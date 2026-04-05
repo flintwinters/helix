@@ -4,8 +4,6 @@
 
 using namespace std;
 
-namespace {
-
 Cell& builtin_arity_error(const char* name) {
     return Error(name);
 }
@@ -75,8 +73,6 @@ Cell& divide(Cell& c) {
     }
     return *new Cell(total);
 }
-
-}  // namespace
 
 Cell& printout(Cell& c) {
     cout << c.to_string() << "\n";
