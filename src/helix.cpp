@@ -226,17 +226,19 @@ string load_file(const string& path) {
 }
 
 int main(int argc, char** argv) {
-    // if (argc < 2) {
-    //     fprintf(stderr, "usage: %s <program.yaml>\n", argv[0]);
-    //     return 1;
-    // }
+    if (argc < 2) {
+        fprintf(stderr, "usage: %s <program.yaml>\n", argv[0]);
+        return 1;
+    }
 
-    // string yaml = load_file(argv[1]);
-    // Cell& parsed = parse_yaml_to_cells(yaml);
-    // cout << parsed["name"] << "\n";
-    // cout << parsed["values"][0] << "\n";
-    // delete &parsed;
-    // return 0;
+    string yaml = load_file(argv[1]);
+    Cell& parsed = parse_yaml_to_cells(yaml);
+    ryml::Tree roundtrip = parsed.to_yaml();
+    vector<char> yaml_buffer(yaml.size() * 4 + 64, '\0');
+    const ryml::substr emitted = ryml::emit_yaml(roundtrip, ryml::substr(yaml_buffer.data(), yaml_buffer.size()));
+    cout.write(emitted.str, emitted.len);
+    delete &parsed;
+    return 0;
 
     Cell c = Cell(printout);
     Cell i = Cell(12);
