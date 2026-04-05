@@ -174,6 +174,10 @@ Cell& parse_yaml_to_cells(const string& yaml) {
 }
 
 int main() {
+    Cell& parsed = parse_yaml_to_cells("name: helix\nvalues:\n  - 1\n  - 2\n");
+    cout << parsed["name"] << "\n";
+    cout << parsed["values"][0] << "\n";
+
     Cell c = Cell(printout);
     Cell i = Cell(12);
     Cell& a = c(i);
