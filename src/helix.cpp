@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <fstream>
 #include <ryml.hpp>
 using namespace std;
 
@@ -15,10 +16,11 @@ using namespace std;
 class Cell;
 typedef Cell& (*Func)(Cell&);
 Cell& Error(const char* s);
+void cell_to_yaml_node(const Cell& cell, ryml::NodeRef* node);
 class Cell {
 public:
     enum Type {
-        INT, STR, FUN, VEC, SPN, MAP, ANY
+        INT, STR, FUN, VEC, MAP, ANY
     };
     enum Type t = INT;
     union {
@@ -26,14 +28,12 @@ public:
         string* s;
         Func f;
         vector<Cell*>* v;
-        span<Cell*> p;
         unordered_map<string, Cell*>* m;
         void* a;
     };
     bool alive = true;
     Cell() {t = INT;}
     Cell(const int i_) : i(i_) {t = INT;}
-    Cell(span<Cell*> p_) : p(p_) {t = SPN;}
     Cell(Func f_) : f(f_) {t = FUN;}
     Cell(const char* s_) {
         s = new string(s_);
@@ -43,9 +43,7 @@ public:
     operator bool() const {return alive;}
 
     Cell& handlevec() {
-        span sp = span<Cell*>(*v).subspan(1);
-        Cell c = Cell(sp);
-        return (*(*v)[0])(c);
+        return (*(*v)[0])(me);
     }
 
     Cell& operator()(Cell& c) {
@@ -54,7 +52,6 @@ public:
         case STR:   return Error("Can't call string");
         case FUN:   return f(c);
         case VEC:   return handlevec();
-        case SPN:   return c;
         case MAP:   return c;
         case ANY:   return c;
         }
@@ -68,7 +65,6 @@ public:
         case STR:   return Error("Can't index string");
         case FUN:   return f(c);
         case VEC:   return *(*v)[c.i];
-        case SPN:   return *p[c.i];
         case MAP:   return *(*m)[*c.s];
         case ANY:   return Error("Can't index void*");
         }
@@ -85,7 +81,6 @@ public:
         case STR:   delete s; break;
         case FUN:   break;
         case VEC:   delete v; break;
-        case SPN:   break;
         case MAP:   delete m; break;
         case ANY:   break;
         }
@@ -98,7 +93,6 @@ public:
         case STR: inner = (s ? *s : "null"); break;
         case FUN: inner = ("Func@" + std::to_string((uintptr_t)(f))); break;
         case VEC: inner = ("Vec#" + std::to_string(v ? v->size() : 0)); break;
-        case SPN: inner = ("Span#" + std::to_string(p.size())); break;
         case MAP: inner = ("Map#" + std::to_string(m ? m->size() : 0)); break;
         case ANY: inner = ("Any@" + std::to_string((uintptr_t)(a))); break;
         }
@@ -114,6 +108,8 @@ public:
     void push(Cell* c) {
         v->push_back(c);
     }
+
+    ryml::Tree to_yaml() const;
 };
 
 ostream& operator<<(ostream& os, const Cell& c) {
@@ -131,6 +127,50 @@ Cell& Error(const char* s) {
 Cell& printout(Cell& c) {
     cout << c.to_string() << "\n";
     return c;
+}
+
+void cell_to_yaml_node(const Cell& cell, ryml::NodeRef* node) {
+    switch (cell.t) {
+    case Cell::INT:
+        *node << cell.i;
+        return;
+    case Cell::STR:
+        if (cell.s) {
+            node->set_val(ryml::csubstr(cell.s->data(), cell.s->size()));
+        } else {
+            const char* empty = "";
+            node->set_val(ryml::csubstr(empty, static_cast<size_t>(0)));
+        }
+        return;
+    case Cell::VEC:
+        *node |= ryml::SEQ;
+        for (Cell* child : *cell.v) {
+            ryml::NodeRef child_node = node->append_child();
+            cell_to_yaml_node(*child, &child_node);
+        }
+        return;
+    case Cell::MAP:
+        *node |= ryml::MAP;
+        for (const auto& [key, value] : *cell.m) {
+            ryml::NodeRef child_node = node->append_child();
+            child_node.set_key(ryml::csubstr(key.data(), key.size()));
+            cell_to_yaml_node(*value, &child_node);
+        }
+        return;
+    case Cell::FUN:
+        node->set_val("FUN");
+        return;
+    case Cell::ANY:
+        node->set_val("ANY");
+        return;
+    }
+}
+
+ryml::Tree Cell::to_yaml() const {
+    ryml::Tree tree;
+    ryml::NodeRef root = tree.rootref();
+    cell_to_yaml_node(*this, &root);
+    return tree;
 }
 
 Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
@@ -173,10 +213,30 @@ Cell& parse_yaml_to_cells(const string& yaml) {
     return *yaml_node_to_cell(tree.rootref());
 }
 
-int main() {
-    Cell& parsed = parse_yaml_to_cells("name: helix\nvalues:\n  - 1\n  - 2\n");
-    cout << parsed["name"] << "\n";
-    cout << parsed["values"][0] << "\n";
+// Loads an entire file into memory for parsing.
+string load_file(const string& path) {
+    ifstream file(path, ios::binary | ios::ate);
+    streamsize size = file.tellg();
+    file.seekg(0, ios::beg);
+
+    string buffer(size, '\0');
+    file.read(&buffer[0], size);
+    
+    return buffer;
+}
+
+int main(int argc, char** argv) {
+    // if (argc < 2) {
+    //     fprintf(stderr, "usage: %s <program.yaml>\n", argv[0]);
+    //     return 1;
+    // }
+
+    // string yaml = load_file(argv[1]);
+    // Cell& parsed = parse_yaml_to_cells(yaml);
+    // cout << parsed["name"] << "\n";
+    // cout << parsed["values"][0] << "\n";
+    // delete &parsed;
+    // return 0;
 
     Cell c = Cell(printout);
     Cell i = Cell(12);
