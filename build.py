@@ -5,17 +5,18 @@ import tempfile
 
 import yaml
 
-INCLUDES = "-I ryml/src -I ryml/ext/c4core/src"
+INCLUDES = "-I include -I ryml/src -I ryml/ext/c4core/src"
 COMPILER = "g++"
 CPP_FLAGS = "-g -std=c++20"
 LINKER_FLAGS = "-L ryml/build -lryml"
 EXECUTABLE = "helix"
+SOURCES = "src/helix.cpp src/core.cpp src/ryml_interface.cpp src/builtins.cpp"
 
 def compile_main():
-    """Compiles the helix.cpp file into an executable."""
-    print("--- Compiling helix.cpp ---")
+    """Compiles the runtime sources into an executable."""
+    print("--- Compiling helix sources ---")
     compile_command = (
-        f"{COMPILER} src/helix.cpp {CPP_FLAGS} -o {EXECUTABLE} "
+        f"{COMPILER} {SOURCES} {CPP_FLAGS} -o {EXECUTABLE} "
         f"{INCLUDES} {LINKER_FLAGS}"
     )
     print(f"$ {compile_command}")
@@ -33,6 +34,7 @@ def run_clang_tidy():
     tidy_command = (
         "clang-tidy-20 "
         "--system-headers=0 "
+        "--extra-arg=-Iinclude "
         "--extra-arg=-isystemryml/src "
         "--extra-arg=-isystemryml/ext/c4core/src "
         "src/helix.cpp -- -std=c++23 -stdlib=libstdc++"
