@@ -5,6 +5,18 @@
 
 using namespace std;
 
+namespace {
+
+void attach_parent_if_map(Cell* parent, Cell* child) {
+    if (child->t != Cell::MAP || child->m == nullptr) {
+        return;
+    }
+
+    (*child->m)["parent"] = parent;
+}
+
+}  // namespace
+
 void cell_to_yaml_node(const Cell& cell, ryml::NodeRef* node) {
     switch (cell.t) {
     case Cell::INT:
@@ -28,6 +40,9 @@ void cell_to_yaml_node(const Cell& cell, ryml::NodeRef* node) {
     case Cell::MAP:
         *node |= ryml::MAP;
         for (const auto& [key, value] : *cell.m) {
+            if (key == "parent") {
+                continue;
+            }
             ryml::NodeRef child_node = node->append_child();
             child_node.set_key(ryml::csubstr(key.data(), key.size()));
             cell_to_yaml_node(*value, &child_node);
@@ -56,7 +71,9 @@ Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
         cell->m = new unordered_map<string, Cell*>();
         for (const ryml::ConstNodeRef& child : node.children()) {
             const string key(child.key().str, child.key().len);
-            (*cell->m)[key] = yaml_node_to_cell(child);
+            Cell* child_cell = yaml_node_to_cell(child);
+            attach_parent_if_map(cell, child_cell);
+            (*cell->m)[key] = child_cell;
         }
         return cell;
     }
@@ -66,7 +83,9 @@ Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
         cell->t = Cell::VEC;
         cell->v = new vector<Cell*>();
         for (const ryml::ConstNodeRef& child : node.children()) {
-            cell->v->push_back(yaml_node_to_cell(child));
+            Cell* child_cell = yaml_node_to_cell(child);
+            attach_parent_if_map(cell, child_cell);
+            cell->v->push_back(child_cell);
         }
         return cell;
     }
