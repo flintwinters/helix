@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
 
     const string yaml = load_file(argv[1]);
     Cell& parsed = parse_yaml_to_cells(yaml);
+    (*Zygote.m)["main"] = &parsed;
     ryml::Tree roundtrip = cell_to_yaml(parsed);
     vector<char> yaml_buffer(yaml.size() * 4 + 64, '\0');
     const ryml::substr emitted = ryml::emit_yaml(roundtrip, ryml::substr(yaml_buffer.data(), yaml_buffer.size()));
