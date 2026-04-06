@@ -2,10 +2,9 @@
 
 #include <cerrno>
 #include <cstdlib>
+#include <vector>
 
 using namespace std;
-
-namespace {
 
 void attach_parent_if_map(Cell* parent, Cell* child) {
     if (child->t != Cell::MAP || child->m == nullptr) {
@@ -14,8 +13,6 @@ void attach_parent_if_map(Cell* parent, Cell* child) {
 
     (*child->m)["parent"] = parent;
 }
-
-}  // namespace
 
 void cell_to_yaml_node(const Cell& cell, ryml::NodeRef* node) {
     switch (cell.t) {
@@ -62,6 +59,20 @@ ryml::Tree cell_to_yaml(const Cell& cell) {
     ryml::NodeRef root = tree.rootref();
     cell_to_yaml_node(cell, &root);
     return tree;
+}
+
+string cell_to_yaml_string(const Cell& cell) {
+    ryml::Tree tree = cell_to_yaml(cell);
+    size_t buffer_size = 64;
+
+    while (true) {
+        vector<char> buffer(buffer_size, '\0');
+        const ryml::substr emitted = ryml::emit_yaml(tree, ryml::substr(buffer.data(), buffer.size()));
+        if (emitted.len < buffer.size()) {
+            return string(emitted.str, emitted.len);
+        }
+        buffer_size *= 2;
+    }
 }
 
 Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
