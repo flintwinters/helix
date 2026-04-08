@@ -27,6 +27,7 @@ public:
         void* a;
     };
     bool alive = true;
+    std::vector<Cell*> parents;
 
     Cell();
     explicit Cell(int i_);
@@ -40,6 +41,7 @@ public:
     Cell& operator[](Cell& c);
     Cell& operator[](int i_);
     Cell& operator[](const char* s_);
+    Cell& operator[](std::string s_);
     ~Cell();
 
     std::string to_string() const;
