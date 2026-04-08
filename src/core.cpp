@@ -6,9 +6,6 @@
 
 using namespace std;
 
-#define returnif(obj) if (obj) {return obj;}
-#define me (*this)
-
 Cell::Cell() { t = INT; }
 
 Cell::Cell(const int i_) : i(i_) { t = INT; }
@@ -22,17 +19,13 @@ Cell::Cell(const char* s_) {
 
 Cell::operator bool() const { return alive; }
 
-Cell& Cell::handlevec() {
-    return (*(*v)[0])(me);
-}
-
 Cell& Cell::operator()(Cell& c) {
     switch (t) {
     case INT:   return Error("Can't call int");
-    case STR:   return Error("Can't call string");
+    case STR:   return (*this)[*s](c);
     case FUN:   return f(c);
-    case VEC:   return handlevec();
-    case MAP:   return c;
+    case VEC:   return (*(*v)[0])(*this);
+    case MAP:   return (*(*m)["main"])(*this);
     case ANY:   return c;
     }
     printf("\nCouldn't call cell %d\n\n", t);
@@ -45,22 +38,43 @@ Cell& Cell::operator[](Cell& c) {
     case STR:   return Error("Can't index string");
     case FUN:   return f(c);
     case VEC:   return *(*v)[c.i];
-    case MAP:   return *(*m)[*c.s];
+    case MAP: {
+        Cell*& value = (*m)[*c.s];
+        if (value != nullptr) {
+            return *value;
+        }
+
+        for (Cell* parent : parents) {
+            if (parent == nullptr) {
+                continue;
+            }
+
+            Cell& inherited = (*parent)[c];
+            if (inherited) {
+                return inherited;
+            }
+        }
+
+        return Error("Couldn't find cell");
+    }
     case ANY:   return Error("Can't index void*");
     }
-    returnif(me["parent"][c]);
-
     return Error("Couldn't find cell");
 }
 
 Cell& Cell::operator[](const int i_) {
     Cell c = Cell(i_);
-    return me[c];
+    return (*this)[c];
 }
 
 Cell& Cell::operator[](const char* s_) {
     Cell c = Cell(s_);
-    return me[c];
+    return (*this)[c];
+}
+
+Cell& Cell::operator[](string s_) {
+    Cell c = Cell(s_.c_str());
+    return (*this)[c];
 }
 
 Cell::~Cell() {
