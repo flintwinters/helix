@@ -39,11 +39,9 @@ int main(int argc, char** argv) {
     // parsed["try_this"][0].t = Cell::FUN;
     // parsed["try_this"][0].f = printout;
 
-    Cell v = parsed["try_this"];
+    Cell& v = parsed["try_this"];
     Cell a = Cell("name");
     // Cell a = Cell(0); // codex claimed segfault due to int map key but string also fails.
     Cell er = v(a);
     if (!er) {cout << er;}
-    delete (*v.v)[1];
-    delete &parsed;
 }
