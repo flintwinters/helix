@@ -1,0 +1,11 @@
+mode: smoke
+program:
+  name: 7
+  values:
+    - 10
+    - 20
+  try_this:
+    - +
+    - 4
+    - 5
+    - 6
