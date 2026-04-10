@@ -10,6 +10,24 @@ Cell& lookup_by_index(Cell& target, const int index);
 Cell& lookup_by_name(Cell& target, const string& name);
 Cell& search_parents(Cell& target, const string& name);
 
+Cell& allocate_in_arena(Cell* cell) {
+    if (Arena.t == Cell::VEC && Arena.v != nullptr) {
+        Arena.push(cell);
+    }
+    return *cell;
+}
+
+void clear_arena() {
+    if (Arena.t != Cell::VEC || Arena.v == nullptr) {
+        return;
+    }
+
+    for (Cell* cell : *Arena.v) {
+        delete cell;
+    }
+    Arena.v->clear();
+}
+
 Cell& lookup_by_index(Cell& target, const int index) {
     switch (target.t) {
     case Cell::INT:   return Error("Can't index int");
@@ -164,7 +182,7 @@ Cell& Error(const char* s) {
     c->alive = false;
     c->t = Cell::STR;
     c->s = new string(s);
-    return *c;
+    return allocate_in_arena(c);
 }
 
 string load_file(const string& path) {
