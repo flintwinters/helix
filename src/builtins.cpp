@@ -21,7 +21,7 @@ Cell& add(Cell& c) {
     for (size_t index = 1; index < c.v->size(); ++index) {
         total += (*c.v)[index]->i;
     }
-    return *new Cell(total);
+    return allocate_in_arena(new Cell(total));
 }
 
 Cell& subtract(Cell& c) {
@@ -34,13 +34,13 @@ Cell& subtract(Cell& c) {
 
     int total = (*c.v)[1]->i;
     if (c.v->size() == 2) {
-        return *new Cell(-total);
+        return allocate_in_arena(new Cell(-total));
     }
 
     for (size_t index = 2; index < c.v->size(); ++index) {
         total -= (*c.v)[index]->i;
     }
-    return *new Cell(total);
+    return allocate_in_arena(new Cell(total));
 }
 
 Cell& multiply(Cell& c) {
@@ -52,7 +52,7 @@ Cell& multiply(Cell& c) {
     for (size_t index = 1; index < c.v->size(); ++index) {
         total *= (*c.v)[index]->i;
     }
-    return *new Cell(total);
+    return allocate_in_arena(new Cell(total));
 }
 
 Cell& divide(Cell& c) {
