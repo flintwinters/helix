@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <fstream>
+#include <memory>
 
 using namespace std;
 
@@ -10,7 +11,15 @@ Cell& lookup_by_index(Cell& target, const int index);
 Cell& lookup_by_name(Cell& target, const string& name);
 Cell& search_parents(Cell& target, const string& name);
 
+namespace {
+vector<unique_ptr<Cell>>& arena_cells() {
+    static vector<unique_ptr<Cell>> cells;
+    return cells;
+}
+}
+
 Cell& allocate_in_arena(Cell* cell) {
+    arena_cells().emplace_back(cell);
     if (Arena.t == Cell::VEC && Arena.v != nullptr) {
         Arena.push(cell);
     }
@@ -19,12 +28,11 @@ Cell& allocate_in_arena(Cell* cell) {
 
 void clear_arena() {
     if (Arena.t != Cell::VEC || Arena.v == nullptr) {
+        arena_cells().clear();
         return;
     }
 
-    for (Cell* cell : *Arena.v) {
-        delete cell;
-    }
+    arena_cells().clear();
     Arena.v->clear();
 }
 
