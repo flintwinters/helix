@@ -103,7 +103,11 @@ Cell& Cell::operator()(Cell& c) {
     }
     case FUN:   return f(c);
     case VEC:   return (*(*v)[0])(*this);
-    case MAP:   return (*(*m)["main"])(*this);
+    case MAP:   {
+        auto a = (*m)["main"];
+        if (a) {return (*a)(*this);}
+        return Error("Couldn't find main");
+    }
     case ANY:   return c;
     }
     printf("\nCouldn't call cell %d\n\n", t);
