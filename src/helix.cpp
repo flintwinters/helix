@@ -11,16 +11,21 @@ Cell& multiply(Cell& c);
 Cell& divide(Cell& c);
 
 Cell Zygote;
+Cell Arena;
 
 void initialize_zygote() {
+    Arena.t = Cell::VEC;
+    Arena.v = new vector<Cell*>();
+
     Zygote.t = Cell::MAP;
     Zygote.m = new unordered_map<string, Cell*>();
+    (*Zygote.m)["arena"] = &Arena;
 
-    (*Zygote.m)["printout"] = new Cell(printout);
-    (*Zygote.m)["+"] = new Cell(add);
-    (*Zygote.m)["-"] = new Cell(subtract);
-    (*Zygote.m)["*"] = new Cell(multiply);
-    (*Zygote.m)["/"] = new Cell(divide);
+    (*Zygote.m)["printout"] = &allocate_in_arena(new Cell(printout));
+    (*Zygote.m)["+"] = &allocate_in_arena(new Cell(add));
+    (*Zygote.m)["-"] = &allocate_in_arena(new Cell(subtract));
+    (*Zygote.m)["*"] = &allocate_in_arena(new Cell(multiply));
+    (*Zygote.m)["/"] = &allocate_in_arena(new Cell(divide));
 }
 
 int main(int argc, char** argv) {
@@ -42,6 +47,8 @@ int main(int argc, char** argv) {
     Cell& v = parsed["try_this"];
     Cell a = Cell("name");
     // Cell a = Cell(0); // codex claimed segfault due to int map key but string also fails.
-    Cell er = v(a);
+    Cell& er = v(a);
     if (!er) {cout << er;}
+
+    clear_arena();
 }
