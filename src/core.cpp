@@ -32,6 +32,11 @@ Cell& search_parents(Cell& target, const string& name) {
         if (inherited) {
             return inherited;
         }
+
+        Cell& ancestor = search_parents(*parent, name);
+        if (ancestor) {
+            return ancestor;
+        }
     }
 
     return Error("Couldn't find cell");
@@ -42,7 +47,7 @@ Cell& lookup_by_name(Cell& target, const string& name) {
     case Cell::INT:   return Error("Can't index int");
     case Cell::STR:   return Error("Can't index string");
     case Cell::FUN:   return Error("Can't index function");
-    case Cell::VEC:   return Error("Can't index vector with string");
+    case Cell::VEC:   return search_parents(target, name);
     case Cell::MAP: {
         const auto it = target.m->find(name);
         if (it != target.m->end() && it->second != nullptr) {
@@ -76,7 +81,7 @@ Cell& Cell::operator()(Cell& c) {
         if (target) {
             return target(c);
         }
-        return Error("Couldn't resolve callable string");
+        return target;
     }
     case FUN:   return f(c);
     case VEC:   return (*(*v)[0])(*this);
