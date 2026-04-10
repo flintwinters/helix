@@ -1,0 +1,6 @@
+mode: smoke
+program:
+  name: 8
+  try_this:
+    - printout
+    - 8
