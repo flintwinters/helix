@@ -29,6 +29,18 @@ void initialize_zygote() {
     (*Zygote.m)["/"] = &allocate_in_arena(new Cell(divide));
 }
 
+void shutdown_zygote() {
+    clear_arena();
+
+    delete Zygote.m;
+    Zygote.m = nullptr;
+    Zygote.t = Cell::ANY;
+
+    delete Arena.v;
+    Arena.v = nullptr;
+    Arena.t = Cell::ANY;
+}
+
 int main(int argc, char** argv) {
     if (argc < 2) {
         fprintf(stderr, "usage: %s <program.yaml>\n", argv[0]);
@@ -45,5 +57,5 @@ int main(int argc, char** argv) {
     Cell& er = Zygote(Null);
     if (!er) {cout << er;}
 
-    clear_arena();
+    shutdown_zygote();
 }
