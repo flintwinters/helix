@@ -1,0 +1,10 @@
+.clang-tidy
+.codex
+builtins.o
+compile_commands.json
+core.o
+helix
+helix.o
+ryml
+ryml_interface.o
+test.yaml
