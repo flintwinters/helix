@@ -81,14 +81,20 @@ def run_tests():
             failed += 1
             continue
 
-        if not isinstance(fixture, dict) or "program" not in fixture or "expected" not in fixture:
-            print(f"[{test_name}] FAILED (fixture must contain 'program' and 'expected')")
+        if not isinstance(fixture, dict) or "program" not in fixture:
+            print(f"[{test_name}] FAILED (fixture must contain 'program')")
             failed += 1
             continue
 
         program = fixture["program"]
-        expected_output = fixture["expected"]
+        smoke_test = fixture.get("mode") == "smoke"
+        expected_output = fixture.get("expected")
         expected_stdout = fixture.get("stdout", "")
+
+        if not smoke_test and expected_output is None:
+            print(f"[{test_name}] FAILED (non-smoke fixtures must contain 'expected')")
+            failed += 1
+            continue
 
         with tempfile.NamedTemporaryFile(
             "w",
@@ -114,6 +120,11 @@ def run_tests():
             print(f"[{test_name}] FAILED (runtime error)")
             print(f"  Stderr: {result.stderr.strip()}")
             failed += 1
+            continue
+
+        if smoke_test:
+            print(f"[{test_name}] PASSED")
+            passed += 1
             continue
 
         if not result.stdout.startswith(expected_stdout):
@@ -175,11 +186,14 @@ def main():
     
     if not run_clang_tidy():
         sys.exit(1)
-    
-    # num_failed = run_tests()
 
-    # if num_failed > 0:
+    # if not run_valgrind():
     #     sys.exit(1)
+    
+    num_failed = run_tests()
+
+    if num_failed > 0:
+        sys.exit(1)
 
         
 if __name__ == "__main__":
