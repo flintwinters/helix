@@ -1,0 +1,7 @@
+mode: smoke
+program:
+  name: 9
+  try_this:
+    - +
+    - 1
+    - 2
