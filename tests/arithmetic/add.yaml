@@ -4,7 +4,7 @@ program:
   values:
     - 10
     - 20
-  try_this:
+  main:
     - +
     - 4
     - 5

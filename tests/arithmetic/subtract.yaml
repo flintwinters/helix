@@ -1,7 +1,7 @@
 mode: smoke
 program:
   name: 9
-  try_this:
+  main:
     - +
     - 1
     - 2

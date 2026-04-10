@@ -4,6 +4,6 @@ program:
   values:
     - 3
     - 2
-  try_this:
+  main:
     - printout
     - 15
