@@ -6,10 +6,9 @@
 
 using namespace std;
 
-namespace {
-
 Cell& lookup_by_index(Cell& target, const int index);
 Cell& lookup_by_name(Cell& target, const string& name);
+Cell& search_parents(Cell& target, const string& name);
 
 Cell& lookup_by_index(Cell& target, const int index) {
     switch (target.t) {
@@ -20,6 +19,21 @@ Cell& lookup_by_index(Cell& target, const int index) {
     case Cell::MAP:   return Error("Can't index map with int");
     case Cell::ANY:   return Error("Can't index void*");
     }
+    return Error("Couldn't find cell");
+}
+
+Cell& search_parents(Cell& target, const string& name) {
+    for (Cell* parent : target.parents) {
+        if (parent == nullptr) {
+            continue;
+        }
+
+        Cell& inherited = lookup_by_name(*parent, name);
+        if (inherited) {
+            return inherited;
+        }
+    }
+
     return Error("Couldn't find cell");
 }
 
@@ -34,25 +48,11 @@ Cell& lookup_by_name(Cell& target, const string& name) {
         if (it != target.m->end() && it->second != nullptr) {
             return *it->second;
         }
-
-        for (Cell* parent : target.parents) {
-            if (parent == nullptr) {
-                continue;
-            }
-
-            Cell& inherited = lookup_by_name(*parent, name);
-            if (inherited) {
-                return inherited;
-            }
-        }
-
-        return Error("Couldn't find cell");
+        return search_parents(target, name);
     }
     case Cell::ANY:   return Error("Can't index void*");
     }
     return Error("Couldn't find cell");
-}
-
 }
 
 Cell::Cell() { t = INT; }
@@ -71,18 +71,13 @@ Cell::operator bool() const { return alive; }
 Cell& Cell::operator()(Cell& c) {
     switch (t) {
     case INT:   return Error("Can't call int");
-    case STR:
-        for (Cell* parent : parents) {
-            if (parent == nullptr) {
-                continue;
-            }
-
-            Cell& target = (*parent)[*s];
-            if (target) {
-                return target(c);
-            }
+    case STR: {
+        Cell& target = search_parents(*this, *s);
+        if (target) {
+            return target(c);
         }
         return Error("Couldn't resolve callable string");
+    }
     case FUN:   return f(c);
     case VEC:   return (*(*v)[0])(*this);
     case MAP:   return (*(*m)["main"])(*this);
