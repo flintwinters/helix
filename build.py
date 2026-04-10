@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import yaml
 
@@ -11,6 +12,12 @@ CPP_FLAGS = "-g -std=c++20"
 LINKER_FLAGS = "-L ryml/build -lryml"
 EXECUTABLE = "helix"
 SOURCES = "src/helix.cpp src/core.cpp src/ryml_interface.cpp src/builtins.cpp"
+VALGRIND_ARGS = [
+    "valgrind",
+    "--leak-check=full",
+    "--show-leak-kinds=all",
+    "--error-exitcode=101",
+]
 
 def compile_main():
     """Compiles the runtime sources into an executable."""
@@ -51,8 +58,6 @@ def run_clang_tidy():
 def run_tests():
     """Discovers and runs YAML fixtures in the 'tests' directory."""
     print("\n--- Running Tests ---")
-    passed = 0
-    failed = 0
 
     if not os.path.isdir("tests"):
         print("No 'tests' directory found.")
@@ -69,32 +74,38 @@ def run_tests():
         print("No YAML test fixtures found.")
         return 0
 
-    for test_path in test_paths:
+    def run_test_case(test_path):
         test_name = os.path.relpath(test_path, "tests")
+        failure_lines = []
 
         try:
             with open(test_path, "r", encoding="utf-8") as fixture_file:
                 fixture = yaml.safe_load(fixture_file)
         except yaml.YAMLError as exc:
-            print(f"[{test_name}] FAILED (invalid YAML fixture)")
-            print(f"  {exc}")
-            failed += 1
-            continue
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": [f"invalid YAML fixture: {exc}"],
+            }
 
         if not isinstance(fixture, dict) or "program" not in fixture:
-            print(f"[{test_name}] FAILED (fixture must contain 'program')")
-            failed += 1
-            continue
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": ["fixture must contain 'program'"],
+            }
 
         program = fixture["program"]
-        smoke_test = fixture.get("mode") == "smoke"
+        smoke_test = fixture.get("mode") in {"smoke", "run-only"}
         expected_output = fixture.get("expected")
         expected_stdout = fixture.get("stdout", "")
 
         if not smoke_test and expected_output is None:
-            print(f"[{test_name}] FAILED (non-smoke fixtures must contain 'expected')")
-            failed += 1
-            continue
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": ["non-run-only fixtures must contain 'expected'"],
+            }
 
         with tempfile.NamedTemporaryFile(
             "w",
@@ -108,7 +119,7 @@ def run_tests():
 
         try:
             result = subprocess.run(
-                [f"./{EXECUTABLE}", program_path],
+                [*VALGRIND_ARGS, f"./{EXECUTABLE}", program_path],
                 capture_output=True,
                 text=True,
                 check=False,
@@ -116,51 +127,108 @@ def run_tests():
         finally:
             os.unlink(program_path)
 
-        if result.returncode != 0:
-            print(f"[{test_name}] FAILED (runtime error)")
-            print(f"  Stderr: {result.stderr.strip()}")
-            failed += 1
-            continue
+        if result.returncode not in (0, 101):
+            failure_lines.append(f"runtime error (exit code {result.returncode})")
+            if result.stdout.strip():
+                failure_lines.append("stdout:")
+                failure_lines.append(indent_block(result.stdout.rstrip("\n")))
+            if result.stderr.strip():
+                failure_lines.append("stderr:")
+                failure_lines.append(indent_block(result.stderr.rstrip("\n")))
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": failure_lines,
+            }
+
+        if result.returncode == 101:
+            failure_lines.append("valgrind reported memory errors or leaks")
+            if result.stdout.strip():
+                failure_lines.append("stdout:")
+                failure_lines.append(indent_block(result.stdout.rstrip("\n")))
+            if result.stderr.strip():
+                failure_lines.append("stderr:")
+                failure_lines.append(indent_block(result.stderr.rstrip("\n")))
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": failure_lines,
+            }
 
         if smoke_test:
-            print(f"[{test_name}] PASSED")
-            passed += 1
-            continue
+            return {
+                "name": test_name,
+                "passed": True,
+                "failure_lines": [],
+            }
 
         if not result.stdout.startswith(expected_stdout):
-            print(f"[{test_name}] FAILED (stdout mismatch)")
-            print("  Expected stdout:")
-            print(indent_block(expected_stdout.rstrip("\n")))
-            print("  Actual stdout:")
-            print(indent_block(result.stdout.rstrip("\n")))
-            failed += 1
-            continue
+            failure_lines.append("stdout mismatch")
+            failure_lines.append("expected stdout:")
+            failure_lines.append(indent_block(expected_stdout.rstrip("\n")))
+            failure_lines.append("actual stdout:")
+            failure_lines.append(indent_block(result.stdout.rstrip("\n")))
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": failure_lines,
+            }
 
         yaml_output = result.stdout[len(expected_stdout):]
 
         try:
             actual_output = yaml.safe_load(yaml_output)
         except yaml.YAMLError as exc:
-            print(f"[{test_name}] FAILED (invalid YAML from runtime)")
-            print(f"  {exc}")
-            print(indent_block(yaml_output.rstrip()))
-            failed += 1
-            continue
+            failure_lines.append(f"invalid YAML from runtime: {exc}")
+            failure_lines.append(indent_block(yaml_output.rstrip()))
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": failure_lines,
+            }
 
         if actual_output == expected_output:
-            print(f"[{test_name}] PASSED")
-            passed += 1
-        else:
-            print(f"[{test_name}] FAILED (output mismatch)")
-            print("  Expected:")
-            print(indent_block(render_yaml(expected_output)))
-            print("  Actual:")
-            print(indent_block(render_yaml(actual_output)))
-            failed += 1
+            return {
+                "name": test_name,
+                "passed": True,
+                "failure_lines": [],
+            }
+
+        failure_lines.append("output mismatch")
+        failure_lines.append("expected:")
+        failure_lines.append(indent_block(render_yaml(expected_output)))
+        failure_lines.append("actual:")
+        failure_lines.append(indent_block(render_yaml(actual_output)))
+        return {
+            "name": test_name,
+            "passed": False,
+            "failure_lines": failure_lines,
+        }
+
+    max_workers = min(len(test_paths), os.cpu_count() or 1)
+    results = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {
+            executor.submit(run_test_case, test_path): test_path
+            for test_path in test_paths
+        }
+        for future in as_completed(future_map):
+            results.append(future.result())
+
+    results.sort(key=lambda result: result["name"])
+    passed = sum(1 for result in results if result["passed"])
+    failed_results = [result for result in results if not result["passed"]]
+
+    if failed_results:
+        print("\n--- Test Failures ---")
+        for result in failed_results:
+            print(f"[{result['name']}] FAILED")
+            for line in result["failure_lines"]:
+                print(f"  {line}")
 
     print("\n--- Test Summary ---")
-    print(f"Passed: {passed}, Failed: {failed}, Total: {passed + failed}")
-    return failed
+    print(f"Passed: {passed}, Failed: {len(failed_results)}, Total: {len(results)}")
+    return len(failed_results)
 
 
 def render_yaml(value):
