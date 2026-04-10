@@ -71,7 +71,7 @@ Cell& divide(Cell& c) {
         }
         total /= divisor;
     }
-    return *new Cell(total);
+    return allocate_in_arena(new Cell(total));
 }
 
 Cell& printout(Cell& c) {
