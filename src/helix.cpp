@@ -10,6 +10,7 @@ Cell& subtract(Cell& c);
 Cell& multiply(Cell& c);
 Cell& divide(Cell& c);
 
+Cell Null;
 Cell Zygote;
 Cell Arena;
 
@@ -41,13 +42,7 @@ int main(int argc, char** argv) {
     (*Zygote.m)["main"] = &parsed;
     cout << cell_to_yaml_string(parsed);
 
-    // parsed["try_this"][0].t = Cell::FUN;
-    // parsed["try_this"][0].f = printout;
-
-    Cell& v = parsed["try_this"];
-    Cell a = Cell("name");
-    // Cell a = Cell(0); // codex claimed segfault due to int map key but string also fails.
-    Cell& er = v(a);
+    Cell& er = Zygote(Null);
     if (!er) {cout << er;}
 
     clear_arena();
