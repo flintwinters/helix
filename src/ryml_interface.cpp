@@ -110,8 +110,10 @@ Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
     return new Cell(value.c_str());
 }
 
-Cell& parse_yaml_to_cells(const string& yaml) {
+Cell& parse_yaml_to_cells(const string& yaml, Cell& zygote) {
     const ryml::csubstr yaml_view(yaml.data(), yaml.size());
     ryml::Tree tree = ryml::parse_in_arena(yaml_view);
-    return *yaml_node_to_cell(tree.rootref());
+    Cell* root = yaml_node_to_cell(tree.rootref());
+    attach_parent(&zygote, root);
+    return *root;
 }

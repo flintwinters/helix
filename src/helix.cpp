@@ -32,16 +32,18 @@ int main(int argc, char** argv) {
     initialize_zygote();
 
     const string yaml = load_file(argv[1]);
-    Cell& parsed = parse_yaml_to_cells(yaml);
+    Cell& parsed = parse_yaml_to_cells(yaml, Zygote);
     (*Zygote.m)["main"] = &parsed;
     cout << cell_to_yaml_string(parsed);
 
-    parsed["try_this"][0].t = Cell::FUN;
-    parsed["try_this"][0].f = printout;
+    // parsed["try_this"][0].t = Cell::FUN;
+    // parsed["try_this"][0].f = printout;
 
     Cell v = parsed["try_this"];
-    Cell a = Cell(0);
-    v(a);
+    Cell a = Cell("name");
+    // Cell a = Cell(0); // codex claimed segfault due to int map key but string also fails.
+    Cell er = v(a);
+    if (!er) {cout << er;}
     delete (*v.v)[1];
     delete &parsed;
 }
