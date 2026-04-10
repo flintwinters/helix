@@ -6,6 +6,55 @@
 
 using namespace std;
 
+namespace {
+
+Cell& lookup_by_index(Cell& target, const int index);
+Cell& lookup_by_name(Cell& target, const string& name);
+
+Cell& lookup_by_index(Cell& target, const int index) {
+    switch (target.t) {
+    case Cell::INT:   return Error("Can't index int");
+    case Cell::STR:   return Error("Can't index string");
+    case Cell::FUN:   return Error("Can't index function");
+    case Cell::VEC:   return *(*target.v)[index];
+    case Cell::MAP:   return Error("Can't index map with int");
+    case Cell::ANY:   return Error("Can't index void*");
+    }
+    return Error("Couldn't find cell");
+}
+
+Cell& lookup_by_name(Cell& target, const string& name) {
+    switch (target.t) {
+    case Cell::INT:   return Error("Can't index int");
+    case Cell::STR:   return Error("Can't index string");
+    case Cell::FUN:   return Error("Can't index function");
+    case Cell::VEC:   return Error("Can't index vector with string");
+    case Cell::MAP: {
+        const auto it = target.m->find(name);
+        if (it != target.m->end() && it->second != nullptr) {
+            return *it->second;
+        }
+
+        for (Cell* parent : target.parents) {
+            if (parent == nullptr) {
+                continue;
+            }
+
+            Cell& inherited = lookup_by_name(*parent, name);
+            if (inherited) {
+                return inherited;
+            }
+        }
+
+        return Error("Couldn't find cell");
+    }
+    case Cell::ANY:   return Error("Can't index void*");
+    }
+    return Error("Couldn't find cell");
+}
+
+}
+
 Cell::Cell() { t = INT; }
 
 Cell::Cell(const int i_) : i(i_) { t = INT; }
@@ -22,7 +71,18 @@ Cell::operator bool() const { return alive; }
 Cell& Cell::operator()(Cell& c) {
     switch (t) {
     case INT:   return Error("Can't call int");
-    case STR:   return (*this)[*s](c);
+    case STR:
+        for (Cell* parent : parents) {
+            if (parent == nullptr) {
+                continue;
+            }
+
+            Cell& target = (*parent)[*s];
+            if (target) {
+                return target(c);
+            }
+        }
+        return Error("Couldn't resolve callable string");
     case FUN:   return f(c);
     case VEC:   return (*(*v)[0])(*this);
     case MAP:   return (*(*m)["main"])(*this);
@@ -33,48 +93,27 @@ Cell& Cell::operator()(Cell& c) {
 }
 
 Cell& Cell::operator[](Cell& c) {
-    switch (t) {
-    case INT:   return Error("Can't index int");
-    case STR:   return Error("Can't index string");
-    case FUN:   return f(c);
-    case VEC:   return *(*v)[c.i];
-    case MAP: {
-        Cell*& value = (*m)[*c.s];
-        if (value != nullptr) {
-            return *value;
-        }
-
-        for (Cell* parent : parents) {
-            if (parent == nullptr) {
-                continue;
-            }
-
-            Cell& inherited = (*parent)[c];
-            if (inherited) {
-                return inherited;
-            }
-        }
-
-        return Error("Couldn't find cell");
-    }
-    case ANY:   return Error("Can't index void*");
+    switch (c.t) {
+    case INT:   return lookup_by_index(*this, c.i);
+    case STR:   return lookup_by_name(*this, *c.s);
+    case FUN:   return Error("Can't index with function");
+    case VEC:   return Error("Can't index with vector");
+    case MAP:   return Error("Can't index with map");
+    case ANY:   return Error("Can't index with void*");
     }
     return Error("Couldn't find cell");
 }
 
 Cell& Cell::operator[](const int i_) {
-    Cell c = Cell(i_);
-    return (*this)[c];
+    return lookup_by_index(*this, i_);
 }
 
 Cell& Cell::operator[](const char* s_) {
-    Cell c = Cell(s_);
-    return (*this)[c];
+    return lookup_by_name(*this, s_);
 }
 
 Cell& Cell::operator[](string s_) {
-    Cell c = Cell(s_.c_str());
-    return (*this)[c];
+    return lookup_by_name(*this, s_);
 }
 
 Cell::~Cell() {
