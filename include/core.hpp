@@ -38,6 +38,8 @@ public:
     explicit Cell(int i_);
     explicit Cell(Func f_);
     explicit Cell(const char* s_);
+    Cell(const Cell&) = delete;
+    Cell& operator=(const Cell&) = delete;
 
     operator bool() const;
 
