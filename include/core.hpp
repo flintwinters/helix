@@ -8,7 +8,12 @@
 class Cell;
 using Func = Cell& (*)(Cell&);
 
+extern Cell Zygote;
+extern Cell Arena;
+
 Cell& Error(const char* s);
+Cell& allocate_in_arena(Cell* cell);
+void clear_arena();
 std::string load_file(const std::string& path);
 
 class Cell {
