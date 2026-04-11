@@ -179,6 +179,24 @@ string Cell::to_string() const {
     return "\033[1;31mDead(\033[1m" + inner + "\033[0m\033[1;31m)\033[0m";
 }
 
+bool Cell::is_truthy() const {
+    switch (t) {
+    case INT:
+        return i != 0;
+    case STR:
+        return s != nullptr && !s->empty();
+    case FUN:
+        return true;
+    case VEC:
+        return v != nullptr && !v->empty();
+    case MAP:
+        return m != nullptr && !m->empty();
+    case ANY:
+        return a != nullptr;
+    }
+    return false;
+}
+
 Cell::operator string() { return to_string(); }
 
 void Cell::push(Cell* c) {
