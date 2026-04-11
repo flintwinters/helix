@@ -9,11 +9,10 @@ class Cell;
 using Func = Cell& (*)(Cell&);
 
 extern Cell Zygote;
-extern Cell Arena;
 
 Cell& Error(const char* s);
-Cell& allocate_in_arena(Cell* cell);
-void clear_arena();
+Cell& register_success(Cell* cell);
+void clear_success_cells();
 std::string load_file(const std::string& path);
 
 class Cell {
@@ -38,6 +37,8 @@ public:
     explicit Cell(int i_);
     explicit Cell(Func f_);
     explicit Cell(const char* s_);
+    Cell(const Cell&) = delete;
+    Cell& operator=(const Cell&) = delete;
 
     operator bool() const;
 
@@ -50,6 +51,7 @@ public:
     ~Cell();
 
     std::string to_string() const;
+    bool is_truthy() const;
     operator std::string();
 
     void push(Cell* c);

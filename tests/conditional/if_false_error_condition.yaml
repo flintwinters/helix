@@ -1,0 +1,15 @@
+mode: state
+program:
+  main:
+    - if
+    - - missing_symbol
+    - [printout, 10]
+    - [printout, 20]
+expected:
+  main:
+    - if
+    - - missing_symbol
+    - [printout, 10]
+    - [printout, 20]
+stdout_contains:
+  - Couldn't find cell

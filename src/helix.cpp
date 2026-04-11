@@ -9,24 +9,29 @@ Cell& add(Cell& c);
 Cell& subtract(Cell& c);
 Cell& multiply(Cell& c);
 Cell& divide(Cell& c);
+Cell& if_builtin(Cell& c);
 
 Cell Null;
 Cell Zygote;
-Cell Arena;
 
 void initialize_zygote() {
-    Arena.t = Cell::VEC;
-    Arena.v = new vector<Cell*>();
-
     Zygote.t = Cell::MAP;
     Zygote.m = new unordered_map<string, Cell*>();
-    (*Zygote.m)["arena"] = &Arena;
 
-    (*Zygote.m)["printout"] = &allocate_in_arena(new Cell(printout));
-    (*Zygote.m)["+"] = &allocate_in_arena(new Cell(add));
-    (*Zygote.m)["-"] = &allocate_in_arena(new Cell(subtract));
-    (*Zygote.m)["*"] = &allocate_in_arena(new Cell(multiply));
-    (*Zygote.m)["/"] = &allocate_in_arena(new Cell(divide));
+    (*Zygote.m)["printout"] = &register_success(new Cell(printout));
+    (*Zygote.m)["+"] = &register_success(new Cell(add));
+    (*Zygote.m)["-"] = &register_success(new Cell(subtract));
+    (*Zygote.m)["*"] = &register_success(new Cell(multiply));
+    (*Zygote.m)["/"] = &register_success(new Cell(divide));
+    (*Zygote.m)["if"] = &register_success(new Cell(if_builtin));
+}
+
+void shutdown_zygote() {
+    clear_success_cells();
+
+    delete Zygote.m;
+    Zygote.m = nullptr;
+    Zygote.t = Cell::ANY;
 }
 
 int main(int argc, char** argv) {
@@ -43,7 +48,10 @@ int main(int argc, char** argv) {
     cout << cell_to_yaml_string(parsed);
 
     Cell& er = Zygote(Null);
-    if (!er) {cout << er;}
+    if (!er) {
+        cout << er;
+        delete &er;
+    }
 
-    clear_arena();
+    shutdown_zygote();
 }

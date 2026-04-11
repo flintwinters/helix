@@ -1,6 +1,7 @@
 #include <ryml_interface.hpp>
 
 #include <cerrno>
+#include <c4/std/string.hpp>
 #include <cstdlib>
 #include <vector>
 
@@ -60,21 +61,12 @@ ryml::Tree cell_to_yaml(const Cell& cell) {
 
 string cell_to_yaml_string(const Cell& cell) {
     ryml::Tree tree = cell_to_yaml(cell);
-    size_t buffer_size = 64;
-
-    while (true) {
-        vector<char> buffer(buffer_size, '\0');
-        const ryml::substr emitted = ryml::emit_yaml(tree, ryml::substr(buffer.data(), buffer.size()));
-        if (emitted.len < buffer.size()) {
-            return string(emitted.str, emitted.len);
-        }
-        buffer_size *= 2;
-    }
+    return ryml::emitrs_yaml<std::string>(tree);
 }
 
 Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
     if (node.is_map()) {
-        Cell* cell = &allocate_in_arena(new Cell());
+        Cell* cell = &register_success(new Cell());
         cell->t = Cell::MAP;
         cell->m = new unordered_map<string, Cell*>();
         for (const ryml::ConstNodeRef& child : node.children()) {
@@ -87,7 +79,7 @@ Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
     }
 
     if (node.is_seq()) {
-        Cell* cell = &allocate_in_arena(new Cell());
+        Cell* cell = &register_success(new Cell());
         cell->t = Cell::VEC;
         cell->v = new vector<Cell*>();
         for (const ryml::ConstNodeRef& child : node.children()) {
@@ -104,10 +96,10 @@ Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
     const long parsed = std::strtol(value.c_str(), &end, 10);
     const bool is_integer = !value.empty() && end == value.c_str() + value.size() && errno == 0;
     if (is_integer) {
-        return &allocate_in_arena(new Cell(static_cast<int>(parsed)));
+        return &register_success(new Cell(static_cast<int>(parsed)));
     }
 
-    return &allocate_in_arena(new Cell(value.c_str()));
+    return &register_success(new Cell(value.c_str()));
 }
 
 Cell& parse_yaml_to_cells(const string& yaml, Cell& zygote) {

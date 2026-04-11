@@ -1,6 +1,14 @@
-mode: smoke
+mode: state
 program:
   name: 8
   main:
     - printout
     - 8
+expected:
+  name: 8
+  main:
+    - printout
+    - 8
+stdout_contains:
+  - printout
+  - "8"

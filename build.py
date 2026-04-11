@@ -21,23 +21,21 @@ VALGRIND_ARGS = [
 
 def compile_main():
     """Compiles the runtime sources into an executable."""
-    print("--- Compiling helix sources ---")
     compile_command = (
         f"{COMPILER} {SOURCES} {CPP_FLAGS} -o {EXECUTABLE} "
         f"{INCLUDES} {LINKER_FLAGS}"
     )
-    print(f"$ {compile_command}")
     result = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
-        print("\033[1;31mCompilation failed!\033[0m")
-        print(result.stderr)
+        print("Compilation failed.")
+        if result.stderr.strip():
+            print(result.stderr)
         return False
-    print("\033[1;32mCompilation successful.\033[0m")
+    print("Compilation successful.")
     return True
 
 def run_clang_tidy():
     """Runs clang-tidy for static analysis and returns success status."""
-    print("\n--- Running clang-tidy ---")
     tidy_command = (
         "clang-tidy-20 "
         "--system-headers=0 "
@@ -46,19 +44,19 @@ def run_clang_tidy():
         "--extra-arg=-isystemryml/ext/c4core/src "
         "src/helix.cpp -- -std=c++23 -stdlib=libstdc++"
     )
-    print(f"$ {tidy_command}")
-    result = subprocess.run(tidy_command, shell=True)
+    result = subprocess.run(tidy_command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
-        print("clang-tidy found issues.")
+        print("clang-tidy failed.")
+        if result.stdout.strip():
+            print(result.stdout)
+        if result.stderr.strip():
+            print(result.stderr)
         return False
-    else:
-        print("clang-tidy checks passed.")
-        return True
+    print("clang-tidy passed.")
+    return True
 
 def run_tests():
     """Discovers and runs YAML fixtures in the 'tests' directory."""
-    print("\n--- Running Tests ---")
-
     if not os.path.isdir("tests"):
         print("No 'tests' directory found.")
         return 0
@@ -99,6 +97,13 @@ def run_tests():
         smoke_test = fixture.get("mode") in {"smoke", "run-only"}
         expected_output = fixture.get("expected")
         expected_stdout = fixture.get("stdout", "")
+        stdout_contains = fixture.get("stdout_contains", [])
+        stdout_excludes = fixture.get("stdout_excludes", [])
+
+        if isinstance(stdout_contains, str):
+            stdout_contains = [stdout_contains]
+        if isinstance(stdout_excludes, str):
+            stdout_excludes = [stdout_excludes]
 
         if not smoke_test and expected_output is None:
             return {
@@ -162,11 +167,9 @@ def run_tests():
                 "failure_lines": [],
             }
 
-        if not result.stdout.startswith(expected_stdout):
-            failure_lines.append("stdout mismatch")
-            failure_lines.append("expected stdout:")
-            failure_lines.append(indent_block(expected_stdout.rstrip("\n")))
-            failure_lines.append("actual stdout:")
+        yaml_output, stdout_tail = split_runtime_output(result.stdout)
+        if yaml_output is None:
+            failure_lines.append("could not split runtime YAML output from trailing stdout")
             failure_lines.append(indent_block(result.stdout.rstrip("\n")))
             return {
                 "name": test_name,
@@ -174,7 +177,34 @@ def run_tests():
                 "failure_lines": failure_lines,
             }
 
-        yaml_output = result.stdout[len(expected_stdout):]
+        if expected_stdout and not stdout_tail.startswith(expected_stdout):
+            failure_lines.append("stdout mismatch")
+            failure_lines.append("expected stdout:")
+            failure_lines.append(indent_block(expected_stdout.rstrip("\n")))
+            failure_lines.append("actual stdout:")
+            failure_lines.append(indent_block(stdout_tail.rstrip("\n")))
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": failure_lines,
+            }
+
+        for expected_fragment in stdout_contains:
+            if expected_fragment not in stdout_tail:
+                failure_lines.append(f"stdout missing fragment: {expected_fragment!r}")
+
+        for unexpected_fragment in stdout_excludes:
+            if unexpected_fragment in stdout_tail:
+                failure_lines.append(f"stdout unexpectedly contained fragment: {unexpected_fragment!r}")
+
+        if failure_lines:
+            failure_lines.append("stdout tail:")
+            failure_lines.append(indent_block(stdout_tail.rstrip("\n")))
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": failure_lines,
+            }
 
         try:
             actual_output = yaml.safe_load(yaml_output)
@@ -220,13 +250,12 @@ def run_tests():
     failed_results = [result for result in results if not result["passed"]]
 
     if failed_results:
-        print("\n--- Test Failures ---")
+        print("Test failures:")
         for result in failed_results:
             print(f"[{result['name']}] FAILED")
             for line in result["failure_lines"]:
                 print(f"  {line}")
 
-    print("\n--- Test Summary ---")
     print(f"Passed: {passed}, Failed: {len(failed_results)}, Total: {len(results)}")
     return len(failed_results)
 
@@ -238,13 +267,23 @@ def render_yaml(value):
 def indent_block(text):
     return "\n".join(f"    {line}" for line in text.splitlines())
 
+
+def split_runtime_output(stdout):
+    lines = stdout.splitlines(keepends=True)
+    for line_count in range(len(lines), 0, -1):
+        yaml_prefix = "".join(lines[:line_count])
+        try:
+            yaml.safe_load(yaml_prefix)
+        except yaml.YAMLError:
+            continue
+        return yaml_prefix, "".join(lines[line_count:])
+    return None, stdout
+
 def run_valgrind():
     """Runs valgrind to check for memory leaks during bootstrap."""
-    print("\n--- Running Valgrind on bootstrap ---")
     # We run without arguments to test memory usage of bootstrap and shutdown.
     # It will exit with 1, which is expected.
     valgrind_command = f"valgrind -s --leak-check=full --show-leak-kinds=all ./{EXECUTABLE}"
-    print(f"$ {valgrind_command}")
     subprocess.run(valgrind_command, shell=True, capture_output=True, text=True)
     print("Valgrind check complete.")
 
