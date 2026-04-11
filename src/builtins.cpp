@@ -119,3 +119,34 @@ Cell& printout(Cell& c) {
     cout << c.to_string() << "\n";
     return c;
 }
+
+Cell& run_all(Cell& c) {
+    if (!is_builtin_call_vector(c)) {
+        return Error("all expects a non-empty call vector");
+    }
+
+    auto* values = c.vec_value();
+    if (values->size() < 2) {
+        return builtin_arity_error("all expects at least one operand");
+    }
+
+    Cell* last_result = nullptr;
+    for (size_t index = 1; index < values->size(); ++index) {
+        Cell* current = (*values)[index];
+        if (current == nullptr) {
+            return Error("all encountered a null operand");
+        }
+
+        Cell& result = (*current)(*current);
+        if (!result.alive) {
+            return result;
+        }
+        last_result = &result;
+    }
+
+    if (last_result == nullptr) {
+        return Error("all couldn't produce a result");
+    }
+
+    return *last_result;
+}
