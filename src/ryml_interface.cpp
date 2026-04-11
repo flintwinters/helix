@@ -66,7 +66,7 @@ string cell_to_yaml_string(const Cell& cell) {
 
 Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
     if (node.is_map()) {
-        Cell* cell = &register_success(new MapCell());
+        Cell* cell = &register_success(make_map_cell());
         auto* entries = cell->map_value();
         for (const ryml::ConstNodeRef& child : node.children()) {
             const string key(child.key().str, child.key().len);
@@ -78,7 +78,7 @@ Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
     }
 
     if (node.is_seq()) {
-        Cell* cell = &register_success(new VecCell());
+        Cell* cell = &register_success(make_vec_cell());
         auto* values = cell->vec_value();
         for (const ryml::ConstNodeRef& child : node.children()) {
             Cell* child_cell = yaml_node_to_cell(child);
@@ -94,10 +94,10 @@ Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
     const long parsed = std::strtol(value.c_str(), &end, 10);
     const bool is_integer = !value.empty() && end == value.c_str() + value.size() && errno == 0;
     if (is_integer) {
-        return &register_success(new IntCell(static_cast<int>(parsed)));
+        return &register_success(make_int_cell(static_cast<int>(parsed)));
     }
 
-    return &register_success(new StringCell(value));
+    return &register_success(make_string_cell(value));
 }
 
 Cell& parse_yaml_to_cells(const string& yaml, Cell& zygote) {
