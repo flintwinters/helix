@@ -1,0 +1,13 @@
+mode: smoke
+program:
+  main:
+    - if
+    - - missing_symbol
+    - - printout
+      - 5
+    - - if
+      - 1
+      - - printout
+        - 8
+      - - printout
+        - 9
