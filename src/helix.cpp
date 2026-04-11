@@ -11,33 +11,27 @@ Cell& multiply(Cell& c);
 Cell& divide(Cell& c);
 Cell& if_builtin(Cell& c);
 
-Cell Null;
-Cell Zygote;
+AnyCell Null;
+MapCell ZygoteRoot;
+Cell& Zygote = ZygoteRoot;
 
 void initialize_zygote() {
-    Zygote.t = Cell::MAP;
-    Zygote.m = new unordered_map<string, Cell*>();
+    auto* bindings = Zygote.map_value();
 
-    Cell& errors = register_success(new Cell());
-    errors.t = Cell::VEC;
-    errors.v = new vector<Cell*>();
-    (*Zygote.m)["errors"] = &errors;
+    Cell& errors = register_success(new VecCell());
+    (*bindings)["errors"] = &errors;
 
-    (*Zygote.m)["printout"] = &register_success(new Cell(printout));
-    (*Zygote.m)["+"] = &register_success(new Cell(add));
-    (*Zygote.m)["-"] = &register_success(new Cell(subtract));
-    (*Zygote.m)["*"] = &register_success(new Cell(multiply));
-    (*Zygote.m)["/"] = &register_success(new Cell(divide));
-    (*Zygote.m)["if"] = &register_success(new Cell(if_builtin));
+    (*bindings)["printout"] = &register_success(new FunCell(printout));
+    (*bindings)["+"] = &register_success(new FunCell(add));
+    (*bindings)["-"] = &register_success(new FunCell(subtract));
+    (*bindings)["*"] = &register_success(new FunCell(multiply));
+    (*bindings)["/"] = &register_success(new FunCell(divide));
+    (*bindings)["if"] = &register_success(new FunCell(if_builtin));
 }
 
 void shutdown_zygote() {
     clear_rooted_errors();
     clear_success_cells();
-
-    delete Zygote.m;
-    Zygote.m = nullptr;
-    Zygote.t = Cell::ANY;
 }
 
 int main(int argc, char** argv) {
@@ -50,7 +44,7 @@ int main(int argc, char** argv) {
 
     const string yaml = load_file(argv[1]);
     Cell& parsed = parse_yaml_to_cells(yaml, Zygote);
-    (*Zygote.m)["main"] = &parsed;
+    (*Zygote.map_value())["main"] = &parsed;
     cout << cell_to_yaml_string(parsed);
 
     Cell& er = Zygote(Null);
