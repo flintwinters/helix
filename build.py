@@ -91,6 +91,25 @@ def run_clang_tidy():
     print("clang-tidy passed.")
     return True
 
+def run_cloc():
+    """Calculates and prints source lines of code for src and include."""
+    result = subprocess.run(
+        ["cloc", "-q", "src", "include"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        print("cloc failed.")
+        if result.stdout.strip():
+            print(result.stdout.rstrip("\n"))
+        if result.stderr.strip():
+            print(result.stderr.rstrip("\n"))
+        return False
+
+    print(result.stdout.rstrip("\n"))
+    return True
+
 def run_tests():
     """Discovers and runs YAML fixtures in the 'tests' directory."""
     if not os.path.isdir("tests"):
@@ -315,14 +334,6 @@ def split_runtime_output(stdout):
         return yaml_prefix, "".join(lines[line_count:])
     return None, stdout
 
-def run_valgrind():
-    """Runs valgrind to check for memory leaks during bootstrap."""
-    # We run without arguments to test memory usage of bootstrap and shutdown.
-    # It will exit with 1, which is expected.
-    valgrind_command = f"valgrind -s --leak-check=full --show-leak-kinds=all ./{EXECUTABLE}"
-    subprocess.run(valgrind_command, shell=True, capture_output=True, text=True)
-    print("Valgrind check complete.")
-
 def main():
     if not compile_main():
         sys.exit(1)
@@ -330,9 +341,9 @@ def main():
     if not run_clang_tidy():
         sys.exit(1)
 
-    # if not run_valgrind():
-    #     sys.exit(1)
-    
+    if not run_cloc():
+        sys.exit(1)
+
     num_failed = run_tests()
 
     if num_failed > 0:
