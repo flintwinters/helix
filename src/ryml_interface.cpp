@@ -1,6 +1,7 @@
 #include <ryml_interface.hpp>
 
 #include <cerrno>
+#include <c4/std/string.hpp>
 #include <cstdlib>
 #include <vector>
 
@@ -60,16 +61,7 @@ ryml::Tree cell_to_yaml(const Cell& cell) {
 
 string cell_to_yaml_string(const Cell& cell) {
     ryml::Tree tree = cell_to_yaml(cell);
-    size_t buffer_size = 64;
-
-    while (true) {
-        vector<char> buffer(buffer_size, '\0');
-        const ryml::substr emitted = ryml::emit_yaml(tree, ryml::substr(buffer.data(), buffer.size()));
-        if (emitted.len < buffer.size()) {
-            return string(emitted.str, emitted.len);
-        }
-        buffer_size *= 2;
-    }
+    return ryml::emitrs_yaml<std::string>(tree);
 }
 
 Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
