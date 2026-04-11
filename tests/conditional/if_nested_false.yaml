@@ -1,4 +1,4 @@
-mode: smoke
+mode: state
 program:
   main:
     - if
@@ -11,3 +11,18 @@ program:
         - 8
       - - printout
         - 9
+expected:
+  main:
+    - if
+    - - missing_symbol
+    - - printout
+      - 5
+    - - if
+      - 1
+      - - printout
+        - 8
+      - - printout
+        - 9
+stdout_contains:
+  - printout
+  - "8"
