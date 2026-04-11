@@ -7,14 +7,6 @@
 
 using namespace std;
 
-void attach_parent(Cell* parent, Cell* child) {
-    if (parent == nullptr || child == nullptr) {
-        return;
-    }
-
-    child->parents.push_back(parent);
-}
-
 void cell_to_yaml_node(const Cell& cell, ryml::NodeRef* node) {
     switch (cell.type()) {
     case Cell::INT:
@@ -66,24 +58,20 @@ string cell_to_yaml_string(const Cell& cell) {
 
 Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
     if (node.is_map()) {
-        Cell* cell = &register_success(new MapCell());
-        auto* entries = cell->map_value();
+        Cell* cell = new MapCell();
         for (const ryml::ConstNodeRef& child : node.children()) {
             const string key(child.key().str, child.key().len);
             Cell* child_cell = yaml_node_to_cell(child);
-            attach_parent(cell, child_cell);
-            (*entries)[key] = child_cell;
+            cell->bind(key, child_cell);
         }
         return cell;
     }
 
     if (node.is_seq()) {
-        Cell* cell = &register_success(new VecCell());
-        auto* values = cell->vec_value();
+        Cell* cell = new VecCell();
         for (const ryml::ConstNodeRef& child : node.children()) {
             Cell* child_cell = yaml_node_to_cell(child);
-            attach_parent(cell, child_cell);
-            values->push_back(child_cell);
+            cell->push(child_cell);
         }
         return cell;
     }
@@ -94,16 +82,16 @@ Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node) {
     const long parsed = std::strtol(value.c_str(), &end, 10);
     const bool is_integer = !value.empty() && end == value.c_str() + value.size() && errno == 0;
     if (is_integer) {
-        return &register_success(new IntCell(static_cast<int>(parsed)));
+        return new IntCell(static_cast<int>(parsed));
     }
 
-    return &register_success(new StringCell(value));
+    return new StringCell(value);
 }
 
 Cell& parse_yaml_to_cells(const string& yaml, Cell& zygote) {
     const ryml::csubstr yaml_view(yaml.data(), yaml.size());
     ryml::Tree tree = ryml::parse_in_arena(yaml_view);
     Cell* root = yaml_node_to_cell(tree.rootref());
-    attach_parent(&zygote, root);
+    zygote.bind("main", root);
     return *root;
 }
