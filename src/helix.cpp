@@ -10,6 +10,7 @@ Cell& subtract(Cell& c);
 Cell& multiply(Cell& c);
 Cell& divide(Cell& c);
 Cell& if_builtin(Cell& c);
+Cell& run_all(Cell& c);
 
 AnyCell NullStorage;
 MapCell ZygoteStorage;
@@ -25,10 +26,7 @@ void initialize_zygote() {
     Zygote.bind("*", new FunCell(multiply));
     Zygote.bind("/", new FunCell(divide));
     Zygote.bind("if", new FunCell(if_builtin));
-}
-
-void shutdown_zygote() {
-    clear_rooted_errors();
+    Zygote.bind("all", new FunCell(run_all));
 }
 
 int main(int argc, char** argv) {
@@ -36,17 +34,17 @@ int main(int argc, char** argv) {
         fprintf(stderr, "usage: %s <program.yaml>\n", argv[0]);
         return 1;
     }
-
+    
     initialize_zygote();
-
+    
     const string yaml = load_file(argv[1]);
     Cell& parsed = parse_yaml_to_cells(yaml, Zygote);
     cout << cell_to_yaml_string(parsed);
-
+    
     Cell& er = Zygote(Null);
     if (!er) {
         cout << er;
     }
-
-    shutdown_zygote();
+    
+    clear_rooted_errors();
 }
