@@ -11,22 +11,21 @@ Cell& multiply(Cell& c);
 Cell& divide(Cell& c);
 Cell& if_builtin(Cell& c);
 
-AnyCell Null;
-MapCell ZygoteRoot;
-Cell& Zygote = ZygoteRoot;
+Cell& Null = *make_any_cell();
+Cell& Zygote = *make_map_cell();
 
 void initialize_zygote() {
     auto* bindings = Zygote.map_value();
 
-    Cell& errors = register_success(new VecCell());
+    Cell& errors = register_success(make_vec_cell());
     (*bindings)["errors"] = &errors;
 
-    (*bindings)["printout"] = &register_success(new FunCell(printout));
-    (*bindings)["+"] = &register_success(new FunCell(add));
-    (*bindings)["-"] = &register_success(new FunCell(subtract));
-    (*bindings)["*"] = &register_success(new FunCell(multiply));
-    (*bindings)["/"] = &register_success(new FunCell(divide));
-    (*bindings)["if"] = &register_success(new FunCell(if_builtin));
+    (*bindings)["printout"] = &register_success(make_fun_cell(printout));
+    (*bindings)["+"] = &register_success(make_fun_cell(add));
+    (*bindings)["-"] = &register_success(make_fun_cell(subtract));
+    (*bindings)["*"] = &register_success(make_fun_cell(multiply));
+    (*bindings)["/"] = &register_success(make_fun_cell(divide));
+    (*bindings)["if"] = &register_success(make_fun_cell(if_builtin));
 }
 
 void shutdown_zygote() {
