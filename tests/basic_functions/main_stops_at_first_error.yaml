@@ -1,0 +1,25 @@
+mode: state
+program:
+  main:
+    - - printout
+      - 8
+    - - /
+      - 1
+      - 0
+    - - printout
+      - 13
+expected:
+  main:
+    - - printout
+      - 8
+    - - /
+      - 1
+      - 0
+    - - printout
+      - 13
+stdout_contains:
+  - printout
+  - "8"
+  - divide by zero
+stdout_excludes:
+  - "13"
