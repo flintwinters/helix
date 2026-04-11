@@ -3,18 +3,13 @@ program:
   main:
     - if
     - - missing_symbol
-    - - printout
-      - 10
-    - - printout
-      - 20
+    - [printout, 10]
+    - [printout, 20]
 expected:
   main:
     - if
     - - missing_symbol
-    - - printout
-      - 10
-    - - printout
-      - 20
+    - [printout, 10]
+    - [printout, 20]
 stdout_contains:
-  - printout
-  - "20"
+  - Couldn't find cell
