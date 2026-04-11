@@ -1,5 +1,11 @@
-mode: smoke
+mode: state
 program:
+  name: 9
+  main:
+    - +
+    - 1
+    - 2
+expected:
   name: 9
   main:
     - +
