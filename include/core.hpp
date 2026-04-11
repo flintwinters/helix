@@ -29,7 +29,7 @@ public:
     Cell() = default;
     Cell(const Cell&) = delete;
     Cell& operator=(const Cell&) = delete;
-    Cell& operator=(Cell& c);
+    Cell& operator=(Cell* c);
     virtual ~Cell() = default;
 
     operator bool() const;
@@ -53,7 +53,7 @@ public:
     virtual const vector<Cell*>* vec_value() const;
     virtual unordered_map<string, Cell*>* map_value();
     virtual const unordered_map<string, Cell*>* map_value() const;
-    virtual Cell& set(Cell& c);
+    virtual Cell& set(Cell* c);
     virtual void bind(const string& key, Cell* c);
     virtual void push(Cell* c);
     virtual void clear();
@@ -75,7 +75,7 @@ public:
     string to_string() const override;
     bool is_truthy() const override;
     int as_int() const override;
-    Cell& set(Cell& c) override;
+    Cell& set(Cell* c) override;
 
 private:
     int value;
@@ -93,7 +93,7 @@ public:
     string to_string() const override;
     bool is_truthy() const override;
     const string* str_value() const override;
-    Cell& set(Cell& c) override;
+    Cell& set(Cell* c) override;
 
 private:
     string value;
@@ -109,7 +109,7 @@ public:
     Cell& index(const string& s_) override;
     string to_string() const override;
     bool is_truthy() const override;
-    Cell& set(Cell& c) override;
+    Cell& set(Cell* c) override;
 
 private:
     Func value;
@@ -163,7 +163,7 @@ public:
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
     Cell& index(const string& s_) override;
-    Cell& set(Cell& c) override;
+    Cell& set(Cell* c) override;
     string to_string() const override;
     bool is_truthy() const override;
 
@@ -183,7 +183,7 @@ public:
     string to_string() const override;
     bool is_truthy() const override;
     const string* str_value() const override;
-    Cell& set(Cell& c) override;
+    Cell& set(Cell* c) override;
 
 private:
     string message;
