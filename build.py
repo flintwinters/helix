@@ -21,23 +21,21 @@ VALGRIND_ARGS = [
 
 def compile_main():
     """Compiles the runtime sources into an executable."""
-    print("--- Compiling helix sources ---")
     compile_command = (
         f"{COMPILER} {SOURCES} {CPP_FLAGS} -o {EXECUTABLE} "
         f"{INCLUDES} {LINKER_FLAGS}"
     )
-    print(f"$ {compile_command}")
     result = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
-        print("\033[1;31mCompilation failed!\033[0m")
-        print(result.stderr)
+        print("Compilation failed.")
+        if result.stderr.strip():
+            print(result.stderr)
         return False
-    print("\033[1;32mCompilation successful.\033[0m")
+    print("Compilation successful.")
     return True
 
 def run_clang_tidy():
     """Runs clang-tidy for static analysis and returns success status."""
-    print("\n--- Running clang-tidy ---")
     tidy_command = (
         "clang-tidy-20 "
         "--system-headers=0 "
@@ -46,19 +44,19 @@ def run_clang_tidy():
         "--extra-arg=-isystemryml/ext/c4core/src "
         "src/helix.cpp -- -std=c++23 -stdlib=libstdc++"
     )
-    print(f"$ {tidy_command}")
-    result = subprocess.run(tidy_command, shell=True)
+    result = subprocess.run(tidy_command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
-        print("clang-tidy found issues.")
+        print("clang-tidy failed.")
+        if result.stdout.strip():
+            print(result.stdout)
+        if result.stderr.strip():
+            print(result.stderr)
         return False
-    else:
-        print("clang-tidy checks passed.")
-        return True
+    print("clang-tidy passed.")
+    return True
 
 def run_tests():
     """Discovers and runs YAML fixtures in the 'tests' directory."""
-    print("\n--- Running Tests ---")
-
     if not os.path.isdir("tests"):
         print("No 'tests' directory found.")
         return 0
@@ -252,13 +250,12 @@ def run_tests():
     failed_results = [result for result in results if not result["passed"]]
 
     if failed_results:
-        print("\n--- Test Failures ---")
+        print("Test failures:")
         for result in failed_results:
             print(f"[{result['name']}] FAILED")
             for line in result["failure_lines"]:
                 print(f"  {line}")
 
-    print("\n--- Test Summary ---")
     print(f"Passed: {passed}, Failed: {len(failed_results)}, Total: {len(results)}")
     return len(failed_results)
 
@@ -284,11 +281,9 @@ def split_runtime_output(stdout):
 
 def run_valgrind():
     """Runs valgrind to check for memory leaks during bootstrap."""
-    print("\n--- Running Valgrind on bootstrap ---")
     # We run without arguments to test memory usage of bootstrap and shutdown.
     # It will exit with 1, which is expected.
     valgrind_command = f"valgrind -s --leak-check=full --show-leak-kinds=all ./{EXECUTABLE}"
-    print(f"$ {valgrind_command}")
     subprocess.run(valgrind_command, shell=True, capture_output=True, text=True)
     print("Valgrind check complete.")
 
