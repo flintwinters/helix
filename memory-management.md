@@ -11,10 +11,10 @@ return a successful cell, but it must not assume ownership of it and must not
 destroy it.
 
 Errored cells are first-class values, but they are rooted separately from
-ordinary successful runtime objects. Every new error created by `Error()` is
-registered in the `errors` vector stored on `Zygote`. Callers therefore borrow
-errored cells just as they borrow successful cells; they do not individually
-free them during propagation.
+ordinary successful runtime objects. Every new error created by `Error()` is an
+`ErrorCell` registered in the `errors` vector stored on `Zygote`. Callers
+therefore borrow errored cells just as they borrow successful cells; they do
+not individually free them during propagation.
 
 The root ownership invariant is now simpler: successful heap cells are kept in a
 private rooted-success store, while errored cells are kept in `Zygote["errors"]`
@@ -28,6 +28,9 @@ new container in a monotonic way. Once wrapped, the container becomes the
 root-level error object that is returned upward. The same child error must not
 be shared across multiple owners or reused after transfer.
 
-Under this model, `alive` does not describe truthiness. It describes whether the
-cell is a successful borrowed value or an owned error value. Truthiness is a
-separate value-level property of `Cell` and must be evaluated independently.
+Under this compatibility model, `alive` does not describe truthiness. It
+describes whether the cell is a successful borrowed value or an owned error
+value. `ErrorCell` makes the error payload explicit in the runtime type system,
+but `alive` remains the success and error discriminator until the broader model
+is migrated. Truthiness is a separate value-level property of `Cell` and must be
+evaluated independently.
