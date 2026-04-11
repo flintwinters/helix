@@ -66,14 +66,19 @@ void clear_rooted_errors() {
     }
 }
 
-Cell& run_sequence(Cell& c) {
+Cell& run_sequence(Cell& c, const size_t start_index) {
     auto* values = c.vec_value();
     if (c.type() != Cell::VEC || values == nullptr || values->empty()) {
         return Error("all expects a non-empty call vector");
     }
 
+    if (start_index >= values->size()) {
+        return Error("all expects at least one operand");
+    }
+
     Cell* last_result = nullptr;
-    for (Cell* current : *values) {
+    for (size_t index = start_index; index < values->size(); ++index) {
+        Cell* current = (*values)[index];
         if (current == nullptr) {
             return Error("all encountered a null operand");
         }
