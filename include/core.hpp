@@ -122,6 +122,7 @@ public:
     vector<Cell*>* vec_value() override;
     const vector<Cell*>* vec_value() const override;
     void push(Cell* c) override;
+    void clear() override;
 
 private:
     vector<unique_ptr<Cell>> owned;
@@ -140,6 +141,8 @@ public:
     bool is_truthy() const override;
     unordered_map<string, Cell*>* map_value() override;
     const unordered_map<string, Cell*>* map_value() const override;
+    void bind(const string& key, Cell* c) override;
+    void clear() override;
 
 private:
     unordered_map<string, unique_ptr<Cell>> owned;
