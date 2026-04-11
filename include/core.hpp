@@ -52,6 +52,7 @@ public:
     ~Cell();
 
     std::string to_string() const;
+    bool is_truthy() const;
     operator std::string();
 
     void push(Cell* c);
