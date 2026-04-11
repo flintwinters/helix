@@ -26,24 +26,6 @@ Cell& evaluate_if_expression(Cell& expression) {
     return Error("if couldn't evaluate expression");
 }
 
-bool is_truthy_value(const Cell& cell) {
-    switch (cell.t) {
-    case Cell::INT:
-        return cell.i != 0;
-    case Cell::STR:
-        return cell.s != nullptr && !cell.s->empty();
-    case Cell::FUN:
-        return true;
-    case Cell::VEC:
-        return cell.v != nullptr && !cell.v->empty();
-    case Cell::MAP:
-        return cell.m != nullptr && !cell.m->empty();
-    case Cell::ANY:
-        return cell.a != nullptr;
-    }
-    return false;
-}
-
 Cell& add(Cell& c) {
     if (!is_builtin_call_vector(c)) {
         return Error("add expects a non-empty call vector");
@@ -119,7 +101,7 @@ Cell& if_builtin(Cell& c) {
         return condition;
     }
 
-    if (is_truthy_value(condition)) {
+    if (condition.is_truthy()) {
         return evaluate_if_expression(*(*c.v)[2]);
     }
 
