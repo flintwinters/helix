@@ -1,20 +1,20 @@
 #pragma once
 
 #include <iosfwd>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 class Cell;
 using Func = Cell& (*)(Cell&);
+using namespace std;
 
 extern Cell& Zygote;
 
 Cell& Error(const char* s);
-Cell& register_success(Cell* cell);
 void clear_rooted_errors();
-void clear_success_cells();
-std::string load_file(const std::string& path);
+string load_file(const string& path);
 
 class Cell {
 public:
@@ -23,7 +23,7 @@ public:
     };
 
     bool alive = true;
-    std::vector<Cell*> parents;
+    vector<Cell*> parents;
 
     Cell() = default;
     Cell(const Cell&) = delete;
@@ -36,23 +36,29 @@ public:
     Cell& operator[](Cell& c);
     Cell& operator[](int i_);
     Cell& operator[](const char* s_);
-    Cell& operator[](std::string s_);
+    Cell& operator[](string s_);
 
     virtual Type type() const = 0;
     virtual Cell& call(Cell& c);
     virtual Cell& index(Cell& c);
     virtual Cell& index(int i_);
-    virtual Cell& index(const std::string& s_);
-    virtual std::string to_string() const = 0;
+    virtual Cell& index(const string& s_);
+    virtual string to_string() const = 0;
     virtual bool is_truthy() const = 0;
     virtual int as_int() const;
-    virtual const std::string* str_value() const;
-    virtual std::vector<Cell*>* vec_value();
-    virtual const std::vector<Cell*>* vec_value() const;
-    virtual std::unordered_map<std::string, Cell*>* map_value();
-    virtual const std::unordered_map<std::string, Cell*>* map_value() const;
+    virtual const string* str_value() const;
+    virtual vector<Cell*>* vec_value();
+    virtual const vector<Cell*>* vec_value() const;
+    virtual unordered_map<string, Cell*>* map_value();
+    virtual const unordered_map<string, Cell*>* map_value() const;
+    virtual void bind(const string& key, Cell* c);
     virtual void push(Cell* c);
-    operator std::string();
+    virtual void clear();
+    Cell& own_result(Cell* c);
+    operator string();
+
+private:
+    unique_ptr<Cell> result;
 };
 
 class IntCell final : public Cell {
@@ -62,8 +68,8 @@ public:
     Type type() const override;
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
-    Cell& index(const std::string& s_) override;
-    std::string to_string() const override;
+    Cell& index(const string& s_) override;
+    string to_string() const override;
     bool is_truthy() const override;
     int as_int() const override;
 
@@ -74,18 +80,18 @@ private:
 class StringCell final : public Cell {
 public:
     explicit StringCell(const char* value_);
-    explicit StringCell(std::string value_);
+    explicit StringCell(string value_);
 
     Type type() const override;
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
-    Cell& index(const std::string& s_) override;
-    std::string to_string() const override;
+    Cell& index(const string& s_) override;
+    string to_string() const override;
     bool is_truthy() const override;
-    const std::string* str_value() const override;
+    const string* str_value() const override;
 
 private:
-    std::string value;
+    string value;
 };
 
 class FunCell final : public Cell {
@@ -95,8 +101,8 @@ public:
     Type type() const override;
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
-    Cell& index(const std::string& s_) override;
-    std::string to_string() const override;
+    Cell& index(const string& s_) override;
+    string to_string() const override;
     bool is_truthy() const override;
 
 private:
@@ -110,15 +116,16 @@ public:
     Type type() const override;
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
-    Cell& index(const std::string& s_) override;
-    std::string to_string() const override;
+    Cell& index(const string& s_) override;
+    string to_string() const override;
     bool is_truthy() const override;
-    std::vector<Cell*>* vec_value() override;
-    const std::vector<Cell*>* vec_value() const override;
+    vector<Cell*>* vec_value() override;
+    const vector<Cell*>* vec_value() const override;
     void push(Cell* c) override;
 
 private:
-    std::vector<Cell*> value;
+    vector<unique_ptr<Cell>> owned;
+    vector<Cell*> value;
 };
 
 class MapCell final : public Cell {
@@ -128,14 +135,15 @@ public:
     Type type() const override;
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
-    Cell& index(const std::string& s_) override;
-    std::string to_string() const override;
+    Cell& index(const string& s_) override;
+    string to_string() const override;
     bool is_truthy() const override;
-    std::unordered_map<std::string, Cell*>* map_value() override;
-    const std::unordered_map<std::string, Cell*>* map_value() const override;
+    unordered_map<string, Cell*>* map_value() override;
+    const unordered_map<string, Cell*>* map_value() const override;
 
 private:
-    std::unordered_map<std::string, Cell*> value;
+    unordered_map<string, unique_ptr<Cell>> owned;
+    unordered_map<string, Cell*> value;
 };
 
 class AnyCell final : public Cell {
@@ -145,12 +153,12 @@ public:
     Type type() const override;
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
-    Cell& index(const std::string& s_) override;
-    std::string to_string() const override;
+    Cell& index(const string& s_) override;
+    string to_string() const override;
     bool is_truthy() const override;
 
 private:
     void* value;
 };
 
-std::ostream& operator<<(std::ostream& os, const Cell& c);
+ostream& operator<<(ostream& os, const Cell& c);
