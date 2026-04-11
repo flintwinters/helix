@@ -19,7 +19,7 @@ string load_file(const string& path);
 class Cell {
 public:
     enum Type {
-        INT, STR, FUN, VEC, MAP, ANY
+        INT, STR, FUN, VEC, MAP, ANY, ERROR
     };
 
     bool alive = true;
@@ -162,6 +162,23 @@ public:
 
 private:
     void* value;
+};
+
+class ErrorCell final : public Cell {
+public:
+    explicit ErrorCell(const char* message_);
+    explicit ErrorCell(string message_);
+
+    Type type() const override;
+    Cell& call(Cell& c) override;
+    Cell& index(int i_) override;
+    Cell& index(const string& s_) override;
+    string to_string() const override;
+    bool is_truthy() const override;
+    const string* str_value() const override;
+
+private:
+    string message;
 };
 
 ostream& operator<<(ostream& os, const Cell& c);
