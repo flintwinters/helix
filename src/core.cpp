@@ -83,6 +83,7 @@ Cell& Cell::index(Cell& c) {
     case VEC:   return Error("Can't index with vector");
     case MAP:   return Error("Can't index with map");
     case ANY:   return Error("Can't index with void*");
+    case ERROR: return Error("Can't index with error");
     }
     return Error("Couldn't find cell");
 }
@@ -236,12 +237,22 @@ string AnyCell::to_string() const {
 }
 bool AnyCell::is_truthy() const { return value != nullptr; }
 
+ErrorCell::ErrorCell(const char* message_) : message(message_) {}
+ErrorCell::ErrorCell(string message_) : message(std::move(message_)) {}
+Cell::Type ErrorCell::type() const { return ERROR; }
+Cell& ErrorCell::call(Cell&) { return *this; }
+Cell& ErrorCell::index(const int) { return *this; }
+Cell& ErrorCell::index(const string&) { return *this; }
+string ErrorCell::to_string() const { return render_cell(message, alive); }
+bool ErrorCell::is_truthy() const { return false; }
+const string* ErrorCell::str_value() const { return &message; }
+
 ostream& operator<<(ostream& os, const Cell& c) {
     return os << c.to_string();
 }
 
 Cell& Error(const char* s) {
-    Cell* c = new StringCell(s);
+    Cell* c = new ErrorCell(s);
     c->alive = false;
 
     Cell* errors = rooted_errors_cell();
