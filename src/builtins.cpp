@@ -22,6 +22,7 @@ Cell& evaluate_if_expression(Cell& expression) {
     case Cell::STR:
     case Cell::FUN:
     case Cell::ANY:
+    case Cell::ERROR:
         return expression;
     }
     return Error("if couldn't evaluate expression");
