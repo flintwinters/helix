@@ -17,9 +17,34 @@ vector<unique_ptr<Cell>>& rooted_success_cells() {
     return cells;
 }
 
+Cell* rooted_errors_cell() {
+    if (Zygote.t != Cell::MAP || Zygote.m == nullptr) {
+        return nullptr;
+    }
+
+    const auto it = Zygote.m->find("errors");
+    if (it == Zygote.m->end() || it->second == nullptr) {
+        return nullptr;
+    }
+
+    return it->second;
+}
+
 Cell& register_success(Cell* cell) {
     rooted_success_cells().emplace_back(cell);
     return *cell;
+}
+
+void clear_rooted_errors() {
+    Cell* errors = rooted_errors_cell();
+    if (errors == nullptr || errors->t != Cell::VEC || errors->v == nullptr) {
+        return;
+    }
+
+    for (Cell* error : *errors->v) {
+        delete error;
+    }
+    errors->v->clear();
 }
 
 void clear_success_cells() {
@@ -228,6 +253,12 @@ Cell& Error(const char* s) {
     c->alive = false;
     c->t = Cell::STR;
     c->s = new string(s);
+
+    Cell* errors = rooted_errors_cell();
+    if (errors != nullptr && errors->t == Cell::VEC && errors->v != nullptr) {
+        errors->v->push_back(c);
+    }
+
     return *c;
 }
 
