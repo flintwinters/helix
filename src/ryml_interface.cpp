@@ -13,6 +13,7 @@ void cell_to_yaml_node(const Cell& cell, ryml::NodeRef* node) {
         *node << cell.as_int();
         return;
     case Cell::STR:
+    case Cell::ERROR:
         if (const string* value = cell.str_value()) {
             node->set_val(ryml::csubstr(value->data(), value->size()));
         } else {
