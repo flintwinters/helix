@@ -12,6 +12,20 @@ bool is_builtin_call_vector(const Cell& c) {
     return c.t == Cell::VEC && c.v != nullptr && !c.v->empty();
 }
 
+Cell& evaluate_if_expression(Cell& expression) {
+    switch (expression.t) {
+    case Cell::VEC:
+    case Cell::MAP:
+        return expression(expression);
+    case Cell::INT:
+    case Cell::STR:
+    case Cell::FUN:
+    case Cell::ANY:
+        return expression;
+    }
+    return Error("if couldn't evaluate expression");
+}
+
 Cell& add(Cell& c) {
     if (!is_builtin_call_vector(c)) {
         return Error("add expects a non-empty call vector");
@@ -72,6 +86,22 @@ Cell& divide(Cell& c) {
         total /= divisor;
     }
     return allocate_in_arena(new Cell(total));
+}
+
+Cell& if_builtin(Cell& c) {
+    if (!is_builtin_call_vector(c)) {
+        return Error("if expects a non-empty call vector");
+    }
+    if (c.v->size() != 4) {
+        return builtin_arity_error("if expects condition, then branch, else branch");
+    }
+
+    Cell& condition = evaluate_if_expression(*(*c.v)[1]);
+    if (!condition) {
+        return evaluate_if_expression(*(*c.v)[3]);
+    }
+
+    return evaluate_if_expression(*(*c.v)[2]);
 }
 
 Cell& printout(Cell& c) {
