@@ -9,6 +9,7 @@ Cell& add(Cell& c);
 Cell& subtract(Cell& c);
 Cell& multiply(Cell& c);
 Cell& divide(Cell& c);
+Cell& if_builtin(Cell& c);
 
 Cell Null;
 Cell Zygote;
@@ -27,6 +28,7 @@ void initialize_zygote() {
     (*Zygote.m)["-"] = &allocate_in_arena(new Cell(subtract));
     (*Zygote.m)["*"] = &allocate_in_arena(new Cell(multiply));
     (*Zygote.m)["/"] = &allocate_in_arena(new Cell(divide));
+    (*Zygote.m)["if"] = &allocate_in_arena(new Cell(if_builtin));
 }
 
 void shutdown_zygote() {
