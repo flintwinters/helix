@@ -1,0 +1,15 @@
+mode: state
+program:
+  main:
+    - all
+    - - /
+      - 1
+      - 0
+expected:
+  main:
+    - all
+    - - /
+      - 1
+      - 0
+stdout_contains:
+  - divide by zero
