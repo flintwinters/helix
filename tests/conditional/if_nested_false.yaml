@@ -7,10 +7,8 @@ program:
       - 5
     - - if
       - 1
-      - - printout
-        - 8
-      - - printout
-        - 9
+      - [printout, 8]
+      - [printout, 9]
 expected:
   main:
     - if
@@ -19,10 +17,7 @@ expected:
       - 5
     - - if
       - 1
-      - - printout
-        - 8
-      - - printout
-        - 9
+      - [printout, 8]
+      - [printout, 9]
 stdout_contains:
-  - printout
-  - "8"
+  - Couldn't find cell
