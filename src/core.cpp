@@ -66,6 +66,32 @@ void clear_rooted_errors() {
     }
 }
 
+Cell& run_sequence(Cell& c) {
+    auto* values = c.vec_value();
+    if (c.type() != Cell::VEC || values == nullptr || values->empty()) {
+        return Error("all expects a non-empty call vector");
+    }
+
+    Cell* last_result = nullptr;
+    for (Cell* current : *values) {
+        if (current == nullptr) {
+            return Error("all encountered a null operand");
+        }
+
+        Cell& result = (*current)(*current);
+        if (!result.alive) {
+            return result;
+        }
+        last_result = &result;
+    }
+
+    if (last_result == nullptr) {
+        return Error("all couldn't produce a result");
+    }
+
+    return *last_result;
+}
+
 Cell::operator bool() const { return alive; }
 Cell& Cell::operator()(Cell& c) { return call(c); }
 Cell& Cell::operator[](Cell& c) { return index(c); }
@@ -188,6 +214,15 @@ Cell::Type MapCell::type() const { return MAP; }
 Cell& MapCell::call(Cell&) {
     const auto it = value.find("main");
     if (it != value.end() && it->second != nullptr) {
+        if (it->second->type() == Cell::VEC) {
+            const auto* elements = it->second->vec_value();
+            if (elements != nullptr && !elements->empty()) {
+                Cell* first = elements->front();
+                if (first != nullptr && first->type() != Cell::STR && first->type() != Cell::FUN) {
+                    return run_sequence(*it->second);
+                }
+            }
+        }
         return (*it->second)(*this);
     }
     return Error("Couldn't find main");
