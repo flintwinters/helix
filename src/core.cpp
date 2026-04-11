@@ -9,31 +9,21 @@ using namespace std;
 
 Cell& lookup_by_index(Cell& target, const int index);
 Cell& lookup_by_name(Cell& target, const string& name);
-Cell& search_parents(Cell& target, const string& name);
+Cell* lookup_by_name_ptr(Cell& target, const string& name);
+Cell* search_parents_ptr(Cell& target, const string& name);
 
-namespace {
-vector<unique_ptr<Cell>>& arena_cells() {
+vector<unique_ptr<Cell>>& rooted_success_cells() {
     static vector<unique_ptr<Cell>> cells;
     return cells;
 }
-}
 
-Cell& allocate_in_arena(Cell* cell) {
-    arena_cells().emplace_back(cell);
-    if (Arena.t == Cell::VEC && Arena.v != nullptr) {
-        Arena.push(cell);
-    }
+Cell& register_success(Cell* cell) {
+    rooted_success_cells().emplace_back(cell);
     return *cell;
 }
 
-void clear_arena() {
-    if (Arena.t != Cell::VEC || Arena.v == nullptr) {
-        arena_cells().clear();
-        return;
-    }
-
-    arena_cells().clear();
-    Arena.v->clear();
+void clear_success_cells() {
+    rooted_success_cells().clear();
 }
 
 Cell& lookup_by_index(Cell& target, const int index) {
@@ -48,24 +38,42 @@ Cell& lookup_by_index(Cell& target, const int index) {
     return Error("Couldn't find cell");
 }
 
-Cell& search_parents(Cell& target, const string& name) {
+Cell* search_parents_ptr(Cell& target, const string& name) {
     for (Cell* parent : target.parents) {
         if (parent == nullptr) {
             continue;
         }
 
-        Cell& inherited = lookup_by_name(*parent, name);
-        if (inherited) {
+        Cell* inherited = lookup_by_name_ptr(*parent, name);
+        if (inherited != nullptr) {
             return inherited;
         }
 
-        Cell& ancestor = search_parents(*parent, name);
-        if (ancestor) {
+        Cell* ancestor = search_parents_ptr(*parent, name);
+        if (ancestor != nullptr) {
             return ancestor;
         }
     }
 
-    return Error("Couldn't find cell");
+    return nullptr;
+}
+
+Cell* lookup_by_name_ptr(Cell& target, const string& name) {
+    switch (target.t) {
+    case Cell::INT:   return nullptr;
+    case Cell::STR:   return nullptr;
+    case Cell::FUN:   return nullptr;
+    case Cell::VEC:   return search_parents_ptr(target, name);
+    case Cell::MAP: {
+        const auto it = target.m->find(name);
+        if (it != target.m->end() && it->second != nullptr) {
+            return it->second;
+        }
+        return search_parents_ptr(target, name);
+    }
+    case Cell::ANY:   return nullptr;
+    }
+    return nullptr;
 }
 
 Cell& lookup_by_name(Cell& target, const string& name) {
@@ -73,13 +81,19 @@ Cell& lookup_by_name(Cell& target, const string& name) {
     case Cell::INT:   return Error("Can't index int");
     case Cell::STR:   return Error("Can't index string");
     case Cell::FUN:   return Error("Can't index function");
-    case Cell::VEC:   return search_parents(target, name);
-    case Cell::MAP: {
-        const auto it = target.m->find(name);
-        if (it != target.m->end() && it->second != nullptr) {
-            return *it->second;
+    case Cell::VEC: {
+        Cell* found = search_parents_ptr(target, name);
+        if (found != nullptr) {
+            return *found;
         }
-        return search_parents(target, name);
+        return Error("Couldn't find cell");
+    }
+    case Cell::MAP: {
+        Cell* found = lookup_by_name_ptr(target, name);
+        if (found != nullptr) {
+            return *found;
+        }
+        return Error("Couldn't find cell");
     }
     case Cell::ANY:   return Error("Can't index void*");
     }
@@ -103,17 +117,19 @@ Cell& Cell::operator()(Cell& c) {
     switch (t) {
     case INT:   return Error("Can't call int");
     case STR: {
-        Cell& target = search_parents(*this, *s);
-        if (target) {
-            return target(c);
+        Cell* target = search_parents_ptr(*this, *s);
+        if (target != nullptr) {
+            return (*target)(c);
         }
-        return target;
+        return Error("Couldn't find cell");
     }
     case FUN:   return f(c);
     case VEC:   return (*(*v)[0])(*this);
     case MAP:   {
-        auto a = (*m)["main"];
-        if (a) {return (*a)(*this);}
+        const auto it = m->find("main");
+        if (it != m->end() && it->second != nullptr) {
+            return (*it->second)(*this);
+        }
         return Error("Couldn't find main");
     }
     case ANY:   return c;
@@ -212,7 +228,7 @@ Cell& Error(const char* s) {
     c->alive = false;
     c->t = Cell::STR;
     c->s = new string(s);
-    return allocate_in_arena(c);
+    return *c;
 }
 
 string load_file(const string& path) {
