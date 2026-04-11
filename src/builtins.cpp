@@ -9,11 +9,12 @@ Cell& builtin_arity_error(const char* name) {
 }
 
 bool is_builtin_call_vector(const Cell& c) {
-    return c.t == Cell::VEC && c.v != nullptr && !c.v->empty();
+    const auto* values = c.vec_value();
+    return c.type() == Cell::VEC && values != nullptr && !values->empty();
 }
 
 Cell& evaluate_if_expression(Cell& expression) {
-    switch (expression.t) {
+    switch (expression.type()) {
     case Cell::VEC:
     case Cell::MAP:
         return expression(expression);
@@ -31,30 +32,32 @@ Cell& add(Cell& c) {
         return Error("add expects a non-empty call vector");
     }
 
+    auto* values = c.vec_value();
     int total = 0;
-    for (size_t index = 1; index < c.v->size(); ++index) {
-        total += (*c.v)[index]->i;
+    for (size_t index = 1; index < values->size(); ++index) {
+        total += (*values)[index]->as_int();
     }
-    return register_success(new Cell(total));
+    return register_success(new IntCell(total));
 }
 
 Cell& subtract(Cell& c) {
     if (!is_builtin_call_vector(c)) {
         return Error("subtract expects a non-empty call vector");
     }
-    if (c.v->size() < 2) {
+    auto* values = c.vec_value();
+    if (values->size() < 2) {
         return builtin_arity_error("subtract expects at least one operand");
     }
 
-    int total = (*c.v)[1]->i;
-    if (c.v->size() == 2) {
-        return register_success(new Cell(-total));
+    int total = (*values)[1]->as_int();
+    if (values->size() == 2) {
+        return register_success(new IntCell(-total));
     }
 
-    for (size_t index = 2; index < c.v->size(); ++index) {
-        total -= (*c.v)[index]->i;
+    for (size_t index = 2; index < values->size(); ++index) {
+        total -= (*values)[index]->as_int();
     }
-    return register_success(new Cell(total));
+    return register_success(new IntCell(total));
 }
 
 Cell& multiply(Cell& c) {
@@ -62,50 +65,53 @@ Cell& multiply(Cell& c) {
         return Error("multiply expects a non-empty call vector");
     }
 
+    auto* values = c.vec_value();
     int total = 1;
-    for (size_t index = 1; index < c.v->size(); ++index) {
-        total *= (*c.v)[index]->i;
+    for (size_t index = 1; index < values->size(); ++index) {
+        total *= (*values)[index]->as_int();
     }
-    return register_success(new Cell(total));
+    return register_success(new IntCell(total));
 }
 
 Cell& divide(Cell& c) {
     if (!is_builtin_call_vector(c)) {
         return Error("divide expects a non-empty call vector");
     }
-    if (c.v->size() < 3) {
+    auto* values = c.vec_value();
+    if (values->size() < 3) {
         return builtin_arity_error("divide expects at least two operands");
     }
 
-    int total = (*c.v)[1]->i;
-    for (size_t index = 2; index < c.v->size(); ++index) {
-        const int divisor = (*c.v)[index]->i;
+    int total = (*values)[1]->as_int();
+    for (size_t index = 2; index < values->size(); ++index) {
+        const int divisor = (*values)[index]->as_int();
         if (divisor == 0) {
             return Error("divide by zero");
         }
         total /= divisor;
     }
-    return register_success(new Cell(total));
+    return register_success(new IntCell(total));
 }
 
 Cell& if_builtin(Cell& c) {
     if (!is_builtin_call_vector(c)) {
         return Error("if expects a non-empty call vector");
     }
-    if (c.v->size() != 4) {
+    auto* values = c.vec_value();
+    if (values->size() != 4) {
         return builtin_arity_error("if expects condition, then branch, else branch");
     }
 
-    Cell& condition = evaluate_if_expression(*(*c.v)[1]);
+    Cell& condition = evaluate_if_expression(*(*values)[1]);
     if (!condition.alive) {
         return condition;
     }
 
     if (condition.is_truthy()) {
-        return evaluate_if_expression(*(*c.v)[2]);
+        return evaluate_if_expression(*(*values)[2]);
     }
 
-    return evaluate_if_expression(*(*c.v)[3]);
+    return evaluate_if_expression(*(*values)[3]);
 }
 
 Cell& printout(Cell& c) {
