@@ -98,6 +98,7 @@ Cell& run_sequence(Cell& c, const size_t start_index) {
 }
 
 Cell::operator bool() const { return alive; }
+Cell& Cell::operator=(Cell* c) { return set(c); }
 Cell& Cell::operator()(Cell& c) { return call(c); }
 Cell& Cell::operator[](Cell& c) { return index(c); }
 Cell& Cell::operator[](const int i_) { return index(i_); }
@@ -126,6 +127,7 @@ vector<Cell*>* Cell::vec_value() { return nullptr; }
 const vector<Cell*>* Cell::vec_value() const { return nullptr; }
 unordered_map<string, Cell*>* Cell::map_value() { return nullptr; }
 const unordered_map<string, Cell*>* Cell::map_value() const { return nullptr; }
+Cell& Cell::set(Cell*) { return Error("Couldn't set cell"); }
 void Cell::bind(const string&, Cell*) {}
 void Cell::push(Cell*) {}
 void Cell::clear() {}
@@ -145,6 +147,14 @@ string IntCell::to_string() const {
 }
 bool IntCell::is_truthy() const { return value != 0; }
 int IntCell::as_int() const { return value; }
+Cell& IntCell::set(Cell* c) {
+    if (c == nullptr || c->type() != INT) {
+        return Error("Can't assign non-int to int");
+    }
+
+    value = c->as_int();
+    return *this;
+}
 
 StringCell::StringCell(const char* value_) : value(value_) {}
 StringCell::StringCell(string value_) : value(std::move(value_)) {}
@@ -161,6 +171,19 @@ Cell& StringCell::index(const string&) { return Error("Can't index string"); }
 string StringCell::to_string() const { return render_cell(value, alive); }
 bool StringCell::is_truthy() const { return !value.empty(); }
 const string* StringCell::str_value() const { return &value; }
+Cell& StringCell::set(Cell* c) {
+    if (c == nullptr || c->type() != STR) {
+        return Error("Can't assign non-string to string");
+    }
+
+    const string* string_value = c->str_value();
+    if (string_value == nullptr) {
+        return Error("Can't assign missing string value");
+    }
+
+    value = *string_value;
+    return *this;
+}
 
 FunCell::FunCell(Func value_) : value(value_) {}
 Cell::Type FunCell::type() const { return FUN; }
@@ -171,6 +194,14 @@ string FunCell::to_string() const {
     return render_cell("Func@" + std::to_string((uintptr_t)(value)), alive);
 }
 bool FunCell::is_truthy() const { return true; }
+Cell& FunCell::set(Cell* c) {
+    if (c == nullptr || c->type() != FUN) {
+        return Error("Can't assign non-function to function");
+    }
+
+    value = static_cast<FunCell*>(c)->value;
+    return *this;
+}
 
 Cell::Type VecCell::type() const { return VEC; }
 Cell& VecCell::call(Cell&) {
@@ -276,6 +307,14 @@ string AnyCell::to_string() const {
     return render_cell("Any@" + std::to_string((uintptr_t)(value)), alive);
 }
 bool AnyCell::is_truthy() const { return value != nullptr; }
+Cell& AnyCell::set(Cell* c) {
+    if (c == nullptr || c->type() != ANY) {
+        return Error("Can't assign non-any to any");
+    }
+
+    value = static_cast<AnyCell*>(c)->value;
+    return *this;
+}
 
 ErrorCell::ErrorCell(const char* message_) : message(message_) {}
 ErrorCell::ErrorCell(string message_) : message(std::move(message_)) {}
@@ -286,6 +325,20 @@ Cell& ErrorCell::index(const string&) { return *this; }
 string ErrorCell::to_string() const { return render_cell(message, alive); }
 bool ErrorCell::is_truthy() const { return false; }
 const string* ErrorCell::str_value() const { return &message; }
+Cell& ErrorCell::set(Cell* c) {
+    if (c == nullptr || c->type() != ERROR) {
+        return Error("Can't assign non-error to error");
+    }
+
+    const string* next_message = c->str_value();
+    if (next_message == nullptr) {
+        return Error("Can't assign missing error message");
+    }
+
+    message = *next_message;
+    alive = c->alive;
+    return *this;
+}
 
 ostream& operator<<(ostream& os, const Cell& c) {
     return os << c.to_string();
