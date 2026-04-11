@@ -1,0 +1,13 @@
+mode: smoke
+program:
+  main:
+    - if
+    - 1
+    - - if
+      - 1
+      - - printout
+        - 5
+      - - printout
+        - 6
+    - - printout
+      - 9
