@@ -1,0 +1,19 @@
+mode: state
+program:
+  main:
+    - all
+    - - printout
+      - 7
+    - - printout
+      - 9
+expected:
+  main:
+    - all
+    - - printout
+      - 7
+    - - printout
+      - 9
+stdout_contains:
+  - printout
+  - "7"
+  - "9"
