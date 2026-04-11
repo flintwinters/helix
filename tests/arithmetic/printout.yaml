@@ -1,4 +1,4 @@
-mode: smoke
+mode: state
 program:
   name: 1
   values:
@@ -7,3 +7,14 @@ program:
   main:
     - printout
     - 15
+expected:
+  name: 1
+  values:
+    - 3
+    - 2
+  main:
+    - printout
+    - 15
+stdout_contains:
+  - printout
+  - "15"
