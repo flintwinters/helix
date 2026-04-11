@@ -1,66 +1,59 @@
 #include <core.hpp>
 
-#include <cstdio>
 #include <cstdint>
 #include <fstream>
 #include <memory>
 
 using namespace std;
 
-Cell& lookup_by_index(Cell& target, const int index);
-Cell& lookup_by_name(Cell& target, const string& name);
-Cell* lookup_by_name_ptr(Cell& target, const string& name);
-Cell* search_parents_ptr(Cell& target, const string& name);
+namespace {
 
 vector<unique_ptr<Cell>>& rooted_success_cells() {
     static vector<unique_ptr<Cell>> cells;
     return cells;
 }
 
+string render_cell(const string& inner, const bool alive) {
+    if (alive) {
+        return "Cell(\033[1m" + inner + "\033[0m)";
+    }
+    return "\033[1;31mDead(\033[1m" + inner + "\033[0m\033[1;31m)\033[0m";
+}
+
+Cell& ErrorString(const string& s) {
+    return Error(s.c_str());
+}
+
 Cell* rooted_errors_cell() {
-    if (Zygote.t != Cell::MAP || Zygote.m == nullptr) {
+    const auto* root = Zygote.map_value();
+    if (root == nullptr) {
         return nullptr;
     }
 
-    const auto it = Zygote.m->find("errors");
-    if (it == Zygote.m->end() || it->second == nullptr) {
+    const auto it = root->find("errors");
+    if (it == root->end() || it->second == nullptr) {
         return nullptr;
     }
 
     return it->second;
 }
 
-Cell& register_success(Cell* cell) {
-    rooted_success_cells().emplace_back(cell);
-    return *cell;
-}
+Cell* search_parents_ptr(Cell& target, const string& name);
 
-void clear_rooted_errors() {
-    Cell* errors = rooted_errors_cell();
-    if (errors == nullptr || errors->t != Cell::VEC || errors->v == nullptr) {
-        return;
+Cell* lookup_by_name_ptr(Cell& target, const string& name) {
+    if (auto* map = target.map_value()) {
+        const auto it = map->find(name);
+        if (it != map->end() && it->second != nullptr) {
+            return it->second;
+        }
+        return search_parents_ptr(target, name);
     }
 
-    for (Cell* error : *errors->v) {
-        delete error;
+    if (target.type() == Cell::VEC) {
+        return search_parents_ptr(target, name);
     }
-    errors->v->clear();
-}
 
-void clear_success_cells() {
-    rooted_success_cells().clear();
-}
-
-Cell& lookup_by_index(Cell& target, const int index) {
-    switch (target.t) {
-    case Cell::INT:   return Error("Can't index int");
-    case Cell::STR:   return Error("Can't index string");
-    case Cell::FUN:   return Error("Can't index function");
-    case Cell::VEC:   return *(*target.v)[index];
-    case Cell::MAP:   return Error("Can't index map with int");
-    case Cell::ANY:   return Error("Can't index void*");
-    }
-    return Error("Couldn't find cell");
+    return nullptr;
 }
 
 Cell* search_parents_ptr(Cell& target, const string& name) {
@@ -73,100 +66,55 @@ Cell* search_parents_ptr(Cell& target, const string& name) {
         if (inherited != nullptr) {
             return inherited;
         }
-
-        Cell* ancestor = search_parents_ptr(*parent, name);
-        if (ancestor != nullptr) {
-            return ancestor;
-        }
     }
 
     return nullptr;
 }
 
-Cell* lookup_by_name_ptr(Cell& target, const string& name) {
-    switch (target.t) {
-    case Cell::INT:   return nullptr;
-    case Cell::STR:   return nullptr;
-    case Cell::FUN:   return nullptr;
-    case Cell::VEC:   return search_parents_ptr(target, name);
-    case Cell::MAP: {
-        const auto it = target.m->find(name);
-        if (it != target.m->end() && it->second != nullptr) {
-            return it->second;
-        }
-        return search_parents_ptr(target, name);
-    }
-    case Cell::ANY:   return nullptr;
-    }
-    return nullptr;
+}  // namespace
+
+Cell& register_success(Cell* cell) {
+    rooted_success_cells().emplace_back(cell);
+    return *cell;
 }
 
-Cell& lookup_by_name(Cell& target, const string& name) {
-    switch (target.t) {
-    case Cell::INT:   return Error("Can't index int");
-    case Cell::STR:   return Error("Can't index string");
-    case Cell::FUN:   return Error("Can't index function");
-    case Cell::VEC: {
-        Cell* found = search_parents_ptr(target, name);
-        if (found != nullptr) {
-            return *found;
-        }
-        return Error("Couldn't find cell");
+void clear_rooted_errors() {
+    Cell* errors = rooted_errors_cell();
+    auto* values = errors ? errors->vec_value() : nullptr;
+    if (values == nullptr) {
+        return;
     }
-    case Cell::MAP: {
-        Cell* found = lookup_by_name_ptr(target, name);
-        if (found != nullptr) {
-            return *found;
-        }
-        return Error("Couldn't find cell");
+
+    for (Cell* error : *values) {
+        delete error;
     }
-    case Cell::ANY:   return Error("Can't index void*");
-    }
-    return Error("Couldn't find cell");
+    values->clear();
 }
 
-Cell::Cell() { t = INT; }
-
-Cell::Cell(const int i_) : i(i_) { t = INT; }
-
-Cell::Cell(Func f_) : f(f_) { t = FUN; }
-
-Cell::Cell(const char* s_) {
-    s = new string(s_);
-    t = STR;
+void clear_success_cells() {
+    rooted_success_cells().clear();
 }
 
 Cell::operator bool() const { return alive; }
 
-Cell& Cell::operator()(Cell& c) {
-    switch (t) {
-    case INT:   return Error("Can't call int");
-    case STR: {
-        Cell* target = search_parents_ptr(*this, *s);
-        if (target != nullptr) {
-            return (*target)(c);
-        }
-        return Error("Couldn't find cell");
-    }
-    case FUN:   return f(c);
-    case VEC:   return (*(*v)[0])(*this);
-    case MAP:   {
-        const auto it = m->find("main");
-        if (it != m->end() && it->second != nullptr) {
-            return (*it->second)(*this);
-        }
-        return Error("Couldn't find main");
-    }
-    case ANY:   return c;
-    }
-    printf("\nCouldn't call cell %d\n\n", t);
-    return Error("Couldn't call cell");
+Cell& Cell::operator()(Cell& c) { return call(c); }
+
+Cell& Cell::operator[](Cell& c) { return index(c); }
+
+Cell& Cell::operator[](const int i_) { return index(i_); }
+
+Cell& Cell::operator[](const char* s_) { return index(string(s_)); }
+
+Cell& Cell::operator[](string s_) { return index(s_); }
+
+Cell& Cell::call(Cell&) {
+    return ErrorString("Can't call " + type_name());
 }
 
-Cell& Cell::operator[](Cell& c) {
-    switch (c.t) {
-    case INT:   return lookup_by_index(*this, c.i);
-    case STR:   return lookup_by_name(*this, *c.s);
+Cell& Cell::index(Cell& c) {
+    switch (c.type()) {
+    case INT:   return index(c.as_int());
+    case STR:   return index(*c.str_value());
     case FUN:   return Error("Can't index with function");
     case VEC:   return Error("Can't index with vector");
     case MAP:   return Error("Can't index with map");
@@ -175,88 +123,196 @@ Cell& Cell::operator[](Cell& c) {
     return Error("Couldn't find cell");
 }
 
-Cell& Cell::operator[](const int i_) {
-    return lookup_by_index(*this, i_);
+Cell& Cell::index(const int) {
+    return ErrorString("Can't index " + type_name());
 }
 
-Cell& Cell::operator[](const char* s_) {
-    return lookup_by_name(*this, s_);
+Cell& Cell::index(const string&) {
+    return ErrorString("Can't index " + type_name());
 }
 
-Cell& Cell::operator[](string s_) {
-    return lookup_by_name(*this, s_);
-}
+int Cell::as_int() const { return 0; }
 
-Cell::~Cell() {
-    switch (t) {
-    case INT:   break;
-    case STR:   delete s; break;
-    case FUN:   break;
-    case VEC:   delete v; break;
-    case MAP:   delete m; break;
-    case ANY:   break;
-    }
-}
+const string* Cell::str_value() const { return nullptr; }
 
-string Cell::to_string() const {
-    string inner = "Unknown";
-    switch (t) {
-    case INT: inner = "\033[35m" + std::to_string(i); break;
-    case STR: inner = (s ? *s : "null"); break;
-    case FUN: inner = "Func@" + std::to_string((uintptr_t)(f)); break;
-    case VEC:
-        inner = "Vec#" + std::to_string(v ? v->size() : 0);
-        for (Cell* c : *v) {
-            inner += c->to_string();
-        }
-        break;
-    case MAP: inner = "Map#" + std::to_string(m ? m->size() : 0); break;
-    case ANY: inner = "Any@" + std::to_string((uintptr_t)(a)); break;
-    }
+Func Cell::fun_value() const { return nullptr; }
 
-    if (alive) {
-        return "Cell(\033[1m" + inner + "\033[0m)";
-    }
-    return "\033[1;31mDead(\033[1m" + inner + "\033[0m\033[1;31m)\033[0m";
-}
+vector<Cell*>* Cell::vec_value() { return nullptr; }
 
-bool Cell::is_truthy() const {
-    switch (t) {
-    case INT:
-        return i != 0;
-    case STR:
-        return s != nullptr && !s->empty();
-    case FUN:
-        return true;
-    case VEC:
-        return v != nullptr && !v->empty();
-    case MAP:
-        return m != nullptr && !m->empty();
-    case ANY:
-        return a != nullptr;
-    }
-    return false;
-}
+const vector<Cell*>* Cell::vec_value() const { return nullptr; }
+
+unordered_map<string, Cell*>* Cell::map_value() { return nullptr; }
+
+const unordered_map<string, Cell*>* Cell::map_value() const { return nullptr; }
+
+void* Cell::any_value() const { return nullptr; }
+
+void Cell::push(Cell*) {}
 
 Cell::operator string() { return to_string(); }
 
-void Cell::push(Cell* c) {
-    v->push_back(c);
+IntCell::IntCell(const int value_) : value(value_) {}
+
+Cell::Type IntCell::type() const { return INT; }
+
+string IntCell::type_name() const { return "int"; }
+
+string IntCell::to_string() const {
+    return render_cell("\033[35m" + std::to_string(value), alive);
 }
+
+bool IntCell::is_truthy() const { return value != 0; }
+
+int IntCell::as_int() const { return value; }
+
+StringCell::StringCell(const char* value_) : value(value_) {}
+
+StringCell::StringCell(string value_) : value(std::move(value_)) {}
+
+Cell::Type StringCell::type() const { return STR; }
+
+string StringCell::type_name() const { return "string"; }
+
+Cell& StringCell::call(Cell& c) {
+    Cell* target = search_parents_ptr(*this, value);
+    if (target != nullptr) {
+        return (*target)(c);
+    }
+    return Error("Couldn't find cell");
+}
+
+string StringCell::to_string() const { return render_cell(value, alive); }
+
+bool StringCell::is_truthy() const { return !value.empty(); }
+
+const string* StringCell::str_value() const { return &value; }
+
+FunCell::FunCell(Func value_) : value(value_) {}
+
+Cell::Type FunCell::type() const { return FUN; }
+
+string FunCell::type_name() const { return "function"; }
+
+Cell& FunCell::call(Cell& c) { return value(c); }
+
+string FunCell::to_string() const {
+    return render_cell("Func@" + std::to_string((uintptr_t)(value)), alive);
+}
+
+bool FunCell::is_truthy() const { return true; }
+
+Func FunCell::fun_value() const { return value; }
+
+VecCell::VecCell() = default;
+
+Cell::Type VecCell::type() const { return VEC; }
+
+string VecCell::type_name() const { return "vector"; }
+
+Cell& VecCell::call(Cell&) {
+    if (value.empty() || value.front() == nullptr) {
+        return Error("Couldn't call vector");
+    }
+    return (*value.front())(*this);
+}
+
+Cell& VecCell::index(const int i_) {
+    if (i_ < 0 || static_cast<size_t>(i_) >= value.size()) {
+        return Error("Couldn't find cell");
+    }
+    return *value[static_cast<size_t>(i_)];
+}
+
+Cell& VecCell::index(const string& s_) {
+    Cell* found = search_parents_ptr(*this, s_);
+    if (found != nullptr) {
+        return *found;
+    }
+    return Error("Couldn't find cell");
+}
+
+string VecCell::to_string() const {
+    string inner = "Vec#" + std::to_string(value.size());
+    for (Cell* c : value) {
+        inner += c->to_string();
+    }
+    return render_cell(inner, alive);
+}
+
+bool VecCell::is_truthy() const { return !value.empty(); }
+
+vector<Cell*>* VecCell::vec_value() { return &value; }
+
+const vector<Cell*>* VecCell::vec_value() const { return &value; }
+
+void VecCell::push(Cell* c) { value.push_back(c); }
+
+MapCell::MapCell() = default;
+
+Cell::Type MapCell::type() const { return MAP; }
+
+string MapCell::type_name() const { return "map"; }
+
+Cell& MapCell::call(Cell&) {
+    const auto it = value.find("main");
+    if (it != value.end() && it->second != nullptr) {
+        return (*it->second)(*this);
+    }
+    return Error("Couldn't find main");
+}
+
+Cell& MapCell::index(const int) { return Error("Can't index map with int"); }
+
+Cell& MapCell::index(const string& s_) {
+    const auto it = value.find(s_);
+    if (it != value.end() && it->second != nullptr) {
+        return *it->second;
+    }
+
+    Cell* found = search_parents_ptr(*this, s_);
+    if (found != nullptr) {
+        return *found;
+    }
+    return Error("Couldn't find cell");
+}
+
+string MapCell::to_string() const {
+    return render_cell("Map#" + std::to_string(value.size()), alive);
+}
+
+bool MapCell::is_truthy() const { return !value.empty(); }
+
+unordered_map<string, Cell*>* MapCell::map_value() { return &value; }
+
+const unordered_map<string, Cell*>* MapCell::map_value() const { return &value; }
+
+AnyCell::AnyCell(void* value_) : value(value_) {}
+
+Cell::Type AnyCell::type() const { return ANY; }
+
+string AnyCell::type_name() const { return "void*"; }
+
+Cell& AnyCell::call(Cell& c) { return c; }
+
+string AnyCell::to_string() const {
+    return render_cell("Any@" + std::to_string((uintptr_t)(value)), alive);
+}
+
+bool AnyCell::is_truthy() const { return value != nullptr; }
+
+void* AnyCell::any_value() const { return value; }
 
 ostream& operator<<(ostream& os, const Cell& c) {
     return os << c.to_string();
 }
 
 Cell& Error(const char* s) {
-    Cell* c = new Cell();
+    Cell* c = new StringCell(s);
     c->alive = false;
-    c->t = Cell::STR;
-    c->s = new string(s);
 
     Cell* errors = rooted_errors_cell();
-    if (errors != nullptr && errors->t == Cell::VEC && errors->v != nullptr) {
-        errors->v->push_back(c);
+    if (errors != nullptr) {
+        errors->push(c);
     }
 
     return *c;
