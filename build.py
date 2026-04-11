@@ -99,6 +99,13 @@ def run_tests():
         smoke_test = fixture.get("mode") in {"smoke", "run-only"}
         expected_output = fixture.get("expected")
         expected_stdout = fixture.get("stdout", "")
+        stdout_contains = fixture.get("stdout_contains", [])
+        stdout_excludes = fixture.get("stdout_excludes", [])
+
+        if isinstance(stdout_contains, str):
+            stdout_contains = [stdout_contains]
+        if isinstance(stdout_excludes, str):
+            stdout_excludes = [stdout_excludes]
 
         if not smoke_test and expected_output is None:
             return {
@@ -162,11 +169,9 @@ def run_tests():
                 "failure_lines": [],
             }
 
-        if not result.stdout.startswith(expected_stdout):
-            failure_lines.append("stdout mismatch")
-            failure_lines.append("expected stdout:")
-            failure_lines.append(indent_block(expected_stdout.rstrip("\n")))
-            failure_lines.append("actual stdout:")
+        yaml_output, stdout_tail = split_runtime_output(result.stdout)
+        if yaml_output is None:
+            failure_lines.append("could not split runtime YAML output from trailing stdout")
             failure_lines.append(indent_block(result.stdout.rstrip("\n")))
             return {
                 "name": test_name,
@@ -174,7 +179,34 @@ def run_tests():
                 "failure_lines": failure_lines,
             }
 
-        yaml_output = result.stdout[len(expected_stdout):]
+        if expected_stdout and not stdout_tail.startswith(expected_stdout):
+            failure_lines.append("stdout mismatch")
+            failure_lines.append("expected stdout:")
+            failure_lines.append(indent_block(expected_stdout.rstrip("\n")))
+            failure_lines.append("actual stdout:")
+            failure_lines.append(indent_block(stdout_tail.rstrip("\n")))
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": failure_lines,
+            }
+
+        for expected_fragment in stdout_contains:
+            if expected_fragment not in stdout_tail:
+                failure_lines.append(f"stdout missing fragment: {expected_fragment!r}")
+
+        for unexpected_fragment in stdout_excludes:
+            if unexpected_fragment in stdout_tail:
+                failure_lines.append(f"stdout unexpectedly contained fragment: {unexpected_fragment!r}")
+
+        if failure_lines:
+            failure_lines.append("stdout tail:")
+            failure_lines.append(indent_block(stdout_tail.rstrip("\n")))
+            return {
+                "name": test_name,
+                "passed": False,
+                "failure_lines": failure_lines,
+            }
 
         try:
             actual_output = yaml.safe_load(yaml_output)
@@ -237,6 +269,18 @@ def render_yaml(value):
 
 def indent_block(text):
     return "\n".join(f"    {line}" for line in text.splitlines())
+
+
+def split_runtime_output(stdout):
+    lines = stdout.splitlines(keepends=True)
+    for line_count in range(len(lines), 0, -1):
+        yaml_prefix = "".join(lines[:line_count])
+        try:
+            yaml.safe_load(yaml_prefix)
+        except yaml.YAMLError:
+            continue
+        return yaml_prefix, "".join(lines[line_count:])
+    return None, stdout
 
 def run_valgrind():
     """Runs valgrind to check for memory leaks during bootstrap."""
