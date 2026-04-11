@@ -18,6 +18,11 @@ void initialize_zygote() {
     Zygote.t = Cell::MAP;
     Zygote.m = new unordered_map<string, Cell*>();
 
+    Cell& errors = register_success(new Cell());
+    errors.t = Cell::VEC;
+    errors.v = new vector<Cell*>();
+    (*Zygote.m)["errors"] = &errors;
+
     (*Zygote.m)["printout"] = &register_success(new Cell(printout));
     (*Zygote.m)["+"] = &register_success(new Cell(add));
     (*Zygote.m)["-"] = &register_success(new Cell(subtract));
@@ -27,6 +32,7 @@ void initialize_zygote() {
 }
 
 void shutdown_zygote() {
+    clear_rooted_errors();
     clear_success_cells();
 
     delete Zygote.m;
@@ -50,7 +56,6 @@ int main(int argc, char** argv) {
     Cell& er = Zygote(Null);
     if (!er) {
         cout << er;
-        delete &er;
     }
 
     shutdown_zygote();
