@@ -12,6 +12,7 @@ CPP_FLAGS = "-g -std=c++20"
 LINKER_FLAGS = "-L ryml/build -lryml"
 EXECUTABLE = "helix"
 SOURCES = "src/helix.cpp src/core.cpp src/ryml_interface.cpp src/builtins.cpp"
+OBJECT_DIRECTORY = "build/obj"
 VALGRIND_ARGS = [
     "valgrind",
     "--leak-check=full",
@@ -19,18 +20,53 @@ VALGRIND_ARGS = [
     "--error-exitcode=101",
 ]
 
+
+def is_source_newer(source_path, output_path):
+    return not os.path.exists(output_path) or os.path.getmtime(source_path) > os.path.getmtime(output_path)
+
+
 def compile_main():
     """Compiles the runtime sources into an executable."""
-    compile_command = (
-        f"{COMPILER} {SOURCES} {CPP_FLAGS} -o {EXECUTABLE} "
-        f"{INCLUDES} {LINKER_FLAGS}"
+    os.makedirs(OBJECT_DIRECTORY, exist_ok=True)
+
+    object_files = []
+    for source_path in SOURCES.split():
+        object_name = os.path.splitext(os.path.basename(source_path))[0] + ".o"
+        object_path = os.path.join(OBJECT_DIRECTORY, object_name)
+        object_files.append(object_path)
+
+        if not is_source_newer(source_path, object_path):
+            continue
+
+        compile_command = (
+            f"{COMPILER} -c {source_path} {CPP_FLAGS} {INCLUDES} -o {object_path}"
+        )
+        result = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"Compilation failed for {source_path}.")
+            if result.stderr.strip():
+                print(result.stderr)
+            return False
+
+    if os.path.exists(EXECUTABLE):
+        should_link = any(os.path.getmtime(object_path) > os.path.getmtime(EXECUTABLE) for object_path in object_files)
+    else:
+        should_link = True
+
+    if not should_link:
+        print("Compilation successful.")
+        return True
+
+    link_command = (
+        f"{COMPILER} {' '.join(object_files)} {CPP_FLAGS} -o {EXECUTABLE} {LINKER_FLAGS}"
     )
-    result = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
+    result = subprocess.run(link_command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
-        print("Compilation failed.")
+        print("Linking failed.")
         if result.stderr.strip():
             print(result.stderr)
         return False
+
     print("Compilation successful.")
     return True
 
