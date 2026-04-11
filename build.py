@@ -92,7 +92,7 @@ def run_clang_tidy():
     return True
 
 def run_cloc():
-    """Calculates and prints source lines of code for src and include."""
+    """Calculates and prints the total source line count for src and include."""
     result = subprocess.run(
         ["cloc", "-q", "src", "include"],
         capture_output=True,
@@ -107,8 +107,14 @@ def run_cloc():
             print(result.stderr.rstrip("\n"))
         return False
 
-    print(result.stdout.rstrip("\n"))
-    return True
+    for line in result.stdout.splitlines():
+        if line.startswith("SUM:"):
+            print(line.split()[-1])
+            return True
+
+    print("cloc failed.")
+    print("missing SUM line in cloc output")
+    return False
 
 def run_tests():
     """Discovers and runs YAML fixtures in the 'tests' directory."""
