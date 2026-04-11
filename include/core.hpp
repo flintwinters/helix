@@ -15,7 +15,7 @@ extern Cell& Zygote;
 Cell& Error(const char* s);
 void clear_rooted_errors();
 string load_file(const string& path);
-Cell& run_sequence(Cell& c);
+Cell& run_sequence(Cell& c, size_t start_index = 0);
 
 class Cell {
 public:
