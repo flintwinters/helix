@@ -8,6 +8,109 @@ using namespace std;
 
 namespace {
 
+string render_cell(const string& inner, bool alive);
+
+class IntCell final : public Cell {
+public:
+    explicit IntCell(int value_) : value(value_) {}
+
+    Type type() const override { return INT; }
+    Cell& call(Cell&) override { return Error("Can't call int"); }
+    Cell& index(int) override { return Error("Can't index int"); }
+    Cell& index(const string&) override { return Error("Can't index int"); }
+    string to_string() const override {
+        return render_cell("\033[35m" + std::to_string(value), alive);
+    }
+    bool is_truthy() const override { return value != 0; }
+    int as_int() const override { return value; }
+
+private:
+    int value;
+};
+
+class StringCell final : public Cell {
+public:
+    explicit StringCell(string value_) : value(std::move(value_)) {}
+
+    Type type() const override { return STR; }
+    Cell& call(Cell& c) override;
+    Cell& index(int) override { return Error("Can't index string"); }
+    Cell& index(const string&) override { return Error("Can't index string"); }
+    string to_string() const override { return render_cell(value, alive); }
+    bool is_truthy() const override { return !value.empty(); }
+    const string* str_value() const override { return &value; }
+
+private:
+    string value;
+};
+
+class FunCell final : public Cell {
+public:
+    explicit FunCell(Func value_) : value(value_) {}
+
+    Type type() const override { return FUN; }
+    Cell& call(Cell& c) override { return value(c); }
+    Cell& index(int) override { return Error("Can't index function"); }
+    Cell& index(const string&) override { return Error("Can't index function"); }
+    string to_string() const override {
+        return render_cell("Func@" + std::to_string((uintptr_t)(value)), alive);
+    }
+    bool is_truthy() const override { return true; }
+
+private:
+    Func value;
+};
+
+class VecCell final : public Cell {
+public:
+    Type type() const override { return VEC; }
+    Cell& call(Cell&) override;
+    Cell& index(int i_) override;
+    Cell& index(const string& s_) override;
+    string to_string() const override;
+    bool is_truthy() const override { return !value.empty(); }
+    vector<Cell*>* vec_value() override { return &value; }
+    const vector<Cell*>* vec_value() const override { return &value; }
+    void push(Cell* c) override { value.push_back(c); }
+
+private:
+    vector<Cell*> value;
+};
+
+class MapCell final : public Cell {
+public:
+    Type type() const override { return MAP; }
+    Cell& call(Cell&) override;
+    Cell& index(int) override { return Error("Can't index map with int"); }
+    Cell& index(const string& s_) override;
+    string to_string() const override {
+        return render_cell("Map#" + std::to_string(value.size()), alive);
+    }
+    bool is_truthy() const override { return !value.empty(); }
+    unordered_map<string, Cell*>* map_value() override { return &value; }
+    const unordered_map<string, Cell*>* map_value() const override { return &value; }
+
+private:
+    unordered_map<string, Cell*> value;
+};
+
+class AnyCell final : public Cell {
+public:
+    explicit AnyCell(void* value_ = nullptr) : value(value_) {}
+
+    Type type() const override { return ANY; }
+    Cell& call(Cell& c) override { return c; }
+    Cell& index(int) override { return Error("Can't index void*"); }
+    Cell& index(const string&) override { return Error("Can't index void*"); }
+    string to_string() const override {
+        return render_cell("Any@" + std::to_string((uintptr_t)(value)), alive);
+    }
+    bool is_truthy() const override { return value != nullptr; }
+
+private:
+    void* value;
+};
+
 vector<unique_ptr<Cell>>& rooted_success_cells() {
     static vector<unique_ptr<Cell>> cells;
     return cells;
@@ -18,10 +121,6 @@ string render_cell(const string& inner, const bool alive) {
         return "Cell(\033[1m" + inner + "\033[0m)";
     }
     return "\033[1;31mDead(\033[1m" + inner + "\033[0m\033[1;31m)\033[0m";
-}
-
-Cell& ErrorString(const string& s) {
-    return Error(s.c_str());
 }
 
 Cell* rooted_errors_cell() {
@@ -108,7 +207,7 @@ Cell& Cell::operator[](const char* s_) { return index(string(s_)); }
 Cell& Cell::operator[](string s_) { return index(s_); }
 
 Cell& Cell::call(Cell&) {
-    return ErrorString("Can't call " + type_name());
+    return Error("Couldn't call cell");
 }
 
 Cell& Cell::index(Cell& c) {
@@ -124,18 +223,16 @@ Cell& Cell::index(Cell& c) {
 }
 
 Cell& Cell::index(const int) {
-    return ErrorString("Can't index " + type_name());
+    return Error("Couldn't find cell");
 }
 
 Cell& Cell::index(const string&) {
-    return ErrorString("Can't index " + type_name());
+    return Error("Couldn't find cell");
 }
 
 int Cell::as_int() const { return 0; }
 
 const string* Cell::str_value() const { return nullptr; }
-
-Func Cell::fun_value() const { return nullptr; }
 
 vector<Cell*>* Cell::vec_value() { return nullptr; }
 
@@ -145,33 +242,9 @@ unordered_map<string, Cell*>* Cell::map_value() { return nullptr; }
 
 const unordered_map<string, Cell*>* Cell::map_value() const { return nullptr; }
 
-void* Cell::any_value() const { return nullptr; }
-
 void Cell::push(Cell*) {}
 
 Cell::operator string() { return to_string(); }
-
-IntCell::IntCell(const int value_) : value(value_) {}
-
-Cell::Type IntCell::type() const { return INT; }
-
-string IntCell::type_name() const { return "int"; }
-
-string IntCell::to_string() const {
-    return render_cell("\033[35m" + std::to_string(value), alive);
-}
-
-bool IntCell::is_truthy() const { return value != 0; }
-
-int IntCell::as_int() const { return value; }
-
-StringCell::StringCell(const char* value_) : value(value_) {}
-
-StringCell::StringCell(string value_) : value(std::move(value_)) {}
-
-Cell::Type StringCell::type() const { return STR; }
-
-string StringCell::type_name() const { return "string"; }
 
 Cell& StringCell::call(Cell& c) {
     Cell* target = search_parents_ptr(*this, value);
@@ -180,34 +253,6 @@ Cell& StringCell::call(Cell& c) {
     }
     return Error("Couldn't find cell");
 }
-
-string StringCell::to_string() const { return render_cell(value, alive); }
-
-bool StringCell::is_truthy() const { return !value.empty(); }
-
-const string* StringCell::str_value() const { return &value; }
-
-FunCell::FunCell(Func value_) : value(value_) {}
-
-Cell::Type FunCell::type() const { return FUN; }
-
-string FunCell::type_name() const { return "function"; }
-
-Cell& FunCell::call(Cell& c) { return value(c); }
-
-string FunCell::to_string() const {
-    return render_cell("Func@" + std::to_string((uintptr_t)(value)), alive);
-}
-
-bool FunCell::is_truthy() const { return true; }
-
-Func FunCell::fun_value() const { return value; }
-
-VecCell::VecCell() = default;
-
-Cell::Type VecCell::type() const { return VEC; }
-
-string VecCell::type_name() const { return "vector"; }
 
 Cell& VecCell::call(Cell&) {
     if (value.empty() || value.front() == nullptr) {
@@ -239,20 +284,6 @@ string VecCell::to_string() const {
     return render_cell(inner, alive);
 }
 
-bool VecCell::is_truthy() const { return !value.empty(); }
-
-vector<Cell*>* VecCell::vec_value() { return &value; }
-
-const vector<Cell*>* VecCell::vec_value() const { return &value; }
-
-void VecCell::push(Cell* c) { value.push_back(c); }
-
-MapCell::MapCell() = default;
-
-Cell::Type MapCell::type() const { return MAP; }
-
-string MapCell::type_name() const { return "map"; }
-
 Cell& MapCell::call(Cell&) {
     const auto it = value.find("main");
     if (it != value.end() && it->second != nullptr) {
@@ -260,8 +291,6 @@ Cell& MapCell::call(Cell&) {
     }
     return Error("Couldn't find main");
 }
-
-Cell& MapCell::index(const int) { return Error("Can't index map with int"); }
 
 Cell& MapCell::index(const string& s_) {
     const auto it = value.find(s_);
@@ -275,32 +304,6 @@ Cell& MapCell::index(const string& s_) {
     }
     return Error("Couldn't find cell");
 }
-
-string MapCell::to_string() const {
-    return render_cell("Map#" + std::to_string(value.size()), alive);
-}
-
-bool MapCell::is_truthy() const { return !value.empty(); }
-
-unordered_map<string, Cell*>* MapCell::map_value() { return &value; }
-
-const unordered_map<string, Cell*>* MapCell::map_value() const { return &value; }
-
-AnyCell::AnyCell(void* value_) : value(value_) {}
-
-Cell::Type AnyCell::type() const { return ANY; }
-
-string AnyCell::type_name() const { return "void*"; }
-
-Cell& AnyCell::call(Cell& c) { return c; }
-
-string AnyCell::to_string() const {
-    return render_cell("Any@" + std::to_string((uintptr_t)(value)), alive);
-}
-
-bool AnyCell::is_truthy() const { return value != nullptr; }
-
-void* AnyCell::any_value() const { return value; }
 
 ostream& operator<<(ostream& os, const Cell& c) {
     return os << c.to_string();
@@ -317,6 +320,20 @@ Cell& Error(const char* s) {
 
     return *c;
 }
+
+Cell* make_int_cell(const int value) { return new IntCell(value); }
+
+Cell* make_string_cell(const char* value) { return new StringCell(value); }
+
+Cell* make_string_cell(string value) { return new StringCell(std::move(value)); }
+
+Cell* make_fun_cell(const Func value) { return new FunCell(value); }
+
+Cell* make_vec_cell() { return new VecCell(); }
+
+Cell* make_map_cell() { return new MapCell(); }
+
+Cell* make_any_cell(void* value) { return new AnyCell(value); }
 
 string load_file(const string& path) {
     ifstream file(path, ios::binary | ios::ate);
