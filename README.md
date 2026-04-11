@@ -4,7 +4,13 @@ Helix is a small experimental runtime written in C++. It loads YAML input,
 builds an internal cell graph, and evaluates that graph through a compact
 runtime model centered around maps, vectors, strings, numbers, and builtin functions.
 
-Python is used as a buildscript. `python3 build.py` compiles the `helix` binary and executes the test suite with valgrind.
+Python is used as a buildscript. `python3 build.py` compiles the `helix` binary and executes the test suite with valgrind.  Helix uses arena allocation for memory safety.
+
+### Planned:
+
+- Inline c++
+- Inline assembly
+- sfml.cpp wrappings
 
 ```
 ├── helix
