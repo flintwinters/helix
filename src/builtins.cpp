@@ -37,7 +37,7 @@ Cell& add(Cell& c) {
     for (size_t index = 1; index < values->size(); ++index) {
         total += (*values)[index]->as_int();
     }
-    return register_success(new IntCell(total));
+    return register_success(make_int_cell(total));
 }
 
 Cell& subtract(Cell& c) {
@@ -51,13 +51,13 @@ Cell& subtract(Cell& c) {
 
     int total = (*values)[1]->as_int();
     if (values->size() == 2) {
-        return register_success(new IntCell(-total));
+        return register_success(make_int_cell(-total));
     }
 
     for (size_t index = 2; index < values->size(); ++index) {
         total -= (*values)[index]->as_int();
     }
-    return register_success(new IntCell(total));
+    return register_success(make_int_cell(total));
 }
 
 Cell& multiply(Cell& c) {
@@ -70,7 +70,7 @@ Cell& multiply(Cell& c) {
     for (size_t index = 1; index < values->size(); ++index) {
         total *= (*values)[index]->as_int();
     }
-    return register_success(new IntCell(total));
+    return register_success(make_int_cell(total));
 }
 
 Cell& divide(Cell& c) {
@@ -90,7 +90,7 @@ Cell& divide(Cell& c) {
         }
         total /= divisor;
     }
-    return register_success(new IntCell(total));
+    return register_success(make_int_cell(total));
 }
 
 Cell& if_builtin(Cell& c) {
