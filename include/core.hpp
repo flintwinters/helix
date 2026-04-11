@@ -12,6 +12,7 @@ extern Cell Zygote;
 
 Cell& Error(const char* s);
 Cell& register_success(Cell* cell);
+void clear_rooted_errors();
 void clear_success_cells();
 std::string load_file(const std::string& path);
 
