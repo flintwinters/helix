@@ -1,6 +1,13 @@
-mode: smoke
+mode: state
 program:
   name: 2
   main:
     - 2
     - 3
+expected:
+  name: 2
+  main:
+    - 2
+    - 3
+stdout_contains:
+  - Can't call int
