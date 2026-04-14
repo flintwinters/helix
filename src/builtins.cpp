@@ -12,7 +12,7 @@ Cell& add(Cell& c) {
     auto* values = c.vec_value();
     int total = 0;
     for (size_t index = 1; index < values->size(); ++index) {
-        total += (*values)[index]->as_int();
+        total += values->at(index)->as_int();
     }
     return c.own_result(new IntCell(total));
 }
@@ -23,13 +23,13 @@ Cell& subtract(Cell& c) {
         return builtin_arity_error("subtract expects at least one operand");
     }
 
-    int total = (*values)[1]->as_int();
+    int total = values->at(1)->as_int();
     if (values->size() == 2) {
         return c.own_result(new IntCell(-total));
     }
 
     for (size_t index = 2; index < values->size(); ++index) {
-        total -= (*values)[index]->as_int();
+        total -= values->at(index)->as_int();
     }
     return c.own_result(new IntCell(total));
 }
@@ -38,7 +38,7 @@ Cell& multiply(Cell& c) {
     auto* values = c.vec_value();
     int total = 1;
     for (size_t index = 1; index < values->size(); ++index) {
-        total *= (*values)[index]->as_int();
+        total *= values->at(index)->as_int();
     }
     return c.own_result(new IntCell(total));
 }
@@ -49,9 +49,9 @@ Cell& divide(Cell& c) {
         return builtin_arity_error("divide expects at least two operands");
     }
 
-    int total = (*values)[1]->as_int();
+    int total = values->at(1)->as_int();
     for (size_t index = 2; index < values->size(); ++index) {
-        const int divisor = (*values)[index]->as_int();
+        const int divisor = values->at(index)->as_int();
         if (divisor == 0) {
             return Error("divide by zero");
         }
@@ -81,16 +81,16 @@ Cell& if_builtin(Cell& c) {
         return builtin_arity_error("if expects condition, then branch, else branch");
     }
 
-    Cell& condition = evaluate_if_expression(*(*values)[1]);
+    Cell& condition = evaluate_if_expression(*values->at(1));
     if (!condition.alive) {
         return condition;
     }
 
     if (condition.is_truthy()) {
-        return evaluate_if_expression(*(*values)[2]);
+        return evaluate_if_expression(*values->at(2));
     }
 
-    return evaluate_if_expression(*(*values)[3]);
+    return evaluate_if_expression(*values->at(3));
 }
 
 Cell& printout(Cell& c) {
