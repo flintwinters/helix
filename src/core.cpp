@@ -78,7 +78,7 @@ Cell& run_sequence(Cell& c, const size_t start_index) {
 
     Cell* last_result = nullptr;
     for (size_t index = start_index; index < values->size(); ++index) {
-        Cell* current = (*values)[index];
+        Cell* current = values->at(index);
         if (current == nullptr) {
             return Error("all encountered a null operand");
         }
@@ -98,11 +98,6 @@ Cell& run_sequence(Cell& c, const size_t start_index) {
 }
 
 Cell::operator bool() const { return alive; }
-Cell& Cell::operator()(Cell& c) { return call(c); }
-Cell& Cell::operator[](Cell& c) { return index(c); }
-Cell& Cell::operator[](const int i_) { return index(i_); }
-Cell& Cell::operator[](const char* s_) { return index(string(s_)); }
-Cell& Cell::operator[](string s_) { return index(s_); }
 Cell& Cell::call(Cell&) {
     return Error("Couldn't call cell");
 }
@@ -213,7 +208,7 @@ Cell& VecCell::index(const int i_) {
     if (i_ < 0 || static_cast<size_t>(i_) >= value.size()) {
         return Error("Couldn't find cell");
     }
-    return *value[static_cast<size_t>(i_)];
+    return *value.at(static_cast<size_t>(i_));
 }
 Cell& VecCell::index(const string& s_) {
     Cell* found = search_parents_ptr(*this, s_);
@@ -289,8 +284,19 @@ void MapCell::bind(const string& key, Cell* c) {
     }
 
     c->parents.push_back(this);
-    owned[key].reset(c);
-    value[key] = c;
+    auto owned_it = owned.find(key);
+    if (owned_it == owned.end()) {
+        owned.emplace(key, unique_ptr<Cell>(c));
+    } else {
+        owned_it->second.reset(c);
+    }
+
+    auto value_it = value.find(key);
+    if (value_it == value.end()) {
+        value.emplace(key, c);
+    } else {
+        value_it->second = c;
+    }
 }
 void MapCell::clear() {
     owned.clear();
@@ -361,7 +367,7 @@ string load_file(const string& path) {
     file.seekg(0, ios::beg);
 
     string buffer(size, '\0');
-    file.read(&buffer[0], size);
+    file.read(buffer.data(), size);
 
     return buffer;
 }
