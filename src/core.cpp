@@ -83,7 +83,7 @@ Cell& run_sequence(Cell& c, const size_t start_index) {
             return Error("all encountered a null operand");
         }
 
-        Cell& result = (*current)(*current);
+        Cell& result = current->call(*current);
         if (!result.alive) {
             return result;
         }
@@ -98,7 +98,6 @@ Cell& run_sequence(Cell& c, const size_t start_index) {
 }
 
 Cell::operator bool() const { return alive; }
-Cell& Cell::operator=(Cell* c) { return set(c); }
 Cell& Cell::operator()(Cell& c) { return call(c); }
 Cell& Cell::operator[](Cell& c) { return index(c); }
 Cell& Cell::operator[](const int i_) { return index(i_); }
@@ -162,7 +161,7 @@ Cell::Type StringCell::type() const { return STR; }
 Cell& StringCell::call(Cell& c) {
     Cell* target = search_parents_ptr(*this, value);
     if (target != nullptr) {
-        return (*target)(c);
+        return target->call(c);
     }
     return Error("Couldn't find cell");
 }
@@ -208,7 +207,7 @@ Cell& VecCell::call(Cell&) {
     if (value.empty() || value.front() == nullptr) {
         return Error("Couldn't call vector");
     }
-    return (*value.front())(*this);
+    return value.front()->call(*this);
 }
 Cell& VecCell::index(const int i_) {
     if (i_ < 0 || static_cast<size_t>(i_) >= value.size()) {
@@ -259,7 +258,7 @@ Cell& MapCell::call(Cell&) {
                 }
             }
         }
-        return (*it->second)(*this);
+        return it->second->call(*this);
     }
     return Error("Couldn't find main");
 }
