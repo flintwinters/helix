@@ -13,12 +13,12 @@ string render_cell(const string& inner, const bool alive) {
 }
 
 Cell* rooted_errors_cell() {
-    const auto* root = Zygote.map_value();
+    const unordered_map<string, Cell*>* root = Zygote.map_value();
     if (root == nullptr) {
         return nullptr;
     }
 
-    const auto it = root->find("errors");
+    unordered_map<string, Cell*>::const_iterator it = root->find("errors");
     if (it == root->end() || it->second == nullptr) {
         return nullptr;
     }
@@ -29,8 +29,9 @@ Cell* rooted_errors_cell() {
 Cell* search_parents_ptr(Cell& target, const string& name);
 
 Cell* lookup_by_name_ptr(Cell& target, const string& name) {
-    if (auto* map = target.map_value()) {
-        const auto it = map->find(name);
+    unordered_map<string, Cell*>* map = target.map_value();
+    if (map != nullptr) {
+        unordered_map<string, Cell*>::iterator it = map->find(name);
         if (it != map->end() && it->second != nullptr) {
             return it->second;
         }
@@ -67,7 +68,7 @@ void clear_rooted_errors() {
 }
 
 Cell& run_sequence(Cell& c, const size_t start_index) {
-    auto* values = c.vec_value();
+    vector<Cell*>* values = c.vec_value();
     if (c.type() != Cell::VEC || values == nullptr || values->empty()) {
         return Error("all expects a non-empty call vector");
     }
@@ -242,10 +243,10 @@ void VecCell::clear() {
 
 Cell::Type MapCell::type() const { return MAP; }
 Cell& MapCell::call(Cell&) {
-    const auto it = value.find("main");
+    unordered_map<string, Cell*>::const_iterator it = value.find("main");
     if (it != value.end() && it->second != nullptr) {
         if (it->second->type() == Cell::VEC) {
-            const auto* elements = it->second->vec_value();
+            const vector<Cell*>* elements = it->second->vec_value();
             if (elements != nullptr && !elements->empty()) {
                 Cell* first = elements->front();
                 if (first != nullptr && first->type() != Cell::STR && first->type() != Cell::FUN) {
@@ -259,7 +260,7 @@ Cell& MapCell::call(Cell&) {
 }
 Cell& MapCell::index(const int) { return Error("Can't index map with int"); }
 Cell& MapCell::index(const string& s_) {
-    const auto it = value.find(s_);
+    unordered_map<string, Cell*>::const_iterator it = value.find(s_);
     if (it != value.end() && it->second != nullptr) {
         return *it->second;
     }
@@ -284,14 +285,14 @@ void MapCell::bind(const string& key, Cell* c) {
     }
 
     c->parents.push_back(this);
-    auto owned_it = owned.find(key);
+    unordered_map<string, unique_ptr<Cell>>::iterator owned_it = owned.find(key);
     if (owned_it == owned.end()) {
         owned.emplace(key, unique_ptr<Cell>(c));
     } else {
         owned_it->second.reset(c);
     }
 
-    auto value_it = value.find(key);
+    unordered_map<string, Cell*>::iterator value_it = value.find(key);
     if (value_it == value.end()) {
         value.emplace(key, c);
     } else {
