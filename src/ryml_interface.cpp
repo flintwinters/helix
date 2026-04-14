@@ -30,10 +30,10 @@ void cell_to_yaml_node(const Cell& cell, ryml::NodeRef* node) {
         return;
     case Cell::MAP:
         *node |= ryml::MAP;
-        for (const auto& [key, value] : *cell.map_value()) {
+        for (const pair<const string, Cell*>& entry : *cell.map_value()) {
             ryml::NodeRef child_node = node->append_child();
-            child_node.set_key(ryml::csubstr(key.data(), key.size()));
-            cell_to_yaml_node(*value, &child_node);
+            child_node.set_key(ryml::csubstr(entry.first.data(), entry.first.size()));
+            cell_to_yaml_node(*entry.second, &child_node);
         }
         return;
     case Cell::FUN:
