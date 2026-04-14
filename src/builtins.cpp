@@ -8,31 +8,7 @@ Cell& builtin_arity_error(const char* name) {
     return Error(name);
 }
 
-bool is_builtin_call_vector(const Cell& c) {
-    const auto* values = c.vec_value();
-    return c.type() == Cell::VEC && values != nullptr && !values->empty();
-}
-
-Cell& evaluate_if_expression(Cell& expression) {
-    switch (expression.type()) {
-    case Cell::VEC:
-    case Cell::MAP:
-        return expression(expression);
-    case Cell::INT:
-    case Cell::STR:
-    case Cell::FUN:
-    case Cell::ANY:
-    case Cell::ERROR:
-        return expression;
-    }
-    return Error("if couldn't evaluate expression");
-}
-
 Cell& add(Cell& c) {
-    if (!is_builtin_call_vector(c)) {
-        return Error("add expects a non-empty call vector");
-    }
-
     auto* values = c.vec_value();
     int total = 0;
     for (size_t index = 1; index < values->size(); ++index) {
@@ -42,9 +18,6 @@ Cell& add(Cell& c) {
 }
 
 Cell& subtract(Cell& c) {
-    if (!is_builtin_call_vector(c)) {
-        return Error("subtract expects a non-empty call vector");
-    }
     auto* values = c.vec_value();
     if (values->size() < 2) {
         return builtin_arity_error("subtract expects at least one operand");
@@ -62,10 +35,6 @@ Cell& subtract(Cell& c) {
 }
 
 Cell& multiply(Cell& c) {
-    if (!is_builtin_call_vector(c)) {
-        return Error("multiply expects a non-empty call vector");
-    }
-
     auto* values = c.vec_value();
     int total = 1;
     for (size_t index = 1; index < values->size(); ++index) {
@@ -75,9 +44,6 @@ Cell& multiply(Cell& c) {
 }
 
 Cell& divide(Cell& c) {
-    if (!is_builtin_call_vector(c)) {
-        return Error("divide expects a non-empty call vector");
-    }
     auto* values = c.vec_value();
     if (values->size() < 3) {
         return builtin_arity_error("divide expects at least two operands");
@@ -94,10 +60,22 @@ Cell& divide(Cell& c) {
     return c.own_result(new IntCell(total));
 }
 
-Cell& if_builtin(Cell& c) {
-    if (!is_builtin_call_vector(c)) {
-        return Error("if expects a non-empty call vector");
+Cell& evaluate_if_expression(Cell& expression) {
+    switch (expression.type()) {
+    case Cell::VEC:
+    case Cell::MAP:
+        return expression.call(expression);
+    case Cell::INT:
+    case Cell::STR:
+    case Cell::FUN:
+    case Cell::ANY:
+    case Cell::ERROR:
+        return expression;
     }
+    return Error("if couldn't evaluate expression");
+}
+
+Cell& if_builtin(Cell& c) {
     auto* values = c.vec_value();
     if (values->size() != 4) {
         return builtin_arity_error("if expects condition, then branch, else branch");
@@ -121,8 +99,14 @@ Cell& printout(Cell& c) {
 }
 
 Cell& run_all(Cell& c) {
-    if (!is_builtin_call_vector(c)) {
-        return Error("all expects a non-empty call vector");
-    }
     return run_sequence(c, 1);
+}
+
+Cell& assignment(Cell& c) {
+    auto* values = c.vec_value();
+    if (values->size() != 3) {
+        return builtin_arity_error("assignment expects name and value");
+    }
+
+    
 }
