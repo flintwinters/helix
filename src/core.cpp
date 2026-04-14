@@ -105,7 +105,7 @@ Cell& Cell::call(Cell&) {
 Cell& Cell::index(Cell& c) {
     switch (c.type()) {
     case INT:   return index(c.as_int());
-    case STR:   return index(*c.str_value());
+    case STR:   return index(static_cast<const StringCell&>(c));
     case FUN:   return Error("Can't index with function");
     case VEC:   return Error("Can't index with vector");
     case MAP:   return Error("Can't index with map");
@@ -114,6 +114,7 @@ Cell& Cell::index(Cell& c) {
     }
     return Error("Couldn't find cell");
 }
+Cell& Cell::index(const StringCell& s_) { return index(*s_.str_value()); }
 Cell& Cell::index(const int) { return Error("Couldn't find cell"); }
 Cell& Cell::index(const string&) { return Error("Couldn't find cell"); }
 int Cell::size() const { return 0; }
