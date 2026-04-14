@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     Cell& parsed = parse_yaml_to_cells(yaml, Zygote);
     cout << cell_to_yaml_string(parsed);
     
-    Cell& er = Zygote(Null);
+    Cell& er = Zygote.call(Null);
     if (!er) {
         cout << er;
     }
