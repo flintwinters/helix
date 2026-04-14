@@ -9,7 +9,7 @@ Cell& builtin_arity_error(const char* name) {
 }
 
 Cell& add(Cell& c) {
-    auto* values = c.vec_value();
+    vector<Cell*>* values = c.vec_value();
     int total = 0;
     for (size_t index = 1; index < values->size(); ++index) {
         total += values->at(index)->as_int();
@@ -18,7 +18,7 @@ Cell& add(Cell& c) {
 }
 
 Cell& subtract(Cell& c) {
-    auto* values = c.vec_value();
+    vector<Cell*>* values = c.vec_value();
     if (values->size() < 2) {
         return builtin_arity_error("subtract expects at least one operand");
     }
@@ -35,7 +35,7 @@ Cell& subtract(Cell& c) {
 }
 
 Cell& multiply(Cell& c) {
-    auto* values = c.vec_value();
+    vector<Cell*>* values = c.vec_value();
     int total = 1;
     for (size_t index = 1; index < values->size(); ++index) {
         total *= values->at(index)->as_int();
@@ -44,7 +44,7 @@ Cell& multiply(Cell& c) {
 }
 
 Cell& divide(Cell& c) {
-    auto* values = c.vec_value();
+    vector<Cell*>* values = c.vec_value();
     if (values->size() < 3) {
         return builtin_arity_error("divide expects at least two operands");
     }
@@ -76,7 +76,7 @@ Cell& evaluate_if_expression(Cell& expression) {
 }
 
 Cell& if_builtin(Cell& c) {
-    auto* values = c.vec_value();
+    vector<Cell*>* values = c.vec_value();
     if (values->size() != 4) {
         return builtin_arity_error("if expects condition, then branch, else branch");
     }
@@ -103,7 +103,7 @@ Cell& run_all(Cell& c) {
 }
 
 Cell& assignment(Cell& c) {
-    auto* values = c.vec_value();
+    vector<Cell*>* values = c.vec_value();
     if (values->size() != 3) {
         return builtin_arity_error("assignment expects name and value");
     }
