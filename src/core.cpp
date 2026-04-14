@@ -133,7 +133,7 @@ Cell::operator string() { return to_string(); }
 
 IntCell::IntCell(const int value_) : value(value_) {}
 Cell::Type IntCell::type() const { return INT; }
-Cell& IntCell::call(Cell&) { return Error("Can't call int"); }
+Cell& IntCell::call(Cell&) { return *this; }
 Cell& IntCell::index(const int) { return Error("Can't index int"); }
 Cell& IntCell::index(const string&) { return Error("Can't index int"); }
 string IntCell::to_string() const {
@@ -305,7 +305,7 @@ void MapCell::clear() {
 
 AnyCell::AnyCell(void* value_) : value(value_) {}
 Cell::Type AnyCell::type() const { return ANY; }
-Cell& AnyCell::call(Cell& c) { return c; }
+Cell& AnyCell::call(Cell&) { return *this; }
 Cell& AnyCell::index(const int) { return Error("Can't index void*"); }
 Cell& AnyCell::index(const string&) { return Error("Can't index void*"); }
 string AnyCell::to_string() const {
