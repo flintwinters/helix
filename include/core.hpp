@@ -102,6 +102,7 @@ public:
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
     Cell& index(const string& s_) override;
+    Cell& size() override;
     string to_string() const override;
     bool is_truthy() const override;
     Cell& set(Cell* c) override;
@@ -118,6 +119,7 @@ public:
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
     Cell& index(const string& s_) override;
+    Cell& size() override;
     string to_string() const override;
     bool is_truthy() const override;
     vector<Cell*>* vec_value() override;
