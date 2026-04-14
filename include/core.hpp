@@ -28,23 +28,16 @@ public:
 
     Cell() = default;
     Cell(const Cell&) = delete;
-    Cell& operator=(const Cell&) = delete;
-    Cell& operator=(Cell* c);
     virtual ~Cell() = default;
 
     operator bool() const;
-
-    Cell& operator()(Cell& c);
-    Cell& operator[](Cell& c);
-    Cell& operator[](int i_);
-    Cell& operator[](const char* s_);
-    Cell& operator[](string s_);
 
     virtual Type type() const = 0;
     virtual Cell& call(Cell& c);
     virtual Cell& index(Cell& c);
     virtual Cell& index(int i_);
     virtual Cell& index(const string& s_);
+    virtual Cell& size();
     virtual string to_string() const = 0;
     virtual bool is_truthy() const = 0;
     virtual int as_int() const;
@@ -72,6 +65,7 @@ public:
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
     Cell& index(const string& s_) override;
+    Cell& size() override;
     string to_string() const override;
     bool is_truthy() const override;
     int as_int() const override;
@@ -90,6 +84,7 @@ public:
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
     Cell& index(const string& s_) override;
+    Cell& size() override;
     string to_string() const override;
     bool is_truthy() const override;
     const string* str_value() const override;
