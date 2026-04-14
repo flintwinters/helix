@@ -7,6 +7,7 @@
 #include <vector>
 
 class Cell;
+class StringCell;
 using Func = Cell& (*)(Cell&);
 using namespace std;
 
@@ -35,6 +36,7 @@ public:
     virtual Type type() const = 0;
     virtual Cell& call(Cell& c);
     virtual Cell& index(Cell& c);
+    virtual Cell& index(const StringCell& s_);
     virtual Cell& index(int i_);
     virtual Cell& index(const string& s_);
     virtual int size() const;
