@@ -37,7 +37,7 @@ public:
     virtual Cell& index(Cell& c);
     virtual Cell& index(int i_);
     virtual Cell& index(const string& s_);
-    virtual Cell& size();
+    virtual int size() const;
     virtual string to_string() const = 0;
     virtual bool is_truthy() const = 0;
     virtual int as_int() const;
@@ -65,7 +65,6 @@ public:
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
     Cell& index(const string& s_) override;
-    Cell& size() override;
     string to_string() const override;
     bool is_truthy() const override;
     int as_int() const override;
@@ -84,7 +83,6 @@ public:
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
     Cell& index(const string& s_) override;
-    Cell& size() override;
     string to_string() const override;
     bool is_truthy() const override;
     const string* str_value() const override;
@@ -102,7 +100,6 @@ public:
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
     Cell& index(const string& s_) override;
-    Cell& size() override;
     string to_string() const override;
     bool is_truthy() const override;
     Cell& set(Cell* c) override;
@@ -119,7 +116,7 @@ public:
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
     Cell& index(const string& s_) override;
-    Cell& size() override;
+    int size() const override;
     string to_string() const override;
     bool is_truthy() const override;
     vector<Cell*>* vec_value() override;
@@ -140,6 +137,7 @@ public:
     Cell& call(Cell& c) override;
     Cell& index(int i_) override;
     Cell& index(const string& s_) override;
+    int size() const override;
     string to_string() const override;
     bool is_truthy() const override;
     unordered_map<string, Cell*>* map_value() override;
