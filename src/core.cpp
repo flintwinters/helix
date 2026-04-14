@@ -116,6 +116,7 @@ Cell& Cell::index(Cell& c) {
 }
 Cell& Cell::index(const int) { return Error("Couldn't find cell"); }
 Cell& Cell::index(const string&) { return Error("Couldn't find cell"); }
+Cell& Cell::size() { return Error("Can't get size of non-container"); }
 int Cell::as_int() const { return 0; }
 const string* Cell::str_value() const { return nullptr; }
 vector<Cell*>* Cell::vec_value() { return nullptr; }
@@ -218,6 +219,9 @@ Cell& VecCell::index(const string& s_) {
     }
     return Error("Couldn't find cell");
 }
+Cell& VecCell::size() {
+    return own_result(new IntCell(static_cast<int>(value.size())));
+}
 string VecCell::to_string() const {
     string inner = "Vec#" + std::to_string(value.size());
     for (Cell* c : value) {
@@ -270,6 +274,9 @@ Cell& MapCell::index(const string& s_) {
         return *found;
     }
     return Error("Couldn't find cell");
+}
+Cell& MapCell::size() {
+    return own_result(new IntCell(static_cast<int>(value.size())));
 }
 string MapCell::to_string() const {
     return render_cell("Map#" + std::to_string(value.size()), alive);
