@@ -52,7 +52,7 @@ struct YamlParser {
     Ptr map_to_cell(ryml::ConstNodeRef node) const {
         unordered_map<string, Ptr> values;
         values.reserve(node.num_children());
-        for (const auto child : node.children()) {
+        for (const ryml::ConstNodeRef child : node.children()) {
             values.emplace(to_string_copy(child.key()), node_to_cell(child));
         }
         return make_map(move(values));
@@ -61,7 +61,7 @@ struct YamlParser {
     Ptr sequence_to_cell(ryml::ConstNodeRef node) const {
         vector<Ptr> values;
         values.reserve(node.num_children());
-        for (const auto child : node.children()) {
+        for (const ryml::ConstNodeRef child : node.children()) {
             values.push_back(node_to_cell(child));
         }
         return make_vec(move(values));
