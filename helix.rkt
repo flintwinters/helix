@@ -26,6 +26,12 @@
     (error 'helix "~a expects numeric arguments" who))
   value)
 
+; Require a value to be a string before builtins treat it as a field name.
+(define (expect-string who value)
+  (unless (string? value)
+    (error 'helix "~a expects a string argument" who))
+  value)
+
 ; add evaluates exactly two arguments and returns their sum.
 (define (builtin-add arguments program)
   (expect-arity "add" arguments 2)
@@ -50,11 +56,21 @@
   (expect-arity "show" arguments 1)
   (evaluate (first arguments) program))
 
+; set treats its left operand as a field name, evaluates the right operand,
+; stores the result in the current program, and returns the stored value.
+(define (builtin-set arguments program)
+  (expect-arity "set" arguments 2)
+  (define field-name (expect-string "set" (first arguments)))
+  (define value (evaluate (second arguments) program))
+  (hash-set! program field-name value)
+  value)
+
 ; Builtins resolve like any other symbol, so strings never need special handling.
 (define builtins
   (hash "add" builtin-add
         "eval" builtin-eval
         "list" builtin-list
+        "set" builtin-set
         "show" builtin-show))
 
 ; Resolve a symbol name to either a builtin procedure or a program value.
