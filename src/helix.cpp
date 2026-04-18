@@ -15,22 +15,27 @@
 
 using namespace std;
 
-int main(int argc, char** argv) {
-    if (argc > 1) {
-        auto root = yaml_file_to_cell(
-            argv[1],
-            [](string message) { return error(move(message)); },
-            [](int value) { return make_cell(new Int(value)); },
-            [](string value) { return make_cell(new Str(move(value))); },
-            [](vector<Ptr> values) { return make_cell(new Vec(move(values))); },
-            [](unordered_map<string, Ptr> values) { return make_cell(new Map(move(values))); }
-        );
-        auto result = root->find(root, "eval")->eval(root, {});
-        cout << result->str() << endl;
-        return 0;
-    }
+static Ptr load_root_from_yaml(const string& filename) {
+    return yaml_file_to_cell(
+        filename,
+        [](string message) { return error(move(message)); },
+        [](int value) { return make_cell(new Int(value)); },
+        [](string value) { return make_cell(new Str(move(value))); },
+        [](vector<Ptr> values) { return make_cell(new Vec(move(values))); },
+        [](unordered_map<string, Ptr> values) { return make_cell(new Map(move(values))); }
+    );
+}
 
-    auto add = make_cell(new Fun([](const Ptr&, const vector<Ptr>& a) {
+static int run_yaml_file(const string& filename) {
+    auto root = load_root_from_yaml(filename);
+    auto result = root->find(root, "eval")->eval(root);
+    cout << result->str() << endl;
+    return 0;
+}
+
+static int run_demo() {
+    auto add = make_cell(new Fun([](const Ptr& vm) {
+        auto a = current_args(vm);
         auto x = dynamic_pointer_cast<Int>(a[0])->v;
         auto y = dynamic_pointer_cast<Int>(a[1])->v;
         return make_cell(new Int(x+y));
@@ -40,15 +45,30 @@ int main(int argc, char** argv) {
         {"add", add}
     }));
 
-    auto result = env->find(env, "add")->eval(env, { make_cell(new Int(2)), make_cell(new Int(3)) });
+    auto call = make_cell(new Vec({
+        make_cell(new Str("add")),
+        make_cell(new Int(2)),
+        make_cell(new Int(3))
+    }));
+
+    auto result = call->eval(env);
     auto missing = env->find(env, "missing");
     auto missing_find = missing->find(env, "still_missing");
-    auto missing_eval = missing->eval(env, {});
-    auto non_callable = env->eval(env, {});
+    auto missing_eval = missing->eval(env);
+    auto non_callable = env->eval(env);
 
     cout << dynamic_pointer_cast<Int>(result)->v << endl;
     cout << missing->str() << endl;
     cout << missing_find->str() << endl;
     cout << missing_eval->str() << endl;
     cout << non_callable->str() << endl;
+    return 0;
+}
+
+int main(int argc, char** argv) {
+    if (argc > 1) {
+        return run_yaml_file(argv[1]);
+    }
+
+    return run_demo();
 }
