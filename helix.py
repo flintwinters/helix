@@ -6,7 +6,7 @@ import yaml
 from rich import print as rprint
 
 
-BUILTINS = {"find", "eval", "list", "show"}
+BUILTINS = {"find", "eval", "list", "set", "show"}
 
 
 def load_program(path: Path) -> dict[str, Any]:
@@ -56,6 +56,13 @@ def evaluate_vector(items: list[Any], program: dict[str, Any]) -> Any:
         if len(arguments) != 1:
             raise ValueError('builtin "show" expects exactly one argument')
         return evaluate(arguments[0], program)
+
+    if actor == "set":
+        if len(arguments) != 2 or not isinstance(arguments[0], str):
+            raise ValueError('builtin "set" expects a string and a value')
+        value = evaluate(arguments[1], program)
+        program[arguments[0]] = value
+        return value
 
     raise ValueError("vector actor did not resolve to a builtin")
 
