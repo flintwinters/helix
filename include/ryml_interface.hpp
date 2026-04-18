@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <ryml.hpp>
+
 #include "core.hpp"
 
 using MakeErr = std::function<Ptr(std::string)>;
@@ -21,3 +23,5 @@ Ptr yaml_file_to_cell(
     const MakeVec& make_vec,
     const MakeMap& make_map
 );
+
+ryml::Tree cell_to_ryml_tree(const Ptr& cell);
