@@ -9,20 +9,17 @@ demo:
     runtime: cell graph
     operations:
       - add
-      - find
       - eval
+      - list
+      - show
 expression:
   - list
-  - - find
-    - name
-  - - find
-    - tagline
+  - - name
+  - - tagline
   - - show
     - demo
   - - add
-    - - find
-      - left
-    - - find
+    - - left
       - right
 eval:
   - eval
