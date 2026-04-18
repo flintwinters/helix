@@ -81,7 +81,7 @@ struct YamlParser {
     }
 
     Ptr node_to_cell(ryml::ConstNodeRef node) const {
-        if (!node.valid()) {
+        if (node.invalid()) {
             return make_err("invalid yaml node");
         }
 
