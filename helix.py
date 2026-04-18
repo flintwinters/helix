@@ -5,8 +5,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-from rich import print as rprint
+try:
+    import yaml
+except ModuleNotFoundError:
+    yaml = None
+
+try:
+    from rich import print as rprint
+except ModuleNotFoundError:
+    rprint = print
 
 
 class Cell:
@@ -183,6 +190,9 @@ def attach_builtins(root: MapCell) -> None:
 
 
 def load_program(path: Path) -> MapCell:
+    if yaml is None:
+        raise RuntimeError('missing dependency: install "pyyaml" to load YAML programs')
+
     data = yaml.safe_load(path.read_text())
     if not isinstance(data, dict):
         raise ValueError("top-level YAML document must be a mapping")
@@ -217,8 +227,13 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     program_path = Path(args.program)
-    root = load_program(program_path)
-    result = root.eval(root)
+    try:
+        root = load_program(program_path)
+        result = root.eval(root)
+    except (OSError, RuntimeError, ValueError) as error:
+        rprint(f"[bold red]error:[/bold red] {error}")
+        return 1
+
     render_result(result)
     return 0 if not isinstance(result, ErrorCell) else 1
 
