@@ -1,0 +1,21 @@
+name: Helix
+tagline: Cells all the way down
+demo:
+  engine: YAML
+  output: rich
+  model:
+    runtime: cell graph
+    operations:
+      - find
+      - eval
+expression:
+  - list
+  - - find
+    - name
+  - - find
+    - tagline
+  - - show
+    - demo
+eval:
+  - eval
+  - expression
