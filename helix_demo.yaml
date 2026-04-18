@@ -1,11 +1,14 @@
 name: Helix
 tagline: Cells all the way down
+left: 20
+right: 22
 demo:
   engine: YAML
   output: rich
   model:
     runtime: cell graph
     operations:
+      - add
       - find
       - eval
 expression:
@@ -16,6 +19,11 @@ expression:
     - tagline
   - - show
     - demo
+  - - add
+    - - find
+      - left
+    - - find
+      - right
 eval:
   - eval
   - expression
