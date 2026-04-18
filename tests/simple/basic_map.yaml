@@ -1,7 +1,4 @@
-mode: run-only
+expected: 42
 program:
-  greeting: hello
   answer: 42
-  items:
-    - first
-    - second
+  eval: answer
