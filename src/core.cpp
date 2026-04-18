@@ -27,7 +27,11 @@ string Err::str(size_t depth) const {
     return pad(depth) + "Err(" + msg + ")";
 }
 
+
 Int::Int(int x) : v(x) {}
+Ptr Int::eval(const Ptr&) {
+    return make_cell(new Int(v));
+}
 string Int::str(size_t depth) const {
     return pad(depth) + to_string(v);
 }
