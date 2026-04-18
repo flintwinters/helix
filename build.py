@@ -11,7 +11,7 @@ COMPILER = "g++"
 CPP_FLAGS = "-g -std=c++20"
 LINKER_FLAGS = "-L ryml/build -lryml"
 EXECUTABLE = "helix"
-SOURCES = "src/helix.cpp src/core.cpp src/ryml_interface.cpp src/builtins.cpp"
+SOURCES = "src/helix.cpp" # src/core.cpp src/ryml_interface.cpp src/builtins.cpp"
 OBJECT_DIRECTORY = "build/obj"
 VALGRIND_ARGS = [
     "valgrind",
@@ -100,19 +100,27 @@ def run_cloc():
         check=False,
     )
     if result.returncode != 0:
-        print("cloc failed.")
+        print("count lines of code failed.")
         if result.stdout.strip():
             print(result.stdout.rstrip("\n"))
         if result.stderr.strip():
             print(result.stderr.rstrip("\n"))
         return False
 
+    code_line_count = None
     for line in result.stdout.splitlines():
         if line.startswith("SUM:"):
-            print(line.split()[-1])
+            print("current LOC:", line.split()[-1])
             return True
+        columns = line.split()
+        if len(columns) == 5 and columns[0] == "C++":
+            code_line_count = columns[-1]
 
-    print("cloc failed.")
+    if code_line_count is not None:
+        print("current LOC:", code_line_count)
+        return True
+
+    print("count lines of code failed.")
     print("missing SUM line in cloc output")
     return False
 
