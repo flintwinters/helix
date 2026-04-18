@@ -80,9 +80,13 @@ class VecCell(Cell):
 @dataclass(slots=True)
 class MapCell(Cell):
     entries: dict[str, Cell] = field(default_factory=dict)
+    builtins: dict[str, Cell] = field(default_factory=dict)
     parent: "MapCell | None" = None
 
     def find(self, vm: "MapCell", key: str) -> Cell:
+        builtin = vm.builtins.get(key)
+        if builtin is not None:
+            return builtin
         if key in self.entries:
             return self.entries[key]
         if self.parent is not None:
@@ -179,14 +183,14 @@ def build_cell(node: Any, parent: MapCell | None = None) -> Cell:
 
 
 def attach_builtins(root: MapCell) -> None:
-    builtins = {
+    root.builtins.update(
+        {
         "find": BuiltinCell("find"),
         "eval": BuiltinCell("eval"),
         "list": BuiltinCell("list"),
         "show": BuiltinCell("show"),
-    }
-    for name, builtin in builtins.items():
-        root.entries.setdefault(name, builtin)
+        }
+    )
 
 
 def load_program(path: Path) -> MapCell:
