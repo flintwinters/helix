@@ -16,31 +16,7 @@
 
 using namespace std;
 
-static Ptr add_builtin(const Ptr& vm) {
-    Ptr args_cell = current_args(vm);
-    if (dynamic_pointer_cast<Err>(args_cell)) {
-        return args_cell;
-    }
-
-    shared_ptr<Vec> args = dynamic_pointer_cast<Vec>(args_cell);
-    if (!args || args->v.size() < 2) {
-        return error("add expects two arguments");
-    }
-
-    shared_ptr<Int> left = dynamic_pointer_cast<Int>(args->v[0]);
-    shared_ptr<Int> right = dynamic_pointer_cast<Int>(args->v[1]);
-    if (!left || !right) {
-        return error("add expects integer arguments");
-    }
-
-    return make_cell(new Int(left->v + right->v));
-}
-
-static Ptr make_builtin_env() {
-    return make_cell(new Map({
-        {"add", make_cell(new Fun(add_builtin))}
-    }));
-}
+Ptr make_builtin_env();
 
 static Ptr load_root_from_yaml(const string& filename) {
     Ptr root = yaml_file_to_cell(
