@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "core.hpp"
+#include "core_utils.hpp"
 #include "helix.hpp"
 #include "ryml_interface.hpp"
 
