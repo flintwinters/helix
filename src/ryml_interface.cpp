@@ -1,25 +1,12 @@
-#include <algorithm>
-#include <cctype>
-#include <fstream>
-#include <functional>
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <vector>
+#include "ryml_interface.hpp"
 
 #include <c4/std/string.hpp>
 #include <ryml.hpp>
+#include <algorithm>
+#include <cctype>
+#include <fstream>
 
 using namespace std;
-
-struct Cell;
-
-using Ptr = shared_ptr<Cell>;
-using MakeErr = function<Ptr(string)>;
-using MakeInt = function<Ptr(int)>;
-using MakeStr = function<Ptr(string)>;
-using MakeVec = function<Ptr(vector<Ptr>)>;
-using MakeMap = function<Ptr(unordered_map<string, Ptr>)>;
 
 static string to_string_copy(c4::csubstr s) {
     return string(s.str, s.len);
