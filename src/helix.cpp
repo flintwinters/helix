@@ -16,26 +16,8 @@
 
 using namespace std;
 
-static Ptr load_root_from_yaml(const string& filename) {
-    return yaml_file_to_cell(
-        filename,
-        [](string message) { return error(move(message)); },
-        [](int value) { return make_cell(new Int(value)); },
-        [](string value) { return make_cell(new Str(move(value))); },
-        [](vector<Ptr> values) { return make_cell(new Vec(move(values))); },
-        [](unordered_map<string, Ptr> values) { return make_cell(new Map(move(values))); }
-    );
-}
-
-static int run_yaml_file(const string& filename) {
-    Ptr root = load_root_from_yaml(filename);
-    Ptr result = root->find(root, "eval")->eval(root);
-    cout << result->str() << endl;
-    return 0;
-}
-
-static int run_demo() {
-    Ptr add = make_cell(new Fun([](const Ptr& vm) {
+static Ptr make_add_builtin() {
+    return make_cell(new Fun([](const Ptr& vm) {
         Ptr args_cell = current_args(vm);
         if (dynamic_pointer_cast<Err>(args_cell)) {
             return args_cell;
@@ -46,14 +28,50 @@ static int run_demo() {
             return error("add expects two arguments");
         }
 
-        int x = dynamic_pointer_cast<Int>(args->v[0])->v;
-        int y = dynamic_pointer_cast<Int>(args->v[1])->v;
-        return make_cell(new Int(x+y));
-    }));
+        shared_ptr<Int> left = dynamic_pointer_cast<Int>(args->v[0]);
+        shared_ptr<Int> right = dynamic_pointer_cast<Int>(args->v[1]);
+        if (!left || !right) {
+            return error("add expects integer arguments");
+        }
 
-    Ptr env = make_cell(new Map({
-        {"add", add}
+        return make_cell(new Int(left->v + right->v));
     }));
+}
+
+static Ptr make_builtin_env() {
+    return make_cell(new Map({
+        {"add", make_add_builtin()}
+    }));
+}
+
+static Ptr load_root_from_yaml(const string& filename) {
+    Ptr root = yaml_file_to_cell(
+        filename,
+        [](string message) { return error(move(message)); },
+        [](int value) { return make_cell(new Int(value)); },
+        [](string value) { return make_cell(new Str(move(value))); },
+        [](vector<Ptr> values) { return make_cell(new Vec(move(values))); },
+        [](unordered_map<string, Ptr> values) { return make_cell(new Map(move(values))); }
+    );
+
+    shared_ptr<Map> root_map = dynamic_pointer_cast<Map>(root);
+    if (!root_map) {
+        return error("program root must be a map");
+    }
+
+    root_map->m["parent"] = make_builtin_env();
+    return root;
+}
+
+static int run_yaml_file(const string& filename) {
+    Ptr root = load_root_from_yaml(filename);
+    Ptr result = root->find(root, "eval")->eval(root);
+    cout << result->str() << endl;
+    return 0;
+}
+
+static int run_demo() {
+    Ptr env = make_builtin_env();
 
     Ptr call = make_cell(new Vec({
         make_cell(new Str("add")),
