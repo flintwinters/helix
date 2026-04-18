@@ -5,11 +5,164 @@
 #include <algorithm>
 #include <cctype>
 #include <fstream>
+#include <sstream>
+#include <unordered_set>
 
 using namespace std;
 
 static string to_string_copy(c4::csubstr s) {
     return string(s.str, s.len);
+}
+
+static string yaml_quote(const string& text) {
+    ostringstream out;
+    out << '"';
+    for (char ch : text) {
+        switch (ch) {
+            case '\\':
+                out << "\\\\";
+                break;
+            case '"':
+                out << "\\\"";
+                break;
+            case '\n':
+                out << "\\n";
+                break;
+            case '\r':
+                out << "\\r";
+                break;
+            case '\t':
+                out << "\\t";
+                break;
+            default:
+                out << ch;
+                break;
+        }
+    }
+    out << '"';
+    return out.str();
+}
+
+static string indent(size_t depth) {
+    return string(depth, ' ');
+}
+
+static string cell_to_yaml_text(
+    const Ptr& cell,
+    size_t depth,
+    unordered_set<const Cell*>& seen
+);
+
+static string yaml_inline_value(
+    const Ptr& cell,
+    size_t depth,
+    unordered_set<const Cell*>& seen
+) {
+    if (!cell) {
+        return "null";
+    }
+
+    if (shared_ptr<Int> int_cell = dynamic_pointer_cast<Int>(cell)) {
+        return to_string(int_cell->v);
+    }
+
+    if (shared_ptr<Str> str_cell = dynamic_pointer_cast<Str>(cell)) {
+        return yaml_quote(str_cell->v);
+    }
+
+    if (shared_ptr<Err> err_cell = dynamic_pointer_cast<Err>(cell)) {
+        return yaml_quote(err_cell->msg);
+    }
+
+    if (dynamic_pointer_cast<Fun>(cell)) {
+        return yaml_quote(cell->str());
+    }
+
+    if (dynamic_pointer_cast<Vec>(cell) || dynamic_pointer_cast<Map>(cell)) {
+        return "\n" + cell_to_yaml_text(cell, depth, seen);
+    }
+
+    return yaml_quote(cell->str());
+}
+
+static string cell_to_yaml_text(
+    const Ptr& cell,
+    size_t depth,
+    unordered_set<const Cell*>& seen
+) {
+    if (!cell) {
+        return indent(depth) + "null\n";
+    }
+
+    if (shared_ptr<Int> int_cell = dynamic_pointer_cast<Int>(cell)) {
+        return indent(depth) + to_string(int_cell->v) + "\n";
+    }
+
+    if (shared_ptr<Str> str_cell = dynamic_pointer_cast<Str>(cell)) {
+        return indent(depth) + yaml_quote(str_cell->v) + "\n";
+    }
+
+    if (shared_ptr<Err> err_cell = dynamic_pointer_cast<Err>(cell)) {
+        return indent(depth) + yaml_quote(err_cell->msg) + "\n";
+    }
+
+    if (dynamic_pointer_cast<Fun>(cell)) {
+        return indent(depth) + yaml_quote(cell->str()) + "\n";
+    }
+
+    if (shared_ptr<Vec> vec_cell = dynamic_pointer_cast<Vec>(cell)) {
+        if (!seen.insert(cell.get()).second) {
+            return indent(depth) + yaml_quote("<recursive>") + "\n";
+        }
+
+        if (vec_cell->v.empty()) {
+            return indent(depth) + "[]\n";
+        }
+
+        ostringstream out;
+        for (const Ptr& item : vec_cell->v) {
+            out << indent(depth) << "-";
+            const string item_text = yaml_inline_value(item, depth + 2, seen);
+            if (!item_text.empty() && item_text[0] != '\n') {
+                out << " " << item_text << "\n";
+            } else {
+                out << "\n" << item_text.substr(1);
+            }
+        }
+        seen.erase(cell.get());
+        return out.str();
+    }
+
+    if (shared_ptr<Map> map_cell = dynamic_pointer_cast<Map>(cell)) {
+        if (!seen.insert(cell.get()).second) {
+            return indent(depth) + yaml_quote("<recursive>") + "\n";
+        }
+
+        if (map_cell->m.empty()) {
+            return indent(depth) + "{}\n";
+        }
+
+        ostringstream out;
+        for (const auto& [key, value] : map_cell->m) {
+            out << indent(depth) << yaml_quote(key) << ":";
+            const string value_text = yaml_inline_value(value, depth + 2, seen);
+            if (!value_text.empty() && value_text[0] != '\n') {
+                out << " " << value_text << "\n";
+            } else {
+                out << "\n" << value_text.substr(1);
+            }
+        }
+        seen.erase(cell.get());
+        return out.str();
+    }
+
+    return indent(depth) + yaml_quote(cell->str()) + "\n";
+}
+
+ryml::Tree cell_to_ryml_tree(const Ptr& cell) {
+    unordered_set<const Cell*> seen;
+    const string yaml_text = cell_to_yaml_text(cell, 0, seen);
+    return ryml::parse_in_arena(ryml::to_csubstr(yaml_text));
 }
 
 struct YamlParser {
