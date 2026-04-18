@@ -42,6 +42,7 @@ struct Int : Cell {
     int v;
 
     explicit Int(int x);
+    Ptr eval(const Ptr& vm) override;
     std::string str(std::size_t depth = 0) const override;
 };
 
