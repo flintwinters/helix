@@ -11,11 +11,6 @@
 #include <unordered_map>
 #include <algorithm>
 #include <functional>
-#include <cctype>
-#include <fstream>
-
-#include <c4/std/string.hpp>
-#include <ryml.hpp>
 
 using namespace std;
 
@@ -27,10 +22,6 @@ inline Ptr make_cell(auto* p) { return Ptr(p); }
 
 static string pad(size_t depth) {
     return string(depth * 2, ' ');
-}
-
-static string to_string_copy(c4::csubstr s) {
-    return string(s.str, s.len);
 }
 
 // Base object. Everything derives from this.
@@ -135,84 +126,32 @@ struct Fun : Cell {
     }
 };
 
-static Ptr scalar_to_cell(c4::csubstr scalar) {
-    const string text = to_string_copy(scalar);
+using MakeErr = function<Ptr(string)>;
+using MakeInt = function<Ptr(int)>;
+using MakeStr = function<Ptr(string)>;
+using MakeVec = function<Ptr(vector<Ptr>)>;
+using MakeMap = function<Ptr(unordered_map<string, Ptr>)>;
 
-    if (!text.empty()) {
-        size_t start = 0;
-        if (text[0] == '-' || text[0] == '+') {
-            start = 1;
-        }
-
-        const bool is_integer =
-            start < text.size() &&
-            all_of(text.begin() + static_cast<ptrdiff_t>(start), text.end(), [](unsigned char ch) {
-                return isdigit(ch) != 0;
-            });
-
-        if (is_integer) {
-            return make_cell(new Int(stoi(text)));
-        }
-    }
-
-    return make_cell(new Str(text));
-}
-
-static Ptr yaml_node_to_cell(ryml::ConstNodeRef node) {
-    if (!node.valid()) {
-        return make_cell(new Err("invalid yaml node"));
-    }
-
-    if (node.is_stream() || node.is_doc()) {
-        if (!node.has_children()) {
-            return make_cell(new Map({}));
-        }
-        return yaml_node_to_cell(node[0]);
-    }
-
-    if (node.is_map()) {
-        unordered_map<string, Ptr> values;
-        values.reserve(node.num_children());
-        for (const auto child : node.children()) {
-            values.emplace(to_string_copy(child.key()), yaml_node_to_cell(child));
-        }
-        return make_cell(new Map(move(values)));
-    }
-
-    if (node.is_seq()) {
-        vector<Ptr> values;
-        values.reserve(node.num_children());
-        for (const auto child : node.children()) {
-            values.push_back(yaml_node_to_cell(child));
-        }
-        return make_cell(new Vec(move(values)));
-    }
-
-    if (node.has_val()) {
-        return scalar_to_cell(node.val());
-    }
-
-    return make_cell(new Map({}));
-}
-
-static Ptr yaml_string_to_cell(const string& yaml) {
-    ryml::Tree tree = ryml::parse_in_arena(ryml::to_csubstr(yaml));
-    return yaml_node_to_cell(tree.rootref());
-}
-
-static Ptr yaml_file_to_cell(const string& filename) {
-    ifstream input(filename);
-    if (!input) {
-        return make_cell(new Err("unable to open file: " + filename));
-    }
-
-    const string yaml((istreambuf_iterator<char>(input)), istreambuf_iterator<char>());
-    return yaml_string_to_cell(yaml);
-}
+Ptr yaml_file_to_cell(
+    const string& filename,
+    const MakeErr& make_err,
+    const MakeInt& make_int,
+    const MakeStr& make_str,
+    const MakeVec& make_vec,
+    const MakeMap& make_map
+);
 
 int main(int argc, char** argv) {
     if (argc > 1) {
-        cout << yaml_file_to_cell(argv[1])->str() << endl;
+        auto parsed = yaml_file_to_cell(
+            argv[1],
+            [](string message) { return make_cell(new Err(move(message))); },
+            [](int value) { return make_cell(new Int(value)); },
+            [](string value) { return make_cell(new Str(move(value))); },
+            [](vector<Ptr> values) { return make_cell(new Vec(move(values))); },
+            [](unordered_map<string, Ptr> values) { return make_cell(new Map(move(values))); }
+        );
+        cout << parsed->str() << endl;
         return 0;
     }
 
