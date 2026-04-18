@@ -17,7 +17,7 @@ using namespace std;
 
 int main(int argc, char** argv) {
     if (argc > 1) {
-        auto parsed = yaml_file_to_cell(
+        auto root = yaml_file_to_cell(
             argv[1],
             [](string message) { return error(move(message)); },
             [](int value) { return make_cell(new Int(value)); },
@@ -25,11 +25,12 @@ int main(int argc, char** argv) {
             [](vector<Ptr> values) { return make_cell(new Vec(move(values))); },
             [](unordered_map<string, Ptr> values) { return make_cell(new Map(move(values))); }
         );
-        cout << parsed->str() << endl;
+        auto result = root->find(root, "eval")->eval(root, {});
+        cout << result->str() << endl;
         return 0;
     }
 
-    auto add = make_cell(new Fun([](const vector<Ptr>& a) {
+    auto add = make_cell(new Fun([](const Ptr&, const vector<Ptr>& a) {
         auto x = dynamic_pointer_cast<Int>(a[0])->v;
         auto y = dynamic_pointer_cast<Int>(a[1])->v;
         return make_cell(new Int(x+y));
@@ -39,11 +40,11 @@ int main(int argc, char** argv) {
         {"add", add}
     }));
 
-    auto result = env->find("add")->eval({ make_cell(new Int(2)), make_cell(new Int(3)) });
-    auto missing = env->find("missing");
-    auto missing_find = missing->find("still_missing");
-    auto missing_eval = missing->eval({});
-    auto non_callable = env->eval({});
+    auto result = env->find(env, "add")->eval(env, { make_cell(new Int(2)), make_cell(new Int(3)) });
+    auto missing = env->find(env, "missing");
+    auto missing_find = missing->find(env, "still_missing");
+    auto missing_eval = missing->eval(env, {});
+    auto non_callable = env->eval(env, {});
 
     cout << dynamic_pointer_cast<Int>(result)->v << endl;
     cout << missing->str() << endl;
