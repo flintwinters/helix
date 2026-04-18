@@ -1,13 +1,23 @@
 #pragma once
 
+#include <functional>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
-#include <ryml.hpp>
+#include "core.hpp"
 
-#include <core.hpp>
+using MakeErr = std::function<Ptr(std::string)>;
+using MakeInt = std::function<Ptr(int)>;
+using MakeStr = std::function<Ptr(std::string)>;
+using MakeVec = std::function<Ptr(std::vector<Ptr>)>;
+using MakeMap = std::function<Ptr(std::unordered_map<std::string, Ptr>)>;
 
-void cell_to_yaml_node(const Cell& cell, ryml::NodeRef* node);
-ryml::Tree cell_to_yaml(const Cell& cell);
-std::string cell_to_yaml_string(const Cell& cell);
-Cell* yaml_node_to_cell(const ryml::ConstNodeRef& node);
-Cell& parse_yaml_to_cells(const std::string& yaml, Cell& zygote);
+Ptr yaml_file_to_cell(
+    const std::string& filename,
+    const MakeErr& make_err,
+    const MakeInt& make_int,
+    const MakeStr& make_str,
+    const MakeVec& make_vec,
+    const MakeMap& make_map
+);
