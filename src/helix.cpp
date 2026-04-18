@@ -5,6 +5,7 @@
 // To eliminate parser complexity and accelerate experimentation, the language uses YAML directly as its surface syntax. Programs are authored as YAML documents that map naturally onto the underlying cell structure, making code both data and executable form simultaneously. This approach enables rapid iteration on semantics without committing to a custom grammar, while preserving readability and structural clarity. Since YAML already encodes maps, sequences, and scalars, it aligns closely with the runtime model, allowing the interpreter to operate directly on parsed data structures. The combination of a Smalltalk-like message-passing core, C++-level control over memory and performance, and YAML-based syntax yields a compact but expressive experimental platform for declarative and reflective systems programming.
 
 #include <iostream>
+#include <cstdio>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -76,6 +77,6 @@ int main(int argc, char** argv) {
     }
 
     ryml::Tree vm_tree = cell_to_ryml_tree(vm);
-    cout << ryml::emitrs_yaml<std::string>(vm_tree);
+    ryml::emit_yaml(vm_tree, stdout);
     return 0;
 }
