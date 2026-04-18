@@ -1,0 +1,7 @@
+mode: run-only
+program:
+  greeting: hello
+  answer: 42
+  items:
+    - first
+    - second
