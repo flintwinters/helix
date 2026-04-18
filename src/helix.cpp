@@ -5,126 +5,14 @@
 // To eliminate parser complexity and accelerate experimentation, the language uses YAML directly as its surface syntax. Programs are authored as YAML documents that map naturally onto the underlying cell structure, making code both data and executable form simultaneously. This approach enables rapid iteration on semantics without committing to a custom grammar, while preserving readability and structural clarity. Since YAML already encodes maps, sequences, and scalars, it aligns closely with the runtime model, allowing the interpreter to operate directly on parsed data structures. The combination of a Smalltalk-like message-passing core, C++-level control over memory and performance, and YAML-based syntax yields a compact but expressive experimental platform for declarative and reflective systems programming.
 
 #include <iostream>
-#include <memory>
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <algorithm>
 #include <functional>
 
+#include "core.cpp" // NOLINT(bugprone-suspicious-include)
+
 using namespace std;
-
-struct Cell;
-
-using Ptr = shared_ptr<Cell>;
-
-inline Ptr make_cell(auto* p) { return Ptr(p); }
-
-static string pad(size_t depth) {
-    return string(depth * 2, ' ');
-}
-
-// Base object. Everything derives from this.
-struct Cell {
-    virtual Ptr find(const string& key) { return 0; }
-    virtual Ptr eval(const vector<Ptr>& args) { return 0; }
-    virtual string str(size_t depth = 0) const { return "<cell>"; }
-    virtual ~Cell() = default;
-};
-
-// Error object. First class failure value.
-struct Err : Cell {
-    string msg;
-    Err(string m) : msg(m) {}
-    Ptr find(const string&) override { return make_cell(new Err(msg)); }
-    Ptr eval(const vector<Ptr>&) override { return make_cell(new Err(msg)); }
-    string str(size_t depth = 0) const override {
-        return pad(depth) + "Err(" + msg + ")";
-    }
-};
-
-// Integer primitive
-struct Int : Cell {
-    int v;
-    Int(int x) : v(x) {}
-    string str(size_t depth = 0) const override {
-        return pad(depth) + to_string(v);
-    }
-};
-
-// String primitive
-struct Str : Cell {
-    string v;
-    Str(string s) : v(s) {}
-    string str(size_t depth = 0) const override {
-        return pad(depth) + "\"" + v + "\"";
-    }
-};
-
-// Vector primitive
-struct Vec : Cell {
-    vector<Ptr> v;
-    Vec(vector<Ptr> x) : v(move(x)) {}
-    string str(size_t depth = 0) const override {
-        if (v.empty()) return pad(depth) + "[]";
-
-        string out = pad(depth) + "[\n";
-        for (size_t i = 0; i < v.size(); ++i) {
-            out += v[i]->str(depth + 1);
-            if (i + 1 != v.size()) out += " ";
-            out += "\n";
-        }
-        out += pad(depth) + "]";
-        return out;
-    }
-};
-
-// Map object. Core of environment, closures, vm host.
-struct Map : Cell {
-    unordered_map<string, Ptr> m;
-    Map(unordered_map<string, Ptr> x) : m(move(x)) {}
-    Ptr find(const string& key) override {
-        if (m.count(key)) return m[key];
-        if (m.count("parent")) return m["parent"]->find(key);
-        return make_cell(new Err("missing: " + key));
-    }
-    Ptr eval(const vector<Ptr>& args) override {
-        if (m.count("eval")) return m["eval"]->eval(args); // delegate to callable slot
-        return make_cell(new Err("not callable"));
-    }
-    string str(size_t depth = 0) const override {
-        if (m.empty()) return pad(depth) + "{}";
-
-        vector<string> keys;
-        keys.reserve(m.size());
-        for (const auto& [key, _] : m) keys.push_back(key);
-        sort(keys.begin(), keys.end());
-
-        string out = pad(depth) + "{\n";
-        for (size_t i = 0; i < keys.size(); ++i) {
-            const auto& key = keys[i];
-            out += pad(depth + 1) + key + ": ";
-            auto value = m.at(key)->str(depth + 1);
-            out += value.substr(pad(depth + 1).size());
-            if (i + 1 != keys.size()) out += " ";
-            out += "\n";
-        }
-        out += pad(depth) + "}";
-        return out;
-    }
-};
-
-// Native callable wrapper.
-struct Fun : Cell {
-    function<Ptr(const vector<Ptr>&)> fn;
-    Fun(function<Ptr(const vector<Ptr>&)> f) : fn(move(f)) {}
-    Ptr eval(const vector<Ptr>& args) override {
-        return fn(args);
-    }
-    string str(size_t depth = 0) const override {
-        return pad(depth) + "<fun>";
-    }
-};
 
 using MakeErr = function<Ptr(string)>;
 using MakeInt = function<Ptr(int)>;
@@ -145,7 +33,7 @@ int main(int argc, char** argv) {
     if (argc > 1) {
         auto parsed = yaml_file_to_cell(
             argv[1],
-            [](string message) { return make_cell(new Err(move(message))); },
+            [](string message) { return error(move(message)); },
             [](int value) { return make_cell(new Int(value)); },
             [](string value) { return make_cell(new Str(move(value))); },
             [](vector<Ptr> values) { return make_cell(new Vec(move(values))); },
