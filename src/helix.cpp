@@ -75,6 +75,7 @@ int main(int argc, char** argv) {
         vm = run_demo();
     }
 
-    cout << vm->str() << endl;
+    ryml::Tree vm_tree = cell_to_ryml_tree(vm);
+    cout << ryml::emitrs_yaml<std::string>(vm_tree);
     return 0;
 }
