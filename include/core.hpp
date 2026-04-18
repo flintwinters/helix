@@ -24,7 +24,7 @@ inline Ptr make_cell(T* p) {
 
 std::string pad(std::size_t depth);
 Ptr error(std::string s);
-std::vector<Ptr> current_args(const Ptr& vm);
+Ptr current_args(const Ptr& vm);
 
 struct Cell {
     virtual Ptr find(const Ptr& vm, const std::string& key);
