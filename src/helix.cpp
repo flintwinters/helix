@@ -37,14 +37,14 @@ static Ptr load_root_from_yaml(const string& filename) {
     return root;
 }
 
-static int run_yaml_file(const string& filename) {
+static Ptr run_yaml_file(const string& filename) {
     Ptr root = load_root_from_yaml(filename);
     Ptr result = root->find(root, "eval")->eval(root);
     cout << result->str() << endl;
-    return 0;
+    return root;
 }
 
-static int run_demo() {
+static Ptr run_demo() {
     Ptr env = make_builtin_env();
 
     Ptr call = make_cell(new Vec({
@@ -64,13 +64,17 @@ static int run_demo() {
     cout << missing_find->str() << endl;
     cout << missing_eval->str() << endl;
     cout << non_callable->str() << endl;
-    return 0;
+    return env;
 }
 
 int main(int argc, char** argv) {
+    Ptr vm;
     if (argc > 1) {
-        return run_yaml_file(argv[1]);
+        vm = run_yaml_file(argv[1]);
+    } else {
+        vm = run_demo();
     }
 
-    return run_demo();
+    cout << vm->str() << endl;
+    return 0;
 }
