@@ -1,3 +1,4 @@
+#include <iostream>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -49,9 +50,32 @@ static Ptr sub_builtin(const Ptr& vm) {
     return make_cell(new Int(left->v - right->v));
 }
 
+static Ptr printout_builtin(const Ptr& vm) {
+    Ptr args_cell = current_args(vm);
+    if (dynamic_pointer_cast<Err>(args_cell)) {
+        return args_cell;
+    }
+
+    shared_ptr<Vec> args = dynamic_pointer_cast<Vec>(args_cell);
+    if (!args || args->v.empty()) {
+        return error("printout expects at least one argument");
+    }
+
+    for (size_t i = 0; i < args->v.size(); ++i) {
+        if (i > 0) {
+            cout << ' ';
+        }
+        cout << args->v[i]->str();
+    }
+    cout << endl;
+
+    return args->v.back();
+}
+
 Ptr make_builtin_env() {
     return make_cell(new Map({
         {"add", make_cell(new Fun(add_builtin))},
-        {"sub", make_cell(new Fun(sub_builtin))}
+        {"sub", make_cell(new Fun(sub_builtin))},
+        {"printout", make_cell(new Fun(printout_builtin))}
     }));
 }
