@@ -1,0 +1,149 @@
+The Helix programming system is inspired by Smalltalk and defines a language where the only runtime entity is a cell, and every cell is structurally a map. There are no distinct runtime categories such as function, environment, object, or VM. Instead, these roles emerge from behavior. The entire program is represented as a single root cell, and execution begins by locating an `"eval"` entrypoint within that structure. From that point forward, all computation proceeds through two operations: `find` and `eval`. `find(vm, key)` performs name resolution relative to a given execution context, while `eval(vm)` executes a cell within that same context. The crucial simplification is that the environment and the VM are identical. There is no separation between lexical scope, dynamic scope, and execution state; all of it lives inside the same graph of cells.
+
+Name resolution is purely structural. A cell may contain arbitrary keys, but if a key is not found locally, `find` follows a `"parent"` reference, recursively. This creates a prototype-like delegation chain that simultaneously models lexical scope and inheritance. No special environment object exists. Any cell can serve as a scope simply by participating in this delegation chain. Because `find` is the only mechanism for retrieving data, it becomes the backbone of all symbolic reference. A string is not just a primitive value; it is a potential reference. When a `StrCell` is evaluated, it resolves its contents via `find`, turning strings into symbolic links within the program graph. This eliminates the need for a separate symbol type and aligns the surface representation directly with runtime behavior.
+
+Evaluation is driven by polymorphism on cell type. There is no global interpreter loop that distinguishes expressions from values. Instead, each cell defines how it evaluates itself. A `VecCell` encodes structured computation using a rule analogous to Lisp: the first element is treated as the actor, and the remaining elements are arguments. Evaluation proceeds by evaluating the actor, then invoking it with arguments derived from the vector tail. However, unlike traditional Lisp, arguments are not passed explicitly through function calls. Instead, they are implicitly managed through VM state. The `eval(vm)` method of each cell reads from and writes to this shared state, typically a stack or frame structure stored under a `"state"` field accessible via `find`. This means that argument passing, return values, and control flow are all mediated through mutation of the VM’s internal data rather than through function parameters.
+
+This design choice pushes the system toward a stack-based execution model without introducing a separate instruction set or bytecode. Each cell acts as a reduction rule that transforms VM state. A `VecCell` might push intermediate results onto the stack, invoke another cell, and then consume results. A callable cell might pop its arguments from the stack, perform computation, and push a result. Because `eval` is the only operation that mutates state, it becomes the locus of all computational effect. In contrast, `find` remains purely observational, traversing structure without side effects. This separation is intentional. It enforces a clear boundary between reading the program graph and executing it, even though both operations operate over the same unified data structure.
+
+The absence of explicit argument passing has significant implications. It removes the need for a fixed calling convention at the interface level, allowing different cells to interpret the stack in different ways. One cell might treat the top of the stack as its argument list, while another might use a frame pointer stored in `"state"`. This flexibility enables multiple execution strategies to coexist within the same system. At the same time, it introduces implicit data flow, which must be carefully managed. The system relies on convention rather than enforcement: cells must agree on how the stack is structured at call boundaries. This is a deliberate tradeoff. It sacrifices some local clarity in exchange for global uniformity and extensibility.
+
+A key property of the system is that any cell can act as a micro-VM. If a cell defines a `"state"` field and implements `eval` in terms of that state, it can host its own execution process. This allows for nested interpreters, coroutines, or isolated execution contexts without introducing new primitives. For example, a cell could contain its own stack and frames, and its `eval` method could interpret a subgraph of cells independently of the outer VM. Because `find` always operates relative to the current VM, switching execution contexts is as simple as changing which cell is passed as `vm`. This makes control flow highly composable. Execution is not centralized but distributed across cells that locally manage their own state and semantics.
+
+Error handling is integrated into the object model. Errors are represented as cells, not as exceptions or out-of-band signals. When an operation fails, it returns an error cell. Subsequent `find` or `eval` operations on that cell propagate the error. This ensures that failure is handled uniformly within the same mechanism as all other computation. There is no need for special control constructs for error propagation; it emerges naturally from polymorphism. This approach also allows errors to carry structured information and participate in the same delegation and evaluation mechanisms as any other cell.
+
+The system’s use of a map-based representation aligns naturally with using a data serialization format such as YAML as the surface syntax. Programs can be written directly as YAML documents, which parse into the same map and vector structures used at runtime. This eliminates the need for a custom parser and ensures that the syntax is a direct reflection of the execution model. A YAML sequence becomes a `VecCell`, and a YAML mapping becomes a `MapCell`. Strings become `StrCell` instances that resolve symbolically. This tight correspondence between syntax and semantics reduces the conceptual gap between source code and execution, making the system easier to reason about and manipulate programmatically.
+
+Conceptually, the system sits at the intersection of prototype-based object systems, Lisp-style evaluation, and stack-based virtual machines. From prototype systems, it takes delegation via `"parent"`. From Lisp, it takes the idea that code is data and that structured lists represent computation. From stack machines, it takes implicit argument passing and state-driven execution. However, it does not fully commit to any of these paradigms. Instead, it extracts their minimal operational principles and recombines them into a uniform model centered on cells and two operations. The result is a language where structure, behavior, and execution are all expressed in the same medium, and where complexity arises from composition rather than from a large set of primitives.
+
+## Python demo
+
+The following demo shows a minimal Helix-style evaluator in Python. It uses YAML as the surface syntax, resolves names through `"parent"` links, and prints evaluation steps with `rich.print`.
+
+Install the dependencies:
+
+```bash
+python -m pip install rich pyyaml
+```
+
+Run the demo:
+
+```python
+from __future__ import annotations
+
+from copy import deepcopy
+from dataclasses import dataclass
+from typing import Any
+
+import yaml
+from rich import print
+
+
+PROGRAM_YAML = """
+parent:
+  add:
+    __builtin__: add
+  message: Hello from the root scope
+eval:
+  - print
+  - message
+sum:
+  - add
+  - 20
+  - 22
+nested:
+  parent:
+    parent:
+      message: Hello from the parent chain
+  eval:
+    - print
+    - message
+"""
+
+
+@dataclass
+class ErrorCell:
+    message: str
+
+    def __repr__(self) -> str:
+        return f"ErrorCell({self.message!r})"
+
+
+def find(vm: dict[str, Any], key: str) -> Any:
+    current: Any = vm
+    while isinstance(current, dict):
+        if key in current:
+            return current[key]
+        current = current.get("parent")
+    return ErrorCell(f"missing key: {key}")
+
+
+def eval_cell(cell: Any, vm: dict[str, Any]) -> Any:
+    if isinstance(cell, ErrorCell):
+        return cell
+    if isinstance(cell, str):
+        return find(vm, cell)
+    if isinstance(cell, list):
+        if not cell:
+            return []
+        actor = eval_cell(cell[0], vm)
+        if isinstance(actor, ErrorCell):
+            return actor
+        args = [eval_cell(arg, vm) for arg in cell[1:]]
+        for arg in args:
+            if isinstance(arg, ErrorCell):
+                return arg
+        return call(actor, args, vm)
+    if isinstance(cell, dict):
+        if "eval" in cell:
+            child_vm = dict(cell)
+            child_vm.setdefault("parent", vm)
+            return eval_cell(child_vm["eval"], child_vm)
+        return cell
+    return cell
+
+
+def call(actor: Any, args: list[Any], vm: dict[str, Any]) -> Any:
+    if actor == "print":
+        value = args[0] if args else None
+        print(f"[bold cyan]print[/bold cyan] -> {value!r}")
+        return value
+    if isinstance(actor, dict) and actor.get("__builtin__") == "add":
+        return sum(args)
+    return ErrorCell(f"cannot call actor: {actor!r}")
+
+
+def main() -> None:
+    program = yaml.safe_load(PROGRAM_YAML)
+
+    print("[bold green]Loaded YAML program[/bold green]")
+    print(program)
+
+    root_vm = deepcopy(program)
+    result = eval_cell(root_vm["eval"], root_vm)
+    print(f"[bold yellow]root result[/bold yellow] = {result!r}")
+
+    sum_result = eval_cell(root_vm["sum"], root_vm)
+    print(f"[bold yellow]sum result[/bold yellow] = {sum_result!r}")
+
+    nested_result = eval_cell(root_vm["nested"], root_vm)
+    print(f"[bold yellow]nested result[/bold yellow] = {nested_result!r}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Expected output:
+
+```text
+Loaded YAML program
+{'parent': {'add': {'__builtin__': 'add'}, 'message': 'Hello from the root scope'}, 'eval': ['print', 'message'], 'sum': ['add', 20, 22], 'nested': {'parent': {'parent': {'message': 'Hello from the parent chain'}}, 'eval': ['print', 'message']}}
+print -> 'Hello from the root scope'
+root result = 'Hello from the root scope'
+sum result = 42
+print -> 'Hello from the parent chain'
+nested result = 'Hello from the parent chain'
+```
+
+This demo is intentionally small, but it preserves the central Helix ideas: one graph of cells, structural name lookup via `find`, and evaluation driven by the shape of the cell being executed.
