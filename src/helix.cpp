@@ -5,29 +5,15 @@
 // To eliminate parser complexity and accelerate experimentation, the language uses YAML directly as its surface syntax. Programs are authored as YAML documents that map naturally onto the underlying cell structure, making code both data and executable form simultaneously. This approach enables rapid iteration on semantics without committing to a custom grammar, while preserving readability and structural clarity. Since YAML already encodes maps, sequences, and scalars, it aligns closely with the runtime model, allowing the interpreter to operate directly on parsed data structures. The combination of a Smalltalk-like message-passing core, C++-level control over memory and performance, and YAML-based syntax yields a compact but expressive experimental platform for declarative and reflective systems programming.
 
 #include <iostream>
-#include <string>
-#include <vector>
 #include <unordered_map>
-#include <functional>
+#include <utility>
+#include <vector>
 
-#include "core.cpp" // NOLINT(bugprone-suspicious-include)
+#include "core.hpp"
+#include "helix.hpp"
+#include "ryml_interface.hpp"
 
 using namespace std;
-
-using MakeErr = function<Ptr(string)>;
-using MakeInt = function<Ptr(int)>;
-using MakeStr = function<Ptr(string)>;
-using MakeVec = function<Ptr(vector<Ptr>)>;
-using MakeMap = function<Ptr(unordered_map<string, Ptr>)>;
-
-Ptr yaml_file_to_cell(
-    const string& filename,
-    const MakeErr& make_err,
-    const MakeInt& make_int,
-    const MakeStr& make_str,
-    const MakeVec& make_vec,
-    const MakeMap& make_map
-);
 
 int main(int argc, char** argv) {
     if (argc > 1) {
