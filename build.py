@@ -11,7 +11,7 @@ COMPILER = "g++"
 CPP_FLAGS = "-g -std=c++20"
 LINKER_FLAGS = "-L ryml/build -lryml"
 EXECUTABLE = "helix"
-SOURCES = "src/helix.cpp" # src/core.cpp src/ryml_interface.cpp src/builtins.cpp"
+SOURCES = "src/helix.cpp src/ryml_interface.cpp" # src/core.cpp src/builtins.cpp"
 OBJECT_DIRECTORY = "build/obj"
 VALGRIND_ARGS = [
     "valgrind",
