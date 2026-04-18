@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "core.hpp"
-#include "core_utils.hpp"
+#include "utils.hpp"
 #include "helix.hpp"
 #include "ryml_interface.hpp"
 
@@ -28,44 +28,44 @@ static Ptr load_root_from_yaml(const string& filename) {
 }
 
 static int run_yaml_file(const string& filename) {
-    auto root = load_root_from_yaml(filename);
-    auto result = root->find(root, "eval")->eval(root);
+    Ptr root = load_root_from_yaml(filename);
+    Ptr result = root->find(root, "eval")->eval(root);
     cout << result->str() << endl;
     return 0;
 }
 
 static int run_demo() {
-    auto add = make_cell(new Fun([](const Ptr& vm) {
-        auto args_cell = current_args(vm);
+    Ptr add = make_cell(new Fun([](const Ptr& vm) {
+        Ptr args_cell = current_args(vm);
         if (dynamic_pointer_cast<Err>(args_cell)) {
             return args_cell;
         }
 
-        auto args = dynamic_pointer_cast<Vec>(args_cell);
+        shared_ptr<Vec> args = dynamic_pointer_cast<Vec>(args_cell);
         if (!args || args->v.size() < 2) {
             return error("add expects two arguments");
         }
 
-        auto x = dynamic_pointer_cast<Int>(args->v[0])->v;
-        auto y = dynamic_pointer_cast<Int>(args->v[1])->v;
+        int x = dynamic_pointer_cast<Int>(args->v[0])->v;
+        int y = dynamic_pointer_cast<Int>(args->v[1])->v;
         return make_cell(new Int(x+y));
     }));
 
-    auto env = make_cell(new Map({
+    Ptr env = make_cell(new Map({
         {"add", add}
     }));
 
-    auto call = make_cell(new Vec({
+    Ptr call = make_cell(new Vec({
         make_cell(new Str("add")),
         make_cell(new Int(2)),
         make_cell(new Int(3))
     }));
 
-    auto result = call->eval(env);
-    auto missing = env->find(env, "missing");
-    auto missing_find = missing->find(env, "still_missing");
-    auto missing_eval = missing->eval(env);
-    auto non_callable = env->eval(env);
+    Ptr result = call->eval(env);
+    Ptr missing = env->find(env, "missing");
+    Ptr missing_find = missing->find(env, "still_missing");
+    Ptr missing_eval = missing->eval(env);
+    Ptr non_callable = env->eval(env);
 
     cout << dynamic_pointer_cast<Int>(result)->v << endl;
     cout << missing->str() << endl;
