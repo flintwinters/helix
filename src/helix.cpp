@@ -35,9 +35,18 @@ static int run_yaml_file(const string& filename) {
 
 static int run_demo() {
     auto add = make_cell(new Fun([](const Ptr& vm) {
-        auto a = current_args(vm);
-        auto x = dynamic_pointer_cast<Int>(a[0])->v;
-        auto y = dynamic_pointer_cast<Int>(a[1])->v;
+        auto args_cell = current_args(vm);
+        if (dynamic_pointer_cast<Err>(args_cell)) {
+            return args_cell;
+        }
+
+        auto args = dynamic_pointer_cast<Vec>(args_cell);
+        if (!args || args->v.size() < 2) {
+            return error("add expects two arguments");
+        }
+
+        auto x = dynamic_pointer_cast<Int>(args->v[0])->v;
+        auto y = dynamic_pointer_cast<Int>(args->v[1])->v;
         return make_cell(new Int(x+y));
     }));
 
