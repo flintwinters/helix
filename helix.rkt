@@ -99,7 +99,7 @@
                    (exit 1))])
   (define program (load-program program-path))
   (define entrypoint
-    (hash-ref program "eval"
+    (hash-ref program "main"
               (lambda ()
-                (error 'helix "program is missing an eval entrypoint"))))
+                (error 'helix "program is missing a main entrypoint"))))
   (render-result (evaluate entrypoint program)))
