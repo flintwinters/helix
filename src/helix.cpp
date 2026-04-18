@@ -19,6 +19,11 @@ using namespace std;
 
 Ptr make_builtin_env();
 
+static void emit_yaml_doc(const Ptr& cell, FILE* out) {
+    ryml::Tree tree = cell_to_ryml_tree(cell);
+    ryml::emit_yaml(tree, out);
+}
+
 static Ptr load_root_from_yaml(const string& filename) {
     Ptr root = yaml_file_to_cell(
         filename,
@@ -38,10 +43,9 @@ static Ptr load_root_from_yaml(const string& filename) {
     return root;
 }
 
-static Ptr run_yaml_file(const string& filename) {
+static Ptr run_yaml_file(const string& filename, Ptr& result_out) {
     Ptr root = load_root_from_yaml(filename);
-    Ptr result = root->find(root, "eval")->eval(root);
-    cout << result->str() << endl;
+    result_out = root->find(root, "eval")->eval(root);
     return root;
 }
 
@@ -71,12 +75,14 @@ static Ptr run_demo() {
 int main(int argc, char** argv) {
     Ptr vm;
     if (argc > 1) {
-        vm = run_yaml_file(argv[1]);
+        Ptr result;
+        vm = run_yaml_file(argv[1], result);
+        cout << result->str() << endl;
+        emit_yaml_doc(vm, stderr);
     } else {
         vm = run_demo();
+        emit_yaml_doc(vm, stderr);
     }
 
-    ryml::Tree vm_tree = cell_to_ryml_tree(vm);
-    ryml::emit_yaml(vm_tree, stdout);
     return 0;
 }
