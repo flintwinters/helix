@@ -12,12 +12,10 @@ demo:
       - eval
       - list
       - show
-expression:
-  - list
-  - [name]
-  - [tagline]
+items:
+  - name
+  - tagline
   - [show, demo]
   - [add, left, right]
-eval:
-  - eval
-  - expression
+expression: [list, items]
+eval: [eval, expression]
