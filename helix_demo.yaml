@@ -14,13 +14,10 @@ demo:
       - show
 expression:
   - list
-  - - name
-  - - tagline
-  - - show
-    - demo
-  - - add
-    - - left
-      - right
+  - [name]
+  - [tagline]
+  - [show, demo]
+  - [add, left, right]
 eval:
   - eval
   - expression
