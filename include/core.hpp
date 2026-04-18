@@ -24,10 +24,11 @@ inline Ptr make_cell(T* p) {
 
 std::string pad(std::size_t depth);
 Ptr error(std::string s);
+std::vector<Ptr> current_args(const Ptr& vm);
 
 struct Cell {
     virtual Ptr find(const Ptr& vm, const std::string& key);
-    virtual Ptr eval(const Ptr& vm, const std::vector<Ptr>& args);
+    virtual Ptr eval(const Ptr& vm);
     virtual std::string str(std::size_t depth = 0) const;
     virtual ~Cell() = default;
 };
@@ -37,7 +38,7 @@ struct Err : Cell {
 
     explicit Err(std::string m);
     Ptr find(const Ptr& vm, const std::string& key) override;
-    Ptr eval(const Ptr& vm, const std::vector<Ptr>& args) override;
+    Ptr eval(const Ptr& vm) override;
     std::string str(std::size_t depth = 0) const override;
 };
 
@@ -52,7 +53,7 @@ struct Str : Cell {
     std::string v;
 
     explicit Str(std::string s);
-    Ptr eval(const Ptr& vm, const std::vector<Ptr>& args) override;
+    Ptr eval(const Ptr& vm) override;
     std::string str(std::size_t depth = 0) const override;
 };
 
@@ -60,15 +61,15 @@ struct Vec : Cell {
     std::vector<Ptr> v;
 
     explicit Vec(std::vector<Ptr> x);
-    Ptr eval(const Ptr& vm, const std::vector<Ptr>& args) override;
+    Ptr eval(const Ptr& vm) override;
     std::string str(std::size_t depth = 0) const override;
 };
 
 struct Fun : Cell {
-    std::function<Ptr(const Ptr&, const std::vector<Ptr>&)> fn;
+    std::function<Ptr(const Ptr&)> fn;
 
-    explicit Fun(std::function<Ptr(const Ptr&, const std::vector<Ptr>&)> f);
-    Ptr eval(const Ptr& vm, const std::vector<Ptr>& args) override;
+    explicit Fun(std::function<Ptr(const Ptr&)> f);
+    Ptr eval(const Ptr& vm) override;
     std::string str(std::size_t depth = 0) const override;
 };
 
@@ -77,6 +78,6 @@ struct Map : Cell {
 
     explicit Map(std::unordered_map<std::string, Ptr> x);
     Ptr find(const Ptr& vm, const std::string& key) override;
-    Ptr eval(const Ptr& vm, const std::vector<Ptr>& args) override;
+    Ptr eval(const Ptr& vm) override;
     std::string str(std::size_t depth = 0) const override;
 };
