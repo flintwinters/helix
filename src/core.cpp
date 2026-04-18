@@ -5,15 +5,77 @@
 
 using namespace std;
 
+static shared_ptr<Map> ensure_state_map(const Ptr& vm) {
+    auto vm_map = dynamic_pointer_cast<Map>(vm);
+    if (!vm_map) {
+        return nullptr;
+    }
+
+    auto existing = vm_map->m.find("state");
+    if (existing != vm_map->m.end()) {
+        auto state = dynamic_pointer_cast<Map>(existing->second);
+        if (state) {
+            return state;
+        }
+    }
+
+    auto state = make_cell(new Map({
+        {"args", make_cell(new Vec({}))}
+    }));
+    vm_map->m["state"] = state;
+    return dynamic_pointer_cast<Map>(state);
+}
+
+static Ptr eval_with_args(const Ptr& vm, const Ptr& actor, vector<Ptr> args) {
+    auto state = ensure_state_map(vm);
+    if (!state) {
+        return error("vm has no mutable state");
+    }
+
+    auto previous = state->m.find("args");
+    const bool had_previous = previous != state->m.end();
+    Ptr previous_args = had_previous ? previous->second : Ptr{};
+
+    state->m["args"] = make_cell(new Vec(move(args)));
+    auto result = actor->eval(vm);
+
+    if (had_previous) {
+        state->m["args"] = previous_args;
+    } else {
+        state->m.erase("args");
+    }
+
+    return result;
+}
+
 string pad(size_t depth) {
     return string(depth * 2, ' ');
+}
+
+vector<Ptr> current_args(const Ptr& vm) {
+    auto state = dynamic_pointer_cast<Map>(vm->find(vm, "state"));
+    if (!state) {
+        return {};
+    }
+
+    auto args = state->m.find("args");
+    if (args == state->m.end()) {
+        return {};
+    }
+
+    auto values = dynamic_pointer_cast<Vec>(args->second);
+    if (!values) {
+        return {};
+    }
+
+    return values->v;
 }
 
 Ptr Cell::find(const Ptr&, const string& key) {
     return error("missing: " + key);
 }
 
-Ptr Cell::eval(const Ptr&, const vector<Ptr>&) {
+Ptr Cell::eval(const Ptr&) {
     return error("not callable");
 }
 
@@ -26,7 +88,7 @@ Err::Err(string m) : msg(move(m)) {}
 Ptr Err::find(const Ptr&, const string&) {
     return error(msg);
 }
-Ptr Err::eval(const Ptr&, const vector<Ptr>&) {
+Ptr Err::eval(const Ptr&) {
     return error(msg);
 }
 string Err::str(size_t depth) const {
@@ -46,7 +108,7 @@ string Int::str(size_t depth) const {
 
 
 Str::Str(string s) : v(move(s)) {}
-Ptr Str::eval(const Ptr& vm, const vector<Ptr>&) {
+Ptr Str::eval(const Ptr& vm) {
     return vm->find(vm, v);
 }
 string Str::str(size_t depth) const {
@@ -55,18 +117,18 @@ string Str::str(size_t depth) const {
 
 
 Vec::Vec(vector<Ptr> x) : v(move(x)) {}
-Ptr Vec::eval(const Ptr& vm, const vector<Ptr>&) {
+Ptr Vec::eval(const Ptr& vm) {
     if (v.empty()) {
         return error("cannot eval empty vector");
     }
 
-    auto actor = v[0]->eval(vm, {});
+    auto actor = v[0]->eval(vm);
     vector<Ptr> args;
     args.reserve(v.size() - 1);
     for (size_t i = 1; i < v.size(); ++i) {
-        args.push_back(v[i]->eval(vm, {}));
+        args.push_back(v[i]->eval(vm));
     }
-    return actor->eval(vm, args);
+    return eval_with_args(vm, actor, move(args));
 }
 string Vec::str(size_t depth) const {
     if (v.empty()) return pad(depth) + "[]";
@@ -82,9 +144,9 @@ string Vec::str(size_t depth) const {
 }
 
 
-Fun::Fun(function<Ptr(const Ptr&, const vector<Ptr>&)> f) : fn(move(f)) {}
-Ptr Fun::eval(const Ptr& vm, const vector<Ptr>& args) {
-    return fn(vm, args);
+Fun::Fun(function<Ptr(const Ptr&)> f) : fn(move(f)) {}
+Ptr Fun::eval(const Ptr& vm) {
+    return fn(vm);
 }
 string Fun::str(size_t depth) const {
     return pad(depth) + "<fun>";
@@ -97,11 +159,11 @@ Ptr Map::find(const Ptr&, const string& key) {
     if (m.count("parent")) return m["parent"]->find(m["parent"], key);
     return error("missing: " + key);
 }
-Ptr Map::eval(const Ptr& vm, const vector<Ptr>& args) {
-    if (m.count("eval")) return m["eval"]->eval(vm, args);
+Ptr Map::eval(const Ptr& vm) {
+    if (m.count("eval")) return m["eval"]->eval(vm);
     if (m.count("parent")) {
         auto actor = m["parent"]->find(m["parent"], "eval");
-        return actor->eval(vm, args);
+        return actor->eval(vm);
     }
     return error("not callable");
 }
