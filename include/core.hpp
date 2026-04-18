@@ -26,8 +26,8 @@ std::string pad(std::size_t depth);
 Ptr error(std::string s);
 
 struct Cell {
-    virtual Ptr find(const std::string& key);
-    virtual Ptr eval(const std::vector<Ptr>& args);
+    virtual Ptr find(const Ptr& vm, const std::string& key);
+    virtual Ptr eval(const Ptr& vm, const std::vector<Ptr>& args);
     virtual std::string str(std::size_t depth = 0) const;
     virtual ~Cell() = default;
 };
@@ -36,8 +36,8 @@ struct Err : Cell {
     std::string msg;
 
     explicit Err(std::string m);
-    Ptr find(const std::string& key) override;
-    Ptr eval(const std::vector<Ptr>& args) override;
+    Ptr find(const Ptr& vm, const std::string& key) override;
+    Ptr eval(const Ptr& vm, const std::vector<Ptr>& args) override;
     std::string str(std::size_t depth = 0) const override;
 };
 
@@ -52,6 +52,7 @@ struct Str : Cell {
     std::string v;
 
     explicit Str(std::string s);
+    Ptr eval(const Ptr& vm, const std::vector<Ptr>& args) override;
     std::string str(std::size_t depth = 0) const override;
 };
 
@@ -59,14 +60,15 @@ struct Vec : Cell {
     std::vector<Ptr> v;
 
     explicit Vec(std::vector<Ptr> x);
+    Ptr eval(const Ptr& vm, const std::vector<Ptr>& args) override;
     std::string str(std::size_t depth = 0) const override;
 };
 
 struct Fun : Cell {
-    std::function<Ptr(const std::vector<Ptr>&)> fn;
+    std::function<Ptr(const Ptr&, const std::vector<Ptr>&)> fn;
 
-    explicit Fun(std::function<Ptr(const std::vector<Ptr>&)> f);
-    Ptr eval(const std::vector<Ptr>& args) override;
+    explicit Fun(std::function<Ptr(const Ptr&, const std::vector<Ptr>&)> f);
+    Ptr eval(const Ptr& vm, const std::vector<Ptr>& args) override;
     std::string str(std::size_t depth = 0) const override;
 };
 
@@ -74,7 +76,7 @@ struct Map : Cell {
     std::unordered_map<std::string, Ptr> m;
 
     explicit Map(std::unordered_map<std::string, Ptr> x);
-    Ptr find(const std::string& key) override;
-    Ptr eval(const std::vector<Ptr>& args) override;
+    Ptr find(const Ptr& vm, const std::string& key) override;
+    Ptr eval(const Ptr& vm, const std::vector<Ptr>& args) override;
     std::string str(std::size_t depth = 0) const override;
 };
