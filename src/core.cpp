@@ -1,5 +1,5 @@
 #include "core.hpp"
-#include "core_utils.hpp"
+#include "utils.hpp"
 
 #include <algorithm>
 
@@ -48,7 +48,7 @@ Ptr Vec::eval(const Ptr& vm) {
         return error("cannot eval empty vector");
     }
 
-    auto actor = v[0]->eval(vm);
+    Ptr actor = v[0]->eval(vm);
     vector<Ptr> args;
     args.reserve(v.size() - 1);
     for (size_t i = 1; i < v.size(); ++i) {
@@ -88,7 +88,7 @@ Ptr Map::find(const Ptr&, const string& key) {
 Ptr Map::eval(const Ptr& vm) {
     if (m.count("eval")) return m["eval"]->eval(vm);
     if (m.count("parent")) {
-        auto actor = m["parent"]->find(m["parent"], "eval");
+        Ptr actor = m["parent"]->find(m["parent"], "eval");
         return actor->eval(vm);
     }
     return error("not callable");
@@ -98,14 +98,14 @@ string Map::str(size_t depth) const {
 
     vector<string> keys;
     keys.reserve(m.size());
-    for (const auto& [key, _] : m) keys.push_back(key);
+    for (const pair<const string, Ptr>& entry : m) keys.push_back(entry.first);
     sort(keys.begin(), keys.end());
 
     string out = pad(depth) + "{\n";
     for (size_t i = 0; i < keys.size(); ++i) {
-        const auto& key = keys[i];
+        const string& key = keys[i];
         out += pad(depth + 1) + key + ": ";
-        auto value = m.at(key)->str(depth + 1);
+        string value = m.at(key)->str(depth + 1);
         out += value.substr(pad(depth + 1).size());
         if (i + 1 != keys.size()) out += " ";
         out += "\n";
