@@ -1,189 +1,80 @@
 #pragma once
 
-#include <iosfwd>
+#include <cstddef>
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-class Cell;
-class StringCell;
-using Func = Cell& (*)(Cell&);
-using namespace std;
+struct Cell;
+struct Err;
+struct Int;
+struct Str;
+struct Vec;
+struct Fun;
+struct Map;
 
-extern Cell& Zygote;
+using Ptr = std::shared_ptr<Cell>;
 
-Cell& Error(const char* s);
-void clear_rooted_errors();
-string load_file(const string& path);
-Cell& run_sequence(Cell& c, size_t start_index = 0);
+template <class T>
+inline Ptr make_cell(T* p) {
+    return Ptr(p);
+}
 
-class Cell {
-public:
-    enum Type {
-        INT, STR, FUN, VEC, MAP, ANY, ERROR
-    };
+std::string pad(std::size_t depth);
+Ptr error(std::string s);
 
-    bool alive = true;
-    vector<Cell*> parents;
-
-    Cell() = default;
-    Cell(const Cell&) = delete;
+struct Cell {
+    virtual Ptr find(const std::string& key);
+    virtual Ptr eval(const std::vector<Ptr>& args);
+    virtual std::string str(std::size_t depth = 0) const;
     virtual ~Cell() = default;
-
-    operator bool() const;
-
-    virtual Type type() const = 0;
-    virtual Cell& call(Cell& c);
-    virtual Cell& index(Cell& c);
-    Cell& index(const StringCell& s_);
-    virtual Cell& index(int i_);
-    virtual Cell& index(const string& s_);
-    virtual int size() const;
-    virtual string to_string() const = 0;
-    virtual bool is_truthy() const = 0;
-    virtual int as_int() const;
-    virtual const string* str_value() const;
-    virtual vector<Cell*>* vec_value();
-    virtual const vector<Cell*>* vec_value() const;
-    virtual unordered_map<string, Cell*>* map_value();
-    virtual const unordered_map<string, Cell*>* map_value() const;
-    virtual Cell& set(Cell* c);
-    virtual void bind(const string& key, Cell* c);
-    virtual void push(Cell* c);
-    virtual void clear();
-    Cell& own_result(Cell* c);
-    operator string();
-
-private:
-    unique_ptr<Cell> result;
 };
 
-class IntCell final : public Cell {
-public:
-    explicit IntCell(int value_);
+struct Err : Cell {
+    std::string msg;
 
-    Type type() const override;
-    Cell& call(Cell& c) override;
-    Cell& index(int i_) override;
-    Cell& index(const string& s_) override;
-    string to_string() const override;
-    bool is_truthy() const override;
-    int as_int() const override;
-    Cell& set(Cell* c) override;
-
-private:
-    int value;
+    explicit Err(std::string m);
+    Ptr find(const std::string& key) override;
+    Ptr eval(const std::vector<Ptr>& args) override;
+    std::string str(std::size_t depth = 0) const override;
 };
 
-class StringCell final : public Cell {
-public:
-    explicit StringCell(const char* value_);
-    explicit StringCell(string value_);
+struct Int : Cell {
+    int v;
 
-    Type type() const override;
-    Cell& call(Cell& c) override;
-    Cell& index(int i_) override;
-    Cell& index(const string& s_) override;
-    string to_string() const override;
-    bool is_truthy() const override;
-    const string* str_value() const override;
-    Cell& set(Cell* c) override;
-
-private:
-    string value;
+    explicit Int(int x);
+    std::string str(std::size_t depth = 0) const override;
 };
 
-class FunCell final : public Cell {
-public:
-    explicit FunCell(Func value_);
+struct Str : Cell {
+    std::string v;
 
-    Type type() const override;
-    Cell& call(Cell& c) override;
-    Cell& index(int i_) override;
-    Cell& index(const string& s_) override;
-    string to_string() const override;
-    bool is_truthy() const override;
-    Cell& set(Cell* c) override;
-
-private:
-    Func value;
+    explicit Str(std::string s);
+    std::string str(std::size_t depth = 0) const override;
 };
 
-class VecCell final : public Cell {
-public:
-    VecCell() = default;
+struct Vec : Cell {
+    std::vector<Ptr> v;
 
-    Type type() const override;
-    Cell& call(Cell& c) override;
-    Cell& index(int i_) override;
-    Cell& index(const string& s_) override;
-    int size() const override;
-    string to_string() const override;
-    bool is_truthy() const override;
-    vector<Cell*>* vec_value() override;
-    const vector<Cell*>* vec_value() const override;
-    void push(Cell* c) override;
-    void clear() override;
-
-private:
-    vector<unique_ptr<Cell>> owned;
-    vector<Cell*> value;
+    explicit Vec(std::vector<Ptr> x);
+    std::string str(std::size_t depth = 0) const override;
 };
 
-class MapCell final : public Cell {
-public:
-    MapCell() = default;
+struct Fun : Cell {
+    std::function<Ptr(const std::vector<Ptr>&)> fn;
 
-    Type type() const override;
-    Cell& call(Cell& c) override;
-    Cell& index(int i_) override;
-    Cell& index(const string& s_) override;
-    int size() const override;
-    string to_string() const override;
-    bool is_truthy() const override;
-    unordered_map<string, Cell*>* map_value() override;
-    const unordered_map<string, Cell*>* map_value() const override;
-    void bind(const string& key, Cell* c) override;
-    void clear() override;
-
-private:
-    unordered_map<string, unique_ptr<Cell>> owned;
-    unordered_map<string, Cell*> value;
+    explicit Fun(std::function<Ptr(const std::vector<Ptr>&)> f);
+    Ptr eval(const std::vector<Ptr>& args) override;
+    std::string str(std::size_t depth = 0) const override;
 };
 
-class AnyCell final : public Cell {
-public:
-    explicit AnyCell(void* value_ = nullptr);
+struct Map : Cell {
+    std::unordered_map<std::string, Ptr> m;
 
-    Type type() const override;
-    Cell& call(Cell& c) override;
-    Cell& index(int i_) override;
-    Cell& index(const string& s_) override;
-    Cell& set(Cell* c) override;
-    string to_string() const override;
-    bool is_truthy() const override;
-
-private:
-    void* value;
+    explicit Map(std::unordered_map<std::string, Ptr> x);
+    Ptr find(const std::string& key) override;
+    Ptr eval(const std::vector<Ptr>& args) override;
+    std::string str(std::size_t depth = 0) const override;
 };
-
-class ErrorCell final : public Cell {
-public:
-    explicit ErrorCell(const char* message_);
-    explicit ErrorCell(string message_);
-
-    Type type() const override;
-    Cell& call(Cell& c) override;
-    Cell& index(int i_) override;
-    Cell& index(const string& s_) override;
-    string to_string() const override;
-    bool is_truthy() const override;
-    const string* str_value() const override;
-    Cell& set(Cell* c) override;
-
-private:
-    string message;
-};
-
-ostream& operator<<(ostream& os, const Cell& c);
