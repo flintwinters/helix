@@ -1,112 +1,57 @@
-#include <builtins.hpp>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
-#include <iostream>
+#include "core.hpp"
+#include "utils.hpp"
 
 using namespace std;
 
-Cell& builtin_arity_error(const char* name) {
-    return Error(name);
+static Ptr parse_binary_int_args(const Ptr& vm, const char* builtin_name, shared_ptr<Int>& left, shared_ptr<Int>& right) {
+    Ptr args_cell = current_args(vm);
+    if (dynamic_pointer_cast<Err>(args_cell)) {
+        return args_cell;
+    }
+
+    shared_ptr<Vec> args = dynamic_pointer_cast<Vec>(args_cell);
+    if (!args || args->v.size() < 2) {
+        return error(string(builtin_name) + " expects two arguments");
+    }
+
+    left = dynamic_pointer_cast<Int>(args->v[0]);
+    right = dynamic_pointer_cast<Int>(args->v[1]);
+    if (!left || !right) {
+        return error(string(builtin_name) + " expects integer arguments");
+    }
+
+    return nullptr;
 }
 
-Cell& add(Cell& c) {
-    vector<Cell*>* values = c.vec_value();
-    int total = 0;
-    for (size_t index = 1; index < values->size(); ++index) {
-        total += values->at(index)->as_int();
+static Ptr add_builtin(const Ptr& vm) {
+    shared_ptr<Int> left;
+    shared_ptr<Int> right;
+    Ptr error_cell = parse_binary_int_args(vm, "add", left, right);
+    if (error_cell) {
+        return error_cell;
     }
-    return c.own_result(new IntCell(total));
+
+    return make_cell(new Int(left->v + right->v));
 }
 
-Cell& subtract(Cell& c) {
-    vector<Cell*>* values = c.vec_value();
-    if (values->size() < 2) {
-        return builtin_arity_error("subtract expects at least one operand");
+static Ptr sub_builtin(const Ptr& vm) {
+    shared_ptr<Int> left;
+    shared_ptr<Int> right;
+    Ptr error_cell = parse_binary_int_args(vm, "sub", left, right);
+    if (error_cell) {
+        return error_cell;
     }
 
-    int total = values->at(1)->as_int();
-    if (values->size() == 2) {
-        return c.own_result(new IntCell(-total));
-    }
-
-    for (size_t index = 2; index < values->size(); ++index) {
-        total -= values->at(index)->as_int();
-    }
-    return c.own_result(new IntCell(total));
+    return make_cell(new Int(left->v - right->v));
 }
 
-Cell& multiply(Cell& c) {
-    vector<Cell*>* values = c.vec_value();
-    int total = 1;
-    for (size_t index = 1; index < values->size(); ++index) {
-        total *= values->at(index)->as_int();
-    }
-    return c.own_result(new IntCell(total));
-}
-
-Cell& divide(Cell& c) {
-    vector<Cell*>* values = c.vec_value();
-    if (values->size() < 3) {
-        return builtin_arity_error("divide expects at least two operands");
-    }
-
-    int total = values->at(1)->as_int();
-    for (size_t index = 2; index < values->size(); ++index) {
-        const int divisor = values->at(index)->as_int();
-        if (divisor == 0) {
-            return Error("divide by zero");
-        }
-        total /= divisor;
-    }
-    return c.own_result(new IntCell(total));
-}
-
-Cell& evaluate_if_expression(Cell& expression) {
-    switch (expression.type()) {
-    case Cell::VEC:
-    case Cell::MAP:
-        return expression.call(expression);
-    case Cell::INT:
-    case Cell::STR:
-    case Cell::FUN:
-    case Cell::ANY:
-    case Cell::ERROR:
-        return expression;
-    }
-    return Error("if couldn't evaluate expression");
-}
-
-Cell& if_builtin(Cell& c) {
-    vector<Cell*>* values = c.vec_value();
-    if (values->size() != 4) {
-        return builtin_arity_error("if expects condition, then branch, else branch");
-    }
-
-    Cell& condition = evaluate_if_expression(*values->at(1));
-    if (!condition.alive) {
-        return condition;
-    }
-
-    if (condition.is_truthy()) {
-        return evaluate_if_expression(*values->at(2));
-    }
-
-    return evaluate_if_expression(*values->at(3));
-}
-
-Cell& printout(Cell& c) {
-    cout << c.to_string() << "\n";
-    return c;
-}
-
-Cell& run_all(Cell& c) {
-    return run_sequence(c, 1);
-}
-
-Cell& assignment(Cell& c) {
-    vector<Cell*>* values = c.vec_value();
-    if (values->size() != 3) {
-        return builtin_arity_error("assignment expects name and value");
-    }
-
-    
+Ptr make_builtin_env() {
+    return make_cell(new Map({
+        {"add", make_cell(new Fun(add_builtin))},
+        {"sub", make_cell(new Fun(sub_builtin))}
+    }));
 }
