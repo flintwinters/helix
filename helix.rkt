@@ -79,6 +79,14 @@
                  (include-key full-path)
                  (load-yaml-file full-path)))))
 
+; Require a value to be a VM-like mapping with a main entrypoint.
+(define (expect-vm who value)
+  (unless (hash? value)
+    (error 'helix "~a expects a VM mapping argument" who))
+  (unless (hash-has-key? value "main")
+    (error 'helix "~a expects a VM with a main entrypoint" who))
+  value)
+
 ; Follow a dot-delimited path through nested VM mappings.
 (define (resolve-path current segments name)
   (cond
@@ -88,17 +96,6 @@
      (resolve-path (hash-ref current (first segments))
                    (rest segments)
                    name)]
-    [else (error 'helix "failed to resolve ~s" name)]))
-
-; Resolve a symbol name to either a builtin procedure or a program value.
-(define (resolve program name)
-  (define builtin
-    (resolve-builtin name resolve evaluate run-vm))
-  (cond
-    [builtin builtin]
-    [(hash-has-key? program name) (hash-ref program name)]
-    [(string-contains? name ".")
-     (resolve-path program (string-split name ".") name)]
     [else (error 'helix "failed to resolve ~s" name)]))
 
 ; Evaluate strings as symbols, lists as calls, and everything else as itself.
@@ -125,6 +122,25 @@
               (lambda ()
                 (error 'helix "program is missing a main entrypoint"))))
   (evaluate entrypoint vm))
+
+; start resolves a named nested VM and runs it through the centralized entrypoint.
+(define (builtin-start arguments program)
+  (unless (= (length arguments) 1)
+    (error 'helix "start expects exactly one argument"))
+  (define vm-name (first arguments))
+  (unless (string? vm-name)
+    (error 'helix "start expects a string argument"))
+  (run-vm (expect-vm "start" (resolve program vm-name))))
+
+; Resolve a symbol name to either a builtin procedure or a program value.
+(define (resolve program name)
+  (cond
+    [(string=? name "start") builtin-start]
+    [(resolve-builtin name resolve evaluate) => values]
+    [(hash-has-key? program name) (hash-ref program name)]
+    [(string-contains? name ".")
+     (resolve-path program (string-split name ".") name)]
+    [else (error 'helix "failed to resolve ~s" name)]))
 
 ; Print the full VM state in a readable format after evaluation completes.
 (define (render-vm-state program)
