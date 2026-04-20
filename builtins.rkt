@@ -32,18 +32,18 @@
   value)
 
 ; add evaluates exactly two arguments and returns their sum.
-(define (builtin-add arguments program resolve evaluate)
+(define (builtin-add arguments program resolve evaluate run-vm)
   (expect-arity "add" arguments 2)
   (+ (expect-number "add" (evaluate (first arguments) program))
      (expect-number "add" (evaluate (second arguments) program))))
 
 ; eval resolves one value and then evaluates the result as code.
-(define (builtin-eval arguments program resolve evaluate)
+(define (builtin-eval arguments program resolve evaluate run-vm)
   (expect-arity "eval" arguments 1)
   (evaluate (evaluate (first arguments) program) program))
 
 ; list resolves one stored sequence and evaluates each form inside it in order.
-(define (builtin-list arguments program resolve evaluate)
+(define (builtin-list arguments program resolve evaluate run-vm)
   (expect-arity "list" arguments 1)
   (define values (evaluate (first arguments) program))
   (unless (list? values)
@@ -51,13 +51,13 @@
   (map (lambda (value) (evaluate value program)) values))
 
 ; show evaluates one argument and returns it unchanged.
-(define (builtin-show arguments program resolve evaluate)
+(define (builtin-show arguments program resolve evaluate run-vm)
   (expect-arity "show" arguments 1)
   (evaluate (first arguments) program))
 
 ; set treats its left operand as a field name, evaluates the right operand,
 ; stores the result in the current program, and returns the stored value.
-(define (builtin-set arguments program resolve evaluate)
+(define (builtin-set arguments program resolve evaluate run-vm)
   (expect-arity "set" arguments 2)
   (define field-name (expect-string "set" (first arguments)))
   (define value (evaluate (second arguments) program))
