@@ -96,10 +96,10 @@
     (error 'helix "vector actor did not resolve to a builtin"))
   (actor (rest items) program))
 
-; Print the final value in a readable format.
-(define (render-result result)
-  (displayln "result:")
-  (pretty-write result))
+; Print the full VM state in a readable format after evaluation completes.
+(define (render-vm-state program)
+  (displayln "vm:")
+  (pretty-write program))
 
 ; Accept an optional path and default to the bundled demo program.
 (define program-path
@@ -118,4 +118,5 @@
     (hash-ref program "main"
               (lambda ()
                 (error 'helix "program is missing a main entrypoint"))))
-  (render-result (evaluate entrypoint program)))
+  (evaluate entrypoint program)
+  (render-vm-state program))
