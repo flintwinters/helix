@@ -1,6 +1,8 @@
 #lang racket
 
 (provide builtin?
+         expect-arity
+         expect-string
          resolve-builtin)
 
 ; Keep builtin arity errors uniform across the evaluator.
