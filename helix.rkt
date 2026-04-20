@@ -2,6 +2,7 @@
 
 ; Import the command-line parser, readable output helpers, and YAML loader.
 (require racket/cmdline
+         racket/string
          "builtins.rkt"
          yaml)
 
@@ -12,6 +13,17 @@
     (error 'helix "top-level YAML document must be a mapping"))
   program)
 
+; Follow a colon-delimited path through nested VM mappings.
+(define (resolve-path current segments name)
+  (cond
+    [(empty? segments) current]
+    [(not (hash? current)) (error 'helix "failed to resolve ~s" name)]
+    [(hash-has-key? current (first segments))
+     (resolve-path (hash-ref current (first segments))
+                   (rest segments)
+                   name)]
+    [else (error 'helix "failed to resolve ~s" name)]))
+
 ; Resolve a symbol name to either a builtin procedure or a program value.
 (define (resolve program name)
   (define builtin
@@ -19,6 +31,8 @@
   (cond
     [builtin builtin]
     [(hash-has-key? program name) (hash-ref program name)]
+    [(string-contains? name ":")
+     (resolve-path program (string-split name ":") name)]
     [else (error 'helix "failed to resolve ~s" name)]))
 
 ; Evaluate strings as symbols, lists as calls, and everything else as itself.
