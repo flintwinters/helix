@@ -6,7 +6,7 @@ import yaml
 from rich import print as rprint
 
 
-BUILTINS = {"find", "eval", "list", "set", "show"}
+BUILTINS = {"add", "find", "eval", "list", "set", "show", "start"}
 
 
 def load_program(path: Path) -> dict[str, Any]:
@@ -39,6 +39,15 @@ def evaluate_vector(items: list[Any], program: dict[str, Any]) -> Any:
     actor = evaluate(items[0], program)
     arguments = items[1:]
 
+    if actor == "add":
+        if len(arguments) != 2:
+            raise ValueError('builtin "add" expects exactly two arguments')
+        left = evaluate(arguments[0], program)
+        right = evaluate(arguments[1], program)
+        if not isinstance(left, (int, float)) or not isinstance(right, (int, float)):
+            raise ValueError('builtin "add" expects numeric arguments')
+        return left + right
+
     if actor == "find":
         if len(arguments) != 1 or not isinstance(arguments[0], str):
             raise ValueError('builtin "find" expects exactly one string argument')
@@ -63,6 +72,16 @@ def evaluate_vector(items: list[Any], program: dict[str, Any]) -> Any:
         value = evaluate(arguments[1], program)
         program[arguments[0]] = value
         return value
+
+    if actor == "start":
+        if len(arguments) != 1 or not isinstance(arguments[0], str):
+            raise ValueError('builtin "start" expects exactly one string argument')
+        vm = resolve(program, arguments[0])
+        if not isinstance(vm, dict):
+            raise ValueError('builtin "start" expects a VM mapping argument')
+        if "main" not in vm:
+            raise ValueError('builtin "start" expects a VM with a main entrypoint')
+        return evaluate(vm["main"], vm)
 
     raise ValueError("vector actor did not resolve to a builtin")
 
