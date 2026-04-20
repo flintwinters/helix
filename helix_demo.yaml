@@ -2,20 +2,12 @@ name: Helix
 tagline: Cells all the way down
 left: 20
 right: 22
-demo:
-  engine: YAML
-  output: rich
-  model:
-    runtime: cell graph
-    operations:
-      - add
-      - eval
-      - list
-      - show
 items:
   - name
   - tagline
-  - [show, demo]
   - [add, left, right]
+  - [set, total, [add, left, right]]
+  - total
+  - [add, right, left]
 expression: [list, items]
 main: [eval, expression]
