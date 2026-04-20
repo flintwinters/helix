@@ -99,7 +99,7 @@
 ; Print the full VM state in a readable format after evaluation completes.
 (define (render-vm-state program)
   (displayln "vm:")
-  (pretty-write program))
+  (write-yaml program))
 
 ; Accept an optional path and default to the bundled demo program.
 (define program-path
