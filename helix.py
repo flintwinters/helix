@@ -69,7 +69,7 @@ def evaluate_vector(items: list[Any], program: dict[str, Any]) -> Any:
 
 def render_vm_state(program: dict[str, Any]) -> None:
     rprint("[bold green]vm:[/bold green]")
-    rprint(program)
+    print(yaml.safe_dump(program, sort_keys=False), end="")
 
 
 def parse_args() -> argparse.Namespace:
