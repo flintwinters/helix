@@ -13,7 +13,7 @@
     (error 'helix "top-level YAML document must be a mapping"))
   program)
 
-; Follow a colon-delimited path through nested VM mappings.
+; Follow a dot-delimited path through nested VM mappings.
 (define (resolve-path current segments name)
   (cond
     [(empty? segments) current]
@@ -31,8 +31,8 @@
   (cond
     [builtin builtin]
     [(hash-has-key? program name) (hash-ref program name)]
-    [(string-contains? name ":")
-     (resolve-path program (string-split name ":") name)]
+    [(string-contains? name ".")
+     (resolve-path program (string-split name ".") name)]
     [else (error 'helix "failed to resolve ~s" name)]))
 
 ; Evaluate strings as symbols, lists as calls, and everything else as itself.
