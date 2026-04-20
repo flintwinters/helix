@@ -32,6 +32,14 @@
     (error 'helix "~a expects a string argument" who))
   value)
 
+; Require a value to be a VM-like mapping with a main entrypoint.
+(define (expect-vm who value)
+  (unless (hash? value)
+    (error 'helix "~a expects a VM mapping argument" who))
+  (unless (hash-has-key? value "main")
+    (error 'helix "~a expects a VM with a main entrypoint" who))
+  value)
+
 ; add evaluates exactly two arguments and returns their sum.
 (define (builtin-add arguments program)
   (expect-arity "add" arguments 2)
@@ -65,12 +73,20 @@
   (hash-set! program field-name value)
   value)
 
+; start resolves a named nested VM and evaluates its main entrypoint in place.
+(define (builtin-start arguments program)
+  (expect-arity "start" arguments 1)
+  (define vm-name (expect-string "start" (first arguments)))
+  (define vm (expect-vm "start" (resolve program vm-name)))
+  (evaluate (hash-ref vm "main") vm))
+
 ; Builtins resolve like any other symbol, so strings never need special handling.
 (define builtins
   (hash "add" builtin-add
         "eval" builtin-eval
         "list" builtin-list
         "set" builtin-set
+        "start" builtin-start
         "show" builtin-show))
 
 ; Resolve a symbol name to either a builtin procedure or a program value.
