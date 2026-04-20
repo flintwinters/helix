@@ -14,7 +14,7 @@ items:
   - [add, left, right]
   - [set, total, [add, left, right]]
   - [set, total, [add, total, [add, total, right]]]
-  - [set, seen, "outer:inner:value"]
+  - [set, seen, outer.inner.value]
   - [start, internal_vm]
   - [add, right, left]
 expression: [list, items]
