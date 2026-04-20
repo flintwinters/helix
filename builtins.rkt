@@ -64,12 +64,14 @@
   (hash-set! program field-name value)
   value)
 
-; start resolves a named nested VM and evaluates its main entrypoint in place.
-(define (builtin-start arguments program resolve evaluate)
+; start resolves a named nested VM and runs it through the VM executor.
+(define (builtin-start arguments program resolve evaluate run-vm)
   (expect-arity "start" arguments 1)
   (define vm-name (expect-string "start" (first arguments)))
   (define vm (expect-vm "start" (resolve program vm-name)))
-  (evaluate (hash-ref vm "main") vm))
+  (if run-vm
+      (run-vm vm)
+      (evaluate (hash-ref vm "main") vm)))
 
 ; Builtins resolve like any other symbol, so strings never need special handling.
 (define builtins
@@ -85,9 +87,9 @@
   (hash-has-key? builtins name))
 
 ; Resolve a builtin name into a procedure bound to the evaluator callbacks.
-(define (resolve-builtin name resolve evaluate)
+(define (resolve-builtin name resolve evaluate [run-vm #f])
   (define builtin
     (hash-ref builtins name #f))
   (and builtin
        (lambda (arguments program)
-         (builtin arguments program resolve evaluate))))
+         (builtin arguments program resolve evaluate run-vm))))
