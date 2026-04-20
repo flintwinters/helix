@@ -4,17 +4,18 @@ left: 20
 right: 22
 outer:
   inner:
-    value: 42
+    value: 43
+include: [helix_demo_include.yaml]
 internal_vm:
   seed: 7
   delta: 8
   main: [set, total, [add, seed, delta]]
 items:
-  - name
   - [add, left, right]
   - [set, total, [add, left, right]]
   - [set, total, [add, total, [add, total, right]]]
   - [set, seen, outer.inner.value]
+  - [set, included_seen, helix_demo_include.inner.value]
   - [start, internal_vm]
   - [add, right, left]
 expression: [list, items]
@@ -29,9 +30,3 @@ main: [eval, expression]
 
 
 
-
-
-
-
-
-# add an optional `include` field to the vm "type" cell.  It should be examined before main, and any
