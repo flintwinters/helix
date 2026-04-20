@@ -2,11 +2,18 @@ name: Helix
 tagline: Cells all the way down
 left: 20
 right: 22
+internal_vm:
+  seed: 7
+  delta: 8
+  main: [set, total, [add, seed, delta]]
 items:
   - name
   - tagline
   - [add, left, right]
   - [set, total, [add, left, right]]
+  - [set, total, [add, total, [add, total, right]]]
+  - [start, internal_vm]
+  - internal_vm
   - total
   - [add, right, left]
 expression: [list, items]
