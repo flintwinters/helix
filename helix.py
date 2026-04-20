@@ -67,9 +67,9 @@ def evaluate_vector(items: list[Any], program: dict[str, Any]) -> Any:
     raise ValueError("vector actor did not resolve to a builtin")
 
 
-def render_result(result: Any) -> None:
-    rprint("[bold green]result:[/bold green]")
-    rprint(result)
+def render_vm_state(program: dict[str, Any]) -> None:
+    rprint("[bold green]vm:[/bold green]")
+    rprint(program)
 
 
 def parse_args() -> argparse.Namespace:
@@ -88,12 +88,12 @@ def main() -> int:
     try:
         program = load_program(Path(args.program))
         entrypoint = program["eval"]
-        result = evaluate(entrypoint, program)
+        evaluate(entrypoint, program)
     except (KeyError, OSError, ValueError) as error:
         rprint(f"[bold red]error:[/bold red] {error}")
         return 1
 
-    render_result(result)
+    render_vm_state(program)
     return 0
 
 
