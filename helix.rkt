@@ -11,17 +11,15 @@
 (define vm-base-directories
   (make-hasheq))
 
-; Record a source directory for every mapping nested inside a loaded YAML value.
-(define (register-vm-source! value base-dir)
-  (cond
-    [(hash? value)
-     (hash-set! vm-base-directories value base-dir)
-     (for ([entry (in-hash-values value)])
-       (register-vm-source! entry base-dir))]
-    [(list? value)
-     (for ([entry value])
-       (register-vm-source! entry base-dir))]
-    [else (void)]))
+; Associate a VM mapping with the directory its YAML file came from.
+(define (remember-vm-source! value base-dir)
+  (when (hash? value)
+    (hash-set! vm-base-directories value base-dir))
+  value)
+
+; Resolve the base directory for a VM, falling back to the current directory.
+(define (vm-base-directory vm)
+  (hash-ref vm-base-directories vm (current-directory)))
 
 ; Read an arbitrary YAML value and associate its nested mappings with its source.
 (define (load-yaml-file path)
@@ -31,8 +29,7 @@
     (call-with-input-file full-path read-yaml))
   (define base-dir
     (or (path-only full-path) (current-directory)))
-  (register-vm-source! value base-dir)
-  value)
+  (remember-vm-source! value base-dir))
 
 ; Read the YAML program and require the root value to be a mapping.
 (define (load-program path)
@@ -41,50 +38,44 @@
     (error 'helix "top-level YAML document must be a mapping"))
   program)
 
-; Normalize the include field into a sequence of file path strings.
-(define (include-paths value)
-  (cond
-    [(string? value) (list value)]
-    [(list? value)
-     (for/list ([entry value])
-       (unless (string? entry)
-         (error 'helix "include expects string file paths"))
-       entry)]
-    [else (error 'helix "include expects a string or sequence of strings")]))
-
-; Derive the inserted key from the included file's basename without extension.
-(define (include-key path)
-  (define raw-name
-    (path->string (file-name-from-path path)))
-  (regexp-replace #rx"\\.[^.]+$" raw-name ""))
-
-; Resolve include paths relative to the VM source directory when needed.
-(define (resolve-include-path base-dir include-path)
+; Resolve an include path, load its YAML value, and derive the inserted key.
+(define (load-include-entry base-dir include-path)
+  (unless (string? include-path)
+    (error 'helix "include expects string file paths"))
   (define candidate
     (string->path include-path))
-  (simplify-path
-   (if (relative-path? candidate)
-       (build-path base-dir candidate)
-       candidate)))
+  (define full-path
+    (simplify-path
+     (if (relative-path? candidate)
+         (build-path base-dir candidate)
+         candidate)))
+  (define key
+    (regexp-replace #rx"\\.[^.]+$"
+                    (path->string (file-name-from-path full-path))
+                    ""))
+  (values key (load-yaml-file full-path)))
 
 ; Load include files into the VM before its main entrypoint runs.
 (define (apply-includes! vm)
   (when (hash-has-key? vm "include")
+    (define include-field
+      (hash-ref vm "include"))
+    (define include-paths
+      (cond
+        [(string? include-field) (list include-field)]
+        [(list? include-field) include-field]
+        [else (error 'helix "include expects a string or sequence of strings")]))
     (define base-dir
-      (hash-ref vm-base-directories vm (current-directory)))
-    (for ([include-path (include-paths (hash-ref vm "include"))])
-      (define full-path
-        (resolve-include-path base-dir include-path))
-      (hash-set! vm
-                 (include-key full-path)
-                 (load-yaml-file full-path)))))
+      (vm-base-directory vm))
+    (for ([include-path include-paths])
+      (define-values (key value)
+        (load-include-entry base-dir include-path))
+      (hash-set! vm key value))))
 
 ; Require a value to be a VM-like mapping with a main entrypoint.
 (define (expect-vm who value)
   (unless (hash? value)
     (error 'helix "~a expects a VM mapping argument" who))
-  (unless (hash-has-key? value "main")
-    (error 'helix "~a expects a VM with a main entrypoint" who))
   value)
 
 ; Follow a dot-delimited path through nested VM mappings.
@@ -116,6 +107,7 @@
 
 ; Prepare a VM and execute its main entrypoint.
 (define (run-vm vm)
+  (expect-vm "run-vm" vm)
   (apply-includes! vm)
   (define entrypoint
     (hash-ref vm "main"
@@ -125,18 +117,25 @@
 
 ; start resolves a named nested VM and runs it through the centralized entrypoint.
 (define (builtin-start arguments program)
-  (unless (= (length arguments) 1)
-    (error 'helix "start expects exactly one argument"))
-  (define vm-name (first arguments))
-  (unless (string? vm-name)
-    (error 'helix "start expects a string argument"))
-  (run-vm (expect-vm "start" (resolve program vm-name))))
+  (expect-arity "start" arguments 1)
+  (define vm-name
+    (expect-string "start" (first arguments)))
+  (define vm
+    (expect-vm "start" (resolve program vm-name)))
+  (remember-vm-source! vm (vm-base-directory program))
+  (run-vm vm))
+
+; Runtime-owned builtins share the same dispatch path as imported builtins.
+(define local-builtins
+  (hash "start" builtin-start))
 
 ; Resolve a symbol name to either a builtin procedure or a program value.
 (define (resolve program name)
+  (define builtin
+    (or (hash-ref local-builtins name #f)
+        (resolve-builtin name resolve evaluate)))
   (cond
-    [(string=? name "start") builtin-start]
-    [(resolve-builtin name resolve evaluate) => values]
+    [builtin builtin]
     [(hash-has-key? program name) (hash-ref program name)]
     [(string-contains? name ".")
      (resolve-path program (string-split name ".") name)]
