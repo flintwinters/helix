@@ -16,11 +16,21 @@ def load_program(path: Path) -> dict[str, Any]:
     return program
 
 
+def resolve_path(current: Any, parts: list[str], name: str) -> Any:
+    for part in parts:
+        if not isinstance(current, dict) or part not in current:
+            raise ValueError(f'failed to resolve "{name}"')
+        current = current[part]
+    return current
+
+
 def resolve(program: dict[str, Any], name: str) -> Any:
     if name in BUILTINS:
         return name
     if name in program:
         return program[name]
+    if ":" in name:
+        return resolve_path(program, name.split(":"), name)
     raise ValueError(f'failed to resolve "{name}"')
 
 
