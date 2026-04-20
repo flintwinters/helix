@@ -2,19 +2,36 @@ name: Helix
 tagline: Cells all the way down
 left: 20
 right: 22
+outer:
+  inner:
+    value: 42
 internal_vm:
   seed: 7
   delta: 8
   main: [set, total, [add, seed, delta]]
 items:
   - name
-  - tagline
   - [add, left, right]
   - [set, total, [add, left, right]]
   - [set, total, [add, total, [add, total, right]]]
+  - [set, seen, "outer:inner:value"]
   - [start, internal_vm]
-  - internal_vm
-  - total
   - [add, right, left]
 expression: [list, items]
 main: [eval, expression]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# add an optional `include` field to the vm "type" cell.  It should be examined before main, and any
