@@ -29,8 +29,8 @@ def resolve(program: dict[str, Any], name: str) -> Any:
         return name
     if name in program:
         return program[name]
-    if ":" in name:
-        return resolve_path(program, name.split(":"), name)
+    if "." in name:
+        return resolve_path(program, name.split("."), name)
     raise ValueError(f'failed to resolve "{name}"')
 
 
