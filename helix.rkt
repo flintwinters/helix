@@ -182,7 +182,13 @@
                 (evaluate (hash-ref vm "main") vm)
                 (let ([frame (first (vm-frames vm))])
                   (set-vm-frames! vm '())
-                  (resume-builtin-frame! frame))))))
+                  (call-with-step-frame
+                   frame
+                   (lambda ()
+                     (evaluate
+                      (cons (hash-ref frame "name")
+                            (hash-ref frame "arguments"))
+                      vm))))))))
        (if (empty? (vm-frames vm))
            (begin
              (hash-set! state "status" "finished")
