@@ -66,16 +66,19 @@
                    [rest-values (rest remaining)])
               (if (empty? rest-values)
                   (reverse next-results)
-                  (begin
-                    (call-with-current-continuation
-                     (lambda (resume-k)
-                       ((hash-ref runtime 'yield!)
-                        (make-hash
-                         (list (cons "name" "list")
-                               (cons "resume"
-                                     (lambda ()
-                                       (resume-k #t))))))))
-                    (loop rest-values next-results))))))))
+                  (let ([resumed?
+                         (call-with-current-continuation
+                          (lambda (resume-k)
+                            ((hash-ref runtime 'yield!)
+                             (make-hash
+                              (list (cons "name" "list")
+                                    (cons "resume"
+                                          (lambda ()
+                                            (resume-k #t))))))
+                            #f))])
+                    (if resumed?
+                        (loop rest-values next-results)
+                        (void)))))))))
 
 ; show evaluates one argument and returns it unchanged.
 (define (builtin-show arguments program resolve evaluate)
