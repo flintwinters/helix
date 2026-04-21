@@ -89,33 +89,123 @@
                    name)]
     [else (error 'helix "failed to resolve ~s" name)]))
 
-; Evaluate strings as symbols, lists as calls, and everything else as itself.
+; Ensure every runnable VM has a mutable state mapping.
+(define (ensure-vm-state! vm)
+  (define existing
+    (hash-ref vm "state" #f))
+  (define state
+    (if (hash? existing)
+        existing
+        (let ([fresh (make-hash)])
+          (hash-set! vm "state" fresh)
+          fresh)))
+  (unless (hash-has-key? state "status")
+    (hash-set! state "status" "ready"))
+  (unless (hash-has-key? state "frames")
+    (hash-set! state "frames" '()))
+  state)
+
+; Remove stale transient fields before a VM starts or restarts execution.
+(define (reset-vm-state! state)
+  (hash-set! state "frames" '())
+  (when (hash-has-key? state "result")
+    (hash-remove! state "result"))
+  (when (hash-has-key? state "error")
+    (hash-remove! state "error")))
+
+; Prepare a fresh or resumed VM for execution.
+(define (initialize-vm! vm)
+  (define state
+    (ensure-vm-state! vm))
+  (when (equal? (hash-ref state "status") "ready")
+    (apply-includes! vm)
+    (reset-vm-state! state)
+    (hash-ref vm "main"
+              (lambda ()
+                (error 'helix "program is missing a main entrypoint")))
+    (hash-set! state "status" "running"))
+  state)
+
+; Report execution failures through VM state before surfacing them normally.
+(define (mark-vm-error! vm message)
+  (define state
+    (ensure-vm-state! vm))
+  (hash-set! state "status" "error")
+  (hash-set! state "error" message))
+
+; Access and update the VM frame stack through one set of helpers.
+(define (vm-frames vm)
+  (hash-ref (ensure-vm-state! vm) "frames"))
+
+(define (set-vm-frames! vm frames)
+  (hash-set! (ensure-vm-state! vm) "frames" frames))
+
+; Preserve direct recursive evaluation for resolved builtin procedures used as values.
 (define (evaluate node program)
   (cond
     [(string? node) (resolve program node)]
     [(list? node) (evaluate-list node program)]
     [else node]))
 
-; Evaluate only the actor position; builtins are responsible for their quoted arguments.
 (define (evaluate-list items program)
   (when (empty? items)
     (error 'helix "cannot evaluate an empty vector"))
-  (define actor (evaluate (first items) program))
+  (define actor
+    (evaluate (first items) program))
   (unless (procedure? actor)
     (error 'helix "vector actor did not resolve to a builtin"))
   (actor (rest items) program))
 
-; Prepare a VM and execute its main entrypoint.
+; Run or resume a VM until it yields once or reaches a terminal state.
+(define (advance-vm! vm)
+  (expect-vm "advance-vm!" vm)
+  (with-handlers ([exn:fail?
+                   (lambda (exn)
+                     (mark-vm-error! vm (exn-message exn))
+                     (raise exn))])
+    (define state
+      (initialize-vm! vm))
+    (cond
+      [(equal? (hash-ref state "status") "finished")
+       (hash-ref state "result")]
+      [(equal? (hash-ref state "status") "error")
+       (error 'helix "~a" (hash-ref state "error"))]
+      [else
+       (let/ec return
+         (define runtime
+           (hasheq 'yield! (lambda (frame)
+                             (set-vm-frames! vm (list frame))
+                             (return vm))))
+         (define result
+           (call-with-step-runtime
+            runtime
+            (lambda ()
+              (if (empty? (vm-frames vm))
+                  (evaluate (hash-ref vm "main") vm)
+                  (let ([frame (first (vm-frames vm))])
+                    (set-vm-frames! vm '())
+                    (resume-builtin-frame! frame))))))
+         (set-vm-frames! vm '())
+         (hash-set! state "status" "finished")
+         (hash-set! state "result" result)
+         result)])))
+
+; Keep running shared steps until the target VM reaches a terminal state.
 (define (run-vm vm)
   (expect-vm "run-vm" vm)
-  (apply-includes! vm)
-  (define entrypoint
-    (hash-ref vm "main"
-              (lambda ()
-                (error 'helix "program is missing a main entrypoint"))))
-  (evaluate entrypoint vm))
+  (let loop ()
+    (define state
+      (ensure-vm-state! vm))
+    (cond
+      [(equal? (hash-ref state "status") "finished")
+       (hash-ref state "result")]
+      [(equal? (hash-ref state "status") "error")
+       (error 'helix "~a" (hash-ref state "error"))]
+      [else
+       (advance-vm! vm)
+       (loop)])))
 
-; start resolves a named nested VM and runs it through the centralized entrypoint.
+; start resolves a named nested VM and runs it through the shared scheduler.
 (define (builtin-start arguments program)
   (expect-arity "start" arguments 1)
   (define vm-name
@@ -125,9 +215,21 @@
   (remember-vm-source! vm (vm-base-directory program))
   (run-vm vm))
 
+; step resolves a named nested VM and advances it once through the same scheduler.
+(define (builtin-step arguments program)
+  (expect-arity "step" arguments 1)
+  (define vm-name
+    (expect-string "step" (first arguments)))
+  (define vm
+    (expect-vm "step" (resolve program vm-name)))
+  (remember-vm-source! vm (vm-base-directory program))
+  (advance-vm! vm)
+  vm)
+
 ; Runtime-owned builtins share the same dispatch path as imported builtins.
 (define local-builtins
-  (hash "start" builtin-start))
+  (hash "start" builtin-start
+        "step" builtin-step))
 
 ; Resolve a symbol name to either a builtin procedure or a program value.
 (define (resolve program name)
@@ -141,10 +243,21 @@
      (resolve-path program (string-split name ".") name)]
     [else (error 'helix "failed to resolve ~s" name)]))
 
+; Render runtime continuations in a readable way without exposing procedures to YAML.
+(define (displayable-value value)
+  (cond
+    [(procedure? value) "<procedure>"]
+    [(hash? value)
+     (for/hash ([(key entry) (in-hash value)])
+       (values key (displayable-value entry)))]
+    [(list? value)
+     (map displayable-value value)]
+    [else value]))
+
 ; Print the full VM state in a readable format after evaluation completes.
 (define (render-vm-state program)
   (displayln "vm:")
-  (write-yaml program))
+  (write-yaml (displayable-value program)))
 
 ; Accept an optional path and default to the bundled demo program.
 (define program-path
