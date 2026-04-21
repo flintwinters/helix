@@ -1,12 +1,11 @@
 #lang racket
 
 (provide builtin?
+         call-with-step-frame
          call-with-step-runtime
          expect-arity
          expect-string
-         resume-builtin-frame!
-         resolve-builtin
-         )
+         resolve-builtin)
 
 ; Keep builtin arity errors uniform across the evaluator.
 (define (expect-arity who arguments count)
@@ -32,8 +31,15 @@
 (define current-step-runtime
   (make-parameter #f))
 
+(define current-step-frame
+  (make-parameter #f))
+
 (define (call-with-step-runtime runtime thunk)
   (parameterize ([current-step-runtime runtime])
+    (thunk)))
+
+(define (call-with-step-frame frame thunk)
+  (parameterize ([current-step-frame frame])
     (thunk)))
 
 ; add evaluates exactly two arguments and returns their sum.
@@ -50,35 +56,50 @@
 ; list resolves one stored sequence and evaluates each form inside it in order.
 (define (builtin-list arguments program resolve evaluate)
   (expect-arity "list" arguments 1)
-  (define values (evaluate (first arguments) program))
-  (unless (list? values)
-    (error 'helix "list expects a sequence argument"))
   (define runtime
     (current-step-runtime))
+  (define frame
+    (current-step-frame))
+  (define list-frame
+    (and runtime
+         (hash? frame)
+         (equal? (hash-ref frame "name" #f) "list")
+         frame))
+  (define values
+    (if list-frame
+        (hash-ref list-frame "values")
+        (let ([resolved-values (evaluate (first arguments) program)])
+          (unless (list? resolved-values)
+            (error 'helix "list expects a sequence argument"))
+          resolved-values)))
+  (define (step-loop index results)
+    (let loop ([index index]
+               [results results])
+      (if (= index (length values))
+          (reverse results)
+          (let* ([value (evaluate (list-ref values index) program)]
+                 [next-results (cons value results)]
+                 [next-index (add1 index)])
+            (if (= next-index (length values))
+                (reverse next-results)
+                (begin
+                  ((hash-ref runtime 'yield!)
+                   (make-hash
+                    (list (cons "name" "list")
+                          (cons "arguments" arguments)
+                          (cons "values" values)
+                          (cons "index" next-index)
+                          (cons "results" next-results))))
+                  (void)))))))
   (if (not runtime)
       (map (lambda (value) (evaluate value program)) values)
-      (let loop ([remaining values]
-                 [results '()])
-        (if (empty? remaining)
-            (reverse results)
-            (let* ([value (evaluate (first remaining) program)]
-                   [next-results (cons value results)]
-                   [rest-values (rest remaining)])
-              (if (empty? rest-values)
-                  (reverse next-results)
-                  (let ([resumed?
-                         (call-with-current-continuation
-                          (lambda (resume-k)
-                            ((hash-ref runtime 'yield!)
-                             (make-hash
-                              (list (cons "name" "list")
-                                    (cons "resume"
-                                          (lambda ()
-                                            (resume-k #t))))))
-                            #f))])
-                    (if resumed?
-                        (loop rest-values next-results)
-                        (void)))))))))
+      (step-loop
+       (if list-frame
+           (hash-ref list-frame "index")
+           0)
+       (if list-frame
+           (hash-ref list-frame "results")
+           '()))))
 
 ; show evaluates one argument and returns it unchanged.
 (define (builtin-show arguments program resolve evaluate)
@@ -113,11 +134,3 @@
   (and builtin
        (lambda (arguments program)
          (builtin arguments program resolve evaluate))))
-
-; Resume whatever continuation frame a builtin stored on the VM.
-(define (resume-builtin-frame! frame)
-  (define resume
-    (hash-ref frame "resume" #f))
-  (unless (procedure? resume)
-    (error 'helix "builtin frame is missing a resume continuation"))
-  (resume))
