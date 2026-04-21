@@ -171,24 +171,24 @@
       [(equal? (hash-ref state "status") "error")
        (error 'helix "~a" (hash-ref state "error"))]
       [else
-       (let/ec return
-         (define runtime
-           (hasheq 'yield! (lambda (frame)
-                             (set-vm-frames! vm (list frame))
-                             (return vm))))
-         (define result
-           (call-with-step-runtime
-            runtime
-            (lambda ()
-              (if (empty? (vm-frames vm))
-                  (evaluate (hash-ref vm "main") vm)
-                  (let ([frame (first (vm-frames vm))])
-                    (set-vm-frames! vm '())
-                    (resume-builtin-frame! frame))))))
-         (set-vm-frames! vm '())
-         (hash-set! state "status" "finished")
-         (hash-set! state "result" result)
-         result)])))
+       (define runtime
+         (hasheq 'yield! (lambda (frame)
+                           (set-vm-frames! vm (list frame)))))
+       (define result
+         (call-with-step-runtime
+          runtime
+          (lambda ()
+            (if (empty? (vm-frames vm))
+                (evaluate (hash-ref vm "main") vm)
+                (let ([frame (first (vm-frames vm))])
+                  (set-vm-frames! vm '())
+                  (resume-builtin-frame! frame))))))
+       (if (empty? (vm-frames vm))
+           (begin
+             (hash-set! state "status" "finished")
+             (hash-set! state "result" result)
+             result)
+           vm)])))
 
 ; Keep running shared steps until the target VM reaches a terminal state.
 (define (run-vm vm)
