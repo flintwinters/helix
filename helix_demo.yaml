@@ -20,6 +20,9 @@ step_vm:
 items:
   - [step, step_vm]
   - [show, step_vm.state.status]
+  - [step, step_vm]
+  - [show, step_vm.state.status]
+  - [show, step_vm.second]
   - [add, left, right]
   - [set, total, [add, left, right]]
   - [set, total, [add, total, [add, total, right]]]
@@ -29,7 +32,6 @@ items:
   - [add, right, left]
 expression: [list, items]
 main: [eval, expression]
-
 
 
 
