@@ -140,6 +140,21 @@
 (define (set-vm-frames! vm frames)
   (hash-set! (ensure-vm-state! vm) "frames" frames))
 
+(define (vm-status-result state)
+  (case (string->symbol (hash-ref state "status"))
+    [(finished) (hash-ref state "result")]
+    [(error) (error 'helix "~a" (hash-ref state "error"))]
+    [else #f]))
+
+(define (resolve-child-vm who arguments program)
+  (expect-arity who arguments 1)
+  (define vm
+    (expect-vm who
+               (resolve program
+                        (expect-string who (first arguments)))))
+  (remember-vm-source! vm (vm-base-directory program))
+  vm)
+
 ; Preserve direct recursive evaluation for resolved builtin procedures used as values.
 (define (evaluate node program)
   (cond
@@ -165,36 +180,30 @@
                      (raise exn))])
     (define state
       (initialize-vm! vm))
-    (cond
-      [(equal? (hash-ref state "status") "finished")
-       (hash-ref state "result")]
-      [(equal? (hash-ref state "status") "error")
-       (error 'helix "~a" (hash-ref state "error"))]
-      [else
-       (define runtime
-         (hasheq 'yield! (lambda (frame)
-                           (set-vm-frames! vm (list frame)))))
-       (define result
-         (call-with-step-runtime
-          runtime
-          (lambda ()
-            (if (empty? (vm-frames vm))
-                (evaluate (hash-ref vm "main") vm)
-                (let ([frame (first (vm-frames vm))])
-                  (set-vm-frames! vm '())
-                  (call-with-step-frame
-                   frame
-                   (lambda ()
-                     (evaluate
-                      (cons (hash-ref frame "name")
-                            (hash-ref frame "arguments"))
-                      vm))))))))
-       (if (empty? (vm-frames vm))
-           (begin
-             (hash-set! state "status" "finished")
-             (hash-set! state "result" result)
-             result)
-           vm)])))
+    (or (vm-status-result state)
+        (let* ([runtime (hasheq 'yield! (lambda (frame)
+                                          (set-vm-frames! vm (list frame))))]
+               [result
+                (call-with-step-runtime
+                 runtime
+                 (lambda ()
+                   (if (empty? (vm-frames vm))
+                       (evaluate (hash-ref vm "main") vm)
+                       (let ([frame (first (vm-frames vm))])
+                         (set-vm-frames! vm '())
+                         (call-with-step-frame
+                          frame
+                          (lambda ()
+                            (evaluate
+                             (cons (hash-ref frame "name")
+                                   (hash-ref frame "arguments"))
+                             vm)))))))])
+          (if (empty? (vm-frames vm))
+              (begin
+                (hash-set! state "status" "finished")
+                (hash-set! state "result" result)
+                result)
+              vm)))))
 
 ; Keep running shared steps until the target VM reaches a terminal state.
 (define (run-vm vm)
@@ -202,33 +211,19 @@
   (let loop ()
     (define state
       (ensure-vm-state! vm))
-    (cond
-      [(equal? (hash-ref state "status") "finished")
-       (hash-ref state "result")]
-      [(equal? (hash-ref state "status") "error")
-       (error 'helix "~a" (hash-ref state "error"))]
-      [else
-       (advance-vm! vm)
-       (loop)])))
+    (or (vm-status-result state)
+        (begin
+          (advance-vm! vm)
+          (loop)))))
 
 ; start resolves a named nested VM and runs it through the shared scheduler.
 (define (builtin-start arguments program)
-  (expect-arity "start" arguments 1)
-  (define vm-name
-    (expect-string "start" (first arguments)))
-  (define vm
-    (expect-vm "start" (resolve program vm-name)))
-  (remember-vm-source! vm (vm-base-directory program))
-  (run-vm vm))
+  (run-vm (resolve-child-vm "start" arguments program)))
 
 ; step resolves a named nested VM and advances it once through the same scheduler.
 (define (builtin-step arguments program)
-  (expect-arity "step" arguments 1)
-  (define vm-name
-    (expect-string "step" (first arguments)))
   (define vm
-    (expect-vm "step" (resolve program vm-name)))
-  (remember-vm-source! vm (vm-base-directory program))
+    (resolve-child-vm "step" arguments program))
   (advance-vm! vm)
   vm)
 
