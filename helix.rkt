@@ -102,7 +102,9 @@
   (unless (hash-has-key? state "status")
     (hash-set! state "status" "ready"))
   (unless (hash-has-key? state "frames")
-    (hash-set! state "frames" '()))
+    (hash-set! state "frames" (box '())))
+  (unless (box? (hash-ref state "frames"))
+    (hash-set! state "frames" (box (hash-ref state "frames"))))
   state)
 
 ; Remove stale transient fields before a VM starts or restarts execution.
@@ -135,10 +137,10 @@
 
 ; Access and update the VM frame stack through one set of helpers.
 (define (vm-frames vm)
-  (hash-ref (ensure-vm-state! vm) "frames"))
+  (unbox (hash-ref (ensure-vm-state! vm) "frames")))
 
 (define (set-vm-frames! vm frames)
-  (hash-set! (ensure-vm-state! vm) "frames" frames))
+  (set-box! (hash-ref (ensure-vm-state! vm) "frames") frames))
 
 (define (vm-status-result state)
   (case (string->symbol (hash-ref state "status"))
@@ -251,14 +253,16 @@
 (define (displayable-value value)
   (define frame-paths
     (make-hasheq))
-  (define empty-frames-placeholder
-    "__helix_empty_frames__")
-  (define (shareable-frames? entry)
-    (and (list? entry)
-         (not (empty? entry))))
-  (define (empty-frames? entry)
-    (and (list? entry)
-         (empty? entry)))
+  (define empty-frame-placeholders
+    (make-hasheq))
+  (define next-empty-frame-id
+    0)
+  (define (empty-frame-placeholder entry)
+    (hash-ref! empty-frame-placeholders
+               entry
+               (lambda ()
+                 (set! next-empty-frame-id (add1 next-empty-frame-id))
+                 (format "__helix_empty_frames_~a__" next-empty-frame-id))))
   (define (path->reference path)
     (string-join path "."))
   (define (render value path)
@@ -274,20 +278,23 @@
          (define rendered-entry
            (cond
              [(and (string=? key "frames")
-                   (empty-frames? entry))
-              empty-frames-placeholder]
-             [(and (string=? key "frames")
-                   (shareable-frames? entry)
+                   (box? entry)
                    (hash-has-key? frame-paths entry))
               (path->reference (hash-ref frame-paths entry))]
              [else
               (begin
                 (when (and (string=? key "frames")
-                           (shareable-frames? entry))
+                           (box? entry))
                   (hash-set! frame-paths entry next-path))
-                (render entry next-path))]))
+                (if (and (string=? key "frames")
+                         (box? entry)
+                         (empty? (unbox entry)))
+                    (empty-frame-placeholder entry)
+                    (render entry next-path)))]))
          (hash-set! rendered key rendered-entry)
          rendered)]
+      [(box? value)
+       (render (unbox value) path)]
       [(list? value)
        (for/list ([entry value]
                   [index (in-naturals)])
@@ -303,7 +310,7 @@
       (lambda ()
         (write-yaml (displayable-value program)))))
   (display
-   (regexp-replace* #rx"__helix_empty_frames__"
+   (regexp-replace* #rx"__helix_empty_frames_[0-9]+__"
                     output
                     "[]")))
 
