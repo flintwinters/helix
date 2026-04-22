@@ -10,7 +10,16 @@ internal_vm:
   seed: 7
   delta: 8
   main: [set, total, [add, seed, delta]]
+step_vm:
+  seed: 3
+  delta: 4
+  steps:
+    - [set, first, [add, seed, delta]]
+    - [set, second, [add, first, delta]]
+  main: [list, steps]
 items:
+  - [step, step_vm]
+  - [show, step_vm.state.status]
   - [add, left, right]
   - [set, total, [add, left, right]]
   - [set, total, [add, total, [add, total, right]]]
@@ -20,9 +29,6 @@ items:
   - [add, right, left]
 expression: [list, items]
 main: [eval, expression]
-
-
-
 
 
 
