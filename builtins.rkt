@@ -28,11 +28,9 @@
   value)
 
 ; The evaluator installs stepping callbacks only while a VM is being advanced.
-(define current-step-runtime
-  (make-parameter #f))
+(define current-step-runtime (make-parameter #f))
 
-(define current-step-frame
-  (make-parameter #f))
+(define current-step-frame (make-parameter #f))
 
 (define (call-with-step-runtime runtime thunk)
   (parameterize ([current-step-runtime runtime])
@@ -61,15 +59,17 @@
 ; list resolves one stored sequence and evaluates each form inside it in order.
 (define (builtin-list arguments program resolve evaluate)
   (expect-arity "list" arguments 1)
-  (define runtime
-    (current-step-runtime))
-  (define frame
-    (current-step-frame))
+  (define runtime (current-step-runtime))
+  (define frame (current-step-frame))
   (define list-frame
     (and runtime
          (hash? frame)
          (equal? (hash-ref frame "name" #f) "list")
          frame))
+  ; A resumed frame is only for this builtin invocation. Nested evaluation must
+  ; not inherit it and accidentally treat it as its own resume state.
+  (when list-frame
+    (current-step-frame #f))
   (define values
     (frame-ref
      list-frame
@@ -126,8 +126,7 @@
         "show" builtin-show))
 
 ; Builtin names can be recognized without coupling the evaluator to their bodies.
-(define (builtin? name)
-  (hash-has-key? builtins name))
+(define (builtin? name) (hash-has-key? builtins name))
 
 ; Resolve a builtin name into a procedure bound to the evaluator callbacks.
 (define (resolve-builtin name resolve evaluate)
