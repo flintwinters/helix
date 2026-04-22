@@ -188,7 +188,10 @@
                  runtime
                  (lambda ()
                    (if (empty? (vm-frames vm))
-                       (evaluate (hash-ref vm "main") vm)
+                       (call-with-step-frame
+                        #f
+                        (lambda ()
+                          (evaluate (hash-ref vm "main") vm)))
                        (let ([frame (first (vm-frames vm))])
                          (set-vm-frames! vm '())
                          (call-with-step-frame
