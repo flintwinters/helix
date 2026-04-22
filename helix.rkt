@@ -251,6 +251,14 @@
 (define (displayable-value value)
   (define frame-paths
     (make-hasheq))
+  (define empty-frames-placeholder
+    "__helix_empty_frames__")
+  (define (shareable-frames? entry)
+    (and (list? entry)
+         (not (empty? entry))))
+  (define (empty-frames? entry)
+    (and (list? entry)
+         (empty? entry)))
   (define (path->reference path)
     (string-join path "."))
   (define (render value path)
@@ -264,13 +272,20 @@
          (define entry
            (hash-ref value key))
          (define rendered-entry
-           (if (and (string=? key "frames")
-                    (hash-has-key? frame-paths entry))
-               (path->reference (hash-ref frame-paths entry))
-               (begin
-                 (when (string=? key "frames")
-                   (hash-set! frame-paths entry next-path))
-                 (render entry next-path))))
+           (cond
+             [(and (string=? key "frames")
+                   (empty-frames? entry))
+              empty-frames-placeholder]
+             [(and (string=? key "frames")
+                   (shareable-frames? entry)
+                   (hash-has-key? frame-paths entry))
+              (path->reference (hash-ref frame-paths entry))]
+             [else
+              (begin
+                (when (and (string=? key "frames")
+                           (shareable-frames? entry))
+                  (hash-set! frame-paths entry next-path))
+                (render entry next-path))]))
          (hash-set! rendered key rendered-entry)
          rendered)]
       [(list? value)
@@ -283,7 +298,14 @@
 ; Print the full VM state in a readable format after evaluation completes.
 (define (render-vm-state program)
   (displayln "vm:")
-  (write-yaml (displayable-value program)))
+  (define output
+    (with-output-to-string
+      (lambda ()
+        (write-yaml (displayable-value program)))))
+  (display
+   (regexp-replace* #rx"__helix_empty_frames__"
+                    output
+                    "[]")))
 
 ; Accept an optional path and default to the bundled demo program.
 (define program-path
