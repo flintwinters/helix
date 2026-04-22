@@ -244,16 +244,38 @@
      (resolve-path program (string-split name ".") name)]
     [else (error 'helix "failed to resolve ~s" name)]))
 
-; Render runtime continuations in a readable way without exposing procedures to YAML.
+; Render runtime state without leaking host-language object identity.
 (define (displayable-value value)
-  (cond
-    [(procedure? value) "<procedure>"]
-    [(hash? value)
-     (for/hash ([(key entry) (in-hash value)])
-       (values key (displayable-value entry)))]
-    [(list? value)
-     (map displayable-value value)]
-    [else value]))
+  (define frame-paths
+    (make-hasheq))
+  (define (path->reference path)
+    (string-join path "."))
+  (define (render value path)
+    (cond
+      [(procedure? value) "<procedure>"]
+      [(hash? value)
+       (for/fold ([rendered (make-hash)])
+                 ([key (sort (hash-keys value) string<?)])
+         (define next-path
+           (append path (list key)))
+         (define entry
+           (hash-ref value key))
+         (define rendered-entry
+           (if (and (string=? key "frames")
+                    (hash-has-key? frame-paths entry))
+               (path->reference (hash-ref frame-paths entry))
+               (begin
+                 (when (string=? key "frames")
+                   (hash-set! frame-paths entry next-path))
+                 (render entry next-path))))
+         (hash-set! rendered key rendered-entry)
+         rendered)]
+      [(list? value)
+       (for/list ([entry value]
+                  [index (in-naturals)])
+         (render entry (append path (list (number->string index)))))]
+      [else value]))
+  (render value '()))
 
 ; Print the full VM state in a readable format after evaluation completes.
 (define (render-vm-state program)
