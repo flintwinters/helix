@@ -42,6 +42,11 @@
   (parameterize ([current-step-frame frame])
     (thunk)))
 
+(define (frame-ref frame key default)
+  (if frame
+      (hash-ref frame key)
+      default))
+
 ; add evaluates exactly two arguments and returns their sum.
 (define (builtin-add arguments program resolve evaluate)
   (expect-arity "add" arguments 2)
@@ -66,12 +71,13 @@
          (equal? (hash-ref frame "name" #f) "list")
          frame))
   (define values
-    (if list-frame
-        (hash-ref list-frame "values")
-        (let ([resolved-values (evaluate (first arguments) program)])
-          (unless (list? resolved-values)
-            (error 'helix "list expects a sequence argument"))
-          resolved-values)))
+    (frame-ref
+     list-frame
+     "values"
+     (let ([resolved-values (evaluate (first arguments) program)])
+       (unless (list? resolved-values)
+         (error 'helix "list expects a sequence argument"))
+       resolved-values)))
   (define (step-loop index results)
     (let loop ([index index]
                [results results])
@@ -94,12 +100,8 @@
   (if (not runtime)
       (map (lambda (value) (evaluate value program)) values)
       (step-loop
-       (if list-frame
-           (hash-ref list-frame "index")
-           0)
-       (if list-frame
-           (hash-ref list-frame "results")
-           '()))))
+       (frame-ref list-frame "index" 0)
+       (frame-ref list-frame "results" '()))))
 
 ; show evaluates one argument and returns it unchanged.
 (define (builtin-show arguments program resolve evaluate)
