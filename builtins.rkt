@@ -7,6 +7,7 @@
          call-with-step-frame
          call-with-step-runtime
          cells->yaml-string
+         display-cells
          expect-arity
          expect-string
          resolve-builtin)
@@ -107,6 +108,11 @@
   (regexp-replace* #rx"__helix_empty_frames_[0-9]+__"
                    output
                    "[]"))
+
+; Display cells in the standard VM-oriented YAML format.
+(define (display-cells value)
+  (displayln "\n---\nvm:")
+  (display (cells->yaml-string value)))
 
 ; Append one printed line to stdout only when the VM already owns that field.
 (define (append-stdout! who program rendered-value)
