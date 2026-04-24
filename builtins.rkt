@@ -1,5 +1,7 @@
 #lang racket
 
+(require racket/pretty)
+
 (provide builtin?
          call-with-step-frame
          call-with-step-runtime
@@ -46,7 +48,7 @@
       default))
 
 ; Append one printed line to stdout only when the VM already owns that field.
-(define (append-stdout! who program value)
+(define (append-stdout! who program rendered-value)
   (when (hash-has-key? program "stdout")
     (define current-stdout
       (hash-ref program "stdout"))
@@ -54,7 +56,7 @@
       (error 'helix "~a expects stdout to be a string when present" who))
     (hash-set! program
                "stdout"
-               (string-append current-stdout (format "~a\n" value)))))
+               (string-append current-stdout rendered-value "\n"))))
 
 ; add evaluates exactly two arguments and returns their sum.
 (define (builtin-add arguments program resolve evaluate)
@@ -116,8 +118,10 @@
   (expect-arity "show" arguments 1)
   (define value
     (evaluate (first arguments) program))
-  (displayln value)
-  (append-stdout! "show" program value)
+  (define rendered-value
+    (pretty-format value))
+  (displayln rendered-value)
+  (append-stdout! "show" program rendered-value)
   value)
 
 ; set treats its left operand as a field name, evaluates the right operand,
