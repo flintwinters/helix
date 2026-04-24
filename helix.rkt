@@ -249,70 +249,10 @@
      (resolve-path program (string-split name ".") name)]
     [else (error 'helix "failed to resolve ~s" name)]))
 
-; Render runtime state without leaking host-language object identity.
-(define (displayable-value value)
-  (define frame-paths
-    (make-hasheq))
-  (define empty-frame-placeholders
-    (make-hasheq))
-  (define next-empty-frame-id
-    0)
-  (define (empty-frame-placeholder entry)
-    (hash-ref! empty-frame-placeholders
-               entry
-               (lambda ()
-                 (set! next-empty-frame-id (add1 next-empty-frame-id))
-                 (format "__helix_empty_frames_~a__" next-empty-frame-id))))
-  (define (path->reference path)
-    (string-join path "."))
-  (define (render value path)
-    (cond
-      [(procedure? value) "<procedure>"]
-      [(hash? value)
-       (for/fold ([rendered (make-hash)])
-                 ([key (sort (hash-keys value) string<?)])
-         (define next-path
-           (append path (list key)))
-         (define entry
-           (hash-ref value key))
-         (define rendered-entry
-           (cond
-             [(and (string=? key "frames")
-                   (box? entry)
-                   (hash-has-key? frame-paths entry))
-              (path->reference (hash-ref frame-paths entry))]
-             [else
-              (begin
-                (when (and (string=? key "frames")
-                           (box? entry))
-                  (hash-set! frame-paths entry next-path))
-                (if (and (string=? key "frames")
-                         (box? entry)
-                         (empty? (unbox entry)))
-                    (empty-frame-placeholder entry)
-                    (render entry next-path)))]))
-         (hash-set! rendered key rendered-entry)
-         rendered)]
-      [(box? value)
-       (render (unbox value) path)]
-      [(list? value)
-       (for/list ([entry value]
-                  [index (in-naturals)])
-         (render entry (append path (list (number->string index)))))]
-      [else value]))
-  (render value '()))
-
 ; Print the full VM state in a readable format after evaluation completes.
 (define (render-vm-state program)
   (displayln "vm:")
-  (define output
-    (with-output-to-string
-      (lambda ()
-        (write-yaml (displayable-value program)))))
-  (display
-   (regexp-replace* #rx"__helix_empty_frames_[0-9]+__"
-                    output
-                    "[]")))
+  (display (cells->yaml-string program)))
 
 ; Accept an optional path and default to the bundled demo program.
 (define program-path
