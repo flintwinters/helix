@@ -37,13 +37,15 @@
 
 (define current-step-frame (make-parameter #f))
 
-(define (call-with-step-runtime runtime thunk)
-  (parameterize ([current-step-runtime runtime])
+(define (call-with-step-parameter parameter value thunk)
+  (parameterize ([parameter value])
     (thunk)))
 
+(define (call-with-step-runtime runtime thunk)
+  (call-with-step-parameter current-step-runtime runtime thunk))
+
 (define (call-with-step-frame frame thunk)
-  (parameterize ([current-step-frame frame])
-    (thunk)))
+  (call-with-step-parameter current-step-frame frame thunk))
 
 (define (frame-ref frame key default)
   (if frame
