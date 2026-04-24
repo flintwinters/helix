@@ -230,7 +230,7 @@
   (define vm
     (resolve-child-vm "step" arguments program))
   (advance-vm! vm)
-  vm)
+  (hash-ref (ensure-vm-state! vm) "status"))
 
 ; Runtime-owned builtins share the same dispatch path as imported builtins.
 (define local-builtins
