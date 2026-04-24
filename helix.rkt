@@ -148,6 +148,17 @@
     [(error) (error 'helix "~a" (hash-ref state "error"))]
     [else #f]))
 
+(define (finish-vm! state result)
+  (hash-set! state "status" "finished")
+  (hash-set! state "result" result)
+  result)
+
+(define (with-vm-running-state vm continue)
+  (define state
+    (ensure-vm-state! vm))
+  (or (vm-status-result state)
+      (continue state)))
+
 (define (resolve-child-vm who arguments program)
   (expect-arity who arguments 1)
   (define vm
@@ -156,6 +167,9 @@
                         (expect-string who (first arguments)))))
   (remember-vm-source! vm (vm-base-directory program))
   vm)
+
+(define (with-resolved-child-vm who arguments program continue)
+  (continue (resolve-child-vm who arguments program)))
 
 ; Preserve direct recursive evaluation for resolved builtin procedures used as values.
 (define (evaluate node program)
@@ -180,57 +194,61 @@
                    (lambda (exn)
                      (mark-vm-error! vm (exn-message exn))
                      (raise exn))])
-    (define state
-      (initialize-vm! vm))
-    (or (vm-status-result state)
-        (let* ([runtime (hasheq 'yield! (lambda (frame)
-                                          (set-vm-frames! vm (list frame))))]
-               [result
-                (call-with-step-runtime
-                 runtime
-                 (lambda ()
-                   (if (empty? (vm-frames vm))
-                       (call-with-step-frame
-                        #f
-                        (lambda ()
-                          (evaluate (hash-ref vm "main") vm)))
-                       (let ([frame (first (vm-frames vm))])
-                         (set-vm-frames! vm '())
-                         (call-with-step-frame
-                          frame
-                          (lambda ()
-                            (evaluate
-                             (cons (hash-ref frame "name")
-                                   (hash-ref frame "arguments"))
-                             vm)))))))])
-          (if (empty? (vm-frames vm))
-              (begin
-                (hash-set! state "status" "finished")
-                (hash-set! state "result" result)
-                result)
-              vm)))))
+    (initialize-vm! vm)
+    (with-vm-running-state
+     vm
+     (lambda (state)
+       (let* ([runtime (hasheq 'yield! (lambda (frame)
+                                         (set-vm-frames! vm (list frame))))]
+              [result
+               (call-with-step-runtime
+                runtime
+                (lambda ()
+                  (if (empty? (vm-frames vm))
+                      (call-with-step-frame
+                       #f
+                       (lambda ()
+                         (evaluate (hash-ref vm "main") vm)))
+                      (let ([frame (first (vm-frames vm))])
+                        (set-vm-frames! vm '())
+                        (call-with-step-frame
+                         frame
+                         (lambda ()
+                           (evaluate
+                            (cons (hash-ref frame "name")
+                                  (hash-ref frame "arguments"))
+                            vm)))))))])
+         (if (empty? (vm-frames vm))
+             (finish-vm! state result)
+             vm))))))
 
 ; Keep running shared steps until the target VM reaches a terminal state.
 (define (run-vm vm)
   (expect-vm "run-vm" vm)
   (let loop ()
-    (define state
-      (ensure-vm-state! vm))
-    (or (vm-status-result state)
-        (begin
-          (advance-vm! vm)
-          (loop)))))
+    (with-vm-running-state
+     vm
+     (lambda (_state)
+       (advance-vm! vm)
+       (loop)))))
 
 ; start resolves a named nested VM and runs it through the shared scheduler.
 (define (builtin-start arguments program)
-  (run-vm (resolve-child-vm "start" arguments program)))
+  (with-resolved-child-vm
+   "start"
+   arguments
+   program
+   run-vm))
 
 ; step resolves a named nested VM and advances it once through the same scheduler.
 (define (builtin-step arguments program)
-  (define vm
-    (resolve-child-vm "step" arguments program))
-  (advance-vm! vm)
-  (hash-ref (ensure-vm-state! vm) "status"))
+  (with-resolved-child-vm
+   "step"
+   arguments
+   program
+   (lambda (vm)
+     (advance-vm! vm)
+     (hash-ref (ensure-vm-state! vm) "status"))))
 
 ; Runtime-owned builtins share the same dispatch path as imported builtins.
 (define local-builtins
