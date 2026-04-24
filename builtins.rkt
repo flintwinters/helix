@@ -160,7 +160,7 @@
        (unless (list? resolved-values)
          (error 'helix "list expects a sequence argument"))
        resolved-values)))
-  (define (step-loop index)
+  (define (walk-values index maybe-yield!)
     (let loop ([index index])
       (if (= index (length values))
           'null
@@ -169,18 +169,20 @@
             (if (= next-index (length values))
                 'null
                 (begin
-                  ((hash-ref runtime 'yield!)
-                   (make-hash
-                    (list (cons "name" "list")
-                          (cons "arguments" arguments)
-                          (cons "values" values)
-                          (cons "index" next-index))))
+                  (maybe-yield! next-index)
                   (void)))))))
   (if (not runtime)
-      (begin
-        (for-each (lambda (value) (evaluate value program)) values)
-        'null)
-      (step-loop (frame-ref list-frame "index" 0))))
+      (walk-values (frame-ref list-frame "index" 0)
+                   (lambda (_next-index) (void)))
+      (walk-values
+       (frame-ref list-frame "index" 0)
+       (lambda (next-index)
+         ((hash-ref runtime 'yield!)
+          (make-hash
+           (list (cons "name" "list")
+                 (cons "arguments" arguments)
+                 (cons "values" values)
+                 (cons "index" next-index))))))))
 
 ; show evaluates one argument and returns it unchanged.
 (define (builtin-show arguments program resolve evaluate)
