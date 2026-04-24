@@ -45,6 +45,17 @@
       (hash-ref frame key)
       default))
 
+; Append one printed line to stdout only when the VM already owns that field.
+(define (append-stdout! who program value)
+  (when (hash-has-key? program "stdout")
+    (define current-stdout
+      (hash-ref program "stdout"))
+    (unless (string? current-stdout)
+      (error 'helix "~a expects stdout to be a string when present" who))
+    (hash-set! program
+               "stdout"
+               (string-append current-stdout (format "~a\n" value)))))
+
 ; add evaluates exactly two arguments and returns their sum.
 (define (builtin-add arguments program resolve evaluate)
   (expect-arity "add" arguments 2)
@@ -106,7 +117,11 @@
 ; show evaluates one argument and returns it unchanged.
 (define (builtin-show arguments program resolve evaluate)
   (expect-arity "show" arguments 1)
-  (evaluate (first arguments) program))
+  (define value
+    (evaluate (first arguments) program))
+  (displayln value)
+  (append-stdout! "show" program value)
+  value)
 
 ; set treats its left operand as a field name, evaluates the right operand,
 ; stores the result in the current program, and returns the stored value.
