@@ -249,11 +249,6 @@
      (resolve-path program (string-split name ".") name)]
     [else (error 'helix "failed to resolve ~s" name)]))
 
-; Print the full VM state in a readable format after evaluation completes.
-(define (render-vm-state program)
-  (displayln "vm:")
-  (display (cells->yaml-string program)))
-
 ; Accept an optional path and default to the bundled demo program.
 (define program-path
   (command-line
@@ -268,4 +263,4 @@
                    (exit 1))])
   (define program (load-program program-path))
   (run-vm program)
-  (render-vm-state program))
+  (display-cells program))
