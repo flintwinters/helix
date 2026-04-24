@@ -89,30 +89,27 @@
        (unless (list? resolved-values)
          (error 'helix "list expects a sequence argument"))
        resolved-values)))
-  (define (step-loop index results)
-    (let loop ([index index]
-               [results results])
+  (define (step-loop index)
+    (let loop ([index index])
       (if (= index (length values))
-          (reverse results)
+          'null
           (let* ([value (evaluate (list-ref values index) program)]
-                 [next-results (cons value results)]
                  [next-index (add1 index)])
             (if (= next-index (length values))
-                (reverse next-results)
+                'null
                 (begin
                   ((hash-ref runtime 'yield!)
                    (make-hash
                     (list (cons "name" "list")
                           (cons "arguments" arguments)
                           (cons "values" values)
-                          (cons "index" next-index)
-                          (cons "results" next-results))))
+                          (cons "index" next-index))))
                   (void)))))))
   (if (not runtime)
-      (map (lambda (value) (evaluate value program)) values)
-      (step-loop
-       (frame-ref list-frame "index" 0)
-       (frame-ref list-frame "results" '()))))
+      (begin
+        (for-each (lambda (value) (evaluate value program)) values)
+        'null)
+      (step-loop (frame-ref list-frame "index" 0))))
 
 ; show evaluates one argument and returns it unchanged.
 (define (builtin-show arguments program resolve evaluate)
