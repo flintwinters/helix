@@ -7,7 +7,6 @@
          call-with-step-frame
          call-with-step-runtime
          cells->yaml-string
-         display-cells
          expect-arity
          expect-string
          resolve-builtin)
@@ -16,9 +15,7 @@
 (define (expect-arity who arguments count)
   (unless (= (length arguments) count)
     (error 'helix "~a expects exactly ~a argument~a"
-           who
-           count
-           (if (= count 1) "" "s"))))
+           who count (if (= count 1) "" "s"))))
 
 ; Require a value to be numeric before arithmetic uses it.
 (define (expect-number who value)
@@ -111,11 +108,6 @@
                    output
                    "[]"))
 
-; Display cells in the standard VM-oriented YAML format.
-(define (display-cells value)
-  (displayln "\n---\nvm:")
-  (display (cells->yaml-string value)))
-
 ; Append one printed line to stdout only when the VM already owns that field.
 (define (append-stdout! who program rendered-value)
   (when (hash-has-key? program "stdout")
@@ -126,6 +118,40 @@
     (hash-set! program
                "stdout"
                (string-append current-stdout rendered-value "\n"))))
+
+; Evaluate a sequence in order, optionally yielding between elements.
+(define (evaluate-sequence who arguments values program evaluate)
+  (define runtime (current-step-runtime))
+  (define frame (current-step-frame))
+  (define sequence-frame
+    (and runtime
+         (hash? frame)
+         (equal? (hash-ref frame "name" #f) who)
+         frame))
+  ; A resumed frame is only for this builtin invocation. Nested evaluation must
+  ; not inherit it and accidentally treat it as its own resume state.
+  (when sequence-frame
+    (current-step-frame #f))
+  (define start-index
+    (frame-ref sequence-frame "index" 0))
+  (define (maybe-yield! next-index)
+    (when runtime
+      ((hash-ref runtime 'yield!)
+       (make-hash
+        (list (cons "name" who)
+              (cons "arguments" arguments)
+              (cons "values" values)
+              (cons "index" next-index))))))
+  (let loop ([index start-index])
+    (if (= index (length values))
+        'null
+        (let ([next-index (add1 index)])
+          (evaluate (list-ref values index) program)
+          (if (= next-index (length values))
+              'null
+              (begin
+                (maybe-yield! next-index)
+                (loop next-index)))))))
 
 ; add evaluates exactly two arguments and returns their sum.
 (define (builtin-add arguments program resolve evaluate)
@@ -141,48 +167,19 @@
 ; list resolves one stored sequence and evaluates each form inside it in order.
 (define (builtin-list arguments program resolve evaluate)
   (expect-arity "list" arguments 1)
-  (define runtime (current-step-runtime))
-  (define frame (current-step-frame))
-  (define list-frame
-    (and runtime
-         (hash? frame)
-         (equal? (hash-ref frame "name" #f) "list")
-         frame))
-  ; A resumed frame is only for this builtin invocation. Nested evaluation must
-  ; not inherit it and accidentally treat it as its own resume state.
-  (when list-frame
-    (current-step-frame #f))
   (define values
-    (frame-ref
-     list-frame
-     "values"
-     (let ([resolved-values (evaluate (first arguments) program)])
-       (unless (list? resolved-values)
-         (error 'helix "list expects a sequence argument"))
-       resolved-values)))
-  (define (walk-values index maybe-yield!)
-    (let loop ([index index])
-      (if (= index (length values))
-          'null
-          (let* ([value (evaluate (list-ref values index) program)]
-                 [next-index (add1 index)])
-            (if (= next-index (length values))
-                'null
-                (begin
-                  (maybe-yield! next-index)
-                  (void)))))))
-  (if (not runtime)
-      (walk-values (frame-ref list-frame "index" 0)
-                   (lambda (_next-index) (void)))
-      (walk-values
-       (frame-ref list-frame "index" 0)
-       (lambda (next-index)
-         ((hash-ref runtime 'yield!)
-          (make-hash
-           (list (cons "name" "list")
-                 (cons "arguments" arguments)
-                 (cons "values" values)
-                 (cons "index" next-index))))))))
+    (let ([frame (current-step-frame)])
+      (frame-ref
+       (and (current-step-runtime)
+            (hash? frame)
+            (equal? (hash-ref frame "name" #f) "list")
+            frame)
+       "values"
+       (let ([resolved-values (evaluate (first arguments) program)])
+         (unless (list? resolved-values)
+           (error 'helix "list expects a sequence argument"))
+         resolved-values))))
+  (evaluate-sequence "list" arguments values program evaluate))
 
 ; show evaluates one argument and returns it unchanged.
 (define (builtin-show arguments program resolve evaluate)
@@ -206,10 +203,10 @@
 
 ; Builtins resolve like any other symbol, so strings never need special handling.
 (define builtins
-  (hash "add" builtin-add
+  (hash "add"  builtin-add
         "eval" builtin-eval
         "list" builtin-list
-        "set" builtin-set
+        "set"  builtin-set
         "show" builtin-show))
 
 ; Builtin names can be recognized without coupling the evaluator to their bodies.
