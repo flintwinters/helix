@@ -78,17 +78,6 @@
     (error 'helix "~a expects a VM mapping argument" who))
   value)
 
-; Follow a dot-delimited path through nested VM mappings.
-(define (resolve-path current segments name)
-  (cond
-    [(empty? segments) current]
-    [(not (hash? current)) (error 'helix "failed to resolve ~s" name)]
-    [(hash-has-key? current (first segments))
-     (resolve-path (hash-ref current (first segments))
-                   (rest segments)
-                   name)]
-    [else (error 'helix "failed to resolve ~s" name)]))
-
 ; Ensure every runnable VM has a mutable state mapping.
 (define (ensure-vm-state! vm)
   (define existing
@@ -201,7 +190,8 @@
                      vm))))))
          (define result
            (call-with-resolve
-            resolve
+            (lambda (_program name)
+              (hash-ref local-builtins name #f))
             (lambda ()
               (call-with-step-runtime runtime resume-or-start))))
          (if (empty? (vm-frames vm))
@@ -240,18 +230,6 @@
 (define local-builtins
   (hash "start" builtin-start
         "step" builtin-step))
-
-; Resolve a symbol name to either a builtin procedure or a program value.
-(define (resolve program name)
-  (define builtin
-    (or (hash-ref local-builtins name #f)
-        (resolve-builtin name)))
-  (cond
-    [builtin builtin]
-    [(hash-has-key? program name) (hash-ref program name)]
-    [(string-contains? name ".")
-     (resolve-path program (string-split name ".") name)]
-    [else (error 'helix "failed to resolve ~s" name)]))
 
 ; Accept an optional path and default to the bundled demo program.
 (define program-path
