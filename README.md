@@ -34,7 +34,6 @@ flowchart LR
     h_load_include["load-include-entry<br/>load include and derive key"]
     h_apply_includes["apply-includes!<br/>merge include files into VM"]
     h_expect_vm["expect-vm<br/>validate VM-shaped mapping"]
-    h_resolve_path["resolve-path<br/>follow dotted path"]
     h_ensure_state["ensure-vm-state!<br/>create VM state fields"]
     h_reset_state["reset-vm-state!<br/>clear transient run state"]
     h_initialize["initialize-vm!<br/>prepare VM for execution"]
@@ -50,7 +49,6 @@ flowchart LR
     h_run["run-vm<br/>drive VM to completion"]
     h_builtin_start["builtin-start<br/>run named child VM"]
     h_builtin_step["builtin-step<br/>step named child VM"]
-    h_resolve["resolve<br/>resolve builtin or program value"]
   end
 
   subgraph B["builtins.rkt"]
@@ -58,13 +56,15 @@ flowchart LR
     b_expect_number["expect-number<br/>check numeric value"]
     b_expect_string["expect-string<br/>check string value"]
     b_call_param["call-with-step-parameter<br/>bind step parameter"]
-    b_call_resolve["call-with-resolve<br/>bind active resolver"]
+    b_call_resolve["call-with-resolve<br/>bind external builtin hook"]
     b_call_runtime["call-with-step-runtime<br/>bind step runtime"]
     b_call_frame["call-with-step-frame<br/>bind step frame"]
     b_frame_ref["frame-ref<br/>read frame field or default"]
     b_cells_yaml["cells->yaml-string<br/>render VM cells as YAML"]
     b_append_stdout["append-stdout!<br/>append rendered stdout line"]
     b_eval_sequence["evaluate-sequence<br/>run sequence with yields"]
+    b_resolve_path["resolve-path<br/>follow dotted path"]
+    b_resolve["resolve<br/>resolve builtin or program value"]
     b_evaluate["evaluate<br/>evaluate one node"]
     b_evaluate_list["evaluate-list<br/>dispatch vector actor"]
     b_builtin_add["builtin-add<br/>evaluate and add two numbers"]
@@ -91,7 +91,7 @@ flowchart LR
   h_with_running --> h_vm_status
   h_resolve_child --> b_expect_arity
   h_resolve_child --> h_expect_vm
-  h_resolve_child --> h_resolve
+  h_resolve_child --> b_resolve
   h_resolve_child --> b_expect_string
   h_resolve_child --> h_remember
   h_resolve_child --> h_vm_base
@@ -115,15 +115,15 @@ flowchart LR
   h_builtin_step --> h_with_child
   h_builtin_step --> h_advance
   h_builtin_step --> h_ensure_state
-  h_resolve -.-> b_resolve_builtin
-  h_resolve -.-> h_resolve_path
 
   b_call_resolve --> b_call_param
   b_call_runtime --> b_call_param
   b_call_frame --> b_call_param
   b_eval_sequence --> b_frame_ref
   b_eval_sequence --> b_evaluate
-  b_evaluate -.-> h_resolve
+  b_resolve -.-> b_resolve_builtin
+  b_resolve -.-> b_resolve_path
+  b_evaluate -.-> b_resolve
   b_evaluate -.-> b_evaluate_list
   b_evaluate_list --> b_evaluate
   b_builtin_add --> b_expect_arity
@@ -144,7 +144,7 @@ flowchart LR
   b_builtin_set --> b_evaluate
 
   class h_load_program,h_builtin_start,h_builtin_step root;
-  class h_expect_vm,h_resolve_path,h_reset_state,h_vm_status,h_finish,b_expect_arity,b_expect_number,b_expect_string,b_frame_ref,b_cells_yaml,b_append_stdout,b_resolve_builtin leaf;
+  class h_expect_vm,h_reset_state,h_vm_status,h_finish,b_expect_arity,b_expect_number,b_expect_string,b_frame_ref,b_cells_yaml,b_append_stdout,b_resolve_path,b_resolve_builtin leaf;
   class b_builtin_q rootleaf;
 ```
 
@@ -161,7 +161,7 @@ This matrix is intentionally selective. It captures the dominant responsibilitie
 | `ensure-vm-state!` |  |  | ✓ |  |  |  |  |  |
 | `initialize-vm!` |  | ✓ | ✓ |  |  |  |  |  |
 | `resolve-path` |  |  |  | ✓ |  |  |  |  |
-| `resolve` |  |  |  | ✓ |  |  |  |  |
+| `resolve` |  |  |  | ✓ | ✓ |  |  |  |
 | `call-with-resolve` |  |  |  | ✓ |  | ✓ |  |  |
 | `evaluate` |  |  |  | ✓ | ✓ |  |  |  |
 | `evaluate-list` |  |  |  |  | ✓ |  |  |  |
