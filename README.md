@@ -22,9 +22,9 @@ The diagram below shows the current repository-level invocation graph. Solid edg
 
 ```mermaid
 flowchart LR
-  classDef root fill:#e8f1ff,stroke:#1f6feb,stroke-width:2px;
-  classDef leaf fill:#edf9ed,stroke:#2da44e,stroke-width:2px;
-  classDef rootleaf fill:#fff4d6,stroke:#9a6700,stroke-width:2px;
+  classDef root fill:#447,stroke:#1f6feb,stroke-width:2px;
+  classDef leaf fill:#475,stroke:#2da44e,stroke-width:2px;
+  classDef rootleaf fill:#764,stroke:#9a6700,stroke-width:2px;
 
   subgraph H["helix.rkt"]
     h_remember["remember-vm-source!<br/>tag VM with source dir"]
@@ -46,8 +46,6 @@ flowchart LR
     h_with_running["with-vm-running-state<br/>run only while active"]
     h_resolve_child["resolve-child-vm<br/>resolve nested VM argument"]
     h_with_child["with-resolved-child-vm<br/>resolve child then continue"]
-    h_evaluate["evaluate<br/>evaluate one node"]
-    h_evaluate_list["evaluate-list<br/>dispatch vector actor"]
     h_advance["advance-vm!<br/>run or resume one VM step"]
     h_run["run-vm<br/>drive VM to completion"]
     h_builtin_start["builtin-start<br/>run named child VM"]
@@ -60,12 +58,15 @@ flowchart LR
     b_expect_number["expect-number<br/>check numeric value"]
     b_expect_string["expect-string<br/>check string value"]
     b_call_param["call-with-step-parameter<br/>bind step parameter"]
+    b_call_resolve["call-with-resolve<br/>bind active resolver"]
     b_call_runtime["call-with-step-runtime<br/>bind step runtime"]
     b_call_frame["call-with-step-frame<br/>bind step frame"]
     b_frame_ref["frame-ref<br/>read frame field or default"]
     b_cells_yaml["cells->yaml-string<br/>render VM cells as YAML"]
     b_append_stdout["append-stdout!<br/>append rendered stdout line"]
     b_eval_sequence["evaluate-sequence<br/>run sequence with yields"]
+    b_evaluate["evaluate<br/>evaluate one node"]
+    b_evaluate_list["evaluate-list<br/>dispatch vector actor"]
     b_builtin_add["builtin-add<br/>evaluate and add two numbers"]
     b_builtin_eval["builtin-eval<br/>evaluate evaluated code"]
     b_builtin_list["builtin-list<br/>evaluate sequence value"]
@@ -95,18 +96,16 @@ flowchart LR
   h_resolve_child --> h_remember
   h_resolve_child --> h_vm_base
   h_with_child --> h_resolve_child
-  h_evaluate -.-> h_resolve
-  h_evaluate -.-> h_evaluate_list
-  h_evaluate_list --> h_evaluate
   h_advance --> h_expect_vm
   h_advance -.-> h_mark_error
   h_advance --> h_initialize
   h_advance --> h_with_running
+  h_advance --> b_call_resolve
   h_advance --> b_call_runtime
   h_advance -.-> h_vm_frames
   h_advance -.-> h_set_frames
   h_advance -.-> b_call_frame
-  h_advance -.-> h_evaluate
+  h_advance -.-> b_evaluate
   h_advance -.-> h_finish
   h_run --> h_expect_vm
   h_run --> h_with_running
@@ -119,29 +118,33 @@ flowchart LR
   h_resolve -.-> b_resolve_builtin
   h_resolve -.-> h_resolve_path
 
+  b_call_resolve --> b_call_param
   b_call_runtime --> b_call_param
   b_call_frame --> b_call_param
   b_eval_sequence --> b_frame_ref
-  b_eval_sequence --> h_evaluate
+  b_eval_sequence --> b_evaluate
+  b_evaluate -.-> h_resolve
+  b_evaluate -.-> b_evaluate_list
+  b_evaluate_list --> b_evaluate
   b_builtin_add --> b_expect_arity
-  b_builtin_add --> h_evaluate
+  b_builtin_add --> b_evaluate
   b_builtin_add --> b_expect_number
   b_builtin_eval --> b_expect_arity
-  b_builtin_eval --> h_evaluate
+  b_builtin_eval --> b_evaluate
   b_builtin_list --> b_expect_arity
-  b_builtin_list -.-> h_evaluate
+  b_builtin_list -.-> b_evaluate
   b_builtin_list --> b_frame_ref
   b_builtin_list --> b_eval_sequence
   b_builtin_show --> b_expect_arity
-  b_builtin_show --> h_evaluate
+  b_builtin_show --> b_evaluate
   b_builtin_show --> b_cells_yaml
   b_builtin_show --> b_append_stdout
   b_builtin_set --> b_expect_arity
   b_builtin_set --> b_expect_string
-  b_builtin_set --> h_evaluate
+  b_builtin_set --> b_evaluate
 
   class h_load_program,h_builtin_start,h_builtin_step root;
-  class h_expect_vm,h_resolve_path,h_reset_state,h_vm_status,h_finish,b_expect_arity,b_expect_number,b_expect_string,b_frame_ref,b_cells_yaml,b_append_stdout leaf;
+  class h_expect_vm,h_resolve_path,h_reset_state,h_vm_status,h_finish,b_expect_arity,b_expect_number,b_expect_string,b_frame_ref,b_cells_yaml,b_append_stdout,b_resolve_builtin leaf;
   class b_builtin_q rootleaf;
 ```
 
@@ -159,6 +162,7 @@ This matrix is intentionally selective. It captures the dominant responsibilitie
 | `initialize-vm!` |  | ✓ | ✓ |  |  |  |  |  |
 | `resolve-path` |  |  |  | ✓ |  |  |  |  |
 | `resolve` |  |  |  | ✓ |  |  |  |  |
+| `call-with-resolve` |  |  |  | ✓ |  | ✓ |  |  |
 | `evaluate` |  |  |  | ✓ | ✓ |  |  |  |
 | `evaluate-list` |  |  |  |  | ✓ |  |  |  |
 | `advance-vm!` |  |  | ✓ |  | ✓ | ✓ |  |  |
