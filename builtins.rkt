@@ -11,6 +11,7 @@
          evaluate
          expect-arity
          expect-string
+         resolve
          resolve-builtin)
 
 ; Keep builtin arity errors uniform across the evaluator.
@@ -32,7 +33,7 @@
   value)
 
 ; The evaluator installs stepping callbacks only while a VM is being advanced.
-(define current-resolve (make-parameter #f))
+(define current-external-resolve (make-parameter #f))
 
 (define current-step-runtime (make-parameter #f))
 
@@ -43,7 +44,7 @@
     (thunk)))
 
 (define (call-with-resolve resolve thunk)
-  (call-with-step-parameter current-resolve resolve thunk))
+  (call-with-step-parameter current-external-resolve resolve thunk))
 
 (define (call-with-step-runtime runtime thunk)
   (call-with-step-parameter current-step-runtime runtime thunk))
@@ -160,12 +161,33 @@
                 (maybe-yield! next-index)
                 (loop next-index)))))))
 
+; Follow a dot-delimited path through nested VM mappings.
+(define (resolve-path current segments name)
+  (cond
+    [(empty? segments) current]
+    [(not (hash? current)) (error 'helix "failed to resolve ~s" name)]
+    [(hash-has-key? current (first segments))
+     (resolve-path (hash-ref current (first segments))
+                   (rest segments)
+                   name)]
+    [else (error 'helix "failed to resolve ~s" name)]))
+
+; Resolve a symbol name to either a builtin procedure or a program value.
+(define (resolve program name)
+  (define builtin
+    (or (let ([external-resolve (current-external-resolve)])
+          (and external-resolve
+               (external-resolve program name)))
+        (resolve-builtin name)))
+  (cond
+    [builtin builtin]
+    [(hash-has-key? program name) (hash-ref program name)]
+    [(string-contains? name ".")
+     (resolve-path program (string-split name ".") name)]
+    [else (error 'helix "failed to resolve ~s" name)]))
+
 ; Preserve direct recursive evaluation for resolved builtin procedures used as values.
 (define (evaluate node program)
-  (define resolve
-    (current-resolve))
-  (unless resolve
-    (error 'helix "evaluate requires an active resolver"))
   (cond
     [(string? node) (resolve program node)]
     [(list? node) (evaluate-list node program)]
