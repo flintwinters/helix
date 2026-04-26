@@ -171,22 +171,6 @@
 (define (with-resolved-child-vm who arguments program continue)
   (continue (resolve-child-vm who arguments program)))
 
-; Preserve direct recursive evaluation for resolved builtin procedures used as values.
-(define (evaluate node program)
-  (cond
-    [(string? node) (resolve program node)]
-    [(list? node) (evaluate-list node program)]
-    [else node]))
-
-(define (evaluate-list items program)
-  (when (empty? items)
-    (error 'helix "cannot evaluate an empty vector"))
-  (define actor
-    (evaluate (first items) program))
-  (unless (procedure? actor)
-    (error 'helix "vector actor did not resolve to a builtin"))
-  (actor (rest items) program))
-
 ; Run or resume a VM until it yields once or reaches a terminal state.
 (define (advance-vm! vm)
   (expect-vm "advance-vm!" vm)
@@ -198,26 +182,28 @@
     (with-vm-running-state
      vm
      (lambda (state)
-       (let* ([runtime (hasheq 'yield! (lambda (frame)
-                                         (set-vm-frames! vm (list frame))))]
-              [result
-               (call-with-step-runtime
-                runtime
+       (let ([runtime (hasheq 'yield! (lambda (frame)
+                                        (set-vm-frames! vm (list frame))))])
+         (define (resume-or-start)
+           (if (empty? (vm-frames vm))
+               (call-with-step-frame
+                #f
                 (lambda ()
-                  (if (empty? (vm-frames vm))
-                      (call-with-step-frame
-                       #f
-                       (lambda ()
-                         (evaluate (hash-ref vm "main") vm)))
-                      (let ([frame (first (vm-frames vm))])
-                        (set-vm-frames! vm '())
-                        (call-with-step-frame
-                         frame
-                         (lambda ()
-                           (evaluate
-                            (cons (hash-ref frame "name")
-                                  (hash-ref frame "arguments"))
-                            vm)))))))])
+                  (evaluate (hash-ref vm "main") vm)))
+               (let ([frame (first (vm-frames vm))])
+                 (set-vm-frames! vm '())
+                 (call-with-step-frame
+                  frame
+                  (lambda ()
+                    (evaluate
+                     (cons (hash-ref frame "name")
+                           (hash-ref frame "arguments"))
+                     vm))))))
+         (define result
+           (call-with-resolve
+            resolve
+            (lambda ()
+              (call-with-step-runtime runtime resume-or-start))))
          (if (empty? (vm-frames vm))
              (finish-vm! state result)
              vm))))))
@@ -259,7 +245,7 @@
 (define (resolve program name)
   (define builtin
     (or (hash-ref local-builtins name #f)
-        (resolve-builtin name resolve evaluate)))
+        (resolve-builtin name)))
   (cond
     [builtin builtin]
     [(hash-has-key? program name) (hash-ref program name)]
@@ -281,4 +267,4 @@
                    (exit 1))])
   (define program (load-program program-path))
   (run-vm program)
-  (display-cells program))
+  (display (cells->yaml-string program)))
