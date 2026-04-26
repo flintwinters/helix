@@ -4,9 +4,11 @@
          yaml)
 
 (provide builtin?
+         call-with-resolve
          call-with-step-frame
          call-with-step-runtime
          cells->yaml-string
+         evaluate
          expect-arity
          expect-string
          resolve-builtin)
@@ -30,6 +32,8 @@
   value)
 
 ; The evaluator installs stepping callbacks only while a VM is being advanced.
+(define current-resolve (make-parameter #f))
+
 (define current-step-runtime (make-parameter #f))
 
 (define current-step-frame (make-parameter #f))
@@ -37,6 +41,9 @@
 (define (call-with-step-parameter parameter value thunk)
   (parameterize ([parameter value])
     (thunk)))
+
+(define (call-with-resolve resolve thunk)
+  (call-with-step-parameter current-resolve resolve thunk))
 
 (define (call-with-step-runtime runtime thunk)
   (call-with-step-parameter current-step-runtime runtime thunk))
@@ -120,7 +127,7 @@
                (string-append current-stdout rendered-value "\n"))))
 
 ; Evaluate a sequence in order, optionally yielding between elements.
-(define (evaluate-sequence who arguments values program evaluate)
+(define (evaluate-sequence who arguments values program)
   (define runtime (current-step-runtime))
   (define frame (current-step-frame))
   (define sequence-frame
@@ -153,19 +160,39 @@
                 (maybe-yield! next-index)
                 (loop next-index)))))))
 
+; Preserve direct recursive evaluation for resolved builtin procedures used as values.
+(define (evaluate node program)
+  (define resolve
+    (current-resolve))
+  (unless resolve
+    (error 'helix "evaluate requires an active resolver"))
+  (cond
+    [(string? node) (resolve program node)]
+    [(list? node) (evaluate-list node program)]
+    [else node]))
+
+(define (evaluate-list items program)
+  (when (empty? items)
+    (error 'helix "cannot evaluate an empty vector"))
+  (define actor
+    (evaluate (first items) program))
+  (unless (procedure? actor)
+    (error 'helix "vector actor did not resolve to a builtin"))
+  (actor (rest items) program))
+
 ; add evaluates exactly two arguments and returns their sum.
-(define (builtin-add arguments program resolve evaluate)
+(define (builtin-add arguments program)
   (expect-arity "add" arguments 2)
   (+ (expect-number "add" (evaluate (first arguments) program))
      (expect-number "add" (evaluate (second arguments) program))))
 
 ; eval resolves one value and then evaluates the result as code.
-(define (builtin-eval arguments program resolve evaluate)
+(define (builtin-eval arguments program)
   (expect-arity "eval" arguments 1)
   (evaluate (evaluate (first arguments) program) program))
 
 ; list resolves one stored sequence and evaluates each form inside it in order.
-(define (builtin-list arguments program resolve evaluate)
+(define (builtin-list arguments program)
   (expect-arity "list" arguments 1)
   (define values
     (let ([frame (current-step-frame)])
@@ -179,10 +206,10 @@
          (unless (list? resolved-values)
            (error 'helix "list expects a sequence argument"))
          resolved-values))))
-  (evaluate-sequence "list" arguments values program evaluate))
+  (evaluate-sequence "list" arguments values program))
 
 ; show evaluates one argument and returns it unchanged.
-(define (builtin-show arguments program resolve evaluate)
+(define (builtin-show arguments program)
   (expect-arity "show" arguments 1)
   (define value
     (evaluate (first arguments) program))
@@ -194,7 +221,7 @@
 
 ; set treats its left operand as a field name, evaluates the right operand,
 ; stores the result in the current program, and returns the stored value.
-(define (builtin-set arguments program resolve evaluate)
+(define (builtin-set arguments program)
   (expect-arity "set" arguments 2)
   (define field-name (expect-string "set" (first arguments)))
   (define value (evaluate (second arguments) program))
@@ -212,10 +239,6 @@
 ; Builtin names can be recognized without coupling the evaluator to their bodies.
 (define (builtin? name) (hash-has-key? builtins name))
 
-; Resolve a builtin name into a procedure bound to the evaluator callbacks.
-(define (resolve-builtin name resolve evaluate)
-  (define builtin
-    (hash-ref builtins name #f))
-  (and builtin
-       (lambda (arguments program)
-         (builtin arguments program resolve evaluate))))
+; Resolve a builtin name into its callable procedure.
+(define (resolve-builtin name)
+  (hash-ref builtins name #f))
