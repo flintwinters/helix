@@ -1,0 +1,11 @@
+program:
+  main: [show, [add, 2, 3]]
+stdout: |
+  5
+  ...
+expected:
+  main: [show, [add, 2, 3]]
+  state:
+    result: 5
+    frames: []
+    status: finished
