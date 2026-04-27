@@ -7,29 +7,11 @@
          "builtins.rkt"
          yaml)
 
-; Track the base directory associated with each loaded VM mapping.
-(define vm-base-directories
-  (make-hasheq))
-
-; Associate a VM mapping with the directory its YAML file came from.
-(define (remember-vm-source! value base-dir)
-  (when (hash? value)
-    (hash-set! vm-base-directories value base-dir))
-  value)
-
-; Resolve the base directory for a VM, falling back to the current directory.
-(define (vm-base-directory vm)
-  (hash-ref vm-base-directories vm (current-directory)))
-
-; Read an arbitrary YAML value and associate its nested mappings with its source.
+; Read an arbitrary YAML value from an absolute path or one relative to cwd.
 (define (load-yaml-file path)
   (define full-path
     (simplify-path (path->complete-path path)))
-  (define value
-    (call-with-input-file full-path read-yaml))
-  (define base-dir
-    (or (path-only full-path) (current-directory)))
-  (remember-vm-source! value base-dir))
+  (call-with-input-file full-path read-yaml))
 
 ; Read the YAML program and require the root value to be a mapping.
 (define (load-program path)
@@ -38,17 +20,14 @@
     (error 'helix "top-level YAML document must be a mapping"))
   program)
 
-; Resolve an include path, load its YAML value, and derive the inserted key.
-(define (load-include-entry base-dir include-path)
+; Resolve an include path from cwd unless it is already absolute.
+(define (load-include-entry include-path)
   (unless (string? include-path)
     (error 'helix "include expects string file paths"))
   (define candidate
     (string->path include-path))
   (define full-path
-    (simplify-path
-     (if (relative-path? candidate)
-         (build-path base-dir candidate)
-         candidate)))
+    (simplify-path (path->complete-path candidate)))
   (define key
     (regexp-replace #rx"\\.[^.]+$"
                     (path->string (file-name-from-path full-path))
@@ -65,11 +44,9 @@
         [(string? include-field) (list include-field)]
         [(list? include-field) include-field]
         [else (error 'helix "include expects a string or sequence of strings")]))
-    (define base-dir
-      (vm-base-directory vm))
     (for ([include-path include-paths])
       (define-values (key value)
-        (load-include-entry base-dir include-path))
+        (load-include-entry include-path))
       (hash-set! vm key value))))
 
 ; Require a value to be a VM-like mapping with a main entrypoint.
@@ -150,12 +127,9 @@
 
 (define (resolve-child-vm who arguments program)
   (expect-arity who arguments 1)
-  (define vm
-    (expect-vm who
-               (resolve program
-                        (expect-string who (first arguments)))))
-  (remember-vm-source! vm (vm-base-directory program))
-  vm)
+  (expect-vm who
+             (resolve program
+                      (expect-string who (first arguments)))))
 
 (define (with-resolved-child-vm who arguments program continue)
   (continue (resolve-child-vm who arguments program)))
