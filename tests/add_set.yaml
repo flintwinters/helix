@@ -1,0 +1,13 @@
+program:
+  left: 2
+  right: 5
+  main: [set, total, [add, left, right]]
+expected:
+  left: 2
+  right: 5
+  main: [set, total, [add, left, right]]
+  total: 7
+  state:
+    result: 7
+    frames: []
+    status: finished
