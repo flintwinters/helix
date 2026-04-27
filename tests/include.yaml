@@ -1,0 +1,16 @@
+program:
+  base: 1
+  include: [helix_demo_include.yaml]
+  main: [set, seen, helix_demo_include.inner.value]
+expected:
+  base: 1
+  include: [helix_demo_include.yaml]
+  main: [set, seen, helix_demo_include.inner.value]
+  seen: 44
+  helix_demo_include:
+    inner:
+      value: 44
+  state:
+    result: 44
+    frames: []
+    status: finished
