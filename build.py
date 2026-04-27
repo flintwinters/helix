@@ -378,13 +378,13 @@ def indent_block(text):
 
 def split_runtime_output(stdout):
     lines = stdout.splitlines(keepends=True)
-    for line_count in range(len(lines), 0, -1):
-        yaml_prefix = "".join(lines[:line_count])
+    for start_index in range(len(lines)):
+        yaml_prefix = "".join(lines[start_index:])
         try:
             yaml.safe_load(yaml_prefix)
         except yaml.YAMLError:
             continue
-        return yaml_prefix, "".join(lines[line_count:])
+        return yaml_prefix, "".join(lines[:start_index])
     return None, stdout
 
 
