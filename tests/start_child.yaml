@@ -1,0 +1,21 @@
+program:
+  child:
+    seed: 5
+    delta: 6
+    main: [set, total, [add, seed, delta]]
+  main: [start, child]
+expected:
+  main: [start, child]
+  child:
+    seed: 5
+    delta: 6
+    main: [set, total, [add, seed, delta]]
+    total: 11
+    state:
+      result: 11
+      frames: []
+      status: finished
+  state:
+    result: 11
+    frames: []
+    status: finished
