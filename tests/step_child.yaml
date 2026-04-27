@@ -1,0 +1,41 @@
+program:
+  child:
+    seed: 10
+    delta: 2
+    steps:
+      - [set, first, [add, seed, delta]]
+      - [set, second, [add, first, delta]]
+    main: [list, steps]
+  items:
+    - [step, child]
+    - [step, child]
+    - [show, child.second]
+  main: [list, items]
+stdout: |
+  14
+  ...
+  14
+  ...
+expected:
+  main: [list, items]
+  items:
+    - [step, child]
+    - [step, child]
+    - [show, child.second]
+  child:
+    seed: 10
+    delta: 2
+    steps:
+      - [set, first, [add, seed, delta]]
+      - [set, second, [add, first, delta]]
+    main: [list, steps]
+    first: 12
+    second: 14
+    state:
+      result: null
+      frames: []
+      status: finished
+  state:
+    result: null
+    frames: []
+    status: finished
