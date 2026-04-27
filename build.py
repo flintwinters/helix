@@ -11,9 +11,10 @@ INCLUDES = "-I include -I ryml/src -I ryml/ext/c4core/src"
 COMPILER = "g++"
 CPP_FLAGS = "-g -std=c++20"
 LINKER_FLAGS = "-L ryml/build -lryml"
-EXECUTABLE = "helix"
+EXECUTABLE = "build/helix"
 SOURCES = "src/helix.cpp src/builtins.cpp src/core.cpp src/utils.cpp src/ryml_interface.cpp"
 OBJECT_DIRECTORY = "build/obj"
+RACKET_SOURCES = ["racket/builtins.rkt", "racket/helix.rkt"]
 RACKET_ENTRYPOINT = ["racket", "racket/helix.rkt"]
 VALGRIND_ARGS = [
     "valgrind",
@@ -74,6 +75,26 @@ def compile_main():
         return False
 
     print("Compilation successful.")
+    return True
+
+
+def compile_racket():
+    """Precompiles the current Racket runtime modules."""
+    result = subprocess.run(
+        ["raco", "make", *RACKET_SOURCES],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        print("Racket compilation failed.")
+        if result.stdout.strip():
+            print(result.stdout)
+        if result.stderr.strip():
+            print(result.stderr)
+        return False
+
+    print("Racket compilation successful.")
     return True
 
 def run_clang_tidy():
@@ -392,6 +413,7 @@ def print_usage():
     print("usage:")
     print("  python3 build.py                # compile C++, tidy, cloc, and run C++ fixtures")
     print("  python3 build.py build          # compile the C++ scaffold only")
+    print("  python3 build.py racket-build   # precompile the current Racket runtime")
     print("  python3 build.py cpp-test       # compile C++ and run fixtures against the native runtime")
     print("  python3 build.py racket-test    # run fixtures against the current Racket runtime")
 
@@ -408,7 +430,14 @@ def main():
             sys.exit(1)
         return
 
+    if command in {"racket-build", "build-racket"}:
+        if not compile_racket():
+            sys.exit(1)
+        return
+
     if command in {"racket-test", "test-racket"}:
+        if not compile_racket():
+            sys.exit(1)
         num_failed = run_tests("racket")
         if num_failed > 0:
             sys.exit(1)
