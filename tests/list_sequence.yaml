@@ -1,0 +1,16 @@
+program:
+  steps:
+    - [set, first, [add, 1, 2]]
+    - [set, second, [add, first, 5]]
+  main: [list, steps]
+expected:
+  steps:
+    - [set, first, [add, 1, 2]]
+    - [set, second, [add, first, 5]]
+  main: [list, steps]
+  first: 3
+  second: 8
+  state:
+    result: null
+    frames: []
+    status: finished
