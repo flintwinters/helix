@@ -1,0 +1,58 @@
+source: helix_demo.yaml
+stdout_contains:
+  - "status: running"
+  - "second: 11"
+expected:
+  name: Helix
+  tagline: Cells all the way down
+  left: 20
+  right: 22
+  outer:
+    inner:
+      value: 43
+  include: [helix_demo_include.yaml]
+  helix_demo_include:
+    inner:
+      value: 44
+  internal_vm:
+    seed: 7
+    delta: 8
+    main: [set, total, [add, seed, delta]]
+    total: 15
+    state:
+      result: 15
+      frames: []
+      status: finished
+  step_vm:
+    seed2: 3
+    delta2: 4
+    steps:
+      - [set, first, [add, seed2, delta2]]
+      - [set, second, [add, first, delta2]]
+    main: [list, steps]
+    first: 7
+    second: 11
+    state:
+      result: null
+      frames: []
+      status: finished
+  items:
+    - [step, step_vm]
+    - [show, step_vm]
+    - [step, step_vm]
+    - [show, step_vm.second]
+    - [add, left, right]
+    - [set, total, [add, left, right]]
+    - [set, total, [add, total, [add, total, right]]]
+    - [set, seen, outer.inner.value]
+    - [set, included_seen, helix_demo_include.inner.value]
+    - [start, internal_vm]
+    - [add, right, left]
+  seen: 43
+  included_seen: 44
+  total: 106
+  main: [list, items]
+  state:
+    result: null
+    frames: []
+    status: finished
