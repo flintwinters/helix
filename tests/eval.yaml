@@ -1,0 +1,10 @@
+program:
+  code: [add, 4, 9]
+  main: [eval, code]
+expected:
+  code: [add, 4, 9]
+  main: [eval, code]
+  state:
+    result: 13
+    frames: []
+    status: finished
