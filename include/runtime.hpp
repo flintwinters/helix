@@ -7,9 +7,9 @@
 #include <variant>
 #include <vector>
 
-namespace helix {
+using namespace std;
 
-using Scalar = std::variant<std::nullptr_t, bool, std::int64_t, double, std::string>;
+using Scalar = variant<nullptr_t, bool, int64_t, double, string>;
 
 struct Value;
 struct Frame;
@@ -17,11 +17,11 @@ struct Signal;
 struct Program;
 struct VM;
 
-using List = std::vector<Value>;
-using Object = std::unordered_map<std::string, Value>;
+using List = vector<Value>;
+using Object = unordered_map<string, Value>;
 
 struct Value {
-  using Storage = std::variant<Scalar, List, Object>;
+  using Storage = variant<Scalar, List, Object>;
 
   Storage storage {};
 
@@ -37,15 +37,15 @@ struct Signal {
   };
 
   Kind kind {Kind::none};
-  std::optional<Value> payload {};
-  std::string message {};
+  optional<Value> payload {};
+  string message {};
 
   Signal() = default;
-  Signal(Kind signal_kind, std::optional<Value> signal_payload, std::string signal_message = {});
+  Signal(Kind signal_kind, optional<Value> signal_payload, string signal_message = {});
 };
 
 struct Frame {
-  std::string name {};
+  string name {};
   Object locals {};
 };
 
@@ -62,10 +62,8 @@ struct VM {
     failed,
   };
 
-  std::vector<Frame> frames {};
-  std::optional<Value> result {};
+  vector<Frame> frames {};
+  optional<Value> result {};
   Signal signal {};
   Status status {Status::ready};
 };
-
-}  // namespace helix
