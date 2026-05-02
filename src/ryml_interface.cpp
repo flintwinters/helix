@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <c4/yml/emit.hpp>
 #include <c4/yml/parse.hpp>
 #include <c4/yml/std/string.hpp>
 
@@ -166,4 +167,9 @@ c4::yml::Tree ryml_tree_from_cell(ConstCellPtr root_cell)
     c4::yml::Tree tree {};
     write_cell_to_ryml_node(root_cell, tree.rootref());
     return tree;
+}
+
+string emit_yaml_from_cell(ConstCellPtr root_cell)
+{
+    return c4::yml::emitrs_yaml<string>(ryml_tree_from_cell(root_cell));
 }
