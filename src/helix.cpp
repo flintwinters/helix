@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdexcept>
-#include "ryml_interface.cpp"
+
+#include <ryml_interface.hpp>
 
 int main(int argc, char* argv[])
 {
