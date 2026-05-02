@@ -6,7 +6,7 @@ The native runtime should become the primary implementation of Helix. It should 
 
 ## Planned Runtime Flow
 
-```text
+```
 build/helix <program.yaml>
 └── main(argc, argv)
     ├── validate CLI arguments
@@ -35,7 +35,7 @@ flowchart TD
   program["Program root cell graph"]
   builtins["create_default_builtins()"]
   evaluator["Evaluator(vm)"]
-  entry["Evaluator::evaluate_node(\"main\", program)"]
+  entry["Evaluator::evaluate_node(main, program)"]
   eval["Evaluator::evaluate(...)"]
   dispatch["BuiltinRegistry::call(...)"]
   vm["VM state update"]
@@ -145,7 +145,7 @@ Own conversion helpers and diagnostics:
 
 ## Planned Invocation Graph
 
-```text
+```
 main
 ├── YamlInterface::load_program_file
 │   └── Program
@@ -175,7 +175,7 @@ flowchart TD
   main["main"]
   load["YamlInterface::load_program_file"]
   registry["create_default_builtins"]
-  node["Evaluator::evaluate_node(\"main\", program)"]
+  node["Evaluator::evaluate_node(main, program)"]
   evaluate["Evaluator::evaluate"]
   find["find"]
   builtin_has["BuiltinRegistry::has_builtin"]
