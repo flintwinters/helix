@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import yaml
 
-INCLUDE_DIRECTORIES = ["include", "ryml/src", "ryml/ext/c4core/src"]
+INCLUDE_DIRECTORIES = ["include", "src", "ryml/src", "ryml/ext/c4core/src"]
 INCLUDES = " ".join(f"-I{directory}" for directory in INCLUDE_DIRECTORIES)
 COMPILER = "g++"
 CPP_FLAGS = "-g -std=c++20"
@@ -108,6 +108,7 @@ def run_clang_tidy():
         "clang-tidy-20 "
         "--system-headers=0 "
         "--extra-arg=-Iinclude "
+        "--extra-arg=-Isrc "
         "--extra-arg=-Iryml/src "
         "--extra-arg=-Iryml/ext/c4core/src "
         "src/helix.cpp -- -std=c++23 -stdlib=libstdc++"
