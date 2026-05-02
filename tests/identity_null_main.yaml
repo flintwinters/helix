@@ -1,0 +1,16 @@
+program:
+  name: identity
+  meta:
+    count: 3
+    tags: [a, b]
+  main: null
+expected:
+  meta:
+    count: 3
+    tags: [a, b]
+  name: identity
+  main: null
+  state:
+    result: null
+    frames: []
+    status: finished
