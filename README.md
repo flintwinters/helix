@@ -1,13 +1,13 @@
 ## Overview
 
-The Helix programming system is mainly inspired by Smalltalk and defines a language where the primitive runtime unit is a cell. Cells are analogous to Lisp nodes: larger program structures are composed of many cells rather than collapsing into one indivisible runtime object. There are no distinct runtime categories such as function, environment, object, or VM. Instead, these roles emerge from how cells are connected and how composite structures behave.
+The Helix programming system is mainly inspired by Smalltalk and defines a language where the primitive runtime unit is a cell. Cells are analogous to Lisp nodes. A YAML scalar, sequence, or mapping corresponds to a cell of the appropriate runtime type, so a YAML map is a `Map`-type cell. However, a large Helix VM object is not treated as one primitive cell in that same sense. It is a higher-level runtime object assembled from many cells.
 
-The program is therefore a rooted graph of cells. At the top level it may appear as one YAML object, but semantically that object is a composite built from many constituent cells. Execution begins by locating a `"main"` entrypoint within that graph. From that point forward, all computation proceeds through two operations:
+The program is therefore a rooted graph of cells. Execution begins by locating a `"main"` entrypoint within that graph. From that point forward, all computation proceeds through two operations:
 
 - `find(vm, key)` performs name resolution relative to a given execution context.
 - `eval(vm)` executes a cell within that same context.
 
-The crucial simplification is that the environment and the VM are identical at the level of the cell graph. There is no separate environment object standing apart from execution state. Lexical scope, dynamic scope, and runtime state all live in the same composed structure.
+The crucial simplification is that the environment and the VM are identical at the operational level. There is no separate environment object standing apart from execution state. Lexical scope, dynamic scope, and runtime state all live in the same connected runtime structure built from cells.
 
 ## Name Resolution
 
