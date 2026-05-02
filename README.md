@@ -2,7 +2,7 @@
 
 The Helix programming system is mainly inspired by Smalltalk and defines a language where the only runtime entity is a cell, and every cell is structurally a map. There are no distinct runtime categories such as function, environment, object, or VM. Instead, these roles emerge from behavior.
 
-The entire program is represented as a single root cell, and execution begins by locating an `"eval"` entrypoint within that structure. From that point forward, all computation proceeds through two operations:
+The entire program is represented as a single root cell, and execution begins by locating a `"main"` entrypoint within that structure. From that point forward, all computation proceeds through two operations:
 
 - `find(vm, key)` performs name resolution relative to a given execution context.
 - `eval(vm)` executes a cell within that same context.
@@ -30,9 +30,11 @@ Evaluation is driven by polymorphism on cell type. There is no global interprete
 - the first element is treated as the actor
 - the remaining elements are treated as arguments
 
-However, arguments are not passed explicitly through ordinary function parameters. Instead, they are mediated through VM state. The `eval(vm)` method of each cell reads from and writes to shared execution state, typically a stack or frame structure stored under a `"state"` field accessible via `find`.
+However, arguments are not passed explicitly through ordinary host-language function parameters. Instead, they are mediated through VM state. The `eval(vm)` method of each cell reads from and writes to the executing VM, typically through a `"state"` field accessible via `find`.
 
-This pushes the system toward a stack-based execution model without introducing bytecode or a separate instruction set. Each cell acts as a reduction rule that transforms VM state. A `VecCell` may push intermediate results, invoke another cell, and then consume results. A callable cell may pop its arguments, perform computation, and push a result.
+This means each cell is best understood as a rule for transforming VM state. Builtins in particular do not receive a detached argument environment and return a separate updated machine. They operate on the executing VM directly and therefore behave like functions from VM state to VM state, with the transition expressed implicitly through in-place mutation of the current VM cell.
+
+Stacks and frames may still appear as internal conventions inside `"state"`, but they are implementation details of how a particular cell organizes execution, not the primary abstraction of the language.
 
 The separation between the two primitive operations is intentional:
 
@@ -44,10 +46,10 @@ The separation between the two primitive operations is intentional:
 The absence of explicit argument passing has important consequences.
 
 - There is no fixed calling convention at the interface level.
-- Different cells may interpret the stack differently.
-- Conventions about stack and frame layout are runtime agreements rather than static type rules.
+- Different cells may interpret VM state differently.
+- Conventions about local state layout are runtime agreements rather than static type rules.
 
-This gives the system flexibility. One cell may treat the top of the stack as its argument list, while another may use a frame pointer stored in `"state"`. The tradeoff is that data flow becomes more implicit, so evaluation discipline must be maintained by convention.
+This gives the system flexibility. One cell may organize its local state around a stack discipline, while another may use named fields, frame-like records, or some other structure under `"state"`. The tradeoff is that data flow becomes more implicit, so evaluation discipline must be maintained by convention. The important constant is not a specific stack protocol, but the fact that evaluation proceeds by reading and updating the current VM.
 
 ## Nested Execution
 
@@ -109,7 +111,7 @@ Conceptually, the system sits at the intersection of several traditions:
 
 - prototype-based object systems, through delegation via `"parent"`
 - Lisp-style evaluation, through structured data representing computation
-- stack-based virtual machines, through implicit argument passing and state-driven execution
+- stateful virtual machines, through implicit argument passing and VM-driven execution
 
 Helix does not fully adopt any one of these paradigms. Instead, it extracts their minimal operational principles and recombines them into a uniform model centered on cells, `find`, and `eval`.
 
