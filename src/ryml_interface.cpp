@@ -1,18 +1,17 @@
+#include <ryml_interface.hpp>
+
 #include <charconv>
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
 #include <string>
 
-#include <c4/yml/node.hpp>
 #include <c4/yml/parse.hpp>
 #include <c4/yml/std/string.hpp>
 
-#include "core.cpp"
-
 using namespace std;
 
-inline string read_yaml_file_text(const char* path)
+static string read_yaml_file_text(const char* path)
 {
     ifstream input(path, ios::binary);
     if(!input)
@@ -23,12 +22,12 @@ inline string read_yaml_file_text(const char* path)
     return {istreambuf_iterator<char>(input), istreambuf_iterator<char>()};
 }
 
-inline string ryml_text_to_string(c4::csubstr text)
+static string ryml_text_to_string(c4::csubstr text)
 {
     return {text.str, text.len};
 }
 
-inline CellPtr scalar_cell_from_ryml(c4::csubstr scalar)
+static CellPtr scalar_cell_from_ryml(c4::csubstr scalar)
 {
     const string text = ryml_text_to_string(scalar);
     int64_t integer_value = 0;
@@ -45,7 +44,7 @@ inline CellPtr scalar_cell_from_ryml(c4::csubstr scalar)
     return make_shared<StrCell>(text);
 }
 
-inline CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node)
+CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node)
 {
     while((node.is_stream() || node.is_doc()) && node.has_children())
     {
@@ -81,7 +80,7 @@ inline CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node)
     return make_shared<StrCell>();
 }
 
-inline CellPtr load_root_cell_from_yaml_file(const char* path)
+CellPtr load_root_cell_from_yaml_file(const char* path)
 {
     const string file_text = read_yaml_file_text(path);
     const c4::csubstr yaml_text(file_text.data(), file_text.size());
@@ -89,7 +88,7 @@ inline CellPtr load_root_cell_from_yaml_file(const char* path)
     return cell_from_ryml_node(tree.rootref());
 }
 
-inline void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node)
+void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node)
 {
     if(!cell)
     {
@@ -162,7 +161,7 @@ inline void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node)
     }
 }
 
-inline c4::yml::Tree ryml_tree_from_cell(ConstCellPtr root_cell)
+c4::yml::Tree ryml_tree_from_cell(ConstCellPtr root_cell)
 {
     c4::yml::Tree tree {};
     write_cell_to_ryml_node(root_cell, tree.rootref());
