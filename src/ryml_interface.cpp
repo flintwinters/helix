@@ -6,6 +6,7 @@
 
 #include <c4/yml/node.hpp>
 #include <c4/yml/parse.hpp>
+#include <c4/yml/std/string.hpp>
 
 #include "core.cpp"
 
@@ -86,4 +87,84 @@ inline CellPtr load_root_cell_from_yaml_file(const char* path)
     const c4::csubstr yaml_text(file_text.data(), file_text.size());
     c4::yml::Tree tree = c4::yml::parse_in_arena(path, yaml_text);
     return cell_from_ryml_node(tree.rootref());
+}
+
+inline void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node)
+{
+    if(!cell)
+    {
+        node << "null";
+        return;
+    }
+
+    switch(cell->type)
+    {
+    case Cell::Type::map:
+    {
+        node |= c4::yml::MAP;
+        const auto& map_cell = static_cast<const MapCell&>(*cell);
+        for(const auto& [key, value] : map_cell.value)
+        {
+            auto child = node.append_child();
+            child << c4::yml::key(key);
+            write_cell_to_ryml_node(value, child);
+        }
+        return;
+    }
+    case Cell::Type::vec:
+    {
+        node |= c4::yml::SEQ;
+        const auto& vec_cell = static_cast<const VecCell&>(*cell);
+        for(const CellPtr& value : vec_cell.value)
+        {
+            auto child = node.append_child();
+            write_cell_to_ryml_node(value, child);
+        }
+        return;
+    }
+    case Cell::Type::integer:
+        node << static_cast<const IntCell&>(*cell).value;
+        return;
+    case Cell::Type::string:
+        node << static_cast<const StrCell&>(*cell).value;
+        return;
+    case Cell::Type::function:
+        node << "<function>";
+        return;
+    case Cell::Type::signal:
+    case Cell::Type::return_signal:
+    {
+        node |= c4::yml::MAP;
+        const auto& sig_cell = static_cast<const SigCell&>(*cell);
+        node["signal_type"] << (cell->type == Cell::Type::return_signal ? "return" : "signal");
+        if(sig_cell.value)
+        {
+            write_cell_to_ryml_node(sig_cell.value, node["value"]);
+        }
+        return;
+    }
+    case Cell::Type::error_signal:
+    {
+        node |= c4::yml::MAP;
+        const auto& err_cell = static_cast<const ErrCell&>(*cell);
+        node["signal_type"] << "error";
+        node["message"] << err_cell.message;
+        if(err_cell.value)
+        {
+            write_cell_to_ryml_node(err_cell.value, node["value"]);
+        }
+        return;
+    }
+    case Cell::Type::base:
+    default:
+        node << "<cell>";
+        return;
+    }
+}
+
+inline c4::yml::Tree ryml_tree_from_cell(ConstCellPtr root_cell)
+{
+    c4::yml::Tree tree {};
+    write_cell_to_ryml_node(root_cell, tree.rootref());
+    return tree;
 }
