@@ -1,40 +1,46 @@
 ## Overview
 
-The Helix programming system is mainly inspired by Smalltalk and defines a language whose primitive runtime unit is the cell. A cell is closer to a Lisp node than to a whole application object: individual strings, vectors, and mappings are cells of different kinds, and a YAML mapping corresponds to a `Map`-type cell. A large Helix VM object, by contrast, is not treated as one primitive cell in the same sense. It is a higher-order runtime structure assembled from many cells, even though it may expose many of the same capabilities.
+The Helix programming system is mainly inspired by Smalltalk, but the current implementation is a Racket prototype over parsed YAML values. In the current runtime, the executable program is a mutable top-level mapping with a required `"main"` entrypoint and a runtime-owned `"state"` field. Strings, lists, mappings, and scalars are interpreted directly through host-language values rather than through a completed C++-style cell class hierarchy.
 
-Execution begins by locating a `"main"` entrypoint within that larger structure. From that point forward, all computation proceeds through two operations:
+Even so, the design direction is already visible. Helix is trying to converge on a model where small runtime units behave like cells or Lisp nodes, while larger runtime objects such as a running VM are assembled from those units rather than treated as unrelated machinery.
+
+Execution begins by locating `"main"` inside the top-level program mapping. From that point forward, the current runtime is organized around two operations:
 
 - `find(vm, key)` performs name resolution relative to a given execution context.
 - `eval(vm)` executes a cell within that same context.
 
-The crucial simplification is that the environment and the VM are not separate layers. Lexical scope, dynamic scope, and execution state all live in the same connected runtime structure, built from cells rather than wrapped by a separate environment object.
+In the present Racket implementation these operations are realized concretely as the `resolve` and `evaluate` functions, together with a small amount of VM scheduling logic in `helix.rkt`. The crucial simplification is that execution state lives inside the same top-level program object being interpreted rather than in a detached host-side environment.
 
 ## Name Resolution
 
-Name resolution is purely structural.
+The current name-resolution behavior is simpler than the long-term prototype-style design.
 
-- A cell may contain arbitrary keys.
-- If a key is not found locally, `find` follows a `"parent"` reference recursively.
-- Any cell can serve as a scope simply by participating in this delegation chain.
+- Builtin names resolve first.
+- Then top-level program fields resolve by exact key.
+- Dotted names such as `foo.bar` resolve by walking nested mappings from the program root.
 
-This creates a prototype-like structure that simultaneously models lexical scope and inheritance. No special environment object exists. Because `find` is the only retrieval mechanism, it becomes the backbone of symbolic reference.
+There is not yet a general `"parent"`-chain lookup in the Racket runtime. That remains part of the conceptual direction rather than current behavior. Today, symbolic reference is still centralized enough that `resolve` forms the backbone of evaluation.
 
-Strings are therefore not merely primitive values. A `StrCell` can act as a symbolic reference: when evaluated, it resolves its contents through `find`. This removes the need for a separate symbol type and keeps the surface representation aligned with runtime behavior.
+Strings are therefore not merely primitive values. In the current runtime, a string in evaluation position can act as a symbolic reference: when evaluated, it resolves its contents through `find`. This removes the need for a separate symbol type and keeps the surface representation aligned with runtime behavior.
 
 ## Evaluation Model
 
-Evaluation is driven by polymorphism on cell type. There is no global interpreter loop that distinguishes expressions from values. Instead, each cell defines how it evaluates itself.
+The current Racket runtime uses a small centralized evaluator rather than a fully distributed per-cell method system. Concretely:
 
-`VecCell` encodes structured computation using a Lisp-like rule:
+- strings are resolved through `resolve`
+- lists are treated as executable forms
+- all other YAML values evaluate to themselves
+
+A YAML sequence in evaluation position encodes structured computation using a Lisp-like rule:
 
 - the first element is treated as the actor
 - the remaining elements are treated as arguments
 
-However, arguments are not passed explicitly through ordinary host-language function parameters. Instead, they are mediated through VM state. The `eval(vm)` method of each cell reads from and writes to the currently executing VM, typically through a `"state"` field accessible via `find`.
+The actor must resolve to a builtin procedure. There is not yet a user-defined callable cell protocol in the current runtime. Even so, the evaluator already has the shape the system is moving toward: evaluation happens against the current program/VM object, and builtins decide when to evaluate their arguments.
 
-This means that executable cells, and builtins in particular, are best understood as state transformers over the active VM. A builtin does not receive a detached argument environment and return a separately constructed machine. It receives access to the whole executing VM and updates that VM in place. Semantically, builtin execution behaves like a transition from one VM state to the next, even though that transition is realized by mutating the current VM object rather than allocating a new one.
+This means that executable forms, and builtins in particular, are best understood as state transformers over the active VM. A builtin does not receive a detached argument environment and return a separately constructed machine. It receives unevaluated argument nodes together with the current program object and updates that program in place. Semantically, builtin execution behaves like a transition from one VM state to the next, even though that transition is realized by mutating the current VM object rather than allocating a new one.
 
-Stacks and frames may still appear as one way of organizing local execution state, but they are conventions inside the VM rather than the defining abstraction of the language.
+The long-term direction is more cell-distributed than the current Racket prototype, but the present implementation already preserves the key operational point: evaluation is rooted in the running VM, not in a separate detached environment.
 
 The separation between the two primitive operations is intentional:
 
@@ -43,29 +49,37 @@ The separation between the two primitive operations is intentional:
 
 ## Calling Convention And State
 
-The absence of explicit argument passing has important consequences.
+The current builtins make the VM-oriented calling convention concrete.
 
-- There is no fixed calling convention at the interface level.
-- Different cells may interpret VM state differently.
-- Conventions about local state layout are runtime agreements rather than static type rules.
+- Builtins receive raw argument nodes.
+- Builtins explicitly call `evaluate` on the arguments they want to force.
+- Builtins can mutate the current program mapping directly.
+- Runtime scheduling state is stored under `"state"`.
 
-This gives the system flexibility. One cell may organize its local execution around a stack discipline, while another may use named fields, frame-like records, or some other structure under `"state"`. The tradeoff is that data flow becomes more implicit, so evaluation discipline must be maintained by convention. The invariant is not a particular stack protocol, but the fact that evaluation proceeds by reading and updating the current VM.
+In the existing Racket runtime, `"state"` currently carries at least:
+
+- `"status"` for `ready`, `running`, `finished`, or `error`
+- `"frames"` for resumable stepped execution
+- `"result"` for terminal results
+- `"error"` for surfaced runtime failure text
+
+This is why the current system is better described as VM-driven than stack-driven. Frames exist, but they are only one field inside the broader mutable runtime state.
 
 ## Nested Execution
 
-Any cell can act as a micro-VM.
-
-If a cell defines a `"state"` field and implements `eval` in terms of that state, it can host its own execution process. That supports:
+The current implementation already supports nested execution, but in a narrower form than the full conceptual model. Specifically, `start` and `step` resolve a named nested VM mapping and run it through the same scheduler used by the outer runtime. That supports:
 
 - nested interpreters
-- coroutines
-- isolated execution contexts
+- resumable child execution
+- isolated child state within each nested VM's `"state"` mapping
 
-Because `find` always operates relative to the current VM, switching execution contexts is as simple as changing which cell is passed as `vm`. Execution is therefore distributed across cells that locally manage their own semantics rather than centralized in one fixed interpreter object.
+The broader idea that any arbitrary cell can host its own evaluator remains part of the direction of the system, but the implemented path today is specifically nested VM mappings driven by `start`, `step`, `advance-vm!`, and `run-vm`.
 
 ## Error And Return Semantics
 
-Error handling is integrated into the object model. Errors are represented as cells rather than host-language exceptions or unrelated out-of-band mechanisms. When an operation fails, it produces an error cell, and subsequent `find` or `eval` operations propagate that failure through ordinary cell behavior.
+The current Racket runtime does not yet implement first-class `Error`, `Signal`, or `Return` cells. Operationally, failures are reported through Racket exceptions, and the VM mirrors those failures into `"state"` by setting `"status"` to `"error"` and recording an `"error"` message.
+
+That said, clean first-class errors remain an important design goal for Helix, because they would let failure participate in the same object model as ordinary values rather than escaping into host-language control flow.
 
 `return` introduces a different problem. A returned value is ordinary data, but the act of returning is not. If `return` were modeled as just another normal result of `eval`, then every caller of `eval` would need to inspect the result to determine whether evaluation produced data or a non-local control transfer. That would force control-flow checks into:
 
@@ -73,7 +87,7 @@ Error handling is integrated into the object model. Errors are represented as ce
 - every builtin that evaluates subexpressions
 - every future evaluator helper
 
-This would spread one control concern across the entire runtime and weaken the intended uniformity of the `find`/`eval` model.
+This would spread one control concern across the entire runtime and weaken the intended uniformity of the evaluator.
 
 The planned solution is to introduce a `Signal` parent cell type for non-local control outcomes, with `Error` and `Return` as sibling signal cells.
 
@@ -81,7 +95,7 @@ The planned solution is to introduce a `Signal` parent cell type for non-local c
 - `Error` represents failure.
 - `Return` represents successful non-local transfer.
 
-This keeps the representation Smalltalk-like and inspectable while preserving proper control behavior. The runtime will distinguish between:
+This keeps the representation Smalltalk-like and inspectable while preserving proper control behavior. It is a direction for the runtime rather than a description of functionality that already exists today. In that planned model, the runtime would distinguish between:
 
 - a signal cell as an object
 - an actively signaled condition in VM state
@@ -93,17 +107,17 @@ This separation is necessary for two reasons:
 - Reification: cells are the only runtime entities, so errors and returns must be representable and inspectable as cells.
 - Non-local transfer: `return` is not merely a value constructor; it is a request to terminate the current evaluation path.
 
-The `Signal` family solves both requirements without forcing every builtin and every caller of `eval` to thread control-flow tags through ordinary value flow.
+The `Signal` family solves both requirements without forcing every builtin and every caller of `eval` to thread ad hoc control-flow tags through ordinary value flow.
 
 ## Surface Syntax
 
-The system’s map-based representation aligns naturally with YAML as the surface syntax.
+The current implementation aligns naturally with YAML as the surface syntax.
 
-- a YAML mapping becomes a `MapCell`
-- a YAML sequence becomes a `VecCell`
-- a string becomes a `StrCell` that may resolve symbolically
+- a YAML mapping becomes a host mapping interpreted with Helix semantics
+- a YAML sequence becomes a host list interpreted with Helix semantics
+- a string remains a string, but may resolve symbolically when evaluated
 
-This removes the need for a custom parser and keeps the syntax close to the runtime representation. Programs can be written directly as YAML documents, and the parsed structure already matches the underlying execution model at the cell level. Higher-order runtime objects such as a running VM are then assembled from those cells rather than identified with one cell wholesale.
+More precisely, the Racket prototype parses YAML directly into host mappings, lists, strings, and scalars, and then interprets those values with Helix semantics. This removes the need for a custom parser and keeps the syntax close to the runtime representation while the cell model is still being made more explicit in the implementation.
 
 ## Conceptual Lineage
 
@@ -113,7 +127,7 @@ Conceptually, the system sits at the intersection of several traditions:
 - Lisp-style evaluation, through structured data representing computation
 - stateful virtual machines, through implicit argument passing and VM-driven execution
 
-Helix does not fully adopt any one of these paradigms. Instead, it extracts their minimal operational principles and recombines them into a uniform model centered on cells, `find`, and `eval`.
+The current Racket runtime does not fully realize all of those ideas yet. Instead, it should be read as a working interpreter that already demonstrates YAML-backed evaluation, builtin dispatch, mutable VM state, includes, and stepped child execution, while still pointing toward a more explicit cell-oriented object model.
 
 ## Codebase overview
 
