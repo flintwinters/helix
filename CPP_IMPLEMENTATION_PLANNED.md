@@ -2,7 +2,7 @@
 
 ## Goal
 
-The native runtime should become the primary implementation of Helix. It should execute the existing YAML program format, match current Racket behavior where that behavior is already tested, and use the same fixture suite through `build.py`.
+The native runtime should become the primary implementation of Helix. It should execute the existing YAML program format, match current Racket behavior where that behavior is already tested, and preserve the philosophy described in `README.md`: the language is cell-based, the root program is a graph, and execution is organized around `find` and `eval` rather than around a large number of special runtime categories.
 
 ## Planned Runtime Flow
 
@@ -25,6 +25,51 @@ build/helix <program.yaml>
     └── print final YAML result
 ```
 
+```mermaid
+flowchart TD
+  classDef root fill:#447,stroke:#1f6feb,stroke-width:2px;
+  classDef leaf fill:#475,stroke:#2da44e,stroke-width:2px;
+
+  main["main(argc, argv)"]
+  load["YamlInterface::load_program_file(path)"]
+  program["Program root cell graph"]
+  builtins["create_default_builtins()"]
+  evaluator["Evaluator(vm)"]
+  entry["Evaluator::evaluate_node(\"main\", program)"]
+  eval["Evaluator::evaluate(...)"]
+  dispatch["BuiltinRegistry::call(...)"]
+  vm["VM state update"]
+  dump["YamlInterface::dump_vm(vm)"]
+  output["print final YAML"]
+
+  main --> load
+  load --> program
+  main --> builtins
+  main --> evaluator
+  main --> entry
+  entry --> eval
+  entry --> dispatch
+  eval --> vm
+  dispatch --> vm
+  main --> dump
+  dump --> output
+
+  class main root;
+  class output leaf;
+```
+
+## Planned Semantic Commitments
+
+The C++ rewrite should preserve these core ideas from `README.md`:
+
+- the cell is the fundamental runtime entity
+- the program root is the execution root
+- name resolution is structural and should be expressible as `find`
+- execution is driven by `eval`
+- execution state should remain conceptually local to the graph being executed, even if some helper C++ types are used to represent it
+
+The implementation may use ordinary C++ structs and helper classes, but those should serve the cell model rather than replace it conceptually.
+
 ## Planned Module Responsibilities
 
 ### `runtime.hpp`
@@ -43,6 +88,12 @@ The central invariant should be:
 - signals represent active non-local control
 - VM owns execution status
 
+More specifically, this layer should evolve toward the README’s stronger model:
+
+- cells are maps or sequences in the YAML-derived graph
+- references are resolved structurally
+- execution context should be recoverable from the graph rather than hidden behind unrelated global state
+
 ### `ryml_interface.cpp`
 
 Own YAML translation only:
@@ -57,6 +108,8 @@ This file should not decide runtime semantics.
 
 Own evaluation semantics:
 
+- implement `find`
+- implement `eval`
 - evaluate literals
 - evaluate symbol/node references
 - evaluate lists/forms
@@ -114,6 +167,39 @@ main
 └── YamlInterface::dump_vm(vm)
 ```
 
+```mermaid
+flowchart TD
+  classDef root fill:#447,stroke:#1f6feb,stroke-width:2px;
+  classDef leaf fill:#475,stroke:#2da44e,stroke-width:2px;
+
+  main["main"]
+  load["YamlInterface::load_program_file"]
+  registry["create_default_builtins"]
+  node["Evaluator::evaluate_node(\"main\", program)"]
+  evaluate["Evaluator::evaluate"]
+  find["find"]
+  builtin_has["BuiltinRegistry::has_builtin"]
+  builtin_call["BuiltinRegistry::call"]
+  builtin_impl["builtin implementation"]
+  vmwrite["write VM.result / VM.status / VM.signal"]
+  dump["YamlInterface::dump_vm"]
+
+  main --> load
+  main --> registry
+  main --> node
+  node --> evaluate
+  evaluate --> find
+  evaluate --> builtin_has
+  evaluate --> builtin_call
+  builtin_call --> builtin_impl
+  evaluate --> vmwrite
+  builtin_impl --> vmwrite
+  main --> dump
+
+  class main root;
+  class find,dump leaf;
+```
+
 ## Planned Control-Flow Model
 
 The native runtime should separate data from active control:
@@ -130,6 +216,8 @@ That supports:
 - later `break` and `continue`
 
 without forcing every interface to treat control transfers as ordinary values.
+
+This is consistent with the README’s philosophy so long as the separation is understood as an implementation aid. Conceptually, the runtime still executes one cell graph. The helper C++ types should clarify that process, not fragment it into unrelated conceptual layers.
 
 ## Planned Testing Path
 
