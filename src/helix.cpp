@@ -1,22 +1,6 @@
-#include <fstream>
 #include <iostream>
-#include <iterator>
 #include <stdexcept>
-
-#include <c4/yml/parse.hpp>
-
-#include "core.cpp"
-
-static string read_file_text(const char* path)
-{
-    ifstream input(path, ios::binary);
-    if(!input)
-    {
-        throw runtime_error(string("failed to open file: ") + path);
-    }
-
-    return {istreambuf_iterator<char>(input), istreambuf_iterator<char>()};
-}
+#include "ryml_interface.cpp"
 
 int main(int argc, char* argv[])
 {
@@ -28,11 +12,7 @@ int main(int argc, char* argv[])
 
     try
     {
-        const string file_text = read_file_text(argv[1]);
-        const c4::csubstr yaml_text(file_text.data(), file_text.size());
-        c4::yml::Tree tree = c4::yml::parse_in_arena(argv[1], yaml_text);
-        c4::yml::ConstNodeRef root = tree.rootref();
-        const CellPtr root_cell = cell_from_ryml_node(root);
+        const CellPtr root_cell = load_root_cell_from_yaml_file(argv[1]);
         std::cout << "loaded " << argv[1]
                   << " into cell type " << static_cast<int>(root_cell->type)
                   << '\n';
