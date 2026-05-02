@@ -1,4 +1,4 @@
-The Helix programming system is inspired by Smalltalk and defines a language where the only runtime entity is a cell, and every cell is structurally a map. There are no distinct runtime categories such as function, environment, object, or VM. Instead, these roles emerge from behavior. The entire program is represented as a single root cell, and execution begins by locating an `"eval"` entrypoint within that structure. From that point forward, all computation proceeds through two operations: `find` and `eval`. `find(vm, key)` performs name resolution relative to a given execution context, while `eval(vm)` executes a cell within that same context. The crucial simplification is that the environment and the VM are identical. There is no separation between lexical scope, dynamic scope, and execution state; all of it lives inside the same graph of cells.
+The Helix programming system is mainly inspired by Smalltalk and defines a language where the only runtime entity is a cell, and every cell is structurally a map. There are no distinct runtime categories such as function, environment, object, or VM. Instead, these roles emerge from behavior. The entire program is represented as a single root cell, and execution begins by locating an `"eval"` entrypoint within that structure. From that point forward, all computation proceeds through two operations: `find` and `eval`. `find(vm, key)` performs name resolution relative to a given execution context, while `eval(vm)` executes a cell within that same context. The crucial simplification is that the environment and the VM are identical. There is no separation between lexical scope, dynamic scope, and execution state; all of it lives inside the same graph of cells.
 
 Name resolution is purely structural. A cell may contain arbitrary keys, but if a key is not found locally, `find` follows a `"parent"` reference, recursively. This creates a prototype-like delegation chain that simultaneously models lexical scope and inheritance. No special environment object exists. Any cell can serve as a scope simply by participating in this delegation chain. Because `find` is the only mechanism for retrieving data, it becomes the backbone of all symbolic reference. A string is not just a primitive value; it is a potential reference. When a `StrCell` is evaluated, it resolves its contents via `find`, turning strings into symbolic links within the program graph. This eliminates the need for a separate symbol type and aligns the surface representation directly with runtime behavior.
 
@@ -11,6 +11,12 @@ The absence of explicit argument passing has significant implications. It remove
 A key property of the system is that any cell can act as a micro-VM. If a cell defines a `"state"` field and implements `eval` in terms of that state, it can host its own execution process. This allows for nested interpreters, coroutines, or isolated execution contexts without introducing new primitives. For example, a cell could contain its own stack and frames, and its `eval` method could interpret a subgraph of cells independently of the outer VM. Because `find` always operates relative to the current VM, switching execution contexts is as simple as changing which cell is passed as `vm`. This makes control flow highly composable. Execution is not centralized but distributed across cells that locally manage their own state and semantics.
 
 Error handling is integrated into the object model. Errors are represented as cells, not as exceptions or out-of-band signals. When an operation fails, it returns an error cell. Subsequent `find` or `eval` operations on that cell propagate the error. This ensures that failure is handled uniformly within the same mechanism as all other computation. There is no need for special control constructs for error propagation; it emerges naturally from polymorphism. This approach also allows errors to carry structured information and participate in the same delegation and evaluation mechanisms as any other cell.
+
+The introduction of `return` creates a more subtle problem. A returned value is ordinary data, but the act of returning is not. If `return` is modeled as just another normal value, then every caller of `eval` must inspect the result to determine whether evaluation produced data or a non-local control transfer. That forces control-flow checks into every sequencing site, every builtin that evaluates subexpressions, and every future evaluator helper. In a system whose semantics are intentionally concentrated around `find` and `eval`, this is a bad distortion. It spreads one control-flow concern across the entire runtime and weakens the uniformity that the cell model is meant to provide.
+
+The planned solution is to introduce `Signal` as a parent cell type for non-local control outcomes, with `Error` and `Return` as sibling signal cells. This keeps the representation object-oriented and Smalltalk-like: signals remain inspectable cells within the language, rather than hidden host-language exceptions. At the same time, the runtime will distinguish between a signal cell as an object and an actively signaled condition in the VM. A `Return` cell can therefore exist as structured data, but when `return` is evaluated in control position it activates a return signal in VM state. Evaluation then unwinds until the appropriate function boundary consumes that signal, just as an active error signal propagates until it is handled or reaches the top level.
+
+This separation is necessary because the language needs both reification and non-local transfer. Reification matters because cells are the only runtime entities, so errors and returns should be representable, inspectable, and composable as cells. Non-local transfer matters because `return` is not merely a value constructor; it is a request to stop the current evaluation path. A unified `Signal` family solves both requirements at once. It preserves the single-cell ontology, gives `Error` and `Return` a common abstraction, and centralizes propagation in VM control state rather than forcing every builtin and every caller of `eval` to manually thread a tagged union through ordinary value flow.
 
 The system’s use of a map-based representation aligns naturally with using a data serialization format such as YAML as the surface syntax. Programs can be written directly as YAML documents, which parse into the same map and vector structures used at runtime. This eliminates the need for a custom parser and ensures that the syntax is a direct reflection of the execution model. A YAML sequence becomes a `VecCell`, and a YAML mapping becomes a `MapCell`. Strings become `StrCell` instances that resolve symbolically. This tight correspondence between syntax and semantics reduces the conceptual gap between source code and execution, making the system easier to reason about and manipulate programmatically.
 
@@ -152,159 +158,20 @@ flowchart LR
 
 This matrix is intentionally selective. It captures the dominant responsibilities rather than every helper edge.
 
-| Function | YAML I/O | Include loading | VM state | Name resolution | Evaluation | Step scheduling | Rendering | Child VM control |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `load-yaml-file` | ✓ |  |  |  |  |  |  |  |
-| `load-program` | ✓ |  |  |  |  |  |  |  |
-| `load-include-entry` | ✓ | ✓ |  |  |  |  |  |  |
-| `apply-includes!` |  | ✓ |  |  |  |  |  |  |
-| `ensure-vm-state!` |  |  | ✓ |  |  |  |  |  |
-| `initialize-vm!` |  | ✓ | ✓ |  |  |  |  |  |
-| `resolve-path` |  |  |  | ✓ |  |  |  |  |
-| `resolve` |  |  |  | ✓ | ✓ |  |  |  |
-| `call-with-resolve` |  |  |  | ✓ |  | ✓ |  |  |
-| `evaluate` |  |  |  | ✓ | ✓ |  |  |  |
-| `evaluate-list` |  |  |  |  | ✓ |  |  |  |
-| `advance-vm!` |  |  | ✓ |  | ✓ | ✓ |  |  |
-| `run-vm` |  |  | ✓ |  |  | ✓ |  |  |
-| `resolve-child-vm` |  |  |  | ✓ |  |  |  | ✓ |
-| `builtin-start` |  |  | ✓ |  |  | ✓ |  | ✓ |
-| `builtin-step` |  |  | ✓ |  |  | ✓ |  | ✓ |
-| `cells->yaml-string` |  |  |  |  |  |  | ✓ |  |
-| `evaluate-sequence` |  |  | ✓ |  | ✓ | ✓ |  |  |
-| `builtin-eval` |  |  |  |  | ✓ |  |  |  |
-| `builtin-list` |  |  | ✓ |  | ✓ | ✓ |  |  |
-| `builtin-show` |  |  |  |  | ✓ |  | ✓ |  |
-| `builtin-set` |  |  | ✓ |  | ✓ |  |  |  |
-
-## Python demo
-
-The following demo shows a minimal Helix-style evaluator in Python. It uses YAML as the surface syntax, resolves names through `"parent"` links, and prints evaluation steps with `rich.print`.
-
-Install the dependencies:
-
-```bash
-python -m pip install rich pyyaml
-```
-
-Run the demo:
-
-```python
-from __future__ import annotations
-
-from copy import deepcopy
-from dataclasses import dataclass
-from typing import Any
-
-import yaml
-from rich import print
-
-
-PROGRAM_YAML = """
-parent:
-  add:
-    __builtin__: add
-  message: Hello from the root scope
-eval:
-  - print
-  - message
-sum:
-  - add
-  - 20
-  - 22
-nested:
-  parent:
-    parent:
-      message: Hello from the parent chain
-  eval:
-    - print
-    - message
-"""
-
-
-@dataclass
-class ErrorCell:
-    message: str
-
-    def __repr__(self) -> str:
-        return f"ErrorCell({self.message!r})"
-
-
-def find(vm: dict[str, Any], key: str) -> Any:
-    current: Any = vm
-    while isinstance(current, dict):
-        if key in current:
-            return current[key]
-        current = current.get("parent")
-    return ErrorCell(f"missing key: {key}")
-
-
-def eval_cell(cell: Any, vm: dict[str, Any]) -> Any:
-    if isinstance(cell, ErrorCell):
-        return cell
-    if isinstance(cell, str):
-        return find(vm, cell)
-    if isinstance(cell, list):
-        if not cell:
-            return []
-        actor = eval_cell(cell[0], vm)
-        if isinstance(actor, ErrorCell):
-            return actor
-        args = [eval_cell(arg, vm) for arg in cell[1:]]
-        for arg in args:
-            if isinstance(arg, ErrorCell):
-                return arg
-        return call(actor, args, vm)
-    if isinstance(cell, dict):
-        if "eval" in cell:
-            child_vm = dict(cell)
-            child_vm.setdefault("parent", vm)
-            return eval_cell(child_vm["eval"], child_vm)
-        return cell
-    return cell
-
-
-def call(actor: Any, args: list[Any], vm: dict[str, Any]) -> Any:
-    if actor == "print":
-        value = args[0] if args else None
-        print(f"[bold cyan]print[/bold cyan] -> {value!r}")
-        return value
-    if isinstance(actor, dict) and actor.get("__builtin__") == "add":
-        return sum(args)
-    return ErrorCell(f"cannot call actor: {actor!r}")
-
-
-def main() -> None:
-    program = yaml.safe_load(PROGRAM_YAML)
-
-    print("[bold green]Loaded YAML program[/bold green]")
-    print(program)
-
-    root_vm = deepcopy(program)
-    result = eval_cell(root_vm["eval"], root_vm)
-    print(f"[bold yellow]root result[/bold yellow] = {result!r}")
-
-    sum_result = eval_cell(root_vm["sum"], root_vm)
-    print(f"[bold yellow]sum result[/bold yellow] = {sum_result!r}")
-
-    nested_result = eval_cell(root_vm["nested"], root_vm)
-    print(f"[bold yellow]nested result[/bold yellow] = {nested_result!r}")
-
-
-if __name__ == "__main__":
-    main()
-```
-
-Expected output:
-
-```text
-Loaded YAML program
-{'parent': {'add': {'__builtin__': 'add'}, 'message': 'Hello from the root scope'}, 'eval': ['print', 'message'], 'sum': ['add', 20, 22], 'nested': {'parent': {'parent': {'message': 'Hello from the parent chain'}}, 'eval': ['print', 'message']}}
-print -> 'Hello from the root scope'
-root result = 'Hello from the root scope'
-sum result = 42
-print -> 'Hello from the parent chain'
-nested result = 'Hello from the parent chain'
-```
-
-This demo is intentionally small, but it preserves the central Helix ideas: one graph of cells, structural name lookup via `find`, and evaluation driven by the shape of the cell being executed.
+| Func | Includes | Path | Eval | Steps | Child VM Ctrl |
+| --- | --- | --- | --- | --- | --- |
+| `apply-includes!`         | x |   |   |   |   |
+| `initialize-vm!`          | x |   |   |   |   |
+| `resolve-path`            |   | x |   |   |   |
+| `resolve`                 |   | x | x |   |   |
+| `call-with-resolve`       |   | x |   | x |   |
+| `evaluate`                |   |   | x |   |   |
+| `evaluate-list`           |   |   | x |   |   |
+| `advance-vm!`             |   |   | x | x |   |
+| `run-vm`                  |   |   |   | x |   |
+| `resolve-child-vm`        |   | x |   |   | x |
+| `builtin-start`           |   |   |   | x | x |
+| `builtin-step`            |   |   |   | x | x |
+| `evaluate-sequence`       |   |   | x | x |   |
+| `builtin-eval`            |   |   | x |   |   |
+| `builtin-list`            |   |   | x | x |   |
