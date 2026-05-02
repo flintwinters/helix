@@ -5,14 +5,12 @@
 
 #include "runtime.hpp"
 
-namespace helix {
+using namespace std;
 
 class YamlInterface {
  public:
-  Program load_program(std::string_view source_text) const;
-  Program load_program_file(std::string_view path) const;
-  std::string dump_program(const Program& program) const;
-  std::string dump_vm(const VM& vm) const;
+  Program load_program(string_view source_text) const;
+  Program load_program_file(string_view path) const;
+  string dump_program(const Program& program) const;
+  string dump_vm(const VM& vm) const;
 };
-
-}  // namespace helix
