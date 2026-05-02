@@ -1,13 +1,13 @@
 ## Overview
 
-The Helix programming system is mainly inspired by Smalltalk and defines a language where the only runtime entity is a cell, and every cell is structurally a map. There are no distinct runtime categories such as function, environment, object, or VM. Instead, these roles emerge from behavior.
+The Helix programming system is mainly inspired by Smalltalk and defines a language where the primitive runtime unit is a cell. Cells are analogous to Lisp nodes: larger program structures are composed of many cells rather than collapsing into one indivisible runtime object. There are no distinct runtime categories such as function, environment, object, or VM. Instead, these roles emerge from how cells are connected and how composite structures behave.
 
-The entire program is represented as a single root cell, and execution begins by locating a `"main"` entrypoint within that structure. From that point forward, all computation proceeds through two operations:
+The program is therefore a rooted graph of cells. At the top level it may appear as one YAML object, but semantically that object is a composite built from many constituent cells. Execution begins by locating a `"main"` entrypoint within that graph. From that point forward, all computation proceeds through two operations:
 
 - `find(vm, key)` performs name resolution relative to a given execution context.
 - `eval(vm)` executes a cell within that same context.
 
-The crucial simplification is that the environment and the VM are identical. There is no separation between lexical scope, dynamic scope, and execution state; all of it lives inside the same graph of cells.
+The crucial simplification is that the environment and the VM are identical at the level of the cell graph. There is no separate environment object standing apart from execution state. Lexical scope, dynamic scope, and runtime state all live in the same composed structure.
 
 ## Name Resolution
 
@@ -17,7 +17,7 @@ Name resolution is purely structural.
 - If a key is not found locally, `find` follows a `"parent"` reference recursively.
 - Any cell can serve as a scope simply by participating in this delegation chain.
 
-This creates a prototype-like structure that simultaneously models lexical scope and inheritance. No special environment object exists. Because `find` is the only retrieval mechanism, it becomes the backbone of symbolic reference.
+This creates a prototype-like structure that simultaneously models lexical scope and inheritance. No special environment object exists apart from the graph being traversed. Because `find` is the only retrieval mechanism, it becomes the backbone of symbolic reference.
 
 Strings are therefore not merely primitive values. A `StrCell` can act as a symbolic reference: when evaluated, it resolves its contents through `find`. This removes the need for a separate symbol type and keeps the surface representation aligned with runtime behavior.
 
@@ -32,7 +32,7 @@ Evaluation is driven by polymorphism on cell type. There is no global interprete
 
 However, arguments are not passed explicitly through ordinary host-language function parameters. Instead, they are mediated through VM state. The `eval(vm)` method of each cell reads from and writes to the executing VM, typically through a `"state"` field accessible via `find`.
 
-This means each cell is best understood as a rule for transforming VM state. Builtins in particular do not receive a detached argument environment and return a separate updated machine. They operate on the executing VM directly and therefore behave like functions from VM state to VM state, with the transition expressed implicitly through in-place mutation of the current VM cell.
+This means each executable cell is best understood as a rule for transforming VM state. Builtins in particular do not receive a detached argument environment and return a separate updated machine. They operate on the executing VM directly and therefore behave like functions from VM state to VM state, with the transition expressed implicitly through in-place mutation of the current composite VM structure.
 
 Stacks and frames may still appear as internal conventions inside `"state"`, but they are implementation details of how a particular cell organizes execution, not the primary abstraction of the language.
 
@@ -97,13 +97,14 @@ The `Signal` family solves both requirements without forcing every builtin and e
 
 ## Surface Syntax
 
-The system’s map-based representation aligns naturally with YAML as the surface syntax.
+The system’s cell-based representation aligns naturally with YAML as the surface syntax.
 
-- a YAML mapping becomes a `MapCell`
-- a YAML sequence becomes a `VecCell`
+- a YAML mapping becomes a composite mapping structure made of cells
+- a YAML sequence becomes a composite vector structure made of cells
+- individual mapping entries, sequence elements, and strings are represented by cells
 - a string becomes a `StrCell` that may resolve symbolically
 
-This removes the need for a custom parser and keeps the syntax close to the runtime representation. Programs can be written directly as YAML documents, and the parsed structure already matches the underlying execution model.
+This removes the need for a custom parser and keeps the syntax close to the runtime representation. Programs can be written directly as YAML documents, and the parsed structure already mirrors the underlying graph of cells rather than requiring a separate surface-language AST.
 
 ## Conceptual Lineage
 
