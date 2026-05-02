@@ -2,7 +2,7 @@
 
 ## Summary
 
-The C++ runtime is still a scaffold. The binary builds, the public header surface exists, and `build.py` can compile and invoke the native executable, but no evaluation pipeline is implemented yet.
+The C++ runtime is still a scaffold. The binary builds, the public header surface exists, and `build.py` can compile and invoke the native executable, but the cell-based evaluation model described in `README.md` is not implemented natively yet. In particular, there is not yet a native realization of the two central operations, `find` and `eval`, and there is not yet a running VM whose execution state is embedded into the same graph it evaluates.
 
 ## Build Entry
 
@@ -41,9 +41,29 @@ build/helix <program.yaml>
 
 There are no native calls yet from `main()` into parsing, evaluation, builtin dispatch, or serialization.
 
+```mermaid
+flowchart TD
+  classDef root fill:#447,stroke:#1f6feb,stroke-width:2px;
+  classDef leaf fill:#475,stroke:#2da44e,stroke-width:2px;
+
+  buildpy["build.py compile_main()"]
+  helix["build/helix"]
+  main["main(argc, argv)"]
+  usage["print usage to stderr<br/>exit 1"]
+  stub["print scaffold message to stderr<br/>exit 0"]
+
+  buildpy --> helix
+  helix --> main
+  main -->|argc != 2| usage
+  main -->|argc == 2| stub
+
+  class buildpy root;
+  class usage,stub leaf;
+```
+
 ## Declared Native Surface
 
-The headers describe the intended modules, even though the `.cpp` implementations are still empty.
+The headers describe the intended modules, even though the `.cpp` implementations are still empty. They should be read as declarations of a future cell-oriented runtime, not as evidence that the runtime semantics already exist.
 
 ### `include/runtime.hpp`
 
@@ -60,6 +80,8 @@ Current control-state shape:
 
 - `Signal::Kind`: `none`, `error`, `returning`
 - `VM::Status`: `ready`, `running`, `finished`, `failed`
+
+This is only a placeholder approximation of the runtime model in the README. It does not yet express the stronger claim that the VM/environment/execution state collapse into one graph of cells, and it does not yet implement `find(vm, key)` or `eval(vm)` as the system’s governing operations.
 
 ### `include/core.hpp`
 
@@ -108,6 +130,8 @@ Declares:
 
 The current native runtime can be built and launched, but it cannot yet:
 
+- model the README’s unified cell graph directly
+- implement `find`-driven name resolution
 - parse YAML programs
 - evaluate nodes or expressions
 - dispatch builtins
