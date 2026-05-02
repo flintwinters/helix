@@ -1,26 +1,117 @@
-The Helix programming system is mainly inspired by Smalltalk and defines a language where the only runtime entity is a cell, and every cell is structurally a map. There are no distinct runtime categories such as function, environment, object, or VM. Instead, these roles emerge from behavior. The entire program is represented as a single root cell, and execution begins by locating an `"eval"` entrypoint within that structure. From that point forward, all computation proceeds through two operations: `find` and `eval`. `find(vm, key)` performs name resolution relative to a given execution context, while `eval(vm)` executes a cell within that same context. The crucial simplification is that the environment and the VM are identical. There is no separation between lexical scope, dynamic scope, and execution state; all of it lives inside the same graph of cells.
+## Overview
 
-Name resolution is purely structural. A cell may contain arbitrary keys, but if a key is not found locally, `find` follows a `"parent"` reference, recursively. This creates a prototype-like delegation chain that simultaneously models lexical scope and inheritance. No special environment object exists. Any cell can serve as a scope simply by participating in this delegation chain. Because `find` is the only mechanism for retrieving data, it becomes the backbone of all symbolic reference. A string is not just a primitive value; it is a potential reference. When a `StrCell` is evaluated, it resolves its contents via `find`, turning strings into symbolic links within the program graph. This eliminates the need for a separate symbol type and aligns the surface representation directly with runtime behavior.
+The Helix programming system is mainly inspired by Smalltalk and defines a language where the only runtime entity is a cell, and every cell is structurally a map. There are no distinct runtime categories such as function, environment, object, or VM. Instead, these roles emerge from behavior.
 
-Evaluation is driven by polymorphism on cell type. There is no global interpreter loop that distinguishes expressions from values. Instead, each cell defines how it evaluates itself. A `VecCell` encodes structured computation using a rule analogous to Lisp: the first element is treated as the actor, and the remaining elements are arguments. Evaluation proceeds by evaluating the actor, then invoking it with arguments derived from the vector tail. However, unlike traditional Lisp, arguments are not passed explicitly through function calls. Instead, they are implicitly managed through VM state. The `eval(vm)` method of each cell reads from and writes to this shared state, typically a stack or frame structure stored under a `"state"` field accessible via `find`. This means that argument passing, return values, and control flow are all mediated through mutation of the VM’s internal data rather than through function parameters.
+The entire program is represented as a single root cell, and execution begins by locating an `"eval"` entrypoint within that structure. From that point forward, all computation proceeds through two operations:
 
-This design choice pushes the system toward a stack-based execution model without introducing a separate instruction set or bytecode. Each cell acts as a reduction rule that transforms VM state. A `VecCell` might push intermediate results onto the stack, invoke another cell, and then consume results. A callable cell might pop its arguments from the stack, perform computation, and push a result. Because `eval` is the only operation that mutates state, it becomes the locus of all computational effect. In contrast, `find` remains purely observational, traversing structure without side effects. This separation is intentional. It enforces a clear boundary between reading the program graph and executing it, even though both operations operate over the same unified data structure.
+- `find(vm, key)` performs name resolution relative to a given execution context.
+- `eval(vm)` executes a cell within that same context.
 
-The absence of explicit argument passing has significant implications. It removes the need for a fixed calling convention at the interface level, allowing different cells to interpret the stack in different ways. One cell might treat the top of the stack as its argument list, while another might use a frame pointer stored in `"state"`. This flexibility enables multiple execution strategies to coexist within the same system. At the same time, it introduces implicit data flow, which must be carefully managed. The system relies on convention rather than enforcement: cells must agree on how the stack is structured at call boundaries. This is a deliberate tradeoff. It sacrifices some local clarity in exchange for global uniformity and extensibility.
+The crucial simplification is that the environment and the VM are identical. There is no separation between lexical scope, dynamic scope, and execution state; all of it lives inside the same graph of cells.
 
-A key property of the system is that any cell can act as a micro-VM. If a cell defines a `"state"` field and implements `eval` in terms of that state, it can host its own execution process. This allows for nested interpreters, coroutines, or isolated execution contexts without introducing new primitives. For example, a cell could contain its own stack and frames, and its `eval` method could interpret a subgraph of cells independently of the outer VM. Because `find` always operates relative to the current VM, switching execution contexts is as simple as changing which cell is passed as `vm`. This makes control flow highly composable. Execution is not centralized but distributed across cells that locally manage their own state and semantics.
+## Name Resolution
 
-Error handling is integrated into the object model. Errors are represented as cells, not as exceptions or out-of-band signals. When an operation fails, it returns an error cell. Subsequent `find` or `eval` operations on that cell propagate the error. This ensures that failure is handled uniformly within the same mechanism as all other computation. There is no need for special control constructs for error propagation; it emerges naturally from polymorphism. This approach also allows errors to carry structured information and participate in the same delegation and evaluation mechanisms as any other cell.
+Name resolution is purely structural.
 
-The introduction of `return` creates a more subtle problem. A returned value is ordinary data, but the act of returning is not. If `return` is modeled as just another normal value, then every caller of `eval` must inspect the result to determine whether evaluation produced data or a non-local control transfer. That forces control-flow checks into every sequencing site, every builtin that evaluates subexpressions, and every future evaluator helper. In a system whose semantics are intentionally concentrated around `find` and `eval`, this is a bad distortion. It spreads one control-flow concern across the entire runtime and weakens the uniformity that the cell model is meant to provide.
+- A cell may contain arbitrary keys.
+- If a key is not found locally, `find` follows a `"parent"` reference recursively.
+- Any cell can serve as a scope simply by participating in this delegation chain.
 
-The planned solution is to introduce `Signal` as a parent cell type for non-local control outcomes, with `Error` and `Return` as sibling signal cells. This keeps the representation object-oriented and Smalltalk-like: signals remain inspectable cells within the language, rather than hidden host-language exceptions. At the same time, the runtime will distinguish between a signal cell as an object and an actively signaled condition in the VM. A `Return` cell can therefore exist as structured data, but when `return` is evaluated in control position it activates a return signal in VM state. Evaluation then unwinds until the appropriate function boundary consumes that signal, just as an active error signal propagates until it is handled or reaches the top level.
+This creates a prototype-like structure that simultaneously models lexical scope and inheritance. No special environment object exists. Because `find` is the only retrieval mechanism, it becomes the backbone of symbolic reference.
 
-This separation is necessary because the language needs both reification and non-local transfer. Reification matters because cells are the only runtime entities, so errors and returns should be representable, inspectable, and composable as cells. Non-local transfer matters because `return` is not merely a value constructor; it is a request to stop the current evaluation path. A unified `Signal` family solves both requirements at once. It preserves the single-cell ontology, gives `Error` and `Return` a common abstraction, and centralizes propagation in VM control state rather than forcing every builtin and every caller of `eval` to manually thread a tagged union through ordinary value flow.
+Strings are therefore not merely primitive values. A `StrCell` can act as a symbolic reference: when evaluated, it resolves its contents through `find`. This removes the need for a separate symbol type and keeps the surface representation aligned with runtime behavior.
 
-The system’s use of a map-based representation aligns naturally with using a data serialization format such as YAML as the surface syntax. Programs can be written directly as YAML documents, which parse into the same map and vector structures used at runtime. This eliminates the need for a custom parser and ensures that the syntax is a direct reflection of the execution model. A YAML sequence becomes a `VecCell`, and a YAML mapping becomes a `MapCell`. Strings become `StrCell` instances that resolve symbolically. This tight correspondence between syntax and semantics reduces the conceptual gap between source code and execution, making the system easier to reason about and manipulate programmatically.
+## Evaluation Model
 
-Conceptually, the system sits at the intersection of prototype-based object systems, Lisp-style evaluation, and stack-based virtual machines. From prototype systems, it takes delegation via `"parent"`. From Lisp, it takes the idea that code is data and that structured lists represent computation. From stack machines, it takes implicit argument passing and state-driven execution. However, it does not fully commit to any of these paradigms. Instead, it extracts their minimal operational principles and recombines them into a uniform model centered on cells and two operations. The result is a language where structure, behavior, and execution are all expressed in the same medium, and where complexity arises from composition rather than from a large set of primitives.
+Evaluation is driven by polymorphism on cell type. There is no global interpreter loop that distinguishes expressions from values. Instead, each cell defines how it evaluates itself.
+
+`VecCell` encodes structured computation using a Lisp-like rule:
+
+- the first element is treated as the actor
+- the remaining elements are treated as arguments
+
+However, arguments are not passed explicitly through ordinary function parameters. Instead, they are mediated through VM state. The `eval(vm)` method of each cell reads from and writes to shared execution state, typically a stack or frame structure stored under a `"state"` field accessible via `find`.
+
+This pushes the system toward a stack-based execution model without introducing bytecode or a separate instruction set. Each cell acts as a reduction rule that transforms VM state. A `VecCell` may push intermediate results, invoke another cell, and then consume results. A callable cell may pop its arguments, perform computation, and push a result.
+
+The separation between the two primitive operations is intentional:
+
+- `find` is observational and traverses structure
+- `eval` is effectful and mutates execution state
+
+## Calling Convention And State
+
+The absence of explicit argument passing has important consequences.
+
+- There is no fixed calling convention at the interface level.
+- Different cells may interpret the stack differently.
+- Conventions about stack and frame layout are runtime agreements rather than static type rules.
+
+This gives the system flexibility. One cell may treat the top of the stack as its argument list, while another may use a frame pointer stored in `"state"`. The tradeoff is that data flow becomes more implicit, so evaluation discipline must be maintained by convention.
+
+## Nested Execution
+
+Any cell can act as a micro-VM.
+
+If a cell defines a `"state"` field and implements `eval` in terms of that state, it can host its own execution process. That supports:
+
+- nested interpreters
+- coroutines
+- isolated execution contexts
+
+Because `find` always operates relative to the current VM, switching execution contexts is as simple as changing which cell is passed as `vm`. Execution is therefore distributed across cells that locally manage their own semantics rather than centralized in one fixed interpreter object.
+
+## Error And Return Semantics
+
+Error handling is integrated into the object model. Errors are represented as cells rather than host-language exceptions or unrelated out-of-band mechanisms. When an operation fails, it produces an error cell, and subsequent `find` or `eval` operations propagate that failure through ordinary cell behavior.
+
+`return` introduces a different problem. A returned value is ordinary data, but the act of returning is not. If `return` were modeled as just another normal result of `eval`, then every caller of `eval` would need to inspect the result to determine whether evaluation produced data or a non-local control transfer. That would force control-flow checks into:
+
+- every sequencing site
+- every builtin that evaluates subexpressions
+- every future evaluator helper
+
+This would spread one control concern across the entire runtime and weaken the intended uniformity of the `find`/`eval` model.
+
+The planned solution is to introduce a `Signal` parent cell type for non-local control outcomes, with `Error` and `Return` as sibling signal cells.
+
+- `Signal` keeps control outcomes within the cell model.
+- `Error` represents failure.
+- `Return` represents successful non-local transfer.
+
+This keeps the representation Smalltalk-like and inspectable while preserving proper control behavior. The runtime will distinguish between:
+
+- a signal cell as an object
+- an actively signaled condition in VM state
+
+A `Return` cell may therefore exist as structured data, but when `return` is evaluated in control position it activates a return signal in VM state. Evaluation then unwinds until the appropriate function boundary consumes that signal, just as an active error signal propagates until it is handled or reaches the top level.
+
+This separation is necessary for two reasons:
+
+- Reification: cells are the only runtime entities, so errors and returns must be representable and inspectable as cells.
+- Non-local transfer: `return` is not merely a value constructor; it is a request to terminate the current evaluation path.
+
+The `Signal` family solves both requirements without forcing every builtin and every caller of `eval` to thread control-flow tags through ordinary value flow.
+
+## Surface Syntax
+
+The system’s map-based representation aligns naturally with YAML as the surface syntax.
+
+- a YAML mapping becomes a `MapCell`
+- a YAML sequence becomes a `VecCell`
+- a string becomes a `StrCell` that may resolve symbolically
+
+This removes the need for a custom parser and keeps the syntax close to the runtime representation. Programs can be written directly as YAML documents, and the parsed structure already matches the underlying execution model.
+
+## Conceptual Lineage
+
+Conceptually, the system sits at the intersection of several traditions:
+
+- prototype-based object systems, through delegation via `"parent"`
+- Lisp-style evaluation, through structured data representing computation
+- stack-based virtual machines, through implicit argument passing and state-driven execution
+
+Helix does not fully adopt any one of these paradigms. Instead, it extracts their minimal operational principles and recombines them into a uniform model centered on cells, `find`, and `eval`.
 
 ## Codebase overview
 
