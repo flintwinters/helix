@@ -110,7 +110,7 @@
 
 (define (vm-status-result state)
   (case (string->symbol (hash-ref state "status"))
-    [(finished) (hash-ref state "result")]
+    [(finished) (hash-ref state "result" (void))]
     [(error) (error 'helix "~a" (hash-ref state "error"))]
     [else #f]))
 
