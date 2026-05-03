@@ -25,11 +25,6 @@ VALGRIND_ARGS = [
     "--show-leak-kinds=all",
     "--error-exitcode=101",
 ]
-CPP_SUPPORTED_FIXTURES = {
-    "identity_null_main.yaml",
-    "show_value.yaml",
-    "simple_show_value.yaml",
-}
 
 
 def is_source_newer(source_path, output_path):
@@ -188,13 +183,6 @@ def run_tests(runtime="cpp"):
         for file_name in files
         if file_name.endswith((".yaml", ".yml"))
     )
-
-    if runtime == "cpp":
-        test_paths = [
-            test_path
-            for test_path in test_paths
-            if os.path.basename(test_path) in CPP_SUPPORTED_FIXTURES
-        ]
 
     if not test_paths:
         print("No YAML test fixtures found.")
