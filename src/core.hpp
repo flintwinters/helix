@@ -37,6 +37,7 @@ struct Cell {
     virtual ~Cell();
 
     Type type {Type::base};
+    CellPtr parent {};
     virtual bool is_signal() const noexcept;
     virtual size_t size() const noexcept;
     virtual CellPtr call(const vector<CellPtr>& arguments, CellPtr current_vm) const;
