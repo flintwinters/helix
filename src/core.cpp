@@ -29,6 +29,8 @@ CellPtr Cell::call(const vector<CellPtr>&, CellPtr) const {
     throw logic_error("Cell is not callable");
 }
 
+void Cell::clear_descendant_parent_links() {}
+
 MapCell::MapCell() : Cell(Type::map) {}
 
 MapCell::MapCell(unordered_map<string, CellPtr> fields)
@@ -38,6 +40,17 @@ size_t MapCell::size() const noexcept {
     return value.size();
 }
 
+void MapCell::clear_descendant_parent_links() {
+    for (auto& [_, child] : value) {
+        if (!child) {
+            continue;
+        }
+
+        child->parent = nullptr;
+        child->clear_descendant_parent_links();
+    }
+}
+
 VecCell::VecCell() : Cell(Type::vec) {}
 
 VecCell::VecCell(vector<CellPtr> elements)
@@ -45,6 +58,17 @@ VecCell::VecCell(vector<CellPtr> elements)
 
 size_t VecCell::size() const noexcept {
     return value.size();
+}
+
+void VecCell::clear_descendant_parent_links() {
+    for (CellPtr& child : value) {
+        if (!child) {
+            continue;
+        }
+
+        child->parent = nullptr;
+        child->clear_descendant_parent_links();
+    }
 }
 
 IntCell::IntCell(int64_t initial_value)
@@ -85,6 +109,15 @@ SigCell::SigCell(Type initial_type, CellPtr initial_value)
 
 bool SigCell::is_signal() const noexcept {
     return true;
+}
+
+void SigCell::clear_descendant_parent_links() {
+    if (!value) {
+        return;
+    }
+
+    value->parent = nullptr;
+    value->clear_descendant_parent_links();
 }
 
 RetCell::RetCell() : SigCell(Type::return_signal, nullptr) {}
