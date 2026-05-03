@@ -14,6 +14,7 @@ flowchart LR
   classDef entry fill:#447,stroke:#1f6feb,stroke-width:2px;
   classDef leaf fill:#475,stroke:#2da44e,stroke-width:2px;
   classDef recurse fill:#664,stroke:#d29922,stroke-width:2px;
+  classDef runtime stroke:#ff5c8a,stroke-width:2px;
 
   h_main["src/helix.cpp::main<br/>load, run, emit"]
   h_run_main["src/helix.cpp::run_main<br/>execute main and attach state"]
@@ -151,4 +152,5 @@ flowchart LR
   class h_main entry;
   class h_attach_parent,h_is_null,h_lookup_child,h_enclosing_map,b_init,b_expect_vm,c_map_ctor,c_vec_ctor,c_int_ctor,c_str_ctor,c_err_ctor,c_make_error,c_is_error,c_expect_arity,c_expect_int,c_signal_check,c_fun_ctor leaf;
   class r_eval,r_lookup,r_clear recurse;
+  class h_main,h_run_main,h_eval_cell,h_eval_resolved,h_eval_form,h_eval_arg,h_render_show,h_lookup_context,h_lookup_name_map,h_lookup_dotted,b_make_zygote,b_show,b_add,b_set,b_eval_arg,c_fun_call,c_clear_desc,c_clear_map,c_clear_vec,c_clear_sig runtime;
 ```
