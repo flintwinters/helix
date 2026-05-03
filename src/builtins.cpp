@@ -2,15 +2,12 @@
 
 #include <iostream>
 #include <string>
+#include <memory>
 
 static EvalCellFn evaluate_cell_fn = nullptr;
 static RenderShowFn render_show_fn = nullptr;
 static MakeErrorFn make_error_fn = nullptr;
 static SetMapFieldFn set_map_field_fn = nullptr;
-
-static bool is_error_cell(ConstCellPtr cell) {
-    return cell && cell->type == Cell::Type::error_signal;
-}
 
 static CellPtr make_error(const string& message, CellPtr value = nullptr) {
     if (!make_error_fn) {
@@ -18,15 +15,6 @@ static CellPtr make_error(const string& message, CellPtr value = nullptr) {
     }
 
     return make_error_fn(message, move(value));
-}
-
-static CellPtr expect_form_arity(const vector<CellPtr>& arguments, size_t expected_arity, const char* who) {
-    if (arguments.size() == expected_arity) {
-        return nullptr;
-    }
-
-    return make_error(string(who) + " expects exactly " + to_string(expected_arity - 1) + " argument"
-        + (expected_arity == 2 ? "" : "s"));
 }
 
 static shared_ptr<MapCell> expect_root_vm(CellPtr current_vm, const char* who) {
@@ -50,25 +38,13 @@ static CellPtr evaluate_argument(CellPtr node, const shared_ptr<MapCell>& root_c
     return value;
 }
 
-static CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
-    if (is_error_cell(cell)) {
-        return const_pointer_cast<Cell>(cell);
-    }
-
-    if (!cell || cell->type != Cell::Type::integer) {
-        return make_error(string(who) + " expects integer arguments");
-    }
-
-    return const_pointer_cast<Cell>(cell);
-}
-
 static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
     shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "show");
     if (!root_cell) {
         return make_error("show requires a map VM");
     }
 
-    CellPtr arity_error = expect_form_arity(arguments, 2, "show");
+    CellPtr arity_error = expect_form_arity(arguments.size(), 2, "show");
     if (arity_error) {
         return arity_error;
     }
@@ -90,7 +66,7 @@ static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm)
         return make_error("add requires a map VM");
     }
 
-    CellPtr arity_error = expect_form_arity(arguments, 3, "add");
+    CellPtr arity_error = expect_form_arity(arguments.size(), 3, "add");
     if (arity_error) {
         return arity_error;
     }
@@ -116,7 +92,7 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
         return make_error("set requires a map VM");
     }
 
-    CellPtr arity_error = expect_form_arity(arguments, 3, "set");
+    CellPtr arity_error = expect_form_arity(arguments.size(), 3, "set");
     if (arity_error) {
         return arity_error;
     }
