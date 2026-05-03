@@ -17,6 +17,15 @@ static CellPtr make_error_cell(const string& message, CellPtr value = nullptr) {
     return make_shared<ErrCell>(message, move(value));
 }
 
+static CellPtr expect_form_arity(const VecCell& form, size_t expected_arity, const char* who) {
+    if (form.value.size() == expected_arity) {
+        return nullptr;
+    }
+
+    return make_error_cell(string(who) + " expects exactly " + to_string(expected_arity - 1) + " argument"
+        + (expected_arity == 2 ? "" : "s"));
+}
+
 static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent) {
     if (!child || !parent || child->parent) {
         return;
@@ -181,12 +190,29 @@ static CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
 
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell);
 
-static CellPtr evaluate_show_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
-    if (form.value.size() != 2) {
-        return make_error_cell("show expects exactly 1 argument");
+static CellPtr evaluate_argument(CellPtr node, const shared_ptr<MapCell>& root_cell) {
+    CellPtr value = evaluate_cell(move(node), root_cell);
+    if (is_error_cell(value)) {
+        return value;
     }
 
-    const CellPtr value = evaluate_cell(form.value[1], root_cell);
+    return value;
+}
+
+static shared_ptr<MapCell> make_finished_state() {
+    shared_ptr<MapCell> state = make_shared<MapCell>();
+    set_map_field(state, "status", make_shared<StrCell>("finished"));
+    set_map_field(state, "frames", make_shared<VecCell>());
+    return state;
+}
+
+static CellPtr evaluate_show_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
+    CellPtr arity_error = expect_form_arity(form, 2, "show");
+    if (arity_error) {
+        return arity_error;
+    }
+
+    CellPtr value = evaluate_argument(form.value[1], root_cell);
     if (is_error_cell(value)) {
         return value;
     }
@@ -196,16 +222,17 @@ static CellPtr evaluate_show_form(const VecCell& form, const shared_ptr<MapCell>
 }
 
 static CellPtr evaluate_add_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
-    if (form.value.size() != 3) {
-        return make_error_cell("add expects exactly 2 arguments");
+    CellPtr arity_error = expect_form_arity(form, 3, "add");
+    if (arity_error) {
+        return arity_error;
     }
 
-    const CellPtr left_cell = expect_int_cell(evaluate_cell(form.value[1], root_cell), "add");
+    const CellPtr left_cell = expect_int_cell(evaluate_argument(form.value[1], root_cell), "add");
     if (is_error_cell(left_cell)) {
         return left_cell;
     }
 
-    const CellPtr right_cell = expect_int_cell(evaluate_cell(form.value[2], root_cell), "add");
+    const CellPtr right_cell = expect_int_cell(evaluate_argument(form.value[2], root_cell), "add");
     if (is_error_cell(right_cell)) {
         return right_cell;
     }
@@ -216,8 +243,9 @@ static CellPtr evaluate_add_form(const VecCell& form, const shared_ptr<MapCell>&
 }
 
 static CellPtr evaluate_set_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
-    if (form.value.size() != 3) {
-        return make_error_cell("set expects exactly 2 arguments");
+    CellPtr arity_error = expect_form_arity(form, 3, "set");
+    if (arity_error) {
+        return arity_error;
     }
 
     const CellPtr name_cell = form.value[1];
@@ -225,7 +253,7 @@ static CellPtr evaluate_set_form(const VecCell& form, const shared_ptr<MapCell>&
         return make_error_cell("set expects a string name");
     }
 
-    const CellPtr value = evaluate_cell(form.value[2], root_cell);
+    const CellPtr value = evaluate_argument(form.value[2], root_cell);
     if (is_error_cell(value)) {
         return value;
     }
@@ -296,9 +324,7 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
 static void run_main(shared_ptr<MapCell> root_cell) {
     unordered_map<string, CellPtr>::const_iterator main_it = root_cell->value.find("main");
     if (main_it == root_cell->value.end()) {
-        shared_ptr<MapCell> state = make_shared<MapCell>();
-        set_map_field(state, "status", make_shared<StrCell>("finished"));
-        set_map_field(state, "frames", make_shared<VecCell>());
+        shared_ptr<MapCell> state = make_finished_state();
         set_map_field(state, "result", make_error_cell("program is missing a main entrypoint"));
         set_map_field(root_cell, "state", state);
         return;
@@ -311,9 +337,7 @@ static void run_main(shared_ptr<MapCell> root_cell) {
         result = evaluate_cell(main_it->second, root_cell);
     }
 
-    shared_ptr<MapCell> state = make_shared<MapCell>();
-    set_map_field(state, "status", make_shared<StrCell>("finished"));
-    set_map_field(state, "frames", make_shared<VecCell>());
+    shared_ptr<MapCell> state = make_finished_state();
     if (result) {
         set_map_field(state, "result", move(result));
     }
