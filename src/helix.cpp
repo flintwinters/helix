@@ -12,19 +12,6 @@ static string render_show_output(ConstCellPtr cell) {
     return rendered;
 }
 
-static CellPtr make_error_cell(const string& message, CellPtr value = nullptr) {
-    return make_shared<ErrCell>(message, move(value));
-}
-
-static CellPtr expect_form_arity(const VecCell& form, size_t expected_arity, const char* who) {
-    if (form.value.size() == expected_arity) {
-        return nullptr;
-    }
-
-    return make_error_cell(string(who) + " expects exactly " + to_string(expected_arity - 1) + " argument"
-        + (expected_arity == 2 ? "" : "s"));
-}
-
 static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent) {
     if (!child || !parent || child->parent) {
         return;
@@ -36,10 +23,6 @@ static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent
 static void set_map_field(const shared_ptr<MapCell>& map_cell, const string& key, CellPtr value) {
     attach_parent_if_missing(value, map_cell);
     map_cell->value[key] = move(value);
-}
-
-static bool is_error_cell(ConstCellPtr cell) {
-    return cell && cell->type == Cell::Type::error_signal;
 }
 
 static bool is_null_cell(ConstCellPtr cell) {
@@ -126,18 +109,6 @@ static CellPtr lookup_name_from_context(const string& name, ConstCellPtr context
     }
 
     return lookup_name_in_map(name, *root_cell);
-}
-
-static CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
-    if (is_error_cell(cell)) {
-        return const_pointer_cast<Cell>(cell);
-    }
-
-    if (!cell || cell->type != Cell::Type::integer) {
-        return make_error_cell(string(who) + " expects integer arguments");
-    }
-
-    return const_pointer_cast<Cell>(cell);
 }
 
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell);
