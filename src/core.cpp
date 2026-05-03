@@ -3,9 +3,9 @@
 #include <stdexcept>
 #include <utility>
 
-Cell::Cell() = default;
+Cell::Cell() : parent(nullptr) {}
 
-Cell::Cell(Type initial_type) : type(initial_type) {}
+Cell::Cell(Type initial_type) : type(initial_type), parent(nullptr) {}
 
 Cell::Cell(const Cell&) = default;
 
