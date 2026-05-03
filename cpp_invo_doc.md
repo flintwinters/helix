@@ -10,56 +10,78 @@ Notes:
 - `src/utils.cpp` is not shown because it currently defines no functions.
 
 ```mermaid
-flowchart TD
+flowchart LR
   classDef entry fill:#447,stroke:#1f6feb,stroke-width:2px;
   classDef leaf fill:#475,stroke:#2da44e,stroke-width:2px;
+  classDef recurse fill:#664,stroke:#d29922,stroke-width:2px;
 
-  h_main["src/helix.cpp::main<br/>run program and print final YAML"]
-  h_run_main["src/helix.cpp::run_main<br/>execute top-level main and attach state"]
-  h_make_state["src/helix.cpp::make_finished_state<br/>construct finished VM state map"]
-  h_set_field["src/helix.cpp::set_map_field<br/>write map field and attach parent"]
-  h_attach_parent["src/helix.cpp::attach_parent_if_missing<br/>attach structural parent once"]
+  subgraph lane_entry["Entry / VM"]
+    direction LR
+    h_main["src/helix.cpp::main<br/>load, run, emit"]
+    h_run_main["src/helix.cpp::run_main<br/>execute main and attach state"]
+    h_make_state["src/helix.cpp::make_finished_state<br/>build finished state"]
+    h_set_field["src/helix.cpp::set_map_field<br/>write map field"]
+    h_attach_parent["src/helix.cpp::attach_parent_if_missing<br/>attach parent once"]
+  end
 
-  h_eval_cell["src/helix.cpp::evaluate_cell<br/>evaluate one cell recursively"]
-  h_eval_resolved["src/helix.cpp::evaluate_resolved_cell<br/>follow resolved references"]
-  h_eval_form["src/helix.cpp::evaluate_form<br/>evaluate actor and call callable form"]
-  h_eval_arg["src/helix.cpp::evaluate_argument<br/>evaluate child and propagate errors"]
-  h_render_show["src/helix.cpp::render_show_output<br/>render show result text"]
+  subgraph lane_eval["Evaluation"]
+    direction LR
+    h_eval_cell["src/helix.cpp::evaluate_cell<br/>evaluate one cell"]
+    h_eval_resolved["src/helix.cpp::evaluate_resolved_cell<br/>follow resolved alias"]
+    h_eval_form["src/helix.cpp::evaluate_form<br/>evaluate actor and call"]
+    h_eval_arg["src/helix.cpp::evaluate_argument<br/>eval child argument"]
+    h_render_show["src/helix.cpp::render_show_output<br/>render show output"]
+    h_is_null["src/helix.cpp::is_null_cell<br/>detect string null"]
+  end
 
-  h_lookup_context["src/helix.cpp::lookup_name_from_context<br/>search local then parent scopes"]
-  h_enclosing_map["src/helix.cpp::enclosing_map<br/>walk upward to enclosing map"]
-  h_lookup_name_map["src/helix.cpp::lookup_name_in_map<br/>exact then dotted lookup in one map"]
-  h_lookup_dotted["src/helix.cpp::lookup_dotted_name_from<br/>walk dotted path recursively"]
-  h_lookup_child["src/helix.cpp::lookup_map_child<br/>lookup one map field"]
+  subgraph lane_lookup["Lookup"]
+    direction LR
+    h_lookup_context["src/helix.cpp::lookup_name_from_context<br/>search local then parent maps"]
+    h_enclosing_map["src/helix.cpp::enclosing_map<br/>walk to enclosing map"]
+    h_lookup_name_map["src/helix.cpp::lookup_name_in_map<br/>exact or dotted lookup"]
+    h_lookup_child["src/helix.cpp::lookup_map_child<br/>lookup one field"]
+    h_lookup_dotted["src/helix.cpp::lookup_dotted_name_from<br/>recursive dotted walk"]
+  end
 
-  h_is_null["src/helix.cpp::is_null_cell<br/>treat string null as null main"]
+  subgraph lane_builtins["Builtins / Zygote"]
+    direction LR
+    b_init["src/builtins.cpp::initialize_builtins<br/>install evaluator callbacks"]
+    b_make_zygote["src/builtins.cpp::make_zygote<br/>construct builtin root"]
+    b_install["src/builtins.cpp::install_builtin<br/>insert FunCell builtin"]
+    b_show["src/builtins.cpp::builtin_show<br/>show builtin"]
+    b_add["src/builtins.cpp::builtin_add<br/>add builtin"]
+    b_set["src/builtins.cpp::builtin_set<br/>set builtin"]
+    b_eval_arg["src/builtins.cpp::evaluate_argument<br/>eval builtin argument"]
+    b_expect_vm["src/builtins.cpp::expect_root_vm<br/>require root VM"]
+    b_make_error["src/builtins.cpp::make_error<br/>builtin error wrapper"]
+  end
 
-  b_init["src/builtins.cpp::initialize_builtins<br/>install evaluator callbacks"]
-  b_make_zygote["src/builtins.cpp::make_zygote<br/>construct global builtin root"]
-  b_install["src/builtins.cpp::install_builtin<br/>insert FunCell builtin into zygote"]
-  b_show["src/builtins.cpp::builtin_show<br/>evaluate and print one argument"]
-  b_add["src/builtins.cpp::builtin_add<br/>evaluate and sum two integers"]
-  b_set["src/builtins.cpp::builtin_set<br/>evaluate and assign top-level binding"]
-  b_eval_arg["src/builtins.cpp::evaluate_argument<br/>delegate nested builtin argument evaluation"]
-  b_expect_vm["src/builtins.cpp::expect_root_vm<br/>require current VM root map"]
-  b_make_error["src/builtins.cpp::make_error<br/>construct builtin error cell"]
+  subgraph lane_core["Shared Runtime"]
+    direction LR
+    c_map_ctor["src/core.cpp::MapCell::MapCell()<br/>empty map"]
+    c_vec_ctor["src/core.cpp::VecCell::VecCell()<br/>empty vector"]
+    c_int_ctor["src/core.cpp::IntCell::IntCell<br/>integer cell"]
+    c_str_ctor["src/core.cpp::StrCell::StrCell(value)<br/>string cell"]
+    c_err_ctor["src/core.cpp::ErrCell::ErrCell<br/>error cell"]
+    c_make_error["src/core.cpp::make_error_cell<br/>shared error helper"]
+    c_is_error["src/core.cpp::is_error_cell<br/>shared error check"]
+    c_expect_arity["src/core.cpp::expect_form_arity<br/>shared arity check"]
+    c_expect_int["src/core.cpp::expect_int_cell<br/>shared int check"]
+    c_signal_check["src/core.cpp::SigCell::is_signal<br/>signal check"]
+    c_fun_ctor["src/core.cpp::FunCell::FunCell<br/>callable cell"]
+    c_fun_call["src/core.cpp::FunCell::call<br/>invoke builtin"]
+    c_clear_desc["src/core.cpp::Cell::clear_descendant_parent_links<br/>polymorphic cleanup"]
+    c_clear_map["src/core.cpp::MapCell::clear_descendant_parent_links<br/>map cleanup"]
+    c_clear_vec["src/core.cpp::VecCell::clear_descendant_parent_links<br/>vector cleanup"]
+    c_clear_sig["src/core.cpp::SigCell::clear_descendant_parent_links<br/>signal cleanup"]
+  end
 
-  c_map_ctor["src/core.cpp::MapCell::MapCell()<br/>construct empty map cell"]
-  c_vec_ctor["src/core.cpp::VecCell::VecCell()<br/>construct empty vector cell"]
-  c_int_ctor["src/core.cpp::IntCell::IntCell<br/>construct integer cell"]
-  c_str_ctor["src/core.cpp::StrCell::StrCell(value)<br/>construct string cell"]
-  c_err_ctor["src/core.cpp::ErrCell::ErrCell<br/>construct error signal cell"]
-  c_make_error["src/core.cpp::make_error_cell<br/>construct shared ErrCell"]
-  c_is_error["src/core.cpp::is_error_cell<br/>recognize ErrCell"]
-  c_expect_arity["src/core.cpp::expect_form_arity<br/>check shared form arity"]
-  c_expect_int["src/core.cpp::expect_int_cell<br/>require shared integer operand"]
-  c_signal_check["src/core.cpp::SigCell::is_signal<br/>report signal kind"]
-  c_fun_ctor["src/core.cpp::FunCell::FunCell<br/>construct callable builtin cell"]
-  c_fun_call["src/core.cpp::FunCell::call<br/>invoke builtin implementation"]
-  c_clear_desc["src/core.cpp::Cell::clear_descendant_parent_links<br/>clear descendant parent links polymorphically"]
-  c_clear_map["src/core.cpp::MapCell::clear_descendant_parent_links<br/>clear map child parent links"]
-  c_clear_vec["src/core.cpp::VecCell::clear_descendant_parent_links<br/>clear vector child parent links"]
-  c_clear_sig["src/core.cpp::SigCell::clear_descendant_parent_links<br/>clear signal payload parent link"]
+  subgraph lane_recursion["Recursive Edges"]
+    direction LR
+    r_eval["evaluate recursion"]
+    r_lookup["lookup recursion"]
+    r_clear["cleanup recursion"]
+  end
 
   h_main --> b_init
   h_main --> b_make_zygote
@@ -83,7 +105,8 @@ flowchart TD
   h_eval_cell --> h_lookup_context
   h_eval_cell --> h_eval_resolved
 
-  h_eval_resolved --> h_eval_cell
+  h_eval_resolved --> r_eval
+  r_eval --> h_eval_cell
 
   h_eval_form --> h_eval_arg
   h_eval_form --> c_is_error
@@ -99,12 +122,14 @@ flowchart TD
   h_lookup_name_map --> h_lookup_child
   h_lookup_name_map --> h_lookup_dotted
   h_lookup_dotted --> h_lookup_child
-  h_lookup_dotted --> h_lookup_dotted
+  h_lookup_dotted --> r_lookup
+  r_lookup --> h_lookup_dotted
 
   h_render_show --> c_signal_check
-  c_clear_map --> c_clear_desc
-  c_clear_vec --> c_clear_desc
-  c_clear_sig --> c_clear_desc
+  c_clear_map --> r_clear
+  c_clear_vec --> r_clear
+  c_clear_sig --> r_clear
+  r_clear --> c_clear_desc
 
   b_make_zygote --> c_map_ctor
   b_make_zygote --> b_install
@@ -143,4 +168,5 @@ flowchart TD
 
   class h_main entry;
   class h_attach_parent,h_is_null,h_lookup_child,h_enclosing_map,b_init,b_expect_vm,c_map_ctor,c_vec_ctor,c_int_ctor,c_str_ctor,c_err_ctor,c_make_error,c_is_error,c_expect_arity,c_expect_int,c_signal_check,c_fun_ctor leaf;
+  class r_eval,r_lookup,r_clear recurse;
 ```
