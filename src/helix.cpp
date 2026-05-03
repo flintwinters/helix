@@ -1,6 +1,5 @@
 #include <iostream>
 #include <memory>
-#include <stdexcept>
 #include <string>
 
 #include <ryml_interface.hpp>
@@ -54,53 +53,6 @@ static bool is_null_cell(ConstCellPtr cell) {
 
     const auto& str_cell = static_cast<const StrCell&>(*cell);
     return str_cell.value == "null";
-}
-
-static void clear_parent_links(const CellPtr& cell);
-
-static void clear_child_parent_link(const CellPtr& child) {
-    if (!child) {
-        return;
-    }
-
-    child->parent = nullptr;
-    clear_parent_links(child);
-}
-
-static void clear_map_parent_links(MapCell& map_cell) {
-    for (auto& [_, child] : map_cell.value) {
-        clear_child_parent_link(child);
-    }
-}
-
-static void clear_vec_parent_links(VecCell& vec_cell) {
-    for (CellPtr& child : vec_cell.value) {
-        clear_child_parent_link(child);
-    }
-}
-
-static void clear_signal_parent_links(SigCell& sig_cell) {
-    clear_child_parent_link(sig_cell.value);
-}
-
-static void clear_parent_links(const CellPtr& cell) {
-    if (!cell) {
-        return;
-    }
-
-    if (cell->type == Cell::Type::map) {
-        clear_map_parent_links(static_cast<MapCell&>(*cell));
-        return;
-    }
-
-    if (cell->type == Cell::Type::vec) {
-        clear_vec_parent_links(static_cast<VecCell&>(*cell));
-        return;
-    }
-
-    if (cell->is_signal()) {
-        clear_signal_parent_links(static_cast<SigCell&>(*cell));
-    }
 }
 
 static CellPtr lookup_map_child(const MapCell& map_cell, const string& segment) {
@@ -287,9 +239,9 @@ int main(int argc, char* argv[]) {
         attach_parent_if_missing(root_cell, zygote);
         run_main(root_cell);
         string yaml_output = emit_yaml_from_cell(root_cell);
-        clear_parent_links(root_cell);
+        root_cell->clear_descendant_parent_links();
         root_cell->parent = nullptr;
-        clear_parent_links(zygote);
+        zygote->clear_descendant_parent_links();
         std::cout << yaml_output;
     } catch (const exception& error) {
         std::cerr << "error: " << error.what() << '\n';
