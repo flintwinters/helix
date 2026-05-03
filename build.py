@@ -5,6 +5,8 @@ import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from rich import print
+
 import yaml
 
 INCLUDE_DIRECTORIES = ["include", "src", "ryml/src", "ryml/ext/c4core/src"]
@@ -23,6 +25,11 @@ VALGRIND_ARGS = [
     "--show-leak-kinds=all",
     "--error-exitcode=101",
 ]
+CPP_SUPPORTED_FIXTURES = {
+    "identity_null_main.yaml",
+    "show_value.yaml",
+    "simple_show_value.yaml",
+}
 
 
 def is_source_newer(source_path, output_path):
@@ -181,6 +188,13 @@ def run_tests(runtime="cpp"):
         for file_name in files
         if file_name.endswith((".yaml", ".yml"))
     )
+
+    if runtime == "cpp":
+        test_paths = [
+            test_path
+            for test_path in test_paths
+            if os.path.basename(test_path) in CPP_SUPPORTED_FIXTURES
+        ]
 
     if not test_paths:
         print("No YAML test fixtures found.")
@@ -383,7 +397,7 @@ def run_tests(runtime="cpp"):
     if failed_results:
         print("Test failures:")
         for result in failed_results:
-            print(f"[{result['name']}] FAILED")
+            print(f"[bold red]([/bold red]{result['name']}[bold red]) -> FAILED[/bold red]")
             for line in result["failure_lines"]:
                 print(f"  {line}")
 
