@@ -7,7 +7,7 @@ Notes:
 - The graph covers the evaluator and directly used runtime helpers.
 - Anything in or through `src/ryml_interface.cpp` is intentionally excluded.
 - Compiler-defaulted special members are omitted.
-- `src/builtins.cpp` and `src/utils.cpp` are not shown because they currently define no functions.
+- `src/utils.cpp` is not shown because it currently defines no functions.
 
 ```mermaid
 flowchart TD
@@ -22,15 +22,10 @@ flowchart TD
 
   h_eval_cell["src/helix.cpp::evaluate_cell<br/>evaluate one cell recursively"]
   h_eval_resolved["src/helix.cpp::evaluate_resolved_cell<br/>follow resolved references"]
-  h_eval_form["src/helix.cpp::evaluate_form<br/>validate vector actor and dispatch"]
-  h_eval_builtin["src/helix.cpp::evaluate_builtin_form<br/>route builtin by name"]
-  h_eval_show["src/helix.cpp::evaluate_show_form<br/>print one evaluated argument"]
-  h_eval_add["src/helix.cpp::evaluate_add_form<br/>sum two integer arguments"]
-  h_eval_set["src/helix.cpp::evaluate_set_form<br/>assign top-level binding"]
+  h_eval_form["src/helix.cpp::evaluate_form<br/>evaluate actor and call callable form"]
   h_eval_arg["src/helix.cpp::evaluate_argument<br/>evaluate child and propagate errors"]
-  h_expect_arity["src/helix.cpp::expect_form_arity<br/>check builtin argument count"]
-  h_expect_int["src/helix.cpp::expect_int_cell<br/>require integer operand"]
   h_make_error["src/helix.cpp::make_error_cell<br/>construct ErrCell"]
+  h_render_show["src/helix.cpp::render_show_output<br/>render show result text"]
 
   h_lookup_context["src/helix.cpp::lookup_name_from_context<br/>search local then parent scopes"]
   h_enclosing_map["src/helix.cpp::enclosing_map<br/>walk upward to enclosing map"]
@@ -40,7 +35,8 @@ flowchart TD
 
   h_is_null["src/helix.cpp::is_null_cell<br/>treat string null as null main"]
   h_is_error["src/helix.cpp::is_error_cell<br/>recognize ErrCell"]
-  h_render_show["src/helix.cpp::render_show_output<br/>render show result text"]
+  h_expect_arity["src/helix.cpp::expect_form_arity<br/>check vector form width"]
+  h_expect_int["src/helix.cpp::expect_int_cell<br/>require integer operand"]
 
   h_clear_parents["src/helix.cpp::clear_parent_links<br/>remove parent links before exit"]
   h_clear_map["src/helix.cpp::clear_map_parent_links<br/>clear map children parents"]
@@ -48,13 +44,30 @@ flowchart TD
   h_clear_signal["src/helix.cpp::clear_signal_parent_links<br/>clear signal payload parent"]
   h_clear_child["src/helix.cpp::clear_child_parent_link<br/>clear one child then recurse"]
 
+  b_init["src/builtins.cpp::initialize_builtins<br/>install evaluator callbacks"]
+  b_make_zygote["src/builtins.cpp::make_zygote<br/>construct global builtin root"]
+  b_install["src/builtins.cpp::install_builtin<br/>insert FunCell builtin into zygote"]
+  b_show["src/builtins.cpp::builtin_show<br/>evaluate and print one argument"]
+  b_add["src/builtins.cpp::builtin_add<br/>evaluate and sum two integers"]
+  b_set["src/builtins.cpp::builtin_set<br/>evaluate and assign top-level binding"]
+  b_eval_arg["src/builtins.cpp::evaluate_argument<br/>delegate nested builtin argument evaluation"]
+  b_expect_arity["src/builtins.cpp::expect_form_arity<br/>check builtin argument count"]
+  b_expect_int["src/builtins.cpp::expect_int_cell<br/>require integer argument"]
+  b_expect_vm["src/builtins.cpp::expect_root_vm<br/>require current VM root map"]
+  b_make_error["src/builtins.cpp::make_error<br/>construct builtin error cell"]
+  b_is_error["src/builtins.cpp::is_error_cell<br/>recognize ErrCell"]
+
   c_map_ctor["src/core.cpp::MapCell::MapCell()<br/>construct empty map cell"]
   c_vec_ctor["src/core.cpp::VecCell::VecCell()<br/>construct empty vector cell"]
   c_int_ctor["src/core.cpp::IntCell::IntCell<br/>construct integer cell"]
   c_str_ctor["src/core.cpp::StrCell::StrCell(value)<br/>construct string cell"]
   c_err_ctor["src/core.cpp::ErrCell::ErrCell<br/>construct error signal cell"]
   c_signal_check["src/core.cpp::SigCell::is_signal<br/>report signal kind"]
+  c_fun_ctor["src/core.cpp::FunCell::FunCell<br/>construct callable builtin cell"]
+  c_fun_call["src/core.cpp::FunCell::call<br/>invoke builtin implementation"]
 
+  h_main --> b_init
+  h_main --> b_make_zygote
   h_main --> h_run_main
   h_main --> h_clear_parents
 
@@ -77,30 +90,10 @@ flowchart TD
 
   h_eval_resolved --> h_eval_cell
 
+  h_eval_form --> h_eval_arg
+  h_eval_form --> h_is_error
   h_eval_form --> h_make_error
-  h_eval_form --> h_eval_builtin
-
-  h_eval_builtin --> h_eval_show
-  h_eval_builtin --> h_eval_add
-  h_eval_builtin --> h_eval_set
-  h_eval_builtin --> h_make_error
-
-  h_eval_show --> h_expect_arity
-  h_eval_show --> h_eval_arg
-  h_eval_show --> h_is_error
-  h_eval_show --> h_render_show
-
-  h_eval_add --> h_expect_arity
-  h_eval_add --> h_eval_arg
-  h_eval_add --> h_expect_int
-  h_eval_add --> h_is_error
-  h_eval_add --> c_int_ctor
-
-  h_eval_set --> h_expect_arity
-  h_eval_set --> h_eval_arg
-  h_eval_set --> h_is_error
-  h_eval_set --> h_make_error
-  h_eval_set --> h_set_field
+  h_eval_form --> c_fun_call
 
   h_eval_arg --> h_eval_cell
   h_eval_arg --> h_is_error
@@ -128,6 +121,43 @@ flowchart TD
   h_clear_signal --> h_clear_child
   h_clear_child --> h_clear_parents
 
+  b_make_zygote --> c_map_ctor
+  b_make_zygote --> b_install
+  b_install --> c_fun_ctor
+  b_install --> h_set_field
+
+  c_fun_call --> b_show
+  c_fun_call --> b_add
+  c_fun_call --> b_set
+
+  b_show --> b_expect_vm
+  b_show --> b_expect_arity
+  b_show --> b_eval_arg
+  b_show --> b_is_error
+  b_show --> h_render_show
+
+  b_add --> b_expect_vm
+  b_add --> b_expect_arity
+  b_add --> b_eval_arg
+  b_add --> b_expect_int
+  b_add --> b_is_error
+  b_add --> c_int_ctor
+
+  b_set --> b_expect_vm
+  b_set --> b_expect_arity
+  b_set --> b_eval_arg
+  b_set --> b_is_error
+  b_set --> b_make_error
+  b_set --> h_set_field
+
+  b_eval_arg --> h_eval_cell
+  b_eval_arg --> b_is_error
+
+  b_expect_arity --> b_make_error
+  b_expect_int --> b_is_error
+  b_expect_int --> b_make_error
+  b_make_error --> c_err_ctor
+
   class h_main entry;
-  class h_attach_parent,h_is_null,h_is_error,h_lookup_child,h_enclosing_map,c_map_ctor,c_vec_ctor,c_int_ctor,c_str_ctor,c_err_ctor,c_signal_check leaf;
+  class h_attach_parent,h_is_null,h_is_error,h_lookup_child,h_enclosing_map,b_init,b_is_error,b_expect_vm,c_map_ctor,c_vec_ctor,c_int_ctor,c_str_ctor,c_err_ctor,c_signal_check,c_fun_ctor leaf;
 ```
