@@ -39,26 +39,38 @@ static CellPtr scalar_cell_from_ryml(c4::csubstr scalar) {
     return make_shared<StrCell>(text);
 }
 
+static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent) {
+    if (!child || !parent || child->parent) {
+        return;
+    }
+
+    child->parent = parent;
+}
+
 CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
     while ((node.is_stream() || node.is_doc()) && node.has_children()) {
         node = node.first_child();
     }
 
     if (node.is_map()) {
-        unordered_map<string, CellPtr> fields {};
+        shared_ptr<MapCell> map_cell = make_shared<MapCell>();
         for (const auto child : node.children()) {
-            fields.emplace(ryml_text_to_string(child.key()), cell_from_ryml_node(child));
+            CellPtr child_cell = cell_from_ryml_node(child);
+            attach_parent_if_missing(child_cell, map_cell);
+            map_cell->value.emplace(ryml_text_to_string(child.key()), move(child_cell));
         }
-        return make_shared<MapCell>(move(fields));
+        return map_cell;
     }
 
     if (node.is_seq()) {
-        vector<CellPtr> elements {};
-        elements.reserve(static_cast<size_t>(node.num_children()));
+        shared_ptr<VecCell> vec_cell = make_shared<VecCell>();
+        vec_cell->value.reserve(static_cast<size_t>(node.num_children()));
         for (const auto child : node.children()) {
-            elements.push_back(cell_from_ryml_node(child));
+            CellPtr child_cell = cell_from_ryml_node(child);
+            attach_parent_if_missing(child_cell, vec_cell);
+            vec_cell->value.push_back(move(child_cell));
         }
-        return make_shared<VecCell>(move(elements));
+        return vec_cell;
     }
 
     if (node.has_val()) {
