@@ -34,6 +34,47 @@ static bool is_null_cell(ConstCellPtr cell) {
     return str_cell.value == "null";
 }
 
+static CellPtr lookup_map_child(const MapCell& map_cell, const string& segment) {
+    unordered_map<string, CellPtr>::const_iterator child_it = map_cell.value.find(segment);
+    if (child_it == map_cell.value.end()) {
+        return nullptr;
+    }
+
+    return child_it->second;
+}
+
+static CellPtr lookup_dotted_name_from(const MapCell& current_map, const string& name, size_t segment_start) {
+    size_t dot_index = name.find('.', segment_start);
+    string segment = name.substr(segment_start, dot_index - segment_start);
+    if (segment.empty()) {
+        return nullptr;
+    }
+
+    CellPtr current = lookup_map_child(current_map, segment);
+    if (!current) {
+        return nullptr;
+    }
+
+    if (dot_index == string::npos) {
+        return current;
+    }
+
+    if (current->type != Cell::Type::map) {
+        return nullptr;
+    }
+
+    return lookup_dotted_name_from(static_cast<const MapCell&>(*current), name, dot_index + 1);
+}
+
+static CellPtr lookup_dotted_name(const string& name, MapCell& root) {
+    unordered_map<string, CellPtr>::const_iterator root_it = root.value.find(name);
+    if (root_it != root.value.end()) {
+        return root_it->second;
+    }
+
+    return lookup_dotted_name_from(root, name, 0);
+}
+
 static CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
     if (is_error_cell(cell)) {
         return const_pointer_cast<Cell>(cell);
@@ -143,9 +184,9 @@ static CellPtr evaluate_cell(CellPtr node, MapCell& root) {
 
     if (node->type == Cell::Type::string) {
         const auto& name = static_cast<const StrCell&>(*node).value;
-        const auto found = root.value.find(name);
-        if (found != root.value.end()) {
-            return found->second;
+        CellPtr resolved = lookup_dotted_name(name, root);
+        if (resolved) {
+            return resolved;
         }
     }
 
