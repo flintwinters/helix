@@ -1,3 +1,165 @@
-namespace helix
-{
+#include <core.hpp>
+
+#include <iostream>
+#include <string>
+
+static EvalCellFn evaluate_cell_fn = nullptr;
+static RenderShowFn render_show_fn = nullptr;
+static MakeErrorFn make_error_fn = nullptr;
+static SetMapFieldFn set_map_field_fn = nullptr;
+
+static bool is_error_cell(ConstCellPtr cell) {
+    return cell && cell->type == Cell::Type::error_signal;
+}
+
+static CellPtr make_error(const string& message, CellPtr value = nullptr) {
+    if (!make_error_fn) {
+        return make_shared<ErrCell>(message, move(value));
+    }
+
+    return make_error_fn(message, move(value));
+}
+
+static CellPtr expect_form_arity(const vector<CellPtr>& arguments, size_t expected_arity, const char* who) {
+    if (arguments.size() == expected_arity) {
+        return nullptr;
+    }
+
+    return make_error(string(who) + " expects exactly " + to_string(expected_arity - 1) + " argument"
+        + (expected_arity == 2 ? "" : "s"));
+}
+
+static shared_ptr<MapCell> expect_root_vm(CellPtr current_vm, const char* who) {
+    if (!current_vm || current_vm->type != Cell::Type::map) {
+        return nullptr;
+    }
+
+    return static_pointer_cast<MapCell>(move(current_vm));
+}
+
+static CellPtr evaluate_argument(CellPtr node, const shared_ptr<MapCell>& root_cell) {
+    if (!evaluate_cell_fn) {
+        return make_error("builtin evaluation is not initialized");
+    }
+
+    CellPtr value = evaluate_cell_fn(move(node), root_cell);
+    if (is_error_cell(value)) {
+        return value;
+    }
+
+    return value;
+}
+
+static CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
+    if (is_error_cell(cell)) {
+        return const_pointer_cast<Cell>(cell);
+    }
+
+    if (!cell || cell->type != Cell::Type::integer) {
+        return make_error(string(who) + " expects integer arguments");
+    }
+
+    return const_pointer_cast<Cell>(cell);
+}
+
+static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "show");
+    if (!root_cell) {
+        return make_error("show requires a map VM");
+    }
+
+    CellPtr arity_error = expect_form_arity(arguments, 2, "show");
+    if (arity_error) {
+        return arity_error;
+    }
+
+    CellPtr value = evaluate_argument(arguments[1], root_cell);
+    if (is_error_cell(value)) {
+        return value;
+    }
+
+    if (render_show_fn) {
+        cout << render_show_fn(value);
+    }
+    return nullptr;
+}
+
+static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "add");
+    if (!root_cell) {
+        return make_error("add requires a map VM");
+    }
+
+    CellPtr arity_error = expect_form_arity(arguments, 3, "add");
+    if (arity_error) {
+        return arity_error;
+    }
+
+    const CellPtr left_cell = expect_int_cell(evaluate_argument(arguments[1], root_cell), "add");
+    if (is_error_cell(left_cell)) {
+        return left_cell;
+    }
+
+    const CellPtr right_cell = expect_int_cell(evaluate_argument(arguments[2], root_cell), "add");
+    if (is_error_cell(right_cell)) {
+        return right_cell;
+    }
+
+    const int64_t left = static_cast<const IntCell&>(*left_cell).value;
+    const int64_t right = static_cast<const IntCell&>(*right_cell).value;
+    return make_shared<IntCell>(left + right);
+}
+
+static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "set");
+    if (!root_cell) {
+        return make_error("set requires a map VM");
+    }
+
+    CellPtr arity_error = expect_form_arity(arguments, 3, "set");
+    if (arity_error) {
+        return arity_error;
+    }
+
+    const CellPtr name_cell = arguments[1];
+    if (!name_cell || name_cell->type != Cell::Type::string) {
+        return make_error("set expects a string name");
+    }
+
+    const CellPtr value = evaluate_argument(arguments[2], root_cell);
+    if (is_error_cell(value)) {
+        return value;
+    }
+
+    if (!set_map_field_fn) {
+        return make_error("set map helper is not initialized");
+    }
+
+    const string& name = static_cast<const StrCell&>(*name_cell).value;
+    set_map_field_fn(root_cell, name, value);
+    return value;
+}
+
+static void install_builtin(const shared_ptr<MapCell>& zygote, const string& name, FunCell::Implementation implementation) {
+    shared_ptr<FunCell> builtin = make_shared<FunCell>(move(implementation));
+    set_map_field_fn(zygote, name, builtin);
+}
+
+void initialize_builtins(
+    EvalCellFn new_evaluate_cell_fn,
+    RenderShowFn new_render_show_fn,
+    MakeErrorFn new_make_error_fn,
+    SetMapFieldFn new_set_map_field_fn) {
+    evaluate_cell_fn = new_evaluate_cell_fn;
+    render_show_fn = new_render_show_fn;
+    make_error_fn = new_make_error_fn;
+    set_map_field_fn = new_set_map_field_fn;
+}
+
+shared_ptr<MapCell> make_zygote() {
+    shared_ptr<MapCell> zygote = make_shared<MapCell>();
+    install_builtin(zygote, "show", builtin_show);
+    install_builtin(zygote, "add", builtin_add);
+    install_builtin(zygote, "set", builtin_set);
+    return zygote;
 }
