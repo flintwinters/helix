@@ -48,6 +48,76 @@ static CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
 
 static CellPtr evaluate_cell(CellPtr node, MapCell& root);
 
+static CellPtr evaluate_show_form(const VecCell& form, MapCell& root) {
+    if (form.value.size() != 2) {
+        return make_error_cell("show expects exactly 1 argument");
+    }
+
+    const CellPtr value = evaluate_cell(form.value[1], root);
+    if (is_error_cell(value)) {
+        return value;
+    }
+
+    cout << render_show_output(value);
+    return nullptr;
+}
+
+static CellPtr evaluate_add_form(const VecCell& form, MapCell& root) {
+    if (form.value.size() != 3) {
+        return make_error_cell("add expects exactly 2 arguments");
+    }
+
+    const CellPtr left_cell = expect_int_cell(evaluate_cell(form.value[1], root), "add");
+    if (is_error_cell(left_cell)) {
+        return left_cell;
+    }
+
+    const CellPtr right_cell = expect_int_cell(evaluate_cell(form.value[2], root), "add");
+    if (is_error_cell(right_cell)) {
+        return right_cell;
+    }
+
+    const int64_t left = static_cast<const IntCell&>(*left_cell).value;
+    const int64_t right = static_cast<const IntCell&>(*right_cell).value;
+    return make_shared<IntCell>(left + right);
+}
+
+static CellPtr evaluate_set_form(const VecCell& form, MapCell& root) {
+    if (form.value.size() != 3) {
+        return make_error_cell("set expects exactly 2 arguments");
+    }
+
+    const CellPtr name_cell = form.value[1];
+    if (!name_cell || name_cell->type != Cell::Type::string) {
+        return make_error_cell("set expects a string name");
+    }
+
+    const CellPtr value = evaluate_cell(form.value[2], root);
+    if (is_error_cell(value)) {
+        return value;
+    }
+
+    const string& name = static_cast<const StrCell&>(*name_cell).value;
+    root.value[name] = value;
+    return value;
+}
+
+static CellPtr evaluate_builtin_form(const string& actor_name, const VecCell& form, MapCell& root) {
+    if (actor_name == "show") {
+        return evaluate_show_form(form, root);
+    }
+
+    if (actor_name == "add") {
+        return evaluate_add_form(form, root);
+    }
+
+    if (actor_name == "set") {
+        return evaluate_set_form(form, root);
+    }
+
+    return make_error_cell("vector actor did not resolve to a builtin");
+}
+
 static CellPtr evaluate_form(const VecCell& form, MapCell& root) {
     if (form.value.empty()) {
         return make_error_cell("cannot evaluate an empty vector");
@@ -59,41 +129,7 @@ static CellPtr evaluate_form(const VecCell& form, MapCell& root) {
     }
 
     const auto& actor_name = static_cast<const StrCell&>(*actor).value;
-
-    if (actor_name == "show") {
-        if (form.value.size() != 2) {
-            return make_error_cell("show expects exactly 1 argument");
-        }
-
-        const CellPtr value = evaluate_cell(form.value[1], root);
-        if (is_error_cell(value)) {
-            return value;
-        }
-        cout << render_show_output(value);
-        return nullptr;
-    }
-
-    if (actor_name == "add") {
-        if (form.value.size() != 3) {
-            return make_error_cell("add expects exactly 2 arguments");
-        }
-
-        const CellPtr left_cell = expect_int_cell(evaluate_cell(form.value[1], root), "add");
-        if (is_error_cell(left_cell)) {
-            return left_cell;
-        }
-
-        const CellPtr right_cell = expect_int_cell(evaluate_cell(form.value[2], root), "add");
-        if (is_error_cell(right_cell)) {
-            return right_cell;
-        }
-
-        const int64_t left = static_cast<const IntCell&>(*left_cell).value;
-        const int64_t right = static_cast<const IntCell&>(*right_cell).value;
-        return make_shared<IntCell>(left + right);
-    }
-
-    return make_error_cell("vector actor did not resolve to a builtin");
+    return evaluate_builtin_form(actor_name, form, root);
 }
 
 static CellPtr evaluate_cell(CellPtr node, MapCell& root) {
