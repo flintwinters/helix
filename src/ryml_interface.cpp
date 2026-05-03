@@ -68,11 +68,15 @@ CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
     return make_shared<StrCell>();
 }
 
-CellPtr load_root_cell_from_yaml_file(const char* path) {
+shared_ptr<MapCell> load_root_cell_from_yaml_file(const char* path) {
     const string file_text = read_yaml_file_text(path);
     const c4::csubstr yaml_text(file_text.data(), file_text.size());
     c4::yml::Tree tree = c4::yml::parse_in_arena(path, yaml_text);
-    return cell_from_ryml_node(tree.rootref());
+    CellPtr root_cell = cell_from_ryml_node(tree.rootref());
+    if (!root_cell || root_cell->type != Cell::Type::map) {
+        throw runtime_error("top-level YAML document must be a mapping");
+    }
+    return static_pointer_cast<MapCell>(move(root_cell));
 }
 
 void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
