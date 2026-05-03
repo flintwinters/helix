@@ -206,102 +206,6 @@ static shared_ptr<MapCell> make_finished_state() {
     return state;
 }
 
-static shared_ptr<MapCell> expect_root_vm(CellPtr current_vm, const char* who) {
-    if (!current_vm || current_vm->type != Cell::Type::map) {
-        return nullptr;
-    }
-
-    return static_pointer_cast<MapCell>(move(current_vm));
-}
-
-static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "show");
-    if (!root_cell) {
-        return make_error_cell("show requires a map VM");
-    }
-
-    VecCell form(arguments);
-    CellPtr arity_error = expect_form_arity(form, 2, "show");
-    if (arity_error) {
-        return arity_error;
-    }
-
-    CellPtr value = evaluate_argument(arguments[1], root_cell);
-    if (is_error_cell(value)) {
-        return value;
-    }
-
-    cout << render_show_output(value);
-    return nullptr;
-}
-
-static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "add");
-    if (!root_cell) {
-        return make_error_cell("add requires a map VM");
-    }
-
-    VecCell form(arguments);
-    CellPtr arity_error = expect_form_arity(form, 3, "add");
-    if (arity_error) {
-        return arity_error;
-    }
-
-    const CellPtr left_cell = expect_int_cell(evaluate_argument(arguments[1], root_cell), "add");
-    if (is_error_cell(left_cell)) {
-        return left_cell;
-    }
-
-    const CellPtr right_cell = expect_int_cell(evaluate_argument(arguments[2], root_cell), "add");
-    if (is_error_cell(right_cell)) {
-        return right_cell;
-    }
-
-    const int64_t left = static_cast<const IntCell&>(*left_cell).value;
-    const int64_t right = static_cast<const IntCell&>(*right_cell).value;
-    return make_shared<IntCell>(left + right);
-}
-
-static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "set");
-    if (!root_cell) {
-        return make_error_cell("set requires a map VM");
-    }
-
-    VecCell form(arguments);
-    CellPtr arity_error = expect_form_arity(form, 3, "set");
-    if (arity_error) {
-        return arity_error;
-    }
-
-    const CellPtr name_cell = arguments[1];
-    if (!name_cell || name_cell->type != Cell::Type::string) {
-        return make_error_cell("set expects a string name");
-    }
-
-    const CellPtr value = evaluate_argument(arguments[2], root_cell);
-    if (is_error_cell(value)) {
-        return value;
-    }
-
-    const string& name = static_cast<const StrCell&>(*name_cell).value;
-    set_map_field(root_cell, name, value);
-    return value;
-}
-
-static void install_builtin(const shared_ptr<MapCell>& zygote, const string& name, FunCell::Implementation implementation) {
-    shared_ptr<FunCell> builtin = make_shared<FunCell>(move(implementation));
-    set_map_field(zygote, name, builtin);
-}
-
-static shared_ptr<MapCell> make_zygote() {
-    shared_ptr<MapCell> zygote = make_shared<MapCell>();
-    install_builtin(zygote, "show", builtin_show);
-    install_builtin(zygote, "add", builtin_add);
-    install_builtin(zygote, "set", builtin_set);
-    return zygote;
-}
-
 static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
     if (form.value.empty()) {
         return make_error_cell("cannot evaluate an empty vector");
@@ -377,6 +281,7 @@ int main(int argc, char* argv[]) {
     }
 
     try {
+        initialize_builtins(evaluate_cell, render_show_output, make_error_cell, set_map_field);
         shared_ptr<MapCell> zygote = make_zygote();
         shared_ptr<MapCell> root_cell = load_root_cell_from_yaml_file(argv[1]);
         attach_parent_if_missing(root_cell, zygote);
