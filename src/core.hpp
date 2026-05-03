@@ -42,6 +42,7 @@ struct Cell {
     virtual bool is_signal() const noexcept;
     virtual size_t size() const noexcept;
     virtual CellPtr call(const vector<CellPtr>& arguments, CellPtr current_vm) const;
+    virtual void clear_descendant_parent_links();
 };
 
 struct MapCell final : public Cell {
@@ -49,6 +50,7 @@ struct MapCell final : public Cell {
     explicit MapCell(unordered_map<string, CellPtr> fields);
 
     size_t size() const noexcept override;
+    void clear_descendant_parent_links() override;
 
     unordered_map<string, CellPtr> value {};
 };
@@ -58,6 +60,7 @@ struct VecCell final : public Cell {
     explicit VecCell(vector<CellPtr> elements);
 
     size_t size() const noexcept override;
+    void clear_descendant_parent_links() override;
 
     vector<CellPtr> value {};
 };
@@ -94,6 +97,7 @@ struct SigCell : public Cell {
     SigCell(Type initial_type, CellPtr initial_value);
 
     bool is_signal() const noexcept override;
+    void clear_descendant_parent_links() override;
 
     CellPtr value {};
 };
