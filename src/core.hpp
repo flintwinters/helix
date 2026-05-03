@@ -119,6 +119,11 @@ using RenderShowFn = string(*)(ConstCellPtr);
 using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
 using SetMapFieldFn = void(*)(const shared_ptr<MapCell>&, const string&, CellPtr);
 
+CellPtr make_error_cell(const string& message, CellPtr value = nullptr);
+bool is_error_cell(ConstCellPtr cell);
+CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char* who);
+CellPtr expect_int_cell(ConstCellPtr cell, const char* who);
+
 void initialize_builtins(
     EvalCellFn evaluate_cell_fn,
     RenderShowFn render_show_fn,
