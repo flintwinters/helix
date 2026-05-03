@@ -17,6 +17,19 @@ static CellPtr make_error_cell(const string& message, CellPtr value = nullptr) {
     return make_shared<ErrCell>(message, move(value));
 }
 
+static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent) {
+    if (!child || !parent || child->parent) {
+        return;
+    }
+
+    child->parent = parent;
+}
+
+static void set_map_field(const shared_ptr<MapCell>& map_cell, const string& key, CellPtr value) {
+    attach_parent_if_missing(value, map_cell);
+    map_cell->value[key] = move(value);
+}
+
 static bool is_error_cell(ConstCellPtr cell) {
     return cell && cell->type == Cell::Type::error_signal;
 }
@@ -34,6 +47,53 @@ static bool is_null_cell(ConstCellPtr cell) {
     return str_cell.value == "null";
 }
 
+static void clear_parent_links(const CellPtr& cell);
+
+static void clear_child_parent_link(const CellPtr& child) {
+    if (!child) {
+        return;
+    }
+
+    child->parent = nullptr;
+    clear_parent_links(child);
+}
+
+static void clear_map_parent_links(MapCell& map_cell) {
+    for (auto& [_, child] : map_cell.value) {
+        clear_child_parent_link(child);
+    }
+}
+
+static void clear_vec_parent_links(VecCell& vec_cell) {
+    for (CellPtr& child : vec_cell.value) {
+        clear_child_parent_link(child);
+    }
+}
+
+static void clear_signal_parent_links(SigCell& sig_cell) {
+    clear_child_parent_link(sig_cell.value);
+}
+
+static void clear_parent_links(const CellPtr& cell) {
+    if (!cell) {
+        return;
+    }
+
+    if (cell->type == Cell::Type::map) {
+        clear_map_parent_links(static_cast<MapCell&>(*cell));
+        return;
+    }
+
+    if (cell->type == Cell::Type::vec) {
+        clear_vec_parent_links(static_cast<VecCell&>(*cell));
+        return;
+    }
+
+    if (cell->is_signal()) {
+        clear_signal_parent_links(static_cast<SigCell&>(*cell));
+    }
+}
+
 static CellPtr lookup_map_child(const MapCell& map_cell, const string& segment) {
     unordered_map<string, CellPtr>::const_iterator child_it = map_cell.value.find(segment);
     if (child_it == map_cell.value.end()) {
@@ -41,6 +101,15 @@ static CellPtr lookup_map_child(const MapCell& map_cell, const string& segment) 
     }
 
     return child_it->second;
+}
+
+static ConstCellPtr enclosing_map(ConstCellPtr cell) {
+    ConstCellPtr current = cell;
+    while (current && current->type != Cell::Type::map) {
+        current = current->parent;
+    }
+
+    return current;
 }
 
 static CellPtr lookup_dotted_name_from(const MapCell& current_map, const string& name, size_t segment_start) {
@@ -66,13 +135,36 @@ static CellPtr lookup_dotted_name_from(const MapCell& current_map, const string&
     return lookup_dotted_name_from(static_cast<const MapCell&>(*current), name, dot_index + 1);
 }
 
-static CellPtr lookup_dotted_name(const string& name, MapCell& root) {
-    unordered_map<string, CellPtr>::const_iterator root_it = root.value.find(name);
-    if (root_it != root.value.end()) {
-        return root_it->second;
+static CellPtr lookup_name_in_map(const string& name, const MapCell& map_cell) {
+    CellPtr child = lookup_map_child(map_cell, name);
+    if (child) {
+        return child;
     }
 
-    return lookup_dotted_name_from(root, name, 0);
+    return lookup_dotted_name_from(map_cell, name, 0);
+}
+
+static CellPtr lookup_name_from_context(const string& name, ConstCellPtr context, const shared_ptr<MapCell>& root_cell) {
+    ConstCellPtr current = context;
+    while (true) {
+        ConstCellPtr map_scope = enclosing_map(current);
+        if (!map_scope) {
+            break;
+        }
+
+        CellPtr resolved = lookup_name_in_map(name, static_cast<const MapCell&>(*map_scope));
+        if (resolved) {
+            return resolved;
+        }
+
+        current = map_scope->parent;
+    }
+
+    if (!root_cell) {
+        return nullptr;
+    }
+
+    return lookup_name_in_map(name, *root_cell);
 }
 
 static CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
@@ -87,14 +179,14 @@ static CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
     return const_pointer_cast<Cell>(cell);
 }
 
-static CellPtr evaluate_cell(CellPtr node, MapCell& root);
+static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell);
 
-static CellPtr evaluate_show_form(const VecCell& form, MapCell& root) {
+static CellPtr evaluate_show_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
     if (form.value.size() != 2) {
         return make_error_cell("show expects exactly 1 argument");
     }
 
-    const CellPtr value = evaluate_cell(form.value[1], root);
+    const CellPtr value = evaluate_cell(form.value[1], root_cell);
     if (is_error_cell(value)) {
         return value;
     }
@@ -103,17 +195,17 @@ static CellPtr evaluate_show_form(const VecCell& form, MapCell& root) {
     return nullptr;
 }
 
-static CellPtr evaluate_add_form(const VecCell& form, MapCell& root) {
+static CellPtr evaluate_add_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
     if (form.value.size() != 3) {
         return make_error_cell("add expects exactly 2 arguments");
     }
 
-    const CellPtr left_cell = expect_int_cell(evaluate_cell(form.value[1], root), "add");
+    const CellPtr left_cell = expect_int_cell(evaluate_cell(form.value[1], root_cell), "add");
     if (is_error_cell(left_cell)) {
         return left_cell;
     }
 
-    const CellPtr right_cell = expect_int_cell(evaluate_cell(form.value[2], root), "add");
+    const CellPtr right_cell = expect_int_cell(evaluate_cell(form.value[2], root_cell), "add");
     if (is_error_cell(right_cell)) {
         return right_cell;
     }
@@ -123,7 +215,7 @@ static CellPtr evaluate_add_form(const VecCell& form, MapCell& root) {
     return make_shared<IntCell>(left + right);
 }
 
-static CellPtr evaluate_set_form(const VecCell& form, MapCell& root) {
+static CellPtr evaluate_set_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
     if (form.value.size() != 3) {
         return make_error_cell("set expects exactly 2 arguments");
     }
@@ -133,33 +225,33 @@ static CellPtr evaluate_set_form(const VecCell& form, MapCell& root) {
         return make_error_cell("set expects a string name");
     }
 
-    const CellPtr value = evaluate_cell(form.value[2], root);
+    const CellPtr value = evaluate_cell(form.value[2], root_cell);
     if (is_error_cell(value)) {
         return value;
     }
 
     const string& name = static_cast<const StrCell&>(*name_cell).value;
-    root.value[name] = value;
+    set_map_field(root_cell, name, value);
     return value;
 }
 
-static CellPtr evaluate_builtin_form(const string& actor_name, const VecCell& form, MapCell& root) {
+static CellPtr evaluate_builtin_form(const string& actor_name, const VecCell& form, const shared_ptr<MapCell>& root_cell) {
     if (actor_name == "show") {
-        return evaluate_show_form(form, root);
+        return evaluate_show_form(form, root_cell);
     }
 
     if (actor_name == "add") {
-        return evaluate_add_form(form, root);
+        return evaluate_add_form(form, root_cell);
     }
 
     if (actor_name == "set") {
-        return evaluate_set_form(form, root);
+        return evaluate_set_form(form, root_cell);
     }
 
     return make_error_cell("vector actor did not resolve to a builtin");
 }
 
-static CellPtr evaluate_form(const VecCell& form, MapCell& root) {
+static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
     if (form.value.empty()) {
         return make_error_cell("cannot evaluate an empty vector");
     }
@@ -170,21 +262,21 @@ static CellPtr evaluate_form(const VecCell& form, MapCell& root) {
     }
 
     const auto& actor_name = static_cast<const StrCell&>(*actor).value;
-    return evaluate_builtin_form(actor_name, form, root);
+    return evaluate_builtin_form(actor_name, form, root_cell);
 }
 
-static CellPtr evaluate_cell(CellPtr node, MapCell& root) {
+static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell) {
     if (!node) {
         return nullptr;
     }
 
     if (node->type == Cell::Type::vec) {
-        return evaluate_form(static_cast<const VecCell&>(*node), root);
+        return evaluate_form(static_cast<const VecCell&>(*node), root_cell);
     }
 
     if (node->type == Cell::Type::string) {
         const auto& name = static_cast<const StrCell&>(*node).value;
-        CellPtr resolved = lookup_dotted_name(name, root);
+        CellPtr resolved = lookup_name_from_context(name, node, root_cell);
         if (resolved) {
             return resolved;
         }
@@ -194,15 +286,13 @@ static CellPtr evaluate_cell(CellPtr node, MapCell& root) {
 }
 
 static void run_main(shared_ptr<MapCell> root_cell) {
-    MapCell& root = *root_cell;
-    unordered_map<string, CellPtr>::const_iterator main_it = root.value.find("main");
-    if (main_it == root.value.end()) {
-        root.value["state"] = make_shared<MapCell>(
-            unordered_map<string, CellPtr> {
-                {"status", make_shared<StrCell>("finished")},
-                {"frames", make_shared<VecCell>()},
-                {"result", make_error_cell("program is missing a main entrypoint")},
-            });
+    unordered_map<string, CellPtr>::const_iterator main_it = root_cell->value.find("main");
+    if (main_it == root_cell->value.end()) {
+        shared_ptr<MapCell> state = make_shared<MapCell>();
+        set_map_field(state, "status", make_shared<StrCell>("finished"));
+        set_map_field(state, "frames", make_shared<VecCell>());
+        set_map_field(state, "result", make_error_cell("program is missing a main entrypoint"));
+        set_map_field(root_cell, "state", state);
         return;
     }
 
@@ -210,16 +300,16 @@ static void run_main(shared_ptr<MapCell> root_cell) {
     if (is_null_cell(main_it->second)) {
         result = main_it->second;
     } else {
-        result = evaluate_cell(main_it->second, root);
+        result = evaluate_cell(main_it->second, root_cell);
     }
 
     shared_ptr<MapCell> state = make_shared<MapCell>();
-    state->value["status"] = make_shared<StrCell>("finished");
-    state->value["frames"] = make_shared<VecCell>();
+    set_map_field(state, "status", make_shared<StrCell>("finished"));
+    set_map_field(state, "frames", make_shared<VecCell>());
     if (result) {
-        state->value["result"] = move(result);
+        set_map_field(state, "result", move(result));
     }
-    root.value["state"] = move(state);
+    set_map_field(root_cell, "state", state);
 }
 
 int main(int argc, char* argv[]) {
@@ -231,7 +321,9 @@ int main(int argc, char* argv[]) {
     try {
         shared_ptr<MapCell> root_cell = load_root_cell_from_yaml_file(argv[1]);
         run_main(root_cell);
-        std::cout << emit_yaml_from_cell(root_cell);
+        string yaml_output = emit_yaml_from_cell(root_cell);
+        clear_parent_links(root_cell);
+        std::cout << yaml_output;
     } catch (const exception& error) {
         std::cerr << "error: " << error.what() << '\n';
         return 1;
