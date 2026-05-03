@@ -265,6 +265,14 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& roo
     return evaluate_builtin_form(actor_name, form, root_cell);
 }
 
+static CellPtr evaluate_resolved_cell(CellPtr node, CellPtr resolved, const shared_ptr<MapCell>& root_cell) {
+    if (!resolved || resolved.get() == node.get()) {
+        return node;
+    }
+
+    return evaluate_cell(resolved, root_cell);
+}
+
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell) {
     if (!node) {
         return nullptr;
@@ -278,7 +286,7 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
         const auto& name = static_cast<const StrCell&>(*node).value;
         CellPtr resolved = lookup_name_from_context(name, node, root_cell);
         if (resolved) {
-            return resolved;
+            return evaluate_resolved_cell(node, resolved, root_cell);
         }
     }
 
