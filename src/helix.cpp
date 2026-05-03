@@ -206,13 +206,27 @@ static shared_ptr<MapCell> make_finished_state() {
     return state;
 }
 
-static CellPtr evaluate_show_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
+static shared_ptr<MapCell> expect_root_vm(CellPtr current_vm, const char* who) {
+    if (!current_vm || current_vm->type != Cell::Type::map) {
+        return nullptr;
+    }
+
+    return static_pointer_cast<MapCell>(move(current_vm));
+}
+
+static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "show");
+    if (!root_cell) {
+        return make_error_cell("show requires a map VM");
+    }
+
+    VecCell form(arguments);
     CellPtr arity_error = expect_form_arity(form, 2, "show");
     if (arity_error) {
         return arity_error;
     }
 
-    CellPtr value = evaluate_argument(form.value[1], root_cell);
+    CellPtr value = evaluate_argument(arguments[1], root_cell);
     if (is_error_cell(value)) {
         return value;
     }
@@ -221,18 +235,24 @@ static CellPtr evaluate_show_form(const VecCell& form, const shared_ptr<MapCell>
     return nullptr;
 }
 
-static CellPtr evaluate_add_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
+static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "add");
+    if (!root_cell) {
+        return make_error_cell("add requires a map VM");
+    }
+
+    VecCell form(arguments);
     CellPtr arity_error = expect_form_arity(form, 3, "add");
     if (arity_error) {
         return arity_error;
     }
 
-    const CellPtr left_cell = expect_int_cell(evaluate_argument(form.value[1], root_cell), "add");
+    const CellPtr left_cell = expect_int_cell(evaluate_argument(arguments[1], root_cell), "add");
     if (is_error_cell(left_cell)) {
         return left_cell;
     }
 
-    const CellPtr right_cell = expect_int_cell(evaluate_argument(form.value[2], root_cell), "add");
+    const CellPtr right_cell = expect_int_cell(evaluate_argument(arguments[2], root_cell), "add");
     if (is_error_cell(right_cell)) {
         return right_cell;
     }
@@ -242,18 +262,24 @@ static CellPtr evaluate_add_form(const VecCell& form, const shared_ptr<MapCell>&
     return make_shared<IntCell>(left + right);
 }
 
-static CellPtr evaluate_set_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
+static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "set");
+    if (!root_cell) {
+        return make_error_cell("set requires a map VM");
+    }
+
+    VecCell form(arguments);
     CellPtr arity_error = expect_form_arity(form, 3, "set");
     if (arity_error) {
         return arity_error;
     }
 
-    const CellPtr name_cell = form.value[1];
+    const CellPtr name_cell = arguments[1];
     if (!name_cell || name_cell->type != Cell::Type::string) {
         return make_error_cell("set expects a string name");
     }
 
-    const CellPtr value = evaluate_argument(form.value[2], root_cell);
+    const CellPtr value = evaluate_argument(arguments[2], root_cell);
     if (is_error_cell(value)) {
         return value;
     }
@@ -263,20 +289,17 @@ static CellPtr evaluate_set_form(const VecCell& form, const shared_ptr<MapCell>&
     return value;
 }
 
-static CellPtr evaluate_builtin_form(const string& actor_name, const VecCell& form, const shared_ptr<MapCell>& root_cell) {
-    if (actor_name == "show") {
-        return evaluate_show_form(form, root_cell);
-    }
+static void install_builtin(const shared_ptr<MapCell>& zygote, const string& name, FunCell::Implementation implementation) {
+    shared_ptr<FunCell> builtin = make_shared<FunCell>(move(implementation));
+    set_map_field(zygote, name, builtin);
+}
 
-    if (actor_name == "add") {
-        return evaluate_add_form(form, root_cell);
-    }
-
-    if (actor_name == "set") {
-        return evaluate_set_form(form, root_cell);
-    }
-
-    return make_error_cell("vector actor did not resolve to a builtin");
+static shared_ptr<MapCell> make_zygote() {
+    shared_ptr<MapCell> zygote = make_shared<MapCell>();
+    install_builtin(zygote, "show", builtin_show);
+    install_builtin(zygote, "add", builtin_add);
+    install_builtin(zygote, "set", builtin_set);
+    return zygote;
 }
 
 static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
@@ -284,13 +307,16 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& roo
         return make_error_cell("cannot evaluate an empty vector");
     }
 
-    const CellPtr actor = form.value.front();
-    if (!actor || actor->type != Cell::Type::string) {
+    CellPtr actor = evaluate_argument(form.value.front(), root_cell);
+    if (is_error_cell(actor)) {
+        return actor;
+    }
+
+    if (!actor || !actor->callable) {
         return make_error_cell("vector actor did not resolve to a builtin");
     }
 
-    const auto& actor_name = static_cast<const StrCell&>(*actor).value;
-    return evaluate_builtin_form(actor_name, form, root_cell);
+    return actor->call(form.value, root_cell);
 }
 
 static CellPtr evaluate_resolved_cell(CellPtr node, CellPtr resolved, const shared_ptr<MapCell>& root_cell) {
@@ -351,10 +377,14 @@ int main(int argc, char* argv[]) {
     }
 
     try {
+        shared_ptr<MapCell> zygote = make_zygote();
         shared_ptr<MapCell> root_cell = load_root_cell_from_yaml_file(argv[1]);
+        attach_parent_if_missing(root_cell, zygote);
         run_main(root_cell);
         string yaml_output = emit_yaml_from_cell(root_cell);
         clear_parent_links(root_cell);
+        root_cell->parent = nullptr;
+        clear_parent_links(zygote);
         std::cout << yaml_output;
     } catch (const exception& error) {
         std::cerr << "error: " << error.what() << '\n';
