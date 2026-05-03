@@ -1,0 +1,16 @@
+program:
+  outer:
+    middle: 2
+    inner:
+      nucleus: middle
+  main: outer.inner.nucleus
+expected:
+  outer:
+    middle: 2
+    inner:
+      nucleus: middle
+  main: outer.inner.nucleus
+  state:
+    result: 2
+    frames: []
+    status: finished
