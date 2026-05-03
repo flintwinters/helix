@@ -90,13 +90,9 @@ static CellPtr evaluate_cell(CellPtr node, MapCell& root) {
     return node;
 }
 
-static void run_main(CellPtr root_cell) {
-    if (!root_cell || root_cell->type != Cell::Type::map) {
-        throw runtime_error("top-level YAML document must be a mapping");
-    }
-
-    auto& root = static_cast<MapCell&>(*root_cell);
-    const auto main_it = root.value.find("main");
+static void run_main(shared_ptr<MapCell> root_cell) {
+    MapCell& root = *root_cell;
+    unordered_map<string, CellPtr>::const_iterator main_it = root.value.find("main");
     if (main_it == root.value.end()) {
         throw runtime_error("program is missing a main entrypoint");
     }
@@ -108,7 +104,7 @@ static void run_main(CellPtr root_cell) {
         result = evaluate_cell(main_it->second, root);
     }
 
-    auto state = make_shared<MapCell>();
+    shared_ptr<MapCell> state = make_shared<MapCell>();
     state->value["status"] = make_shared<StrCell>("finished");
     state->value["frames"] = make_shared<VecCell>();
     if (result) {
@@ -124,7 +120,7 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        CellPtr root_cell = load_root_cell_from_yaml_file(argv[1]);
+        shared_ptr<MapCell> root_cell = load_root_cell_from_yaml_file(argv[1]);
         run_main(root_cell);
         std::cout << emit_yaml_from_cell(root_cell);
     } catch (const exception& error) {
