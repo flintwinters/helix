@@ -1,0 +1,14 @@
+program:
+  outercell:
+    innercell:
+      nucleus: 19
+  main: outercell.innercell.nucleus
+expected:
+  outercell:
+    innercell:
+      nucleus: 19
+  main: outercell.innercell.nucleus
+  state:
+    result: 19
+    frames: []
+    status: finished
