@@ -12,6 +12,7 @@ using namespace std;
 class Cell;
 using CellPtr = shared_ptr<Cell>;
 using ConstCellPtr = shared_ptr<const Cell>;
+struct MapCell;
 
 struct Cell {
     enum class Type {
@@ -108,3 +109,16 @@ struct ErrCell final : public SigCell {
 
     string message {};
 };
+
+using EvalCellFn = CellPtr(*)(CellPtr, const shared_ptr<MapCell>&);
+using RenderShowFn = string(*)(ConstCellPtr);
+using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
+using SetMapFieldFn = void(*)(const shared_ptr<MapCell>&, const string&, CellPtr);
+
+void initialize_builtins(
+    EvalCellFn evaluate_cell_fn,
+    RenderShowFn render_show_fn,
+    MakeErrorFn make_error_fn,
+    SetMapFieldFn set_map_field_fn);
+
+shared_ptr<MapCell> make_zygote();
