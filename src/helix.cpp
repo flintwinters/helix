@@ -13,6 +13,14 @@ static string render_show_output(ConstCellPtr cell) {
     return rendered;
 }
 
+static CellPtr make_error_cell(const string& message, CellPtr value = nullptr) {
+    return make_shared<ErrCell>(message, move(value));
+}
+
+static bool is_error_cell(ConstCellPtr cell) {
+    return cell && cell->type == Cell::Type::error_signal;
+}
+
 static bool is_null_cell(ConstCellPtr cell) {
     if (!cell) {
         return true;
@@ -26,48 +34,66 @@ static bool is_null_cell(ConstCellPtr cell) {
     return str_cell.value == "null";
 }
 
-static int64_t expect_int_cell(ConstCellPtr cell, const char* who) {
-    if (!cell || cell->type != Cell::Type::integer) {
-        throw runtime_error(string(who) + " expects integer arguments");
+static CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
+    if (is_error_cell(cell)) {
+        return const_pointer_cast<Cell>(cell);
     }
-    return static_cast<const IntCell&>(*cell).value;
+
+    if (!cell || cell->type != Cell::Type::integer) {
+        return make_error_cell(string(who) + " expects integer arguments");
+    }
+
+    return const_pointer_cast<Cell>(cell);
 }
 
 static CellPtr evaluate_cell(CellPtr node, MapCell& root);
 
 static CellPtr evaluate_form(const VecCell& form, MapCell& root) {
     if (form.value.empty()) {
-        throw runtime_error("cannot evaluate an empty vector");
+        return make_error_cell("cannot evaluate an empty vector");
     }
 
     const CellPtr actor = form.value.front();
     if (!actor || actor->type != Cell::Type::string) {
-        throw runtime_error("vector actor did not resolve to a builtin");
+        return make_error_cell("vector actor did not resolve to a builtin");
     }
 
     const auto& actor_name = static_cast<const StrCell&>(*actor).value;
 
     if (actor_name == "show") {
         if (form.value.size() != 2) {
-            throw runtime_error("show expects exactly 1 argument");
+            return make_error_cell("show expects exactly 1 argument");
         }
 
         const CellPtr value = evaluate_cell(form.value[1], root);
+        if (is_error_cell(value)) {
+            return value;
+        }
         cout << render_show_output(value);
         return nullptr;
     }
 
     if (actor_name == "add") {
         if (form.value.size() != 3) {
-            throw runtime_error("add expects exactly 2 arguments");
+            return make_error_cell("add expects exactly 2 arguments");
         }
 
-        const int64_t left = expect_int_cell(evaluate_cell(form.value[1], root), "add");
-        const int64_t right = expect_int_cell(evaluate_cell(form.value[2], root), "add");
+        const CellPtr left_cell = expect_int_cell(evaluate_cell(form.value[1], root), "add");
+        if (is_error_cell(left_cell)) {
+            return left_cell;
+        }
+
+        const CellPtr right_cell = expect_int_cell(evaluate_cell(form.value[2], root), "add");
+        if (is_error_cell(right_cell)) {
+            return right_cell;
+        }
+
+        const int64_t left = static_cast<const IntCell&>(*left_cell).value;
+        const int64_t right = static_cast<const IntCell&>(*right_cell).value;
         return make_shared<IntCell>(left + right);
     }
 
-    throw runtime_error("vector actor did not resolve to a builtin");
+    return make_error_cell("vector actor did not resolve to a builtin");
 }
 
 static CellPtr evaluate_cell(CellPtr node, MapCell& root) {
@@ -94,7 +120,13 @@ static void run_main(shared_ptr<MapCell> root_cell) {
     MapCell& root = *root_cell;
     unordered_map<string, CellPtr>::const_iterator main_it = root.value.find("main");
     if (main_it == root.value.end()) {
-        throw runtime_error("program is missing a main entrypoint");
+        root.value["state"] = make_shared<MapCell>(
+            unordered_map<string, CellPtr> {
+                {"status", make_shared<StrCell>("finished")},
+                {"frames", make_shared<VecCell>()},
+                {"result", make_error_cell("program is missing a main entrypoint")},
+            });
+        return;
     }
 
     CellPtr result = nullptr;
