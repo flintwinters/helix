@@ -17,6 +17,35 @@ Cell& Cell::operator=(Cell&&) = default;
 
 Cell::~Cell() = default;
 
+CellPtr make_error_cell(const string& message, CellPtr value) {
+    return make_shared<ErrCell>(message, move(value));
+}
+
+bool is_error_cell(ConstCellPtr cell) {
+    return cell && cell->type == Cell::Type::error_signal;
+}
+
+CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char* who) {
+    if (actual_arity == expected_arity) {
+        return nullptr;
+    }
+
+    return make_error_cell(string(who) + " expects exactly " + to_string(expected_arity - 1) + " argument"
+        + (expected_arity == 2 ? "" : "s"));
+}
+
+CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
+    if (is_error_cell(cell)) {
+        return const_pointer_cast<Cell>(cell);
+    }
+
+    if (!cell || cell->type != Cell::Type::integer) {
+        return make_error_cell(string(who) + " expects integer arguments");
+    }
+
+    return const_pointer_cast<Cell>(cell);
+}
+
 bool Cell::is_signal() const noexcept {
     return false;
 }
