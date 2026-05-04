@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -31,6 +32,58 @@ def is_source_newer(source_path, output_path):
     return not os.path.exists(output_path) or os.path.getmtime(source_path) > os.path.getmtime(output_path)
 
 
+INCLUDE_PATTERN = re.compile(r'^\s*#\s*include\s*[<"]([^">]+)[">]')
+
+
+def included_project_files(source_path, include_directories):
+    resolved_paths = set()
+    pending_paths = [source_path]
+    visited_paths = set()
+
+    while pending_paths:
+        current_path = pending_paths.pop()
+        if current_path in visited_paths or not os.path.exists(current_path):
+            continue
+
+        visited_paths.add(current_path)
+
+        with open(current_path, "r", encoding="utf-8") as source_file:
+            for line in source_file:
+                match = INCLUDE_PATTERN.match(line)
+                if not match:
+                    continue
+
+                include_name = match.group(1)
+                candidate_paths = [os.path.join(os.path.dirname(current_path), include_name)]
+                candidate_paths.extend(os.path.join(directory, include_name) for directory in include_directories)
+
+                for candidate_path in candidate_paths:
+                    normalized_path = os.path.normpath(candidate_path)
+                    if not os.path.exists(normalized_path):
+                        continue
+
+                    if normalized_path.startswith("src") or normalized_path.startswith("include"):
+                        if normalized_path not in resolved_paths:
+                            resolved_paths.add(normalized_path)
+                            pending_paths.append(normalized_path)
+                    break
+
+    return resolved_paths
+
+
+def newest_dependency_mtime(source_path, include_directories):
+    dependency_paths = {source_path}
+    dependency_paths.update(included_project_files(source_path, include_directories))
+    return max(os.path.getmtime(path) for path in dependency_paths)
+
+
+def should_recompile(source_path, object_path, include_directories):
+    if not os.path.exists(object_path):
+        return True
+
+    return newest_dependency_mtime(source_path, include_directories) > os.path.getmtime(object_path)
+
+
 def command_exists(command_name):
     return shutil.which(command_name) is not None
 
@@ -45,7 +98,7 @@ def compile_main():
         object_path = os.path.join(OBJECT_DIRECTORY, object_name)
         object_files.append(object_path)
 
-        if not is_source_newer(source_path, object_path):
+        if not should_recompile(source_path, object_path, INCLUDE_DIRECTORIES):
             continue
 
         compile_command = (
@@ -466,11 +519,12 @@ def main():
     if not run_clang_tidy():
         sys.exit(1)
 
-    if not run_cloc():
-        sys.exit(1)
 
     num_failed = run_tests("cpp")
 
+    if not run_cloc():
+        sys.exit(1)
+        
     if num_failed > 0:
         sys.exit(1)
 
