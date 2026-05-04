@@ -117,6 +117,8 @@ using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
 
 CellPtr make_error_cell(const string& message, CellPtr value = nullptr);
 shared_ptr<MapCell> expect_map_cell(CellPtr cell, const char* who);
+shared_ptr<MapCell> make_finished_state_cell();
+void attach_finished_state(const shared_ptr<MapCell>& root_cell, CellPtr result);
 CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char* who);
 CellPtr expect_int_cell(ConstCellPtr cell, const char* who);
 
