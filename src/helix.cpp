@@ -130,7 +130,7 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& roo
         return actor;
     }
 
-    if (!actor || !actor->callable) {
+    if (!actor || actor->type != Cell::Type::function) {
         return make_error_cell("vector actor did not resolve to a builtin");
     }
 
