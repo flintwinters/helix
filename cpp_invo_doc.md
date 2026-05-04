@@ -25,7 +25,6 @@ flowchart LR
   h_eval_cell["src/helix.cpp::evaluate_cell<br/>evaluate one cell"]
   h_eval_resolved["src/helix.cpp::evaluate_resolved_cell<br/>follow resolved alias"]
   h_eval_form["src/helix.cpp::evaluate_form<br/>evaluate actor and call"]
-  h_eval_arg["src/helix.cpp::evaluate_argument<br/>eval child argument"]
   h_render_show["src/helix.cpp::render_show_output<br/>render show output"]
   h_is_null["src/helix.cpp::is_null_cell<br/>detect string null"]
 
@@ -41,7 +40,6 @@ flowchart LR
   b_show["src/builtins.cpp::builtin_show<br/>show builtin"]
   b_add["src/builtins.cpp::builtin_add<br/>add builtin"]
   b_set["src/builtins.cpp::builtin_set<br/>set builtin"]
-  b_eval_arg["src/builtins.cpp::evaluate_argument<br/>eval builtin argument"]
   b_expect_vm["src/builtins.cpp::expect_root_vm<br/>require root VM"]
   b_make_error["src/builtins.cpp::make_error<br/>builtin error wrapper"]
 
@@ -80,11 +78,9 @@ flowchart LR
   h_eval_resolved --> r_eval
   r_eval --> h_eval_cell
 
-  h_eval_form --> h_eval_arg
+  h_eval_form --> h_eval_cell
   h_eval_form --> c_make_error
   h_eval_form --> c_fun_call
-
-  h_eval_arg --> h_eval_cell
 
   h_lookup_context --> h_enclosing_map
   h_lookup_context --> h_lookup_name_map
@@ -109,26 +105,24 @@ flowchart LR
 
   b_show --> b_expect_vm
   b_show --> c_expect_arity
-  b_show --> b_eval_arg
+  b_show --> h_eval_cell
   b_show --> h_render_show
 
   b_add --> b_expect_vm
   b_add --> c_expect_arity
-  b_add --> b_eval_arg
+  b_add --> h_eval_cell
   b_add --> c_expect_int
 
   b_set --> b_expect_vm
   b_set --> c_expect_arity
-  b_set --> b_eval_arg
+  b_set --> h_eval_cell
   b_set --> b_make_error
   b_set --> h_set_field
-
-  b_eval_arg --> h_eval_cell
 
   b_make_error --> c_make_error
 
   class h_main entry;
   class h_attach_parent,h_is_null,h_lookup_child,h_enclosing_map,b_init,b_expect_vm,c_make_error,c_expect_arity,c_expect_int leaf;
   class r_eval,r_lookup,r_clear recurse;
-  class h_main,h_run_main,h_eval_cell,h_eval_resolved,h_eval_form,h_eval_arg,h_render_show,h_lookup_context,h_lookup_name_map,h_lookup_dotted,b_make_zygote,b_show,b_add,b_set,b_eval_arg,c_fun_call,c_clear_desc,c_clear_map,c_clear_vec,c_clear_sig runtime;
+  class h_main,h_run_main,h_eval_cell,h_eval_resolved,h_eval_form,h_render_show,h_lookup_context,h_lookup_name_map,h_lookup_dotted,b_make_zygote,b_show,b_add,b_set,c_fun_call,c_clear_desc,c_clear_map,c_clear_vec,c_clear_sig runtime;
 ```
