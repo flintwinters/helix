@@ -14,7 +14,7 @@ using CellPtr = shared_ptr<Cell>;
 using ConstCellPtr = shared_ptr<const Cell>;
 struct MapCell;
 
-struct Cell : enable_shared_from_this<Cell> {
+struct Cell {
     enum class Type {
         base,
         map,
@@ -42,7 +42,7 @@ struct Cell : enable_shared_from_this<Cell> {
     virtual void clear_descendant_parent_links();
 };
 
-struct MapCell final : public Cell {
+struct MapCell final : public Cell, public enable_shared_from_this<MapCell> {
     MapCell();
     explicit MapCell(unordered_map<string, CellPtr> fields);
 
