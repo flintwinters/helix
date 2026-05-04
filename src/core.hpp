@@ -27,8 +27,6 @@ struct Cell {
         error_signal,
     };
 
-    bool callable = false;
-
     Cell();
     explicit Cell(Type initial_type);
     Cell(const Cell&);
