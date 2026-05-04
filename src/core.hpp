@@ -39,7 +39,6 @@ struct Cell {
 
     Type type {Type::base};
     CellPtr parent {};
-    virtual bool is_signal() const noexcept;
     virtual size_t size() const noexcept;
     virtual CellPtr call(const vector<CellPtr>& arguments, CellPtr current_vm) const;
     virtual void clear_descendant_parent_links();
@@ -96,7 +95,6 @@ struct SigCell : public Cell {
     explicit SigCell(CellPtr initial_value);
     SigCell(Type initial_type, CellPtr initial_value);
 
-    bool is_signal() const noexcept override;
     void clear_descendant_parent_links() override;
 
     CellPtr value {};
@@ -120,7 +118,6 @@ using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
 using SetMapFieldFn = void(*)(const shared_ptr<MapCell>&, const string&, CellPtr);
 
 CellPtr make_error_cell(const string& message, CellPtr value = nullptr);
-bool is_error_cell(ConstCellPtr cell);
 CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char* who);
 CellPtr expect_int_cell(ConstCellPtr cell, const char* who);
 
