@@ -12,19 +12,6 @@ static string render_show_output(ConstCellPtr cell) {
     return rendered;
 }
 
-static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent) {
-    if (!child || !parent || child->parent) {
-        return;
-    }
-
-    child->parent = parent;
-}
-
-static void set_map_field(const shared_ptr<MapCell>& map_cell, const string& key, CellPtr value) {
-    attach_parent_if_missing(value, map_cell);
-    map_cell->value[key] = move(value);
-}
-
 static bool is_null_cell(ConstCellPtr cell) {
     if (!cell) {
         return true;
@@ -115,8 +102,8 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
 
 static shared_ptr<MapCell> make_finished_state() {
     shared_ptr<MapCell> state = make_shared<MapCell>();
-    set_map_field(state, "status", make_shared<StrCell>("finished"));
-    set_map_field(state, "frames", make_shared<VecCell>());
+    state->set("status", make_shared<StrCell>("finished"));
+    state->set("frames", make_shared<VecCell>());
     return state;
 }
 
@@ -169,8 +156,8 @@ static void run_main(shared_ptr<MapCell> root_cell) {
     unordered_map<string, CellPtr>::const_iterator main_it = root_cell->value.find("main");
     if (main_it == root_cell->value.end()) {
         shared_ptr<MapCell> state = make_finished_state();
-        set_map_field(state, "result", make_error_cell("program is missing a main entrypoint"));
-        set_map_field(root_cell, "state", state);
+        state->set("result", make_error_cell("program is missing a main entrypoint"));
+        root_cell->set("state", state);
         return;
     }
 
@@ -183,9 +170,9 @@ static void run_main(shared_ptr<MapCell> root_cell) {
 
     shared_ptr<MapCell> state = make_finished_state();
     if (result) {
-        set_map_field(state, "result", move(result));
+        state->set("result", move(result));
     }
-    set_map_field(root_cell, "state", state);
+    root_cell->set("state", state);
 }
 
 int main(int argc, char* argv[]) {
@@ -195,10 +182,12 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        initialize_builtins(evaluate_cell, render_show_output, make_error_cell, set_map_field);
+        initialize_builtins(evaluate_cell, render_show_output, make_error_cell);
         shared_ptr<MapCell> zygote = make_zygote();
         shared_ptr<MapCell> root_cell = load_root_cell_from_yaml_file(argv[1]);
-        attach_parent_if_missing(root_cell, zygote);
+        if (!root_cell->parent) {
+            root_cell->parent = zygote;
+        }
         run_main(root_cell);
         string yaml_output = emit_yaml_from_cell(root_cell);
         root_cell->clear_descendant_parent_links();
