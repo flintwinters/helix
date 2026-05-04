@@ -21,10 +21,6 @@ CellPtr make_error_cell(const string& message, CellPtr value) {
     return make_shared<ErrCell>(message, move(value));
 }
 
-bool is_error_cell(ConstCellPtr cell) {
-    return cell && cell->type == Cell::Type::error_signal;
-}
-
 CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char* who) {
     if (actual_arity == expected_arity) {
         return nullptr;
@@ -35,7 +31,7 @@ CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char
 }
 
 CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
-    if (is_error_cell(cell)) {
+    if (cell && cell->type == Cell::Type::error_signal) {
         return const_pointer_cast<Cell>(cell);
     }
 
@@ -44,10 +40,6 @@ CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
     }
 
     return const_pointer_cast<Cell>(cell);
-}
-
-bool Cell::is_signal() const noexcept {
-    return false;
 }
 
 size_t Cell::size() const noexcept {
@@ -135,10 +127,6 @@ SigCell::SigCell(CellPtr initial_value)
 
 SigCell::SigCell(Type initial_type, CellPtr initial_value)
     : Cell(initial_type), value(move(initial_value)) {}
-
-bool SigCell::is_signal() const noexcept {
-    return true;
-}
 
 void SigCell::clear_descendant_parent_links() {
     if (!value) {
