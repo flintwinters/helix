@@ -21,6 +21,16 @@ CellPtr make_error_cell(const string& message, CellPtr value) {
     return make_shared<ErrCell>(message, move(value));
 }
 
+shared_ptr<MapCell> expect_map_cell(CellPtr cell, const char* who) {
+    (void)who;
+
+    if (cell && cell->type == Cell::Type::map) {
+        return static_pointer_cast<MapCell>(move(cell));
+    }
+
+    return nullptr;
+}
+
 CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char* who) {
     if (actual_arity == expected_arity) {
         return nullptr;
