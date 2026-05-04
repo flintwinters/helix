@@ -25,12 +25,7 @@ static bool is_null_cell(ConstCellPtr cell) {
     return str_cell.value == "null";
 }
 
-static CellPtr resolve_name_in_map(const string& name, const MapCell& map_cell) {
-    unordered_map<string, CellPtr>::const_iterator exact_it = map_cell.value.find(name);
-    if (exact_it != map_cell.value.end()) {
-        return exact_it->second;
-    }
-
+static CellPtr resolve_dotted_name_in_map(const string& name, const MapCell& map_cell) {
     const MapCell* current_map = &map_cell;
     size_t segment_start = 0;
 
@@ -60,6 +55,15 @@ static CellPtr resolve_name_in_map(const string& name, const MapCell& map_cell) 
     }
 
     return nullptr;
+}
+
+static CellPtr resolve_name_in_map(const string& name, const MapCell& map_cell) {
+    unordered_map<string, CellPtr>::const_iterator exact_it = map_cell.value.find(name);
+    if (exact_it != map_cell.value.end()) {
+        return exact_it->second;
+    }
+
+    return resolve_dotted_name_in_map(name, map_cell);
 }
 
 static CellPtr resolve_name_from_context(const string& name, ConstCellPtr context, const shared_ptr<MapCell>& root_cell) {
