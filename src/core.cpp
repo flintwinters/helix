@@ -1,6 +1,5 @@
 #include <core.hpp>
 
-#include <stdexcept>
 #include <utility>
 
 Cell::Cell() : parent(nullptr) {}
@@ -80,7 +79,7 @@ size_t Cell::size() const noexcept {
 }
 
 CellPtr Cell::call(const vector<CellPtr>&, CellPtr) const {
-    throw logic_error("Cell is not callable");
+    return make_error_cell("Cell is not callable");
 }
 
 void Cell::clear_descendant_parent_links() {}
@@ -150,7 +149,7 @@ FunCell::FunCell(Implementation implementation)
 
 CellPtr FunCell::call(const vector<CellPtr>& arguments, CellPtr current_vm) const {
     if (!value) {
-        throw logic_error("FunCell has no implementation");
+        return make_error_cell("function cell has no implementation");
     }
     return value(arguments, move(current_vm));
 }
