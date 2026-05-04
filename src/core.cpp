@@ -17,6 +17,14 @@ Cell& Cell::operator=(Cell&&) = default;
 
 Cell::~Cell() = default;
 
+static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent) {
+    if (!child || !parent || child->parent) {
+        return;
+    }
+
+    child->parent = parent;
+}
+
 CellPtr make_error_cell(const string& message, CellPtr value) {
     return make_shared<ErrCell>(message, move(value));
 }
@@ -66,6 +74,11 @@ MapCell::MapCell() : Cell(Type::map) {}
 
 MapCell::MapCell(unordered_map<string, CellPtr> fields)
     : Cell(Type::map), value(move(fields)) {}
+
+void MapCell::set(const string& key, CellPtr child) {
+    attach_parent_if_missing(child, shared_from_this());
+    value[key] = move(child);
+}
 
 size_t MapCell::size() const noexcept {
     return value.size();
