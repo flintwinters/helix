@@ -105,13 +105,10 @@ size_t StrCell::size() const noexcept {
 }
 
 FunCell::FunCell() : Cell(Type::function) {
-    callable = true;
 }
 
 FunCell::FunCell(Implementation implementation)
-    : Cell(Type::function), value(move(implementation)) {
-    callable = true;
-}
+    : Cell(Type::function), value(move(implementation)) {}
 
 CellPtr FunCell::call(const vector<CellPtr>& arguments, CellPtr current_vm) const {
     if (!value) {
