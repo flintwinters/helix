@@ -113,15 +113,6 @@ static CellPtr lookup_name_from_context(const string& name, ConstCellPtr context
 
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell);
 
-static CellPtr evaluate_argument(CellPtr node, const shared_ptr<MapCell>& root_cell) {
-    CellPtr value = evaluate_cell(move(node), root_cell);
-    if (value && value->type == Cell::Type::error_signal) {
-        return value;
-    }
-
-    return value;
-}
-
 static shared_ptr<MapCell> make_finished_state() {
     shared_ptr<MapCell> state = make_shared<MapCell>();
     set_map_field(state, "status", make_shared<StrCell>("finished"));
@@ -134,7 +125,7 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& roo
         return make_error_cell("cannot evaluate an empty vector");
     }
 
-    CellPtr actor = evaluate_argument(form.value.front(), root_cell);
+    CellPtr actor = evaluate_cell(form.value.front(), root_cell);
     if (actor && actor->type == Cell::Type::error_signal) {
         return actor;
     }
