@@ -17,16 +17,8 @@ static CellPtr make_error(const string& message, CellPtr value = nullptr) {
     return make_error_fn(message, move(value));
 }
 
-static shared_ptr<MapCell> expect_root_vm(CellPtr current_vm, const char* who) {
-    if (!current_vm || current_vm->type != Cell::Type::map) {
-        return nullptr;
-    }
-
-    return static_pointer_cast<MapCell>(move(current_vm));
-}
-
 static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "show");
+    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "show");
     if (!root_cell) {
         return make_error("show requires a map VM");
     }
@@ -52,7 +44,7 @@ static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm
 }
 
 static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "add");
+    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "add");
     if (!root_cell) {
         return make_error("add requires a map VM");
     }
@@ -82,7 +74,7 @@ static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm)
 }
 
 static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "set");
+    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "set");
     if (!root_cell) {
         return make_error("set requires a map VM");
     }
