@@ -25,19 +25,6 @@ static shared_ptr<MapCell> expect_root_vm(CellPtr current_vm, const char* who) {
     return static_pointer_cast<MapCell>(move(current_vm));
 }
 
-static CellPtr evaluate_argument(CellPtr node, const shared_ptr<MapCell>& root_cell) {
-    if (!evaluate_cell_fn) {
-        return make_error("builtin evaluation is not initialized");
-    }
-
-    CellPtr value = evaluate_cell_fn(move(node), root_cell);
-    if (value && value->type == Cell::Type::error_signal) {
-        return value;
-    }
-
-    return value;
-}
-
 static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
     shared_ptr<MapCell> root_cell = expect_root_vm(move(current_vm), "show");
     if (!root_cell) {
@@ -49,7 +36,11 @@ static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm
         return arity_error;
     }
 
-    CellPtr value = evaluate_argument(arguments[1], root_cell);
+    if (!evaluate_cell_fn) {
+        return make_error("builtin evaluation is not initialized");
+    }
+
+    CellPtr value = evaluate_cell_fn(arguments[1], root_cell);
     if (value && value->type == Cell::Type::error_signal) {
         return value;
     }
@@ -71,12 +62,16 @@ static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm)
         return arity_error;
     }
 
-    const CellPtr left_cell = expect_int_cell(evaluate_argument(arguments[1], root_cell), "add");
+    if (!evaluate_cell_fn) {
+        return make_error("builtin evaluation is not initialized");
+    }
+
+    const CellPtr left_cell = expect_int_cell(evaluate_cell_fn(arguments[1], root_cell), "add");
     if (left_cell && left_cell->type == Cell::Type::error_signal) {
         return left_cell;
     }
 
-    const CellPtr right_cell = expect_int_cell(evaluate_argument(arguments[2], root_cell), "add");
+    const CellPtr right_cell = expect_int_cell(evaluate_cell_fn(arguments[2], root_cell), "add");
     if (right_cell && right_cell->type == Cell::Type::error_signal) {
         return right_cell;
     }
@@ -102,7 +97,11 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
         return make_error("set expects a string name");
     }
 
-    const CellPtr value = evaluate_argument(arguments[2], root_cell);
+    if (!evaluate_cell_fn) {
+        return make_error("builtin evaluation is not initialized");
+    }
+
+    const CellPtr value = evaluate_cell_fn(arguments[2], root_cell);
     if (value && value->type == Cell::Type::error_signal) {
         return value;
     }
