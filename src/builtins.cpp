@@ -31,7 +31,7 @@ static CellPtr evaluate_argument(CellPtr node, const shared_ptr<MapCell>& root_c
     }
 
     CellPtr value = evaluate_cell_fn(move(node), root_cell);
-    if (is_error_cell(value)) {
+    if (value && value->type == Cell::Type::error_signal) {
         return value;
     }
 
@@ -50,7 +50,7 @@ static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm
     }
 
     CellPtr value = evaluate_argument(arguments[1], root_cell);
-    if (is_error_cell(value)) {
+    if (value && value->type == Cell::Type::error_signal) {
         return value;
     }
 
@@ -72,12 +72,12 @@ static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm)
     }
 
     const CellPtr left_cell = expect_int_cell(evaluate_argument(arguments[1], root_cell), "add");
-    if (is_error_cell(left_cell)) {
+    if (left_cell && left_cell->type == Cell::Type::error_signal) {
         return left_cell;
     }
 
     const CellPtr right_cell = expect_int_cell(evaluate_argument(arguments[2], root_cell), "add");
-    if (is_error_cell(right_cell)) {
+    if (right_cell && right_cell->type == Cell::Type::error_signal) {
         return right_cell;
     }
 
@@ -103,7 +103,7 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
     }
 
     const CellPtr value = evaluate_argument(arguments[2], root_cell);
-    if (is_error_cell(value)) {
+    if (value && value->type == Cell::Type::error_signal) {
         return value;
     }
 
