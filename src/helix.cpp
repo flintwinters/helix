@@ -91,13 +91,6 @@ static CellPtr resolve_name_from_context(const string& name, ConstCellPtr contex
 
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell);
 
-static shared_ptr<MapCell> make_finished_state() {
-    shared_ptr<MapCell> state = make_shared<MapCell>();
-    state->set("status", make_shared<StrCell>("finished"));
-    state->set("frames", make_shared<VecCell>());
-    return state;
-}
-
 static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
     if (form.value.empty()) {
         return make_error_cell("cannot evaluate an empty vector");
@@ -146,9 +139,7 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
 static void run_main(shared_ptr<MapCell> root_cell) {
     unordered_map<string, CellPtr>::const_iterator main_it = root_cell->value.find("main");
     if (main_it == root_cell->value.end()) {
-        shared_ptr<MapCell> state = make_finished_state();
-        state->set("result", make_error_cell("program is missing a main entrypoint"));
-        root_cell->set("state", state);
+        attach_finished_state(root_cell, make_error_cell("program is missing a main entrypoint"));
         return;
     }
 
@@ -159,11 +150,7 @@ static void run_main(shared_ptr<MapCell> root_cell) {
         result = evaluate_cell(main_it->second, root_cell);
     }
 
-    shared_ptr<MapCell> state = make_finished_state();
-    if (result) {
-        state->set("result", move(result));
-    }
-    root_cell->set("state", state);
+    attach_finished_state(root_cell, move(result));
 }
 
 int main(int argc, char* argv[]) {
