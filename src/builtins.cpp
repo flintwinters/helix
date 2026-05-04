@@ -107,6 +107,25 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
     return value;
 }
 
+static CellPtr builtin_eval(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "eval");
+    if (!root_cell) {
+        return make_error("eval requires a map VM");
+    }
+
+    CellPtr arity_error = expect_form_arity(arguments.size(), 2, "eval");
+    if (arity_error) {
+        return arity_error;
+    }
+
+    CellPtr code = evaluate_or_error(arguments[1], root_cell);
+    if (code && code->type == Cell::Type::error_signal) {
+        return code;
+    }
+
+    return evaluate_or_error(code, root_cell);
+}
+
 static void install_builtin(const shared_ptr<MapCell>& zygote, const string& name, FunCell::Implementation implementation) {
     shared_ptr<FunCell> builtin = make_shared<FunCell>(move(implementation));
     zygote->set(name, builtin);
@@ -126,5 +145,6 @@ shared_ptr<MapCell> make_zygote() {
     install_builtin(zygote, "show", builtin_show);
     install_builtin(zygote, "add", builtin_add);
     install_builtin(zygote, "set", builtin_set);
+    install_builtin(zygote, "eval", builtin_eval);
     return zygote;
 }
