@@ -14,7 +14,7 @@ using CellPtr = shared_ptr<Cell>;
 using ConstCellPtr = shared_ptr<const Cell>;
 struct MapCell;
 
-struct Cell {
+struct Cell : enable_shared_from_this<Cell> {
     enum class Type {
         base,
         map,
