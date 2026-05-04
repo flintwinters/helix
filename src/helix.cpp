@@ -25,77 +25,68 @@ static bool is_null_cell(ConstCellPtr cell) {
     return str_cell.value == "null";
 }
 
-static CellPtr lookup_map_child(const MapCell& map_cell, const string& segment) {
-    unordered_map<string, CellPtr>::const_iterator child_it = map_cell.value.find(segment);
-    if (child_it == map_cell.value.end()) {
-        return nullptr;
+static CellPtr resolve_name_in_map(const string& name, const MapCell& map_cell) {
+    unordered_map<string, CellPtr>::const_iterator exact_it = map_cell.value.find(name);
+    if (exact_it != map_cell.value.end()) {
+        return exact_it->second;
     }
 
-    return child_it->second;
+    const MapCell* current_map = &map_cell;
+    size_t segment_start = 0;
+
+    while (segment_start < name.size()) {
+        size_t dot_index = name.find('.', segment_start);
+        string segment = name.substr(segment_start, dot_index - segment_start);
+        if (segment.empty()) {
+            return nullptr;
+        }
+
+        unordered_map<string, CellPtr>::const_iterator child_it = current_map->value.find(segment);
+        if (child_it == current_map->value.end()) {
+            return nullptr;
+        }
+
+        CellPtr current = child_it->second;
+        if (dot_index == string::npos) {
+            return current;
+        }
+
+        if (!current || current->type != Cell::Type::map) {
+            return nullptr;
+        }
+
+        current_map = &static_cast<const MapCell&>(*current);
+        segment_start = dot_index + 1;
+    }
+
+    return nullptr;
 }
 
-static ConstCellPtr enclosing_map(ConstCellPtr cell) {
-    ConstCellPtr current = cell;
-    while (current && current->type != Cell::Type::map) {
-        current = current->parent;
-    }
-
-    return current;
-}
-
-static CellPtr lookup_dotted_name_from(const MapCell& current_map, const string& name, size_t segment_start) {
-    size_t dot_index = name.find('.', segment_start);
-    string segment = name.substr(segment_start, dot_index - segment_start);
-    if (segment.empty()) {
-        return nullptr;
-    }
-
-    CellPtr current = lookup_map_child(current_map, segment);
-    if (!current) {
-        return nullptr;
-    }
-
-    if (dot_index == string::npos) {
-        return current;
-    }
-
-    if (current->type != Cell::Type::map) {
-        return nullptr;
-    }
-
-    return lookup_dotted_name_from(static_cast<const MapCell&>(*current), name, dot_index + 1);
-}
-
-static CellPtr lookup_name_in_map(const string& name, const MapCell& map_cell) {
-    CellPtr child = lookup_map_child(map_cell, name);
-    if (child) {
-        return child;
-    }
-
-    return lookup_dotted_name_from(map_cell, name, 0);
-}
-
-static CellPtr lookup_name_from_context(const string& name, ConstCellPtr context, const shared_ptr<MapCell>& root_cell) {
+static CellPtr resolve_name_from_context(const string& name, ConstCellPtr context, const shared_ptr<MapCell>& root_cell) {
     ConstCellPtr current = context;
-    while (true) {
-        ConstCellPtr map_scope = enclosing_map(current);
-        if (!map_scope) {
+
+    while (current) {
+        while (current && current->type != Cell::Type::map) {
+            current = current->parent;
+        }
+
+        if (!current) {
             break;
         }
 
-        CellPtr resolved = lookup_name_in_map(name, static_cast<const MapCell&>(*map_scope));
+        CellPtr resolved = resolve_name_in_map(name, static_cast<const MapCell&>(*current));
         if (resolved) {
             return resolved;
         }
 
-        current = map_scope->parent;
+        current = current->parent;
     }
 
     if (!root_cell) {
         return nullptr;
     }
 
-    return lookup_name_in_map(name, *root_cell);
+    return resolve_name_in_map(name, *root_cell);
 }
 
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell);
@@ -143,7 +134,7 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
 
     if (node->type == Cell::Type::string) {
         const auto& name = static_cast<const StrCell&>(*node).value;
-        CellPtr resolved = lookup_name_from_context(name, node, root_cell);
+        CellPtr resolved = resolve_name_from_context(name, node, root_cell);
         if (resolved) {
             return evaluate_resolved_cell(node, resolved, root_cell);
         }
