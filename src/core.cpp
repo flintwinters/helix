@@ -39,6 +39,21 @@ shared_ptr<MapCell> expect_map_cell(CellPtr cell, const char* who) {
     return nullptr;
 }
 
+shared_ptr<MapCell> make_finished_state_cell() {
+    shared_ptr<MapCell> state = make_shared<MapCell>();
+    state->set("status", make_shared<StrCell>("finished"));
+    state->set("frames", make_shared<VecCell>());
+    return state;
+}
+
+void attach_finished_state(const shared_ptr<MapCell>& root_cell, CellPtr result) {
+    shared_ptr<MapCell> state = make_finished_state_cell();
+    if (result) {
+        state->set("result", move(result));
+    }
+    root_cell->set("state", state);
+}
+
 CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char* who) {
     if (actual_arity == expected_arity) {
         return nullptr;
