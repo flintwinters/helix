@@ -7,7 +7,6 @@
 static EvalCellFn evaluate_cell_fn = nullptr;
 static RenderShowFn render_show_fn = nullptr;
 static MakeErrorFn make_error_fn = nullptr;
-static SetMapFieldFn set_map_field_fn = nullptr;
 
 static CellPtr make_error(const string& message, CellPtr value = nullptr) {
     if (!make_error_fn) {
@@ -98,29 +97,23 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
         return value;
     }
 
-    if (!set_map_field_fn) {
-        return make_error("set map helper is not initialized");
-    }
-
     const string& name = static_cast<const StrCell&>(*name_cell).value;
-    set_map_field_fn(root_cell, name, value);
+    root_cell->set(name, value);
     return value;
 }
 
 static void install_builtin(const shared_ptr<MapCell>& zygote, const string& name, FunCell::Implementation implementation) {
     shared_ptr<FunCell> builtin = make_shared<FunCell>(move(implementation));
-    set_map_field_fn(zygote, name, builtin);
+    zygote->set(name, builtin);
 }
 
 void initialize_builtins(
     EvalCellFn new_evaluate_cell_fn,
     RenderShowFn new_render_show_fn,
-    MakeErrorFn new_make_error_fn,
-    SetMapFieldFn new_set_map_field_fn) {
+    MakeErrorFn new_make_error_fn) {
     evaluate_cell_fn = new_evaluate_cell_fn;
     render_show_fn = new_render_show_fn;
     make_error_fn = new_make_error_fn;
-    set_map_field_fn = new_set_map_field_fn;
 }
 
 shared_ptr<MapCell> make_zygote() {
