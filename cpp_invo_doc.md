@@ -46,10 +46,8 @@ flowchart LR
   b_make_error["src/builtins.cpp::make_error<br/>builtin error wrapper"]
 
   c_make_error["src/core.cpp::make_error_cell<br/>shared error helper"]
-  c_is_error["src/core.cpp::is_error_cell<br/>shared error check"]
   c_expect_arity["src/core.cpp::expect_form_arity<br/>shared arity check"]
   c_expect_int["src/core.cpp::expect_int_cell<br/>shared int check"]
-  c_signal_check["src/core.cpp::SigCell::is_signal<br/>signal check"]
   c_fun_call["src/core.cpp::FunCell::call<br/>invoke builtin"]
   c_clear_desc["src/core.cpp::Cell::clear_descendant_parent_links<br/>polymorphic cleanup"]
   c_clear_map["src/core.cpp::MapCell::clear_descendant_parent_links<br/>map cleanup"]
@@ -83,12 +81,10 @@ flowchart LR
   r_eval --> h_eval_cell
 
   h_eval_form --> h_eval_arg
-  h_eval_form --> c_is_error
   h_eval_form --> c_make_error
   h_eval_form --> c_fun_call
 
   h_eval_arg --> h_eval_cell
-  h_eval_arg --> c_is_error
 
   h_lookup_context --> h_enclosing_map
   h_lookup_context --> h_lookup_name_map
@@ -99,7 +95,6 @@ flowchart LR
   h_lookup_dotted --> r_lookup
   r_lookup --> h_lookup_dotted
 
-  h_render_show --> c_signal_check
   c_clear_map --> r_clear
   c_clear_vec --> r_clear
   c_clear_sig --> r_clear
@@ -115,29 +110,25 @@ flowchart LR
   b_show --> b_expect_vm
   b_show --> c_expect_arity
   b_show --> b_eval_arg
-  b_show --> c_is_error
   b_show --> h_render_show
 
   b_add --> b_expect_vm
   b_add --> c_expect_arity
   b_add --> b_eval_arg
   b_add --> c_expect_int
-  b_add --> c_is_error
 
   b_set --> b_expect_vm
   b_set --> c_expect_arity
   b_set --> b_eval_arg
-  b_set --> c_is_error
   b_set --> b_make_error
   b_set --> h_set_field
 
   b_eval_arg --> h_eval_cell
-  b_eval_arg --> c_is_error
 
   b_make_error --> c_make_error
 
   class h_main entry;
-  class h_attach_parent,h_is_null,h_lookup_child,h_enclosing_map,b_init,b_expect_vm,c_make_error,c_is_error,c_expect_arity,c_expect_int,c_signal_check leaf;
+  class h_attach_parent,h_is_null,h_lookup_child,h_enclosing_map,b_init,b_expect_vm,c_make_error,c_expect_arity,c_expect_int leaf;
   class r_eval,r_lookup,r_clear recurse;
   class h_main,h_run_main,h_eval_cell,h_eval_resolved,h_eval_form,h_eval_arg,h_render_show,h_lookup_context,h_lookup_name_map,h_lookup_dotted,b_make_zygote,b_show,b_add,b_set,b_eval_arg,c_fun_call,c_clear_desc,c_clear_map,c_clear_vec,c_clear_sig runtime;
 ```
