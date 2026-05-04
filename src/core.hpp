@@ -46,6 +46,7 @@ struct MapCell final : public Cell {
     MapCell();
     explicit MapCell(unordered_map<string, CellPtr> fields);
 
+    void set(const string& key, CellPtr child);
     size_t size() const noexcept override;
     void clear_descendant_parent_links() override;
 
@@ -113,7 +114,6 @@ struct ErrCell final : public SigCell {
 using EvalCellFn = CellPtr(*)(CellPtr, const shared_ptr<MapCell>&);
 using RenderShowFn = string(*)(ConstCellPtr);
 using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
-using SetMapFieldFn = void(*)(const shared_ptr<MapCell>&, const string&, CellPtr);
 
 CellPtr make_error_cell(const string& message, CellPtr value = nullptr);
 shared_ptr<MapCell> expect_map_cell(CellPtr cell, const char* who);
@@ -123,7 +123,6 @@ CellPtr expect_int_cell(ConstCellPtr cell, const char* who);
 void initialize_builtins(
     EvalCellFn evaluate_cell_fn,
     RenderShowFn render_show_fn,
-    MakeErrorFn make_error_fn,
-    SetMapFieldFn set_map_field_fn);
+    MakeErrorFn make_error_fn);
 
 shared_ptr<MapCell> make_zygote();
