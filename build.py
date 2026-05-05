@@ -16,7 +16,7 @@ COMPILER = "g++"
 CPP_FLAGS = "-g -std=c++20"
 LINKER_FLAGS = "-L ryml/build -lryml"
 EXECUTABLE = "build/helix"
-SOURCES = "src/helix.cpp src/builtins.cpp src/core.cpp src/utils.cpp src/ryml_interface.cpp"
+SOURCES = "src/helix.cpp src/builtins.cpp src/core.cpp src/utils.cpp src/include.cpp src/ryml_interface.cpp"
 OBJECT_DIRECTORY = "build/obj"
 RACKET_SOURCES = ["racket/builtins.rkt", "racket/helix.rkt"]
 RACKET_ENTRYPOINT = ["racket", "racket/helix.rkt"]
