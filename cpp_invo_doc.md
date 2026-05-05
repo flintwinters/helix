@@ -21,6 +21,7 @@ flowchart LR
   h_eval_cell["src/helix.cpp::evaluate_cell<br/>evaluate one cell"]
   h_eval_resolved["src/helix.cpp::evaluate_resolved_cell<br/>follow resolved alias"]
   h_eval_form["src/helix.cpp::evaluate_form<br/>evaluate actor and call"]
+  h_resolve_cell["src/helix.cpp::resolve_cell<br/>resolve one cell without eval"]
   h_render_show["src/helix.cpp::render_show_output<br/>render show output"]
   h_is_null["src/helix.cpp::is_null_cell<br/>detect string null"]
   h_resolve_context["src/helix.cpp::resolve_name_from_context<br/>search local then parent maps"]
@@ -32,9 +33,12 @@ flowchart LR
   b_show["src/builtins.cpp::builtin_show<br/>show builtin"]
   b_add["src/builtins.cpp::builtin_add<br/>add builtin"]
   b_set["src/builtins.cpp::builtin_set<br/>set builtin"]
+  b_builtin_eval["src/builtins.cpp::builtin_eval<br/>evaluate resolved code"]
+  b_list["src/builtins.cpp::builtin_list<br/>run sequence vector"]
   b_make_error["src/builtins.cpp::make_error<br/>builtin error wrapper"]
   b_eval["src/builtins.cpp::evaluate_or_error<br/>eval or propagate error"]
   b_eval_int["src/builtins.cpp::evaluate_int_or_error<br/>eval integer operand"]
+  b_resolve["src/builtins.cpp::resolve_or_error<br/>resolve without eval"]
 
   c_make_error["src/core.cpp::make_error_cell<br/>shared error helper"]
   c_expect_map["src/core.cpp::expect_map_cell<br/>shared map check"]
@@ -68,9 +72,10 @@ flowchart LR
   c_make_state --> c_map_set
 
   h_eval_cell --> h_eval_form
-  h_eval_cell --> h_resolve_context
+  h_eval_cell --> h_resolve_cell
   h_eval_cell --> h_eval_resolved
 
+  h_resolve_cell --> h_resolve_context
   h_eval_resolved --> r_eval
   r_eval --> h_eval_cell
 
@@ -93,6 +98,8 @@ flowchart LR
   c_fun_call --> b_show
   c_fun_call --> b_add
   c_fun_call --> b_set
+  c_fun_call --> b_builtin_eval
+  c_fun_call --> b_list
 
   b_show --> c_expect_map
   b_show --> c_expect_arity
@@ -111,11 +118,21 @@ flowchart LR
   b_set --> b_make_error
   b_set --> c_map_set
 
+  b_builtin_eval --> c_expect_map
+  b_builtin_eval --> c_expect_arity
+  b_builtin_eval --> b_eval
+
+  b_list --> c_expect_map
+  b_list --> c_expect_arity
+  b_list --> b_resolve
+  b_list --> b_eval
+
   b_make_error --> c_make_error
   b_eval --> h_eval_cell
+  b_resolve --> h_resolve_cell
 
   class h_main entry;
   class h_is_null,b_init,b_make_error,c_make_error,c_expect_map,c_make_state,c_expect_arity,c_expect_int,c_map_set leaf;
   class r_eval,r_lookup,r_clear recurse;
-  class h_main,h_run_main,h_eval_cell,h_eval_resolved,h_eval_form,h_render_show,h_resolve_context,h_resolve_map,b_make_zygote,b_show,b_add,b_set,b_eval,b_eval_int,c_attach_state,c_fun_call,c_clear_desc,c_clear_map,c_clear_vec,c_clear_sig runtime;
+  class h_main,h_run_main,h_eval_cell,h_eval_resolved,h_eval_form,h_resolve_cell,h_render_show,h_resolve_context,h_resolve_map,b_make_zygote,b_show,b_add,b_set,b_builtin_eval,b_list,b_eval,b_eval_int,b_resolve,c_attach_state,c_fun_call,c_clear_desc,c_clear_map,c_clear_vec,c_clear_sig runtime;
 ```
