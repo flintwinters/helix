@@ -1,3 +1,4 @@
+#include <include.hpp>
 #include <ryml_interface.hpp>
 
 #include <charconv>
@@ -88,7 +89,10 @@ shared_ptr<MapCell> load_root_cell_from_yaml_file(const char* path) {
     if (!root_cell || root_cell->type != Cell::Type::map) {
         throw runtime_error("top-level YAML document must be a mapping");
     }
-    return static_pointer_cast<MapCell>(move(root_cell));
+
+    shared_ptr<MapCell> root_map = static_pointer_cast<MapCell>(move(root_cell));
+    expand_includes_in_root_map(root_map, filesystem::path(path));
+    return root_map;
 }
 
 void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
