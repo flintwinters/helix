@@ -21,7 +21,7 @@ The current name-resolution behavior is simpler than the long-term prototype-sty
 
 There is not yet a general `"parent"`-chain lookup in the Racket runtime. That remains part of the conceptual direction rather than current behavior. Today, symbolic reference is still centralized enough that `resolve` forms the backbone of evaluation.
 
-Strings are therefore not merely primitive values. In the current runtime, a string in evaluation position can act as a symbolic reference: when evaluated, it resolves its contents through `find`. This removes the need for a separate symbol type and keeps the surface representation aligned with runtime behavior.
+Strings are therefore not merely primitive values. A `StrCell` can act as a symbolic reference: when evaluated, it resolves its contents through `find`. This removes the need for a separate symbol type and keeps the surface representation aligned with runtime behavior.
 
 ## Evaluation Model
 
@@ -31,7 +31,7 @@ The current Racket runtime uses a small centralized evaluator rather than a full
 - lists are treated as executable forms
 - all other YAML values evaluate to themselves
 
-A YAML sequence in evaluation position encodes structured computation using a Lisp-like rule:
+`VecCell` encodes structured computation using a Lisp-like rule:
 
 - the first element is treated as the actor
 - the remaining elements are treated as arguments
@@ -46,6 +46,31 @@ The separation between the two primitive operations is intentional:
 
 - `find` is observational and traverses structure
 - `eval` is effectful and mutates execution state
+
+## Sequence Semantics
+
+`list` is the current sequencing form. Its job is not to construct data. Its job is to walk a sequence of executable cells in order and evaluate them against the active VM.
+
+- Each element of the target sequence is evaluated from left to right.
+- Earlier elements may mutate the VM and later elements observe those mutations.
+- The sequence result is the value of the last completed element, or `null` for an empty sequence.
+
+This makes `list` the main bridge between expression evaluation and multi-step computation. Operationally, it is the smallest builtin that already behaves like a statement block.
+
+It also has a second role in the current prototype: stepped execution. The stepped and non-stepped modes share the same sequencing semantics and differ only in where execution yields back to the scheduler. In other words:
+
+- `list` defines the order of evaluation
+- VM stepping defines when control returns to the host scheduler
+
+That distinction matters for the planned C++ runtime. As more VM behavior moves into explicit cell and signal machinery, `list` should remain the canonical place where ordinary sequential evaluation is expressed, while stepping, pausing, and resuming remain scheduler concerns layered on top of that sequence walk.
+
+This is also why `list` is important for the future `return` design. `return` should terminate the current function or sequence boundary early without forcing every builtin to invent its own sequencing rules. In the planned signal-based model:
+
+- `list` keeps evaluating items until one produces an active control signal
+- `Return` stops the sequence immediately
+- the active return signal then propagates to the correct VM boundary, where it is consumed
+
+So `list` is not only a convenience builtin. It is the current and future definition of ordinary evaluation order inside Helix.
 
 ## Calling Convention And State
 
@@ -113,9 +138,9 @@ The `Signal` family solves both requirements without forcing every builtin and e
 
 The current implementation aligns naturally with YAML as the surface syntax.
 
-- a YAML mapping becomes a host mapping interpreted with Helix semantics
-- a YAML sequence becomes a host list interpreted with Helix semantics
-- a string remains a string, but may resolve symbolically when evaluated
+- a YAML mapping becomes a `MapCell`
+- a YAML sequence becomes a `VecCell`
+- a string becomes a `StrCell` that may resolve symbolically
 
 More precisely, the Racket prototype parses YAML directly into host mappings, lists, strings, and scalars, and then interprets those values with Helix semantics. This removes the need for a custom parser and keeps the syntax close to the runtime representation while the cell model is still being made more explicit in the implementation.
 
@@ -128,6 +153,13 @@ Conceptually, the system sits at the intersection of several traditions:
 - stateful virtual machines, through implicit argument passing and VM-driven execution
 
 The current Racket runtime does not fully realize all of those ideas yet. Instead, it should be read as a working interpreter that already demonstrates YAML-backed evaluation, builtin dispatch, mutable VM state, includes, and stepped child execution, while still pointing toward a more explicit cell-oriented object model.
+
+#### Current racket shortcomings
+
+- General "parent"-chain lookup is not implemented; current resolution is builtin-first, then top-level key, then dotted path.
+- First-class Error, Signal, and Return cells are not implemented yet; current failures are Racket exceptions mirrored into state.error.
+- A distributed per-cell method evaluator is not implemented yet; the current runtime uses centralized resolve / evaluate.
+- Names like MapCell, VecCell, and StrCell are design-language, not current Racket runtime types.
 
 ## Codebase overview
 
