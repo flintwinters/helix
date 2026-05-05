@@ -163,7 +163,7 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
         }
     }
 
-    return nullptr;
+    return make_shared<StrCell>("null");
 }
 
 static void install_builtin(const shared_ptr<MapCell>& zygote, const string& name, FunCell::Implementation implementation) {
