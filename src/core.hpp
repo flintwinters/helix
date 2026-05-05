@@ -112,6 +112,7 @@ struct ErrCell final : public SigCell {
 };
 
 using EvalCellFn = CellPtr(*)(CellPtr, const shared_ptr<MapCell>&);
+using ResolveCellFn = CellPtr(*)(CellPtr, const shared_ptr<MapCell>&);
 using RenderShowFn = string(*)(ConstCellPtr);
 using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
 
@@ -124,6 +125,7 @@ CellPtr expect_int_cell(ConstCellPtr cell, const char* who);
 
 void initialize_builtins(
     EvalCellFn evaluate_cell_fn,
+    ResolveCellFn resolve_cell_fn,
     RenderShowFn render_show_fn,
     MakeErrorFn make_error_fn);
 
