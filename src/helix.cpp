@@ -95,6 +95,24 @@ static CellPtr resolve_name_from_context(const string& name, ConstCellPtr contex
 
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell);
 
+static CellPtr resolve_cell(CellPtr node, const shared_ptr<MapCell>& root_cell) {
+    if (!node) {
+        return nullptr;
+    }
+
+    if (node->type != Cell::Type::string) {
+        return node;
+    }
+
+    const auto& name = static_cast<const StrCell&>(*node).value;
+    CellPtr resolved = resolve_name_from_context(name, node, root_cell);
+    if (resolved) {
+        return resolved;
+    }
+
+    return node;
+}
+
 static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
     if (form.value.empty()) {
         return make_error_cell("cannot evaluate an empty vector");
@@ -130,8 +148,7 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
     }
 
     if (node->type == Cell::Type::string) {
-        const auto& name = static_cast<const StrCell&>(*node).value;
-        CellPtr resolved = resolve_name_from_context(name, node, root_cell);
+        CellPtr resolved = resolve_cell(node, root_cell);
         if (resolved) {
             return evaluate_resolved_cell(node, resolved, root_cell);
         }
@@ -164,7 +181,7 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        initialize_builtins(evaluate_cell, render_show_output, make_error_cell);
+        initialize_builtins(evaluate_cell, resolve_cell, render_show_output, make_error_cell);
         shared_ptr<MapCell> zygote = make_zygote();
         shared_ptr<MapCell> root_cell = load_root_cell_from_yaml_file(argv[1]);
         if (!root_cell->parent) {
