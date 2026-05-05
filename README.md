@@ -49,29 +49,29 @@ The separation between the two primitive operations is intentional:
 
 ## Sequence Semantics
 
-`list` is the current sequencing form. Its job is not to construct data. Its job is to walk a sequence of executable cells in order and evaluate them against the active VM.
+`list` is the current sequencing form. At its core it is simple: it takes a vector, loops over its elements from left to right, and evaluates each one against the active VM.
 
-- Each element of the target sequence is evaluated from left to right.
-- Earlier elements may mutate the VM and later elements observe those mutations.
-- The sequence result is the value of the last completed element, or `null` for an empty sequence.
+- Each element is evaluated in order.
+- Earlier elements may mutate the VM.
+- Later elements observe those mutations.
+- The result is the last completed value, or `null` for an empty sequence.
 
-This makes `list` the main bridge between expression evaluation and multi-step computation. Operationally, it is the smallest builtin that already behaves like a statement block.
+That is the whole basic rule. `list` is therefore the builtin that gives Helix ordinary sequential execution.
 
-It also has a second role in the current prototype: stepped execution. The stepped and non-stepped modes share the same sequencing semantics and differ only in where execution yields back to the scheduler. In other words:
+Stepped execution does not change that rule. The stepped and non-stepped modes run the same loop and differ only in where control yields back to the scheduler.
 
-- `list` defines the order of evaluation
-- VM stepping defines when control returns to the host scheduler
+So:
 
-That distinction matters for the planned C++ runtime. As more VM behavior moves into explicit cell and signal machinery, `list` should remain the canonical place where ordinary sequential evaluation is expressed, while stepping, pausing, and resuming remain scheduler concerns layered on top of that sequence walk.
+- `list` defines evaluation order
+- stepping defines yield points
 
-This is also why `list` is important for the future `return` design. `return` should terminate the current function or sequence boundary early without forcing every builtin to invent its own sequencing rules. In the planned signal-based model:
+This is also why `list` matters for the planned `return` model. `return` should simply stop that loop early. In the planned signal-based design:
 
-- `list` keeps evaluating items until one produces an active control signal
-- `Return` stops the sequence immediately
-- the active return signal then propagates to the correct VM boundary, where it is consumed
+- `list` keeps running elements until one activates a control signal
+- `Return` stops the loop immediately
+- the active return signal then propagates to the proper VM boundary
 
-So `list` is not only a convenience builtin. It is the current and future definition of ordinary evaluation order inside Helix.
-
+So `list` stays simple even as VM control flow becomes richer. It is still just the sequence loop.
 ## Calling Convention And State
 
 The current builtins make the VM-oriented calling convention concrete.
