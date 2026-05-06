@@ -21,6 +21,7 @@ struct Cell {
         vec,
         integer,
         string,
+        nil,
         function,
         signal,
         return_signal,
@@ -76,6 +77,10 @@ struct StrCell final : public Cell {
     size_t size() const noexcept override;
 
     string value {};
+};
+
+struct NilCell final : public Cell {
+    NilCell();
 };
 
 struct FunCell final : public Cell {
