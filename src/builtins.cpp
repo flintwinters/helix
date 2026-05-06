@@ -17,13 +17,15 @@ static CellPtr make_error(const string& message, CellPtr value = nullptr) {
     return make_error_fn(message, move(value));
 }
 
-static CellPtr evaluate_or_error(CellPtr node, const shared_ptr<MapCell>& root_cell) {
+static CellPtr evaluate_or_signal(CellPtr node, const shared_ptr<MapCell>& root_cell) {
     if (!evaluate_cell_fn) {
         return make_error("builtin evaluation is not initialized");
     }
 
     CellPtr value = evaluate_cell_fn(move(node), root_cell);
-    if (value && value->type == Cell::Type::error_signal) {
+    if (value && (value->type == Cell::Type::signal
+        || value->type == Cell::Type::return_signal
+        || value->type == Cell::Type::error_signal)) {
         return value;
     }
 
@@ -31,15 +33,22 @@ static CellPtr evaluate_or_error(CellPtr node, const shared_ptr<MapCell>& root_c
 }
 
 static CellPtr evaluate_int_or_error(CellPtr node, const shared_ptr<MapCell>& root_cell, const char* who) {
-    return expect_int_cell(evaluate_or_error(move(node), root_cell), who);
+    return expect_int_cell(evaluate_or_signal(move(node), root_cell), who);
 }
 
-static CellPtr resolve_or_error(CellPtr node, const shared_ptr<MapCell>& root_cell) {
+static CellPtr resolve_or_signal(CellPtr node, const shared_ptr<MapCell>& root_cell) {
     if (!resolve_cell_fn) {
         return make_error("builtin resolution is not initialized");
     }
 
-    return resolve_cell_fn(move(node), root_cell);
+    CellPtr value = resolve_cell_fn(move(node), root_cell);
+    if (value && (value->type == Cell::Type::signal
+        || value->type == Cell::Type::return_signal
+        || value->type == Cell::Type::error_signal)) {
+        return value;
+    }
+
+    return value;
 }
 
 static bool is_truthy(ConstCellPtr cell) {
@@ -57,8 +66,10 @@ static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm
         return arity_error;
     }
 
-    CellPtr value = evaluate_or_error(arguments[1], root_cell);
-    if (value && value->type == Cell::Type::error_signal) {
+    CellPtr value = evaluate_or_signal(arguments[1], root_cell);
+    if (value && (value->type == Cell::Type::signal
+        || value->type == Cell::Type::return_signal
+        || value->type == Cell::Type::error_signal)) {
         return value;
     }
 
@@ -80,12 +91,16 @@ static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm)
     }
 
     const CellPtr left_cell = evaluate_int_or_error(arguments[1], root_cell, "add");
-    if (left_cell && left_cell->type == Cell::Type::error_signal) {
+    if (left_cell && (left_cell->type == Cell::Type::signal
+        || left_cell->type == Cell::Type::return_signal
+        || left_cell->type == Cell::Type::error_signal)) {
         return left_cell;
     }
 
     const CellPtr right_cell = evaluate_int_or_error(arguments[2], root_cell, "add");
-    if (right_cell && right_cell->type == Cell::Type::error_signal) {
+    if (right_cell && (right_cell->type == Cell::Type::signal
+        || right_cell->type == Cell::Type::return_signal
+        || right_cell->type == Cell::Type::error_signal)) {
         return right_cell;
     }
 
@@ -110,8 +125,10 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
         return make_error("set expects a string name");
     }
 
-    const CellPtr value = evaluate_or_error(arguments[2], root_cell);
-    if (value && value->type == Cell::Type::error_signal) {
+    const CellPtr value = evaluate_or_signal(arguments[2], root_cell);
+    if (value && (value->type == Cell::Type::signal
+        || value->type == Cell::Type::return_signal
+        || value->type == Cell::Type::error_signal)) {
         return value;
     }
 
@@ -131,12 +148,14 @@ static CellPtr builtin_eval(const vector<CellPtr>& arguments, CellPtr current_vm
         return arity_error;
     }
 
-    CellPtr code = evaluate_or_error(arguments[1], root_cell);
-    if (code && code->type == Cell::Type::error_signal) {
+    CellPtr code = evaluate_or_signal(arguments[1], root_cell);
+    if (code && (code->type == Cell::Type::signal
+        || code->type == Cell::Type::return_signal
+        || code->type == Cell::Type::error_signal)) {
         return code;
     }
 
-    return evaluate_or_error(code, root_cell);
+    return evaluate_or_signal(code, root_cell);
 }
 
 static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm) {
@@ -150,8 +169,10 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
         return arity_error;
     }
 
-    CellPtr sequence_cell = resolve_or_error(arguments[1], root_cell);
-    if (sequence_cell && sequence_cell->type == Cell::Type::error_signal) {
+    CellPtr sequence_cell = resolve_or_signal(arguments[1], root_cell);
+    if (sequence_cell && (sequence_cell->type == Cell::Type::signal
+        || sequence_cell->type == Cell::Type::return_signal
+        || sequence_cell->type == Cell::Type::error_signal)) {
         return sequence_cell;
     }
 
@@ -161,8 +182,10 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
 
     const VecCell& sequence = static_cast<const VecCell&>(*sequence_cell);
     for (const CellPtr& element : sequence.value) {
-        CellPtr value = evaluate_or_error(element, root_cell);
-        if (value && value->type == Cell::Type::error_signal) {
+        CellPtr value = evaluate_or_signal(element, root_cell);
+        if (value && (value->type == Cell::Type::signal
+            || value->type == Cell::Type::return_signal
+            || value->type == Cell::Type::error_signal)) {
             return value;
         }
     }
@@ -181,16 +204,18 @@ static CellPtr builtin_if(const vector<CellPtr>& arguments, CellPtr current_vm) 
         return arity_error;
     }
 
-    CellPtr condition = evaluate_or_error(arguments[1], root_cell);
-    if (condition && condition->type == Cell::Type::error_signal) {
+    CellPtr condition = evaluate_or_signal(arguments[1], root_cell);
+    if (condition && (condition->type == Cell::Type::signal
+        || condition->type == Cell::Type::return_signal
+        || condition->type == Cell::Type::error_signal)) {
         return condition;
     }
 
     if (is_truthy(condition)) {
-        return evaluate_or_error(arguments[2], root_cell);
+        return evaluate_or_signal(arguments[2], root_cell);
     }
 
-    return evaluate_or_error(arguments[3], root_cell);
+    return evaluate_or_signal(arguments[3], root_cell);
 }
 
 static void install_builtin(const shared_ptr<MapCell>& zygote, const string& name, FunCell::Implementation implementation) {
