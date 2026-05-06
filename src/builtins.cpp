@@ -42,6 +42,10 @@ static CellPtr resolve_or_error(CellPtr node, const shared_ptr<MapCell>& root_ce
     return resolve_cell_fn(move(node), root_cell);
 }
 
+static bool is_truthy(ConstCellPtr cell) {
+    return cell && cell->type != Cell::Type::nil;
+}
+
 static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
     shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "show");
     if (!root_cell) {
@@ -166,6 +170,29 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
     return make_shared<NilCell>();
 }
 
+static CellPtr builtin_if(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "if");
+    if (!root_cell) {
+        return make_error("if requires a map VM");
+    }
+
+    CellPtr arity_error = expect_form_arity(arguments.size(), 4, "if");
+    if (arity_error) {
+        return arity_error;
+    }
+
+    CellPtr condition = evaluate_or_error(arguments[1], root_cell);
+    if (condition && condition->type == Cell::Type::error_signal) {
+        return condition;
+    }
+
+    if (is_truthy(condition)) {
+        return evaluate_or_error(arguments[2], root_cell);
+    }
+
+    return evaluate_or_error(arguments[3], root_cell);
+}
+
 static void install_builtin(const shared_ptr<MapCell>& zygote, const string& name, FunCell::Implementation implementation) {
     shared_ptr<FunCell> builtin = make_shared<FunCell>(move(implementation));
     zygote->set(name, builtin);
@@ -189,5 +216,6 @@ shared_ptr<MapCell> make_zygote() {
     install_builtin(zygote, "set", builtin_set);
     install_builtin(zygote, "eval", builtin_eval);
     install_builtin(zygote, "list", builtin_list);
+    install_builtin(zygote, "if", builtin_if);
     return zygote;
 }
