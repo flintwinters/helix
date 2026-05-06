@@ -114,7 +114,9 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& roo
     }
 
     CellPtr actor = evaluate_cell(form.value.front(), root_cell);
-    if (actor && actor->type == Cell::Type::error_signal) {
+    if (actor && (actor->type == Cell::Type::signal
+        || actor->type == Cell::Type::return_signal
+        || actor->type == Cell::Type::error_signal)) {
         return actor;
     }
 
@@ -128,6 +130,12 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& roo
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell) {
     if (!node) {
         return nullptr;
+    }
+
+    if (node->type == Cell::Type::signal
+        || node->type == Cell::Type::return_signal
+        || node->type == Cell::Type::error_signal) {
+        return node;
     }
 
     if (node->type == Cell::Type::vec) {
@@ -158,7 +166,7 @@ static void run_main(shared_ptr<MapCell> root_cell) {
         result = evaluate_cell(main_it->second, root_cell);
     }
 
-    attach_finished_state(root_cell, move(result));
+    attach_terminal_state(root_cell, move(result));
 }
 
 int main(int argc, char* argv[]) {
