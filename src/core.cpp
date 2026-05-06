@@ -141,6 +141,8 @@ size_t StrCell::size() const noexcept {
     return value.size();
 }
 
+NilCell::NilCell() : Cell(Type::nil) {}
+
 FunCell::FunCell() : Cell(Type::function) {
 }
 
