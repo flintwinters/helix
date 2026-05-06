@@ -53,6 +53,35 @@ void attach_finished_state(const shared_ptr<MapCell>& root_cell, CellPtr result)
     root_cell->set("state", state);
 }
 
+void attach_terminal_state(const shared_ptr<MapCell>& root_cell, CellPtr result) {
+    if (!result) {
+        attach_finished_state(root_cell, nullptr);
+        return;
+    }
+
+    if (result->type == Cell::Type::error_signal) {
+        shared_ptr<MapCell> state = make_shared<MapCell>();
+        state->set("status", make_shared<StrCell>("error"));
+        state->set("frames", make_shared<VecCell>());
+
+        const ErrCell& error_cell = static_cast<const ErrCell&>(*result);
+        state->set("error", make_shared<StrCell>(error_cell.message));
+        root_cell->set("state", state);
+        return;
+    }
+
+    if (result->type == Cell::Type::signal || result->type == Cell::Type::return_signal) {
+        shared_ptr<MapCell> state = make_shared<MapCell>();
+        state->set("status", make_shared<StrCell>("signaled"));
+        state->set("frames", make_shared<VecCell>());
+        state->set("result", move(result));
+        root_cell->set("state", state);
+        return;
+    }
+
+    attach_finished_state(root_cell, move(result));
+}
+
 CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char* who) {
     if (actual_arity == expected_arity) {
         return nullptr;
@@ -63,7 +92,9 @@ CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char
 }
 
 CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
-    if (cell && cell->type == Cell::Type::error_signal) {
+    if (cell && (cell->type == Cell::Type::signal
+        || cell->type == Cell::Type::return_signal
+        || cell->type == Cell::Type::error_signal)) {
         return const_pointer_cast<Cell>(cell);
     }
 
