@@ -1,0 +1,9 @@
+program:
+  main: [if, null, [set, taken, 7], [set, untaken, 9]]
+expected:
+  main: [if, null, [set, taken, 7], [set, untaken, 9]]
+  untaken: 9
+  state:
+    result: 9
+    frames: []
+    status: finished
