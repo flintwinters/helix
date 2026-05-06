@@ -17,12 +17,7 @@ static bool is_null_cell(ConstCellPtr cell) {
         return true;
     }
 
-    if (cell->type != Cell::Type::string) {
-        return false;
-    }
-
-    const auto& str_cell = static_cast<const StrCell&>(*cell);
-    return str_cell.value == "null";
+    return cell->type == Cell::Type::nil;
 }
 
 static CellPtr resolve_dotted_name_in_map(const string& name, const MapCell& map_cell) {
@@ -130,14 +125,6 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& roo
     return actor->call(form.value, root_cell);
 }
 
-static CellPtr evaluate_resolved_cell(CellPtr node, CellPtr resolved, const shared_ptr<MapCell>& root_cell) {
-    if (!resolved || resolved.get() == node.get()) {
-        return node;
-    }
-
-    return evaluate_cell(resolved, root_cell);
-}
-
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell) {
     if (!node) {
         return nullptr;
@@ -149,8 +136,8 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
 
     if (node->type == Cell::Type::string) {
         CellPtr resolved = resolve_cell(node, root_cell);
-        if (resolved) {
-            return evaluate_resolved_cell(node, resolved, root_cell);
+        if (resolved && resolved.get() != node.get()) {
+            return evaluate_cell(resolved, root_cell);
         }
     }
 
