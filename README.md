@@ -49,29 +49,27 @@ The separation between the two primitive operations is intentional:
 
 ## Sequence Semantics
 
-`list` is the current sequencing form. At its core it is simple: it takes a vector, loops over its elements from left to right, and evaluates each one against the active VM.
+`list` is the sequencing form, but its real role is to cooperate with `step`. At its core it is still simple: it identifies a vector as the active execution sequence for the current VM.
 
-- Each element is evaluated in order.
-- Earlier elements may mutate the VM.
-- Later elements observe those mutations.
-- The result is the last completed value, or `null` for an empty sequence.
+- `list` selects the target vector.
+- `list` stores enough VM state for future progression through that vector.
+- `step` evaluates the next element.
+- repeated `step` calls walk the vector from left to right.
 
-That is the whole basic rule. `list` is therefore the builtin that gives Helix ordinary sequential execution.
+So the real sequencing rule is:
 
-Stepped execution does not change that rule. The stepped and non-stepped modes run the same loop and differ only in where control yields back to the scheduler.
+- `list` arms the VM
+- `step` advances the VM
 
-So:
-
-- `list` defines evaluation order
-- stepping defines yield points
+Under that model, `start` is just a loop of `step` until the sequence finishes or activates a control condition.
 
 This is also why `list` matters for the planned `return` model. `return` should simply stop that loop early. In the planned signal-based design:
 
-- `list` keeps running elements until one activates a control signal
-- `Return` stops the loop immediately
+- `step` keeps advancing elements until one activates a control signal
+- `Return` stops further advancement immediately
 - the active return signal then propagates to the proper VM boundary
 
-So `list` stays simple even as VM control flow becomes richer. It is still just the sequence loop.
+So `list` stays simple even as VM control flow becomes richer. It only prepares the sequence; `step` is the operation that actually moves through it.
 ## Calling Convention And State
 
 The current builtins make the VM-oriented calling convention concrete.
@@ -120,12 +118,14 @@ The planned solution is to introduce a `Signal` parent cell type for non-local c
 - `Error` represents failure.
 - `Return` represents successful non-local transfer.
 
-This keeps the representation Smalltalk-like and inspectable while preserving proper control behavior. It is a direction for the runtime rather than a description of functionality that already exists today. In that planned model, the runtime would distinguish between:
+This keeps the representation Smalltalk-like and inspectable while preserving proper control behavior. In Smalltalk spirit, messages and exceptional control are not foreign host artifacts; they are objects that belong to the language's own world. Helix is aiming for the same kind of homoiconicity here: a signal is itself a cell, and can therefore be inspected, stored, and reasoned about at the language layer.
+
+It is a direction for the runtime rather than a description of functionality that already exists today. In that planned model, the runtime would distinguish between:
 
 - a signal cell as an object
 - an actively signaled condition in VM state
 
-A `Return` cell may therefore exist as structured data, but when `return` is evaluated in control position it activates a return signal in VM state. Evaluation then unwinds until the appropriate function boundary consumes that signal, just as an active error signal propagates until it is handled or reaches the top level.
+A `Return` cell may therefore exist as structured data, but evaluating a signal cell is special. In that case the runtime treats it more like a syscall or trap: control returns to the VM, and the VM decides how to handle the signal. So when `return` is evaluated in control position it activates a return signal in VM state. Evaluation then unwinds until the appropriate function boundary consumes that signal, just as an active error signal propagates until it is handled or reaches the top level.
 
 This separation is necessary for two reasons:
 
