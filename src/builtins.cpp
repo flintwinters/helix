@@ -272,6 +272,41 @@ static CellPtr builtin_if(const vector<CellPtr>& arguments, CellPtr current_vm) 
     return evaluate_or_signal(arguments[3], root_cell);
 }
 
+static CellPtr builtin_while(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "while", 3);
+    if (!root_cell) {
+        return make_error("while requires a map VM");
+    }
+
+    CellPtr body_cell = resolve_or_signal(arguments[2], root_cell);
+    if (is_signal_cell(body_cell)) {
+        return body_cell;
+    }
+
+    if (!body_cell || body_cell->type != Cell::Type::vec) {
+        return make_error("while expects a vector body");
+    }
+
+    const VecCell& body = static_cast<const VecCell&>(*body_cell);
+    while (true) {
+        CellPtr condition = evaluate_or_signal(arguments[1], root_cell);
+        if (is_signal_cell(condition)) {
+            return condition;
+        }
+
+        if (!is_truthy(condition)) {
+            return make_shared<NilCell>();
+        }
+
+        for (const CellPtr& element : body.value) {
+            CellPtr value = evaluate_or_signal(element, root_cell);
+            if (is_signal_cell(value)) {
+                return value;
+            }
+        }
+    }
+}
+
 static CellPtr builtin_start(const vector<CellPtr>& arguments, CellPtr current_vm) {
     if (!advance_vm_fn) {
         return make_error("start is not initialized");
@@ -344,6 +379,7 @@ shared_ptr<MapCell> make_zygote() {
     install_builtin(zygote, "eval", builtin_eval);
     install_builtin(zygote, "list", builtin_list);
     install_builtin(zygote, "if", builtin_if);
+    install_builtin(zygote, "while", builtin_while);
     install_builtin(zygote, "start", builtin_start);
     install_builtin(zygote, "step", builtin_step);
     return zygote;
