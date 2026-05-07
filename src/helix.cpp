@@ -114,9 +114,7 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& roo
     }
 
     CellPtr actor = evaluate_cell(form.value.front(), root_cell);
-    if (actor && (actor->type == Cell::Type::signal
-        || actor->type == Cell::Type::return_signal
-        || actor->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(actor)) {
         return actor;
     }
 
@@ -132,9 +130,7 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
         return nullptr;
     }
 
-    if (node->type == Cell::Type::signal
-        || node->type == Cell::Type::return_signal
-        || node->type == Cell::Type::error_signal) {
+    if (is_signal_cell(node)) {
         return node;
     }
 
