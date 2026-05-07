@@ -88,7 +88,7 @@ static shared_ptr<MapCell> resolve_child_vm(const vector<CellPtr>& arguments, Ce
         return nullptr;
     }
 
-    child_vm->parent = nullptr;
+    child_vm->parent = root_cell->parent;
     return child_vm;
 }
 
