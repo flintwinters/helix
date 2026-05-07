@@ -52,7 +52,7 @@ static bool is_truthy(ConstCellPtr cell) {
     return cell && cell->type != Cell::Type::nil;
 }
 
-static shared_ptr<MapCell> expect_vm_state(const shared_ptr<MapCell>& vm, const char* who) {
+static shared_ptr<MapCell> expect_vm_state(const shared_ptr<MapCell>& vm) {
     unordered_map<string, CellPtr>::const_iterator state_it = vm->value.find("state");
     if (state_it == vm->value.end() || !state_it->second || state_it->second->type != Cell::Type::map) {
         return nullptr;
@@ -61,7 +61,7 @@ static shared_ptr<MapCell> expect_vm_state(const shared_ptr<MapCell>& vm, const 
     return static_pointer_cast<MapCell>(state_it->second);
 }
 
-static shared_ptr<MapCell> resolve_child_vm(const vector<CellPtr>& arguments, CellPtr current_vm, const char* who) {
+static shared_ptr<MapCell> expect_builtin_vm(const vector<CellPtr>& arguments, CellPtr current_vm, const char* who) {
     shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), who);
     if (!root_cell) {
         return nullptr;
@@ -69,6 +69,73 @@ static shared_ptr<MapCell> resolve_child_vm(const vector<CellPtr>& arguments, Ce
 
     CellPtr arity_error = expect_form_arity(arguments.size(), 2, who);
     if (arity_error) {
+        return nullptr;
+    }
+
+    return root_cell;
+}
+
+static shared_ptr<MapCell> expect_builtin_vm(
+    const vector<CellPtr>& arguments,
+    CellPtr current_vm,
+    const char* who,
+    size_t expected_arity) {
+    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), who);
+    if (!root_cell) {
+        return nullptr;
+    }
+
+    CellPtr arity_error = expect_form_arity(arguments.size(), expected_arity, who);
+    if (arity_error) {
+        return nullptr;
+    }
+
+    return root_cell;
+}
+
+static const string* vm_status_string(const shared_ptr<MapCell>& vm) {
+    shared_ptr<MapCell> state = expect_vm_state(vm);
+    if (!state) {
+        return nullptr;
+    }
+
+    unordered_map<string, CellPtr>::const_iterator status_it = state->value.find("status");
+    if (status_it == state->value.end() || !status_it->second || status_it->second->type != Cell::Type::string) {
+        return nullptr;
+    }
+
+    return &static_cast<const StrCell&>(*status_it->second).value;
+}
+
+static CellPtr vm_status_cell(const shared_ptr<MapCell>& vm) {
+    shared_ptr<MapCell> state = expect_vm_state(vm);
+    if (!state) {
+        return nullptr;
+    }
+
+    unordered_map<string, CellPtr>::const_iterator status_it = state->value.find("status");
+    if (status_it == state->value.end() || !status_it->second || status_it->second->type != Cell::Type::string) {
+        return nullptr;
+    }
+
+    return status_it->second;
+}
+
+static void arm_list_frame(const shared_ptr<MapCell>& vm, CellPtr sequence_cell) {
+    shared_ptr<MapCell> state = expect_vm_state(vm);
+    shared_ptr<MapCell> frame = make_shared<MapCell>();
+    frame->set("name", make_shared<StrCell>("list"));
+    frame->set("values", move(sequence_cell));
+    frame->set("index", make_shared<IntCell>(0));
+    state->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
+    state->set("status", make_shared<StrCell>("running"));
+    state->value.erase("result");
+    state->value.erase("error");
+}
+
+static shared_ptr<MapCell> resolve_child_vm(const vector<CellPtr>& arguments, CellPtr current_vm, const char* who) {
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), who);
+    if (!root_cell) {
         return nullptr;
     }
 
@@ -92,14 +159,9 @@ static shared_ptr<MapCell> resolve_child_vm(const vector<CellPtr>& arguments, Ce
 }
 
 static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "show");
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "show");
     if (!root_cell) {
         return make_error("show requires a map VM");
-    }
-
-    CellPtr arity_error = expect_form_arity(arguments.size(), 2, "show");
-    if (arity_error) {
-        return arity_error;
     }
 
     CellPtr value = evaluate_or_signal(arguments[1], root_cell);
@@ -114,14 +176,9 @@ static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm
 }
 
 static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "add");
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "add", 3);
     if (!root_cell) {
         return make_error("add requires a map VM");
-    }
-
-    CellPtr arity_error = expect_form_arity(arguments.size(), 3, "add");
-    if (arity_error) {
-        return arity_error;
     }
 
     const CellPtr left_cell = evaluate_int_or_error(arguments[1], root_cell, "add");
@@ -140,14 +197,9 @@ static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm)
 }
 
 static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "set");
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "set", 3);
     if (!root_cell) {
         return make_error("set requires a map VM");
-    }
-
-    CellPtr arity_error = expect_form_arity(arguments.size(), 3, "set");
-    if (arity_error) {
-        return arity_error;
     }
 
     const CellPtr name_cell = arguments[1];
@@ -166,14 +218,9 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
 }
 
 static CellPtr builtin_eval(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "eval");
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "eval");
     if (!root_cell) {
         return make_error("eval requires a map VM");
-    }
-
-    CellPtr arity_error = expect_form_arity(arguments.size(), 2, "eval");
-    if (arity_error) {
-        return arity_error;
     }
 
     CellPtr code = evaluate_or_signal(arguments[1], root_cell);
@@ -185,14 +232,9 @@ static CellPtr builtin_eval(const vector<CellPtr>& arguments, CellPtr current_vm
 }
 
 static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "list");
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "list");
     if (!root_cell) {
         return make_error("list requires a map VM");
-    }
-
-    CellPtr arity_error = expect_form_arity(arguments.size(), 2, "list");
-    if (arity_error) {
-        return arity_error;
     }
 
     CellPtr sequence_cell = resolve_or_signal(arguments[1], root_cell);
@@ -204,31 +246,18 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
         return make_error("list expects a vector sequence");
     }
 
-    shared_ptr<MapCell> state = expect_vm_state(root_cell, "list");
-    if (!state) {
+    if (!expect_vm_state(root_cell)) {
         return make_error("list requires VM state");
     }
 
-    shared_ptr<MapCell> frame = make_shared<MapCell>();
-    frame->set("name", make_shared<StrCell>("list"));
-    frame->set("values", sequence_cell);
-    frame->set("index", make_shared<IntCell>(0));
-    state->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
-    state->set("status", make_shared<StrCell>("running"));
-    state->value.erase("result");
-    state->value.erase("error");
+    arm_list_frame(root_cell, sequence_cell);
     return make_shared<NilCell>();
 }
 
 static CellPtr builtin_if(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), "if");
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "if", 4);
     if (!root_cell) {
         return make_error("if requires a map VM");
-    }
-
-    CellPtr arity_error = expect_form_arity(arguments.size(), 4, "if");
-    if (arity_error) {
-        return arity_error;
     }
 
     CellPtr condition = evaluate_or_signal(arguments[1], root_cell);
@@ -259,18 +288,12 @@ static CellPtr builtin_start(const vector<CellPtr>& arguments, CellPtr current_v
             return step_result;
         }
 
-        shared_ptr<MapCell> state = expect_vm_state(child_vm, "start");
-        if (!state) {
+        const string* status = vm_status_string(child_vm);
+        if (!status) {
             return make_error("start requires child VM state");
         }
 
-        unordered_map<string, CellPtr>::const_iterator status_it = state->value.find("status");
-        if (status_it == state->value.end() || !status_it->second || status_it->second->type != Cell::Type::string) {
-            return make_error("start requires a string child VM status");
-        }
-
-        const string& status = static_cast<const StrCell&>(*status_it->second).value;
-        if (status == "finished" || status == "error" || status == "signaled") {
+        if (*status == "finished" || *status == "error" || *status == "signaled") {
             return step_result;
         }
     }
@@ -287,17 +310,12 @@ static CellPtr builtin_step(const vector<CellPtr>& arguments, CellPtr current_vm
     }
 
     advance_vm_fn(child_vm);
-    shared_ptr<MapCell> state = expect_vm_state(child_vm, "step");
-    if (!state) {
+    CellPtr status_cell = vm_status_cell(child_vm);
+    if (!status_cell) {
         return make_error("step requires child VM state");
     }
 
-    unordered_map<string, CellPtr>::const_iterator status_it = state->value.find("status");
-    if (status_it == state->value.end() || !status_it->second || status_it->second->type != Cell::Type::string) {
-        return make_error("step requires a string child VM status");
-    }
-
-    return status_it->second;
+    return status_cell;
 }
 
 static void install_builtin(const shared_ptr<MapCell>& zygote, const string& name, FunCell::Implementation implementation) {
