@@ -1,0 +1,20 @@
+program:
+  total: 0
+  remaining: 3
+  cond: [if, remaining, 1, null]
+  body:
+    - [set, total, [add, total, 2]]
+    - [set, remaining, [add, remaining, -1]]
+  main: [while, cond, body]
+expected:
+  total: 6
+  remaining: 0
+  cond: [if, remaining, 1, null]
+  body:
+    - [set, total, [add, total, 2]]
+    - [set, remaining, [add, remaining, -1]]
+  main: [while, cond, body]
+  state:
+    result: null
+    frames: []
+    status: finished
