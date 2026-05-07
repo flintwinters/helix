@@ -230,19 +230,18 @@ static const IntCell* frame_index(const shared_ptr<MapCell>& frame) {
     return &static_cast<const IntCell&>(*index_it->second);
 }
 
-static CellPtr finish_list_frame(const shared_ptr<MapCell>& vm) {
-    CellPtr result = make_shared<NilCell>();
-    attach_terminal_state(vm, result);
-    return result;
-}
-
-static CellPtr continue_list_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame, size_t next_index, CellPtr value) {
+static void store_list_resume_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame, size_t next_index) {
     frame->set("index", make_shared<IntCell>(static_cast<int64_t>(next_index)));
     shared_ptr<MapCell> state = ensure_vm_state(vm);
     state->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
     state->set("status", make_shared<StrCell>("running"));
     clear_vm_terminal_fields(vm);
-    return value;
+}
+
+static void retire_unyielded_frame(const shared_ptr<MapCell>& frame) {
+    frame->clear_descendant_parent_links();
+    frame->value.clear();
+    frame->parent = nullptr;
 }
 
 static CellPtr advance_list_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame) {
@@ -261,18 +260,29 @@ static CellPtr advance_list_frame(const shared_ptr<MapCell>& vm, const shared_pt
         return fail_vm(vm, "list frame index is out of bounds");
     }
 
-    CellPtr value = evaluate_cell(sequence->value[static_cast<size_t>(index)], vm);
-    if (is_signal_cell(value)) {
-        attach_terminal_state(vm, value);
-        return value;
+    shared_ptr<MapCell> state = ensure_vm_state(vm);
+    state->set("frames", make_shared<VecCell>());
+    bool yielded = false;
+
+    for (size_t current_index = static_cast<size_t>(index); current_index < sequence->value.size(); ++current_index) {
+        CellPtr value = evaluate_cell(sequence->value[current_index], vm);
+        if (is_signal_cell(value)) {
+            attach_terminal_state(vm, value);
+            return value;
+        }
+
+        size_t next_index = current_index + 1;
+        if (next_index < sequence->value.size()) {
+            yielded = true;
+            store_list_resume_frame(vm, frame, next_index);
+        }
     }
 
-    size_t next_index = static_cast<size_t>(index) + 1;
-    if (next_index >= sequence->value.size()) {
-        return finish_list_frame(vm);
+    if (!yielded) {
+        retire_unyielded_frame(frame);
     }
 
-    return continue_list_frame(vm, frame, next_index, value);
+    return make_shared<NilCell>();
 }
 
 static CellPtr start_vm_main(const shared_ptr<MapCell>& vm) {
@@ -290,12 +300,7 @@ static CellPtr start_vm_main(const shared_ptr<MapCell>& vm) {
         return result;
     }
 
-    if (vm_frames(vm)->value.empty()) {
-        attach_terminal_state(vm, result);
-        return result;
-    }
-
-    return nullptr;
+    return result;
 }
 
 static shared_ptr<MapCell> current_frame(const shared_ptr<MapCell>& vm) {
@@ -349,14 +354,25 @@ static CellPtr advance_vm(const shared_ptr<MapCell>& vm) {
         return vm_result(vm);
     }
 
+    CellPtr result = nullptr;
     if (vm_frames(vm)->value.empty()) {
-        CellPtr start_result = start_vm_main(vm);
-        if (start_result || is_terminal_status(vm_status(vm))) {
-            return start_result;
-        }
+        result = start_vm_main(vm);
     }
 
-    return resume_vm_frame(vm);
+    if (!is_terminal_status(vm_status(vm)) && !vm_frames(vm)->value.empty()) {
+        result = resume_vm_frame(vm);
+    }
+
+    if (is_terminal_status(vm_status(vm))) {
+        return vm_result(vm);
+    }
+
+    if (vm_frames(vm)->value.empty()) {
+        attach_terminal_state(vm, result);
+        return result;
+    }
+
+    return result;
 }
 
 static CellPtr run_vm(const shared_ptr<MapCell>& vm) {
