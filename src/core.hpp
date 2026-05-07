@@ -122,6 +122,7 @@ using RenderShowFn = string(*)(ConstCellPtr);
 using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
 
 CellPtr make_error_cell(const string& message, CellPtr value = nullptr);
+bool is_signal_cell(ConstCellPtr cell);
 shared_ptr<MapCell> expect_map_cell(CellPtr cell, const char* who);
 shared_ptr<MapCell> make_finished_state_cell();
 void attach_finished_state(const shared_ptr<MapCell>& root_cell, CellPtr result);
