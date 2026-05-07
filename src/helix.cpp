@@ -394,7 +394,7 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        initialize_builtins(evaluate_cell, resolve_cell, advance_vm, run_vm, render_show_output, make_error_cell);
+        initialize_builtins(evaluate_cell, resolve_cell, advance_vm, render_show_output, make_error_cell);
         shared_ptr<MapCell> zygote = make_zygote();
         shared_ptr<MapCell> root_cell = load_root_cell_from_yaml_file(argv[1]);
         if (!root_cell->parent) {
