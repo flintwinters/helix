@@ -1,18 +1,18 @@
 program:
   total: 0
-  remaining: 3
-  cond: [if, remaining, 1, null]
+  keep_going: 1
+  cond: keep_going
   body:
-    - [set, total, [add, total, 2]]
-    - [set, remaining, [add, remaining, -1]]
+    - [set, total, [add, total, 6]]
+    - [set, keep_going, null]
   main: [while, cond, body]
 expected:
   total: 6
-  remaining: 0
-  cond: [if, remaining, 1, null]
+  keep_going: null
+  cond: keep_going
   body:
-    - [set, total, [add, total, 2]]
-    - [set, remaining, [add, remaining, -1]]
+    - [set, total, [add, total, 6]]
+    - [set, keep_going, null]
   main: [while, cond, body]
   state:
     result: null
