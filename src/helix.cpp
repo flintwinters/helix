@@ -64,6 +64,26 @@ static void clear_vm_terminal_fields(const shared_ptr<MapCell>& vm) {
     state->value.erase("error");
 }
 
+static bool is_terminal_status(const string& status) {
+    return status == "finished" || status == "error" || status == "signaled";
+}
+
+static CellPtr vm_result(const shared_ptr<MapCell>& vm) {
+    shared_ptr<MapCell> state = ensure_vm_state(vm);
+    unordered_map<string, CellPtr>::const_iterator result_it = state->value.find("result");
+    if (result_it != state->value.end()) {
+        return result_it->second;
+    }
+
+    return nullptr;
+}
+
+static CellPtr fail_vm(const shared_ptr<MapCell>& vm, const string& message) {
+    CellPtr error = make_error_cell(message);
+    attach_terminal_state(vm, error);
+    return error;
+}
+
 static CellPtr resolve_dotted_name_in_map(const string& name, const MapCell& map_cell) {
     const MapCell* current_map = &map_cell;
     size_t segment_start = 0;
@@ -192,27 +212,53 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
     return node;
 }
 
-static CellPtr advance_list_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame) {
+static shared_ptr<VecCell> frame_values(const shared_ptr<MapCell>& frame) {
     unordered_map<string, CellPtr>::const_iterator values_it = frame->value.find("values");
     if (values_it == frame->value.end() || !values_it->second || values_it->second->type != Cell::Type::vec) {
-        CellPtr error = make_error_cell("list frame is missing a vector sequence");
-        attach_terminal_state(vm, error);
-        return error;
+        return nullptr;
     }
 
+    return static_pointer_cast<VecCell>(values_it->second);
+}
+
+static const IntCell* frame_index(const shared_ptr<MapCell>& frame) {
     unordered_map<string, CellPtr>::const_iterator index_it = frame->value.find("index");
     if (index_it == frame->value.end() || !index_it->second || index_it->second->type != Cell::Type::integer) {
-        CellPtr error = make_error_cell("list frame is missing an integer index");
-        attach_terminal_state(vm, error);
-        return error;
+        return nullptr;
     }
 
-    shared_ptr<VecCell> sequence = static_pointer_cast<VecCell>(values_it->second);
-    int64_t index = static_cast<const IntCell&>(*index_it->second).value;
+    return &static_cast<const IntCell&>(*index_it->second);
+}
+
+static CellPtr finish_list_frame(const shared_ptr<MapCell>& vm) {
+    CellPtr result = make_shared<NilCell>();
+    attach_terminal_state(vm, result);
+    return result;
+}
+
+static CellPtr continue_list_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame, size_t next_index, CellPtr value) {
+    frame->set("index", make_shared<IntCell>(static_cast<int64_t>(next_index)));
+    shared_ptr<MapCell> state = ensure_vm_state(vm);
+    state->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
+    state->set("status", make_shared<StrCell>("running"));
+    clear_vm_terminal_fields(vm);
+    return value;
+}
+
+static CellPtr advance_list_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame) {
+    shared_ptr<VecCell> sequence = frame_values(frame);
+    if (!sequence) {
+        return fail_vm(vm, "list frame is missing a vector sequence");
+    }
+
+    const IntCell* index_cell = frame_index(frame);
+    if (!index_cell) {
+        return fail_vm(vm, "list frame is missing an integer index");
+    }
+
+    int64_t index = index_cell->value;
     if (index < 0 || static_cast<size_t>(index) >= sequence->value.size()) {
-        CellPtr error = make_error_cell("list frame index is out of bounds");
-        attach_terminal_state(vm, error);
-        return error;
+        return fail_vm(vm, "list frame index is out of bounds");
     }
 
     CellPtr value = evaluate_cell(sequence->value[static_cast<size_t>(index)], vm);
@@ -223,102 +269,102 @@ static CellPtr advance_list_frame(const shared_ptr<MapCell>& vm, const shared_pt
 
     size_t next_index = static_cast<size_t>(index) + 1;
     if (next_index >= sequence->value.size()) {
-        shared_ptr<MapCell> state = ensure_vm_state(vm);
-        state->set("frames", make_shared<VecCell>());
-        CellPtr result = make_shared<NilCell>();
+        return finish_list_frame(vm);
+    }
+
+    return continue_list_frame(vm, frame, next_index, value);
+}
+
+static CellPtr start_vm_main(const shared_ptr<MapCell>& vm) {
+    unordered_map<string, CellPtr>::const_iterator main_it = vm->value.find("main");
+    if (main_it == vm->value.end()) {
+        return fail_vm(vm, "program is missing a main entrypoint");
+    }
+
+    set_vm_status(vm, "running");
+    clear_vm_terminal_fields(vm);
+
+    CellPtr result = is_null_cell(main_it->second) ? main_it->second : evaluate_cell(main_it->second, vm);
+    if (is_signal_cell(result)) {
         attach_terminal_state(vm, result);
         return result;
     }
 
-    frame->set("index", make_shared<IntCell>(static_cast<int64_t>(next_index)));
-    shared_ptr<MapCell> state = ensure_vm_state(vm);
-    state->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
-    state->set("status", make_shared<StrCell>("running"));
-    clear_vm_terminal_fields(vm);
-    return value;
+    if (vm_frames(vm)->value.empty()) {
+        attach_terminal_state(vm, result);
+        return result;
+    }
+
+    return nullptr;
+}
+
+static shared_ptr<MapCell> current_frame(const shared_ptr<MapCell>& vm) {
+    shared_ptr<VecCell> frames = vm_frames(vm);
+    if (frames->value.empty()) {
+        return nullptr;
+    }
+
+    const CellPtr frame_cell = frames->value.front();
+    if (!frame_cell || frame_cell->type != Cell::Type::map) {
+        return nullptr;
+    }
+
+    return static_pointer_cast<MapCell>(frame_cell);
+}
+
+static const string* current_frame_name(const shared_ptr<MapCell>& frame) {
+    if (!frame) {
+        return nullptr;
+    }
+
+    unordered_map<string, CellPtr>::const_iterator name_it = frame->value.find("name");
+    if (name_it == frame->value.end() || !name_it->second || name_it->second->type != Cell::Type::string) {
+        return nullptr;
+    }
+
+    return &static_cast<const StrCell&>(*name_it->second).value;
+}
+
+static CellPtr resume_vm_frame(const shared_ptr<MapCell>& vm) {
+    shared_ptr<MapCell> frame = current_frame(vm);
+    if (!frame) {
+        return nullptr;
+    }
+
+    const string* frame_name = current_frame_name(frame);
+    if (!frame_name) {
+        return fail_vm(vm, "VM frame is missing a string name");
+    }
+
+    if (*frame_name == "list") {
+        return advance_list_frame(vm, frame);
+    }
+
+    return fail_vm(vm, "unknown VM frame type");
 }
 
 static CellPtr advance_vm(const shared_ptr<MapCell>& vm) {
     ensure_vm_state(vm);
-    string status = vm_status(vm);
-    if (status == "finished" || status == "error" || status == "signaled") {
-        shared_ptr<MapCell> state = ensure_vm_state(vm);
-        unordered_map<string, CellPtr>::const_iterator result_it = state->value.find("result");
-        if (result_it != state->value.end()) {
-            return result_it->second;
-        }
-        return nullptr;
+    if (is_terminal_status(vm_status(vm))) {
+        return vm_result(vm);
     }
 
-    shared_ptr<VecCell> frames = vm_frames(vm);
-    if (frames->value.empty()) {
-        unordered_map<string, CellPtr>::const_iterator main_it = vm->value.find("main");
-        if (main_it == vm->value.end()) {
-            CellPtr error = make_error_cell("program is missing a main entrypoint");
-            attach_terminal_state(vm, error);
-            return error;
-        }
-
-        set_vm_status(vm, "running");
-        clear_vm_terminal_fields(vm);
-
-        CellPtr result = is_null_cell(main_it->second) ? main_it->second : evaluate_cell(main_it->second, vm);
-        if (is_signal_cell(result)) {
-            attach_terminal_state(vm, result);
-            return result;
-        }
-
-        frames = vm_frames(vm);
-        if (frames->value.empty()) {
-            attach_terminal_state(vm, result);
-            return result;
+    if (vm_frames(vm)->value.empty()) {
+        CellPtr start_result = start_vm_main(vm);
+        if (start_result || is_terminal_status(vm_status(vm))) {
+            return start_result;
         }
     }
 
-    shared_ptr<VecCell> resumed_frames = vm_frames(vm);
-    if (resumed_frames->value.empty()) {
-        return nullptr;
-    }
-
-    const CellPtr frame_cell = resumed_frames->value.front();
-    if (!frame_cell || frame_cell->type != Cell::Type::map) {
-        CellPtr error = make_error_cell("VM frame is not a map");
-        attach_terminal_state(vm, error);
-        return error;
-    }
-
-    shared_ptr<MapCell> frame = static_pointer_cast<MapCell>(frame_cell);
-    unordered_map<string, CellPtr>::const_iterator name_it = frame->value.find("name");
-    if (name_it == frame->value.end() || !name_it->second || name_it->second->type != Cell::Type::string) {
-        CellPtr error = make_error_cell("VM frame is missing a string name");
-        attach_terminal_state(vm, error);
-        return error;
-    }
-
-    const string& frame_name = static_cast<const StrCell&>(*name_it->second).value;
-    if (frame_name == "list") {
-        return advance_list_frame(vm, frame);
-    }
-
-    CellPtr error = make_error_cell("unknown VM frame type");
-    attach_terminal_state(vm, error);
-    return error;
+    return resume_vm_frame(vm);
 }
 
 static CellPtr run_vm(const shared_ptr<MapCell>& vm) {
-    while (true) {
-        string status = vm_status(vm);
-        if (status == "finished" || status == "error" || status == "signaled") {
-            shared_ptr<MapCell> state = ensure_vm_state(vm);
-            unordered_map<string, CellPtr>::const_iterator result_it = state->value.find("result");
-            if (result_it != state->value.end()) {
-                return result_it->second;
-            }
-            return nullptr;
-        }
-
+    while (!is_terminal_status(vm_status(vm))) {
         advance_vm(vm);
     }
+
+    return vm_result(vm);
 }
 
 static void run_main(shared_ptr<MapCell> root_cell) {
