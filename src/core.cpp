@@ -24,6 +24,18 @@ static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent
     child->parent = parent;
 }
 
+static void clear_existing_state(const shared_ptr<MapCell>& root_cell) {
+    unordered_map<string, CellPtr>::iterator state_it = root_cell->value.find("state");
+    if (state_it == root_cell->value.end() || !state_it->second || state_it->second->type != Cell::Type::map) {
+        return;
+    }
+
+    shared_ptr<MapCell> state = static_pointer_cast<MapCell>(state_it->second);
+    state->clear_descendant_parent_links();
+    state->value.clear();
+    state->parent = nullptr;
+}
+
 CellPtr make_error_cell(const string& message, CellPtr value) {
     return make_shared<ErrCell>(message, move(value));
 }
@@ -56,6 +68,7 @@ shared_ptr<MapCell> make_finished_state_cell() {
 }
 
 void attach_finished_state(const shared_ptr<MapCell>& root_cell, CellPtr result) {
+    clear_existing_state(root_cell);
     shared_ptr<MapCell> state = make_finished_state_cell();
     if (result) {
         state->set("result", move(result));
@@ -70,6 +83,7 @@ void attach_terminal_state(const shared_ptr<MapCell>& root_cell, CellPtr result)
     }
 
     if (result->type == Cell::Type::error_signal) {
+        clear_existing_state(root_cell);
         shared_ptr<MapCell> state = make_shared<MapCell>();
         state->set("status", make_shared<StrCell>("error"));
         state->set("frames", make_shared<VecCell>());
@@ -81,6 +95,7 @@ void attach_terminal_state(const shared_ptr<MapCell>& root_cell, CellPtr result)
     }
 
     if (is_signal_cell(result)) {
+        clear_existing_state(root_cell);
         shared_ptr<MapCell> state = make_shared<MapCell>();
         state->set("status", make_shared<StrCell>("signaled"));
         state->set("frames", make_shared<VecCell>());
