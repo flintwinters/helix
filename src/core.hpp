@@ -119,7 +119,6 @@ struct ErrCell final : public SigCell {
 using EvalCellFn = CellPtr(*)(CellPtr, const shared_ptr<MapCell>&);
 using ResolveCellFn = CellPtr(*)(CellPtr, const shared_ptr<MapCell>&);
 using AdvanceVmFn = CellPtr(*)(const shared_ptr<MapCell>&);
-using RunVmFn = CellPtr(*)(const shared_ptr<MapCell>&);
 using RenderShowFn = string(*)(ConstCellPtr);
 using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
 
@@ -136,7 +135,6 @@ void initialize_builtins(
     EvalCellFn evaluate_cell_fn,
     ResolveCellFn resolve_cell_fn,
     AdvanceVmFn advance_vm_fn,
-    RunVmFn run_vm_fn,
     RenderShowFn render_show_fn,
     MakeErrorFn make_error_fn);
 
