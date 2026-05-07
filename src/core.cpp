@@ -28,6 +28,16 @@ CellPtr make_error_cell(const string& message, CellPtr value) {
     return make_shared<ErrCell>(message, move(value));
 }
 
+bool is_signal_cell(ConstCellPtr cell) {
+    if (!cell) {
+        return false;
+    }
+
+    return cell->type == Cell::Type::signal
+        || cell->type == Cell::Type::return_signal
+        || cell->type == Cell::Type::error_signal;
+}
+
 shared_ptr<MapCell> expect_map_cell(CellPtr cell, const char* who) {
     (void)who;
 
@@ -70,7 +80,7 @@ void attach_terminal_state(const shared_ptr<MapCell>& root_cell, CellPtr result)
         return;
     }
 
-    if (result->type == Cell::Type::signal || result->type == Cell::Type::return_signal) {
+    if (is_signal_cell(result)) {
         shared_ptr<MapCell> state = make_shared<MapCell>();
         state->set("status", make_shared<StrCell>("signaled"));
         state->set("frames", make_shared<VecCell>());
@@ -92,9 +102,7 @@ CellPtr expect_form_arity(size_t actual_arity, size_t expected_arity, const char
 }
 
 CellPtr expect_int_cell(ConstCellPtr cell, const char* who) {
-    if (cell && (cell->type == Cell::Type::signal
-        || cell->type == Cell::Type::return_signal
-        || cell->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(cell)) {
         return const_pointer_cast<Cell>(cell);
     }
 
