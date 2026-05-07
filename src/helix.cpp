@@ -20,23 +20,68 @@ static bool is_null_cell(ConstCellPtr cell) {
     return cell->type == Cell::Type::nil;
 }
 
+static CellPtr map_field_cell(ConstCellPtr map_cell, const string& key) {
+    if (!map_cell || map_cell->type != Cell::Type::map) {
+        return nullptr;
+    }
+
+    const auto& fields = static_cast<const MapCell&>(*map_cell).value;
+    unordered_map<string, CellPtr>::const_iterator field_it = fields.find(key);
+    if (field_it == fields.end()) {
+        return nullptr;
+    }
+
+    return field_it->second;
+}
+
+static shared_ptr<MapCell> map_field_map(ConstCellPtr map_cell, const string& key) {
+    CellPtr field = map_field_cell(map_cell, key);
+    if (!field || field->type != Cell::Type::map) {
+        return nullptr;
+    }
+
+    return static_pointer_cast<MapCell>(field);
+}
+
+static shared_ptr<VecCell> map_field_vec(ConstCellPtr map_cell, const string& key) {
+    CellPtr field = map_field_cell(map_cell, key);
+    if (!field || field->type != Cell::Type::vec) {
+        return nullptr;
+    }
+
+    return static_pointer_cast<VecCell>(field);
+}
+
+static const StrCell* map_field_string(ConstCellPtr map_cell, const string& key) {
+    CellPtr field = map_field_cell(map_cell, key);
+    if (!field || field->type != Cell::Type::string) {
+        return nullptr;
+    }
+
+    return &static_cast<const StrCell&>(*field);
+}
+
+static const IntCell* map_field_int(ConstCellPtr map_cell, const string& key) {
+    CellPtr field = map_field_cell(map_cell, key);
+    if (!field || field->type != Cell::Type::integer) {
+        return nullptr;
+    }
+
+    return &static_cast<const IntCell&>(*field);
+}
+
 static shared_ptr<MapCell> ensure_vm_state(const shared_ptr<MapCell>& vm) {
-    unordered_map<string, CellPtr>::const_iterator state_it = vm->value.find("state");
-    shared_ptr<MapCell> state = nullptr;
-    if (state_it != vm->value.end() && state_it->second && state_it->second->type == Cell::Type::map) {
-        state = static_pointer_cast<MapCell>(state_it->second);
-    } else {
+    shared_ptr<MapCell> state = map_field_map(vm, "state");
+    if (!state) {
         state = make_shared<MapCell>();
         vm->set("state", state);
     }
 
-    unordered_map<string, CellPtr>::const_iterator status_it = state->value.find("status");
-    if (status_it == state->value.end() || !status_it->second || status_it->second->type != Cell::Type::string) {
+    if (!map_field_string(state, "status")) {
         state->set("status", make_shared<StrCell>("ready"));
     }
 
-    unordered_map<string, CellPtr>::const_iterator frames_it = state->value.find("frames");
-    if (frames_it == state->value.end() || !frames_it->second || frames_it->second->type != Cell::Type::vec) {
+    if (!map_field_vec(state, "frames")) {
         state->set("frames", make_shared<VecCell>());
     }
 
@@ -45,12 +90,12 @@ static shared_ptr<MapCell> ensure_vm_state(const shared_ptr<MapCell>& vm) {
 
 static shared_ptr<VecCell> vm_frames(const shared_ptr<MapCell>& vm) {
     shared_ptr<MapCell> state = ensure_vm_state(vm);
-    return static_pointer_cast<VecCell>(state->value["frames"]);
+    return map_field_vec(state, "frames");
 }
 
 static string vm_status(const shared_ptr<MapCell>& vm) {
     shared_ptr<MapCell> state = ensure_vm_state(vm);
-    return static_cast<const StrCell&>(*state->value["status"]).value;
+    return map_field_string(state, "status")->value;
 }
 
 static void set_vm_status(const shared_ptr<MapCell>& vm, const string& status) {
@@ -69,13 +114,7 @@ static bool is_terminal_status(const string& status) {
 }
 
 static CellPtr vm_result(const shared_ptr<MapCell>& vm) {
-    shared_ptr<MapCell> state = ensure_vm_state(vm);
-    unordered_map<string, CellPtr>::const_iterator result_it = state->value.find("result");
-    if (result_it != state->value.end()) {
-        return result_it->second;
-    }
-
-    return nullptr;
+    return map_field_cell(ensure_vm_state(vm), "result");
 }
 
 static CellPtr fail_vm(const shared_ptr<MapCell>& vm, const string& message) {
@@ -213,21 +252,11 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
 }
 
 static shared_ptr<VecCell> frame_values(const shared_ptr<MapCell>& frame) {
-    unordered_map<string, CellPtr>::const_iterator values_it = frame->value.find("values");
-    if (values_it == frame->value.end() || !values_it->second || values_it->second->type != Cell::Type::vec) {
-        return nullptr;
-    }
-
-    return static_pointer_cast<VecCell>(values_it->second);
+    return map_field_vec(frame, "values");
 }
 
 static const IntCell* frame_index(const shared_ptr<MapCell>& frame) {
-    unordered_map<string, CellPtr>::const_iterator index_it = frame->value.find("index");
-    if (index_it == frame->value.end() || !index_it->second || index_it->second->type != Cell::Type::integer) {
-        return nullptr;
-    }
-
-    return &static_cast<const IntCell&>(*index_it->second);
+    return map_field_int(frame, "index");
 }
 
 static void store_list_resume_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame, size_t next_index) {
@@ -318,16 +347,8 @@ static shared_ptr<MapCell> current_frame(const shared_ptr<MapCell>& vm) {
 }
 
 static const string* current_frame_name(const shared_ptr<MapCell>& frame) {
-    if (!frame) {
-        return nullptr;
-    }
-
-    unordered_map<string, CellPtr>::const_iterator name_it = frame->value.find("name");
-    if (name_it == frame->value.end() || !name_it->second || name_it->second->type != Cell::Type::string) {
-        return nullptr;
-    }
-
-    return &static_cast<const StrCell&>(*name_it->second).value;
+    const StrCell* name_cell = map_field_string(frame, "name");
+    return name_cell ? &name_cell->value : nullptr;
 }
 
 static CellPtr resume_vm_frame(const shared_ptr<MapCell>& vm) {
