@@ -23,9 +23,7 @@ static CellPtr evaluate_or_signal(CellPtr node, const shared_ptr<MapCell>& root_
     }
 
     CellPtr value = evaluate_cell_fn(move(node), root_cell);
-    if (value && (value->type == Cell::Type::signal
-        || value->type == Cell::Type::return_signal
-        || value->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(value)) {
         return value;
     }
 
@@ -42,9 +40,7 @@ static CellPtr resolve_or_signal(CellPtr node, const shared_ptr<MapCell>& root_c
     }
 
     CellPtr value = resolve_cell_fn(move(node), root_cell);
-    if (value && (value->type == Cell::Type::signal
-        || value->type == Cell::Type::return_signal
-        || value->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(value)) {
         return value;
     }
 
@@ -67,9 +63,7 @@ static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm
     }
 
     CellPtr value = evaluate_or_signal(arguments[1], root_cell);
-    if (value && (value->type == Cell::Type::signal
-        || value->type == Cell::Type::return_signal
-        || value->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(value)) {
         return value;
     }
 
@@ -91,16 +85,12 @@ static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm)
     }
 
     const CellPtr left_cell = evaluate_int_or_error(arguments[1], root_cell, "add");
-    if (left_cell && (left_cell->type == Cell::Type::signal
-        || left_cell->type == Cell::Type::return_signal
-        || left_cell->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(left_cell)) {
         return left_cell;
     }
 
     const CellPtr right_cell = evaluate_int_or_error(arguments[2], root_cell, "add");
-    if (right_cell && (right_cell->type == Cell::Type::signal
-        || right_cell->type == Cell::Type::return_signal
-        || right_cell->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(right_cell)) {
         return right_cell;
     }
 
@@ -126,9 +116,7 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
     }
 
     const CellPtr value = evaluate_or_signal(arguments[2], root_cell);
-    if (value && (value->type == Cell::Type::signal
-        || value->type == Cell::Type::return_signal
-        || value->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(value)) {
         return value;
     }
 
@@ -149,9 +137,7 @@ static CellPtr builtin_eval(const vector<CellPtr>& arguments, CellPtr current_vm
     }
 
     CellPtr code = evaluate_or_signal(arguments[1], root_cell);
-    if (code && (code->type == Cell::Type::signal
-        || code->type == Cell::Type::return_signal
-        || code->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(code)) {
         return code;
     }
 
@@ -170,9 +156,7 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
     }
 
     CellPtr sequence_cell = resolve_or_signal(arguments[1], root_cell);
-    if (sequence_cell && (sequence_cell->type == Cell::Type::signal
-        || sequence_cell->type == Cell::Type::return_signal
-        || sequence_cell->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(sequence_cell)) {
         return sequence_cell;
     }
 
@@ -183,9 +167,7 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
     const VecCell& sequence = static_cast<const VecCell&>(*sequence_cell);
     for (const CellPtr& element : sequence.value) {
         CellPtr value = evaluate_or_signal(element, root_cell);
-        if (value && (value->type == Cell::Type::signal
-            || value->type == Cell::Type::return_signal
-            || value->type == Cell::Type::error_signal)) {
+        if (is_signal_cell(value)) {
             return value;
         }
     }
@@ -205,9 +187,7 @@ static CellPtr builtin_if(const vector<CellPtr>& arguments, CellPtr current_vm) 
     }
 
     CellPtr condition = evaluate_or_signal(arguments[1], root_cell);
-    if (condition && (condition->type == Cell::Type::signal
-        || condition->type == Cell::Type::return_signal
-        || condition->type == Cell::Type::error_signal)) {
+    if (is_signal_cell(condition)) {
         return condition;
     }
 
