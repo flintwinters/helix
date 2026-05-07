@@ -7,7 +7,6 @@
 static EvalCellFn evaluate_cell_fn = nullptr;
 static ResolveCellFn resolve_cell_fn = nullptr;
 static AdvanceVmFn advance_vm_fn = nullptr;
-static RunVmFn run_vm_fn = nullptr;
 static RenderShowFn render_show_fn = nullptr;
 static MakeErrorFn make_error_fn = nullptr;
 
@@ -245,7 +244,7 @@ static CellPtr builtin_if(const vector<CellPtr>& arguments, CellPtr current_vm) 
 }
 
 static CellPtr builtin_start(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    if (!run_vm_fn) {
+    if (!advance_vm_fn) {
         return make_error("start is not initialized");
     }
 
@@ -254,7 +253,27 @@ static CellPtr builtin_start(const vector<CellPtr>& arguments, CellPtr current_v
         return make_error("start expects a child VM name");
     }
 
-    return run_vm_fn(child_vm);
+    while (true) {
+        CellPtr step_result = advance_vm_fn(child_vm);
+        if (is_signal_cell(step_result)) {
+            return step_result;
+        }
+
+        shared_ptr<MapCell> state = expect_vm_state(child_vm, "start");
+        if (!state) {
+            return make_error("start requires child VM state");
+        }
+
+        unordered_map<string, CellPtr>::const_iterator status_it = state->value.find("status");
+        if (status_it == state->value.end() || !status_it->second || status_it->second->type != Cell::Type::string) {
+            return make_error("start requires a string child VM status");
+        }
+
+        const string& status = static_cast<const StrCell&>(*status_it->second).value;
+        if (status == "finished" || status == "error" || status == "signaled") {
+            return step_result;
+        }
+    }
 }
 
 static CellPtr builtin_step(const vector<CellPtr>& arguments, CellPtr current_vm) {
@@ -290,13 +309,11 @@ void initialize_builtins(
     EvalCellFn new_evaluate_cell_fn,
     ResolveCellFn new_resolve_cell_fn,
     AdvanceVmFn new_advance_vm_fn,
-    RunVmFn new_run_vm_fn,
     RenderShowFn new_render_show_fn,
     MakeErrorFn new_make_error_fn) {
     evaluate_cell_fn = new_evaluate_cell_fn;
     resolve_cell_fn = new_resolve_cell_fn;
     advance_vm_fn = new_advance_vm_fn;
-    run_vm_fn = new_run_vm_fn;
     render_show_fn = new_render_show_fn;
     make_error_fn = new_make_error_fn;
 }
