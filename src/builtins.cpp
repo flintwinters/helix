@@ -49,7 +49,15 @@ static CellPtr resolve_or_signal(CellPtr node, const shared_ptr<MapCell>& root_c
 }
 
 static bool is_truthy(ConstCellPtr cell) {
-    return cell && cell->type != Cell::Type::nil;
+    if (!cell || cell->type == Cell::Type::nil) {
+        return false;
+    }
+
+    if (cell->type == Cell::Type::integer) {
+        return static_cast<const IntCell&>(*cell).value != 0;
+    }
+
+    return true;
 }
 
 static shared_ptr<MapCell> expect_vm_state(const shared_ptr<MapCell>& vm) {
