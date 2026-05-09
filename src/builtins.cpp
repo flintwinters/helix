@@ -1,8 +1,9 @@
 #include <core.hpp>
 
 #include <iostream>
-#include <string>
+#include <functional>
 #include <memory>
+#include <string>
 
 static EvalCellFn evaluate_cell_fn = nullptr;
 static ResolveCellFn resolve_cell_fn = nullptr;
@@ -46,6 +47,28 @@ static CellPtr evaluate_or_signal(CellPtr node, const shared_ptr<MapCell>& root_
 
 static CellPtr evaluate_int_or_error(CellPtr node, const shared_ptr<MapCell>& root_cell, const char* who) {
     return expect_int_cell(evaluate_or_signal(move(node), root_cell), who);
+}
+
+static CellPtr vec_or_signal_from_callback(
+    VmCallbackFn callback,
+    CellPtr node,
+    const shared_ptr<MapCell>& root_cell,
+    const string& init_error_message,
+    const string& type_error_message) {
+    CellPtr value = apply_vm_callback_or_signal(
+        callback,
+        move(node),
+        root_cell,
+        init_error_message.c_str());
+    if (is_signal_cell(value)) {
+        return value;
+    }
+
+    if (!value || value->type != Cell::Type::vec) {
+        return make_error(type_error_message);
+    }
+
+    return value;
 }
 
 static CellPtr resolve_or_signal(CellPtr node, const shared_ptr<MapCell>& root_cell) {
@@ -125,6 +148,50 @@ static shared_ptr<MapCell> resolve_child_vm(const vector<CellPtr>& arguments, Ce
     return child_vm;
 }
 
+static CellPtr resolve_vec_or_signal(
+    CellPtr node,
+    const shared_ptr<MapCell>& root_cell,
+    const string& type_error_message) {
+    return vec_or_signal_from_callback(
+        resolve_cell_fn,
+        move(node),
+        root_cell,
+        "builtin resolution is not initialized",
+        type_error_message);
+}
+
+static CellPtr resolve_vec_target_or_signal(
+    CellPtr node,
+    const shared_ptr<MapCell>& root_cell,
+    const char* who) {
+    return resolve_vec_or_signal(move(node), root_cell, string(who) + " expects a vector target");
+}
+
+static CellPtr builtin_int_binary(
+    const vector<CellPtr>& arguments,
+    CellPtr current_vm,
+    const char* who,
+    const function<int64_t(int64_t, int64_t)>& operation) {
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), who, 3);
+    if (!root_cell) {
+        return make_error(string(who) + " requires a map VM");
+    }
+
+    const CellPtr left_cell = evaluate_int_or_error(arguments[1], root_cell, who);
+    if (is_signal_cell(left_cell)) {
+        return left_cell;
+    }
+
+    const CellPtr right_cell = evaluate_int_or_error(arguments[2], root_cell, who);
+    if (is_signal_cell(right_cell)) {
+        return right_cell;
+    }
+
+    const int64_t left = static_cast<const IntCell&>(*left_cell).value;
+    const int64_t right = static_cast<const IntCell&>(*right_cell).value;
+    return make_shared<IntCell>(operation(left, right));
+}
+
 static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
     shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "show");
     if (!root_cell) {
@@ -143,24 +210,27 @@ static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm
 }
 
 static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "add", 3);
-    if (!root_cell) {
-        return make_error("add requires a map VM");
-    }
+    return builtin_int_binary(
+        arguments,
+        move(current_vm),
+        "add",
+        [](int64_t left, int64_t right) { return left + right; });
+}
 
-    const CellPtr left_cell = evaluate_int_or_error(arguments[1], root_cell, "add");
-    if (is_signal_cell(left_cell)) {
-        return left_cell;
-    }
+static CellPtr builtin_sub(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    return builtin_int_binary(
+        arguments,
+        move(current_vm),
+        "sub",
+        [](int64_t left, int64_t right) { return left - right; });
+}
 
-    const CellPtr right_cell = evaluate_int_or_error(arguments[2], root_cell, "add");
-    if (is_signal_cell(right_cell)) {
-        return right_cell;
-    }
-
-    const int64_t left = static_cast<const IntCell&>(*left_cell).value;
-    const int64_t right = static_cast<const IntCell&>(*right_cell).value;
-    return make_shared<IntCell>(left + right);
+static CellPtr builtin_mul(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    return builtin_int_binary(
+        arguments,
+        move(current_vm),
+        "mul",
+        [](int64_t left, int64_t right) { return left * right; });
 }
 
 static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm) {
@@ -204,17 +274,106 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
         return make_error("list requires a map VM");
     }
 
-    CellPtr sequence_cell = resolve_or_signal(arguments[1], root_cell);
+    CellPtr sequence_cell = resolve_vec_or_signal(arguments[1], root_cell, "list expects a vector sequence");
     if (is_signal_cell(sequence_cell)) {
         return sequence_cell;
     }
 
-    if (!sequence_cell || sequence_cell->type != Cell::Type::vec) {
-        return make_error("list expects a vector sequence");
-    }
-
     arm_list_frame(root_cell, sequence_cell);
     return make_shared<NilCell>();
+}
+
+static CellPtr builtin_append(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "append", 3);
+    if (!root_cell) {
+        return make_error("append requires a map VM");
+    }
+
+    CellPtr sequence_cell = resolve_vec_target_or_signal(arguments[1], root_cell, "append");
+    if (is_signal_cell(sequence_cell)) {
+        return sequence_cell;
+    }
+    shared_ptr<VecCell> sequence = static_pointer_cast<VecCell>(sequence_cell);
+
+    CellPtr value = evaluate_or_signal(arguments[2], root_cell);
+    if (is_signal_cell(value)) {
+        return value;
+    }
+
+    sequence->value.push_back(value);
+    return sequence;
+}
+
+static CellPtr builtin_pop(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "pop");
+    if (!root_cell) {
+        return make_error("pop requires a map VM");
+    }
+
+    CellPtr sequence_cell = resolve_vec_target_or_signal(arguments[1], root_cell, "pop");
+    if (is_signal_cell(sequence_cell)) {
+        return sequence_cell;
+    }
+    shared_ptr<VecCell> sequence = static_pointer_cast<VecCell>(sequence_cell);
+
+    if (sequence->value.empty()) {
+        return make_error("pop expects a non-empty vector");
+    }
+
+    CellPtr value = sequence->value.back();
+    sequence->value.pop_back();
+    return value;
+}
+
+static CellPtr builtin_at(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "at", 3);
+    if (!root_cell) {
+        return make_error("at requires a map VM");
+    }
+
+    CellPtr sequence_cell = resolve_vec_target_or_signal(arguments[1], root_cell, "at");
+    if (is_signal_cell(sequence_cell)) {
+        return sequence_cell;
+    }
+    shared_ptr<VecCell> sequence = static_pointer_cast<VecCell>(sequence_cell);
+
+    const CellPtr index_cell = evaluate_int_or_error(arguments[2], root_cell, "at");
+    if (is_signal_cell(index_cell)) {
+        return index_cell;
+    }
+
+    const int64_t index = static_cast<const IntCell&>(*index_cell).value;
+    if (index < 0 || static_cast<size_t>(index) >= sequence->value.size()) {
+        return make_error("at index is out of bounds");
+    }
+
+    return sequence->value[static_cast<size_t>(index)];
+}
+
+static CellPtr builtin_copy(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "copy");
+    if (!root_cell) {
+        return make_error("copy requires a map VM");
+    }
+
+    CellPtr value = resolve_or_signal(arguments[1], root_cell);
+    if (is_signal_cell(value)) {
+        return value;
+    }
+
+    if (!value) {
+        return nullptr;
+    }
+
+    if (value->type == Cell::Type::vec) {
+        return make_shared<VecCell>(static_cast<const VecCell&>(*value).value);
+    }
+
+    if (value->type == Cell::Type::map) {
+        return make_shared<MapCell>(static_cast<const MapCell&>(*value).value);
+    }
+
+    return value;
 }
 
 static CellPtr builtin_if(const vector<CellPtr>& arguments, CellPtr current_vm) {
@@ -241,13 +400,9 @@ static CellPtr builtin_while(const vector<CellPtr>& arguments, CellPtr current_v
         return make_error("while requires a map VM");
     }
 
-    CellPtr body_cell = resolve_or_signal(arguments[2], root_cell);
+    CellPtr body_cell = resolve_vec_or_signal(arguments[2], root_cell, "while expects a vector body");
     if (is_signal_cell(body_cell)) {
         return body_cell;
-    }
-
-    if (!body_cell || body_cell->type != Cell::Type::vec) {
-        return make_error("while expects a vector body");
     }
 
     const VecCell& body = static_cast<const VecCell&>(*body_cell);
@@ -333,9 +488,15 @@ shared_ptr<MapCell> make_zygote() {
     shared_ptr<MapCell> zygote = make_shared<MapCell>();
     install_builtin(zygote, "show", builtin_show);
     install_builtin(zygote, "add", builtin_add);
+    install_builtin(zygote, "sub", builtin_sub);
+    install_builtin(zygote, "mul", builtin_mul);
     install_builtin(zygote, "set", builtin_set);
     install_builtin(zygote, "eval", builtin_eval);
     install_builtin(zygote, "list", builtin_list);
+    install_builtin(zygote, "append", builtin_append);
+    install_builtin(zygote, "pop", builtin_pop);
+    install_builtin(zygote, "at", builtin_at);
+    install_builtin(zygote, "copy", builtin_copy);
     install_builtin(zygote, "if", builtin_if);
     install_builtin(zygote, "while", builtin_while);
     install_builtin(zygote, "start", builtin_start);
