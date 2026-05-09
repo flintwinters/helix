@@ -130,6 +130,33 @@ def extract_stepped_vm(wrapper_output: dict) -> dict:
     return stepped_vm
 
 
+def reorder_like_template(current, template):
+    if isinstance(current, dict):
+        template_dict = template if isinstance(template, dict) else {}
+        ordered = {}
+
+        for key, template_value in template_dict.items():
+            if key in current:
+                ordered[key] = reorder_like_template(current[key], template_value)
+
+        for key in sorted(current.keys() - template_dict.keys()):
+            ordered[key] = reorder_like_template(current[key], None)
+
+        return ordered
+
+    if isinstance(current, list):
+        template_list = template if isinstance(template, list) else []
+        return [
+            reorder_like_template(
+                value,
+                template_list[index] if index < len(template_list) else None,
+            )
+            for index, value in enumerate(current)
+        ]
+
+    return current
+
+
 def dump_yaml(data: dict, destination: Path) -> None:
     with destination.open("w", encoding="utf-8") as handle:
         yaml.safe_dump(
@@ -161,7 +188,8 @@ def step_target_file(binary_path: Path, target_path: Path) -> None:
     try:
         wrapper_output = run_helix(binary_path, wrapper_path)
         stepped_vm = extract_stepped_vm(wrapper_output)
-        dump_yaml(stepped_vm, target_path)
+        ordered_vm = reorder_like_template(stepped_vm, target_vm)
+        dump_yaml(ordered_vm, target_path)
     finally:
         wrapper_path.unlink(missing_ok=True)
 
