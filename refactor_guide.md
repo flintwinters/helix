@@ -4,7 +4,7 @@ This document records the next code-reuse refactor pass for the native C++ runti
 
 The items are ordered. Earlier items should be addressed before later ones unless a later item becomes a direct blocker.
 
-## 1. Unify `evaluate_or_signal(...)` and `resolve_or_signal(...)`
+## [x] 1. Unify `evaluate_or_signal(...)` and `resolve_or_signal(...)`
 
 This is the highest-priority refactor and should have been done earlier.
 
@@ -37,7 +37,11 @@ Success condition:
 - there is one wrapper for “invoke callback and propagate signals”
 - builtin code no longer distinguishes this pattern twice
 
-## 2. Move VM-state helpers out of `helix.cpp` and into shared runtime code
+Status:
+
+- completed via `apply_vm_callback_or_signal(...)` in [src/builtins.cpp](/home/iron/projects/Helixrkt/src/builtins.cpp:1)
+
+## [ ] 2. Move VM-state helpers out of `helix.cpp` and into shared runtime code
 
 The following helpers currently live in [src/helix.cpp](/home/iron/projects/Helixrkt/src/helix.cpp:1):
 
@@ -67,7 +71,7 @@ Success condition:
 - `helix.cpp` stops owning shared VM-state protocol helpers
 - VM state access becomes a reusable runtime layer
 
-## 3. Share typed map-field access across modules
+## [x] 3. Share typed map-field access across modules
 
 [src/helix.cpp](/home/iron/projects/Helixrkt/src/helix.cpp:1) now has typed map-field helpers:
 
@@ -92,7 +96,11 @@ Success condition:
 - typed field extraction is defined once
 - builtins and scheduler both use the same helpers
 
-## 4. Move list-frame arming into shared runtime code
+Status:
+
+- completed by moving the typed field-access helpers into [src/core.hpp](/home/iron/projects/Helixrkt/src/core.hpp:1) and [src/core.cpp](/home/iron/projects/Helixrkt/src/core.cpp:1), with both [src/helix.cpp](/home/iron/projects/Helixrkt/src/helix.cpp:1) and [src/builtins.cpp](/home/iron/projects/Helixrkt/src/builtins.cpp:1) consuming them
+
+## [ ] 4. Move list-frame arming into shared runtime code
 
 `builtin_list(...)` still knows the internal scheduler frame schema:
 
@@ -117,7 +125,7 @@ Success condition:
 - `builtin_list(...)` stops constructing frame maps directly
 - frame layout knowledge lives in one scheduler-facing helper
 
-## 5. Centralize terminal-status checks and terminal-result reads
+## [ ] 5. Centralize terminal-status checks and terminal-result reads
 
 Terminal-state knowledge is currently spread across:
 
@@ -143,7 +151,7 @@ Success condition:
 - terminal checks are expressed through one shared interface
 - loops no longer open-code status comparisons
 
-## 6. Centralize status representation
+## [ ] 6. Centralize status representation
 
 The following status strings are still scattered across the runtime:
 
@@ -170,7 +178,7 @@ Success condition:
 
 - status values are no longer hard-coded ad hoc throughout the codebase
 
-## 7. Refine child-VM stepping helpers
+## [ ] 7. Refine child-VM stepping helpers
 
 `start` and `step` are already closer than before, but they still repeat several scheduler-specific concerns:
 
@@ -195,7 +203,7 @@ Success condition:
 
 - `start` and `step` differ mainly in repetition count, not in protocol shape
 
-## 8. Revisit arithmetic helper reuse once more numeric builtins exist
+## [ ] 8. Revisit arithmetic helper reuse once more numeric builtins exist
 
 `add` still contains a local pattern that future arithmetic builtins will likely reuse:
 
@@ -216,7 +224,7 @@ Success condition:
 
 - no action yet unless more arithmetic builtins are added
 
-## 9. Remove unused interface surface
+## [ ] 9. Remove unused interface surface
 
 Some functions still carry parameters that do not currently affect behavior. The clearest example is:
 
@@ -233,7 +241,7 @@ Success condition:
 
 - either the parameter is meaningfully used, or it no longer exists
 
-## 10. Keep feature work subordinate to these refactors
+## [ ] 10. Keep feature work subordinate to these refactors
 
 The next features most likely to stress the runtime are:
 
