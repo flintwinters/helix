@@ -20,53 +20,6 @@ static bool is_null_cell(ConstCellPtr cell) {
     return cell->type == Cell::Type::nil;
 }
 
-static shared_ptr<MapCell> ensure_vm_state(const shared_ptr<MapCell>& vm) {
-    shared_ptr<MapCell> state = map_field_map(vm, "state");
-    if (!state) {
-        state = make_shared<MapCell>();
-        vm->set("state", state);
-    }
-
-    if (!map_field_string(state, "status")) {
-        state->set("status", make_shared<StrCell>("ready"));
-    }
-
-    if (!map_field_vec(state, "frames")) {
-        state->set("frames", make_shared<VecCell>());
-    }
-
-    return state;
-}
-
-static shared_ptr<VecCell> vm_frames(const shared_ptr<MapCell>& vm) {
-    shared_ptr<MapCell> state = ensure_vm_state(vm);
-    return map_field_vec(state, "frames");
-}
-
-static string vm_status(const shared_ptr<MapCell>& vm) {
-    shared_ptr<MapCell> state = ensure_vm_state(vm);
-    return map_field_string(state, "status")->value;
-}
-
-static void set_vm_status(const shared_ptr<MapCell>& vm, const string& status) {
-    shared_ptr<MapCell> state = ensure_vm_state(vm);
-    state->set("status", make_shared<StrCell>(status));
-}
-
-static void clear_vm_terminal_fields(const shared_ptr<MapCell>& vm) {
-    shared_ptr<MapCell> state = ensure_vm_state(vm);
-    state->value.erase("result");
-    state->value.erase("error");
-}
-
-static bool is_terminal_status(const string& status) {
-    return status == "finished" || status == "error" || status == "signaled";
-}
-
-static CellPtr vm_result(const shared_ptr<MapCell>& vm) {
-    return map_field_cell(ensure_vm_state(vm), "result");
-}
-
 static CellPtr fail_vm(const shared_ptr<MapCell>& vm, const string& message) {
     CellPtr error = make_error_cell(message);
     attach_terminal_state(vm, error);
@@ -210,11 +163,7 @@ static const IntCell* frame_index(const shared_ptr<MapCell>& frame) {
 }
 
 static void store_list_resume_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame, size_t next_index) {
-    frame->set("index", make_shared<IntCell>(static_cast<int64_t>(next_index)));
-    shared_ptr<MapCell> state = ensure_vm_state(vm);
-    state->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
-    state->set("status", make_shared<StrCell>("running"));
-    clear_vm_terminal_fields(vm);
+    arm_list_frame(vm, map_field_cell(frame, "values"), static_cast<int64_t>(next_index));
 }
 
 static void retire_unyielded_frame(const shared_ptr<MapCell>& frame) {
@@ -239,8 +188,7 @@ static CellPtr advance_list_frame(const shared_ptr<MapCell>& vm, const shared_pt
         return fail_vm(vm, "list frame index is out of bounds");
     }
 
-    shared_ptr<MapCell> state = ensure_vm_state(vm);
-    state->set("frames", make_shared<VecCell>());
+    ensure_vm_state(vm)->set("frames", make_shared<VecCell>());
     bool yielded = false;
 
     for (size_t current_index = static_cast<size_t>(index); current_index < sequence->value.size(); ++current_index) {
@@ -270,7 +218,7 @@ static CellPtr start_vm_main(const shared_ptr<MapCell>& vm) {
         return fail_vm(vm, "program is missing a main entrypoint");
     }
 
-    set_vm_status(vm, "running");
+    set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
 
     CellPtr result = is_null_cell(main_it->second) ? main_it->second : evaluate_cell(main_it->second, vm);
@@ -321,7 +269,7 @@ static CellPtr resume_vm_frame(const shared_ptr<MapCell>& vm) {
 
 static CellPtr advance_vm(const shared_ptr<MapCell>& vm) {
     ensure_vm_state(vm);
-    if (is_terminal_status(vm_status(vm))) {
+    if (vm_is_terminal(vm)) {
         return vm_result(vm);
     }
 
@@ -330,11 +278,11 @@ static CellPtr advance_vm(const shared_ptr<MapCell>& vm) {
         result = start_vm_main(vm);
     }
 
-    if (!is_terminal_status(vm_status(vm)) && !vm_frames(vm)->value.empty()) {
+    if (!vm_is_terminal(vm) && !vm_frames(vm)->value.empty()) {
         result = resume_vm_frame(vm);
     }
 
-    if (is_terminal_status(vm_status(vm))) {
+    if (vm_is_terminal(vm)) {
         return vm_result(vm);
     }
 
@@ -347,7 +295,7 @@ static CellPtr advance_vm(const shared_ptr<MapCell>& vm) {
 }
 
 static CellPtr run_vm(const shared_ptr<MapCell>& vm) {
-    while (!is_terminal_status(vm_status(vm))) {
+    while (!vm_is_terminal(vm)) {
         advance_vm(vm);
     }
 
