@@ -20,56 +20,6 @@ static bool is_null_cell(ConstCellPtr cell) {
     return cell->type == Cell::Type::nil;
 }
 
-static CellPtr map_field_cell(ConstCellPtr map_cell, const string& key) {
-    if (!map_cell || map_cell->type != Cell::Type::map) {
-        return nullptr;
-    }
-
-    const auto& fields = static_cast<const MapCell&>(*map_cell).value;
-    unordered_map<string, CellPtr>::const_iterator field_it = fields.find(key);
-    if (field_it == fields.end()) {
-        return nullptr;
-    }
-
-    return field_it->second;
-}
-
-static shared_ptr<MapCell> map_field_map(ConstCellPtr map_cell, const string& key) {
-    CellPtr field = map_field_cell(map_cell, key);
-    if (!field || field->type != Cell::Type::map) {
-        return nullptr;
-    }
-
-    return static_pointer_cast<MapCell>(field);
-}
-
-static shared_ptr<VecCell> map_field_vec(ConstCellPtr map_cell, const string& key) {
-    CellPtr field = map_field_cell(map_cell, key);
-    if (!field || field->type != Cell::Type::vec) {
-        return nullptr;
-    }
-
-    return static_pointer_cast<VecCell>(field);
-}
-
-static const StrCell* map_field_string(ConstCellPtr map_cell, const string& key) {
-    CellPtr field = map_field_cell(map_cell, key);
-    if (!field || field->type != Cell::Type::string) {
-        return nullptr;
-    }
-
-    return &static_cast<const StrCell&>(*field);
-}
-
-static const IntCell* map_field_int(ConstCellPtr map_cell, const string& key) {
-    CellPtr field = map_field_cell(map_cell, key);
-    if (!field || field->type != Cell::Type::integer) {
-        return nullptr;
-    }
-
-    return &static_cast<const IntCell&>(*field);
-}
-
 static shared_ptr<MapCell> ensure_vm_state(const shared_ptr<MapCell>& vm) {
     shared_ptr<MapCell> state = map_field_map(vm, "state");
     if (!state) {
