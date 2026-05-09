@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from copy import deepcopy
 import subprocess
 import sys
 import tempfile
@@ -137,6 +138,94 @@ def extract_stepped_vm(wrapper_output: dict) -> dict:
     return stepped_vm
 
 
+def list_frame_from_state(target_vm: dict):
+    state = target_vm.get("state")
+    if not isinstance(state, dict):
+        return None
+
+    frames = state.get("frames")
+    if not isinstance(frames, list) or not frames:
+        return None
+
+    frame = frames[0]
+    if not isinstance(frame, dict):
+        raise ValueError("state.frames[0] must be a mapping")
+
+    if frame.get("name") != "list":
+        raise ValueError("only list-backed VM frames are supported")
+
+    values = frame.get("values")
+    index = frame.get("index")
+    if not isinstance(values, list) or not isinstance(index, int):
+        raise ValueError("list frame must contain list values and an integer index")
+
+    return frame
+
+
+def sequence_from_main(target_vm: dict) -> list:
+    main = target_vm.get("main")
+    if not isinstance(main, list) or len(main) != 2 or main[0] != "list":
+        raise ValueError("target VM must use main: [list, <sequence-name>] for stepped execution")
+
+    sequence_name = main[1]
+    if not isinstance(sequence_name, str):
+        raise ValueError("list-backed main must reference a named sequence")
+
+    sequence = target_vm.get(sequence_name)
+    if not isinstance(sequence, list):
+        raise ValueError(f"target VM sequence {sequence_name!r} must be a YAML list")
+
+    return sequence
+
+
+def next_step_context(target_vm: dict) -> tuple[list, int]:
+    frame = list_frame_from_state(target_vm)
+    if frame is not None:
+        return frame["values"], frame["index"]
+
+    return sequence_from_main(target_vm), 0
+
+
+def single_step_execution_vm(target_vm: dict, step_expression) -> dict:
+    execution_vm = deepcopy(target_vm)
+    execution_vm["main"] = deepcopy(step_expression)
+    execution_vm.pop("state", None)
+    return execution_vm
+
+
+def stepped_state(sequence: list, next_index: int) -> dict:
+    if next_index < len(sequence):
+        return {
+            "status": "running",
+            "frames": [
+                {
+                    "name": "list",
+                    "index": next_index,
+                    "values": deepcopy(sequence),
+                }
+            ],
+        }
+
+    return {
+        "status": "finished",
+        "frames": [],
+        "result": None,
+    }
+
+
+def merge_single_step_result(original_vm: dict, stepped_execution_vm: dict, sequence: list, current_index: int) -> dict:
+    merged_vm = deepcopy(original_vm)
+
+    for key, value in stepped_execution_vm.items():
+        if key == "main":
+            continue
+        merged_vm[key] = value
+
+    merged_vm["main"] = deepcopy(original_vm["main"])
+    merged_vm["state"] = stepped_state(sequence, current_index + 1)
+    return merged_vm
+
+
 def reorder_like_template(current, template):
     if isinstance(current, dict):
         template_dict = template if isinstance(template, dict) else {}
@@ -206,7 +295,12 @@ def step_target_file(binary_path: Path, target_path: Path) -> None:
         raise FileNotFoundError(f"helix binary not found: {binary_path}")
 
     target_vm = load_target_vm(target_path)
-    wrapper_vm = build_wrapper_vm(target_vm)
+    sequence, current_index = next_step_context(target_vm)
+    if current_index < 0 or current_index >= len(sequence):
+        raise ValueError("target VM has no remaining step to execute")
+
+    execution_vm = single_step_execution_vm(target_vm, sequence[current_index])
+    wrapper_vm = build_wrapper_vm(execution_vm)
 
     with tempfile.NamedTemporaryFile(
         "w",
@@ -221,7 +315,13 @@ def step_target_file(binary_path: Path, target_path: Path) -> None:
 
     try:
         wrapper_output = run_helix(binary_path, wrapper_path)
-        stepped_vm = extract_stepped_vm(wrapper_output)
+        stepped_execution_vm = extract_stepped_vm(wrapper_output)
+        stepped_vm = merge_single_step_result(
+            target_vm,
+            stepped_execution_vm,
+            sequence,
+            current_index,
+        )
         ordered_vm = reorder_like_template(stepped_vm, target_vm)
         dump_yaml(ordered_vm, target_path)
     finally:
