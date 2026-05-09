@@ -41,7 +41,7 @@ Status:
 
 - completed via `apply_vm_callback_or_signal(...)` in [src/builtins.cpp](/home/iron/projects/Helixrkt/src/builtins.cpp:1)
 
-## [ ] 2. Move VM-state helpers out of `helix.cpp` and into shared runtime code
+## [x] 2. Move VM-state helpers out of `helix.cpp` and into shared runtime code
 
 The following helpers currently live in [src/helix.cpp](/home/iron/projects/Helixrkt/src/helix.cpp:1):
 
@@ -70,6 +70,10 @@ Success condition:
 
 - `helix.cpp` stops owning shared VM-state protocol helpers
 - VM state access becomes a reusable runtime layer
+
+Status:
+
+- completed by moving VM-state and terminal-state helpers into [src/core.hpp](/home/iron/projects/Helixrkt/src/core.hpp:1) and [src/core.cpp](/home/iron/projects/Helixrkt/src/core.cpp:1), with [src/helix.cpp](/home/iron/projects/Helixrkt/src/helix.cpp:1) reduced to scheduler-specific logic
 
 ## [x] 3. Share typed map-field access across modules
 
@@ -100,7 +104,7 @@ Status:
 
 - completed by moving the typed field-access helpers into [src/core.hpp](/home/iron/projects/Helixrkt/src/core.hpp:1) and [src/core.cpp](/home/iron/projects/Helixrkt/src/core.cpp:1), with both [src/helix.cpp](/home/iron/projects/Helixrkt/src/helix.cpp:1) and [src/builtins.cpp](/home/iron/projects/Helixrkt/src/builtins.cpp:1) consuming them
 
-## [ ] 4. Move list-frame arming into shared runtime code
+## [x] 4. Move list-frame arming into shared runtime code
 
 `builtin_list(...)` still knows the internal scheduler frame schema:
 
@@ -125,7 +129,11 @@ Success condition:
 - `builtin_list(...)` stops constructing frame maps directly
 - frame layout knowledge lives in one scheduler-facing helper
 
-## [ ] 5. Centralize terminal-status checks and terminal-result reads
+Status:
+
+- completed via `arm_list_frame(...)` in [src/core.cpp](/home/iron/projects/Helixrkt/src/core.cpp:1), which now owns initial list-frame construction for the builtin layer
+
+## [x] 5. Centralize terminal-status checks and terminal-result reads
 
 Terminal-state knowledge is currently spread across:
 
@@ -151,7 +159,11 @@ Success condition:
 - terminal checks are expressed through one shared interface
 - loops no longer open-code status comparisons
 
-## [ ] 6. Centralize status representation
+Status:
+
+- completed via shared helpers such as `vm_is_terminal(...)` and `vm_result(...)` in [src/core.cpp](/home/iron/projects/Helixrkt/src/core.cpp:1)
+
+## [x] 6. Centralize status representation
 
 The following status strings are still scattered across the runtime:
 
@@ -178,7 +190,11 @@ Success condition:
 
 - status values are no longer hard-coded ad hoc throughout the codebase
 
-## [ ] 7. Refine child-VM stepping helpers
+Status:
+
+- completed through `VmStatus` and `vm_status_name(...)` in [src/core.hpp](/home/iron/projects/Helixrkt/src/core.hpp:1) and [src/core.cpp](/home/iron/projects/Helixrkt/src/core.cpp:1)
+
+## [x] 7. Refine child-VM stepping helpers
 
 `start` and `step` are already closer than before, but they still repeat several scheduler-specific concerns:
 
@@ -203,6 +219,10 @@ Success condition:
 
 - `start` and `step` differ mainly in repetition count, not in protocol shape
 
+Status:
+
+- completed in [src/builtins.cpp](/home/iron/projects/Helixrkt/src/builtins.cpp:1), where `start` and `step` now share child resolution and the same primitive VM step operation, differing mainly by repetition
+
 ## [ ] 8. Revisit arithmetic helper reuse once more numeric builtins exist
 
 `add` still contains a local pattern that future arithmetic builtins will likely reuse:
@@ -224,7 +244,7 @@ Success condition:
 
 - no action yet unless more arithmetic builtins are added
 
-## [ ] 9. Remove unused interface surface
+## [x] 9. Remove unused interface surface
 
 Some functions still carry parameters that do not currently affect behavior. The clearest example is:
 
@@ -240,6 +260,10 @@ Why this matters:
 Success condition:
 
 - either the parameter is meaningfully used, or it no longer exists
+
+Status:
+
+- completed for `expect_map_cell(...)`, which no longer carries the unused `who` parameter
 
 ## [ ] 10. Keep feature work subordinate to these refactors
 
