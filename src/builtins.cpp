@@ -9,6 +9,7 @@ static ResolveCellFn resolve_cell_fn = nullptr;
 static AdvanceVmFn advance_vm_fn = nullptr;
 static RenderShowFn render_show_fn = nullptr;
 static MakeErrorFn make_error_fn = nullptr;
+using VmCallbackFn = CellPtr(*)(CellPtr, const shared_ptr<MapCell>&);
 
 static CellPtr make_error(const string& message, CellPtr value = nullptr) {
     if (!make_error_fn) {
@@ -18,17 +19,29 @@ static CellPtr make_error(const string& message, CellPtr value = nullptr) {
     return make_error_fn(message, move(value));
 }
 
-static CellPtr evaluate_or_signal(CellPtr node, const shared_ptr<MapCell>& root_cell) {
-    if (!evaluate_cell_fn) {
-        return make_error("builtin evaluation is not initialized");
+static CellPtr apply_vm_callback_or_signal(
+    VmCallbackFn callback,
+    CellPtr node,
+    const shared_ptr<MapCell>& root_cell,
+    const char* init_error_message) {
+    if (!callback) {
+        return make_error(init_error_message);
     }
 
-    CellPtr value = evaluate_cell_fn(move(node), root_cell);
+    CellPtr value = callback(move(node), root_cell);
     if (is_signal_cell(value)) {
         return value;
     }
 
     return value;
+}
+
+static CellPtr evaluate_or_signal(CellPtr node, const shared_ptr<MapCell>& root_cell) {
+    return apply_vm_callback_or_signal(
+        evaluate_cell_fn,
+        move(node),
+        root_cell,
+        "builtin evaluation is not initialized");
 }
 
 static CellPtr evaluate_int_or_error(CellPtr node, const shared_ptr<MapCell>& root_cell, const char* who) {
@@ -36,16 +49,11 @@ static CellPtr evaluate_int_or_error(CellPtr node, const shared_ptr<MapCell>& ro
 }
 
 static CellPtr resolve_or_signal(CellPtr node, const shared_ptr<MapCell>& root_cell) {
-    if (!resolve_cell_fn) {
-        return make_error("builtin resolution is not initialized");
-    }
-
-    CellPtr value = resolve_cell_fn(move(node), root_cell);
-    if (is_signal_cell(value)) {
-        return value;
-    }
-
-    return value;
+    return apply_vm_callback_or_signal(
+        resolve_cell_fn,
+        move(node),
+        root_cell,
+        "builtin resolution is not initialized");
 }
 
 static bool is_truthy(ConstCellPtr cell) {
