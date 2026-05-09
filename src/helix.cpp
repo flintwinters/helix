@@ -163,7 +163,10 @@ static const IntCell* frame_index(const shared_ptr<MapCell>& frame) {
 }
 
 static void store_list_resume_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame, size_t next_index) {
-    arm_list_frame(vm, map_field_cell(frame, "values"), static_cast<int64_t>(next_index));
+    frame->set("index", make_shared<IntCell>(static_cast<int64_t>(next_index)));
+    ensure_vm_state(vm)->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
+    set_vm_status(vm, VmStatus::running);
+    clear_vm_terminal_fields(vm);
 }
 
 static void retire_unyielded_frame(const shared_ptr<MapCell>& frame) {
