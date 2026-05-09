@@ -105,7 +105,8 @@ static shared_ptr<MapCell> expect_builtin_vm(
 }
 
 static const string* vm_status_string(const shared_ptr<MapCell>& vm) {
-    return map_field_string(expect_vm_state(vm), "status");
+    const StrCell* status_cell = map_field_string(expect_vm_state(vm), "status");
+    return status_cell ? &status_cell->value : nullptr;
 }
 
 static CellPtr vm_status_cell(const shared_ptr<MapCell>& vm) {
