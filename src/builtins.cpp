@@ -68,12 +68,8 @@ static bool is_truthy(ConstCellPtr cell) {
     return true;
 }
 
-static shared_ptr<MapCell> expect_vm_state(const shared_ptr<MapCell>& vm) {
-    return map_field_map(vm, "state");
-}
-
 static shared_ptr<MapCell> expect_builtin_vm(const vector<CellPtr>& arguments, CellPtr current_vm, const char* who) {
-    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), who);
+    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm));
     if (!root_cell) {
         return nullptr;
     }
@@ -91,7 +87,7 @@ static shared_ptr<MapCell> expect_builtin_vm(
     CellPtr current_vm,
     const char* who,
     size_t expected_arity) {
-    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm), who);
+    shared_ptr<MapCell> root_cell = expect_map_cell(move(current_vm));
     if (!root_cell) {
         return nullptr;
     }
@@ -102,27 +98,6 @@ static shared_ptr<MapCell> expect_builtin_vm(
     }
 
     return root_cell;
-}
-
-static const string* vm_status_string(const shared_ptr<MapCell>& vm) {
-    const StrCell* status_cell = map_field_string(expect_vm_state(vm), "status");
-    return status_cell ? &status_cell->value : nullptr;
-}
-
-static CellPtr vm_status_cell(const shared_ptr<MapCell>& vm) {
-    return map_field_cell(expect_vm_state(vm), "status");
-}
-
-static void arm_list_frame(const shared_ptr<MapCell>& vm, CellPtr sequence_cell) {
-    shared_ptr<MapCell> state = expect_vm_state(vm);
-    shared_ptr<MapCell> frame = make_shared<MapCell>();
-    frame->set("name", make_shared<StrCell>("list"));
-    frame->set("values", move(sequence_cell));
-    frame->set("index", make_shared<IntCell>(0));
-    state->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
-    state->set("status", make_shared<StrCell>("running"));
-    state->value.erase("result");
-    state->value.erase("error");
 }
 
 static shared_ptr<MapCell> resolve_child_vm(const vector<CellPtr>& arguments, CellPtr current_vm, const char* who) {
@@ -141,7 +116,7 @@ static shared_ptr<MapCell> resolve_child_vm(const vector<CellPtr>& arguments, Ce
     }
 
     CellPtr resolved = resolve_cell_fn(child_name, root_cell);
-    shared_ptr<MapCell> child_vm = expect_map_cell(move(resolved), who);
+    shared_ptr<MapCell> child_vm = expect_map_cell(move(resolved));
     if (!child_vm) {
         return nullptr;
     }
@@ -238,10 +213,6 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
         return make_error("list expects a vector sequence");
     }
 
-    if (!expect_vm_state(root_cell)) {
-        return make_error("list requires VM state");
-    }
-
     arm_list_frame(root_cell, sequence_cell);
     return make_shared<NilCell>();
 }
@@ -315,12 +286,7 @@ static CellPtr builtin_start(const vector<CellPtr>& arguments, CellPtr current_v
             return step_result;
         }
 
-        const string* status = vm_status_string(child_vm);
-        if (!status) {
-            return make_error("start requires child VM state");
-        }
-
-        if (*status == "finished" || *status == "error" || *status == "signaled") {
+        if (vm_is_terminal(child_vm)) {
             return step_result;
         }
     }
