@@ -124,6 +124,11 @@ using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
 
 CellPtr make_error_cell(const string& message, CellPtr value = nullptr);
 bool is_signal_cell(ConstCellPtr cell);
+CellPtr map_field_cell(ConstCellPtr map_cell, const string& key);
+shared_ptr<MapCell> map_field_map(ConstCellPtr map_cell, const string& key);
+shared_ptr<VecCell> map_field_vec(ConstCellPtr map_cell, const string& key);
+const StrCell* map_field_string(ConstCellPtr map_cell, const string& key);
+const IntCell* map_field_int(ConstCellPtr map_cell, const string& key);
 shared_ptr<MapCell> expect_map_cell(CellPtr cell, const char* who);
 shared_ptr<MapCell> make_finished_state_cell();
 void attach_finished_state(const shared_ptr<MapCell>& root_cell, CellPtr result);
