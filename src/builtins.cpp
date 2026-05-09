@@ -233,6 +233,56 @@ static CellPtr builtin_mul(const vector<CellPtr>& arguments, CellPtr current_vm)
         [](int64_t left, int64_t right) { return left * right; });
 }
 
+static CellPtr builtin_div(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "div", 3);
+    if (!root_cell) {
+        return make_error("div requires a map VM");
+    }
+
+    const CellPtr left_cell = evaluate_int_or_error(arguments[1], root_cell, "div");
+    if (is_signal_cell(left_cell)) {
+        return left_cell;
+    }
+
+    const CellPtr right_cell = evaluate_int_or_error(arguments[2], root_cell, "div");
+    if (is_signal_cell(right_cell)) {
+        return right_cell;
+    }
+
+    const int64_t left = static_cast<const IntCell&>(*left_cell).value;
+    const int64_t right = static_cast<const IntCell&>(*right_cell).value;
+    if (right == 0) {
+        return make_error("div cannot divide by zero");
+    }
+
+    return make_shared<IntCell>(left / right);
+}
+
+static CellPtr builtin_mod(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "mod", 3);
+    if (!root_cell) {
+        return make_error("mod requires a map VM");
+    }
+
+    const CellPtr left_cell = evaluate_int_or_error(arguments[1], root_cell, "mod");
+    if (is_signal_cell(left_cell)) {
+        return left_cell;
+    }
+
+    const CellPtr right_cell = evaluate_int_or_error(arguments[2], root_cell, "mod");
+    if (is_signal_cell(right_cell)) {
+        return right_cell;
+    }
+
+    const int64_t left = static_cast<const IntCell&>(*left_cell).value;
+    const int64_t right = static_cast<const IntCell&>(*right_cell).value;
+    if (right == 0) {
+        return make_error("mod cannot divide by zero");
+    }
+
+    return make_shared<IntCell>(left % right);
+}
+
 static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm) {
     shared_ptr<MapCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "set", 3);
     if (!root_cell) {
@@ -490,6 +540,8 @@ shared_ptr<MapCell> make_zygote() {
     install_builtin(zygote, "add", builtin_add);
     install_builtin(zygote, "sub", builtin_sub);
     install_builtin(zygote, "mul", builtin_mul);
+    install_builtin(zygote, "div", builtin_div);
+    install_builtin(zygote, "mod", builtin_mod);
     install_builtin(zygote, "set", builtin_set);
     install_builtin(zygote, "eval", builtin_eval);
     install_builtin(zygote, "list", builtin_list);
