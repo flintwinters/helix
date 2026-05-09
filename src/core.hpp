@@ -116,6 +116,14 @@ struct ErrCell final : public SigCell {
     string message {};
 };
 
+enum class VmStatus {
+    ready,
+    running,
+    finished,
+    error,
+    signaled,
+};
+
 using EvalCellFn = CellPtr(*)(CellPtr, const shared_ptr<MapCell>&);
 using ResolveCellFn = CellPtr(*)(CellPtr, const shared_ptr<MapCell>&);
 using AdvanceVmFn = CellPtr(*)(const shared_ptr<MapCell>&);
@@ -129,7 +137,17 @@ shared_ptr<MapCell> map_field_map(ConstCellPtr map_cell, const string& key);
 shared_ptr<VecCell> map_field_vec(ConstCellPtr map_cell, const string& key);
 const StrCell* map_field_string(ConstCellPtr map_cell, const string& key);
 const IntCell* map_field_int(ConstCellPtr map_cell, const string& key);
-shared_ptr<MapCell> expect_map_cell(CellPtr cell, const char* who);
+shared_ptr<MapCell> expect_map_cell(CellPtr cell);
+const char* vm_status_name(VmStatus status);
+shared_ptr<MapCell> ensure_vm_state(const shared_ptr<MapCell>& vm);
+CellPtr vm_status_cell(const shared_ptr<MapCell>& vm);
+VmStatus vm_status(const shared_ptr<MapCell>& vm);
+shared_ptr<VecCell> vm_frames(const shared_ptr<MapCell>& vm);
+void set_vm_status(const shared_ptr<MapCell>& vm, VmStatus status);
+void clear_vm_terminal_fields(const shared_ptr<MapCell>& vm);
+bool vm_is_terminal(const shared_ptr<MapCell>& vm);
+CellPtr vm_result(const shared_ptr<MapCell>& vm);
+void arm_list_frame(const shared_ptr<MapCell>& vm, CellPtr sequence_cell, int64_t start_index = 0);
 shared_ptr<MapCell> make_finished_state_cell();
 void attach_finished_state(const shared_ptr<MapCell>& root_cell, CellPtr result);
 void attach_terminal_state(const shared_ptr<MapCell>& root_cell, CellPtr result);
