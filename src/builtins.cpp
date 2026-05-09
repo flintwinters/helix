@@ -69,12 +69,7 @@ static bool is_truthy(ConstCellPtr cell) {
 }
 
 static shared_ptr<MapCell> expect_vm_state(const shared_ptr<MapCell>& vm) {
-    unordered_map<string, CellPtr>::const_iterator state_it = vm->value.find("state");
-    if (state_it == vm->value.end() || !state_it->second || state_it->second->type != Cell::Type::map) {
-        return nullptr;
-    }
-
-    return static_pointer_cast<MapCell>(state_it->second);
+    return map_field_map(vm, "state");
 }
 
 static shared_ptr<MapCell> expect_builtin_vm(const vector<CellPtr>& arguments, CellPtr current_vm, const char* who) {
@@ -110,31 +105,11 @@ static shared_ptr<MapCell> expect_builtin_vm(
 }
 
 static const string* vm_status_string(const shared_ptr<MapCell>& vm) {
-    shared_ptr<MapCell> state = expect_vm_state(vm);
-    if (!state) {
-        return nullptr;
-    }
-
-    unordered_map<string, CellPtr>::const_iterator status_it = state->value.find("status");
-    if (status_it == state->value.end() || !status_it->second || status_it->second->type != Cell::Type::string) {
-        return nullptr;
-    }
-
-    return &static_cast<const StrCell&>(*status_it->second).value;
+    return map_field_string(expect_vm_state(vm), "status");
 }
 
 static CellPtr vm_status_cell(const shared_ptr<MapCell>& vm) {
-    shared_ptr<MapCell> state = expect_vm_state(vm);
-    if (!state) {
-        return nullptr;
-    }
-
-    unordered_map<string, CellPtr>::const_iterator status_it = state->value.find("status");
-    if (status_it == state->value.end() || !status_it->second || status_it->second->type != Cell::Type::string) {
-        return nullptr;
-    }
-
-    return status_it->second;
+    return map_field_cell(expect_vm_state(vm), "status");
 }
 
 static void arm_list_frame(const shared_ptr<MapCell>& vm, CellPtr sequence_cell) {
