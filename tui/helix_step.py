@@ -6,10 +6,17 @@ import sys
 import tempfile
 from pathlib import Path
 
-import yaml
+from ruamel.yaml import YAML
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 
 WRAPPER_VM_NAME = "__debug_target__"
+YAML_LOADER = YAML(typ="safe")
+YAML_DUMPER = YAML()
+YAML_DUMPER.default_flow_style = False
+YAML_DUMPER.sort_base_mapping_type_on_output = False
+YAML_DUMPER.width = 100
+YAML_DUMPER.indent(mapping=2, sequence=4, offset=2)
 
 
 def parse_args() -> argparse.Namespace:
@@ -63,7 +70,7 @@ def expand_root_includes(target_vm: dict, source_path: Path) -> dict:
 
 def load_target_vm(target_path: Path) -> dict:
     with target_path.open("r", encoding="utf-8") as handle:
-        loaded = yaml.safe_load(handle)
+        loaded = YAML_LOADER.load(handle)
 
     if not isinstance(loaded, dict):
         raise ValueError("target YAML must be a top-level mapping representing a Helix VM")
@@ -112,8 +119,8 @@ def run_helix(binary_path: Path, wrapper_path: Path) -> dict:
 
     try:
         named_block = extract_named_top_level_block(completed.stdout, WRAPPER_VM_NAME)
-        loaded = yaml.safe_load(named_block)
-    except yaml.YAMLError as error:
+        loaded = YAML_LOADER.load(named_block)
+    except Exception as error:
         raise RuntimeError("helix did not emit a valid stepped VM block") from error
 
     if not isinstance(loaded, dict):
@@ -157,14 +164,41 @@ def reorder_like_template(current, template):
     return current
 
 
+def should_use_flow_style(sequence) -> bool:
+    if not sequence:
+        return True
+
+    if all(not isinstance(value, (dict, list)) for value in sequence):
+        return True
+
+    return (
+        len(sequence) <= 4
+        and isinstance(sequence[0], str)
+        and all(not isinstance(value, dict) for value in sequence[1:])
+    )
+
+
+def to_ruamel_node(data):
+    if isinstance(data, dict):
+        node = CommentedMap()
+        for key, value in data.items():
+            node[key] = to_ruamel_node(value)
+        return node
+
+    if isinstance(data, list):
+        node = CommentedSeq()
+        for value in data:
+            node.append(to_ruamel_node(value))
+        if should_use_flow_style(data):
+            node.fa.set_flow_style()
+        return node
+
+    return data
+
+
 def dump_yaml(data: dict, destination: Path) -> None:
     with destination.open("w", encoding="utf-8") as handle:
-        yaml.safe_dump(
-            data,
-            handle,
-            sort_keys=False,
-            default_flow_style=False,
-        )
+        YAML_DUMPER.dump(to_ruamel_node(data), handle)
 
 
 def step_target_file(binary_path: Path, target_path: Path) -> None:
@@ -183,7 +217,7 @@ def step_target_file(binary_path: Path, target_path: Path) -> None:
         delete=False,
     ) as handle:
         wrapper_path = Path(handle.name)
-        yaml.safe_dump(wrapper_vm, handle, sort_keys=False, default_flow_style=False)
+        YAML_DUMPER.dump(to_ruamel_node(wrapper_vm), handle)
 
     try:
         wrapper_output = run_helix(binary_path, wrapper_path)
