@@ -139,6 +139,32 @@ Form:
 - Requires integers
 - Returns `left * right`
 
+## `div`
+
+Form:
+
+```yaml
+[div, left, right]
+```
+
+- Evaluates both operands
+- Requires integers
+- Returns integer division `left / right`
+- Errors on division by zero
+
+## `mod`
+
+Form:
+
+```yaml
+[mod, left, right]
+```
+
+- Evaluates both operands
+- Requires integers
+- Returns integer remainder `left % right`
+- Errors on division by zero
+
 ## `set`
 
 Form:
