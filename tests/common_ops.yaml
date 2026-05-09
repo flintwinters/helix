@@ -1,0 +1,32 @@
+program:
+  numbers: [1, 2]
+  actions:
+    - [set, appended, [append, numbers, 3]]
+    - [set, second, [at, numbers, 1]]
+    - [set, clone, [copy, numbers]]
+    - [append, clone, 9]
+    - [set, popped, [pop, clone]]
+    - [set, product, [mul, 4, 5]]
+    - [set, difference, [sub, product, 6]]
+  main: [list, actions]
+expected:
+  numbers: [1, 2, 3]
+  actions:
+    - [set, appended, [append, numbers, 3]]
+    - [set, second, [at, numbers, 1]]
+    - [set, clone, [copy, numbers]]
+    - [append, clone, 9]
+    - [set, popped, [pop, clone]]
+    - [set, product, [mul, 4, 5]]
+    - [set, difference, [sub, product, 6]]
+  main: [list, actions]
+  appended: [1, 2, 3]
+  second: 2
+  clone: [1, 2, 3]
+  popped: 9
+  product: 20
+  difference: 14
+  state:
+    result: null
+    frames: []
+    status: finished
