@@ -12,7 +12,12 @@ expected:
   main:
     - if
     - choose_then
-    - [if, choose_inner_then, [set, outcome, 11], [set, outcome, 12]]
+    - [if,
+        choose_inner_then,
+        
+        [set, outcome, 11],
+        [set, outcome, 12]
+      ]
     - [set, outcome, 13]
   outcome: 12
   state:

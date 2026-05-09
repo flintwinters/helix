@@ -11,17 +11,16 @@ internal_vm:
   delta: 8
   main: [set, total, [add, seed, delta]]
 step_vm:
-  seed: 3
-  delta: 4
+  seed2: 3
+  delta2: 4
   steps:
-    - [set, first, [add, seed, delta]]
-    - [set, second, [add, first, delta]]
+    - [set, first, [add, seed2, delta2]]
+    - [set, second, [add, first, delta2]]
   main: [list, steps]
 items:
   - [step, step_vm]
-  - [show, step_vm.state.status]
+  - [show, step_vm]
   - [step, step_vm]
-  - [show, step_vm.state.status]
   - [show, step_vm.second]
   - [add, left, right]
   - [set, total, [add, left, right]]
@@ -30,11 +29,4 @@ items:
   - [set, included_seen, helix_demo_include.inner.value]
   - [start, internal_vm]
   - [add, right, left]
-expression: [list, items]
-main: [eval, expression]
-
-
-
-
-
-
+main: [list, items]
