@@ -7,6 +7,8 @@ program:
     - [append, clone, 9]
     - [set, popped, [pop, clone]]
     - [set, product, [mul, 4, 5]]
+    - [set, quotient, [div, product, 6]]
+    - [set, remainder, [mod, product, 6]]
     - [set, difference, [sub, product, 6]]
   main: [list, actions]
 expected:
@@ -18,6 +20,8 @@ expected:
     - [append, clone, 9]
     - [set, popped, [pop, clone]]
     - [set, product, [mul, 4, 5]]
+    - [set, quotient, [div, product, 6]]
+    - [set, remainder, [mod, product, 6]]
     - [set, difference, [sub, product, 6]]
   main: [list, actions]
   appended: [1, 2, 3]
@@ -25,6 +29,8 @@ expected:
   clone: [1, 2, 3]
   popped: 9
   product: 20
+  quotient: 3
+  remainder: 2
   difference: 14
   state:
     result: null
