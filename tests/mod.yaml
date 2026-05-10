@@ -1,0 +1,13 @@
+program:
+  left: 20
+  right: 6
+  main: [set, remainder, [mod, left, right]]
+expected:
+  left: 20
+  right: 6
+  main: [set, remainder, [mod, left, right]]
+  remainder: 2
+  state:
+    result: 2
+    frames: []
+    status: finished
