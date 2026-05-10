@@ -1,0 +1,13 @@
+program:
+  numerator: 20
+  denominator: 6
+  main: [set, quotient, [div, numerator, denominator]]
+expected:
+  numerator: 20
+  denominator: 6
+  main: [set, quotient, [div, numerator, denominator]]
+  quotient: 3
+  state:
+    result: 3
+    frames: []
+    status: finished
