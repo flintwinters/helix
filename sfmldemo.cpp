@@ -87,7 +87,7 @@ struct AppState {
     sf::View view;
     sf::Vector2i selectedCell{4, 4};
     bool isPanning = false;
-    sf::Vector2i lastPanPosition;
+    sf::Vector2i lastPanPosition{0, 0};
 };
 
 void handleResize(const sf::Event::SizeEvent& sizeEvent, AppState& state) {
