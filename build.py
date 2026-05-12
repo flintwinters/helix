@@ -14,9 +14,9 @@ INCLUDE_DIRECTORIES = ["include", "src", "ryml/src", "ryml/ext/c4core/src"]
 INCLUDES = " ".join(f"-I{directory}" for directory in INCLUDE_DIRECTORIES)
 COMPILER = "g++"
 CPP_FLAGS = "-g -std=c++20"
-LINKER_FLAGS = "-L ryml/build -lryml"
+LINKER_FLAGS = "-L ryml/build -lryml -lsfml-graphics -lsfml-window -lsfml-system"
 EXECUTABLE = "build/helix"
-SOURCES = "src/helix.cpp src/builtins.cpp src/core.cpp src/utils.cpp src/ryml_interface.cpp"
+SOURCES = "src/helix.cpp src/builtins.cpp src/core.cpp src/utils.cpp src/ryml_interface.cpp src/sfmlwrapper.cpp"
 OBJECT_DIRECTORY = "build/obj"
 RACKET_SOURCES = ["racket/builtins.rkt", "racket/helix.rkt"]
 RACKET_ENTRYPOINT = ["racket", "racket/helix.rkt"]
