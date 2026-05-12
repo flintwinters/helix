@@ -20,83 +20,40 @@ static bool is_null_cell(ConstCellPtr cell) {
     return cell->type == Cell::Type::nil;
 }
 
-static CellPtr fail_vm(const shared_ptr<MapCell>& vm, const string& message) {
+static CellPtr fail_vm(const shared_ptr<VmCell>& vm, const string& message) {
     CellPtr error = make_error_cell(message);
     attach_terminal_state(vm, error);
     return error;
 }
 
-static CellPtr resolve_dotted_name_in_map(const string& name, const MapCell& map_cell) {
-    const MapCell* current_map = &map_cell;
-    size_t segment_start = 0;
+static CellPtr evaluate_cell(CellPtr node, const shared_ptr<VmCell>& root_cell);
 
-    while (segment_start < name.size()) {
-        size_t dot_index = name.find('.', segment_start);
-        string segment = name.substr(segment_start, dot_index - segment_start);
-        if (segment.empty()) {
-            return nullptr;
-        }
-
-        unordered_map<string, CellPtr>::const_iterator child_it = current_map->value.find(segment);
-        if (child_it == current_map->value.end()) {
-            return nullptr;
-        }
-
-        CellPtr current = child_it->second;
-        if (dot_index == string::npos) {
-            return current;
-        }
-
-        if (!current || current->type != Cell::Type::map) {
-            return nullptr;
-        }
-
-        current_map = &static_cast<const MapCell&>(*current);
-        segment_start = dot_index + 1;
+static shared_ptr<MapCell> make_resolution_details(
+    const string& kind,
+    const string& name,
+    const Cell* context,
+    CellPtr source = nullptr) {
+    unordered_map<string, CellPtr> fields;
+    fields["kind"] = make_shared<StrCell>(kind);
+    fields["name"] = make_shared<StrCell>(name);
+    fields["context_type"] = make_shared<StrCell>(cell_class_name(context));
+    if (source) {
+        fields["source"] = source;
     }
-
-    return nullptr;
+    return make_shared<MapCell>(move(fields));
 }
 
-static CellPtr resolve_name_in_map(const string& name, const MapCell& map_cell) {
-    unordered_map<string, CellPtr>::const_iterator exact_it = map_cell.value.find(name);
-    if (exact_it != map_cell.value.end()) {
-        return exact_it->second;
+static const Cell* lookup_context(ConstCellPtr node, const shared_ptr<VmCell>& root_cell) {
+    for (ConstCellPtr current = node; current; current = current->parent) {
+        if (current->type == Cell::Type::scope || current->type == Cell::Type::vm) {
+            return current.get();
+        }
     }
 
-    return resolve_dotted_name_in_map(name, map_cell);
+    return root_cell.get();
 }
 
-static CellPtr resolve_name_from_context(const string& name, ConstCellPtr context, const shared_ptr<MapCell>& root_cell) {
-    ConstCellPtr current = context;
-
-    while (current) {
-        while (current && current->type != Cell::Type::map) {
-            current = current->parent;
-        }
-
-        if (!current) {
-            break;
-        }
-
-        CellPtr resolved = resolve_name_in_map(name, static_cast<const MapCell&>(*current));
-        if (resolved) {
-            return resolved;
-        }
-
-        current = current->parent;
-    }
-
-    if (!root_cell) {
-        return nullptr;
-    }
-
-    return resolve_name_in_map(name, *root_cell);
-}
-
-static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell);
-
-static CellPtr resolve_cell(CellPtr node, const shared_ptr<MapCell>& root_cell) {
+static CellPtr resolve_cell(CellPtr node, const shared_ptr<VmCell>& root_cell) {
     if (!node) {
         return nullptr;
     }
@@ -106,7 +63,17 @@ static CellPtr resolve_cell(CellPtr node, const shared_ptr<MapCell>& root_cell) 
     }
 
     const auto& name = static_cast<const StrCell&>(*node).value;
-    CellPtr resolved = resolve_name_from_context(name, node, root_cell);
+    const Cell* context = lookup_context(node, root_cell);
+    CellPtr resolved = context ? context->lookup(name, root_cell) : nullptr;
+    if (resolved && resolved->type == Cell::Type::error_signal) {
+        ErrCell& error = static_cast<ErrCell&>(*resolved);
+        if (!error.value || error.value->type != Cell::Type::map) {
+            error.value = make_resolution_details("resolution_error", name, context, node);
+        } else {
+            static_pointer_cast<MapCell>(error.value)->set("source", node);
+        }
+        return resolved;
+    }
     if (resolved) {
         return resolved;
     }
@@ -114,7 +81,7 @@ static CellPtr resolve_cell(CellPtr node, const shared_ptr<MapCell>& root_cell) 
     return node;
 }
 
-static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& root_cell) {
+static CellPtr evaluate_form(const VecCell& form, const shared_ptr<VmCell>& root_cell) {
     if (form.value.empty()) {
         return make_error_cell("cannot evaluate an empty vector");
     }
@@ -124,14 +91,26 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<MapCell>& roo
         return actor;
     }
 
+    if (actor && actor.get() == form.value.front().get() && actor->type == Cell::Type::string) {
+        const string& actor_name = static_cast<const StrCell&>(*actor).value;
+        return make_error_cell(
+            "vector actor could not be resolved",
+            make_resolution_details("unresolved_actor", actor_name, root_cell.get(), form.value.front()));
+    }
+
     if (!actor || actor->type != Cell::Type::function) {
-        return make_error_cell("vector actor did not resolve to a builtin");
+        unordered_map<string, CellPtr> fields;
+        fields["kind"] = make_shared<StrCell>("invalid_actor");
+        fields["actor_type"] = make_shared<StrCell>(cell_class_name(actor));
+        fields["source"] = form.value.front();
+        shared_ptr<MapCell> details = make_shared<MapCell>(move(fields));
+        return make_error_cell("vector actor did not resolve to a builtin", details);
     }
 
     return actor->call(form.value, root_cell);
 }
 
-static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell) {
+static CellPtr evaluate_cell(CellPtr node, const shared_ptr<VmCell>& root_cell) {
     if (!node) {
         return nullptr;
     }
@@ -154,28 +133,28 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<MapCell>& root_cell)
     return node;
 }
 
-static shared_ptr<VecCell> frame_values(const shared_ptr<MapCell>& frame) {
+static shared_ptr<VecCell> frame_values(const shared_ptr<ScopeCell>& frame) {
     return map_field_vec(frame, "values");
 }
 
-static const IntCell* frame_index(const shared_ptr<MapCell>& frame) {
+static const IntCell* frame_index(const shared_ptr<ScopeCell>& frame) {
     return map_field_int(frame, "index");
 }
 
-static void store_list_resume_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame, size_t next_index) {
+static void store_list_resume_frame(const shared_ptr<VmCell>& vm, const shared_ptr<ScopeCell>& frame, size_t next_index) {
     frame->set("index", make_shared<IntCell>(static_cast<int64_t>(next_index)));
     ensure_vm_state(vm)->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
     set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
 }
 
-static void retire_unyielded_frame(const shared_ptr<MapCell>& frame) {
+static void retire_unyielded_frame(const shared_ptr<ScopeCell>& frame) {
     frame->clear_descendant_parent_links();
     frame->value.clear();
     frame->parent = nullptr;
 }
 
-static CellPtr advance_list_frame(const shared_ptr<MapCell>& vm, const shared_ptr<MapCell>& frame) {
+static CellPtr advance_list_frame(const shared_ptr<VmCell>& vm, const shared_ptr<ScopeCell>& frame) {
     shared_ptr<VecCell> sequence = frame_values(frame);
     if (!sequence) {
         return fail_vm(vm, "list frame is missing a vector sequence");
@@ -215,7 +194,7 @@ static CellPtr advance_list_frame(const shared_ptr<MapCell>& vm, const shared_pt
     return make_shared<NilCell>();
 }
 
-static CellPtr start_vm_main(const shared_ptr<MapCell>& vm) {
+static CellPtr start_vm_main(const shared_ptr<VmCell>& vm) {
     unordered_map<string, CellPtr>::const_iterator main_it = vm->value.find("main");
     if (main_it == vm->value.end()) {
         return fail_vm(vm, "program is missing a main entrypoint");
@@ -233,27 +212,27 @@ static CellPtr start_vm_main(const shared_ptr<MapCell>& vm) {
     return result;
 }
 
-static shared_ptr<MapCell> current_frame(const shared_ptr<MapCell>& vm) {
+static shared_ptr<ScopeCell> current_frame(const shared_ptr<VmCell>& vm) {
     shared_ptr<VecCell> frames = vm_frames(vm);
     if (frames->value.empty()) {
         return nullptr;
     }
 
     const CellPtr frame_cell = frames->value.front();
-    if (!frame_cell || frame_cell->type != Cell::Type::map) {
+    if (!frame_cell || frame_cell->type != Cell::Type::scope) {
         return nullptr;
     }
 
-    return static_pointer_cast<MapCell>(frame_cell);
+    return static_pointer_cast<ScopeCell>(frame_cell);
 }
 
-static const string* current_frame_name(const shared_ptr<MapCell>& frame) {
+static const string* current_frame_name(const shared_ptr<ScopeCell>& frame) {
     const StrCell* name_cell = map_field_string(frame, "name");
     return name_cell ? &name_cell->value : nullptr;
 }
 
-static CellPtr resume_vm_frame(const shared_ptr<MapCell>& vm) {
-    shared_ptr<MapCell> frame = current_frame(vm);
+static CellPtr resume_vm_frame(const shared_ptr<VmCell>& vm) {
+    shared_ptr<ScopeCell> frame = current_frame(vm);
     if (!frame) {
         return nullptr;
     }
@@ -270,7 +249,7 @@ static CellPtr resume_vm_frame(const shared_ptr<MapCell>& vm) {
     return fail_vm(vm, "unknown VM frame type");
 }
 
-static CellPtr advance_vm(const shared_ptr<MapCell>& vm) {
+static CellPtr advance_vm(const shared_ptr<VmCell>& vm) {
     ensure_vm_state(vm);
     if (vm_is_terminal(vm)) {
         return vm_result(vm);
@@ -297,7 +276,7 @@ static CellPtr advance_vm(const shared_ptr<MapCell>& vm) {
     return result;
 }
 
-static CellPtr run_vm(const shared_ptr<MapCell>& vm) {
+static CellPtr run_vm(const shared_ptr<VmCell>& vm) {
     while (!vm_is_terminal(vm)) {
         advance_vm(vm);
     }
@@ -305,7 +284,7 @@ static CellPtr run_vm(const shared_ptr<MapCell>& vm) {
     return vm_result(vm);
 }
 
-static void run_main(shared_ptr<MapCell> root_cell) {
+static void run_main(shared_ptr<VmCell> root_cell) {
     run_vm(root_cell);
 }
 
@@ -317,8 +296,8 @@ int main(int argc, char* argv[]) {
 
     try {
         initialize_builtins(evaluate_cell, resolve_cell, advance_vm, render_show_output, make_error_cell);
-        shared_ptr<MapCell> zygote = make_zygote();
-        shared_ptr<MapCell> root_cell = load_root_cell_from_yaml_file(argv[1]);
+        shared_ptr<ScopeCell> zygote = make_zygote();
+        shared_ptr<VmCell> root_cell = load_root_cell_from_yaml_file(argv[1]);
         if (!root_cell->parent) {
             root_cell->parent = zygote;
         }

@@ -71,7 +71,17 @@ CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
     }
 
     if (node.is_map()) {
-        shared_ptr<MapCell> map_cell = make_shared<MapCell>();
+        bool has_main = false;
+        for (const auto child : node.children()) {
+            if (ryml_text_to_string(child.key()) == "main") {
+                has_main = true;
+                break;
+            }
+        }
+
+        shared_ptr<MapCell> map_cell = has_main
+            ? static_pointer_cast<MapCell>(make_shared<VmCell>())
+            : static_pointer_cast<MapCell>(make_shared<ScopeCell>());
         for (const auto child : node.children()) {
             CellPtr child_cell = cell_from_ryml_node(child);
             attach_parent_if_missing(child_cell, map_cell);
@@ -98,7 +108,7 @@ CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
     return make_shared<StrCell>();
 }
 
-static void expand_includes_in_root_map(const shared_ptr<MapCell>& root_cell, const filesystem::path& source_path) {
+static void expand_includes_in_root_map(const shared_ptr<VmCell>& root_cell, const filesystem::path& source_path) {
     if (!root_cell) {
         return;
     }
@@ -121,23 +131,37 @@ static void expand_includes_in_root_map(const shared_ptr<MapCell>& root_cell, co
 
         const string& include_name = static_cast<const StrCell&>(*include_entry).value;
         const filesystem::path include_path = resolve_include_path(source_path, include_name);
-        const shared_ptr<MapCell> included_root = load_root_cell_from_yaml_file(include_path.c_str());
+        const shared_ptr<VmCell> included_root = load_root_cell_from_yaml_file(include_path.c_str());
         root_cell->set(include_binding_name(include_path), included_root);
     }
 }
 
-shared_ptr<MapCell> load_root_cell_from_yaml_file(const char* path) {
+shared_ptr<VmCell> load_root_cell_from_yaml_file(const char* path) {
     const string file_text = read_yaml_file_text(path);
     const c4::csubstr yaml_text(file_text.data(), file_text.size());
     c4::yml::Tree tree = c4::yml::parse_in_arena(path, yaml_text);
     CellPtr root_cell = cell_from_ryml_node(tree.rootref());
-    if (!root_cell || root_cell->type != Cell::Type::map) {
-        throw runtime_error("top-level YAML document must be a mapping");
+    shared_ptr<VmCell> root_vm = expect_vm_cell(root_cell);
+    if (!root_vm) {
+        shared_ptr<MapCell> root_map = expect_map_cell(root_cell);
+        if (!root_map) {
+            throw runtime_error("top-level YAML document must be a mapping");
+        }
+
+        root_vm = make_shared<VmCell>();
+        for (auto& [key, value] : root_map->value) {
+            if (value) {
+                value->parent = nullptr;
+            }
+            root_vm->set(key, value);
+        }
     }
 
-    shared_ptr<MapCell> root_map = static_pointer_cast<MapCell>(move(root_cell));
-    expand_includes_in_root_map(root_map, filesystem::path(path));
-    return root_map;
+    if (!root_vm) {
+        throw runtime_error("top-level YAML document must be a mapping");
+    }
+    expand_includes_in_root_map(root_vm, filesystem::path(path));
+    return root_vm;
 }
 
 void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
@@ -148,6 +172,10 @@ void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
 
     switch (cell->type) {
     case Cell::Type::map: {
+        [[fallthrough]];
+    }
+    case Cell::Type::scope:
+    case Cell::Type::vm: {
         node |= c4::yml::MAP;
         const auto& map_cell = static_cast<const MapCell&>(*cell);
         for (const auto& [key, value] : map_cell.value) {
