@@ -82,6 +82,105 @@ sf::VertexArray makeTileOutline(int x, int y) {
 
     return outline;
 }
+
+struct AppState {
+    sf::View view;
+    sf::Vector2i selectedCell{4, 4};
+    bool isPanning = false;
+    sf::Vector2i lastPanPosition;
+};
+
+void handleResize(const sf::Event::SizeEvent& sizeEvent, AppState& state) {
+    state.view.setSize(
+        static_cast<float>(sizeEvent.width),
+        static_cast<float>(sizeEvent.height)
+    );
+}
+
+void handleMousePress(
+    const sf::Event::MouseButtonEvent& mouseEvent,
+    sf::RenderWindow& window,
+    AppState& state
+) {
+    if (mouseEvent.button == sf::Mouse::Right) {
+        state.isPanning = true;
+        state.lastPanPosition = {mouseEvent.x, mouseEvent.y};
+        return;
+    }
+
+    if (mouseEvent.button != sf::Mouse::Left) {
+        return;
+    }
+
+    const sf::Vector2f worldPosition = window.mapPixelToCoords(
+        {mouseEvent.x, mouseEvent.y},
+        state.view
+    );
+
+    if (const std::optional<sf::Vector2i> hitCell = screenToCell(worldPosition)) {
+        state.selectedCell = *hitCell;
+    }
+}
+
+void handleMouseRelease(const sf::Event::MouseButtonEvent& mouseEvent, AppState& state) {
+    if (mouseEvent.button == sf::Mouse::Right) {
+        state.isPanning = false;
+    }
+}
+
+void handleMouseMove(
+    const sf::Event::MouseMoveEvent& moveEvent,
+    sf::RenderWindow& window,
+    AppState& state
+) {
+    if (!state.isPanning) {
+        return;
+    }
+
+    const sf::Vector2i currentPosition(moveEvent.x, moveEvent.y);
+    const sf::Vector2f previousWorld = window.mapPixelToCoords(
+        state.lastPanPosition,
+        state.view
+    );
+    const sf::Vector2f currentWorld = window.mapPixelToCoords(currentPosition, state.view);
+
+    state.view.move(previousWorld - currentWorld);
+    state.lastPanPosition = currentPosition;
+}
+
+void handleEvent(sf::RenderWindow& window, const sf::Event& event, AppState& state) {
+    switch (event.type) {
+    case sf::Event::Closed:
+        window.close();
+        break;
+    case sf::Event::Resized:
+        handleResize(event.size, state);
+        break;
+    case sf::Event::MouseButtonPressed:
+        handleMousePress(event.mouseButton, window, state);
+        break;
+    case sf::Event::MouseButtonReleased:
+        handleMouseRelease(event.mouseButton, state);
+        break;
+    case sf::Event::MouseMoved:
+        handleMouseMove(event.mouseMove, window, state);
+        break;
+    default:
+        break;
+    }
+}
+
+void drawFrame(
+    sf::RenderWindow& window,
+    const sf::VertexArray& grid,
+    const AppState& state
+) {
+    window.clear(sf::Color(20, 24, 30));
+    window.setView(state.view);
+    window.draw(grid);
+    window.draw(makeTileOutline(state.selectedCell.x, state.selectedCell.y));
+    window.display();
+}
 }
 
 int main() {
@@ -93,62 +192,16 @@ int main() {
     window.setFramerateLimit(60);
 
     const sf::VertexArray grid = makeIsoGrid();
-    sf::View view = window.getDefaultView();
-    sf::Vector2i selectedCell(4, 4);
-    bool isPanning = false;
-    sf::Vector2i lastPanPosition;
+    AppState state{window.getDefaultView()};
 
     while (window.isOpen()) {
         sf::Event event{};
 
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                window.close();
-            }
-
-            if (event.type == sf::Event::Resized) {
-                view.setSize(
-                    static_cast<float>(event.size.width),
-                    static_cast<float>(event.size.height)
-                );
-            }
-
-            if (event.type == sf::Event::MouseButtonPressed) {
-                if (event.mouseButton.button == sf::Mouse::Right) {
-                    isPanning = true;
-                    lastPanPosition = {event.mouseButton.x, event.mouseButton.y};
-                } else if (event.mouseButton.button == sf::Mouse::Left) {
-                    const sf::Vector2f worldPosition = window.mapPixelToCoords(
-                        {event.mouseButton.x, event.mouseButton.y},
-                        view
-                    );
-
-                    if (const std::optional<sf::Vector2i> hitCell = screenToCell(worldPosition)) {
-                        selectedCell = *hitCell;
-                    }
-                }
-            }
-
-            if (event.type == sf::Event::MouseButtonReleased &&
-                event.mouseButton.button == sf::Mouse::Right) {
-                isPanning = false;
-            }
-
-            if (event.type == sf::Event::MouseMoved && isPanning) {
-                const sf::Vector2i currentPosition(event.mouseMove.x, event.mouseMove.y);
-                const sf::Vector2f previousWorld = window.mapPixelToCoords(lastPanPosition, view);
-                const sf::Vector2f currentWorld = window.mapPixelToCoords(currentPosition, view);
-
-                view.move(previousWorld - currentWorld);
-                lastPanPosition = currentPosition;
-            }
+            handleEvent(window, event, state);
         }
 
-        window.clear(sf::Color(20, 24, 30));
-        window.setView(view);
-        window.draw(grid);
-        window.draw(makeTileOutline(selectedCell.x, selectedCell.y));
-        window.display();
+        drawFrame(window, grid, state);
     }
 
     return 0;
