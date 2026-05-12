@@ -40,6 +40,16 @@ std::optional<sf::Vector2i> screenToCell(const sf::Vector2f& position) {
     return sf::Vector2i(cellX, cellY);
 }
 
+void appendLine(
+    sf::VertexArray& vertices,
+    const sf::Vector2f& start,
+    const sf::Vector2f& end,
+    const sf::Color& color
+) {
+    vertices.append(sf::Vertex(start, color));
+    vertices.append(sf::Vertex(end, color));
+}
+
 sf::VertexArray makeIsoGrid() {
     sf::VertexArray lines(sf::Lines);
 
@@ -49,16 +59,14 @@ sf::VertexArray makeIsoGrid() {
         const sf::Vector2f a = isoToScreen(0, y);
         const sf::Vector2f b = isoToScreen(GridWidth, y);
 
-        lines.append(sf::Vertex(a, gridColor));
-        lines.append(sf::Vertex(b, gridColor));
+        appendLine(lines, a, b, gridColor);
     }
 
     for (int x = 0; x <= GridWidth; ++x) {
         const sf::Vector2f a = isoToScreen(x, 0);
         const sf::Vector2f b = isoToScreen(x, GridHeight);
 
-        lines.append(sf::Vertex(a, gridColor));
-        lines.append(sf::Vertex(b, gridColor));
+        appendLine(lines, a, b, gridColor);
     }
 
     return lines;
@@ -90,6 +98,14 @@ struct AppState {
     sf::Vector2i lastPanPosition{0, 0};
 };
 
+sf::Vector2f mapPixelToWorld(
+    sf::RenderWindow& window,
+    const sf::Vector2i& pixelPosition,
+    const AppState& state
+) {
+    return window.mapPixelToCoords(pixelPosition, state.view);
+}
+
 void handleResize(const sf::Event::SizeEvent& sizeEvent, AppState& state) {
     state.view.setSize(
         static_cast<float>(sizeEvent.width),
@@ -112,9 +128,10 @@ void handleMousePress(
         return;
     }
 
-    const sf::Vector2f worldPosition = window.mapPixelToCoords(
+    const sf::Vector2f worldPosition = mapPixelToWorld(
+        window,
         {mouseEvent.x, mouseEvent.y},
-        state.view
+        state
     );
 
     if (const std::optional<sf::Vector2i> hitCell = screenToCell(worldPosition)) {
@@ -138,11 +155,12 @@ void handleMouseMove(
     }
 
     const sf::Vector2i currentPosition(moveEvent.x, moveEvent.y);
-    const sf::Vector2f previousWorld = window.mapPixelToCoords(
+    const sf::Vector2f previousWorld = mapPixelToWorld(
+        window,
         state.lastPanPosition,
-        state.view
+        state
     );
-    const sf::Vector2f currentWorld = window.mapPixelToCoords(currentPosition, state.view);
+    const sf::Vector2f currentWorld = mapPixelToWorld(window, currentPosition, state);
 
     state.view.move(previousWorld - currentWorld);
     state.lastPanPosition = currentPosition;
