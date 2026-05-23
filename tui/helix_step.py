@@ -468,6 +468,14 @@ def step_and_commit(binary_path: Path, debug_target_path: Path) -> None:
     commit_debug_snapshot(debug_target_path.parent, "VM state")
 
 
+def preserve_snapshot_ref(repo, commit_id) -> None:
+    repo.create_reference(
+        f"refs/helix-debug/snapshots/{str(commit_id)[:12]}",
+        commit_id,
+        force=True,
+    )
+
+
 def checkout_previous_snapshot(debug_target_path: Path) -> None:
     pygit2 = load_pygit2()
     repo = open_debug_repo(debug_target_path.parent)
@@ -476,8 +484,9 @@ def checkout_previous_snapshot(debug_target_path: Path) -> None:
         raise RuntimeError("debug repository has no previous snapshot")
 
     parent_commit = head_commit.parents[0]
+    preserve_snapshot_ref(repo, head_commit.id)
     repo.checkout_tree(parent_commit)
-    repo.set_head(parent_commit.id)
+    repo.set_head_detached(parent_commit.id)
 
 
 def main() -> int:
