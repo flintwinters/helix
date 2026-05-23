@@ -10,7 +10,6 @@ static ResolveCellFn resolve_cell_fn = nullptr;
 static AdvanceVmFn advance_vm_fn = nullptr;
 static RenderShowFn render_show_fn = nullptr;
 static MakeErrorFn make_error_fn = nullptr;
-void install_sfml_namespace(const shared_ptr<ScopeCell>& zygote);
 using VmCallbackFn = CellPtr(*)(CellPtr, const shared_ptr<VmCell>&);
 
 static CellPtr make_error(const string& message, CellPtr value = nullptr) {
@@ -619,6 +618,5 @@ shared_ptr<ScopeCell> make_zygote() {
     install_builtin(zygote, "while", builtin_while);
     install_builtin(zygote, "start", builtin_start);
     install_builtin(zygote, "step", builtin_step);
-    install_sfml_namespace(zygote);
     return zygote;
 }
