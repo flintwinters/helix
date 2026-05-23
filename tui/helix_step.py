@@ -303,51 +303,47 @@ def debug_target_path_for(target_path: Path) -> Path:
     return debug_directory_for(target_path) / target_path.name
 
 
-def git_completed(debug_directory: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args],
-        cwd=debug_directory,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+def load_pygit2():
+    try:
+        import pygit2
+    except ImportError as error:
+        raise RuntimeError("pygit2 is required for debug snapshot storage") from error
+
+    return pygit2
 
 
-def run_git(debug_directory: Path, *args: str) -> None:
-    completed = git_completed(debug_directory, *args)
-    if completed.returncode != 0:
-        stderr = completed.stderr.strip()
-        raise RuntimeError(stderr or f"git {' '.join(args)} failed")
+def open_debug_repo(debug_directory: Path):
+    pygit2 = load_pygit2()
+    return pygit2.Repository(str(debug_directory / ".git"))
 
 
 def init_debug_repo(debug_directory: Path) -> None:
-    run_git(debug_directory.parent, "init", debug_directory.name)
+    pygit2 = load_pygit2()
+    pygit2.init_repository(str(debug_directory), initial_head="main")
 
 
 def debug_repo_exists(debug_directory: Path) -> bool:
-    completed = git_completed(debug_directory, "rev-parse", "--show-toplevel")
-    if completed.returncode != 0:
+    try:
+        repo = open_debug_repo(debug_directory)
+    except Exception:
         return False
 
-    return Path(completed.stdout.strip()).resolve() == debug_directory.resolve()
+    return Path(repo.workdir).resolve() == debug_directory.resolve()
 
 
 def debug_repo_has_commits(debug_directory: Path) -> bool:
-    return git_completed(debug_directory, "rev-parse", "--verify", "HEAD").returncode == 0
+    return not open_debug_repo(debug_directory).head_is_unborn
 
 
 def commit_debug_snapshot(debug_directory: Path, message: str) -> None:
-    run_git(debug_directory, "add", ".")
-    run_git(
-        debug_directory,
-        "-c",
-        "user.name=Helix Debugger",
-        "-c",
-        "user.email=helix-debugger@example.invalid",
-        "commit",
-        "-m",
-        message,
-    )
+    pygit2 = load_pygit2()
+    repo = open_debug_repo(debug_directory)
+    signature = pygit2.Signature("Helix Debugger", "helix-debugger@example.invalid")
+    repo.index.add_all()
+    repo.index.write()
+    tree = repo.index.write_tree()
+    parents = [] if repo.head_is_unborn else [repo.head.target]
+    repo.create_commit("HEAD", signature, signature, message, tree, parents)
 
 
 def ensure_debug_repo(target_path: Path) -> Path:
@@ -425,7 +421,13 @@ def step_and_commit(binary_path: Path, debug_target_path: Path) -> None:
 
 
 def reset_previous_snapshot(debug_target_path: Path) -> None:
-    run_git(debug_target_path.parent, "reset", "--hard", "HEAD~1")
+    pygit2 = load_pygit2()
+    repo = open_debug_repo(debug_target_path.parent)
+    head_commit = repo[repo.head.target]
+    if not head_commit.parents:
+        raise RuntimeError("debug repository has no previous snapshot")
+
+    repo.reset(head_commit.parents[0].id, pygit2.GIT_RESET_HARD)
 
 
 def main() -> int:
