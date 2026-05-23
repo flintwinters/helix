@@ -486,7 +486,7 @@ def checkout_previous_snapshot(debug_target_path: Path) -> None:
     parent_commit = head_commit.parents[0]
     preserve_snapshot_ref(repo, head_commit.id)
     repo.checkout_tree(parent_commit)
-    repo.set_head_detached(parent_commit.id)
+    repo.set_head(parent_commit.id)
 
 
 def main() -> int:
