@@ -1,11 +1,13 @@
 #include <ryml_interface.hpp>
 
 #include <charconv>
+#include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <c4/yml/emit.hpp>
 #include <c4/yml/parse.hpp>
@@ -63,6 +65,44 @@ static filesystem::path resolve_include_path(const filesystem::path& source_path
 
 static string include_binding_name(const filesystem::path& include_path) {
     return include_path.stem().string();
+}
+
+static bool is_native_include_path(const filesystem::path& include_path) {
+    return include_path.extension() == ".so";
+}
+
+using NativeModuleInstallFn = CellPtr (*)(const shared_ptr<ScopeCell>&);
+
+static vector<void*> native_library_handles {};
+
+static shared_ptr<ScopeCell> load_native_module_from_library(const filesystem::path& include_path) {
+    void* handle = dlopen(include_path.c_str(), RTLD_NOW | RTLD_LOCAL);
+    if (!handle) {
+        throw runtime_error(string("failed to load native include: ") + dlerror());
+    }
+
+    dlerror();
+    void* symbol = dlsym(handle, "helix_install_module");
+    const char* symbol_error = dlerror();
+    if (symbol_error) {
+        dlclose(handle);
+        throw runtime_error(string("native include is missing helix_install_module: ") + symbol_error);
+    }
+
+    auto install_module = reinterpret_cast<NativeModuleInstallFn>(symbol);
+    shared_ptr<ScopeCell> module = make_shared<ScopeCell>();
+    CellPtr install_result = install_module(module);
+    if (is_signal_cell(install_result)) {
+        dlclose(handle);
+        if (install_result->type == Cell::Type::error_signal) {
+            const ErrCell& error = static_cast<const ErrCell&>(*install_result);
+            throw runtime_error(error.message);
+        }
+        throw runtime_error("native include installation returned a signal");
+    }
+
+    native_library_handles.push_back(handle);
+    return module;
 }
 
 CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
@@ -131,8 +171,12 @@ static void expand_includes_in_root_map(const shared_ptr<VmCell>& root_cell, con
 
         const string& include_name = static_cast<const StrCell&>(*include_entry).value;
         const filesystem::path include_path = resolve_include_path(source_path, include_name);
-        const shared_ptr<VmCell> included_root = load_root_cell_from_yaml_file(include_path.c_str());
-        root_cell->set(include_binding_name(include_path), included_root);
+        if (is_native_include_path(include_path)) {
+            root_cell->set(include_binding_name(include_path), load_native_module_from_library(include_path));
+        } else {
+            const shared_ptr<VmCell> included_root = load_root_cell_from_yaml_file(include_path.c_str());
+            root_cell->set(include_binding_name(include_path), included_root);
+        }
     }
 }
 
