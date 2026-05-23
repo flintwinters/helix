@@ -112,7 +112,10 @@ def compile_main():
             return False
 
     if os.path.exists(EXECUTABLE):
-        should_link = any(os.path.getmtime(object_path) > os.path.getmtime(EXECUTABLE) for object_path in object_files)
+        executable_mtime = os.path.getmtime(EXECUTABLE)
+        should_link = os.path.getmtime(__file__) > executable_mtime or any(
+            os.path.getmtime(object_path) > executable_mtime for object_path in object_files
+        )
     else:
         should_link = True
 
