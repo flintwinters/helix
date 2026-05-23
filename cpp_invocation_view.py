@@ -394,8 +394,11 @@ HTML = """
     const gridX = 260;
     const gridY = 92;
     const routeMargin = 26;
+    const portPadding = 8;
+    const laneSpacing = 12;
     const state = { scale: 0.85, tx: 30, ty: 30 };
     const nodeById = new Map(graph.nodes.map(node => [node.id, node]));
+    const routesByEdgeKey = new Map();
 
     function transformPoint(clientX, clientY) {
       const rect = svg.getBoundingClientRect();
@@ -442,7 +445,7 @@ HTML = """
       return false;
     }
 
-    function chooseHorizontalLane(source, target, baseY) {
+    function chooseHorizontalLane(source, target, startX, endX, baseY) {
       const candidates = [baseY];
       const lower = Math.max(source.y, target.y) + nodeHeight + routeMargin;
       const upper = Math.min(source.y, target.y) - routeMargin;
@@ -452,8 +455,6 @@ HTML = """
         candidates.push(upper - step * gridY);
       }
 
-      const startX = source.x + nodeWidth;
-      const endX = target.x;
       for (const candidate of candidates) {
         if (!horizontalSegmentHitsNode(candidate, startX, endX, source.id, target.id)) {
           return candidate;
@@ -462,26 +463,126 @@ HTML = """
       return baseY;
     }
 
-    function edgePath(edge) {
-      const source = nodeById.get(edge.source);
-      const target = nodeById.get(edge.target);
-      const sx = source.x + nodeWidth;
-      const sy = source.y + nodeHeight / 2;
-      const tx = target.x;
-      const ty = target.y + nodeHeight / 2;
-      const goingRight = tx >= sx + gridX / 2;
+    function portOffset(index, total) {
+      if (total <= 1) {
+        return nodeHeight / 2;
+      }
+      const usable = nodeHeight - portPadding * 2;
+      return portPadding + usable * index / (total - 1);
+    }
 
-      if (goingRight && !horizontalSegmentHitsNode(sy, sx, tx, source.id, target.id)) {
-        if (Math.abs(sy - ty) < 1) {
-          return `M ${sx} ${sy} L ${tx} ${ty}`;
+    function edgeKey(edge) {
+      return `${edge.source}->${edge.target}`;
+    }
+
+    function buildRoutes() {
+      routesByEdgeKey.clear();
+      const outgoing = new Map();
+      const incoming = new Map();
+
+      for (const edge of graph.edges) {
+        if (!outgoing.has(edge.source)) {
+          outgoing.set(edge.source, []);
         }
-        const elbowX = Math.round((sx + tx) / (2 * gridX)) * gridX;
-        return `M ${sx} ${sy} L ${elbowX} ${sy} L ${elbowX} ${ty} L ${tx} ${ty}`;
+        if (!incoming.has(edge.target)) {
+          incoming.set(edge.target, []);
+        }
+        outgoing.get(edge.source).push(edge);
+        incoming.get(edge.target).push(edge);
       }
 
-      const laneY = chooseHorizontalLane(source, target, (sy + ty) / 2);
-      const sourceStub = sx + routeMargin;
-      const targetStub = tx - routeMargin;
+      for (const edges of outgoing.values()) {
+        edges.sort((left, right) => {
+          const leftTarget = nodeById.get(left.target);
+          const rightTarget = nodeById.get(right.target);
+          return leftTarget.y - rightTarget.y || leftTarget.x - rightTarget.x;
+        });
+      }
+
+      for (const edges of incoming.values()) {
+        edges.sort((left, right) => {
+          const leftSource = nodeById.get(left.source);
+          const rightSource = nodeById.get(right.source);
+          return leftSource.y - rightSource.y || leftSource.x - rightSource.x;
+        });
+      }
+
+      const laneUse = new Map();
+
+      for (const edge of graph.edges) {
+        const key = edgeKey(edge);
+        const source = nodeById.get(edge.source);
+        const target = nodeById.get(edge.target);
+        const sourceEdges = outgoing.get(edge.source) || [edge];
+        const targetEdges = incoming.get(edge.target) || [edge];
+        const sourceIndex = sourceEdges.findIndex(candidate => candidate === edge);
+        const targetIndex = targetEdges.findIndex(candidate => candidate === edge);
+        const sy = source.y + portOffset(sourceIndex, sourceEdges.length);
+        const ty = target.y + portOffset(targetIndex, targetEdges.length);
+        const sx = source.x + nodeWidth;
+        const tx = target.x;
+        const sourceStub = sx + routeMargin + sourceIndex * 4;
+        const targetStub = tx - routeMargin - targetIndex * 4;
+
+        let laneY = sy;
+        let elbowX = Math.round((sx + tx) / (2 * gridX)) * gridX;
+        let direct = false;
+        const goingRight = tx >= sx + gridX / 2;
+
+        if (goingRight && !horizontalSegmentHitsNode(sy, sx, tx, source.id, target.id)) {
+          direct = Math.abs(sy - ty) < 1;
+        } else {
+          const baseY = Math.round((sy + ty) / (2 * laneSpacing)) * laneSpacing;
+          laneY = chooseHorizontalLane(source, target, sourceStub, targetStub, baseY);
+          const corridor = `${Math.min(sourceStub, targetStub)}:${Math.max(sourceStub, targetStub)}:${Math.round(laneY / laneSpacing)}`;
+          const laneIndex = laneUse.get(corridor) || 0;
+          laneUse.set(corridor, laneIndex + 1);
+          const direction = laneIndex % 2 === 0 ? 1 : -1;
+          const magnitude = Math.floor((laneIndex + 1) / 2) * laneSpacing;
+          laneY += direction * magnitude;
+        }
+
+        routesByEdgeKey.set(key, {
+          sx,
+          sy,
+          tx,
+          ty,
+          sourceStub,
+          targetStub,
+          laneY,
+          elbowX,
+          direct
+        });
+      }
+    }
+
+    function edgePath(edge) {
+      const route = routesByEdgeKey.get(edgeKey(edge));
+      if (!route) {
+        return "";
+      }
+      const { sx, sy, tx, ty, sourceStub, targetStub, laneY, elbowX, direct } = route;
+      if (direct) {
+        return `M ${sx} ${sy} L ${tx} ${ty}`;
+      }
+      if (Math.abs(laneY - sy) < 1 && Math.abs(laneY - ty) < 1) {
+        return `M ${sx} ${sy} L ${tx} ${ty}`;
+      }
+      if (Math.abs(sourceStub - targetStub) < gridX / 3) {
+        return [
+          `M ${sx} ${sy}`,
+          `L ${sourceStub} ${sy}`,
+          `L ${sourceStub} ${laneY}`,
+          `L ${tx} ${laneY}`,
+          `L ${tx} ${ty}`
+        ].join(" ");
+      }
+      if (Math.abs(sy - laneY) < 1 && Math.abs(ty - laneY) >= 1) {
+        return `M ${sx} ${sy} L ${elbowX} ${sy} L ${elbowX} ${ty} L ${tx} ${ty}`;
+      }
+      if (Math.abs(ty - laneY) < 1 && Math.abs(sy - laneY) >= 1) {
+        return `M ${sx} ${sy} L ${sourceStub} ${sy} L ${sourceStub} ${ty} L ${tx} ${ty}`;
+      }
       return [
         `M ${sx} ${sy}`,
         `L ${sourceStub} ${sy}`,
@@ -498,12 +599,14 @@ HTML = """
     }
 
     function updateEdges() {
+      buildRoutes();
       for (const path of viewport.querySelectorAll(".edge")) {
         path.setAttribute("d", edgePath(path.__edge));
       }
     }
 
     function render() {
+      buildRoutes();
       for (const edge of graph.edges) {
         const path = makeSvg("path", { class: "edge", d: edgePath(edge) });
         path.__edge = edge;
