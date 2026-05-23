@@ -490,6 +490,30 @@ HTML = """
       return index;
     }
 
+    function intervalsOverlap(left, right, existing) {
+      const overlapPadding = 18;
+      return Math.max(left, existing.left) < Math.min(right, existing.right) + overlapPadding;
+    }
+
+    function reserveHorizontalSegment(trackUse, y, x1, x2) {
+      const rowKey = Math.round(y / laneSpacing);
+      const left = Math.min(x1, x2);
+      const right = Math.max(x1, x2);
+      const lanes = trackUse.get(rowKey) || [];
+
+      for (let laneIndex = 0; laneIndex < lanes.length; laneIndex += 1) {
+        if (lanes[laneIndex].every(existing => !intervalsOverlap(left, right, existing))) {
+          lanes[laneIndex].push({ left, right });
+          trackUse.set(rowKey, lanes);
+          return y + distributeOffset(laneIndex, corridorSpacing);
+        }
+      }
+
+      lanes.push([{ left, right }]);
+      trackUse.set(rowKey, lanes);
+      return y + distributeOffset(lanes.length - 1, corridorSpacing);
+    }
+
     function buildRoutes() {
       routesByEdgeKey.clear();
       const outgoing = new Map();
@@ -547,14 +571,13 @@ HTML = """
 
         if (goingRight && !horizontalSegmentHitsNode(sy, sx, tx, source.id, target.id)) {
           if (Math.abs(sy - ty) < 1) {
-            const rowKey = `${Math.round(sy / laneSpacing)}:${Math.round(Math.min(sx, tx) / corridorSpacing)}:${Math.round(Math.max(sx, tx) / corridorSpacing)}`;
-            const rowIndex = reserveTrack(horizontalTrackUse, rowKey);
-            laneY = sy + distributeOffset(rowIndex, corridorSpacing);
-            direct = rowIndex === 0;
+            laneY = reserveHorizontalSegment(horizontalTrackUse, sy, sx, tx);
+            direct = Math.abs(laneY - sy) < 1;
           } else {
             const elbowKey = `${Math.round(elbowX / corridorSpacing)}:${Math.round(Math.min(sy, ty) / laneSpacing)}:${Math.round(Math.max(sy, ty) / laneSpacing)}`;
             const elbowIndex = reserveTrack(verticalTrackUse, elbowKey);
             elbowX += distributeOffset(elbowIndex, corridorSpacing);
+            laneY = reserveHorizontalSegment(horizontalTrackUse, sy, sx, tx);
           }
         } else {
           const baseY = Math.round((sy + ty) / (2 * laneSpacing)) * laneSpacing;
@@ -568,17 +591,9 @@ HTML = """
           const targetColumnIndex = reserveTrack(verticalTrackUse, targetColumnKey);
           const targetColumn = targetStub + distributeOffset(targetColumnIndex, corridorSpacing);
 
-          const leftSegmentKey = `${Math.round(sy / laneSpacing)}:${Math.round(Math.min(sx, sourceColumn) / corridorSpacing)}:${Math.round(Math.max(sx, sourceColumn) / corridorSpacing)}`;
-          const leftSegmentIndex = reserveTrack(horizontalTrackUse, leftSegmentKey);
-          const leftY = sy + distributeOffset(leftSegmentIndex, corridorSpacing);
-
-          const centerSegmentKey = `${Math.round(laneY / laneSpacing)}:${Math.round(Math.min(sourceColumn, targetColumn) / corridorSpacing)}:${Math.round(Math.max(sourceColumn, targetColumn) / corridorSpacing)}`;
-          const centerSegmentIndex = reserveTrack(horizontalTrackUse, centerSegmentKey);
-          const centerY = laneY + distributeOffset(centerSegmentIndex, corridorSpacing);
-
-          const rightSegmentKey = `${Math.round(ty / laneSpacing)}:${Math.round(Math.min(targetColumn, tx) / corridorSpacing)}:${Math.round(Math.max(targetColumn, tx) / corridorSpacing)}`;
-          const rightSegmentIndex = reserveTrack(horizontalTrackUse, rightSegmentKey);
-          const rightY = ty + distributeOffset(rightSegmentIndex, corridorSpacing);
+          const leftY = reserveHorizontalSegment(horizontalTrackUse, sy, sx, sourceColumn);
+          const centerY = reserveHorizontalSegment(horizontalTrackUse, laneY, sourceColumn, targetColumn);
+          const rightY = reserveHorizontalSegment(horizontalTrackUse, ty, targetColumn, tx);
 
           routesByEdgeKey.set(key, {
             sx,
@@ -620,24 +635,6 @@ HTML = """
       const { sx, sy, tx, ty, sourceStub, targetStub, laneY, leftY, rightY, elbowX, direct } = route;
       if (direct) {
         return `M ${sx} ${sy} L ${tx} ${ty}`;
-      }
-      if (Math.abs(laneY - sy) < 1 && Math.abs(laneY - ty) < 1) {
-        return `M ${sx} ${sy} L ${tx} ${ty}`;
-      }
-      if (Math.abs(sourceStub - targetStub) < gridX / 3) {
-        return [
-          `M ${sx} ${sy}`,
-          `L ${sourceStub} ${sy}`,
-          `L ${sourceStub} ${laneY}`,
-          `L ${tx} ${laneY}`,
-          `L ${tx} ${ty}`
-        ].join(" ");
-      }
-      if (Math.abs(sy - laneY) < 1 && Math.abs(ty - laneY) >= 1) {
-        return `M ${sx} ${sy} L ${elbowX} ${sy} L ${elbowX} ${ty} L ${tx} ${ty}`;
-      }
-      if (Math.abs(ty - laneY) < 1 && Math.abs(sy - laneY) >= 1) {
-        return `M ${sx} ${sy} L ${sourceStub} ${sy} L ${sourceStub} ${ty} L ${tx} ${ty}`;
       }
       return [
         `M ${sx} ${sy}`,
