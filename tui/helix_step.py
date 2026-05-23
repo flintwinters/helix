@@ -468,14 +468,16 @@ def step_and_commit(binary_path: Path, debug_target_path: Path) -> None:
     commit_debug_snapshot(debug_target_path.parent, "Record stepped debug VM state")
 
 
-def reset_previous_snapshot(debug_target_path: Path) -> None:
+def checkout_previous_snapshot(debug_target_path: Path) -> None:
     pygit2 = load_pygit2()
     repo = open_debug_repo(debug_target_path.parent)
     head_commit = repo[repo.head.target]
     if not head_commit.parents:
         raise RuntimeError("debug repository has no previous snapshot")
 
-    repo.reset(head_commit.parents[0].id, pygit2.GIT_RESET_HARD)
+    parent_commit = head_commit.parents[0]
+    repo.checkout_tree(parent_commit)
+    repo.set_head(parent_commit.id)
 
 
 def main() -> int:
@@ -493,7 +495,7 @@ def main() -> int:
                 step_and_commit(binary_path, debug_target_path)
                 log_renderer.refresh(debug_target_path.parent)
             elif key == UP_ARROW:
-                reset_previous_snapshot(debug_target_path)
+                checkout_previous_snapshot(debug_target_path)
                 log_renderer.refresh(debug_target_path.parent)
             else:
                 return 0
