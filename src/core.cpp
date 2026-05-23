@@ -86,6 +86,67 @@ CellPtr map_field_cell(ConstCellPtr map_cell, const string& key) {
     return field_it->second;
 }
 
+static CellPtr make_path_error(const string& message, size_t segment_index, ConstCellPtr segment, ConstCellPtr receiver) {
+    shared_ptr<MapCell> details = make_shared<MapCell>();
+    details->set("kind", make_shared<StrCell>("path_error"));
+    details->set("segment_index", make_shared<IntCell>(static_cast<int64_t>(segment_index)));
+    details->set("receiver_type", make_shared<StrCell>(cell_class_name(receiver)));
+    if (segment) {
+        details->set("segment", const_pointer_cast<Cell>(segment));
+    }
+    return make_error_cell(message, details);
+}
+
+CellPtr cell_at_path(CellPtr root_cell, ConstCellPtr path_cell) {
+    if (!root_cell) {
+        return make_error_cell("object path requires a root cell");
+    }
+    if (!path_cell || path_cell->type != Cell::Type::vec) {
+        return make_error_cell("object path must be a vector");
+    }
+
+    CellPtr current = move(root_cell);
+    const VecCell& path = static_cast<const VecCell&>(*path_cell);
+    for (size_t index = 0; index < path.value.size(); ++index) {
+        ConstCellPtr segment = path.value[index];
+        if (!segment) {
+            return make_path_error("object path segment cannot be null", index, segment, current);
+        }
+
+        if (segment->type == Cell::Type::string) {
+            if (!is_map_like_cell(current)) {
+                return make_path_error("object path string segment requires a map-like receiver", index, segment, current);
+            }
+
+            const string& key = static_cast<const StrCell&>(*segment).value;
+            CellPtr next = map_field_cell(current, key);
+            if (!next) {
+                return make_path_error("object path map key was not found", index, segment, current);
+            }
+            current = move(next);
+            continue;
+        }
+
+        if (segment->type == Cell::Type::integer) {
+            if (!current || current->type != Cell::Type::vec) {
+                return make_path_error("object path integer segment requires a vector receiver", index, segment, current);
+            }
+
+            const int64_t offset = static_cast<const IntCell&>(*segment).value;
+            const vector<CellPtr>& values = static_cast<const VecCell&>(*current).value;
+            if (offset < 0 || static_cast<size_t>(offset) >= values.size()) {
+                return make_path_error("object path vector offset is out of bounds", index, segment, current);
+            }
+            current = values[static_cast<size_t>(offset)];
+            continue;
+        }
+
+        return make_path_error("object path segments must be strings or integers", index, segment, current);
+    }
+
+    return current;
+}
+
 shared_ptr<MapCell> map_field_map(ConstCellPtr map_cell, const string& key) {
     CellPtr field = map_field_cell(map_cell, key);
     if (!is_map_like_cell(field)) {
