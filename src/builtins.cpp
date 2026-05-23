@@ -449,6 +449,20 @@ static CellPtr builtin_at(const vector<CellPtr>& arguments, CellPtr current_vm) 
     return sequence->value[static_cast<size_t>(index)];
 }
 
+static CellPtr builtin_get(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "get");
+    if (!root_cell) {
+        return make_error("get requires a map VM");
+    }
+
+    CellPtr path_cell = resolve_vec_or_signal(arguments[1], root_cell, "get expects a vector path");
+    if (is_signal_cell(path_cell)) {
+        return path_cell;
+    }
+
+    return cell_at_path(root_cell, path_cell);
+}
+
 static CellPtr builtin_copy(const vector<CellPtr>& arguments, CellPtr current_vm) {
     shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "copy");
     if (!root_cell) {
@@ -613,6 +627,7 @@ shared_ptr<ScopeCell> make_zygote() {
     install_builtin(zygote, "append", builtin_append);
     install_builtin(zygote, "pop", builtin_pop);
     install_builtin(zygote, "at", builtin_at);
+    install_builtin(zygote, "get", builtin_get);
     install_builtin(zygote, "copy", builtin_copy);
     install_builtin(zygote, "if", builtin_if);
     install_builtin(zygote, "while", builtin_while);
