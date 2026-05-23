@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import math
 import re
 import sys
 from dataclasses import dataclass, field
@@ -33,8 +34,8 @@ class GraphNode:
     title: str
     detail: str = ""
     classes: set[str] = field(default_factory=set)
-    x: int = 0
-    y: int = 0
+    x: float = 0
+    y: float = 0
 
     def as_json(self) -> dict[str, object]:
         return {
@@ -110,35 +111,123 @@ def parse_mermaid_graph(mermaid: str) -> tuple[list[GraphNode], list[GraphEdge]]
 
 
 def assign_layout(nodes: dict[str, GraphNode], edges: list[GraphEdge]) -> None:
-    incoming: dict[str, int] = {node_id: 0 for node_id in nodes}
-    outgoing: dict[str, list[str]] = {node_id: [] for node_id in nodes}
+    node_ids = sorted(nodes)
+    if not node_ids:
+        return
 
-    for edge in edges:
-        incoming[edge.target] += 1
-        outgoing[edge.source].append(edge.target)
+    index = {node_id: offset for offset, node_id in enumerate(node_ids)}
+    positions = initial_spring_positions(node_ids)
+    velocities = {node_id: [0.0, 0.0] for node_id in node_ids}
+    edge_pairs = [(edge.source, edge.target) for edge in edges]
 
-    roots = sorted(node_id for node_id, count in incoming.items() if count == 0)
-    queue = list(roots or sorted(nodes))
-    depth = {node_id: 0 for node_id in queue}
+    spring_length = 280.0
+    spring_strength = 0.018
+    repulsion_strength = 210_000.0
+    center_strength = 0.002
+    damping = 0.82
 
-    seen = set(queue)
+    for step in range(520):
+        forces = {node_id: [0.0, 0.0] for node_id in node_ids}
+        temperature = 1.0 - step / 520
 
-    while queue:
-        node_id = queue.pop(0)
-        for target in outgoing[node_id]:
-            if target not in seen:
-                seen.add(target)
-                depth[target] = depth[node_id] + 1
-                queue.append(target)
+        for offset, source in enumerate(node_ids):
+            sx, sy = positions[source]
+            for target in node_ids[offset + 1 :]:
+                tx, ty = positions[target]
+                dx = tx - sx
+                dy = ty - sy
+                distance_squared = max(dx * dx + dy * dy, 0.01)
+                distance = math.sqrt(distance_squared)
+                force = repulsion_strength / distance_squared
+                fx = force * dx / distance
+                fy = force * dy / distance
+                forces[source][0] -= fx
+                forces[source][1] -= fy
+                forces[target][0] += fx
+                forces[target][1] += fy
 
-    layers: dict[int, list[str]] = {}
-    for node_id in sorted(nodes):
-        layers.setdefault(depth.get(node_id, 0), []).append(node_id)
+        for source, target in edge_pairs:
+            sx, sy = positions[source]
+            tx, ty = positions[target]
+            dx = tx - sx
+            dy = ty - sy
+            distance = max(math.hypot(dx, dy), 0.01)
+            force = spring_strength * (distance - spring_length)
+            fx = force * dx / distance
+            fy = force * dy / distance
+            forces[source][0] += fx
+            forces[source][1] += fy
+            forces[target][0] -= fx
+            forces[target][1] -= fy
 
-    for layer, node_ids in layers.items():
-        for row, node_id in enumerate(node_ids):
-            nodes[node_id].x = 80 + layer * 290
-            nodes[node_id].y = 80 + row * 86
+        for node_id in node_ids:
+            x, y = positions[node_id]
+            rank_pull = (index[node_id] - len(node_ids) / 2) * 3.0
+            forces[node_id][0] += -x * center_strength + rank_pull * center_strength
+            forces[node_id][1] += -y * center_strength
+
+            vx, vy = velocities[node_id]
+            vx = (vx + forces[node_id][0]) * damping * temperature
+            vy = (vy + forces[node_id][1]) * damping * temperature
+            velocities[node_id] = [vx, vy]
+            positions[node_id] = [x + vx, y + vy]
+
+    resolve_collisions(node_ids, positions)
+
+    min_x = min(position[0] for position in positions.values())
+    min_y = min(position[1] for position in positions.values())
+
+    for node_id, (x, y) in positions.items():
+        nodes[node_id].x = round(x - min_x + 80, 2)
+        nodes[node_id].y = round(y - min_y + 80, 2)
+
+
+def initial_spring_positions(node_ids: list[str]) -> dict[str, list[float]]:
+    radius = max(420.0, len(node_ids) * 11.0)
+    positions: dict[str, list[float]] = {}
+
+    for offset, node_id in enumerate(node_ids):
+        angle = 2.0 * math.pi * offset / len(node_ids)
+        shell = 1.0 + (offset % 7) * 0.075
+        positions[node_id] = [
+            math.cos(angle) * radius * shell,
+            math.sin(angle) * radius * shell,
+        ]
+
+    return positions
+
+
+def resolve_collisions(node_ids: list[str], positions: dict[str, list[float]]) -> None:
+    minimum_x_gap = 260.0
+    minimum_y_gap = 86.0
+
+    for _ in range(90):
+        moved = False
+        for offset, source in enumerate(node_ids):
+            sx, sy = positions[source]
+            for target in node_ids[offset + 1 :]:
+                tx, ty = positions[target]
+                dx = tx - sx
+                dy = ty - sy
+                overlap_x = minimum_x_gap - abs(dx)
+                overlap_y = minimum_y_gap - abs(dy)
+                if overlap_x <= 0 or overlap_y <= 0:
+                    continue
+
+                moved = True
+                if overlap_x < overlap_y:
+                    push = overlap_x / 2.0
+                    direction = 1.0 if dx >= 0 else -1.0
+                    positions[source][0] -= push * direction
+                    positions[target][0] += push * direction
+                else:
+                    push = overlap_y / 2.0
+                    direction = 1.0 if dy >= 0 else -1.0
+                    positions[source][1] -= push * direction
+                    positions[target][1] += push * direction
+
+        if not moved:
+            return
 
 
 def graph_payload(markdown_path: Path) -> dict[str, object]:
