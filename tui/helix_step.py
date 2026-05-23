@@ -380,7 +380,7 @@ class DebugLogRenderer:
 
     def refresh(self, debug_directory: Path) -> None:
         if self.rendered_lines:
-            sys.stdout.write(f"\x1b[{self.rendered_lines}F")
+            sys.stdout.write(f"\x1b[{self.rendered_lines + 1}F")
             sys.stdout.write("\x1b[J")
 
         log_output = debug_log(debug_directory).rstrip("\n")
@@ -465,7 +465,7 @@ def read_debug_key() -> str:
 
 def step_and_commit(binary_path: Path, debug_target_path: Path) -> None:
     step_target_file(binary_path, debug_target_path)
-    commit_debug_snapshot(debug_target_path.parent, "Record stepped debug VM state")
+    commit_debug_snapshot(debug_target_path.parent, "VM state")
 
 
 def checkout_previous_snapshot(debug_target_path: Path) -> None:
