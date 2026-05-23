@@ -3,9 +3,9 @@ include:
 proc:
   - [sfml.initialize]
   - [while, [sfml.is-open], [
-    [while, [sfml.poll-event], [
-      [sfml.handle-event]
-    ]],
+      [while, [sfml.poll-event], [
+        [sfml.handle-event]
+      ]],
     [sfml.draw-frame]
   ]]
 main: [list, proc]
