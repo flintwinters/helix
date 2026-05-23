@@ -43,6 +43,14 @@ static shared_ptr<MapCell> make_resolution_details(
     return make_shared<MapCell>(move(fields));
 }
 
+static void attach_error_source(ErrCell& error, CellPtr source) {
+    if (!source || !is_map_like_cell(error.value)) {
+        return;
+    }
+
+    static_pointer_cast<MapCell>(error.value)->set("source", move(source));
+}
+
 static const Cell* lookup_context(ConstCellPtr node, const shared_ptr<VmCell>& root_cell) {
     for (ConstCellPtr current = node; current; current = current->parent) {
         if (current->type == Cell::Type::scope || current->type == Cell::Type::vm) {
@@ -67,10 +75,10 @@ static CellPtr resolve_cell(CellPtr node, const shared_ptr<VmCell>& root_cell) {
     CellPtr resolved = context ? context->lookup(name, root_cell) : nullptr;
     if (resolved && resolved->type == Cell::Type::error_signal) {
         ErrCell& error = static_cast<ErrCell&>(*resolved);
-        if (!error.value || error.value->type != Cell::Type::map) {
+        if (!error.value) {
             error.value = make_resolution_details("resolution_error", name, context, node);
         } else {
-            static_pointer_cast<MapCell>(error.value)->set("source", node);
+            attach_error_source(error, node);
         }
         return resolved;
     }
