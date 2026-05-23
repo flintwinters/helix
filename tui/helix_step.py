@@ -17,6 +17,8 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 WRAPPER_VM_NAME = "__debug_target__"
 DOWN_ARROW = "\x1b[B"
 UP_ARROW = "\x1b[A"
+RIGHT_ARROW = "\x1b[C"
+LEFT_ARROW = "\x1b[D"
 DEBUG_LOG_FORMAT = (
     "%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) "
     "%C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)"
@@ -468,6 +470,45 @@ def checkout_snapshot(repo, commit) -> None:
     repo.set_head(commit.id)
 
 
+def checkout_branch(repo, reference_name: str) -> None:
+    reference = repo.lookup_reference(reference_name)
+    repo.checkout_tree(repo[reference.target])
+    repo.set_head(reference_name)
+
+
+def local_branch_references(repo) -> list[str]:
+    return sorted(
+        reference_name
+        for reference_name in repo.listall_references()
+        if reference_name.startswith("refs/heads/")
+    )
+
+
+def current_branch_index(repo, branch_references: list[str]) -> int:
+    if not repo.head_is_detached:
+        head_name = repo.head.name
+        if head_name in branch_references:
+            return branch_references.index(head_name)
+
+    head_target = repo.head.target
+    for index, reference_name in enumerate(branch_references):
+        if repo.lookup_reference(reference_name).target == head_target:
+            return index
+
+    return 0
+
+
+def checkout_adjacent_branch(debug_target_path: Path, offset: int) -> None:
+    repo = open_debug_repo(debug_target_path.parent)
+    branch_references = local_branch_references(repo)
+    if not branch_references:
+        raise RuntimeError("debug repository has no branches")
+
+    current_index = current_branch_index(repo, branch_references)
+    next_index = (current_index + offset) % len(branch_references)
+    checkout_branch(repo, branch_references[next_index])
+
+
 def next_preserved_snapshot(repo):
     head_id = repo.head.target
     for reference_name in repo.listall_references():
@@ -528,6 +569,12 @@ def main() -> int:
                 log_renderer.refresh(debug_target_path.parent)
             elif key == UP_ARROW:
                 checkout_previous_snapshot(debug_target_path)
+                log_renderer.refresh(debug_target_path.parent)
+            elif key == RIGHT_ARROW:
+                checkout_adjacent_branch(debug_target_path, 1)
+                log_renderer.refresh(debug_target_path.parent)
+            elif key == LEFT_ARROW:
+                checkout_adjacent_branch(debug_target_path, -1)
                 log_renderer.refresh(debug_target_path.parent)
             else:
                 return 0
