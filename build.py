@@ -14,9 +14,12 @@ INCLUDE_DIRECTORIES = ["include", "src", "ryml/src", "ryml/ext/c4core/src"]
 INCLUDES = " ".join(f"-I{directory}" for directory in INCLUDE_DIRECTORIES)
 COMPILER = "g++"
 CPP_FLAGS = "-g -std=c++20"
-LINKER_FLAGS = "-rdynamic -L ryml/build -lryml -lsfml-graphics -lsfml-window -lsfml-system -ldl"
+LINKER_FLAGS = "-rdynamic -L ryml/build -lryml -ldl"
+SFML_MODULE = "build/sfml.so"
+SFML_MODULE_SOURCE = "src/sfmlwrapper.cpp"
+SFML_MODULE_LINKER_FLAGS = "-lsfml-graphics -lsfml-window -lsfml-system"
 EXECUTABLE = "build/helix"
-SOURCES = "src/helix.cpp src/builtins.cpp src/core.cpp src/utils.cpp src/ryml_interface.cpp src/sfmlwrapper.cpp"
+SOURCES = "src/helix.cpp src/builtins.cpp src/core.cpp src/utils.cpp src/ryml_interface.cpp"
 OBJECT_DIRECTORY = "build/obj"
 RACKET_SOURCES = ["racket/builtins.rkt", "racket/helix.rkt"]
 RACKET_ENTRYPOINT = ["racket", "racket/helix.rkt"]
@@ -134,6 +137,34 @@ def compile_main():
         return False
 
     print("Compilation successful.")
+    return True
+
+
+def compile_sfml_module():
+    """Compiles the SFML wrapper into a native include module."""
+    os.makedirs(os.path.dirname(SFML_MODULE), exist_ok=True)
+
+    should_compile = (
+        not os.path.exists(SFML_MODULE)
+        or newest_dependency_mtime(SFML_MODULE_SOURCE, INCLUDE_DIRECTORIES) > os.path.getmtime(SFML_MODULE)
+        or os.path.getmtime(__file__) > os.path.getmtime(SFML_MODULE)
+    )
+    if not should_compile:
+        print("SFML module compilation successful.")
+        return True
+
+    compile_command = (
+        f"{COMPILER} -fPIC -shared {SFML_MODULE_SOURCE} {CPP_FLAGS} {INCLUDES} "
+        f"-o {SFML_MODULE} {SFML_MODULE_LINKER_FLAGS}"
+    )
+    result = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
+    if result.returncode != 0:
+        print("SFML module compilation failed.")
+        if result.stderr.strip():
+            print(result.stderr)
+        return False
+
+    print("SFML module compilation successful.")
     return True
 
 
@@ -488,6 +519,8 @@ def main():
     if command == "build":
         if not compile_main():
             sys.exit(1)
+        if not compile_sfml_module():
+            sys.exit(1)
         return
 
     if command in {"racket-build", "build-racket"}:
@@ -506,6 +539,8 @@ def main():
     if command in {"cpp-test", "test-cpp"}:
         if not compile_main():
             sys.exit(1)
+        if not compile_sfml_module():
+            sys.exit(1)
         num_failed = run_tests("cpp")
         if num_failed > 0:
             sys.exit(1)
@@ -517,6 +552,9 @@ def main():
         sys.exit(1)
 
     if not compile_main():
+        sys.exit(1)
+
+    if not compile_sfml_module():
         sys.exit(1)
 
     if not run_clang_tidy():
