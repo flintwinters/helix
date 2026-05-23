@@ -2,6 +2,7 @@
 
 import argparse
 from copy import deepcopy
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -321,6 +322,13 @@ def init_debug_repo(debug_directory: Path) -> None:
     )
 
 
+def recreate_debug_repo(debug_directory: Path) -> None:
+    git_directory = debug_directory / ".git"
+    if git_directory.is_dir():
+        shutil.rmtree(git_directory)
+    init_debug_repo(debug_directory)
+
+
 def tracked_debug_path(repo, target_path: Path) -> str:
     workdir = Path(repo.workdir).resolve()
     return target_path.relative_to(workdir).as_posix()
@@ -346,7 +354,8 @@ def ensure_debug_repo(target_path: Path) -> Path:
 
     repo = open_debug_repo(debug_directory)
     if Path(repo.workdir).resolve() != target_path.parent:
-        raise RuntimeError("debug repository worktree does not match the target file directory")
+        recreate_debug_repo(debug_directory)
+        repo = open_debug_repo(debug_directory)
 
     if repo.head_is_unborn:
         commit_debug_snapshot(debug_directory, target_path, "Record initial debug VM state")
