@@ -1,0 +1,53 @@
+
+Checks: >
+  -*,
+  readability-function-size,
+  readability-function-cognitive-complexity,
+  bugprone-suspicious-include,
+  modernize-use-std-format,
+  cppcoreguidelines-explicit-virtual-functions,
+  bugprone-argument-comment,
+  readability-identifier-naming
+  
+WarningsAsErrors: '*'
+
+CheckOptions:
+  # 1. Function Length (Line Count)
+  - key:             readability-function-size.LineThreshold
+    value:           '40'
+
+  # 2. Parameter Count (Long argument lists)
+  - key:             readability-function-size.ParameterThreshold
+    value:           '4'
+
+  # 3. Cyclomatic/Cognitive Complexity 
+  - key:             readability-function-cognitive-complexity.Threshold
+    value:           '10'
+
+  # 4. Nesting Threshold
+  - key:             readability-function-size.NestingThreshold
+    value:           '3'
+
+  # 5. Statement Threshold
+  - key:             readability-function-size.StatementThreshold
+    value:           '80'
+
+  # 6. Variable Count Threshold
+  - key:             readability-function-size.VariableThreshold
+    value:           '100'
+
+  # 7. Magic Numbers (Force constants for clarity)
+  - key:             cppcoreguidelines-avoid-magic-numbers.MagicNumbers
+    value:           '0;1;2'
+
+  # 8. Const Correctness
+  - key:             readability-make-member-function-const.Threshold
+    value:           '1'
+
+  # 9. Convert to Static (Encourages extraction to utility libraries)
+  - key:             readability-convert-member-functions-to-static.Threshold
+    value:           '1'
+
+  # 10. Argument Comments (Self-documenting magic booleans/values)
+  - key:             bugprone-argument-comment.StrictMode
+    value:           '1'
