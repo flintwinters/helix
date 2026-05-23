@@ -299,68 +299,72 @@ def debug_directory_for(target_path: Path) -> Path:
     return target_path.parent / f"debug_{target_path.stem}"
 
 
-def load_pygit2():
-    try:
-        import pygit2
-    except ImportError as error:
-        raise RuntimeError("pygit2 is required for debug snapshot storage") from error
-
-    return pygit2
+def debug_target_path_for(target_path: Path) -> Path:
+    return debug_directory_for(target_path) / target_path.name
 
 
-def open_debug_repo(debug_directory: Path):
-    pygit2 = load_pygit2()
-    return pygit2.Repository(str(debug_directory / ".git"))
-
-
-def init_debug_repo(debug_directory: Path) -> None:
-    pygit2 = load_pygit2()
-    pygit2.init_repository(
-        str(debug_directory / ".git"),
-        initial_head="main",
-        workdir_path=str(debug_directory.parent),
+def git_completed(debug_directory: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=debug_directory,
+        capture_output=True,
+        text=True,
+        check=False,
     )
 
 
-def recreate_debug_repo(debug_directory: Path) -> None:
-    git_directory = debug_directory / ".git"
-    if git_directory.is_dir():
-        shutil.rmtree(git_directory)
-    init_debug_repo(debug_directory)
+def run_git(debug_directory: Path, *args: str) -> None:
+    completed = git_completed(debug_directory, *args)
+    if completed.returncode != 0:
+        stderr = completed.stderr.strip()
+        raise RuntimeError(stderr or f"git {' '.join(args)} failed")
 
 
-def tracked_debug_path(repo, target_path: Path) -> str:
-    workdir = Path(repo.workdir).resolve()
-    return target_path.relative_to(workdir).as_posix()
+def init_debug_repo(debug_directory: Path) -> None:
+    run_git(debug_directory.parent, "init", debug_directory.name)
 
 
-def commit_debug_snapshot(debug_directory: Path, target_path: Path, message: str) -> None:
-    pygit2 = load_pygit2()
-    repo = open_debug_repo(debug_directory)
-    signature = pygit2.Signature("Helix Debugger", "helix-debugger@example.invalid")
-    repo.index.add(tracked_debug_path(repo, target_path))
-    repo.index.write()
-    tree = repo.index.write_tree()
-    parents = [] if repo.head_is_unborn else [repo.head.target]
-    repo.create_commit("HEAD", signature, signature, message, tree, parents)
+def debug_repo_exists(debug_directory: Path) -> bool:
+    completed = git_completed(debug_directory, "rev-parse", "--show-toplevel")
+    if completed.returncode != 0:
+        return False
+
+    return Path(completed.stdout.strip()).resolve() == debug_directory.resolve()
+
+
+def debug_repo_has_commits(debug_directory: Path) -> bool:
+    return git_completed(debug_directory, "rev-parse", "--verify", "HEAD").returncode == 0
+
+
+def commit_debug_snapshot(debug_directory: Path, message: str) -> None:
+    run_git(debug_directory, "add", ".")
+    run_git(
+        debug_directory,
+        "-c",
+        "user.name=Helix Debugger",
+        "-c",
+        "user.email=helix-debugger@example.invalid",
+        "commit",
+        "-m",
+        message,
+    )
 
 
 def ensure_debug_repo(target_path: Path) -> Path:
     debug_directory = debug_directory_for(target_path)
+    debug_target_path = debug_target_path_for(target_path)
     debug_directory.mkdir(exist_ok=True)
 
-    if not (debug_directory / ".git").is_dir():
+    if not debug_repo_exists(debug_directory):
         init_debug_repo(debug_directory)
 
-    repo = open_debug_repo(debug_directory)
-    if Path(repo.workdir).resolve() != target_path.parent:
-        recreate_debug_repo(debug_directory)
-        repo = open_debug_repo(debug_directory)
+    if not debug_target_path.exists():
+        shutil.copy2(target_path, debug_target_path)
 
-    if repo.head_is_unborn:
-        commit_debug_snapshot(debug_directory, target_path, "Record initial debug VM state")
+    if not debug_repo_has_commits(debug_directory):
+        commit_debug_snapshot(debug_directory, "Record initial debug VM state")
 
-    return debug_directory
+    return debug_target_path
 
 
 def step_target_file(binary_path: Path, target_path: Path) -> None:
@@ -415,19 +419,13 @@ def read_debug_key() -> str:
     return key
 
 
-def step_and_commit(binary_path: Path, debug_directory: Path, target_path: Path) -> None:
-    step_target_file(binary_path, target_path)
-    commit_debug_snapshot(debug_directory, target_path, "Record stepped debug VM state")
+def step_and_commit(binary_path: Path, debug_target_path: Path) -> None:
+    step_target_file(binary_path, debug_target_path)
+    commit_debug_snapshot(debug_target_path.parent, "Record stepped debug VM state")
 
 
-def reset_previous_snapshot(debug_directory: Path) -> None:
-    pygit2 = load_pygit2()
-    repo = open_debug_repo(debug_directory)
-    head_commit = repo[repo.head.target]
-    if not head_commit.parents:
-        raise RuntimeError("debug repository has no previous snapshot")
-
-    repo.reset(head_commit.parents[0].id, pygit2.GIT_RESET_HARD)
+def reset_previous_snapshot(debug_target_path: Path) -> None:
+    run_git(debug_target_path.parent, "reset", "--hard", "HEAD~1")
 
 
 def main() -> int:
@@ -436,13 +434,13 @@ def main() -> int:
     binary_path = resolve_binary_path(args.binary)
 
     try:
-        debug_directory = ensure_debug_repo(target_path)
+        debug_target_path = ensure_debug_repo(target_path)
         while True:
             key = read_debug_key()
             if key == DOWN_ARROW:
-                step_and_commit(binary_path, debug_directory, target_path)
+                step_and_commit(binary_path, debug_target_path)
             elif key == UP_ARROW:
-                reset_previous_snapshot(debug_directory)
+                reset_previous_snapshot(debug_target_path)
             else:
                 return 0
     except KeyboardInterrupt:
