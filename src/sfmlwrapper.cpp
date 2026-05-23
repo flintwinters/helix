@@ -591,9 +591,9 @@ void install_builtin(const shared_ptr<ScopeCell>& module, const string& name, Fu
 }
 }
 
-void install_sfml_namespace(const shared_ptr<ScopeCell>& zygote) {
-    shared_ptr<ScopeCell> module = make_shared<ScopeCell>();
+extern "C" CellPtr helix_install_module(const shared_ptr<ScopeCell>& module) {
     install_builtin(module, "initialize", builtin_sfml_initialize);
+    install_builtin(module, "init", builtin_sfml_initialize);
     install_builtin(module, "iso-to-screen", builtin_sfml_iso_to_screen);
     install_builtin(module, "screen-to-cell", builtin_sfml_screen_to_cell);
     install_builtin(module, "append-line", builtin_sfml_append_line);
@@ -608,5 +608,5 @@ void install_sfml_namespace(const shared_ptr<ScopeCell>& zygote) {
     install_builtin(module, "handle-event", builtin_sfml_handle_event);
     install_builtin(module, "draw-frame", builtin_sfml_draw_frame);
     install_builtin(module, "is-open", builtin_sfml_is_open);
-    zygote->set("sfml", module);
+    return nullptr;
 }
