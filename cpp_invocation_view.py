@@ -173,6 +173,9 @@ def assign_layout(nodes: dict[str, GraphNode], edges: list[GraphEdge]) -> None:
             positions[node_id] = [x + vx, y + vy]
 
     resolve_collisions(node_ids, positions)
+    snap_positions_to_grid(node_ids, positions)
+    resolve_collisions(node_ids, positions)
+    snap_positions_to_grid(node_ids, positions)
 
     min_x = min(position[0] for position in positions.values())
     min_y = min(position[1] for position in positions.values())
@@ -230,6 +233,36 @@ def resolve_collisions(node_ids: list[str], positions: dict[str, list[float]]) -
             return
 
 
+def snap_positions_to_grid(node_ids: list[str], positions: dict[str, list[float]]) -> None:
+    grid_x = 260.0
+    grid_y = 92.0
+    used: set[tuple[int, int]] = set()
+
+    for node_id in sorted(node_ids, key=lambda current: (positions[current][1], positions[current][0])):
+        x, y = positions[node_id]
+        column = int(round(x / grid_x))
+        row = int(round(y / grid_y))
+
+        if (column, row) in used:
+            placed = False
+            for radius in range(1, len(node_ids) + 1):
+                for row_delta in range(-radius, radius + 1):
+                    for column_delta in range(-radius, radius + 1):
+                        candidate = (column + column_delta, row + row_delta)
+                        if candidate in used:
+                            continue
+                        column, row = candidate
+                        placed = True
+                        break
+                    if placed:
+                        break
+                if placed:
+                    break
+
+        used.add((column, row))
+        positions[node_id] = [column * grid_x, row * grid_y]
+
+
 def graph_payload(markdown_path: Path) -> dict[str, object]:
     nodes, edges = parse_mermaid_graph(extract_mermaid(markdown_path))
     return {
@@ -252,7 +285,7 @@ HTML = """
       --panel: #1a2027;
       --text: #ecf2f8;
       --muted: #9aa9b7;
-      --edge: #53616f;
+      --edge: #b8c7d6;
       --runtime: #ff5c8a;
       --entry: #58a6ff;
       --leaf: #3fb950;
@@ -310,8 +343,9 @@ HTML = """
     .edge {
       fill: none;
       stroke: var(--edge);
-      stroke-width: 1.4;
+      stroke-width: 2.1;
       marker-end: url(#arrow);
+      opacity: 0.92;
     }
     .node { cursor: move; }
     .node rect {
@@ -344,9 +378,9 @@ HTML = """
   </header>
   <svg id="graph" aria-label="Interactive C++ invocation graph">
     <defs>
-      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
-              markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-        <path d="M 0 0 L 10 5 L 0 10 z" fill="#53616f"></path>
+      <marker id="arrow" viewBox="0 0 14 14" refX="12" refY="7"
+              markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+        <path d="M 0 0 L 14 7 L 0 14 z" fill="#d8e6f3"></path>
       </marker>
     </defs>
     <g id="viewport"></g>
@@ -357,6 +391,9 @@ HTML = """
     const viewport = document.querySelector("#viewport");
     const nodeWidth = 230;
     const nodeHeight = 56;
+    const gridX = 260;
+    const gridY = 92;
+    const routeMargin = 26;
     const state = { scale: 0.85, tx: 30, ty: 30 };
     const nodeById = new Map(graph.nodes.map(node => [node.id, node]));
 
@@ -380,6 +417,51 @@ HTML = """
       return element;
     }
 
+    function nodeRect(node) {
+      return {
+        left: node.x,
+        right: node.x + nodeWidth,
+        top: node.y,
+        bottom: node.y + nodeHeight
+      };
+    }
+
+    function horizontalSegmentHitsNode(y, x1, x2, sourceId, targetId) {
+      const left = Math.min(x1, x2);
+      const right = Math.max(x1, x2);
+      for (const node of graph.nodes) {
+        if (node.id === sourceId || node.id === targetId) {
+          continue;
+        }
+        const rect = nodeRect(node);
+        if (y > rect.top - routeMargin && y < rect.bottom + routeMargin &&
+            right > rect.left - routeMargin && left < rect.right + routeMargin) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function chooseHorizontalLane(source, target, baseY) {
+      const candidates = [baseY];
+      const lower = Math.max(source.y, target.y) + nodeHeight + routeMargin;
+      const upper = Math.min(source.y, target.y) - routeMargin;
+
+      for (let step = 1; step <= 18; step += 1) {
+        candidates.push(lower + step * gridY);
+        candidates.push(upper - step * gridY);
+      }
+
+      const startX = source.x + nodeWidth;
+      const endX = target.x;
+      for (const candidate of candidates) {
+        if (!horizontalSegmentHitsNode(candidate, startX, endX, source.id, target.id)) {
+          return candidate;
+        }
+      }
+      return baseY;
+    }
+
     function edgePath(edge) {
       const source = nodeById.get(edge.source);
       const target = nodeById.get(edge.target);
@@ -387,8 +469,32 @@ HTML = """
       const sy = source.y + nodeHeight / 2;
       const tx = target.x;
       const ty = target.y + nodeHeight / 2;
-      const mid = Math.max(40, Math.abs(tx - sx) / 2);
-      return `M ${sx} ${sy} C ${sx + mid} ${sy}, ${tx - mid} ${ty}, ${tx} ${ty}`;
+      const goingRight = tx >= sx + gridX / 2;
+
+      if (goingRight && !horizontalSegmentHitsNode(sy, sx, tx, source.id, target.id)) {
+        if (Math.abs(sy - ty) < 1) {
+          return `M ${sx} ${sy} L ${tx} ${ty}`;
+        }
+        const elbowX = Math.round((sx + tx) / (2 * gridX)) * gridX;
+        return `M ${sx} ${sy} L ${elbowX} ${sy} L ${elbowX} ${ty} L ${tx} ${ty}`;
+      }
+
+      const laneY = chooseHorizontalLane(source, target, (sy + ty) / 2);
+      const sourceStub = sx + routeMargin;
+      const targetStub = tx - routeMargin;
+      return [
+        `M ${sx} ${sy}`,
+        `L ${sourceStub} ${sy}`,
+        `L ${sourceStub} ${laneY}`,
+        `L ${targetStub} ${laneY}`,
+        `L ${targetStub} ${ty}`,
+        `L ${tx} ${ty}`
+      ].join(" ");
+    }
+
+    function snapNode(node) {
+      node.x = Math.round(node.x / gridX) * gridX;
+      node.y = Math.round(node.y / gridY) * gridY;
     }
 
     function updateEdges() {
@@ -435,6 +541,9 @@ HTML = """
           }
 
           function up() {
+            snapNode(node);
+            group.setAttribute("transform", `translate(${node.x} ${node.y})`);
+            updateEdges();
             group.removeEventListener("pointermove", move);
             group.removeEventListener("pointerup", up);
             group.removeEventListener("pointercancel", up);
