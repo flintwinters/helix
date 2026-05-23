@@ -333,13 +333,15 @@ def main() -> int:
     target_path = Path(args.target).expanduser().resolve()
     binary_path = resolve_binary_path(args.binary)
 
-    try:
-        step_target_file(binary_path, target_path)
-    except Exception as error:
-        print(f"error: {error}", file=sys.stderr)
-        return 1
-
-    return 0
+    while True:
+        try:
+            step_target_file(binary_path, target_path)
+            input()
+        except KeyboardInterrupt:
+            return 0
+        except Exception as error:
+            print(f"error: {error}", file=sys.stderr)
+            return 1
 
 
 if __name__ == "__main__":
