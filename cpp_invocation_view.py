@@ -559,9 +559,6 @@ HTML = """
         } else {
           const baseY = Math.round((sy + ty) / (2 * laneSpacing)) * laneSpacing;
           laneY = chooseHorizontalLane(source, target, sourceStub, targetStub, baseY);
-          const laneKey = `${Math.round(laneY / laneSpacing)}:${Math.round(Math.min(sourceStub, targetStub) / corridorSpacing)}:${Math.round(Math.max(sourceStub, targetStub) / corridorSpacing)}`;
-          const laneIndex = reserveTrack(horizontalTrackUse, laneKey);
-          laneY += distributeOffset(laneIndex, corridorSpacing);
 
           const sourceColumnKey = `${Math.round(sourceStub / corridorSpacing)}:${Math.round(Math.min(sy, laneY) / laneSpacing)}:${Math.round(Math.max(sy, laneY) / laneSpacing)}`;
           const sourceColumnIndex = reserveTrack(verticalTrackUse, sourceColumnKey);
@@ -571,6 +568,18 @@ HTML = """
           const targetColumnIndex = reserveTrack(verticalTrackUse, targetColumnKey);
           const targetColumn = targetStub + distributeOffset(targetColumnIndex, corridorSpacing);
 
+          const leftSegmentKey = `${Math.round(sy / laneSpacing)}:${Math.round(Math.min(sx, sourceColumn) / corridorSpacing)}:${Math.round(Math.max(sx, sourceColumn) / corridorSpacing)}`;
+          const leftSegmentIndex = reserveTrack(horizontalTrackUse, leftSegmentKey);
+          const leftY = sy + distributeOffset(leftSegmentIndex, corridorSpacing);
+
+          const centerSegmentKey = `${Math.round(laneY / laneSpacing)}:${Math.round(Math.min(sourceColumn, targetColumn) / corridorSpacing)}:${Math.round(Math.max(sourceColumn, targetColumn) / corridorSpacing)}`;
+          const centerSegmentIndex = reserveTrack(horizontalTrackUse, centerSegmentKey);
+          const centerY = laneY + distributeOffset(centerSegmentIndex, corridorSpacing);
+
+          const rightSegmentKey = `${Math.round(ty / laneSpacing)}:${Math.round(Math.min(targetColumn, tx) / corridorSpacing)}:${Math.round(Math.max(targetColumn, tx) / corridorSpacing)}`;
+          const rightSegmentIndex = reserveTrack(horizontalTrackUse, rightSegmentKey);
+          const rightY = ty + distributeOffset(rightSegmentIndex, corridorSpacing);
+
           routesByEdgeKey.set(key, {
             sx,
             sy,
@@ -578,7 +587,9 @@ HTML = """
             ty,
             sourceStub: sourceColumn,
             targetStub: targetColumn,
-            laneY,
+            laneY: centerY,
+            leftY,
+            rightY,
             elbowX,
             direct
           });
@@ -593,6 +604,8 @@ HTML = """
           sourceStub,
           targetStub,
           laneY,
+          leftY: sy,
+          rightY: ty,
           elbowX,
           direct
         });
@@ -604,7 +617,7 @@ HTML = """
       if (!route) {
         return "";
       }
-      const { sx, sy, tx, ty, sourceStub, targetStub, laneY, elbowX, direct } = route;
+      const { sx, sy, tx, ty, sourceStub, targetStub, laneY, leftY, rightY, elbowX, direct } = route;
       if (direct) {
         return `M ${sx} ${sy} L ${tx} ${ty}`;
       }
@@ -628,10 +641,12 @@ HTML = """
       }
       return [
         `M ${sx} ${sy}`,
-        `L ${sourceStub} ${sy}`,
+        `L ${sx} ${leftY}`,
+        `L ${sourceStub} ${leftY}`,
         `L ${sourceStub} ${laneY}`,
         `L ${targetStub} ${laneY}`,
-        `L ${targetStub} ${ty}`,
+        `L ${targetStub} ${rightY}`,
+        `L ${tx} ${rightY}`,
         `L ${tx} ${ty}`
       ].join(" ");
     }
