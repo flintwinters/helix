@@ -2,6 +2,7 @@
 
 import argparse
 from copy import deepcopy
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -14,6 +15,8 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 
 WRAPPER_VM_NAME = "__debug_target__"
+DOWN_ARROW = "\x1b[B"
+UP_ARROW = "\x1b[A"
 YAML_LOADER = YAML(typ="safe")
 YAML_DUMPER = YAML()
 YAML_DUMPER.default_flow_style = False
@@ -292,6 +295,56 @@ def dump_yaml(data: dict, destination: Path) -> None:
         YAML_DUMPER.dump(to_ruamel_node(data), handle)
 
 
+def debug_directory_for(target_path: Path) -> Path:
+    return target_path.parent / f"debug_{target_path.stem}"
+
+
+def debug_target_path_for(target_path: Path) -> Path:
+    return debug_directory_for(target_path) / target_path.name
+
+
+def run_git(debug_directory: Path, *args: str) -> None:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=debug_directory,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        stderr = completed.stderr.strip()
+        raise RuntimeError(stderr or f"git {' '.join(args)} failed")
+
+
+def commit_debug_snapshot(debug_directory: Path, message: str) -> None:
+    run_git(debug_directory, "add", ".")
+    run_git(
+        debug_directory,
+        "-c",
+        "user.name=Helix Debugger",
+        "-c",
+        "user.email=helix-debugger@example.invalid",
+        "commit",
+        "-m",
+        message,
+    )
+
+
+def ensure_debug_repo(target_path: Path) -> Path:
+    debug_directory = debug_directory_for(target_path)
+    debug_target_path = debug_target_path_for(target_path)
+    debug_directory.mkdir(exist_ok=True)
+
+    if not (debug_directory / ".git").is_dir():
+        run_git(debug_directory, "init")
+
+    if not debug_target_path.exists():
+        shutil.copy2(target_path, debug_target_path)
+        commit_debug_snapshot(debug_directory, "Record initial debug VM state")
+
+    return debug_target_path
+
+
 def step_target_file(binary_path: Path, target_path: Path) -> None:
     if not binary_path.is_file():
         raise FileNotFoundError(f"helix binary not found: {binary_path}")
@@ -330,16 +383,27 @@ def step_target_file(binary_path: Path, target_path: Path) -> None:
         wrapper_path.unlink(missing_ok=True)
 
 
-def should_continue_after_step() -> bool:
+def read_debug_key() -> str:
     stdin_fd = sys.stdin.fileno()
     original_settings = termios.tcgetattr(stdin_fd)
     try:
         tty.setraw(stdin_fd)
         key = sys.stdin.read(1)
+        if key == "\x1b":
+            key += sys.stdin.read(2)
     finally:
         termios.tcsetattr(stdin_fd, termios.TCSADRAIN, original_settings)
 
-    return key in ("\n", "\r")
+    return key
+
+
+def step_and_commit(binary_path: Path, debug_target_path: Path) -> None:
+    step_target_file(binary_path, debug_target_path)
+    commit_debug_snapshot(debug_target_path.parent, "Record stepped debug VM state")
+
+
+def reset_previous_snapshot(debug_target_path: Path) -> None:
+    run_git(debug_target_path.parent, "reset", "--hard", "HEAD~1")
 
 
 def main() -> int:
@@ -347,16 +411,21 @@ def main() -> int:
     target_path = Path(args.target).expanduser().resolve()
     binary_path = resolve_binary_path(args.binary)
 
-    while True:
-        try:
-            step_target_file(binary_path, target_path)
-            if not should_continue_after_step():
+    try:
+        debug_target_path = ensure_debug_repo(target_path)
+        while True:
+            key = read_debug_key()
+            if key == DOWN_ARROW:
+                step_and_commit(binary_path, debug_target_path)
+            elif key == UP_ARROW:
+                reset_previous_snapshot(debug_target_path)
+            else:
                 return 0
-        except KeyboardInterrupt:
-            return 0
-        except Exception as error:
-            print(f"error: {error}", file=sys.stderr)
-            return 1
+    except KeyboardInterrupt:
+        return 0
+    except Exception as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
