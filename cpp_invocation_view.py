@@ -396,6 +396,7 @@ HTML = """
     const routeMargin = 26;
     const portPadding = 8;
     const laneSpacing = 12;
+    const corridorSpacing = 10;
     const state = { scale: 0.85, tx: 30, ty: 30 };
     const nodeById = new Map(graph.nodes.map(node => [node.id, node]));
     const routesByEdgeKey = new Map();
@@ -475,6 +476,20 @@ HTML = """
       return `${edge.source}->${edge.target}`;
     }
 
+    function distributeOffset(index, spacing) {
+      if (index === 0) {
+        return 0;
+      }
+      const rank = Math.floor((index + 1) / 2);
+      return (index % 2 === 1 ? 1 : -1) * rank * spacing;
+    }
+
+    function reserveTrack(trackUse, key) {
+      const index = trackUse.get(key) || 0;
+      trackUse.set(key, index + 1);
+      return index;
+    }
+
     function buildRoutes() {
       routesByEdgeKey.clear();
       const outgoing = new Map();
@@ -507,7 +522,8 @@ HTML = """
         });
       }
 
-      const laneUse = new Map();
+      const horizontalTrackUse = new Map();
+      const verticalTrackUse = new Map();
 
       for (const edge of graph.edges) {
         const key = edgeKey(edge);
@@ -530,16 +546,43 @@ HTML = """
         const goingRight = tx >= sx + gridX / 2;
 
         if (goingRight && !horizontalSegmentHitsNode(sy, sx, tx, source.id, target.id)) {
-          direct = Math.abs(sy - ty) < 1;
+          if (Math.abs(sy - ty) < 1) {
+            const rowKey = `${Math.round(sy / laneSpacing)}:${Math.round(Math.min(sx, tx) / corridorSpacing)}:${Math.round(Math.max(sx, tx) / corridorSpacing)}`;
+            const rowIndex = reserveTrack(horizontalTrackUse, rowKey);
+            laneY = sy + distributeOffset(rowIndex, corridorSpacing);
+            direct = rowIndex === 0;
+          } else {
+            const elbowKey = `${Math.round(elbowX / corridorSpacing)}:${Math.round(Math.min(sy, ty) / laneSpacing)}:${Math.round(Math.max(sy, ty) / laneSpacing)}`;
+            const elbowIndex = reserveTrack(verticalTrackUse, elbowKey);
+            elbowX += distributeOffset(elbowIndex, corridorSpacing);
+          }
         } else {
           const baseY = Math.round((sy + ty) / (2 * laneSpacing)) * laneSpacing;
           laneY = chooseHorizontalLane(source, target, sourceStub, targetStub, baseY);
-          const corridor = `${Math.min(sourceStub, targetStub)}:${Math.max(sourceStub, targetStub)}:${Math.round(laneY / laneSpacing)}`;
-          const laneIndex = laneUse.get(corridor) || 0;
-          laneUse.set(corridor, laneIndex + 1);
-          const direction = laneIndex % 2 === 0 ? 1 : -1;
-          const magnitude = Math.floor((laneIndex + 1) / 2) * laneSpacing;
-          laneY += direction * magnitude;
+          const laneKey = `${Math.round(laneY / laneSpacing)}:${Math.round(Math.min(sourceStub, targetStub) / corridorSpacing)}:${Math.round(Math.max(sourceStub, targetStub) / corridorSpacing)}`;
+          const laneIndex = reserveTrack(horizontalTrackUse, laneKey);
+          laneY += distributeOffset(laneIndex, corridorSpacing);
+
+          const sourceColumnKey = `${Math.round(sourceStub / corridorSpacing)}:${Math.round(Math.min(sy, laneY) / laneSpacing)}:${Math.round(Math.max(sy, laneY) / laneSpacing)}`;
+          const sourceColumnIndex = reserveTrack(verticalTrackUse, sourceColumnKey);
+          const sourceColumn = sourceStub + distributeOffset(sourceColumnIndex, corridorSpacing);
+
+          const targetColumnKey = `${Math.round(targetStub / corridorSpacing)}:${Math.round(Math.min(ty, laneY) / laneSpacing)}:${Math.round(Math.max(ty, laneY) / laneSpacing)}`;
+          const targetColumnIndex = reserveTrack(verticalTrackUse, targetColumnKey);
+          const targetColumn = targetStub + distributeOffset(targetColumnIndex, corridorSpacing);
+
+          routesByEdgeKey.set(key, {
+            sx,
+            sy,
+            tx,
+            ty,
+            sourceStub: sourceColumn,
+            targetStub: targetColumn,
+            laneY,
+            elbowX,
+            direct
+          });
+          continue;
         }
 
         routesByEdgeKey.set(key, {
