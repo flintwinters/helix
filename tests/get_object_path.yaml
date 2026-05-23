@@ -1,0 +1,22 @@
+program:
+  main: [get, pathvar]
+  inner:
+    - a
+    - b
+    - c
+  pathvar:
+    - inner
+    - 2
+expected:
+  main: [get, pathvar]
+  inner:
+    - a
+    - b
+    - c
+  pathvar:
+    - inner
+    - 2
+  state:
+    result: c
+    frames: []
+    status: finished
