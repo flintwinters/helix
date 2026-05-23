@@ -17,6 +17,10 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 WRAPPER_VM_NAME = "__debug_target__"
 DOWN_ARROW = "\x1b[B"
 UP_ARROW = "\x1b[A"
+DEBUG_LOG_FORMAT = (
+    "%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) "
+    "%C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)"
+)
 YAML_LOADER = YAML(typ="safe")
 YAML_DUMPER = YAML()
 YAML_DUMPER.default_flow_style = False
@@ -346,6 +350,50 @@ def commit_debug_snapshot(debug_directory: Path, message: str) -> None:
     repo.create_commit("HEAD", signature, signature, message, tree, parents)
 
 
+def debug_log(debug_directory: Path) -> str:
+    completed = subprocess.run(
+        [
+            "git",
+            "log",
+            "--graph",
+            "--abbrev-commit",
+            "--decorate",
+            "--color=always",
+            f"--format=format:{DEBUG_LOG_FORMAT}",
+            "--all",
+        ],
+        cwd=debug_directory,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        stderr = completed.stderr.strip()
+        raise RuntimeError(stderr or "git log failed")
+
+    return completed.stdout
+
+
+class DebugLogRenderer:
+    def __init__(self) -> None:
+        self.rendered_lines = 0
+
+    def refresh(self, debug_directory: Path) -> None:
+        if self.rendered_lines:
+            sys.stdout.write(f"\x1b[{self.rendered_lines}F")
+            sys.stdout.write("\x1b[J")
+
+        log_output = debug_log(debug_directory).rstrip("\n")
+        if log_output:
+            sys.stdout.write(log_output)
+            sys.stdout.write("\n")
+            self.rendered_lines = len(log_output.splitlines())
+        else:
+            self.rendered_lines = 0
+
+        sys.stdout.flush()
+
+
 def ensure_debug_repo(target_path: Path) -> Path:
     debug_directory = debug_directory_for(target_path)
     debug_target_path = debug_target_path_for(target_path)
@@ -437,12 +485,16 @@ def main() -> int:
 
     try:
         debug_target_path = ensure_debug_repo(target_path)
+        log_renderer = DebugLogRenderer()
+        log_renderer.refresh(debug_target_path.parent)
         while True:
             key = read_debug_key()
             if key == DOWN_ARROW:
                 step_and_commit(binary_path, debug_target_path)
+                log_renderer.refresh(debug_target_path.parent)
             elif key == UP_ARROW:
                 reset_previous_snapshot(debug_target_path)
+                log_renderer.refresh(debug_target_path.parent)
             else:
                 return 0
     except KeyboardInterrupt:
