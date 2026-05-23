@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
-import curses
 from copy import deepcopy
 import subprocess
 import sys
 import tempfile
+import termios
+import tty
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -330,19 +331,15 @@ def step_target_file(binary_path: Path, target_path: Path) -> None:
 
 
 def should_continue_after_step() -> bool:
-    screen = curses.initscr()
+    stdin_fd = sys.stdin.fileno()
+    original_settings = termios.tcgetattr(stdin_fd)
     try:
-        curses.noecho()
-        curses.cbreak()
-        screen.keypad(True)
-        key = screen.getch()
+        tty.setraw(stdin_fd)
+        key = sys.stdin.read(1)
     finally:
-        screen.keypad(False)
-        curses.nocbreak()
-        curses.echo()
-        curses.endwin()
+        termios.tcsetattr(stdin_fd, termios.TCSADRAIN, original_settings)
 
-    return key in (curses.KEY_ENTER, 10, 13)
+    return key in ("\n", "\r")
 
 
 def main() -> int:
