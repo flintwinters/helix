@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import curses
 from copy import deepcopy
 import subprocess
 import sys
@@ -328,6 +329,22 @@ def step_target_file(binary_path: Path, target_path: Path) -> None:
         wrapper_path.unlink(missing_ok=True)
 
 
+def should_continue_after_step() -> bool:
+    screen = curses.initscr()
+    try:
+        curses.noecho()
+        curses.cbreak()
+        screen.keypad(True)
+        key = screen.getch()
+    finally:
+        screen.keypad(False)
+        curses.nocbreak()
+        curses.echo()
+        curses.endwin()
+
+    return key in (curses.KEY_ENTER, 10, 13)
+
+
 def main() -> int:
     args = parse_args()
     target_path = Path(args.target).expanduser().resolve()
@@ -336,7 +353,8 @@ def main() -> int:
     while True:
         try:
             step_target_file(binary_path, target_path)
-            input()
+            if not should_continue_after_step():
+                return 0
         except KeyboardInterrupt:
             return 0
         except Exception as error:
