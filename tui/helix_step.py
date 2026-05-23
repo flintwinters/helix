@@ -463,7 +463,31 @@ def read_debug_key() -> str:
     return key
 
 
+def checkout_snapshot(repo, commit) -> None:
+    repo.checkout_tree(commit)
+    repo.set_head(commit.id)
+
+
+def next_preserved_snapshot(repo):
+    head_id = repo.head.target
+    for reference_name in repo.listall_references():
+        if not reference_name.startswith("refs/helix-debug/snapshots/"):
+            continue
+
+        commit = repo[repo.lookup_reference(reference_name).target]
+        if commit.parents and commit.parents[0].id == head_id:
+            return commit
+
+    return None
+
+
 def step_and_commit(binary_path: Path, debug_target_path: Path) -> None:
+    repo = open_debug_repo(debug_target_path.parent)
+    next_snapshot = next_preserved_snapshot(repo)
+    if next_snapshot is not None:
+        checkout_snapshot(repo, next_snapshot)
+        return
+
     step_target_file(binary_path, debug_target_path)
     commit_debug_snapshot(debug_target_path.parent, "VM state")
 
@@ -485,8 +509,7 @@ def checkout_previous_snapshot(debug_target_path: Path) -> None:
 
     parent_commit = head_commit.parents[0]
     preserve_snapshot_ref(repo, head_commit.id)
-    repo.checkout_tree(parent_commit)
-    repo.set_head(parent_commit.id)
+    checkout_snapshot(repo, parent_commit)
 
 
 def main() -> int:
