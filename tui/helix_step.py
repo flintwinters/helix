@@ -608,10 +608,11 @@ def next_preserved_snapshot(repo):
 
 def step_and_commit(binary_path: Path, debug_target_path: Path) -> None:
     repo = open_debug_repo(debug_target_path.parent)
-    next_snapshot = next_preserved_snapshot(repo)
-    if next_snapshot is not None:
-        checkout_snapshot(repo, next_snapshot)
-        return
+    if repo.head_is_detached:
+        next_snapshot = next_preserved_snapshot(repo)
+        if next_snapshot is not None:
+            checkout_snapshot(repo, next_snapshot)
+            return
 
     step_target_file(binary_path, debug_target_path)
     commit_debug_snapshot(debug_target_path.parent, "VM state")
