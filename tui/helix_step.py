@@ -19,6 +19,7 @@ DOWN_ARROW = "\x1b[B"
 UP_ARROW = "\x1b[A"
 RIGHT_ARROW = "\x1b[C"
 LEFT_ARROW = "\x1b[D"
+SPACE_KEY = " "
 DEBUG_LOG_FORMAT = (
     "%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) "
     "%C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)"
@@ -476,6 +477,19 @@ def checkout_branch(repo, reference_name: str) -> None:
     repo.set_head(reference_name)
 
 
+def create_branch_at_head(debug_target_path: Path) -> None:
+    repo = open_debug_repo(debug_target_path.parent)
+    existing_branches = local_branch_reference_set(repo)
+    branch_index = 1
+
+    while f"refs/heads/fork-{branch_index}" in existing_branches:
+        branch_index += 1
+
+    reference_name = f"refs/heads/fork-{branch_index}"
+    repo.create_reference(reference_name, repo.head.target)
+    checkout_branch(repo, reference_name)
+
+
 def branch_log_order(debug_directory: Path) -> list[str]:
     completed = subprocess.run(
         [
@@ -645,6 +659,9 @@ def main() -> int:
                 log_renderer.refresh(debug_target_path.parent)
             elif key == LEFT_ARROW:
                 checkout_adjacent_branch(debug_target_path, -1)
+                log_renderer.refresh(debug_target_path.parent)
+            elif key == SPACE_KEY:
+                create_branch_at_head(debug_target_path)
                 log_renderer.refresh(debug_target_path.parent)
             else:
                 return 0
