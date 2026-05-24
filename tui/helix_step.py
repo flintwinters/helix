@@ -590,58 +590,13 @@ def local_branch_reference_set(repo) -> set[str]:
     }
 
 
-def commit_first_parent_id(commit):
-    if not commit.parents:
-        return None
-
-    return commit.parents[0].id
-
-
-def first_parent_depths(repo, commit_id) -> dict:
-    depths = {}
-    depth = 0
-    current_commit = repo[commit_id]
-
-    while current_commit.id not in depths:
-        depths[current_commit.id] = depth
-        if not current_commit.parents:
-            break
-
-        depth += 1
-        current_commit = current_commit.parents[0]
-
-    return depths
-
-
-def parallel_branch_references(repo, ordered_branches: list[str]) -> list[str]:
+def ordered_local_branch_references(repo, ordered_branches: list[str]) -> list[str]:
     local_branches = local_branch_reference_set(repo)
-    head_commit = repo[repo.head.target]
-    head_depths = first_parent_depths(repo, head_commit.id)
-    branch_depths = []
-
-    for reference_name in ordered_branches:
-        if reference_name not in local_branches:
-            continue
-
-        branch_commit = repo[repo.lookup_reference(reference_name).target]
-        if branch_commit.id == head_commit.id:
-            branch_depths.append((reference_name, 0))
-            continue
-
-        branch_parent_id = commit_first_parent_id(branch_commit)
-        if branch_parent_id in head_depths:
-            branch_depths.append((reference_name, head_depths[branch_parent_id]))
-
-    if not branch_depths:
-        return []
-
-    nearest_depth = min(depth for _, depth in branch_depths)
+    ordered_branch_set = set(ordered_branches)
     return [
-        reference_name
-        for reference_name, depth in branch_depths
-        if depth == nearest_depth
+        *[reference_name for reference_name in ordered_branches if reference_name in local_branches],
+        *sorted(local_branches - ordered_branch_set),
     ]
-
 
 
 def current_branch_index(repo, branch_references: list[str]) -> int:
@@ -660,12 +615,12 @@ def current_branch_index(repo, branch_references: list[str]) -> int:
 
 def checkout_adjacent_branch(debug_target_path: Path, offset: int) -> None:
     repo = open_debug_repo(debug_target_path.parent)
-    branch_references = parallel_branch_references(
+    branch_references = ordered_local_branch_references(
         repo,
         branch_log_order(debug_target_path.parent),
     )
     if not branch_references:
-        raise RuntimeError("debug repository has no parallel branches")
+        raise RuntimeError("debug repository has no local branches")
 
     current_index = current_branch_index(repo, branch_references)
     next_index = (current_index + offset) % len(branch_references)
