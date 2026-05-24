@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <ryml_interface.hpp>
@@ -29,6 +30,53 @@ static CellPtr fail_vm(const shared_ptr<VmCell>& vm, const string& message) {
 
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<VmCell>& root_cell);
 
+static CellPtr map_segment_for_child(const MapCell& parent, const Cell* child) {
+    for (const auto& [key, candidate] : parent.value) {
+        if (candidate.get() == child) {
+            return make_shared<StrCell>(key);
+        }
+    }
+
+    return nullptr;
+}
+
+static CellPtr vec_segment_for_child(const VecCell& parent, const Cell* child) {
+    for (size_t index = 0; index < parent.value.size(); ++index) {
+        if (parent.value[index].get() == child) {
+            return make_shared<IntCell>(static_cast<int64_t>(index));
+        }
+    }
+
+    return nullptr;
+}
+
+static CellPtr segment_for_child(const Cell* parent, const Cell* child) {
+    if (is_map_like_cell(ConstCellPtr(const_cast<Cell*>(parent), [](const Cell*) {}))) {
+        return map_segment_for_child(static_cast<const MapCell&>(*parent), child);
+    }
+    if (parent->type == Cell::Type::vec) {
+        return vec_segment_for_child(static_cast<const VecCell&>(*parent), child);
+    }
+
+    return nullptr;
+}
+
+static bool append_reversed_path_segment(vector<CellPtr>& reversed_segments, const Cell*& current) {
+    const Cell* parent = current->parent.get();
+    if (!parent) {
+        return false;
+    }
+
+    CellPtr segment = segment_for_child(parent, current);
+    if (!segment) {
+        return false;
+    }
+
+    reversed_segments.push_back(move(segment));
+    current = parent;
+    return true;
+}
+
 static shared_ptr<VecCell> object_path_to_cell(const shared_ptr<VmCell>& vm, ConstCellPtr target) {
     if (!vm || !target) {
         return nullptr;
@@ -37,36 +85,9 @@ static shared_ptr<VecCell> object_path_to_cell(const shared_ptr<VmCell>& vm, Con
     vector<CellPtr> reversed_segments;
     const Cell* current = target.get();
     while (current && current != vm.get()) {
-        const Cell* parent = current->parent.get();
-        if (!parent) {
+        if (!append_reversed_path_segment(reversed_segments, current)) {
             return nullptr;
         }
-
-        CellPtr segment = nullptr;
-        if (is_map_like_cell(ConstCellPtr(const_cast<Cell*>(parent), [](const Cell*) {}))) {
-            const auto& fields = static_cast<const MapCell&>(*parent).value;
-            for (const auto& [key, child] : fields) {
-                if (child.get() == current) {
-                    segment = make_shared<StrCell>(key);
-                    break;
-                }
-            }
-        } else if (parent->type == Cell::Type::vec) {
-            const vector<CellPtr>& values = static_cast<const VecCell&>(*parent).value;
-            for (size_t index = 0; index < values.size(); ++index) {
-                if (values[index].get() == current) {
-                    segment = make_shared<IntCell>(static_cast<int64_t>(index));
-                    break;
-                }
-            }
-        }
-
-        if (!segment) {
-            return nullptr;
-        }
-
-        reversed_segments.push_back(move(segment));
-        current = parent;
     }
 
     if (current != vm.get()) {
@@ -316,54 +337,88 @@ static void retire_unyielded_frame(const shared_ptr<ScopeCell>& frame) {
     frame->parent = nullptr;
 }
 
+static optional<size_t> validated_list_frame_index(
+    const shared_ptr<VmCell>& vm,
+    const shared_ptr<VecCell>& sequence,
+    const shared_ptr<ScopeCell>& frame) {
+    const IntCell* index_cell = frame_index(frame);
+    if (!index_cell) {
+        fail_vm(vm, "list frame is missing an integer index");
+        return nullopt;
+    }
+
+    int64_t index = index_cell->value;
+    if (index < 0 || static_cast<size_t>(index) >= sequence->value.size()) {
+        fail_vm(vm, "list frame index is out of bounds");
+        return nullopt;
+    }
+
+    return static_cast<size_t>(index);
+}
+
+static CellPtr yield_list_frame_at(
+    const shared_ptr<VmCell>& vm,
+    const shared_ptr<ScopeCell>& frame,
+    size_t next_index,
+    CellPtr result) {
+    store_list_resume_frame(vm, frame, next_index);
+    return result;
+}
+
+struct ListFrameAdvance {
+    shared_ptr<VmCell> vm {};
+    shared_ptr<ScopeCell> frame {};
+    shared_ptr<VecCell> sequence {};
+    bool yielded = false;
+};
+
+static CellPtr advance_list_item(ListFrameAdvance& advance, size_t current_index) {
+    CellPtr item = advance.sequence->value[current_index];
+    CellPtr breakpoint_result = update_pc_or_break(advance.vm, item);
+    if (breakpoint_result) {
+        return is_signal_cell(breakpoint_result)
+            ? breakpoint_result
+            : yield_list_frame_at(advance.vm, advance.frame, current_index, breakpoint_result);
+    }
+
+    CellPtr value = evaluate_cell(item, advance.vm);
+    if (is_signal_cell(value)) {
+        attach_terminal_state(advance.vm, value);
+        return value;
+    }
+
+    size_t next_index = current_index + 1;
+    if (next_index < advance.sequence->value.size()) {
+        advance.yielded = true;
+        store_list_resume_frame(advance.vm, advance.frame, next_index);
+    }
+
+    return nullptr;
+}
+
 static CellPtr advance_list_frame(const shared_ptr<VmCell>& vm, const shared_ptr<ScopeCell>& frame) {
     shared_ptr<VecCell> sequence = frame_values(frame);
     if (!sequence) {
         return fail_vm(vm, "list frame is missing a vector sequence");
     }
 
-    const IntCell* index_cell = frame_index(frame);
-    if (!index_cell) {
-        return fail_vm(vm, "list frame is missing an integer index");
-    }
-
-    int64_t index = index_cell->value;
-    if (index < 0 || static_cast<size_t>(index) >= sequence->value.size()) {
-        return fail_vm(vm, "list frame index is out of bounds");
+    optional<size_t> start_index = validated_list_frame_index(vm, sequence, frame);
+    if (!start_index) {
+        return vm_result(vm);
     }
 
     ensure_vm_state(vm)->set("frames", make_shared<VecCell>());
-    bool yielded = false;
-
-    for (size_t current_index = static_cast<size_t>(index); current_index < sequence->value.size(); ++current_index) {
-        CellPtr breakpoint_result = update_pc_or_break(vm, sequence->value[current_index]);
-        if (breakpoint_result) {
-            if (is_signal_cell(breakpoint_result)) {
-                return breakpoint_result;
-            }
-
-            yielded = true;
-            store_list_resume_frame(vm, frame, current_index);
-            return breakpoint_result;
-        }
-
-        CellPtr value = evaluate_cell(sequence->value[current_index], vm);
-        if (is_signal_cell(value)) {
-            attach_terminal_state(vm, value);
-            return value;
-        }
-
-        size_t next_index = current_index + 1;
-        if (next_index < sequence->value.size()) {
-            yielded = true;
-            store_list_resume_frame(vm, frame, next_index);
+    ListFrameAdvance advance {vm, frame, sequence};
+    for (size_t current_index = *start_index; current_index < sequence->value.size(); ++current_index) {
+        CellPtr result = advance_list_item(advance, current_index);
+        if (result) {
+            return result;
         }
     }
 
-    if (!yielded) {
+    if (!advance.yielded) {
         retire_unyielded_frame(frame);
     }
-
     return make_shared<NilCell>();
 }
 
