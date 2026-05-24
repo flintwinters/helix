@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <memory>
 #include <string>
 
@@ -27,6 +28,159 @@ static CellPtr fail_vm(const shared_ptr<VmCell>& vm, const string& message) {
 }
 
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<VmCell>& root_cell);
+
+static shared_ptr<VecCell> object_path_to_cell(const shared_ptr<VmCell>& vm, ConstCellPtr target) {
+    if (!vm || !target) {
+        return nullptr;
+    }
+
+    vector<CellPtr> reversed_segments;
+    const Cell* current = target.get();
+    while (current && current != vm.get()) {
+        const Cell* parent = current->parent.get();
+        if (!parent) {
+            return nullptr;
+        }
+
+        CellPtr segment = nullptr;
+        if (is_map_like_cell(ConstCellPtr(const_cast<Cell*>(parent), [](const Cell*) {}))) {
+            const auto& fields = static_cast<const MapCell&>(*parent).value;
+            for (const auto& [key, child] : fields) {
+                if (child.get() == current) {
+                    segment = make_shared<StrCell>(key);
+                    break;
+                }
+            }
+        } else if (parent->type == Cell::Type::vec) {
+            const vector<CellPtr>& values = static_cast<const VecCell&>(*parent).value;
+            for (size_t index = 0; index < values.size(); ++index) {
+                if (values[index].get() == current) {
+                    segment = make_shared<IntCell>(static_cast<int64_t>(index));
+                    break;
+                }
+            }
+        }
+
+        if (!segment) {
+            return nullptr;
+        }
+
+        reversed_segments.push_back(move(segment));
+        current = parent;
+    }
+
+    if (current != vm.get()) {
+        return nullptr;
+    }
+
+    reverse(reversed_segments.begin(), reversed_segments.end());
+    return make_shared<VecCell>(move(reversed_segments));
+}
+
+static bool path_segments_equal(ConstCellPtr left, ConstCellPtr right) {
+    if (!left || !right || left->type != right->type) {
+        return false;
+    }
+
+    if (left->type == Cell::Type::string) {
+        return static_cast<const StrCell&>(*left).value == static_cast<const StrCell&>(*right).value;
+    }
+
+    if (left->type == Cell::Type::integer) {
+        return static_cast<const IntCell&>(*left).value == static_cast<const IntCell&>(*right).value;
+    }
+
+    return false;
+}
+
+static bool object_paths_equal(ConstCellPtr left, ConstCellPtr right) {
+    if (!left || !right || left->type != Cell::Type::vec || right->type != Cell::Type::vec) {
+        return false;
+    }
+
+    const vector<CellPtr>& left_values = static_cast<const VecCell&>(*left).value;
+    const vector<CellPtr>& right_values = static_cast<const VecCell&>(*right).value;
+    if (left_values.size() != right_values.size()) {
+        return false;
+    }
+
+    for (size_t index = 0; index < left_values.size(); ++index) {
+        if (!path_segments_equal(left_values[index], right_values[index])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static void clear_vm_yield_reason(const shared_ptr<VmCell>& vm) {
+    ensure_vm_state(vm)->value.erase("yield_reason");
+}
+
+static CellPtr breakpoint_error(const string& message, ConstCellPtr source) {
+    shared_ptr<MapCell> details = make_shared<MapCell>();
+    details->set("kind", make_shared<StrCell>("breakpoint_error"));
+    if (source) {
+        details->set("source", const_pointer_cast<Cell>(source));
+    }
+    return make_error_cell(message, details);
+}
+
+static bool vm_breakpoint_matches(const shared_ptr<VmCell>& vm, ConstCellPtr pc, CellPtr& error) {
+    CellPtr breakpoints_cell = map_field_cell(vm, "breakpoints");
+    if (!breakpoints_cell) {
+        return false;
+    }
+
+    if (breakpoints_cell->type != Cell::Type::vec) {
+        error = breakpoint_error("VM breakpoints must be a vector", breakpoints_cell);
+        return false;
+    }
+
+    const vector<CellPtr>& breakpoints = static_cast<const VecCell&>(*breakpoints_cell).value;
+    for (const CellPtr& breakpoint : breakpoints) {
+        if (!breakpoint || breakpoint->type != Cell::Type::vec) {
+            error = breakpoint_error("VM breakpoint entries must be object path vectors", breakpoint);
+            return false;
+        }
+
+        if (object_paths_equal(pc, breakpoint)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static CellPtr yield_at_breakpoint(const shared_ptr<VmCell>& vm, CellPtr pc) {
+    shared_ptr<MapCell> state = ensure_vm_state(vm);
+    state->set("pc", move(pc));
+    state->set("yield_reason", make_shared<StrCell>("breakpoint"));
+    set_vm_status(vm, VmStatus::running);
+    clear_vm_terminal_fields(vm);
+    return vm_status_cell(vm);
+}
+
+static CellPtr update_pc_or_break(const shared_ptr<VmCell>& vm, CellPtr node) {
+    CellPtr pc = object_path_to_cell(vm, node);
+    if (!pc) {
+        return fail_vm(vm, "VM program counter could not be resolved as an object path");
+    }
+
+    ensure_vm_state(vm)->set("pc", pc);
+
+    CellPtr error = nullptr;
+    if (vm_breakpoint_matches(vm, pc, error)) {
+        return yield_at_breakpoint(vm, pc);
+    }
+    if (error) {
+        attach_terminal_state(vm, error);
+        return error;
+    }
+
+    clear_vm_yield_reason(vm);
+    return nullptr;
+}
 
 static shared_ptr<MapCell> make_resolution_details(
     const string& kind,
@@ -182,6 +336,17 @@ static CellPtr advance_list_frame(const shared_ptr<VmCell>& vm, const shared_ptr
     bool yielded = false;
 
     for (size_t current_index = static_cast<size_t>(index); current_index < sequence->value.size(); ++current_index) {
+        CellPtr breakpoint_result = update_pc_or_break(vm, sequence->value[current_index]);
+        if (breakpoint_result) {
+            if (is_signal_cell(breakpoint_result)) {
+                return breakpoint_result;
+            }
+
+            yielded = true;
+            store_list_resume_frame(vm, frame, current_index);
+            return breakpoint_result;
+        }
+
         CellPtr value = evaluate_cell(sequence->value[current_index], vm);
         if (is_signal_cell(value)) {
             attach_terminal_state(vm, value);
@@ -210,6 +375,11 @@ static CellPtr start_vm_main(const shared_ptr<VmCell>& vm) {
 
     set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
+
+    CellPtr breakpoint_result = update_pc_or_break(vm, main_it->second);
+    if (breakpoint_result) {
+        return breakpoint_result;
+    }
 
     CellPtr result = is_null_cell(main_it->second) ? main_it->second : evaluate_cell(main_it->second, vm);
     if (is_signal_cell(result)) {
