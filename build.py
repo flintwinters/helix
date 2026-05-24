@@ -33,6 +33,21 @@ VALGRIND_ARGS = [
 STEP_INPUT_TIMEOUT_SECONDS = 1.0
 
 
+def validate_native_module_isolation():
+    """Ensures optional native libraries stay out of the core runtime binary."""
+    core_sources = SOURCES.split()
+    sfml_sources = [source for source in core_sources if "sfml" in source.lower()]
+    if sfml_sources:
+        print(f"Core runtime sources must not include SFML module sources: {sfml_sources}")
+        return False
+
+    if "sfml" in LINKER_FLAGS.lower():
+        print("Core runtime linker flags must not link SFML libraries.")
+        return False
+
+    return True
+
+
 def is_source_newer(source_path, output_path):
     return not os.path.exists(output_path) or os.path.getmtime(source_path) > os.path.getmtime(output_path)
 
@@ -111,6 +126,9 @@ def wait_after_step(step_name):
 
 def compile_main():
     """Compiles the runtime sources into an executable."""
+    if not validate_native_module_isolation():
+        return False
+
     os.makedirs(OBJECT_DIRECTORY, exist_ok=True)
 
     object_files = []
