@@ -20,6 +20,7 @@ UP_ARROW = "\x1b[A"
 RIGHT_ARROW = "\x1b[C"
 LEFT_ARROW = "\x1b[D"
 SPACE_KEY = " "
+CONTINUE_OPERATION = "__continue__"
 DEBUG_LOG_FORMAT = (
     "%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) "
     "%C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)"
@@ -44,9 +45,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--continue",
-        dest="continue_mode",
-        action="store_true",
-        help="Run start instead of step for forward execution.",
+        dest="operations",
+        action="append_const",
+        const=CONTINUE_OPERATION,
+        help="Run the forward-start action once.",
     )
     parser.add_argument(
         "--tui",
@@ -461,7 +463,7 @@ def ensure_debug_repo(target_path: Path) -> Path:
     return debug_target_path
 
 
-def step_target_file(binary_path: Path, target_path: Path, continue_mode: bool) -> None:
+def step_target_file(binary_path: Path, target_path: Path, forward_primitive: str) -> None:
     if not binary_path.is_file():
         raise FileNotFoundError(f"helix binary not found: {binary_path}")
 
@@ -471,7 +473,6 @@ def step_target_file(binary_path: Path, target_path: Path, continue_mode: bool) 
         raise ValueError("target VM has no remaining step to execute")
 
     execution_vm = single_step_execution_vm(target_vm, sequence[current_index])
-    forward_primitive = "start" if continue_mode else "step"
     wrapper_vm = build_wrapper_vm(execution_vm, forward_primitive)
 
     with tempfile.NamedTemporaryFile(
@@ -684,7 +685,7 @@ def next_preserved_snapshot(repo):
     return None
 
 
-def step_and_commit(binary_path: Path, debug_target_path: Path, continue_mode: bool) -> None:
+def step_and_commit(binary_path: Path, debug_target_path: Path, forward_primitive: str) -> None:
     repo = open_debug_repo(debug_target_path.parent)
     if repo.head_is_detached:
         next_snapshot = next_preserved_snapshot(repo)
@@ -692,7 +693,7 @@ def step_and_commit(binary_path: Path, debug_target_path: Path, continue_mode: b
             checkout_snapshot(repo, next_snapshot)
             return
 
-    step_target_file(binary_path, debug_target_path, continue_mode)
+    step_target_file(binary_path, debug_target_path, forward_primitive)
     commit_debug_snapshot(debug_target_path.parent, "VM state")
 
 
@@ -720,10 +721,13 @@ def execute_debug_operation(
     operation: str,
     binary_path: Path,
     debug_target_path: Path,
-    continue_mode: bool,
 ) -> bool:
     if operation == DOWN_ARROW:
-        step_and_commit(binary_path, debug_target_path, continue_mode)
+        step_and_commit(binary_path, debug_target_path, "step")
+        return True
+
+    if operation == CONTINUE_OPERATION:
+        step_and_commit(binary_path, debug_target_path, "start")
         return True
 
     if operation == UP_ARROW:
@@ -759,7 +763,6 @@ def main() -> int:
                     operation,
                     binary_path,
                     debug_target_path,
-                    args.continue_mode,
                 )
             return 0
 
@@ -771,7 +774,6 @@ def main() -> int:
                 key,
                 binary_path,
                 debug_target_path,
-                args.continue_mode,
             ):
                 log_renderer.refresh(debug_target_path.parent)
             else:
