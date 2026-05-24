@@ -21,6 +21,8 @@ RIGHT_ARROW = "\x1b[C"
 LEFT_ARROW = "\x1b[D"
 SPACE_KEY = " "
 CONTINUE_OPERATION = "__continue__"
+STEP_FORWARD_OPERATION = "__step_forward__"
+STEP_BACKWARD_OPERATION = "__step_backward__"
 DEBUG_LOG_FORMAT = (
     "%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) "
     "%C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)"
@@ -59,14 +61,14 @@ def parse_args() -> argparse.Namespace:
         "--step-forward",
         dest="operations",
         action="append_const",
-        const=DOWN_ARROW,
+        const=STEP_FORWARD_OPERATION,
         help="Run the forward-step action once.",
     )
     parser.add_argument(
         "--step-backward",
         dest="operations",
         action="append_const",
-        const=UP_ARROW,
+        const=STEP_BACKWARD_OPERATION,
         help="Run the backward-step action once.",
     )
     parser.add_argument(
@@ -677,7 +679,7 @@ def execute_debug_operation(
     binary_path: Path,
     debug_target_path: Path,
 ) -> bool:
-    if operation == DOWN_ARROW:
+    if operation in (STEP_FORWARD_OPERATION, UP_ARROW):
         step_and_commit(binary_path, debug_target_path, "step")
         return True
 
@@ -685,7 +687,7 @@ def execute_debug_operation(
         step_and_commit(binary_path, debug_target_path, "start")
         return True
 
-    if operation == UP_ARROW:
+    if operation in (STEP_BACKWARD_OPERATION, DOWN_ARROW):
         checkout_previous_snapshot(debug_target_path)
         return True
 
@@ -712,7 +714,7 @@ def main() -> int:
     try:
         debug_target_path = ensure_debug_repo(target_path)
         if not args.tui:
-            operations = args.operations or [DOWN_ARROW]
+            operations = args.operations or [STEP_FORWARD_OPERATION]
             for operation in operations:
                 execute_debug_operation(
                     operation,
