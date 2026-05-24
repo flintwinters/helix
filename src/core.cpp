@@ -1,5 +1,6 @@
 #include <core.hpp>
 
+#include <algorithm>
 #include <utility>
 
 Cell::Cell() : parent(nullptr) {}
@@ -95,6 +96,110 @@ static CellPtr make_path_error(const string& message, size_t segment_index, Cons
         details->set("segment", const_pointer_cast<Cell>(segment));
     }
     return make_error_cell(message, details);
+}
+
+static CellPtr map_segment_for_child(const MapCell& parent, const Cell* child) {
+    for (const auto& [key, candidate] : parent.value) {
+        if (candidate.get() == child) {
+            return make_shared<StrCell>(key);
+        }
+    }
+
+    return nullptr;
+}
+
+static CellPtr vec_segment_for_child(const VecCell& parent, const Cell* child) {
+    for (size_t index = 0; index < parent.value.size(); ++index) {
+        if (parent.value[index].get() == child) {
+            return make_shared<IntCell>(static_cast<int64_t>(index));
+        }
+    }
+
+    return nullptr;
+}
+
+static CellPtr segment_for_child(const Cell* parent, const Cell* child) {
+    if (is_map_like_cell(ConstCellPtr(const_cast<Cell*>(parent), [](const Cell*) {}))) {
+        return map_segment_for_child(static_cast<const MapCell&>(*parent), child);
+    }
+    if (parent->type == Cell::Type::vec) {
+        return vec_segment_for_child(static_cast<const VecCell&>(*parent), child);
+    }
+
+    return nullptr;
+}
+
+static bool append_reversed_path_segment(vector<CellPtr>& reversed_segments, const Cell*& current) {
+    const Cell* parent = current->parent.get();
+    if (!parent) {
+        return false;
+    }
+
+    CellPtr segment = segment_for_child(parent, current);
+    if (!segment) {
+        return false;
+    }
+
+    reversed_segments.push_back(move(segment));
+    current = parent;
+    return true;
+}
+
+static bool path_segments_equal(ConstCellPtr left, ConstCellPtr right) {
+    if (!left || !right || left->type != right->type) {
+        return false;
+    }
+
+    if (left->type == Cell::Type::string) {
+        return static_cast<const StrCell&>(*left).value == static_cast<const StrCell&>(*right).value;
+    }
+
+    if (left->type == Cell::Type::integer) {
+        return static_cast<const IntCell&>(*left).value == static_cast<const IntCell&>(*right).value;
+    }
+
+    return false;
+}
+
+shared_ptr<VecCell> cell_path_from_root(const shared_ptr<VmCell>& root_cell, ConstCellPtr target_cell) {
+    if (!root_cell || !target_cell) {
+        return nullptr;
+    }
+
+    vector<CellPtr> reversed_segments;
+    const Cell* current = target_cell.get();
+    while (current && current != root_cell.get()) {
+        if (!append_reversed_path_segment(reversed_segments, current)) {
+            return nullptr;
+        }
+    }
+
+    if (current != root_cell.get()) {
+        return nullptr;
+    }
+
+    reverse(reversed_segments.begin(), reversed_segments.end());
+    return make_shared<VecCell>(move(reversed_segments));
+}
+
+bool cell_paths_equal(ConstCellPtr left_path, ConstCellPtr right_path) {
+    if (!left_path || !right_path || left_path->type != Cell::Type::vec || right_path->type != Cell::Type::vec) {
+        return false;
+    }
+
+    const vector<CellPtr>& left_values = static_cast<const VecCell&>(*left_path).value;
+    const vector<CellPtr>& right_values = static_cast<const VecCell&>(*right_path).value;
+    if (left_values.size() != right_values.size()) {
+        return false;
+    }
+
+    for (size_t index = 0; index < left_values.size(); ++index) {
+        if (!path_segments_equal(left_values[index], right_values[index])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 CellPtr cell_at_path(CellPtr root_cell, ConstCellPtr path_cell) {
