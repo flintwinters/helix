@@ -1,0 +1,6 @@
+ryml
+__pycache__
+.python-version
+.clangd
+.codex
+build
