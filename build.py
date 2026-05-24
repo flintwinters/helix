@@ -273,9 +273,8 @@ def run_binary_size_report():
         print(f"binary size check failed: missing executable at {EXECUTABLE}")
         return False
 
-    size_bytes = os.path.getsize(EXECUTABLE)
-    size_kib = size_bytes / 1024
-    print(f"helix binary size: {size_bytes} bytes ({size_kib:.2f} KiB)")
+    size_kib = os.path.getsize(EXECUTABLE) / 1024
+    print(f"helix binary size: {size_kib:.2f} KiB")
     return True
 
 
