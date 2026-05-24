@@ -172,6 +172,7 @@ shared_ptr<MapCell> ensure_vm_state(const shared_ptr<VmCell>& vm);
 CellPtr vm_status_cell(const shared_ptr<VmCell>& vm);
 VmStatus vm_status(const shared_ptr<VmCell>& vm);
 shared_ptr<VecCell> vm_frames(const shared_ptr<VmCell>& vm);
+shared_ptr<VecCell> vm_breakpoints(const shared_ptr<VmCell>& vm);
 void set_vm_status(const shared_ptr<VmCell>& vm, VmStatus status);
 void clear_vm_terminal_fields(const shared_ptr<VmCell>& vm);
 bool vm_is_terminal(const shared_ptr<VmCell>& vm);
