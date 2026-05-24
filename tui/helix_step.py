@@ -476,12 +476,79 @@ def checkout_branch(repo, reference_name: str) -> None:
     repo.set_head(reference_name)
 
 
-def local_branch_references(repo) -> list[str]:
-    return sorted(
+def branch_log_order(debug_directory: Path) -> list[str]:
+    completed = subprocess.run(
+        [
+            "git",
+            "log",
+            "--graph",
+            "--abbrev-commit",
+            "--decorate=full",
+            "--format=format:%x1f%D",
+            "--all",
+        ],
+        cwd=debug_directory,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        stderr = completed.stderr.strip()
+        raise RuntimeError(stderr or "git log failed")
+
+    ordered_branches = []
+    seen_branches = set()
+    for line in completed.stdout.splitlines():
+        _, separator, decorations = line.partition("\x1f")
+        if not separator:
+            continue
+
+        for decoration in decorations.split(", "):
+            if decoration.startswith("HEAD -> "):
+                decoration = decoration.removeprefix("HEAD -> ")
+
+            if decoration.startswith("refs/heads/"):
+                reference_name = decoration
+            else:
+                continue
+
+            if reference_name not in seen_branches:
+                ordered_branches.append(reference_name)
+                seen_branches.add(reference_name)
+
+    return ordered_branches
+
+
+def local_branch_reference_set(repo) -> set[str]:
+    return {
         reference_name
         for reference_name in repo.listall_references()
         if reference_name.startswith("refs/heads/")
-    )
+    }
+
+
+def commit_first_parent_id(commit):
+    if not commit.parents:
+        return None
+
+    return commit.parents[0].id
+
+
+def parallel_branch_references(repo, ordered_branches: list[str]) -> list[str]:
+    local_branches = local_branch_reference_set(repo)
+    head_commit = repo[repo.head.target]
+    head_parent_id = commit_first_parent_id(head_commit)
+    parallel_branches = []
+
+    for reference_name in ordered_branches:
+        if reference_name not in local_branches:
+            continue
+
+        branch_commit = repo[repo.lookup_reference(reference_name).target]
+        if branch_commit.id == head_commit.id or commit_first_parent_id(branch_commit) == head_parent_id:
+            parallel_branches.append(reference_name)
+
+    return parallel_branches
 
 
 def current_branch_index(repo, branch_references: list[str]) -> int:
@@ -500,9 +567,12 @@ def current_branch_index(repo, branch_references: list[str]) -> int:
 
 def checkout_adjacent_branch(debug_target_path: Path, offset: int) -> None:
     repo = open_debug_repo(debug_target_path.parent)
-    branch_references = local_branch_references(repo)
+    branch_references = parallel_branch_references(
+        repo,
+        branch_log_order(debug_target_path.parent),
+    )
     if not branch_references:
-        raise RuntimeError("debug repository has no branches")
+        raise RuntimeError("debug repository has no parallel branches")
 
     current_index = current_branch_index(repo, branch_references)
     next_index = (current_index + offset) % len(branch_references)
