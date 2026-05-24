@@ -266,6 +266,19 @@ def run_cloc():
     print("missing SUM line in cloc output")
     return False
 
+
+def run_binary_size_report():
+    """Prints the final helix binary size."""
+    if not os.path.exists(EXECUTABLE):
+        print(f"binary size check failed: missing executable at {EXECUTABLE}")
+        return False
+
+    size_bytes = os.path.getsize(EXECUTABLE)
+    size_kib = size_bytes / 1024
+    print(f"helix binary size: {size_bytes} bytes ({size_kib:.2f} KiB)")
+    return True
+
+
 def runtime_command(program_path, runtime):
     if runtime == "cpp":
         return [*VALGRIND_ARGS, f"./{EXECUTABLE}", program_path], True
@@ -595,6 +608,9 @@ def main():
     num_failed = run_tests("cpp")
 
     if not run_cloc():
+        sys.exit(1)
+
+    if not run_binary_size_report():
         sys.exit(1)
         
     if num_failed > 0:
