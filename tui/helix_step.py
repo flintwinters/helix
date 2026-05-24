@@ -9,6 +9,7 @@ import tempfile
 import termios
 import tty
 from pathlib import Path
+from typing import Callable
 
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -23,6 +24,9 @@ SPACE_KEY = " "
 CONTINUE_OPERATION = "__continue__"
 STEP_FORWARD_OPERATION = "__step_forward__"
 STEP_BACKWARD_OPERATION = "__step_backward__"
+NEXT_BRANCH_OPERATION = "__next_branch__"
+PREVIOUS_BRANCH_OPERATION = "__previous_branch__"
+FORK_BRANCH_OPERATION = "__fork_branch__"
 DEBUG_LOG_FORMAT = (
     "%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) "
     "%C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)"
@@ -33,65 +37,47 @@ YAML_DUMPER.default_flow_style = False
 YAML_DUMPER.sort_base_mapping_type_on_output = False
 YAML_DUMPER.width = 100
 YAML_DUMPER.indent(mapping=2, sequence=4, offset=2)
+PYGIT2 = None
+CLI_OPERATION_FLAGS = (
+    ("--continue", CONTINUE_OPERATION, "Run the forward-start action once."),
+    ("--step-forward", STEP_FORWARD_OPERATION, "Run the forward-step action once."),
+    ("--step-backward", STEP_BACKWARD_OPERATION, "Run the backward-step action once."),
+    ("--next-branch", NEXT_BRANCH_OPERATION, "Switch to the next local branch once."),
+    ("--previous-branch", PREVIOUS_BRANCH_OPERATION, "Switch to the previous local branch once."),
+    ("--fork-branch", FORK_BRANCH_OPERATION, "Create a new branch at the current HEAD once."),
+)
+GIT_LOG_BASE_COMMAND = [
+    "git",
+    "log",
+    "--graph",
+    "--abbrev-commit",
+    "--all",
+]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Advance a Helix VM YAML file by one step using the compiled helix binary."
+        description="Snapshot and navigate Helix VM execution state in a per-target debug git repo."
     )
-    parser.add_argument("target", help="Path to the Helix VM YAML file to step in place.")
+    parser.add_argument("target", help="Path to the Helix VM YAML file to debug.")
     parser.add_argument(
         "--binary",
         default=None,
         help="Path to the compiled helix binary. Defaults to ../build/helix relative to this script.",
     )
     parser.add_argument(
-        "--continue",
-        dest="operations",
-        action="append_const",
-        const=CONTINUE_OPERATION,
-        help="Run the forward-start action once.",
-    )
-    parser.add_argument(
         "--tui",
         action="store_true",
         help="Enable interactive terminal controls instead of running a single forward step and exiting.",
     )
-    parser.add_argument(
-        "--step-forward",
-        dest="operations",
-        action="append_const",
-        const=STEP_FORWARD_OPERATION,
-        help="Run the forward-step action once.",
-    )
-    parser.add_argument(
-        "--step-backward",
-        dest="operations",
-        action="append_const",
-        const=STEP_BACKWARD_OPERATION,
-        help="Run the backward-step action once.",
-    )
-    parser.add_argument(
-        "--next-branch",
-        dest="operations",
-        action="append_const",
-        const=RIGHT_ARROW,
-        help="Switch to the next parallel branch once.",
-    )
-    parser.add_argument(
-        "--previous-branch",
-        dest="operations",
-        action="append_const",
-        const=LEFT_ARROW,
-        help="Switch to the previous parallel branch once.",
-    )
-    parser.add_argument(
-        "--fork-branch",
-        dest="operations",
-        action="append_const",
-        const=SPACE_KEY,
-        help="Create a new branch at the current HEAD once.",
-    )
+    for flag, operation, help_text in CLI_OPERATION_FLAGS:
+        parser.add_argument(
+            flag,
+            dest="operations",
+            action="append_const",
+            const=operation,
+            help=help_text,
+        )
     parser.set_defaults(operations=[])
     return parser.parse_args()
 
@@ -149,7 +135,7 @@ def build_wrapper_vm(target_vm: dict, forward_primitive: str) -> dict:
     }
 
 
-def extract_named_top_level_block(text: str, field_name: str) -> str:
+def extract_named_top_level_yaml_block(text: str, field_name: str) -> str:
     lines = text.splitlines()
     marker = f"{field_name}:"
     start_index = None
@@ -182,7 +168,7 @@ def run_helix(binary_path: Path, wrapper_path: Path) -> dict:
         raise RuntimeError(stderr or "helix exited with a non-zero status")
 
     try:
-        named_block = extract_named_top_level_block(completed.stdout, WRAPPER_VM_NAME)
+        named_block = extract_named_top_level_yaml_block(completed.stdout, WRAPPER_VM_NAME)
         loaded = YAML_LOADER.load(named_block)
     except Exception as error:
         raise RuntimeError("helix did not emit a valid stepped VM block") from error
@@ -362,12 +348,17 @@ def debug_target_path_for(target_path: Path) -> Path:
 
 
 def load_pygit2():
+    global PYGIT2
+    if PYGIT2 is not None:
+        return PYGIT2
+
     try:
-        import pygit2
+        import pygit2 as loaded_pygit2
     except ImportError as error:
         raise RuntimeError("pygit2 is required for debug snapshot storage") from error
 
-    return pygit2
+    PYGIT2 = loaded_pygit2
+    return PYGIT2
 
 
 def open_debug_repo(debug_directory: Path):
@@ -404,18 +395,9 @@ def commit_debug_snapshot(debug_directory: Path, message: str) -> None:
     repo.create_commit("HEAD", signature, signature, message, tree, parents)
 
 
-def debug_log(debug_directory: Path) -> str:
+def run_git_log(debug_directory: Path, *args: str) -> str:
     completed = subprocess.run(
-        [
-            "git",
-            "log",
-            "--graph",
-            "--abbrev-commit",
-            "--decorate",
-            "--color=always",
-            f"--format=format:{DEBUG_LOG_FORMAT}",
-            "--all",
-        ],
+        [*GIT_LOG_BASE_COMMAND, *args],
         cwd=debug_directory,
         capture_output=True,
         text=True,
@@ -428,14 +410,21 @@ def debug_log(debug_directory: Path) -> str:
     return completed.stdout
 
 
+def debug_log(debug_directory: Path) -> str:
+    return run_git_log(
+        debug_directory,
+        "--decorate",
+        "--color=always",
+        f"--format=format:{DEBUG_LOG_FORMAT}",
+    )
+
+
 class DebugLogRenderer:
     def __init__(self) -> None:
         self.rendered_lines = 0
 
     def refresh(self, debug_directory: Path) -> None:
-        if self.rendered_lines:
-            sys.stdout.write(f"\x1b[{self.rendered_lines}F")
-            sys.stdout.write("\x1b[J")
+        self.clear()
 
         log_output = debug_log(debug_directory).rstrip("\n")
         if log_output:
@@ -446,6 +435,13 @@ class DebugLogRenderer:
             self.rendered_lines = 0
 
         sys.stdout.flush()
+
+    def clear(self) -> None:
+        if not self.rendered_lines:
+            return
+
+        sys.stdout.write(f"\x1b[{self.rendered_lines}F")
+        sys.stdout.write("\x1b[J")
 
 
 def ensure_debug_repo(target_path: Path) -> Path:
@@ -517,12 +513,12 @@ def read_debug_key() -> str:
     return key
 
 
-def checkout_snapshot(repo, commit) -> None:
+def checkout_detached_commit(repo, commit) -> None:
     repo.checkout_tree(commit)
     repo.set_head(commit.id)
 
 
-def checkout_branch(repo, reference_name: str) -> None:
+def checkout_branch_ref(repo, reference_name: str) -> None:
     reference = repo.lookup_reference(reference_name)
     repo.checkout_tree(repo[reference.target])
     repo.set_head(reference_name)
@@ -538,32 +534,19 @@ def create_branch_at_head(debug_target_path: Path) -> None:
 
     reference_name = f"refs/heads/fork-{branch_index}"
     repo.create_reference(reference_name, repo.head.target)
-    checkout_branch(repo, reference_name)
+    checkout_branch_ref(repo, reference_name)
 
 
 def branch_log_order(debug_directory: Path) -> list[str]:
-    completed = subprocess.run(
-        [
-            "git",
-            "log",
-            "--graph",
-            "--abbrev-commit",
-            "--decorate=full",
-            "--format=format:%x1f%D",
-            "--all",
-        ],
-        cwd=debug_directory,
-        capture_output=True,
-        text=True,
-        check=False,
+    git_log = run_git_log(
+        debug_directory,
+        "--decorate=full",
+        "--format=format:%x1f%D",
     )
-    if completed.returncode != 0:
-        stderr = completed.stderr.strip()
-        raise RuntimeError(stderr or "git log failed")
 
     ordered_branches = []
     seen_branches = set()
-    for line in completed.stdout.splitlines():
+    for line in git_log.splitlines():
         _, separator, decorations = line.partition("\x1f")
         if not separator:
             continue
@@ -626,7 +609,7 @@ def checkout_adjacent_branch(debug_target_path: Path, offset: int) -> None:
 
     current_index = current_branch_index(repo, branch_references)
     next_index = (current_index + offset) % len(branch_references)
-    checkout_branch(repo, branch_references[next_index])
+    checkout_branch_ref(repo, branch_references[next_index])
 
 
 def next_preserved_snapshot(repo):
@@ -647,7 +630,7 @@ def step_and_commit(binary_path: Path, debug_target_path: Path, forward_primitiv
     if repo.head_is_detached:
         next_snapshot = next_preserved_snapshot(repo)
         if next_snapshot is not None:
-            checkout_snapshot(repo, next_snapshot)
+            checkout_detached_commit(repo, next_snapshot)
             return
 
     step_target_file(binary_path, debug_target_path, forward_primitive)
@@ -663,15 +646,30 @@ def preserve_snapshot_ref(repo, commit_id) -> None:
 
 
 def checkout_previous_snapshot(debug_target_path: Path) -> None:
-    pygit2 = load_pygit2()
     repo = open_debug_repo(debug_target_path.parent)
     head_commit = repo[repo.head.target]
     if not head_commit.parents:
-        raise RuntimeError("debug repository has no previous snapshot")
+        return
 
     parent_commit = head_commit.parents[0]
     preserve_snapshot_ref(repo, head_commit.id)
-    checkout_snapshot(repo, parent_commit)
+    checkout_detached_commit(repo, parent_commit)
+
+
+def operation_handlers(binary_path: Path, debug_target_path: Path) -> dict[str, Callable[[], None]]:
+    return {
+        STEP_FORWARD_OPERATION: lambda: step_and_commit(binary_path, debug_target_path, "step"),
+        UP_ARROW: lambda: step_and_commit(binary_path, debug_target_path, "step"),
+        CONTINUE_OPERATION: lambda: step_and_commit(binary_path, debug_target_path, "start"),
+        STEP_BACKWARD_OPERATION: lambda: checkout_previous_snapshot(debug_target_path),
+        DOWN_ARROW: lambda: checkout_previous_snapshot(debug_target_path),
+        NEXT_BRANCH_OPERATION: lambda: checkout_adjacent_branch(debug_target_path, 1),
+        RIGHT_ARROW: lambda: checkout_adjacent_branch(debug_target_path, 1),
+        PREVIOUS_BRANCH_OPERATION: lambda: checkout_adjacent_branch(debug_target_path, -1),
+        LEFT_ARROW: lambda: checkout_adjacent_branch(debug_target_path, -1),
+        FORK_BRANCH_OPERATION: lambda: create_branch_at_head(debug_target_path),
+        SPACE_KEY: lambda: create_branch_at_head(debug_target_path),
+    }
 
 
 def execute_debug_operation(
@@ -679,31 +677,12 @@ def execute_debug_operation(
     binary_path: Path,
     debug_target_path: Path,
 ) -> bool:
-    if operation in (STEP_FORWARD_OPERATION, UP_ARROW):
-        step_and_commit(binary_path, debug_target_path, "step")
-        return True
+    handler = operation_handlers(binary_path, debug_target_path).get(operation)
+    if handler is None:
+        return False
 
-    if operation == CONTINUE_OPERATION:
-        step_and_commit(binary_path, debug_target_path, "start")
-        return True
-
-    if operation in (STEP_BACKWARD_OPERATION, DOWN_ARROW):
-        checkout_previous_snapshot(debug_target_path)
-        return True
-
-    if operation == RIGHT_ARROW:
-        checkout_adjacent_branch(debug_target_path, 1)
-        return True
-
-    if operation == LEFT_ARROW:
-        checkout_adjacent_branch(debug_target_path, -1)
-        return True
-
-    if operation == SPACE_KEY:
-        create_branch_at_head(debug_target_path)
-        return True
-
-    return False
+    handler()
+    return True
 
 
 def main() -> int:
