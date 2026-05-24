@@ -1,0 +1,11 @@
+program:
+  value: {}
+  main: [set, value.inner, 1]
+expected:
+  value:
+    inner: 1
+  main: [set, value.inner, 1]
+  state:
+    result: 1
+    frames: []
+    status: finished

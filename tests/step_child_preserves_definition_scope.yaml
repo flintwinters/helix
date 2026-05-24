@@ -1,0 +1,27 @@
+program:
+  local: 99
+  outer:
+    local: 7
+    child:
+      steps:
+        - [set, seen, local]
+      main: [list, steps]
+  main: [step, outer.child]
+expected:
+  local: 99
+  outer:
+    local: 7
+    child:
+      steps:
+        - [set, seen, local]
+      main: [list, steps]
+      seen: 7
+      state:
+        result: null
+        frames: []
+        status: finished
+  main: [step, outer.child]
+  state:
+    result: finished
+    frames: []
+    status: finished

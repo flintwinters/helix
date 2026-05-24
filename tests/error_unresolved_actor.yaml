@@ -1,0 +1,17 @@
+program:
+  main: [bogus, 1]
+expected:
+  main: [bogus, 1]
+  state:
+    status: error
+    frames: []
+    error: lookup failed because the requested member was not found
+    result:
+      signal_type: error
+      message: lookup failed because the requested member was not found
+      value:
+        kind: lookup_error
+        name: bogus
+        receiver_type: VmCell
+        failed_segment: bogus
+        source: bogus

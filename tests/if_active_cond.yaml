@@ -1,0 +1,26 @@
+program:
+  choose_then: 1
+  choose_inner_then: [add, 1, 2]
+  main:
+    - if
+    - choose_then
+    - [if, choose_inner_then, [set, outcome, 11], [set, outcome, 12]]
+    - [set, outcome, 13]
+expected:
+  choose_then: 1
+  choose_inner_then: [add, 1, 2]
+  main:
+    - if
+    - choose_then
+    - [if,
+        choose_inner_then,
+        
+        [set, outcome, 11],
+        [set, outcome, 12]
+      ]
+    - [set, outcome, 13]
+  outcome: 11
+  state:
+    result: 11
+    frames: []
+    status: finished

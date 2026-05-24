@@ -1,0 +1,22 @@
+program:
+  outer:
+    inner: 19
+  main: outer.missing.nucleus
+expected:
+  outer:
+    inner: 19
+  main: outer.missing.nucleus
+  state:
+    status: error
+    frames: []
+    error: lookup failed because the requested member was not found
+    result:
+      signal_type: error
+      message: lookup failed because the requested member was not found
+      value:
+        kind: lookup_error
+        name: outer.missing.nucleus
+        receiver_type: ScopeCell
+        failed_segment: missing
+        resolved_prefix: outer
+        source: outer.missing.nucleus

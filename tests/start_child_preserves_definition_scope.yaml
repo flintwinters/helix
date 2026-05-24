@@ -1,0 +1,23 @@
+program:
+  local: 99
+  outer:
+    local: 7
+    child:
+      main: [set, seen, local]
+  main: [start, outer.child]
+expected:
+  local: 99
+  outer:
+    local: 7
+    child:
+      main: [set, seen, local]
+      seen: 7
+      state:
+        result: 7
+        frames: []
+        status: finished
+  main: [start, outer.child]
+  state:
+    result: 7
+    frames: []
+    status: finished
