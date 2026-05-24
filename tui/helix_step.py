@@ -43,6 +43,12 @@ def parse_args() -> argparse.Namespace:
         help="Path to the compiled helix binary. Defaults to ../build/helix relative to this script.",
     )
     parser.add_argument(
+        "--continue",
+        dest="continue_mode",
+        action="store_true",
+        help="Run start instead of step for forward execution.",
+    )
+    parser.add_argument(
         "--tui",
         action="store_true",
         help="Enable interactive terminal controls instead of running a single forward step and exiting.",
@@ -132,10 +138,10 @@ def load_target_vm(target_path: Path) -> dict:
     return expand_root_includes(loaded, target_path)
 
 
-def build_wrapper_vm(target_vm: dict) -> dict:
+def build_wrapper_vm(target_vm: dict, forward_primitive: str) -> dict:
     return {
         WRAPPER_VM_NAME: target_vm,
-        "main": ["step", WRAPPER_VM_NAME],
+        "main": [forward_primitive, WRAPPER_VM_NAME],
     }
 
 
@@ -455,7 +461,7 @@ def ensure_debug_repo(target_path: Path) -> Path:
     return debug_target_path
 
 
-def step_target_file(binary_path: Path, target_path: Path) -> None:
+def step_target_file(binary_path: Path, target_path: Path, continue_mode: bool) -> None:
     if not binary_path.is_file():
         raise FileNotFoundError(f"helix binary not found: {binary_path}")
 
@@ -465,7 +471,8 @@ def step_target_file(binary_path: Path, target_path: Path) -> None:
         raise ValueError("target VM has no remaining step to execute")
 
     execution_vm = single_step_execution_vm(target_vm, sequence[current_index])
-    wrapper_vm = build_wrapper_vm(execution_vm)
+    forward_primitive = "start" if continue_mode else "step"
+    wrapper_vm = build_wrapper_vm(execution_vm, forward_primitive)
 
     with tempfile.NamedTemporaryFile(
         "w",
@@ -677,7 +684,7 @@ def next_preserved_snapshot(repo):
     return None
 
 
-def step_and_commit(binary_path: Path, debug_target_path: Path) -> None:
+def step_and_commit(binary_path: Path, debug_target_path: Path, continue_mode: bool) -> None:
     repo = open_debug_repo(debug_target_path.parent)
     if repo.head_is_detached:
         next_snapshot = next_preserved_snapshot(repo)
@@ -685,7 +692,7 @@ def step_and_commit(binary_path: Path, debug_target_path: Path) -> None:
             checkout_snapshot(repo, next_snapshot)
             return
 
-    step_target_file(binary_path, debug_target_path)
+    step_target_file(binary_path, debug_target_path, continue_mode)
     commit_debug_snapshot(debug_target_path.parent, "VM state")
 
 
@@ -709,9 +716,14 @@ def checkout_previous_snapshot(debug_target_path: Path) -> None:
     checkout_snapshot(repo, parent_commit)
 
 
-def execute_debug_operation(operation: str, binary_path: Path, debug_target_path: Path) -> bool:
+def execute_debug_operation(
+    operation: str,
+    binary_path: Path,
+    debug_target_path: Path,
+    continue_mode: bool,
+) -> bool:
     if operation == DOWN_ARROW:
-        step_and_commit(binary_path, debug_target_path)
+        step_and_commit(binary_path, debug_target_path, continue_mode)
         return True
 
     if operation == UP_ARROW:
@@ -743,14 +755,24 @@ def main() -> int:
         if not args.tui:
             operations = args.operations or [DOWN_ARROW]
             for operation in operations:
-                execute_debug_operation(operation, binary_path, debug_target_path)
+                execute_debug_operation(
+                    operation,
+                    binary_path,
+                    debug_target_path,
+                    args.continue_mode,
+                )
             return 0
 
         log_renderer = DebugLogRenderer()
         log_renderer.refresh(debug_target_path.parent)
         while True:
             key = read_debug_key()
-            if execute_debug_operation(key, binary_path, debug_target_path):
+            if execute_debug_operation(
+                key,
+                binary_path,
+                debug_target_path,
+                args.continue_mode,
+            ):
                 log_renderer.refresh(debug_target_path.parent)
             else:
                 return 0
