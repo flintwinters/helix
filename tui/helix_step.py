@@ -395,6 +395,10 @@ def commit_debug_snapshot(debug_directory: Path, message: str) -> None:
     repo.create_commit("HEAD", signature, signature, message, tree, parents)
 
 
+def debug_repo_has_uncommitted_changes(debug_directory: Path) -> bool:
+    return bool(open_debug_repo(debug_directory).status())
+
+
 def run_git_log(debug_directory: Path, *args: str) -> str:
     completed = subprocess.run(
         [*GIT_LOG_BASE_COMMAND, *args],
@@ -524,17 +528,29 @@ def checkout_branch_ref(repo, reference_name: str) -> None:
     repo.set_head(reference_name)
 
 
-def create_branch_at_head(debug_target_path: Path) -> None:
-    repo = open_debug_repo(debug_target_path.parent)
+def next_fork_branch_ref(repo) -> str:
     existing_branches = local_branch_reference_set(repo)
     branch_index = 1
 
     while f"refs/heads/fork-{branch_index}" in existing_branches:
         branch_index += 1
 
-    reference_name = f"refs/heads/fork-{branch_index}"
+    return f"refs/heads/fork-{branch_index}"
+
+
+def create_branch_at_head(debug_target_path: Path) -> None:
+    repo = open_debug_repo(debug_target_path.parent)
+    reference_name = next_fork_branch_ref(repo)
     repo.create_reference(reference_name, repo.head.target)
     checkout_branch_ref(repo, reference_name)
+
+
+def commit_manual_edit_to_fork(debug_target_path: Path) -> None:
+    if not debug_repo_has_uncommitted_changes(debug_target_path.parent):
+        return
+
+    create_branch_at_head(debug_target_path)
+    commit_debug_snapshot(debug_target_path.parent, "Manual VM edit")
 
 
 def branch_log_order(debug_directory: Path) -> list[str]:
@@ -680,6 +696,11 @@ def execute_debug_operation(
     handler = operation_handlers(binary_path, debug_target_path).get(operation)
     if handler is None:
         return False
+
+    if debug_repo_has_uncommitted_changes(debug_target_path.parent):
+        commit_manual_edit_to_fork(debug_target_path)
+        if operation in (FORK_BRANCH_OPERATION, SPACE_KEY):
+            return True
 
     handler()
     return True
