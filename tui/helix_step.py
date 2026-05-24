@@ -118,14 +118,14 @@ def expand_root_includes(target_vm: dict, source_path: Path) -> dict:
     return expanded_vm
 
 
-def load_target_vm(target_path: Path) -> dict:
+def load_target_vm(target_path: Path, include_source_path: Path | None = None) -> dict:
     with target_path.open("r", encoding="utf-8") as handle:
         loaded = YAML_LOADER.load(handle)
 
     if not isinstance(loaded, dict):
         raise ValueError("target YAML must be a top-level mapping representing a Helix VM")
 
-    return expand_root_includes(loaded, target_path)
+    return expand_root_includes(loaded, include_source_path or target_path)
 
 
 def build_wrapper_vm(target_vm: dict, forward_primitive: str) -> dict:
@@ -465,11 +465,16 @@ def ensure_debug_repo(target_path: Path) -> Path:
     return debug_target_path
 
 
-def step_target_file(binary_path: Path, target_path: Path, forward_primitive: str) -> None:
+def step_target_file(
+    binary_path: Path,
+    target_path: Path,
+    include_source_path: Path,
+    forward_primitive: str,
+) -> None:
     if not binary_path.is_file():
         raise FileNotFoundError(f"helix binary not found: {binary_path}")
 
-    target_vm = load_target_vm(target_path)
+    target_vm = load_target_vm(target_path, include_source_path)
     sequence, current_index = next_step_context(target_vm)
     if current_index < 0 or current_index >= len(sequence):
         raise ValueError("target VM has no remaining step to execute")
@@ -482,7 +487,7 @@ def step_target_file(binary_path: Path, target_path: Path, forward_primitive: st
         encoding="utf-8",
         suffix=".yaml",
         prefix=".helix-step-",
-        dir=target_path.parent,
+        dir=include_source_path.parent,
         delete=False,
     ) as handle:
         wrapper_path = Path(handle.name)
@@ -641,7 +646,12 @@ def next_preserved_snapshot(repo):
     return None
 
 
-def step_and_commit(binary_path: Path, debug_target_path: Path, forward_primitive: str) -> None:
+def step_and_commit(
+    binary_path: Path,
+    debug_target_path: Path,
+    include_source_path: Path,
+    forward_primitive: str,
+) -> None:
     repo = open_debug_repo(debug_target_path.parent)
     if repo.head_is_detached:
         next_snapshot = next_preserved_snapshot(repo)
@@ -649,7 +659,7 @@ def step_and_commit(binary_path: Path, debug_target_path: Path, forward_primitiv
             checkout_detached_commit(repo, next_snapshot)
             return
 
-    step_target_file(binary_path, debug_target_path, forward_primitive)
+    step_target_file(binary_path, debug_target_path, include_source_path, forward_primitive)
     commit_debug_snapshot(debug_target_path.parent, "VM state")
 
 
@@ -672,11 +682,30 @@ def checkout_previous_snapshot(debug_target_path: Path) -> None:
     checkout_detached_commit(repo, parent_commit)
 
 
-def operation_handlers(binary_path: Path, debug_target_path: Path) -> dict[str, Callable[[], None]]:
+def operation_handlers(
+    binary_path: Path,
+    debug_target_path: Path,
+    include_source_path: Path,
+) -> dict[str, Callable[[], None]]:
     return {
-        STEP_FORWARD_OPERATION: lambda: step_and_commit(binary_path, debug_target_path, "step"),
-        UP_ARROW: lambda: step_and_commit(binary_path, debug_target_path, "step"),
-        CONTINUE_OPERATION: lambda: step_and_commit(binary_path, debug_target_path, "start"),
+        STEP_FORWARD_OPERATION: lambda: step_and_commit(
+            binary_path,
+            debug_target_path,
+            include_source_path,
+            "step",
+        ),
+        UP_ARROW: lambda: step_and_commit(
+            binary_path,
+            debug_target_path,
+            include_source_path,
+            "step",
+        ),
+        CONTINUE_OPERATION: lambda: step_and_commit(
+            binary_path,
+            debug_target_path,
+            include_source_path,
+            "start",
+        ),
         STEP_BACKWARD_OPERATION: lambda: checkout_previous_snapshot(debug_target_path),
         DOWN_ARROW: lambda: checkout_previous_snapshot(debug_target_path),
         NEXT_BRANCH_OPERATION: lambda: checkout_adjacent_branch(debug_target_path, 1),
@@ -692,8 +721,9 @@ def execute_debug_operation(
     operation: str,
     binary_path: Path,
     debug_target_path: Path,
+    include_source_path: Path,
 ) -> bool:
-    handler = operation_handlers(binary_path, debug_target_path).get(operation)
+    handler = operation_handlers(binary_path, debug_target_path, include_source_path).get(operation)
     if handler is None:
         return False
 
@@ -720,6 +750,7 @@ def main() -> int:
                     operation,
                     binary_path,
                     debug_target_path,
+                    target_path,
                 )
             return 0
 
@@ -731,6 +762,7 @@ def main() -> int:
                 key,
                 binary_path,
                 debug_target_path,
+                target_path,
             ):
                 log_renderer.refresh(debug_target_path.parent)
             else:
