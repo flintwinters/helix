@@ -1,6 +1,5 @@
 import os
 import re
-import select
 import shutil
 import subprocess
 import sys
@@ -30,9 +29,6 @@ VALGRIND_ARGS = [
     "--show-leak-kinds=all",
     "--error-exitcode=101",
 ]
-STEP_INPUT_TIMEOUT_SECONDS = 1.0
-
-
 def validate_native_module_isolation():
     """Ensures optional native libraries stay out of the core runtime binary."""
     core_sources = SOURCES.split()
@@ -106,22 +102,6 @@ def should_recompile(source_path, object_path, include_directories):
 
 def command_exists(command_name):
     return shutil.which(command_name) is not None
-
-
-def wait_after_step(step_name):
-    """Waits briefly for keyboard input after a completed build step."""
-    if not sys.stdin.isatty():
-        return
-
-    print(f"{step_name} finished. Press Enter to continue.")
-    readable, _, _ = select.select([sys.stdin], [], [], STEP_INPUT_TIMEOUT_SECONDS)
-    if not readable:
-        return
-
-    try:
-        input()
-    except EOFError:
-        return
 
 
 def compile_main():
@@ -555,24 +535,19 @@ def main():
     if command == "build":
         if not compile_main():
             sys.exit(1)
-        wait_after_step("C++ compilation")
         if not compile_sfml_module():
             sys.exit(1)
-        wait_after_step("SFML module compilation")
         return
 
     if command in {"racket-build", "build-racket"}:
         if not compile_racket():
             sys.exit(1)
-        wait_after_step("Racket compilation")
         return
 
     if command in {"racket-test", "test-racket"}:
         if not compile_racket():
             sys.exit(1)
-        wait_after_step("Racket compilation")
         num_failed = run_tests("racket")
-        wait_after_step("Racket tests")
         if num_failed > 0:
             sys.exit(1)
         return
@@ -580,12 +555,9 @@ def main():
     if command in {"cpp-test", "test-cpp"}:
         if not compile_main():
             sys.exit(1)
-        wait_after_step("C++ compilation")
         if not compile_sfml_module():
             sys.exit(1)
-        wait_after_step("SFML module compilation")
         num_failed = run_tests("cpp")
-        wait_after_step("C++ tests")
         if num_failed > 0:
             sys.exit(1)
         return
@@ -597,23 +569,18 @@ def main():
 
     if not compile_main():
         sys.exit(1)
-    wait_after_step("C++ compilation")
 
     if not compile_sfml_module():
         sys.exit(1)
-    wait_after_step("SFML module compilation")
 
     if not run_clang_tidy():
         sys.exit(1)
-    wait_after_step("clang-tidy")
 
 
     num_failed = run_tests("cpp")
-    wait_after_step("C++ tests")
 
     if not run_cloc():
         sys.exit(1)
-    wait_after_step("line count")
         
     if num_failed > 0:
         sys.exit(1)
