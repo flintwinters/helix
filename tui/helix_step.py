@@ -42,6 +42,47 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Path to the compiled helix binary. Defaults to ../build/helix relative to this script.",
     )
+    parser.add_argument(
+        "--tui",
+        action="store_true",
+        help="Enable interactive terminal controls instead of running a single forward step and exiting.",
+    )
+    parser.add_argument(
+        "--step-forward",
+        dest="operations",
+        action="append_const",
+        const=DOWN_ARROW,
+        help="Run the forward-step action once.",
+    )
+    parser.add_argument(
+        "--step-backward",
+        dest="operations",
+        action="append_const",
+        const=UP_ARROW,
+        help="Run the backward-step action once.",
+    )
+    parser.add_argument(
+        "--next-branch",
+        dest="operations",
+        action="append_const",
+        const=RIGHT_ARROW,
+        help="Switch to the next parallel branch once.",
+    )
+    parser.add_argument(
+        "--previous-branch",
+        dest="operations",
+        action="append_const",
+        const=LEFT_ARROW,
+        help="Switch to the previous parallel branch once.",
+    )
+    parser.add_argument(
+        "--fork-branch",
+        dest="operations",
+        action="append_const",
+        const=SPACE_KEY,
+        help="Create a new branch at the current HEAD once.",
+    )
+    parser.set_defaults(operations=[])
     return parser.parse_args()
 
 
@@ -668,6 +709,30 @@ def checkout_previous_snapshot(debug_target_path: Path) -> None:
     checkout_snapshot(repo, parent_commit)
 
 
+def execute_debug_operation(operation: str, binary_path: Path, debug_target_path: Path) -> bool:
+    if operation == DOWN_ARROW:
+        step_and_commit(binary_path, debug_target_path)
+        return True
+
+    if operation == UP_ARROW:
+        checkout_previous_snapshot(debug_target_path)
+        return True
+
+    if operation == RIGHT_ARROW:
+        checkout_adjacent_branch(debug_target_path, 1)
+        return True
+
+    if operation == LEFT_ARROW:
+        checkout_adjacent_branch(debug_target_path, -1)
+        return True
+
+    if operation == SPACE_KEY:
+        create_branch_at_head(debug_target_path)
+        return True
+
+    return False
+
+
 def main() -> int:
     args = parse_args()
     target_path = Path(args.target).expanduser().resolve()
@@ -675,24 +740,17 @@ def main() -> int:
 
     try:
         debug_target_path = ensure_debug_repo(target_path)
+        if not args.tui:
+            operations = args.operations or [DOWN_ARROW]
+            for operation in operations:
+                execute_debug_operation(operation, binary_path, debug_target_path)
+            return 0
+
         log_renderer = DebugLogRenderer()
         log_renderer.refresh(debug_target_path.parent)
         while True:
             key = read_debug_key()
-            if key == DOWN_ARROW:
-                step_and_commit(binary_path, debug_target_path)
-                log_renderer.refresh(debug_target_path.parent)
-            elif key == UP_ARROW:
-                checkout_previous_snapshot(debug_target_path)
-                log_renderer.refresh(debug_target_path.parent)
-            elif key == RIGHT_ARROW:
-                checkout_adjacent_branch(debug_target_path, 1)
-                log_renderer.refresh(debug_target_path.parent)
-            elif key == LEFT_ARROW:
-                checkout_adjacent_branch(debug_target_path, -1)
-                log_renderer.refresh(debug_target_path.parent)
-            elif key == SPACE_KEY:
-                create_branch_at_head(debug_target_path)
+            if execute_debug_operation(key, binary_path, debug_target_path):
                 log_renderer.refresh(debug_target_path.parent)
             else:
                 return 0
