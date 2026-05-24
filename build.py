@@ -518,15 +518,30 @@ def split_runtime_output(stdout):
 
 def print_usage():
     print("usage:")
-    print("  python3 build.py                # compile C++, tidy, cloc, and run C++ fixtures")
-    print("  python3 build.py build          # compile the C++ scaffold only")
+    print("  python3 build.py [--lib]                # compile C++, optional libs, tidy, cloc, and run C++ fixtures")
+    print("  python3 build.py build [--lib]          # compile the C++ scaffold and optional libs only")
     print("  python3 build.py racket-build   # precompile the current Racket runtime")
-    print("  python3 build.py cpp-test       # compile C++ and run fixtures against the native runtime")
+    print("  python3 build.py cpp-test [--lib]       # compile C++, optional libs, and run native fixtures")
     print("  python3 build.py racket-test    # run fixtures against the current Racket runtime")
 
 
 def main():
-    command = sys.argv[1] if len(sys.argv) > 1 else "default"
+    arguments = sys.argv[1:]
+    compile_libs = False
+    filtered_arguments = []
+
+    for argument in arguments:
+        if argument == "--lib":
+            compile_libs = True
+            continue
+        filtered_arguments.append(argument)
+
+    if len(filtered_arguments) > 1:
+        print(f"unknown arguments: {' '.join(filtered_arguments[1:])}")
+        print_usage()
+        sys.exit(1)
+
+    command = filtered_arguments[0] if filtered_arguments else "default"
 
     if command in {"-h", "--help", "help"}:
         print_usage()
@@ -535,7 +550,7 @@ def main():
     if command == "build":
         if not compile_main():
             sys.exit(1)
-        if not compile_sfml_module():
+        if compile_libs and not compile_sfml_module():
             sys.exit(1)
         return
 
@@ -555,7 +570,7 @@ def main():
     if command in {"cpp-test", "test-cpp"}:
         if not compile_main():
             sys.exit(1)
-        if not compile_sfml_module():
+        if compile_libs and not compile_sfml_module():
             sys.exit(1)
         num_failed = run_tests("cpp")
         if num_failed > 0:
@@ -570,7 +585,7 @@ def main():
     if not compile_main():
         sys.exit(1)
 
-    if not compile_sfml_module():
+    if compile_libs and not compile_sfml_module():
         sys.exit(1)
 
     if not run_clang_tidy():
