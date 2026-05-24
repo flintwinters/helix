@@ -282,6 +282,16 @@ shared_ptr<VecCell> vm_frames(const shared_ptr<VmCell>& vm) {
     return map_field_vec(ensure_vm_state(vm), "frames");
 }
 
+shared_ptr<VecCell> vm_breakpoints(const shared_ptr<VmCell>& vm) {
+    shared_ptr<VecCell> breakpoints = map_field_vec(vm, "breakpoints");
+    if (!breakpoints) {
+        breakpoints = make_shared<VecCell>();
+        vm->set("breakpoints", breakpoints);
+    }
+
+    return breakpoints;
+}
+
 void set_vm_status(const shared_ptr<VmCell>& vm, VmStatus status) {
     ensure_vm_state(vm)->set("status", make_shared<StrCell>(vm_status_name(status)));
 }
