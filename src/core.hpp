@@ -159,6 +159,8 @@ const char* cell_class_name(const Cell* cell);
 bool is_map_like_cell(ConstCellPtr cell);
 CellPtr map_field_cell(ConstCellPtr map_cell, const string& key);
 CellPtr cell_at_path(CellPtr root_cell, ConstCellPtr path_cell);
+shared_ptr<VecCell> cell_path_from_root(const shared_ptr<VmCell>& root_cell, ConstCellPtr target_cell);
+bool cell_paths_equal(ConstCellPtr left_path, ConstCellPtr right_path);
 shared_ptr<MapCell> map_field_map(ConstCellPtr map_cell, const string& key);
 shared_ptr<ScopeCell> map_field_scope(ConstCellPtr map_cell, const string& key);
 shared_ptr<VecCell> map_field_vec(ConstCellPtr map_cell, const string& key);
