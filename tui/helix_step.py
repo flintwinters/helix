@@ -344,7 +344,7 @@ def debug_repo_has_commits(debug_directory: Path) -> bool:
 def commit_debug_snapshot(debug_directory: Path, message: str) -> None:
     pygit2 = load_pygit2()
     repo = open_debug_repo(debug_directory)
-    signature = pygit2.Signature("Helix Debugger", "helix-debugger@example.invalid")
+    signature = pygit2.Signature("Hx Db", "helix-debugger@example.com")
     repo.index.add_all()
     repo.index.write()
     tree = repo.index.write_tree()
@@ -382,7 +382,7 @@ class DebugLogRenderer:
 
     def refresh(self, debug_directory: Path) -> None:
         if self.rendered_lines:
-            sys.stdout.write(f"\x1b[{self.rendered_lines + 1}F")
+            sys.stdout.write(f"\x1b[{self.rendered_lines}F")
             sys.stdout.write("\x1b[J")
 
         log_output = debug_log(debug_directory).rstrip("\n")
