@@ -1,0 +1,40 @@
+program:
+  child:
+    breakpoints:
+      - [steps, 1]
+    steps:
+      - [set, first, 1]
+      - [set, second, 2]
+    main: [list, steps]
+  items:
+    - [start, child]
+    - [set, observed, child.first]
+  main: [list, items]
+expected:
+  main: [list, items]
+  items:
+    - [start, child]
+    - [set, observed, child.first]
+  observed: 1
+  child:
+    breakpoints:
+      - [steps, 1]
+    first: 1
+    main: [list, steps]
+    state:
+      frames:
+        - name: list
+          values:
+            - [set, first, 1]
+            - [set, second, 2]
+          index: 1
+      pc: [steps, 1]
+      status: running
+      yield_reason: breakpoint
+    steps:
+      - [set, first, 1]
+      - [set, second, 2]
+  state:
+    frames: []
+    result: null
+    status: finished
