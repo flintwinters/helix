@@ -573,6 +573,11 @@ static CellPtr builtin_start(const vector<CellPtr>& arguments, CellPtr current_v
         if (vm_is_terminal(child_vm)) {
             return step_result;
         }
+
+        const StrCell* yield_reason = map_field_string(ensure_vm_state(child_vm), "yield_reason");
+        if (yield_reason && yield_reason->value == "breakpoint") {
+            return step_result;
+        }
     }
 }
 
