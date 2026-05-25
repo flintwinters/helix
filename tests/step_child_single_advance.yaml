@@ -1,0 +1,47 @@
+program:
+  child:
+    seed: 3
+    delta: 4
+    steps:
+      - [set, first, [add, seed, delta]]
+      - [set, second, [add, first, delta]]
+      - [set, third, [add, second, delta]]
+      - [set, fourth, [add, third, delta]]
+    main: [list, steps]
+  items:
+    - [step, child]
+    - [set, observed_child_index, [get, child_index_path]]
+  child_index_path: [child, state, frames, 0, index]
+  main: [list, items]
+expected:
+  child:
+    seed: 3
+    delta: 4
+    steps:
+      - [set, first, [add, seed, delta]]
+      - [set, second, [add, first, delta]]
+      - [set, third, [add, second, delta]]
+      - [set, fourth, [add, third, delta]]
+    main: [list, steps]
+    first: 7
+    state:
+      frames:
+        - name: list
+          values:
+            - [set, first, [add, seed, delta]]
+            - [set, second, [add, first, delta]]
+            - [set, third, [add, second, delta]]
+            - [set, fourth, [add, third, delta]]
+          index: 1
+      pc: [steps, 0]
+      status: running
+  items:
+    - [step, child]
+    - [set, observed_child_index, [get, child_index_path]]
+  child_index_path: [child, state, frames, 0, index]
+  main: [list, items]
+  observed_child_index: 1
+  state:
+    result: null
+    frames: []
+    status: finished
