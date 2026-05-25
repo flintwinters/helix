@@ -11,7 +11,7 @@ program:
   items:
     - [step, child]
     - [set, observed_child_index, [get, child_index_path]]
-  child_index_path: [child, state, frames, 0, index]
+  child_index_path: [child, state, frames, 0, 1]
   main: [list, items]
 expected:
   child:
@@ -26,19 +26,12 @@ expected:
     first: 7
     state:
       frames:
-        - name: list
-          values:
-            - [set, first, [add, seed, delta]]
-            - [set, second, [add, first, delta]]
-            - [set, third, [add, second, delta]]
-            - [set, fourth, [add, third, delta]]
-          index: 1
-      pc: [steps, 0]
+        - [steps, 1]
       status: running
   items:
     - [step, child]
     - [set, observed_child_index, [get, child_index_path]]
-  child_index_path: [child, state, frames, 0, index]
+  child_index_path: [child, state, frames, 0, 1]
   main: [list, items]
   observed_child_index: 1
   state:
