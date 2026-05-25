@@ -474,10 +474,6 @@ def run_tests(runtime="cpp"):
             }
 
         failure_lines.append("output mismatch")
-        failure_lines.append("expected:")
-        failure_lines.append(indent_block(render_yaml(expected_output)))
-        failure_lines.append("actual:")
-        failure_lines.append(indent_block(render_yaml(actual_output)))
         failure_lines.append("diff:")
         failure_lines.append(indent_block(render_yaml_diff(expected_output, actual_output)))
         return {
