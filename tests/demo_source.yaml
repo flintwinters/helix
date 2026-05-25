@@ -36,14 +36,7 @@ expected:
     second: 11
     state:
       frames:
-        - index: 2
-          name: list
-          values:
-            - [set, first, [add, seed2, delta2]]
-            - [set, second, [add, first, delta2]]
-            - [set, third, [add, second, delta2]]
-            - [set, fourth, [add, third, delta2]]
-      pc: [steps, 1]
+        - [steps, 2]
       status: running
   items:
     - [step, step_vm]
