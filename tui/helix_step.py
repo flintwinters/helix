@@ -603,6 +603,20 @@ def next_preserved_snapshot(repo):
     return None
 
 
+def preserved_snapshot_has_pc_comment(debug_target_path: Path, commit) -> bool:
+    completed = subprocess.run(
+        ["git", "show", f"{commit.id}:{debug_target_path.name}"],
+        cwd=debug_target_path.parent,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        return False
+
+    return "# <---" in completed.stdout
+
+
 def step_and_commit(
     binary_path: Path,
     debug_target_path: Path,
@@ -612,7 +626,10 @@ def step_and_commit(
     repo = open_debug_repo(debug_target_path.parent)
     if repo.head_is_detached:
         next_snapshot = next_preserved_snapshot(repo)
-        if next_snapshot is not None:
+        if next_snapshot is not None and preserved_snapshot_has_pc_comment(
+            debug_target_path,
+            next_snapshot,
+        ):
             checkout_detached_commit(repo, next_snapshot)
             return
 
