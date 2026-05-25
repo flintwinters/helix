@@ -1,7 +1,7 @@
 source: helix_demo.yaml
 stdout_contains:
   - "status: running"
-  - "second: 11"
+  - "first: 7"
 expected:
   name: Helix
   tagline: Cells all the way down
@@ -29,13 +29,22 @@ expected:
     steps:
       - [set, first, [add, seed2, delta2]]
       - [set, second, [add, first, delta2]]
+      - [set, third, [add, second, delta2]]
+      - [set, fourth, [add, third, delta2]]
     main: [list, steps]
     first: 7
     second: 11
     state:
-      result: null
-      frames: []
-      status: finished
+      frames:
+        - index: 2
+          name: list
+          values:
+            - [set, first, [add, seed2, delta2]]
+            - [set, second, [add, first, delta2]]
+            - [set, third, [add, second, delta2]]
+            - [set, fourth, [add, third, delta2]]
+      pc: [steps, 1]
+      status: running
   items:
     - [step, step_vm]
     - [show, step_vm]
