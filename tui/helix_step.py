@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-from copy import deepcopy
 import shutil
 import subprocess
 import sys
@@ -185,114 +184,6 @@ def extract_stepped_vm(wrapper_output: dict) -> dict:
         raise RuntimeError("helix output did not contain the stepped child VM")
 
     return stepped_vm
-
-
-def resolve_path(root, path: list):
-    current = root
-    for segment in path:
-        if isinstance(segment, str):
-            if not isinstance(current, dict) or segment not in current:
-                raise ValueError(f"object path segment {segment!r} could not be resolved")
-            current = current[segment]
-            continue
-
-        if isinstance(segment, int):
-            if not isinstance(current, list) or segment < 0 or segment >= len(current):
-                raise ValueError(f"object path offset {segment!r} could not be resolved")
-            current = current[segment]
-            continue
-
-        raise ValueError("object path segments must be strings or integers")
-
-    return current
-
-
-def frame_path_from_state(target_vm: dict):
-    state = target_vm.get("state")
-    if not isinstance(state, dict):
-        return None
-
-    frames = state.get("frames")
-    if not isinstance(frames, list) or not frames:
-        return None
-
-    frame = frames[0]
-    if not isinstance(frame, list):
-        raise ValueError("state.frames[0] must be an object path")
-
-    return frame
-
-
-def sequence_from_main(target_vm: dict) -> tuple[list, list]:
-    main = target_vm.get("main")
-    if not isinstance(main, list) or len(main) != 2 or main[0] != "list":
-        raise ValueError("target VM must use main: [list, <sequence-name>] for stepped execution")
-
-    sequence_name = main[1]
-    if not isinstance(sequence_name, str):
-        raise ValueError("list-backed main must reference a named sequence")
-
-    sequence = target_vm.get(sequence_name)
-    if not isinstance(sequence, list):
-        raise ValueError(f"target VM sequence {sequence_name!r} must be a YAML list")
-
-    return [sequence_name], sequence
-
-
-def next_step_context(target_vm: dict) -> tuple[list, list, int]:
-    frame_path = frame_path_from_state(target_vm)
-    if frame_path is not None:
-        if not frame_path or not isinstance(frame_path[-1], int):
-            raise ValueError("state.frames[0] must end with an integer vector offset")
-
-        sequence_path = frame_path[:-1]
-        sequence = resolve_path(target_vm, sequence_path)
-        if not isinstance(sequence, list):
-            raise ValueError("state.frames[0] must point inside a sequence")
-        return sequence_path, sequence, frame_path[-1]
-
-    sequence_path, sequence = sequence_from_main(target_vm)
-    return sequence_path, sequence, 0
-
-
-def single_step_execution_vm(target_vm: dict, step_expression) -> dict:
-    execution_vm = deepcopy(target_vm)
-    execution_vm["main"] = deepcopy(step_expression)
-    execution_vm.pop("state", None)
-    return execution_vm
-
-
-def stepped_state(sequence_path: list, sequence: list, next_index: int) -> dict:
-    if next_index < len(sequence):
-        return {
-            "status": "running",
-            "frames": [[*deepcopy(sequence_path), next_index]],
-        }
-
-    return {
-        "status": "finished",
-        "frames": [],
-        "result": None,
-    }
-
-
-def merge_single_step_result(
-    original_vm: dict,
-    stepped_execution_vm: dict,
-    sequence_path: list,
-    sequence: list,
-    current_index: int,
-) -> dict:
-    merged_vm = deepcopy(original_vm)
-
-    for key, value in stepped_execution_vm.items():
-        if key == "main":
-            continue
-        merged_vm[key] = value
-
-    merged_vm["main"] = deepcopy(original_vm["main"])
-    merged_vm["state"] = stepped_state(sequence_path, sequence, current_index + 1)
-    return merged_vm
 
 
 def reorder_like_template(current, template):
@@ -495,12 +386,7 @@ def step_target_file(
         raise FileNotFoundError(f"helix binary not found: {binary_path}")
 
     target_vm = load_target_vm(target_path, include_source_path)
-    sequence_path, sequence, current_index = next_step_context(target_vm)
-    if current_index < 0 or current_index >= len(sequence):
-        raise ValueError("target VM has no remaining step to execute")
-
-    execution_vm = single_step_execution_vm(target_vm, sequence[current_index])
-    wrapper_vm = build_wrapper_vm(execution_vm, forward_primitive)
+    wrapper_vm = build_wrapper_vm(target_vm, forward_primitive)
 
     with tempfile.NamedTemporaryFile(
         "w",
@@ -515,14 +401,7 @@ def step_target_file(
 
     try:
         wrapper_output = run_helix(binary_path, wrapper_path)
-        stepped_execution_vm = extract_stepped_vm(wrapper_output)
-        stepped_vm = merge_single_step_result(
-            target_vm,
-            stepped_execution_vm,
-            sequence_path,
-            sequence,
-            current_index,
-        )
+        stepped_vm = extract_stepped_vm(wrapper_output)
         ordered_vm = reorder_like_template(stepped_vm, target_vm)
         dump_yaml(ordered_vm, target_path)
     finally:
