@@ -219,6 +219,73 @@ static const IntCell* frame_index(const shared_ptr<ScopeCell>& frame) {
     return map_field_int(frame, "index");
 }
 
+static CellPtr clone_path_segment(ConstCellPtr segment) {
+    if (!segment) {
+        return nullptr;
+    }
+    if (segment->type == Cell::Type::string) {
+        return make_shared<StrCell>(static_cast<const StrCell&>(*segment).value);
+    }
+    if (segment->type == Cell::Type::integer) {
+        return make_shared<IntCell>(static_cast<const IntCell&>(*segment).value);
+    }
+    return nullptr;
+}
+
+static shared_ptr<VecCell> clone_path_prefix(ConstCellPtr path_cell) {
+    if (!path_cell || path_cell->type != Cell::Type::vec) {
+        return nullptr;
+    }
+
+    const vector<CellPtr>& path = static_cast<const VecCell&>(*path_cell).value;
+    if (path.empty()) {
+        return nullptr;
+    }
+
+    vector<CellPtr> prefix;
+    prefix.reserve(path.size() - 1);
+    for (size_t index = 0; index + 1 < path.size(); ++index) {
+        CellPtr segment = clone_path_segment(path[index]);
+        if (!segment) {
+            return nullptr;
+        }
+        prefix.push_back(move(segment));
+    }
+
+    return make_shared<VecCell>(move(prefix));
+}
+
+static shared_ptr<VecCell> resolve_sequence_path(
+    const shared_ptr<VmCell>& vm,
+    const shared_ptr<VecCell>& path) {
+    CellPtr resolved = cell_at_path(vm, path);
+    if (!resolved || resolved->type != Cell::Type::vec) {
+        return nullptr;
+    }
+
+    return static_pointer_cast<VecCell>(resolved);
+}
+
+static shared_ptr<VecCell> sequence_path_from_pc(const shared_ptr<VmCell>& vm) {
+    return clone_path_prefix(map_field_cell(ensure_vm_state(vm), "pc"));
+}
+
+static shared_ptr<VecCell> frame_sequence(const shared_ptr<VmCell>& vm, const shared_ptr<ScopeCell>& frame) {
+    shared_ptr<VecCell> path = sequence_path_from_pc(vm);
+    if (path) {
+        shared_ptr<VecCell> sequence = resolve_sequence_path(vm, path);
+        if (sequence) {
+            return sequence;
+        }
+    }
+
+    return frame_values(frame);
+}
+
+static void clear_vm_frames(const shared_ptr<VmCell>& vm) {
+    ensure_vm_state(vm)->set("frames", make_shared<VecCell>());
+}
+
 static void store_list_resume_frame(const shared_ptr<VmCell>& vm, const shared_ptr<ScopeCell>& frame, size_t next_index) {
     frame->set("index", make_shared<IntCell>(static_cast<int64_t>(next_index)));
     shared_ptr<VecCell> frames = make_shared<VecCell>();
@@ -295,7 +362,7 @@ static CellPtr advance_list_item(ListFrameAdvance& advance, size_t current_index
 }
 
 static CellPtr advance_list_frame(const shared_ptr<VmCell>& vm, const shared_ptr<ScopeCell>& frame) {
-    shared_ptr<VecCell> sequence = frame_values(frame);
+    shared_ptr<VecCell> sequence = frame_sequence(vm, frame);
     if (!sequence) {
         return fail_vm(vm, "list frame is missing a vector sequence");
     }
@@ -305,7 +372,6 @@ static CellPtr advance_list_frame(const shared_ptr<VmCell>& vm, const shared_ptr
         return vm_result(vm);
     }
 
-    ensure_vm_state(vm)->set("frames", make_shared<VecCell>());
     ListFrameAdvance advance {vm, frame, sequence};
     CellPtr result = advance_list_item(advance, *start_index);
     if (result) {
@@ -313,6 +379,7 @@ static CellPtr advance_list_frame(const shared_ptr<VmCell>& vm, const shared_ptr
     }
 
     if (!advance.yielded) {
+        clear_vm_frames(vm);
         retire_unyielded_frame(frame);
     }
     return make_shared<NilCell>();
