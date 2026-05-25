@@ -221,7 +221,10 @@ static const IntCell* frame_index(const shared_ptr<ScopeCell>& frame) {
 
 static void store_list_resume_frame(const shared_ptr<VmCell>& vm, const shared_ptr<ScopeCell>& frame, size_t next_index) {
     frame->set("index", make_shared<IntCell>(static_cast<int64_t>(next_index)));
-    ensure_vm_state(vm)->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
+    shared_ptr<VecCell> frames = make_shared<VecCell>();
+    frame->parent = frames;
+    frames->value.push_back(frame);
+    ensure_vm_state(vm)->set("frames", frames);
     set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
 }
