@@ -14,8 +14,6 @@ program:
 stdout: |
   14
   ...
-  14
-  ...
 expected:
   main: [list, items]
   items:
