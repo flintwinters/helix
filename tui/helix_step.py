@@ -245,9 +245,66 @@ def to_ruamel_node(data):
     return data
 
 
+def current_pc_path(data: dict) -> list | None:
+    state = data.get("state")
+    if not isinstance(state, dict):
+        return None
+
+    frames = state.get("frames")
+    if not isinstance(frames, list) or not frames:
+        return None
+
+    pc_path = frames[0]
+    if not isinstance(pc_path, list):
+        return None
+
+    return pc_path
+
+
+def child_for_path_segment(node, segment):
+    if isinstance(node, CommentedMap) and segment in node:
+        return node[segment]
+
+    if isinstance(node, CommentedSeq) and isinstance(segment, int) and 0 <= segment < len(node):
+        return node[segment]
+
+    return None
+
+
+def format_pc_path(pc_path: list) -> str:
+    return f"[{', '.join(str(segment) for segment in pc_path)}]"
+
+
+def add_pc_comment(root, pc_path: list) -> None:
+    if not pc_path:
+        return
+
+    parent = root
+    for segment in pc_path[:-1]:
+        parent = child_for_path_segment(parent, segment)
+        if parent is None:
+            return
+
+    final_segment = pc_path[-1]
+    comment = f"<--- {format_pc_path(pc_path)}"
+    if isinstance(parent, CommentedMap) and final_segment in parent:
+        parent.yaml_add_eol_comment(comment, key=final_segment)
+    elif (
+        isinstance(parent, CommentedSeq)
+        and isinstance(final_segment, int)
+        and 0 <= final_segment < len(parent)
+    ):
+        parent.yaml_add_eol_comment(comment, key=final_segment)
+
+
 def dump_yaml(data: dict, destination: Path) -> None:
+    root = to_ruamel_node(data)
+    pc_path = current_pc_path(data)
+    if pc_path is not None:
+        add_pc_comment(root, pc_path)
+
     with destination.open("w", encoding="utf-8") as handle:
-        YAML_DUMPER.dump(to_ruamel_node(data), handle)
+        YAML_DUMPER.dump(root, handle)
 
 
 def debug_directory_for(target_path: Path) -> Path:
