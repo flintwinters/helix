@@ -418,19 +418,21 @@ CellPtr vm_result(const shared_ptr<VmCell>& vm) {
     return map_field_cell(ensure_vm_state(vm), "result");
 }
 
-void arm_list_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t start_index) {
-    shared_ptr<ScopeCell> frame = make_shared<ScopeCell>();
-    frame->set("name", make_shared<StrCell>("list"));
-    frame->set("values", move(sequence_cell));
-    frame->set("index", make_shared<IntCell>(start_index));
+bool arm_list_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t start_index) {
+    shared_ptr<VecCell> sequence_path = cell_path_from_root(vm, sequence_cell);
+    if (!sequence_path) {
+        return false;
+    }
+    sequence_path->value.push_back(make_shared<IntCell>(start_index));
 
     shared_ptr<MapCell> state = ensure_vm_state(vm);
     shared_ptr<VecCell> frames = make_shared<VecCell>();
-    frame->parent = frames;
-    frames->value.push_back(frame);
+    frames->value.push_back(sequence_path);
     state->set("frames", frames);
+    state->value.erase("pc");
     set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
+    return true;
 }
 
 shared_ptr<MapCell> make_finished_state_cell() {
