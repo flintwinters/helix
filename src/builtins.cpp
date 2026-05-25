@@ -377,7 +377,9 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
         return sequence_cell;
     }
 
-    arm_list_frame(root_cell, sequence_cell);
+    if (!arm_list_frame(root_cell, sequence_cell)) {
+        return make_error("list sequence could not be represented as an object path");
+    }
     return make_shared<NilCell>();
 }
 
