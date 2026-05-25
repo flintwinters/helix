@@ -5,6 +5,7 @@ program:
     steps:
       - [set, first, 1]
       - [set, second, 2]
+      - [set, third, 3]
     main: [list, steps]
   items:
     - [start, child]
@@ -23,17 +24,13 @@ expected:
     main: [list, steps]
     state:
       frames:
-        - name: list
-          values:
-            - [set, first, 1]
-            - [set, second, 2]
-          index: 1
-      pc: [steps, 1]
+        - [steps, 1]
       status: running
       yield_reason: breakpoint
     steps:
       - [set, first, 1]
       - [set, second, 2]
+      - [set, third, 3]
   state:
     frames: []
     result: null
