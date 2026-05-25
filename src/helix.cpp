@@ -68,34 +68,21 @@ static bool vm_breakpoint_matches(const shared_ptr<VmCell>& vm, ConstCellPtr pc,
     return false;
 }
 
+static void store_vm_frame(const shared_ptr<VmCell>& vm, CellPtr pc) {
+    shared_ptr<MapCell> state = ensure_vm_state(vm);
+    shared_ptr<VecCell> frames = make_shared<VecCell>();
+    frames->value.push_back(move(pc));
+    state->set("frames", frames);
+    state->value.erase("pc");
+}
+
 static CellPtr yield_at_breakpoint(const shared_ptr<VmCell>& vm, CellPtr pc) {
     shared_ptr<MapCell> state = ensure_vm_state(vm);
-    state->set("pc", move(pc));
+    store_vm_frame(vm, move(pc));
     state->set("yield_reason", make_shared<StrCell>("breakpoint"));
     set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
     return vm_status_cell(vm);
-}
-
-static CellPtr update_pc_or_break(const shared_ptr<VmCell>& vm, CellPtr node) {
-    CellPtr pc = cell_path_from_root(vm, node);
-    if (!pc) {
-        return fail_vm(vm, "VM program counter could not be resolved as an object path");
-    }
-
-    ensure_vm_state(vm)->set("pc", pc);
-
-    CellPtr error = nullptr;
-    if (vm_breakpoint_matches(vm, pc, error)) {
-        return yield_at_breakpoint(vm, pc);
-    }
-    if (error) {
-        attach_terminal_state(vm, error);
-        return error;
-    }
-
-    clear_vm_yield_reason(vm);
-    return nullptr;
 }
 
 static shared_ptr<MapCell> make_resolution_details(
@@ -211,14 +198,6 @@ static CellPtr evaluate_cell(CellPtr node, const shared_ptr<VmCell>& root_cell) 
     return node;
 }
 
-static shared_ptr<VecCell> frame_values(const shared_ptr<ScopeCell>& frame) {
-    return map_field_vec(frame, "values");
-}
-
-static const IntCell* frame_index(const shared_ptr<ScopeCell>& frame) {
-    return map_field_int(frame, "index");
-}
-
 static CellPtr clone_path_segment(ConstCellPtr segment) {
     if (!segment) {
         return nullptr;
@@ -255,134 +234,142 @@ static shared_ptr<VecCell> clone_path_prefix(ConstCellPtr path_cell) {
     return make_shared<VecCell>(move(prefix));
 }
 
-static shared_ptr<VecCell> resolve_sequence_path(
-    const shared_ptr<VmCell>& vm,
-    const shared_ptr<VecCell>& path) {
-    CellPtr resolved = cell_at_path(vm, path);
-    if (!resolved || resolved->type != Cell::Type::vec) {
+static void clear_vm_frames(const shared_ptr<VmCell>& vm) {
+    shared_ptr<MapCell> state = ensure_vm_state(vm);
+    state->set("frames", make_shared<VecCell>());
+    state->value.erase("pc");
+}
+
+static shared_ptr<VecCell> next_vector_path(ConstCellPtr pc, size_t next_index) {
+    shared_ptr<VecCell> next_path = clone_path_prefix(pc);
+    if (!next_path) {
         return nullptr;
     }
 
-    return static_pointer_cast<VecCell>(resolved);
+    next_path->value.push_back(make_shared<IntCell>(static_cast<int64_t>(next_index)));
+    return next_path;
 }
 
-static shared_ptr<VecCell> sequence_path_from_pc(const shared_ptr<VmCell>& vm) {
-    return clone_path_prefix(map_field_cell(ensure_vm_state(vm), "pc"));
-}
-
-static shared_ptr<VecCell> frame_sequence(const shared_ptr<VmCell>& vm, const shared_ptr<ScopeCell>& frame) {
-    shared_ptr<VecCell> path = sequence_path_from_pc(vm);
-    if (path) {
-        shared_ptr<VecCell> sequence = resolve_sequence_path(vm, path);
-        if (sequence) {
-            return sequence;
-        }
-    }
-
-    return frame_values(frame);
-}
-
-static void clear_vm_frames(const shared_ptr<VmCell>& vm) {
-    ensure_vm_state(vm)->set("frames", make_shared<VecCell>());
-}
-
-static void store_list_resume_frame(const shared_ptr<VmCell>& vm, const shared_ptr<ScopeCell>& frame, size_t next_index) {
-    frame->set("index", make_shared<IntCell>(static_cast<int64_t>(next_index)));
-    shared_ptr<VecCell> frames = make_shared<VecCell>();
-    frame->parent = frames;
-    frames->value.push_back(frame);
-    ensure_vm_state(vm)->set("frames", frames);
+static void store_resume_path(const shared_ptr<VmCell>& vm, CellPtr next_pc) {
+    store_vm_frame(vm, move(next_pc));
     set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
 }
 
-static void retire_unyielded_frame(const shared_ptr<ScopeCell>& frame) {
-    frame->clear_descendant_parent_links();
-    frame->value.clear();
-    frame->parent = nullptr;
-}
-
-static optional<size_t> validated_list_frame_index(
-    const shared_ptr<VmCell>& vm,
-    const shared_ptr<VecCell>& sequence,
-    const shared_ptr<ScopeCell>& frame) {
-    const IntCell* index_cell = frame_index(frame);
-    if (!index_cell) {
-        fail_vm(vm, "list frame is missing an integer index");
+static optional<size_t> path_tail_index(ConstCellPtr pc) {
+    if (!pc || pc->type != Cell::Type::vec) {
         return nullopt;
     }
 
-    int64_t index = index_cell->value;
-    if (index < 0 || static_cast<size_t>(index) >= sequence->value.size()) {
-        fail_vm(vm, "list frame index is out of bounds");
+    const vector<CellPtr>& path = static_cast<const VecCell&>(*pc).value;
+    if (path.empty()) {
+        return nullopt;
+    }
+
+    ConstCellPtr tail = path.back();
+    if (!tail || tail->type != Cell::Type::integer) {
+        return nullopt;
+    }
+
+    int64_t index = static_cast<const IntCell&>(*tail).value;
+    if (index < 0) {
         return nullopt;
     }
 
     return static_cast<size_t>(index);
 }
 
-static CellPtr yield_list_frame_at(
-    const shared_ptr<VmCell>& vm,
-    const shared_ptr<ScopeCell>& frame,
-    size_t next_index,
-    CellPtr result) {
-    store_list_resume_frame(vm, frame, next_index);
-    return result;
-}
-
-struct ListFrameAdvance {
-    shared_ptr<VmCell> vm {};
-    shared_ptr<ScopeCell> frame {};
-    shared_ptr<VecCell> sequence {};
-    bool yielded = false;
-};
-
-static CellPtr advance_list_item(ListFrameAdvance& advance, size_t current_index) {
-    CellPtr item = advance.sequence->value[current_index];
-    CellPtr breakpoint_result = update_pc_or_break(advance.vm, item);
-    if (breakpoint_result) {
-        return is_signal_cell(breakpoint_result)
-            ? breakpoint_result
-            : yield_list_frame_at(advance.vm, advance.frame, current_index, breakpoint_result);
+static shared_ptr<VecCell> frame_sequence(const shared_ptr<VmCell>& vm, ConstCellPtr pc) {
+    shared_ptr<VecCell> sequence_path = clone_path_prefix(pc);
+    if (!sequence_path) {
+        return nullptr;
     }
 
-    CellPtr value = evaluate_cell(item, advance.vm);
+    CellPtr sequence = cell_at_path(vm, sequence_path);
+    if (!sequence || sequence->type != Cell::Type::vec) {
+        return nullptr;
+    }
+
+    return static_pointer_cast<VecCell>(sequence);
+}
+
+static optional<size_t> validated_pc_index(
+    const shared_ptr<VmCell>& vm,
+    const shared_ptr<VecCell>& sequence,
+    ConstCellPtr pc) {
+    optional<size_t> index = path_tail_index(pc);
+    if (!index) {
+        fail_vm(vm, "VM frame path must end with an integer vector offset");
+        return nullopt;
+    }
+
+    if (*index >= sequence->value.size()) {
+        fail_vm(vm, "VM frame vector offset is out of bounds");
+        return nullopt;
+    }
+
+    return index;
+}
+
+static bool current_frame_is(const shared_ptr<VmCell>& vm, ConstCellPtr pc) {
+    shared_ptr<VecCell> frames = vm_frames(vm);
+    return frames->value.size() == 1 && cell_paths_equal(frames->value.front(), pc);
+}
+
+static bool advance_vector_frame(const shared_ptr<VmCell>& vm, ConstCellPtr pc, size_t current_index, size_t sequence_size) {
+    size_t next_index = current_index + 1;
+    if (next_index < sequence_size) {
+        store_resume_path(vm, next_vector_path(pc, next_index));
+        return true;
+    }
+
+    clear_vm_frames(vm);
+    return false;
+}
+
+static CellPtr resume_vector_frame(const shared_ptr<VmCell>& vm, ConstCellPtr pc) {
+    shared_ptr<VecCell> sequence = frame_sequence(vm, pc);
+    if (!sequence) {
+        return fail_vm(vm, "VM frame path must resolve inside a vector");
+    }
+
+    optional<size_t> current_index = validated_pc_index(vm, sequence, pc);
+    if (!current_index) {
+        return vm_result(vm);
+    }
+
+    CellPtr value = evaluate_cell(sequence->value[*current_index], vm);
     if (is_signal_cell(value)) {
-        attach_terminal_state(advance.vm, value);
+        attach_terminal_state(vm, value);
         return value;
     }
 
-    size_t next_index = current_index + 1;
-    if (next_index < advance.sequence->value.size()) {
-        advance.yielded = true;
-        store_list_resume_frame(advance.vm, advance.frame, next_index);
+    if (current_frame_is(vm, pc)) {
+        if (!advance_vector_frame(vm, pc, *current_index, sequence->value.size())) {
+            return make_shared<NilCell>();
+        }
     }
 
     return nullptr;
 }
 
-static CellPtr advance_list_frame(const shared_ptr<VmCell>& vm, const shared_ptr<ScopeCell>& frame) {
-    shared_ptr<VecCell> sequence = frame_sequence(vm, frame);
-    if (!sequence) {
-        return fail_vm(vm, "list frame is missing a vector sequence");
+static CellPtr resume_direct_frame(const shared_ptr<VmCell>& vm, ConstCellPtr pc) {
+    CellPtr node = cell_at_path(vm, pc);
+    if (!node || is_signal_cell(node)) {
+        return node ? node : fail_vm(vm, "VM frame path could not be resolved");
     }
 
-    optional<size_t> start_index = validated_list_frame_index(vm, sequence, frame);
-    if (!start_index) {
-        return vm_result(vm);
+    CellPtr value = evaluate_cell(node, vm);
+    if (is_signal_cell(value)) {
+        attach_terminal_state(vm, value);
+        return value;
     }
 
-    ListFrameAdvance advance {vm, frame, sequence};
-    CellPtr result = advance_list_item(advance, *start_index);
-    if (result) {
-        return result;
-    }
-
-    if (!advance.yielded) {
+    if (current_frame_is(vm, pc)) {
         clear_vm_frames(vm);
-        retire_unyielded_frame(frame);
     }
-    return make_shared<NilCell>();
+
+    return value;
 }
 
 static CellPtr start_vm_main(const shared_ptr<VmCell>& vm) {
@@ -394,10 +381,17 @@ static CellPtr start_vm_main(const shared_ptr<VmCell>& vm) {
     set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
 
-    CellPtr breakpoint_result = update_pc_or_break(vm, main_it->second);
-    if (breakpoint_result) {
-        return breakpoint_result;
+    shared_ptr<VecCell> main_pc = make_shared<VecCell>();
+    main_pc->value.push_back(make_shared<StrCell>("main"));
+    CellPtr error = nullptr;
+    if (vm_breakpoint_matches(vm, main_pc, error)) {
+        return yield_at_breakpoint(vm, main_pc);
     }
+    if (error) {
+        attach_terminal_state(vm, error);
+        return error;
+    }
+    clear_vm_yield_reason(vm);
 
     CellPtr result = is_null_cell(main_it->second) ? main_it->second : evaluate_cell(main_it->second, vm);
     if (is_signal_cell(result)) {
@@ -408,41 +402,39 @@ static CellPtr start_vm_main(const shared_ptr<VmCell>& vm) {
     return result;
 }
 
-static shared_ptr<ScopeCell> current_frame(const shared_ptr<VmCell>& vm) {
+static shared_ptr<VecCell> current_frame(const shared_ptr<VmCell>& vm) {
     shared_ptr<VecCell> frames = vm_frames(vm);
     if (frames->value.empty()) {
         return nullptr;
     }
 
     const CellPtr frame_cell = frames->value.front();
-    if (!frame_cell || frame_cell->type != Cell::Type::scope) {
+    if (!frame_cell || frame_cell->type != Cell::Type::vec) {
         return nullptr;
     }
 
-    return static_pointer_cast<ScopeCell>(frame_cell);
-}
-
-static const string* current_frame_name(const shared_ptr<ScopeCell>& frame) {
-    const StrCell* name_cell = map_field_string(frame, "name");
-    return name_cell ? &name_cell->value : nullptr;
+    return static_pointer_cast<VecCell>(frame_cell);
 }
 
 static CellPtr resume_vm_frame(const shared_ptr<VmCell>& vm) {
-    shared_ptr<ScopeCell> frame = current_frame(vm);
-    if (!frame) {
+    shared_ptr<VecCell> pc = current_frame(vm);
+    if (!pc) {
         return nullptr;
     }
 
-    const string* frame_name = current_frame_name(frame);
-    if (!frame_name) {
-        return fail_vm(vm, "VM frame is missing a string name");
+    CellPtr error = nullptr;
+    if (vm_breakpoint_matches(vm, pc, error)) {
+        return yield_at_breakpoint(vm, pc);
     }
-
-    if (*frame_name == "list") {
-        return advance_list_frame(vm, frame);
+    if (error) {
+        attach_terminal_state(vm, error);
+        return error;
     }
+    clear_vm_yield_reason(vm);
 
-    return fail_vm(vm, "unknown VM frame type");
+    return path_tail_index(pc)
+        ? resume_vector_frame(vm, pc)
+        : resume_direct_frame(vm, pc);
 }
 
 static CellPtr advance_vm(const shared_ptr<VmCell>& vm) {
