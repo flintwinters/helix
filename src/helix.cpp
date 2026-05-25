@@ -304,11 +304,9 @@ static CellPtr advance_list_frame(const shared_ptr<VmCell>& vm, const shared_ptr
 
     ensure_vm_state(vm)->set("frames", make_shared<VecCell>());
     ListFrameAdvance advance {vm, frame, sequence};
-    for (size_t current_index = *start_index; current_index < sequence->value.size(); ++current_index) {
-        CellPtr result = advance_list_item(advance, current_index);
-        if (result) {
-            return result;
-        }
+    CellPtr result = advance_list_item(advance, *start_index);
+    if (result) {
+        return result;
     }
 
     if (!advance.yielded) {
