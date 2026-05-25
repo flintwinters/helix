@@ -72,6 +72,11 @@ static void store_vm_frame(const shared_ptr<VmCell>& vm, CellPtr pc) {
     shared_ptr<MapCell> state = ensure_vm_state(vm);
     shared_ptr<VecCell> frames = make_shared<VecCell>();
     frames->value.push_back(move(pc));
+    CellPtr old_frames = map_field_cell(state, "frames");
+    if (old_frames) {
+        old_frames->clear_descendant_parent_links();
+        old_frames->parent = nullptr;
+    }
     state->set("frames", frames);
     state->value.erase("pc");
 }
@@ -234,8 +239,102 @@ static shared_ptr<VecCell> clone_path_prefix(ConstCellPtr path_cell) {
     return make_shared<VecCell>(move(prefix));
 }
 
+static bool cells_match(ConstCellPtr left, ConstCellPtr right) {
+    if (!left || !right || left->type != right->type) {
+        return false;
+    }
+
+    if (left->type == Cell::Type::nil) {
+        return true;
+    }
+    if (left->type == Cell::Type::integer) {
+        return static_cast<const IntCell&>(*left).value == static_cast<const IntCell&>(*right).value;
+    }
+    if (left->type == Cell::Type::string) {
+        return static_cast<const StrCell&>(*left).value == static_cast<const StrCell&>(*right).value;
+    }
+    if (left->type != Cell::Type::vec) {
+        return false;
+    }
+
+    const vector<CellPtr>& left_values = static_cast<const VecCell&>(*left).value;
+    const vector<CellPtr>& right_values = static_cast<const VecCell&>(*right).value;
+    if (left_values.size() != right_values.size()) {
+        return false;
+    }
+
+    for (size_t index = 0; index < left_values.size(); ++index) {
+        if (!cells_match(left_values[index], right_values[index])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static shared_ptr<VecCell> path_with_segment(const shared_ptr<VecCell>& path, CellPtr segment) {
+    vector<CellPtr> values = path ? path->value : vector<CellPtr> {};
+    values.push_back(move(segment));
+    return make_shared<VecCell>(move(values));
+}
+
+static shared_ptr<VecCell> find_matching_vector_path(ConstCellPtr current, ConstCellPtr target, const shared_ptr<VecCell>& path);
+
+static shared_ptr<VecCell> find_matching_map_child_path(ConstCellPtr current, ConstCellPtr target, const shared_ptr<VecCell>& path) {
+    const unordered_map<string, CellPtr>& fields = static_cast<const MapCell&>(*current).value;
+    for (const auto& [key, child] : fields) {
+        if (key == "state") {
+            continue;
+        }
+
+        shared_ptr<VecCell> match = find_matching_vector_path(child, target, path_with_segment(path, make_shared<StrCell>(key)));
+        if (match) {
+            return match;
+        }
+    }
+    return nullptr;
+}
+
+static shared_ptr<VecCell> find_matching_vec_child_path(ConstCellPtr current, ConstCellPtr target, const shared_ptr<VecCell>& path) {
+    const vector<CellPtr>& values = static_cast<const VecCell&>(*current).value;
+    for (size_t index = 0; index < values.size(); ++index) {
+        shared_ptr<VecCell> match = find_matching_vector_path(
+            values[index],
+            target,
+            path_with_segment(path, make_shared<IntCell>(static_cast<int64_t>(index))));
+        if (match) {
+            return match;
+        }
+    }
+    return nullptr;
+}
+
+static shared_ptr<VecCell> find_matching_vector_path(ConstCellPtr current, ConstCellPtr target, const shared_ptr<VecCell>& path) {
+    if (!current) {
+        return nullptr;
+    }
+
+    if (current.get() != target.get() && current->type == Cell::Type::vec && cells_match(current, target)) {
+        return path;
+    }
+
+    if (is_map_like_cell(current)) {
+        return find_matching_map_child_path(current, target, path);
+    }
+
+    if (current->type == Cell::Type::vec) {
+        return find_matching_vec_child_path(current, target, path);
+    }
+
+    return nullptr;
+}
+
 static void clear_vm_frames(const shared_ptr<VmCell>& vm) {
     shared_ptr<MapCell> state = ensure_vm_state(vm);
+    CellPtr old_frames = map_field_cell(state, "frames");
+    if (old_frames) {
+        old_frames->clear_descendant_parent_links();
+        old_frames->parent = nullptr;
+    }
     state->set("frames", make_shared<VecCell>());
     state->value.erase("pc");
 }
@@ -410,7 +509,24 @@ static shared_ptr<VecCell> current_frame(const shared_ptr<VmCell>& vm) {
 
     const CellPtr frame_cell = frames->value.front();
     if (!frame_cell || frame_cell->type != Cell::Type::vec) {
-        return nullptr;
+        if (!is_map_like_cell(frame_cell)) {
+            return nullptr;
+        }
+
+        const IntCell* index_cell = map_field_int(frame_cell, "index");
+        shared_ptr<VecCell> values = map_field_vec(frame_cell, "values");
+        if (!index_cell || !values || index_cell->value < 0) {
+            return nullptr;
+        }
+
+        shared_ptr<VecCell> path = find_matching_vector_path(vm, values, make_shared<VecCell>());
+        if (!path) {
+            return nullptr;
+        }
+
+        path->value.push_back(make_shared<IntCell>(index_cell->value));
+        store_vm_frame(vm, path);
+        return path;
     }
 
     return static_pointer_cast<VecCell>(frame_cell);
