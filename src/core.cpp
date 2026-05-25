@@ -425,7 +425,10 @@ void arm_list_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t
     frame->set("index", make_shared<IntCell>(start_index));
 
     shared_ptr<MapCell> state = ensure_vm_state(vm);
-    state->set("frames", make_shared<VecCell>(vector<CellPtr> {frame}));
+    shared_ptr<VecCell> frames = make_shared<VecCell>();
+    frame->parent = frames;
+    frames->value.push_back(frame);
+    state->set("frames", frames);
     set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
 }
