@@ -1,3 +1,4 @@
+import difflib
 import os
 import re
 import shutil
@@ -477,6 +478,8 @@ def run_tests(runtime="cpp"):
         failure_lines.append(indent_block(render_yaml(expected_output)))
         failure_lines.append("actual:")
         failure_lines.append(indent_block(render_yaml(actual_output)))
+        failure_lines.append("diff:")
+        failure_lines.append(indent_block(render_yaml_diff(expected_output, actual_output)))
         return {
             "name": test_name,
             "passed": False,
@@ -510,6 +513,20 @@ def run_tests(runtime="cpp"):
 
 def render_yaml(value):
     return yaml.safe_dump(value, sort_keys=True).rstrip()
+
+
+def render_yaml_diff(expected_value, actual_value):
+    expected_lines = render_yaml(expected_value).splitlines()
+    actual_lines = render_yaml(actual_value).splitlines()
+    return "\n".join(
+        difflib.unified_diff(
+            expected_lines,
+            actual_lines,
+            fromfile="expected",
+            tofile="actual",
+            lineterm="",
+        )
+    )
 
 
 def indent_block(text):
