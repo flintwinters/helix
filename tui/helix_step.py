@@ -187,7 +187,27 @@ def extract_stepped_vm(wrapper_output: dict) -> dict:
     return stepped_vm
 
 
-def list_frame_from_state(target_vm: dict):
+def resolve_path(root, path: list):
+    current = root
+    for segment in path:
+        if isinstance(segment, str):
+            if not isinstance(current, dict) or segment not in current:
+                raise ValueError(f"object path segment {segment!r} could not be resolved")
+            current = current[segment]
+            continue
+
+        if isinstance(segment, int):
+            if not isinstance(current, list) or segment < 0 or segment >= len(current):
+                raise ValueError(f"object path offset {segment!r} could not be resolved")
+            current = current[segment]
+            continue
+
+        raise ValueError("object path segments must be strings or integers")
+
+    return current
+
+
+def frame_path_from_state(target_vm: dict):
     state = target_vm.get("state")
     if not isinstance(state, dict):
         return None
@@ -197,21 +217,13 @@ def list_frame_from_state(target_vm: dict):
         return None
 
     frame = frames[0]
-    if not isinstance(frame, dict):
-        raise ValueError("state.frames[0] must be a mapping")
-
-    if frame.get("name") != "list":
-        raise ValueError("only list-backed VM frames are supported")
-
-    values = frame.get("values")
-    index = frame.get("index")
-    if not isinstance(values, list) or not isinstance(index, int):
-        raise ValueError("list frame must contain list values and an integer index")
+    if not isinstance(frame, list):
+        raise ValueError("state.frames[0] must be an object path")
 
     return frame
 
 
-def sequence_from_main(target_vm: dict) -> list:
+def sequence_from_main(target_vm: dict) -> tuple[list, list]:
     main = target_vm.get("main")
     if not isinstance(main, list) or len(main) != 2 or main[0] != "list":
         raise ValueError("target VM must use main: [list, <sequence-name>] for stepped execution")
@@ -224,15 +236,23 @@ def sequence_from_main(target_vm: dict) -> list:
     if not isinstance(sequence, list):
         raise ValueError(f"target VM sequence {sequence_name!r} must be a YAML list")
 
-    return sequence
+    return [sequence_name], sequence
 
 
-def next_step_context(target_vm: dict) -> tuple[list, int]:
-    frame = list_frame_from_state(target_vm)
-    if frame is not None:
-        return frame["values"], frame["index"]
+def next_step_context(target_vm: dict) -> tuple[list, list, int]:
+    frame_path = frame_path_from_state(target_vm)
+    if frame_path is not None:
+        if not frame_path or not isinstance(frame_path[-1], int):
+            raise ValueError("state.frames[0] must end with an integer vector offset")
 
-    return sequence_from_main(target_vm), 0
+        sequence_path = frame_path[:-1]
+        sequence = resolve_path(target_vm, sequence_path)
+        if not isinstance(sequence, list):
+            raise ValueError("state.frames[0] must point inside a sequence")
+        return sequence_path, sequence, frame_path[-1]
+
+    sequence_path, sequence = sequence_from_main(target_vm)
+    return sequence_path, sequence, 0
 
 
 def single_step_execution_vm(target_vm: dict, step_expression) -> dict:
@@ -242,17 +262,11 @@ def single_step_execution_vm(target_vm: dict, step_expression) -> dict:
     return execution_vm
 
 
-def stepped_state(sequence: list, next_index: int) -> dict:
+def stepped_state(sequence_path: list, sequence: list, next_index: int) -> dict:
     if next_index < len(sequence):
         return {
             "status": "running",
-            "frames": [
-                {
-                    "name": "list",
-                    "index": next_index,
-                    "values": deepcopy(sequence),
-                }
-            ],
+            "frames": [[*deepcopy(sequence_path), next_index]],
         }
 
     return {
@@ -262,7 +276,13 @@ def stepped_state(sequence: list, next_index: int) -> dict:
     }
 
 
-def merge_single_step_result(original_vm: dict, stepped_execution_vm: dict, sequence: list, current_index: int) -> dict:
+def merge_single_step_result(
+    original_vm: dict,
+    stepped_execution_vm: dict,
+    sequence_path: list,
+    sequence: list,
+    current_index: int,
+) -> dict:
     merged_vm = deepcopy(original_vm)
 
     for key, value in stepped_execution_vm.items():
@@ -271,7 +291,7 @@ def merge_single_step_result(original_vm: dict, stepped_execution_vm: dict, sequ
         merged_vm[key] = value
 
     merged_vm["main"] = deepcopy(original_vm["main"])
-    merged_vm["state"] = stepped_state(sequence, current_index + 1)
+    merged_vm["state"] = stepped_state(sequence_path, sequence, current_index + 1)
     return merged_vm
 
 
@@ -475,7 +495,7 @@ def step_target_file(
         raise FileNotFoundError(f"helix binary not found: {binary_path}")
 
     target_vm = load_target_vm(target_path, include_source_path)
-    sequence, current_index = next_step_context(target_vm)
+    sequence_path, sequence, current_index = next_step_context(target_vm)
     if current_index < 0 or current_index >= len(sequence):
         raise ValueError("target VM has no remaining step to execute")
 
@@ -499,6 +519,7 @@ def step_target_file(
         stepped_vm = merge_single_step_result(
             target_vm,
             stepped_execution_vm,
+            sequence_path,
             sequence,
             current_index,
         )
