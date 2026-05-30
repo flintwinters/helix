@@ -1,32 +1,48 @@
-name: Helix
-tagline: Cells all the way down
-left: 20
-right: 22
-outer:
+title: Helix Demo
+desc: |
+  The Helix programming system:
+  demonstration of versioned program state
+  and procedural debugging abilities.
+
+include: [helix_demo_include.yaml]
+
+
+
+x: 5
+y: 8
+main: [list, run]
+run:
+  - [step, cell_vm]
+  - [step, cell_vm]
+  - [show, cell_vm]
+  - [set, total, [add, x, y]]
+  - [set, total, [add, total, y]]
+  - [set, seen, simple_cell_vm.inner.value]
+  - [set, included_seen, helix_demo_include.inner.value]
+  - [start, cell_vm]
+
+
+
+simple_cell_vm:
   inner:
     value: 43
-include: [helix_demo_include.yaml]
-internal_vm:
-  seed: 7
-  delta: 8
-  main: [set, total, [add, seed, delta]]
-step_vm:
-  seed2: 3
-  delta2: 4
-  steps:
-    - [set, first, [add, seed2, delta2]]
-    - [set, second, [add, first, delta2]]
-  main: [list, steps]
-items:
-  - [step, step_vm]
-  - [show, step_vm]
-  - [step, step_vm]
-  - [show, step_vm.second]
-  - [add, left, right]
-  - [set, total, [add, left, right]]
-  - [set, total, [add, total, [add, total, right]]]
-  - [set, seen, outer.inner.value]
-  - [set, included_seen, helix_demo_include.inner.value]
-  - [start, internal_vm]
-  - [add, right, left]
-main: [list, items]
+
+
+
+
+cell_vm:
+  x: 3
+  y: 4
+
+  main: [list, run]
+  run:
+    - [set, 1st, [add, x, y]]
+    - [set, 2nd, [add, 1st, y]]
+    - [set, 3rd, [add, 2nd, y]]
+    - [set, 4th, [add, 3rd, y]]
+    - [start, cell_vm.internal_cell_vm]
+
+  internal_cell_vm:
+    a: 7
+    b: 8
+    main: [set, total, [add, a, b]]
