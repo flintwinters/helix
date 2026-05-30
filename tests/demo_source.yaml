@@ -1,59 +1,65 @@
 source: helix_demo.yaml
-stdout_contains:
-  - "status: running"
-  - "first: 7"
 expected:
-  name: Helix
-  tagline: Cells all the way down
-  left: 20
-  right: 22
-  outer:
-    inner:
-      value: 43
+  1st: 7
+  2nd: 11
+  title: Helix Demo
+  desc: |
+    The Helix programming system:
+    demonstration of versioned program state
+    and procedural debugging abilities.
   include: [helix_demo_include.yaml]
   helix_demo_include:
     inner:
       value: 44
-  internal_vm:
-    seed: 7
-    delta: 8
-    main: [set, total, [add, seed, delta]]
-    total: 15
+  internal_cell_vm:
+    a: 7
+    b: 8
+    main: [set, total, [add, a, b]]
+  x: 5
+  y: 8
+  main: [list, run]
+  run:
+    - [step, cell_vm]
+    - [step, cell_vm]
+    - [show, cell_vm]
+    - [set, total, [add, x, y]]
+    - [set, total, [add, total, y]]
+    - [set, seen, simple_cell_vm.inner.value]
+    - [set, included_seen, helix_demo_include.inner.value]
+    - [start, cell_vm]
+  simple_cell_vm:
+    inner:
+      value: 43
+  cell_vm:
+    x: 3
+    y: 4
+    main: [list, run]
+    run:
+      - [set, 1st, [add, x, y]]
+      - [set, 2nd, [add, 1st, y]]
+      - [set, 3rd, [add, 2nd, y]]
+      - [set, 4th, [add, 3rd, y]]
+      - [start, cell_vm.internal_cell_vm]
+    internal_cell_vm:
+      a: 7
+      b: 8
+      main: [set, total, [add, a, b]]
+      total: 15
+      state:
+        result: 15
+        frames: []
+        status: finished
+    1st: 7
+    2nd: 11
+    3rd: 15
+    4th: 19
     state:
-      result: 15
+      result: null
       frames: []
       status: finished
-  step_vm:
-    seed2: 3
-    delta2: 4
-    steps:
-      - [set, first, [add, seed2, delta2]]
-      - [set, second, [add, first, delta2]]
-      - [set, third, [add, second, delta2]]
-      - [set, fourth, [add, third, delta2]]
-    main: [list, steps]
-    first: 7
-    second: 11
-    state:
-      frames:
-        - [steps, 2]
-      status: running
-  items:
-    - [step, step_vm]
-    - [show, step_vm]
-    - [step, step_vm]
-    - [show, step_vm.second]
-    - [add, left, right]
-    - [set, total, [add, left, right]]
-    - [set, total, [add, total, [add, total, right]]]
-    - [set, seen, outer.inner.value]
-    - [set, included_seen, helix_demo_include.inner.value]
-    - [start, internal_vm]
-    - [add, right, left]
-  seen: 43
   included_seen: 44
-  total: 106
-  main: [list, items]
+  total: 21
+  seen: 43
   state:
     result: null
     frames: []
