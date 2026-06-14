@@ -426,18 +426,24 @@ class DebugLogRenderer:
 
 
 def ensure_debug_repo(target_path: Path) -> Path:
+    debug_target_path = ensure_debug_target_copy(target_path)
+
+    if not debug_repo_exists(debug_target_path.parent):
+        init_debug_repo(debug_target_path.parent)
+
+    if not debug_repo_has_commits(debug_target_path.parent):
+        commit_debug_snapshot(debug_target_path.parent, "Record initial debug VM state")
+
+    return debug_target_path
+
+
+def ensure_debug_target_copy(target_path: Path) -> Path:
     debug_directory = debug_directory_for(target_path)
     debug_target_path = debug_target_path_for(target_path)
     debug_directory.mkdir(exist_ok=True)
 
-    if not debug_repo_exists(debug_directory):
-        init_debug_repo(debug_directory)
-
     if not debug_target_path.exists():
         shutil.copy2(target_path, debug_target_path)
-
-    if not debug_repo_has_commits(debug_directory):
-        commit_debug_snapshot(debug_directory, "Record initial debug VM state")
 
     return debug_target_path
 
@@ -747,9 +753,15 @@ def main() -> int:
             if args.tui:
                 raise RuntimeError("--no-vcs cannot be combined with --tui")
 
+            debug_target_path = ensure_debug_target_copy(target_path)
             operations = args.operations or [STEP_FORWARD_OPERATION]
             for operation in operations:
-                if not execute_non_vcs_operation(operation, binary_path, target_path, target_path):
+                if not execute_non_vcs_operation(
+                    operation,
+                    binary_path,
+                    debug_target_path,
+                    target_path,
+                ):
                     raise RuntimeError(f"operation {operation!r} requires git, which is disabled by --no-vcs")
             return 0
 
