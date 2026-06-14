@@ -45,6 +45,10 @@ CLI_OPERATION_FLAGS = (
     ("--previous-branch", PREVIOUS_BRANCH_OPERATION, "Switch to the previous local branch once."),
     ("--fork-branch", FORK_BRANCH_OPERATION, "Create a new branch at the current HEAD once."),
 )
+FORWARD_ONLY_OPERATIONS = {
+    CONTINUE_OPERATION,
+    STEP_FORWARD_OPERATION,
+}
 GIT_LOG_BASE_COMMAND = [
     "git",
     "log",
@@ -68,6 +72,11 @@ def parse_args() -> argparse.Namespace:
         "--tui",
         action="store_true",
         help="Enable interactive terminal controls instead of running a single forward step and exiting.",
+    )
+    parser.add_argument(
+        "--no-vcs",
+        action="store_true",
+        help="Run Helix directly against the target file without creating or using a debug git repository.",
     )
     for flag, operation, help_text in CLI_OPERATION_FLAGS:
         parser.add_argument(
@@ -465,6 +474,24 @@ def step_target_file(
         wrapper_path.unlink(missing_ok=True)
 
 
+def execute_non_vcs_operation(
+    operation: str,
+    binary_path: Path,
+    target_path: Path,
+    include_source_path: Path,
+) -> bool:
+    if operation not in FORWARD_ONLY_OPERATIONS:
+        return False
+
+    step_target_file(
+        binary_path,
+        target_path,
+        include_source_path,
+        "start" if operation == CONTINUE_OPERATION else "step",
+    )
+    return True
+
+
 def read_debug_key() -> str:
     stdin_fd = sys.stdin.fileno()
     original_settings = termios.tcgetattr(stdin_fd)
@@ -716,6 +743,16 @@ def main() -> int:
     binary_path = resolve_binary_path(args.binary)
 
     try:
+        if args.no_vcs:
+            if args.tui:
+                raise RuntimeError("--no-vcs cannot be combined with --tui")
+
+            operations = args.operations or [STEP_FORWARD_OPERATION]
+            for operation in operations:
+                if not execute_non_vcs_operation(operation, binary_path, target_path, target_path):
+                    raise RuntimeError(f"operation {operation!r} requires git, which is disabled by --no-vcs")
+            return 0
+
         debug_target_path = ensure_debug_repo(target_path)
         if not args.tui:
             operations = args.operations or [STEP_FORWARD_OPERATION]
