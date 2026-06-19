@@ -14,7 +14,7 @@ import yaml
 INCLUDE_DIRECTORIES = ["include", "src", "ryml/src", "ryml/ext/c4core/src"]
 INCLUDES = " ".join(f"-I{directory}" for directory in INCLUDE_DIRECTORIES)
 COMPILER = "g++"
-CPP_FLAGS = "-g -std=c++20"
+CPP_FLAGS = "-std=c++20"
 LINKER_FLAGS = "-rdynamic -L ryml/build -lryml -ldl"
 SFML_MODULE = "build/sfml.so"
 SFML_MODULE_SOURCE = "lib/sfml/sfmlwrapper.cpp"
