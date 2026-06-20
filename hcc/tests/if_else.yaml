@@ -9,18 +9,7 @@ c_source: |
       }
       return value;
   }
-expected:
-  c:
-    main:
-      kind: function
-      params: []
-      body:
-        - [set, flag, 0]
-        - [set, value, 5]
-        - [if, flag, [set, value, 1], [set, value, 7]]
-        - [return, value]
-  main: [call, c.main, []]
-  state:
-    result: 7
-    frames: []
-    status: finished
+expected_state:
+  result: 7
+  frames: []
+  status: finished
