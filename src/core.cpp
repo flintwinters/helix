@@ -699,6 +699,11 @@ VecCell::VecCell(vector<CellPtr> elements)
     class_name = "VecCell";
 }
 
+void VecCell::append(CellPtr child) {
+    attach_parent_if_missing(child, shared_from_this());
+    value.push_back(move(child));
+}
+
 size_t VecCell::size() const noexcept {
     return value.size();
 }
