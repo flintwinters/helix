@@ -1,7 +1,6 @@
 #include <core.hpp>
 
 #include <iostream>
-#include <functional>
 #include <memory>
 #include <string>
 
@@ -11,6 +10,7 @@ static AdvanceVmFn advance_vm_fn = nullptr;
 static RenderShowFn render_show_fn = nullptr;
 static MakeErrorFn make_error_fn = nullptr;
 using VmCallbackFn = CellPtr(*)(CellPtr, const shared_ptr<VmCell>&);
+using IntBinaryOperation = int64_t(*)(int64_t, int64_t);
 
 static CellPtr make_error(const string& message, CellPtr value = nullptr) {
     if (!make_error_fn) {
@@ -259,7 +259,7 @@ static CellPtr builtin_int_binary(
     const vector<CellPtr>& arguments,
     CellPtr current_vm,
     const char* who,
-    const function<int64_t(int64_t, int64_t)>& operation) {
+    IntBinaryOperation operation) {
     shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), who, 3);
     if (!root_cell) {
         return make_error(string(who) + " requires a map VM");
@@ -278,6 +278,18 @@ static CellPtr builtin_int_binary(
     const int64_t left = static_cast<const IntCell&>(*left_cell).value;
     const int64_t right = static_cast<const IntCell&>(*right_cell).value;
     return make_shared<IntCell>(operation(left, right));
+}
+
+static int64_t add_ints(int64_t left, int64_t right) {
+    return left + right;
+}
+
+static int64_t sub_ints(int64_t left, int64_t right) {
+    return left - right;
+}
+
+static int64_t mul_ints(int64_t left, int64_t right) {
+    return left * right;
 }
 
 static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
@@ -302,7 +314,7 @@ static CellPtr builtin_add(const vector<CellPtr>& arguments, CellPtr current_vm)
         arguments,
         move(current_vm),
         "add",
-        [](int64_t left, int64_t right) { return left + right; });
+        add_ints);
 }
 
 static CellPtr builtin_sub(const vector<CellPtr>& arguments, CellPtr current_vm) {
@@ -310,7 +322,7 @@ static CellPtr builtin_sub(const vector<CellPtr>& arguments, CellPtr current_vm)
         arguments,
         move(current_vm),
         "sub",
-        [](int64_t left, int64_t right) { return left - right; });
+        sub_ints);
 }
 
 static CellPtr builtin_mul(const vector<CellPtr>& arguments, CellPtr current_vm) {
@@ -318,7 +330,7 @@ static CellPtr builtin_mul(const vector<CellPtr>& arguments, CellPtr current_vm)
         arguments,
         move(current_vm),
         "mul",
-        [](int64_t left, int64_t right) { return left * right; });
+        mul_ints);
 }
 
 static CellPtr builtin_div(const vector<CellPtr>& arguments, CellPtr current_vm) {
