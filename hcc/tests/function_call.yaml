@@ -1,0 +1,30 @@
+c_source: |
+  int add(int a, int b) {
+      return a + b;
+  }
+
+  int main(void) {
+      int x = 40;
+      int y = add(x, 2);
+      return y;
+  }
+expected:
+  c:
+    c_add:
+      kind: function
+      params: [a, b]
+      body:
+        - [return, [add, a, b]]
+      c_name: add
+    main:
+      kind: function
+      params: []
+      body:
+        - [set, x, 40]
+        - [set, y, [call, c_add, [x, 2]]]
+        - [return, y]
+  main: [call, c.main, []]
+  state:
+    result: 42
+    frames: []
+    status: finished
