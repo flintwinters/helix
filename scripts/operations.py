@@ -440,15 +440,25 @@ def run_hcc_tests(runtime="cpp"):
                 program_file.write(dump_hcc_program(program))
                 program_path = program_file.name
 
-            if "expected" in fixture and "expected_state" in fixture:
-                return test_result(
-                    test_name,
-                    False,
-                    ["fixture must contain only one of 'expected' or 'expected_state'"],
-                )
-
             runtime_fixture = fixture
-            if "expected_state" in fixture:
+            if "expected" in fixture and "expected_state" in fixture:
+                expected_program = fixture["expected"]
+                if program != expected_program:
+                    return test_result(
+                        test_name,
+                        False,
+                        [
+                            "emitted Helix mismatch",
+                            "diff:",
+                            indent_block(render_yaml_diff(expected_program, program)),
+                        ],
+                    )
+
+                expected = dict(expected_program)
+                expected["state"] = fixture["expected_state"]
+                runtime_fixture = dict(fixture)
+                runtime_fixture["expected"] = expected
+            elif "expected_state" in fixture:
                 expected = dict(program)
                 expected["state"] = fixture["expected_state"]
                 runtime_fixture = dict(fixture)
