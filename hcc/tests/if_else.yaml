@@ -1,0 +1,26 @@
+c_source: |
+  int main(void) {
+      int flag = 0;
+      int value = 5;
+      if (flag) {
+          value = 1;
+      } else {
+          value = 7;
+      }
+      return value;
+  }
+expected:
+  c:
+    main:
+      kind: function
+      params: []
+      body:
+        - [set, flag, 0]
+        - [set, value, 5]
+        - [if, flag, [set, value, 1], [set, value, 7]]
+        - [return, value]
+  main: [call, c.main, []]
+  state:
+    result: 7
+    frames: []
+    status: finished
