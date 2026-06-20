@@ -140,11 +140,11 @@ static CellPtr resolve_or_signal(CellPtr node, const shared_ptr<VmCell>& root_ce
     }
 
     if (value && original && value.get() == original.get() && value->type == Cell::Type::string) {
-        unordered_map<string, CellPtr> fields;
-        fields[CellField::kind] = make_shared<StrCell>(CellValue::unresolved_name);
-        fields[CellField::name] = make_shared<StrCell>(static_cast<const StrCell&>(*value).value);
-        fields[CellField::context_type] = make_shared<StrCell>(cell_class_name(root_cell));
-        return make_error("builtin resolution failed", make_shared<MapCell>(move(fields)));
+        shared_ptr<MapCell> details = make_shared<MapCell>();
+        details->set(CellField::kind, make_shared<StrCell>(CellValue::unresolved_name));
+        details->set(CellField::name, make_shared<StrCell>(static_cast<const StrCell&>(*value).value));
+        details->set(CellField::context_type, make_shared<StrCell>(cell_class_name(root_cell)));
+        return make_error("builtin resolution failed", details);
     }
 
     return value;
