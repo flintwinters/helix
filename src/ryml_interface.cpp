@@ -1,13 +1,20 @@
 #include <ryml_interface.hpp>
 
 #include <charconv>
-#include <dlfcn.h>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#ifndef HELIX_ENABLE_DYNAMIC_LIBRARIES
+#define HELIX_ENABLE_DYNAMIC_LIBRARIES 1
+#endif
+
+#if HELIX_ENABLE_DYNAMIC_LIBRARIES
+#include <dlfcn.h>
+#endif
 
 #include <c4/yml/emit.hpp>
 #include <c4/yml/parse.hpp>
@@ -63,6 +70,7 @@ static bool is_native_include_path(const filesystem::path& include_path) {
     return include_path.extension() == ".so";
 }
 
+#if HELIX_ENABLE_DYNAMIC_LIBRARIES
 using NativeModuleInstallFn = CellPtr (*)(const shared_ptr<ScopeCell>&);
 
 static vector<void*> native_library_handles {};
@@ -96,6 +104,7 @@ static shared_ptr<ScopeCell> load_native_module_from_library(const filesystem::p
     native_library_handles.push_back(handle);
     return module;
 }
+#endif
 
 CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
     while ((node.is_stream() || node.is_doc()) && node.has_children()) {
@@ -162,7 +171,11 @@ static void expand_includes_in_root_map(const shared_ptr<VmCell>& root_cell, con
         const string& include_name = static_cast<const StrCell&>(*include_entry).value;
         const filesystem::path include_path = resolve_include_path(source_path, include_name);
         if (is_native_include_path(include_path)) {
+#if HELIX_ENABLE_DYNAMIC_LIBRARIES
             root_cell->set(include_binding_name(include_path), load_native_module_from_library(include_path));
+#else
+            throw runtime_error("native includes require dynamic library support");
+#endif
         } else {
             const shared_ptr<VmCell> included_root = load_root_cell_from_yaml_file(include_path.c_str());
             root_cell->set(include_binding_name(include_path), included_root);
