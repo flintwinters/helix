@@ -8,6 +8,21 @@ c_source: |
       int y = plus_two(x);
       return y;
   }
+expected:
+  c:
+    plus_two:
+      kind: function
+      params: [a]
+      body:
+        - [return, [add, a, 2]]
+    main:
+      kind: function
+      params: []
+      body:
+        - [set, x, 40]
+        - [set, y, [call, plus_two, [x]]]
+        - [return, y]
+  main: [call, c.main, []]
 expected_state:
   result: 42
   frames: []
