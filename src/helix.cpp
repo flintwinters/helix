@@ -30,20 +30,20 @@ static CellPtr fail_vm(const shared_ptr<VmCell>& vm, const string& message) {
 static CellPtr evaluate_cell(CellPtr node, const shared_ptr<VmCell>& root_cell);
 
 static void clear_vm_yield_reason(const shared_ptr<VmCell>& vm) {
-    ensure_vm_state(vm)->value.erase("yield_reason");
+    ensure_vm_state(vm)->value.erase(CellField::yield_reason);
 }
 
 static CellPtr breakpoint_error(const string& message, ConstCellPtr source) {
     shared_ptr<MapCell> details = make_shared<MapCell>();
-    details->set("kind", make_shared<StrCell>("breakpoint_error"));
+    details->set(CellField::kind, make_shared<StrCell>(CellValue::breakpoint_error));
     if (source) {
-        details->set("source", const_pointer_cast<Cell>(source));
+        details->set(CellField::source, const_pointer_cast<Cell>(source));
     }
     return make_error_cell(message, details);
 }
 
 static bool vm_breakpoint_matches(const shared_ptr<VmCell>& vm, ConstCellPtr pc, CellPtr& error) {
-    CellPtr breakpoints_cell = map_field_cell(vm, "breakpoints");
+    CellPtr breakpoints_cell = map_field_cell(vm, CellField::breakpoints);
     if (!breakpoints_cell) {
         return false;
     }
@@ -72,19 +72,19 @@ static void store_vm_frame(const shared_ptr<VmCell>& vm, CellPtr pc) {
     shared_ptr<MapCell> state = ensure_vm_state(vm);
     shared_ptr<VecCell> frames = make_shared<VecCell>();
     frames->value.push_back(move(pc));
-    CellPtr old_frames = map_field_cell(state, "frames");
+    CellPtr old_frames = map_field_cell(state, CellField::frames);
     if (old_frames) {
         old_frames->clear_descendant_parent_links();
         old_frames->parent = nullptr;
     }
-    state->set("frames", frames);
-    state->value.erase("pc");
+    state->set(CellField::frames, frames);
+    state->value.erase(CellField::pc);
 }
 
 static CellPtr yield_at_breakpoint(const shared_ptr<VmCell>& vm, CellPtr pc) {
     shared_ptr<MapCell> state = ensure_vm_state(vm);
     store_vm_frame(vm, move(pc));
-    state->set("yield_reason", make_shared<StrCell>("breakpoint"));
+    state->set(CellField::yield_reason, make_shared<StrCell>(CellValue::breakpoint));
     set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
     return vm_status_cell(vm);
@@ -96,11 +96,11 @@ static shared_ptr<MapCell> make_resolution_details(
     const Cell* context,
     CellPtr source = nullptr) {
     unordered_map<string, CellPtr> fields;
-    fields["kind"] = make_shared<StrCell>(kind);
-    fields["name"] = make_shared<StrCell>(name);
-    fields["context_type"] = make_shared<StrCell>(cell_class_name(context));
+    fields[CellField::kind] = make_shared<StrCell>(kind);
+    fields[CellField::name] = make_shared<StrCell>(name);
+    fields[CellField::context_type] = make_shared<StrCell>(cell_class_name(context));
     if (source) {
-        fields["source"] = source;
+        fields[CellField::source] = source;
     }
     return make_shared<MapCell>(move(fields));
 }
@@ -110,7 +110,7 @@ static void attach_error_source(ErrCell& error, CellPtr source) {
         return;
     }
 
-    static_pointer_cast<MapCell>(error.value)->set("source", move(source));
+    static_pointer_cast<MapCell>(error.value)->set(CellField::source, move(source));
 }
 
 static const Cell* lookup_context(ConstCellPtr node, const shared_ptr<VmCell>& root_cell) {
@@ -138,7 +138,7 @@ static CellPtr resolve_cell(CellPtr node, const shared_ptr<VmCell>& root_cell) {
     if (resolved && resolved->type == Cell::Type::error_signal) {
         ErrCell& error = static_cast<ErrCell&>(*resolved);
         if (!error.value) {
-            error.value = make_resolution_details("resolution_error", name, context, node);
+            error.value = make_resolution_details(CellValue::resolution_error, name, context, node);
         } else {
             attach_error_source(error, node);
         }
@@ -165,14 +165,14 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<VmCell>& root
         const string& actor_name = static_cast<const StrCell&>(*actor).value;
         return make_error_cell(
             "vector actor could not be resolved",
-            make_resolution_details("unresolved_actor", actor_name, root_cell.get(), form.value.front()));
+            make_resolution_details(CellValue::unresolved_actor, actor_name, root_cell.get(), form.value.front()));
     }
 
     if (!actor || actor->type != Cell::Type::function) {
         unordered_map<string, CellPtr> fields;
-        fields["kind"] = make_shared<StrCell>("invalid_actor");
-        fields["actor_type"] = make_shared<StrCell>(cell_class_name(actor));
-        fields["source"] = form.value.front();
+        fields[CellField::kind] = make_shared<StrCell>(CellValue::invalid_actor);
+        fields[CellField::actor_type] = make_shared<StrCell>(cell_class_name(actor));
+        fields[CellField::source] = form.value.front();
         shared_ptr<MapCell> details = make_shared<MapCell>(move(fields));
         return make_error_cell("vector actor did not resolve to a builtin", details);
     }
@@ -241,13 +241,13 @@ static shared_ptr<VecCell> clone_path_prefix(ConstCellPtr path_cell) {
 
 static void clear_vm_frames(const shared_ptr<VmCell>& vm) {
     shared_ptr<MapCell> state = ensure_vm_state(vm);
-    CellPtr old_frames = map_field_cell(state, "frames");
+    CellPtr old_frames = map_field_cell(state, CellField::frames);
     if (old_frames) {
         old_frames->clear_descendant_parent_links();
         old_frames->parent = nullptr;
     }
-    state->set("frames", make_shared<VecCell>());
-    state->value.erase("pc");
+    state->set(CellField::frames, make_shared<VecCell>());
+    state->value.erase(CellField::pc);
 }
 
 static shared_ptr<VecCell> next_vector_path(ConstCellPtr pc, size_t next_index) {
@@ -383,7 +383,7 @@ static CellPtr resume_direct_frame(const shared_ptr<VmCell>& vm, ConstCellPtr pc
 }
 
 static CellPtr start_vm_main(const shared_ptr<VmCell>& vm) {
-    unordered_map<string, CellPtr>::const_iterator main_it = vm->value.find("main");
+    unordered_map<string, CellPtr>::const_iterator main_it = vm->value.find(CellField::main);
     if (main_it == vm->value.end()) {
         return fail_vm(vm, "program is missing a main entrypoint");
     }
@@ -392,7 +392,7 @@ static CellPtr start_vm_main(const shared_ptr<VmCell>& vm) {
     clear_vm_terminal_fields(vm);
 
     shared_ptr<VecCell> main_pc = make_shared<VecCell>();
-    main_pc->value.push_back(make_shared<StrCell>("main"));
+    main_pc->value.push_back(make_shared<StrCell>(CellField::main));
     CellPtr error = nullptr;
     if (vm_breakpoint_matches(vm, main_pc, error)) {
         return yield_at_breakpoint(vm, main_pc);
