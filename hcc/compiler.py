@@ -34,30 +34,6 @@ def flow_list(*items: Any) -> FlowList:
     return FlowList(items)
 
 
-HELIX_BUILTINS = {
-    "add",
-    "append",
-    "at",
-    "call",
-    "copy",
-    "div",
-    "eval",
-    "get",
-    "if",
-    "list",
-    "mod",
-    "mul",
-    "pop",
-    "return",
-    "set",
-    "show",
-    "start",
-    "step",
-    "sub",
-    "while",
-}
-
-
 class HccError(Exception):
     """Raised when the proof-of-concept compiler cannot lower a C construct."""
 
@@ -95,13 +71,8 @@ class HccCompiler:
             if isinstance(external, c_ast.FuncDef):
                 c_name = external.decl.name
                 if c_name:
-                    names[c_name] = self.helix_function_name(c_name)
+                    names[c_name] = c_name
         return names
-
-    def helix_function_name(self, c_name: str) -> str:
-        if c_name in HELIX_BUILTINS:
-            return f"c_{c_name}"
-        return c_name
 
     def compile_function(self, node: c_ast.FuncDef) -> tuple[str, dict[str, Any]]:
         name = node.decl.name
@@ -121,8 +92,6 @@ class HccCompiler:
             "body": self.compile_compound(node.body),
         }
         emitted_name = self.function_names[name]
-        if emitted_name != name:
-            function["c_name"] = name
 
         return emitted_name, function
 
