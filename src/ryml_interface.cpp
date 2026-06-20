@@ -46,14 +46,6 @@ static CellPtr scalar_cell_from_ryml(c4::csubstr scalar) {
     return make_shared<StrCell>(text);
 }
 
-static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent) {
-    if (!child || !parent || child->parent) {
-        return;
-    }
-
-    child->parent = parent;
-}
-
 static filesystem::path resolve_include_path(const filesystem::path& source_path, const string& include_name) {
     const filesystem::path include_path(include_name);
     if (include_path.is_absolute()) {
@@ -124,8 +116,7 @@ CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
             : static_pointer_cast<MapCell>(make_shared<ScopeCell>());
         for (const auto child : node.children()) {
             CellPtr child_cell = cell_from_ryml_node(child);
-            attach_parent_if_missing(child_cell, map_cell);
-            map_cell->value.emplace(ryml_text_to_string(child.key()), move(child_cell));
+            map_cell->set(ryml_text_to_string(child.key()), move(child_cell));
         }
         return map_cell;
     }
