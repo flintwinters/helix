@@ -145,9 +145,9 @@ static CellPtr resolve_or_signal(CellPtr node, const shared_ptr<VmCell>& root_ce
 
     if (value && original && value.get() == original.get() && value->type == Cell::Type::string) {
         unordered_map<string, CellPtr> fields;
-        fields["kind"] = make_shared<StrCell>("unresolved_name");
-        fields["name"] = make_shared<StrCell>(static_cast<const StrCell&>(*value).value);
-        fields["context_type"] = make_shared<StrCell>(cell_class_name(root_cell));
+        fields[CellField::kind] = make_shared<StrCell>(CellValue::unresolved_name);
+        fields[CellField::name] = make_shared<StrCell>(static_cast<const StrCell&>(*value).value);
+        fields[CellField::context_type] = make_shared<StrCell>(cell_class_name(root_cell));
         return make_error("builtin resolution failed", make_shared<MapCell>(move(fields)));
     }
 
@@ -411,10 +411,10 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
     }
 
     shared_ptr<MapCell> error_details = expect_map_cell(static_cast<ErrCell&>(*target_cell).value);
-    const StrCell* kind_cell = error_details ? map_field_string(error_details, "kind") : nullptr;
-    const StrCell* prefix_cell = error_details ? map_field_string(error_details, "resolved_prefix") : nullptr;
-    const StrCell* segment_cell = error_details ? map_field_string(error_details, "failed_segment") : nullptr;
-    if (!kind_cell || kind_cell->value != "lookup_error" || !prefix_cell || !segment_cell) {
+    const StrCell* kind_cell = error_details ? map_field_string(error_details, CellField::kind) : nullptr;
+    const StrCell* prefix_cell = error_details ? map_field_string(error_details, CellField::resolved_prefix) : nullptr;
+    const StrCell* segment_cell = error_details ? map_field_string(error_details, CellField::failed_segment) : nullptr;
+    if (!kind_cell || kind_cell->value != CellValue::lookup_error || !prefix_cell || !segment_cell) {
         return target_cell;
     }
 
@@ -435,8 +435,10 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
 }
 
 static bool is_user_function(ConstCellPtr cell) {
-    const StrCell* kind = map_field_string(cell, "kind");
-    return kind && kind->value == "function" && map_field_vec(cell, "params") && map_field_vec(cell, "body");
+    const StrCell* kind = map_field_string(cell, CellField::kind);
+    return kind && kind->value == CellValue::function
+        && map_field_vec(cell, CellField::params)
+        && map_field_vec(cell, CellField::body);
 }
 
 static CellPtr expect_user_function(CellPtr cell, const char* who) {
@@ -490,7 +492,7 @@ static CellPtr bind_call_arguments(
 }
 
 static CellPtr evaluate_function_body(const shared_ptr<ScopeCell>& call_scope, const shared_ptr<VmCell>& root_cell) {
-    shared_ptr<VecCell> body = map_field_vec(call_scope, "__body");
+    shared_ptr<VecCell> body = map_field_vec(call_scope, CellField::internal_body);
     if (!body) {
         return make_error("call scope is missing a function body");
     }
@@ -529,12 +531,12 @@ static CellPtr builtin_call(const vector<CellPtr>& arguments, CellPtr current_vm
     shared_ptr<ScopeCell> call_scope = make_shared<ScopeCell>();
     call_scope->parent = function_cell;
 
-    CellPtr binding_error = bind_call_arguments(call_scope, map_field_vec(function_cell, "params"), evaluated_arguments);
+    CellPtr binding_error = bind_call_arguments(call_scope, map_field_vec(function_cell, CellField::params), evaluated_arguments);
     if (binding_error) {
         return binding_error;
     }
 
-    call_scope->set("__body", clone_cell_tree(map_field_vec(function_cell, "body")));
+    call_scope->set(CellField::internal_body, clone_cell_tree(map_field_vec(function_cell, CellField::body)));
     CellPtr result = evaluate_function_body(call_scope, root_cell);
     call_scope->clear_descendant_parent_links();
     call_scope->parent = nullptr;
@@ -779,8 +781,8 @@ static CellPtr builtin_start(const vector<CellPtr>& arguments, CellPtr current_v
             return step_result;
         }
 
-        const StrCell* yield_reason = map_field_string(ensure_vm_state(child_vm), "yield_reason");
-        if (yield_reason && yield_reason->value == "breakpoint") {
+        const StrCell* yield_reason = map_field_string(ensure_vm_state(child_vm), CellField::yield_reason);
+        if (yield_reason && yield_reason->value == CellValue::breakpoint) {
             return step_result;
         }
     }
