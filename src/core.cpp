@@ -561,17 +561,17 @@ static CellPtr make_lookup_error(
     const Cell* receiver,
     const string& failed_segment,
     const string& resolved_prefix) {
-    unordered_map<string, CellPtr> fields;
-    fields[CellField::kind] = make_shared<StrCell>(CellValue::lookup_error);
-    fields[CellField::name] = make_shared<StrCell>(queried_name);
-    fields[CellField::receiver_type] = make_shared<StrCell>(cell_class_name(receiver));
+    shared_ptr<MapCell> details = make_shared<MapCell>();
+    details->set(CellField::kind, make_shared<StrCell>(CellValue::lookup_error));
+    details->set(CellField::name, make_shared<StrCell>(queried_name));
+    details->set(CellField::receiver_type, make_shared<StrCell>(cell_class_name(receiver)));
     if (!failed_segment.empty()) {
-        fields[CellField::failed_segment] = make_shared<StrCell>(failed_segment);
+        details->set(CellField::failed_segment, make_shared<StrCell>(failed_segment));
     }
     if (!resolved_prefix.empty()) {
-        fields[CellField::resolved_prefix] = make_shared<StrCell>(resolved_prefix);
+        details->set(CellField::resolved_prefix, make_shared<StrCell>(resolved_prefix));
     }
-    return make_error_cell(message, make_shared<MapCell>(move(fields)));
+    return make_error_cell(message, details);
 }
 
 size_t Cell::size() const noexcept {
