@@ -685,31 +685,7 @@ static CellPtr builtin_copy(const vector<CellPtr>& arguments, CellPtr current_vm
         return nullptr;
     }
 
-    if (value->type == Cell::Type::vec) {
-        shared_ptr<VecCell> copy = make_shared<VecCell>();
-        for (const CellPtr& element : static_cast<const VecCell&>(*value).value) {
-            if (element) {
-                element->parent = copy;
-            }
-            copy->value.push_back(element);
-        }
-        return copy;
-    }
-
-    if (value->type == Cell::Type::scope || value->type == Cell::Type::map || value->type == Cell::Type::vm) {
-        shared_ptr<MapCell> copy = value->type == Cell::Type::scope
-            ? static_pointer_cast<MapCell>(make_shared<ScopeCell>())
-            : static_pointer_cast<MapCell>(make_shared<MapCell>());
-        for (const auto& [key, field_value] : static_cast<const MapCell&>(*value).value) {
-            if (field_value) {
-                field_value->parent = nullptr;
-            }
-            copy->set(key, field_value);
-        }
-        return copy;
-    }
-
-    return value;
+    return clone_cell_tree(value);
 }
 
 static CellPtr builtin_if(const vector<CellPtr>& arguments, CellPtr current_vm) {
