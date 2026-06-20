@@ -113,7 +113,7 @@ CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
     if (node.is_map()) {
         bool has_main = false;
         for (const auto child : node.children()) {
-            if (ryml_text_to_string(child.key()) == "main") {
+            if (ryml_text_to_string(child.key()) == CellField::main) {
                 has_main = true;
                 break;
             }
@@ -153,7 +153,7 @@ static void expand_includes_in_root_map(const shared_ptr<VmCell>& root_cell, con
         return;
     }
 
-    unordered_map<string, CellPtr>::const_iterator include_it = root_cell->value.find("include");
+    unordered_map<string, CellPtr>::const_iterator include_it = root_cell->value.find(CellField::include);
     if (include_it == root_cell->value.end()) {
         return;
     }
@@ -254,19 +254,19 @@ void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
     case Cell::Type::return_signal: {
         node |= c4::yml::MAP;
         const auto& sig_cell = static_cast<const SigCell&>(*cell);
-        node["signal_type"] << (cell->type == Cell::Type::return_signal ? "return" : "signal");
+        node[CellField::signal_type] << (cell->type == Cell::Type::return_signal ? CellValue::return_signal : CellValue::signal);
         if (sig_cell.value) {
-            write_cell_to_ryml_node(sig_cell.value, node["value"]);
+            write_cell_to_ryml_node(sig_cell.value, node[CellField::value]);
         }
         return;
     }
     case Cell::Type::error_signal: {
         node |= c4::yml::MAP;
         const auto& err_cell = static_cast<const ErrCell&>(*cell);
-        node["signal_type"] << "error";
-        node["message"] << err_cell.message;
+        node[CellField::signal_type] << CellValue::error;
+        node[CellField::message] << err_cell.message;
         if (err_cell.value) {
-            write_cell_to_ryml_node(err_cell.value, node["value"]);
+            write_cell_to_ryml_node(err_cell.value, node[CellField::value]);
         }
         return;
     }
