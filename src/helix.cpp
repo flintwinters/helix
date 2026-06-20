@@ -95,14 +95,14 @@ static shared_ptr<MapCell> make_resolution_details(
     const string& name,
     const Cell* context,
     CellPtr source = nullptr) {
-    unordered_map<string, CellPtr> fields;
-    fields[CellField::kind] = make_shared<StrCell>(kind);
-    fields[CellField::name] = make_shared<StrCell>(name);
-    fields[CellField::context_type] = make_shared<StrCell>(cell_class_name(context));
+    shared_ptr<MapCell> details = make_shared<MapCell>();
+    details->set(CellField::kind, make_shared<StrCell>(kind));
+    details->set(CellField::name, make_shared<StrCell>(name));
+    details->set(CellField::context_type, make_shared<StrCell>(cell_class_name(context)));
     if (source) {
-        fields[CellField::source] = source;
+        details->set(CellField::source, source);
     }
-    return make_shared<MapCell>(move(fields));
+    return details;
 }
 
 static void attach_error_source(ErrCell& error, CellPtr source) {
@@ -169,11 +169,10 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<VmCell>& root
     }
 
     if (!actor || actor->type != Cell::Type::function) {
-        unordered_map<string, CellPtr> fields;
-        fields[CellField::kind] = make_shared<StrCell>(CellValue::invalid_actor);
-        fields[CellField::actor_type] = make_shared<StrCell>(cell_class_name(actor));
-        fields[CellField::source] = form.value.front();
-        shared_ptr<MapCell> details = make_shared<MapCell>(move(fields));
+        shared_ptr<MapCell> details = make_shared<MapCell>();
+        details->set(CellField::kind, make_shared<StrCell>(CellValue::invalid_actor));
+        details->set(CellField::actor_type, make_shared<StrCell>(cell_class_name(actor)));
+        details->set(CellField::source, form.value.front());
         return make_error_cell("vector actor did not resolve to a builtin", details);
     }
 
