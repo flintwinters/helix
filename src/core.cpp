@@ -423,11 +423,11 @@ bool arm_list_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t
     if (!sequence_path) {
         return false;
     }
-    sequence_path->value.push_back(make_shared<IntCell>(start_index));
+    sequence_path->append(make_shared<IntCell>(start_index));
 
     shared_ptr<MapCell> state = ensure_vm_state(vm);
     shared_ptr<VecCell> frames = make_shared<VecCell>();
-    frames->value.push_back(sequence_path);
+    frames->append(sequence_path);
     state->set(CellField::frames, frames);
     state->value.erase("pc");
     set_vm_status(vm, VmStatus::running);
