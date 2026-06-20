@@ -152,6 +152,48 @@ using AdvanceVmFn = CellPtr(*)(const shared_ptr<VmCell>&);
 using RenderShowFn = string(*)(ConstCellPtr);
 using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
 
+namespace CellField {
+inline constexpr const char* actor_type = "actor_type";
+inline constexpr const char* breakpoints = "breakpoints";
+inline constexpr const char* context_type = "context_type";
+inline constexpr const char* error = "error";
+inline constexpr const char* failed_segment = "failed_segment";
+inline constexpr const char* frames = "frames";
+inline constexpr const char* kind = "kind";
+inline constexpr const char* main = "main";
+inline constexpr const char* message = "message";
+inline constexpr const char* name = "name";
+inline constexpr const char* receiver_type = "receiver_type";
+inline constexpr const char* resolved_prefix = "resolved_prefix";
+inline constexpr const char* result = "result";
+inline constexpr const char* segment = "segment";
+inline constexpr const char* segment_index = "segment_index";
+inline constexpr const char* signal_type = "signal_type";
+inline constexpr const char* source = "source";
+inline constexpr const char* state = "state";
+inline constexpr const char* status = "status";
+inline constexpr const char* value = "value";
+inline constexpr const char* yield_reason = "yield_reason";
+}
+
+namespace CellValue {
+inline constexpr const char* breakpoint = "breakpoint";
+inline constexpr const char* breakpoint_error = "breakpoint_error";
+inline constexpr const char* error = "error";
+inline constexpr const char* finished = "finished";
+inline constexpr const char* invalid_actor = "invalid_actor";
+inline constexpr const char* lookup_error = "lookup_error";
+inline constexpr const char* path_error = "path_error";
+inline constexpr const char* ready = "ready";
+inline constexpr const char* resolution_error = "resolution_error";
+inline constexpr const char* return_signal = "return";
+inline constexpr const char* running = "running";
+inline constexpr const char* signal = "signal";
+inline constexpr const char* signaled = "signaled";
+inline constexpr const char* unresolved_actor = "unresolved_actor";
+inline constexpr const char* unresolved_name = "unresolved_name";
+}
+
 CellPtr make_error_cell(const string& message, CellPtr value = nullptr);
 bool is_signal_cell(ConstCellPtr cell);
 const char* cell_class_name(ConstCellPtr cell);
