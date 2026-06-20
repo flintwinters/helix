@@ -50,11 +50,7 @@ static CellPtr clone_cell_tree(ConstCellPtr cell);
 static shared_ptr<VecCell> clone_vec_cell(const VecCell& cell) {
     shared_ptr<VecCell> copy = make_shared<VecCell>();
     for (const CellPtr& element : cell.value) {
-        CellPtr cloned_element = clone_cell_tree(element);
-        if (cloned_element) {
-            cloned_element->parent = copy;
-        }
-        copy->value.push_back(move(cloned_element));
+        copy->append(clone_cell_tree(element));
     }
     return copy;
 }
@@ -605,8 +601,7 @@ static CellPtr builtin_append(const vector<CellPtr>& arguments, CellPtr current_
         return value;
     }
 
-    value->parent = sequence_cell;
-    sequence->value.push_back(value);
+    sequence->append(value);
     return sequence;
 }
 
