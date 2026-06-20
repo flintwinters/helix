@@ -15,6 +15,10 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 
 WRAPPER_VM_NAME = "__debug_target__"
+INCLUDE_FIELD = "include"
+MAIN_FIELD = "main"
+STATE_FIELD = "state"
+FRAMES_FIELD = "frames"
 DOWN_ARROW = "\x1b[B"
 UP_ARROW = "\x1b[A"
 RIGHT_ARROW = "\x1b[C"
@@ -110,7 +114,7 @@ def include_binding_name(include_path: Path) -> str:
 
 
 def expand_root_includes(target_vm: dict, source_path: Path) -> dict:
-    include_entries = target_vm.get("include")
+    include_entries = target_vm.get(INCLUDE_FIELD)
     if include_entries is None:
         return target_vm
 
@@ -139,7 +143,7 @@ def load_target_vm(target_path: Path, include_source_path: Path | None = None) -
 def build_wrapper_vm(target_vm: dict, forward_primitive: str) -> dict:
     return {
         WRAPPER_VM_NAME: target_vm,
-        "main": [forward_primitive, WRAPPER_VM_NAME],
+        MAIN_FIELD: [forward_primitive, WRAPPER_VM_NAME],
     }
 
 
@@ -255,11 +259,11 @@ def to_ruamel_node(data):
 
 
 def current_pc_path(data: dict) -> list | None:
-    state = data.get("state")
+    state = data.get(STATE_FIELD)
     if not isinstance(state, dict):
         return None
 
-    frames = state.get("frames")
+    frames = state.get(FRAMES_FIELD)
     if not isinstance(frames, list) or not frames:
         return None
 
