@@ -26,7 +26,7 @@ static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent
 }
 
 static void clear_existing_state(const shared_ptr<VmCell>& root_cell) {
-    unordered_map<string, CellPtr>::iterator state_it = root_cell->value.find("state");
+    unordered_map<string, CellPtr>::iterator state_it = root_cell->value.find(CellField::state);
     if (state_it == root_cell->value.end() || !is_map_like_cell(state_it->second)) {
         return;
     }
@@ -89,11 +89,11 @@ CellPtr map_field_cell(ConstCellPtr map_cell, const string& key) {
 
 static CellPtr make_path_error(const string& message, size_t segment_index, ConstCellPtr segment, ConstCellPtr receiver) {
     shared_ptr<MapCell> details = make_shared<MapCell>();
-    details->set("kind", make_shared<StrCell>("path_error"));
-    details->set("segment_index", make_shared<IntCell>(static_cast<int64_t>(segment_index)));
-    details->set("receiver_type", make_shared<StrCell>(cell_class_name(receiver)));
+    details->set(CellField::kind, make_shared<StrCell>(CellValue::path_error));
+    details->set(CellField::segment_index, make_shared<IntCell>(static_cast<int64_t>(segment_index)));
+    details->set(CellField::receiver_type, make_shared<StrCell>(cell_class_name(receiver)));
     if (segment) {
-        details->set("segment", const_pointer_cast<Cell>(segment));
+        details->set(CellField::segment, const_pointer_cast<Cell>(segment));
     }
     return make_error_cell(message, details);
 }
@@ -324,59 +324,59 @@ shared_ptr<VmCell> expect_vm_cell(CellPtr cell) {
 const char* vm_status_name(VmStatus status) {
     switch (status) {
     case VmStatus::ready:
-        return "ready";
+        return CellValue::ready;
     case VmStatus::running:
-        return "running";
+        return CellValue::running;
     case VmStatus::finished:
-        return "finished";
+        return CellValue::finished;
     case VmStatus::error:
-        return "error";
+        return CellValue::error;
     case VmStatus::signaled:
-        return "signaled";
+        return CellValue::signaled;
     }
 
-    return "ready";
+    return CellValue::ready;
 }
 
 shared_ptr<MapCell> ensure_vm_state(const shared_ptr<VmCell>& vm) {
-    shared_ptr<MapCell> state = map_field_map(vm, "state");
+    shared_ptr<MapCell> state = map_field_map(vm, CellField::state);
     if (!state) {
         state = make_shared<MapCell>();
-        vm->set("state", state);
+        vm->set(CellField::state, state);
     }
 
-    if (!map_field_string(state, "status")) {
-        state->set("status", make_shared<StrCell>(vm_status_name(VmStatus::ready)));
+    if (!map_field_string(state, CellField::status)) {
+        state->set(CellField::status, make_shared<StrCell>(vm_status_name(VmStatus::ready)));
     }
 
-    if (!map_field_vec(state, "frames")) {
-        state->set("frames", make_shared<VecCell>());
+    if (!map_field_vec(state, CellField::frames)) {
+        state->set(CellField::frames, make_shared<VecCell>());
     }
 
     return state;
 }
 
 CellPtr vm_status_cell(const shared_ptr<VmCell>& vm) {
-    return map_field_cell(ensure_vm_state(vm), "status");
+    return map_field_cell(ensure_vm_state(vm), CellField::status);
 }
 
 VmStatus vm_status(const shared_ptr<VmCell>& vm) {
-    const StrCell* status_cell = map_field_string(ensure_vm_state(vm), "status");
+    const StrCell* status_cell = map_field_string(ensure_vm_state(vm), CellField::status);
     if (!status_cell) {
         return VmStatus::ready;
     }
 
     const string& status = status_cell->value;
-    if (status == "running") {
+    if (status == CellValue::running) {
         return VmStatus::running;
     }
-    if (status == "finished") {
+    if (status == CellValue::finished) {
         return VmStatus::finished;
     }
-    if (status == "error") {
+    if (status == CellValue::error) {
         return VmStatus::error;
     }
-    if (status == "signaled") {
+    if (status == CellValue::signaled) {
         return VmStatus::signaled;
     }
 
@@ -384,27 +384,27 @@ VmStatus vm_status(const shared_ptr<VmCell>& vm) {
 }
 
 shared_ptr<VecCell> vm_frames(const shared_ptr<VmCell>& vm) {
-    return map_field_vec(ensure_vm_state(vm), "frames");
+    return map_field_vec(ensure_vm_state(vm), CellField::frames);
 }
 
 shared_ptr<VecCell> vm_breakpoints(const shared_ptr<VmCell>& vm) {
-    shared_ptr<VecCell> breakpoints = map_field_vec(vm, "breakpoints");
+    shared_ptr<VecCell> breakpoints = map_field_vec(vm, CellField::breakpoints);
     if (!breakpoints) {
         breakpoints = make_shared<VecCell>();
-        vm->set("breakpoints", breakpoints);
+        vm->set(CellField::breakpoints, breakpoints);
     }
 
     return breakpoints;
 }
 
 void set_vm_status(const shared_ptr<VmCell>& vm, VmStatus status) {
-    ensure_vm_state(vm)->set("status", make_shared<StrCell>(vm_status_name(status)));
+    ensure_vm_state(vm)->set(CellField::status, make_shared<StrCell>(vm_status_name(status)));
 }
 
 void clear_vm_terminal_fields(const shared_ptr<VmCell>& vm) {
     shared_ptr<MapCell> state = ensure_vm_state(vm);
-    state->value.erase("result");
-    state->value.erase("error");
+    state->value.erase(CellField::result);
+    state->value.erase(CellField::error);
 }
 
 bool vm_is_terminal(const shared_ptr<VmCell>& vm) {
@@ -415,7 +415,7 @@ bool vm_is_terminal(const shared_ptr<VmCell>& vm) {
 }
 
 CellPtr vm_result(const shared_ptr<VmCell>& vm) {
-    return map_field_cell(ensure_vm_state(vm), "result");
+    return map_field_cell(ensure_vm_state(vm), CellField::result);
 }
 
 bool arm_list_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t start_index) {
@@ -428,7 +428,7 @@ bool arm_list_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t
     shared_ptr<MapCell> state = ensure_vm_state(vm);
     shared_ptr<VecCell> frames = make_shared<VecCell>();
     frames->value.push_back(sequence_path);
-    state->set("frames", frames);
+    state->set(CellField::frames, frames);
     state->value.erase("pc");
     set_vm_status(vm, VmStatus::running);
     clear_vm_terminal_fields(vm);
@@ -437,8 +437,8 @@ bool arm_list_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t
 
 shared_ptr<MapCell> make_finished_state_cell() {
     shared_ptr<MapCell> state = make_shared<MapCell>();
-    state->set("status", make_shared<StrCell>(vm_status_name(VmStatus::finished)));
-    state->set("frames", make_shared<VecCell>());
+    state->set(CellField::status, make_shared<StrCell>(vm_status_name(VmStatus::finished)));
+    state->set(CellField::frames, make_shared<VecCell>());
     return state;
 }
 
@@ -446,9 +446,9 @@ void attach_finished_state(const shared_ptr<VmCell>& root_cell, CellPtr result) 
     clear_existing_state(root_cell);
     shared_ptr<MapCell> state = make_finished_state_cell();
     if (result) {
-        state->set("result", move(result));
+        state->set(CellField::result, move(result));
     }
-    root_cell->set("state", state);
+    root_cell->set(CellField::state, state);
 }
 
 void attach_terminal_state(const shared_ptr<VmCell>& root_cell, CellPtr result) {
@@ -460,23 +460,23 @@ void attach_terminal_state(const shared_ptr<VmCell>& root_cell, CellPtr result) 
     if (result->type == Cell::Type::error_signal) {
         clear_existing_state(root_cell);
         shared_ptr<MapCell> state = make_shared<MapCell>();
-        state->set("status", make_shared<StrCell>(vm_status_name(VmStatus::error)));
-        state->set("frames", make_shared<VecCell>());
+        state->set(CellField::status, make_shared<StrCell>(vm_status_name(VmStatus::error)));
+        state->set(CellField::frames, make_shared<VecCell>());
 
         const ErrCell& error_cell = static_cast<const ErrCell&>(*result);
-        state->set("error", make_shared<StrCell>(error_cell.message));
-        state->set("result", result);
-        root_cell->set("state", state);
+        state->set(CellField::error, make_shared<StrCell>(error_cell.message));
+        state->set(CellField::result, result);
+        root_cell->set(CellField::state, state);
         return;
     }
 
     if (is_signal_cell(result)) {
         clear_existing_state(root_cell);
         shared_ptr<MapCell> state = make_shared<MapCell>();
-        state->set("status", make_shared<StrCell>(vm_status_name(VmStatus::signaled)));
-        state->set("frames", make_shared<VecCell>());
-        state->set("result", move(result));
-        root_cell->set("state", state);
+        state->set(CellField::status, make_shared<StrCell>(vm_status_name(VmStatus::signaled)));
+        state->set(CellField::frames, make_shared<VecCell>());
+        state->set(CellField::result, move(result));
+        root_cell->set(CellField::state, state);
         return;
     }
 
@@ -562,14 +562,14 @@ static CellPtr make_lookup_error(
     const string& failed_segment,
     const string& resolved_prefix) {
     unordered_map<string, CellPtr> fields;
-    fields["kind"] = make_shared<StrCell>("lookup_error");
-    fields["name"] = make_shared<StrCell>(queried_name);
-    fields["receiver_type"] = make_shared<StrCell>(cell_class_name(receiver));
+    fields[CellField::kind] = make_shared<StrCell>(CellValue::lookup_error);
+    fields[CellField::name] = make_shared<StrCell>(queried_name);
+    fields[CellField::receiver_type] = make_shared<StrCell>(cell_class_name(receiver));
     if (!failed_segment.empty()) {
-        fields["failed_segment"] = make_shared<StrCell>(failed_segment);
+        fields[CellField::failed_segment] = make_shared<StrCell>(failed_segment);
     }
     if (!resolved_prefix.empty()) {
-        fields["resolved_prefix"] = make_shared<StrCell>(resolved_prefix);
+        fields[CellField::resolved_prefix] = make_shared<StrCell>(resolved_prefix);
     }
     return make_error_cell(message, make_shared<MapCell>(move(fields)));
 }
