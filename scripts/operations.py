@@ -18,7 +18,8 @@ INCLUDE_DIRECTORIES = ["include", "src", "ryml/src", "ryml/ext/c4core/src"]
 INCLUDES = " ".join(f"-I{directory}" for directory in INCLUDE_DIRECTORIES)
 COMPILER = "g++"
 CPP_FLAGS = "-std=c++20 -Os -ffunction-sections -fdata-sections"
-LINKER_FLAGS = "-Wl,--gc-sections -rdynamic -L ryml/build -lryml -ldl"
+LINKER_FLAGS = "-Wl,--gc-sections -L ryml/build -lryml"
+DYNAMIC_LIBRARY_LINKER_FLAGS = "-rdynamic -ldl"
 SFML_MODULE = "build/sfml.so"
 SFML_MODULE_SOURCE = "lib/sfml/sfmlwrapper.cpp"
 SFML_MODULE_LINKER_FLAGS = "-lsfml-graphics -lsfml-window -lsfml-system"
@@ -48,16 +49,28 @@ def validate_native_module_isolation():
     return True
 
 
+def compile_cpp_flags(dynamic_libraries):
+    enabled = "1" if dynamic_libraries else "0"
+    return f"{CPP_FLAGS} -DHELIX_ENABLE_DYNAMIC_LIBRARIES={enabled}"
+
+
+def compile_linker_flags(dynamic_libraries):
+    if dynamic_libraries:
+        return f"{LINKER_FLAGS} {DYNAMIC_LIBRARY_LINKER_FLAGS}"
+    return LINKER_FLAGS
+
+
 def command_exists(command_name):
     return shutil.which(command_name) is not None
 
 
-def compile_main():
+def compile_main(dynamic_libraries=True):
     """Compiles the runtime sources into an executable."""
     if not validate_native_module_isolation():
         return False
 
     os.makedirs(OBJECT_DIRECTORY, exist_ok=True)
+    cpp_flags = compile_cpp_flags(dynamic_libraries)
 
     object_files = []
     for source_path in SOURCES.split():
@@ -66,7 +79,7 @@ def compile_main():
         object_files.append(object_path)
 
         compile_command = (
-            f"{COMPILER} -c {source_path} {CPP_FLAGS} {INCLUDES} -o {object_path}"
+            f"{COMPILER} -c {source_path} {cpp_flags} {INCLUDES} -o {object_path}"
         )
         result = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
         if result.returncode != 0:
@@ -76,7 +89,7 @@ def compile_main():
             return False
 
     link_command = (
-        f"{COMPILER} {' '.join(object_files)} {CPP_FLAGS} -o {EXECUTABLE} {LINKER_FLAGS}"
+        f"{COMPILER} {' '.join(object_files)} {cpp_flags} -o {EXECUTABLE} {compile_linker_flags(dynamic_libraries)}"
     )
     result = subprocess.run(link_command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
@@ -497,22 +510,30 @@ def split_runtime_output(stdout):
 
 def print_usage(script_name="run.py"):
     print("usage:")
-    print(f"  python3 {script_name} [--lib]                # compile C++, optional libs, tidy, cloc, and run C++ fixtures")
-    print(f"  python3 {script_name} build [--lib]          # compile the C++ scaffold and optional libs only")
+    print(f"  python3 {script_name} [--lib] [--no-dynamic-libraries]")
+    print("                                             # compile C++, optional libs, tidy, cloc, and run C++ fixtures")
+    print(f"  python3 {script_name} build [--lib] [--no-dynamic-libraries]")
+    print("                                             # compile the C++ scaffold and optional libs only")
     print(f"  python3 {script_name} racket-build           # precompile the current Racket runtime")
-    print(f"  python3 {script_name} cpp-test [--lib]       # compile C++, optional libs, and run native fixtures")
-    print(f"  python3 {script_name} hcc-test [--lib]       # compile C++, optional libs, and run HCC fixtures")
+    print(f"  python3 {script_name} cpp-test [--lib] [--no-dynamic-libraries]")
+    print("                                             # compile C++, optional libs, and run native fixtures")
+    print(f"  python3 {script_name} hcc-test [--lib] [--no-dynamic-libraries]")
+    print("                                             # compile C++, optional libs, and run HCC fixtures")
     print(f"  python3 {script_name} racket-test            # run fixtures against the current Racket runtime")
 
 
 def main(arguments=None, default_command="default", script_name="run.py"):
     arguments = sys.argv[1:] if arguments is None else arguments
     compile_libs = False
+    dynamic_libraries = True
     filtered_arguments = []
 
     for argument in arguments:
         if argument == "--lib":
             compile_libs = True
+            continue
+        if argument == "--no-dynamic-libraries":
+            dynamic_libraries = False
             continue
         filtered_arguments.append(argument)
 
@@ -527,8 +548,12 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         print_usage(script_name)
         return
 
+    if compile_libs and not dynamic_libraries:
+        print("--lib requires dynamic library support.")
+        sys.exit(1)
+
     if command == "build":
-        if not compile_main():
+        if not compile_main(dynamic_libraries):
             sys.exit(1)
         if compile_libs and not compile_sfml_module():
             sys.exit(1)
@@ -548,7 +573,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         return
 
     if command in {"cpp-test", "test-cpp"}:
-        if not compile_main():
+        if not compile_main(dynamic_libraries):
             sys.exit(1)
         if compile_libs and not compile_sfml_module():
             sys.exit(1)
@@ -558,7 +583,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         return
 
     if command in {"hcc-test", "test-hcc"}:
-        if not compile_main():
+        if not compile_main(dynamic_libraries):
             sys.exit(1)
         if compile_libs and not compile_sfml_module():
             sys.exit(1)
@@ -572,7 +597,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         print_usage(script_name)
         sys.exit(1)
 
-    if not compile_main():
+    if not compile_main(dynamic_libraries):
         sys.exit(1)
 
     if compile_libs and not compile_sfml_module():
