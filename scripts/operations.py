@@ -18,8 +18,8 @@ from hcc import dump_program as dump_hcc_program
 INCLUDE_DIRECTORIES = ["include", "src", "ryml/src", "ryml/ext/c4core/src"]
 INCLUDES = " ".join(f"-I{directory}" for directory in INCLUDE_DIRECTORIES)
 COMPILER = "g++"
-CPP_FLAGS = "-std=c++20"
-LINKER_FLAGS = "-rdynamic -L ryml/build -lryml -ldl"
+CPP_FLAGS = "-std=c++20 -Os -ffunction-sections -fdata-sections"
+LINKER_FLAGS = "-Wl,--gc-sections -rdynamic -L ryml/build -lryml -ldl"
 SFML_MODULE = "build/sfml.so"
 SFML_MODULE_SOURCE = "lib/sfml/sfmlwrapper.cpp"
 SFML_MODULE_LINKER_FLAGS = "-lsfml-graphics -lsfml-window -lsfml-system"
@@ -102,7 +102,11 @@ def should_recompile(source_path, object_path, include_directories):
     if not os.path.exists(object_path):
         return True
 
-    return newest_dependency_mtime(source_path, include_directories) > os.path.getmtime(object_path)
+    newest_input_mtime = max(
+        newest_dependency_mtime(source_path, include_directories),
+        os.path.getmtime(__file__),
+    )
+    return newest_input_mtime > os.path.getmtime(object_path)
 
 
 def command_exists(command_name):
