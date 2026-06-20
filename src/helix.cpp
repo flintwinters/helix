@@ -391,7 +391,7 @@ static CellPtr start_vm_main(const shared_ptr<VmCell>& vm) {
     clear_vm_terminal_fields(vm);
 
     shared_ptr<VecCell> main_pc = make_shared<VecCell>();
-    main_pc->append(make_shared<StrCell>(CellField::main));
+    main_pc->value.push_back(make_shared<StrCell>(CellField::main));
     CellPtr error = nullptr;
     if (vm_breakpoint_matches(vm, main_pc, error)) {
         return yield_at_breakpoint(vm, main_pc);
