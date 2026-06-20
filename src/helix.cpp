@@ -71,7 +71,7 @@ static bool vm_breakpoint_matches(const shared_ptr<VmCell>& vm, ConstCellPtr pc,
 static void store_vm_frame(const shared_ptr<VmCell>& vm, CellPtr pc) {
     shared_ptr<MapCell> state = ensure_vm_state(vm);
     shared_ptr<VecCell> frames = make_shared<VecCell>();
-    frames->value.push_back(move(pc));
+    frames->append(move(pc));
     CellPtr old_frames = map_field_cell(state, CellField::frames);
     if (old_frames) {
         old_frames->clear_descendant_parent_links();
@@ -256,7 +256,7 @@ static shared_ptr<VecCell> next_vector_path(ConstCellPtr pc, size_t next_index) 
         return nullptr;
     }
 
-    next_path->value.push_back(make_shared<IntCell>(static_cast<int64_t>(next_index)));
+    next_path->append(make_shared<IntCell>(static_cast<int64_t>(next_index)));
     return next_path;
 }
 
@@ -392,7 +392,7 @@ static CellPtr start_vm_main(const shared_ptr<VmCell>& vm) {
     clear_vm_terminal_fields(vm);
 
     shared_ptr<VecCell> main_pc = make_shared<VecCell>();
-    main_pc->value.push_back(make_shared<StrCell>(CellField::main));
+    main_pc->append(make_shared<StrCell>(CellField::main));
     CellPtr error = nullptr;
     if (vm_breakpoint_matches(vm, main_pc, error)) {
         return yield_at_breakpoint(vm, main_pc);
