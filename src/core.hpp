@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -107,7 +106,7 @@ struct NilCell final : public Cell {
 };
 
 struct FunCell final : public Cell {
-    using Implementation = function<CellPtr(const vector<CellPtr>&, CellPtr)>;
+    using Implementation = CellPtr (*)(const vector<CellPtr>&, CellPtr);
 
     FunCell();
     explicit FunCell(Implementation implementation);
