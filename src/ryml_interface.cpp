@@ -135,8 +135,7 @@ CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
         vec_cell->value.reserve(static_cast<size_t>(node.num_children()));
         for (const auto child : node.children()) {
             CellPtr child_cell = cell_from_ryml_node(child);
-            attach_parent_if_missing(child_cell, vec_cell);
-            vec_cell->value.push_back(move(child_cell));
+            vec_cell->append(move(child_cell));
         }
         return vec_cell;
     }
