@@ -26,8 +26,6 @@ SFML_MODULE_LINKER_FLAGS = "-lsfml-graphics -lsfml-window -lsfml-system"
 EXECUTABLE = "build/helix"
 SOURCES = "src/helix.cpp src/builtins.cpp src/core.cpp src/utils.cpp src/ryml_interface.cpp"
 OBJECT_DIRECTORY = "build/obj"
-RACKET_SOURCES = ["racket/builtins.rkt", "racket/helix.rkt"]
-RACKET_ENTRYPOINT = ["racket", "racket/helix.rkt"]
 VALGRIND_ARGS = [
     "valgrind",
     "--leak-check=full",
@@ -121,25 +119,6 @@ def compile_sfml_module():
     return True
 
 
-def compile_racket():
-    """Precompiles the current Racket runtime modules."""
-    result = subprocess.run(
-        ["raco", "make", *RACKET_SOURCES],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        print("Racket compilation failed.")
-        if result.stdout.strip():
-            print(result.stdout)
-        if result.stderr.strip():
-            print(result.stderr)
-        return False
-
-    print("Racket compilation successful.")
-    return True
-
 def run_clang_tidy():
     """Runs clang-tidy for static analysis and returns success status."""
     if not command_exists("clang-tidy-20"):
@@ -218,8 +197,6 @@ def run_binary_size_report():
 def runtime_command(program_path, runtime):
     if runtime == "cpp":
         return [*VALGRIND_ARGS, f"./{EXECUTABLE}", program_path], True
-    if runtime == "racket":
-        return [*RACKET_ENTRYPOINT, program_path], False
     raise ValueError(f"unsupported runtime: {runtime}")
 
 
@@ -514,12 +491,10 @@ def print_usage(script_name="run.py"):
     print("                                             # compile C++, optional libs, tidy, cloc, and run C++ fixtures")
     print(f"  python3 {script_name} build [--lib] [--no-dynamic-libraries]")
     print("                                             # compile the C++ scaffold and optional libs only")
-    print(f"  python3 {script_name} racket-build           # precompile the current Racket runtime")
     print(f"  python3 {script_name} cpp-test [--lib] [--no-dynamic-libraries]")
     print("                                             # compile C++, optional libs, and run native fixtures")
     print(f"  python3 {script_name} hcc-test [--lib] [--no-dynamic-libraries]")
     print("                                             # compile C++, optional libs, and run HCC fixtures")
-    print(f"  python3 {script_name} racket-test            # run fixtures against the current Racket runtime")
 
 
 def main(arguments=None, default_command="default", script_name="run.py"):
@@ -556,19 +531,6 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         if not compile_main(dynamic_libraries):
             sys.exit(1)
         if compile_libs and not compile_sfml_module():
-            sys.exit(1)
-        return
-
-    if command in {"racket-build", "build-racket"}:
-        if not compile_racket():
-            sys.exit(1)
-        return
-
-    if command in {"racket-test", "test-racket"}:
-        if not compile_racket():
-            sys.exit(1)
-        num_failed = run_tests("racket")
-        if num_failed > 0:
             sys.exit(1)
         return
 
