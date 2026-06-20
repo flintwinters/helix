@@ -1,27 +1,26 @@
 c_source: |
-  int add(int a, int b) {
-      return a + b;
+  int plus_two(int a) {
+      return a + 2;
   }
 
   int main(void) {
       int x = 40;
-      int y = add(x, 2);
+      int y = plus_two(x);
       return y;
   }
 expected:
   c:
-    c_add:
+    plus_two:
       kind: function
-      params: [a, b]
+      params: [a]
       body:
-        - [return, [add, a, b]]
-      c_name: add
+        - [return, [add, a, 2]]
     main:
       kind: function
       params: []
       body:
         - [set, x, 40]
-        - [set, y, [call, c_add, [x, 2]]]
+        - [set, y, [call, plus_two, [x]]]
         - [return, y]
   main: [call, c.main, []]
   state:
