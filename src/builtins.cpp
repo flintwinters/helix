@@ -535,7 +535,10 @@ static CellPtr builtin_call(const vector<CellPtr>& arguments, CellPtr current_vm
     }
 
     call_scope->set("__body", clone_cell_tree(map_field_vec(function_cell, "body")));
-    return evaluate_function_body(call_scope, root_cell);
+    CellPtr result = evaluate_function_body(call_scope, root_cell);
+    call_scope->clear_descendant_parent_links();
+    call_scope->parent = nullptr;
+    return result;
 }
 
 static CellPtr builtin_return(const vector<CellPtr>& arguments, CellPtr current_vm) {
