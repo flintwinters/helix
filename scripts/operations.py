@@ -440,7 +440,21 @@ def run_hcc_tests(runtime="cpp"):
                 program_file.write(dump_hcc_program(program))
                 program_path = program_file.name
 
-            return evaluate_program_fixture(test_name, fixture, program_path, runtime)
+            if "expected" in fixture and "expected_state" in fixture:
+                return test_result(
+                    test_name,
+                    False,
+                    ["fixture must contain only one of 'expected' or 'expected_state'"],
+                )
+
+            runtime_fixture = fixture
+            if "expected_state" in fixture:
+                expected = dict(program)
+                expected["state"] = fixture["expected_state"]
+                runtime_fixture = dict(fixture)
+                runtime_fixture["expected"] = expected
+
+            return evaluate_program_fixture(test_name, runtime_fixture, program_path, runtime)
         except Exception as exc:
             return test_result(test_name, False, [f"hcc compile failed: {exc}"])
         finally:
