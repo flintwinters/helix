@@ -30,9 +30,9 @@ class HccCompilerTests(unittest.TestCase):
             helix = dump_program(compile_path(source_path, use_cpp=False))
 
         self.assertIn("c:", helix)
-        self.assertIn("add:", helix)
+        self.assertIn("c_add:", helix)
         self.assertIn("main: [call, c.main, []]", helix)
-        self.assertIn("- [set, y, [call, add, [x, 2]]]", helix)
+        self.assertIn("- [set, y, [call, c_add, [x, 2]]]", helix)
         self.assertIn("- [return, [add, a, b]]", helix)
 
 
