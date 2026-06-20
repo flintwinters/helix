@@ -1,0 +1,27 @@
+program:
+  local: 99
+  outer:
+    local: 7
+    add_local:
+      kind: function
+      params: [x]
+      body:
+        - [set, temp, [add, x, local]]
+        - [return, temp]
+  main: [set, result, [call, outer.add_local, [5]]]
+expected:
+  local: 99
+  outer:
+    local: 7
+    add_local:
+      kind: function
+      params: [x]
+      body:
+        - [set, temp, [add, x, local]]
+        - [return, temp]
+  main: [set, result, [call, outer.add_local, [5]]]
+  result: 12
+  state:
+    result: 12
+    frames: []
+    status: finished
