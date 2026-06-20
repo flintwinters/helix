@@ -76,10 +76,11 @@ struct VmCell final : public MapCell {
     CellPtr lookup(const string& name, const shared_ptr<VmCell>& root_cell) const override;
 };
 
-struct VecCell final : public Cell {
+struct VecCell final : public Cell, public enable_shared_from_this<VecCell> {
     VecCell();
     explicit VecCell(vector<CellPtr> elements);
 
+    void append(CellPtr child);
     size_t size() const noexcept override;
     void clear_descendant_parent_links() override;
 
