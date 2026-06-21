@@ -335,7 +335,10 @@ void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
         const auto& err_cell = static_cast<const ErrCell&>(*cell);
         node[CellField::signal_type] << CellValue::error;
         node[CellField::message] << err_cell.message;
-        if (err_cell.value) {
+        shared_ptr<MapCell> details = materialize_error_details(err_cell);
+        if (details) {
+            write_cell_to_ryml_node(details, node[CellField::value]);
+        } else if (err_cell.value) {
             write_cell_to_ryml_node(err_cell.value, node[CellField::value]);
         }
         return;
