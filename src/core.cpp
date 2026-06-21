@@ -310,15 +310,18 @@ void absorb_error_details(ErrCell& error, CellPtr details) {
     clear_transient_parent_links(detail_map);
 }
 
+void attach_error_details(ErrCell& error_cell, ErrorDetails details) {
+    for (auto& [key, value] : details.fields) {
+        error_cell.details.fields[key] = move(value);
+    }
+}
+
 void attach_error_details(CellPtr error, ErrorDetails details) {
     if (!error || error->type != Cell::Type::error_signal) {
         return;
     }
 
-    ErrCell& error_cell = static_cast<ErrCell&>(*error);
-    for (auto& [key, value] : details.fields) {
-        error_cell.details.fields[key] = move(value);
-    }
+    attach_error_details(static_cast<ErrCell&>(*error), move(details));
 }
 
 const char* cell_class_name(ConstCellPtr cell) {
