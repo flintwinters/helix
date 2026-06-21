@@ -12,6 +12,10 @@ expected:
       value:
         type: invalid_actor
         actor_type: IntCell
+        debug:
+          cpp_file: src/helix.cpp
+          cpp_function: evaluate_form
+          cpp_line: <present>
         location:
           line: 2
           column: 3
