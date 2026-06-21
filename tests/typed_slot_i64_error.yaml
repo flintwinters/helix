@@ -14,6 +14,6 @@ expected:
       signal_type: error
       message: i64 typed slot expects an integer value
       value:
-        kind: type_error
+        type: type_error
         expected_type: i64
         actual_type: NilCell
