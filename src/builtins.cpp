@@ -17,13 +17,21 @@ struct BuiltinVmValidation {
     CellPtr error {};
 };
 
-static CellPtr make_error(const string& message, CellPtr value = nullptr) {
+static CellPtr make_error_with_origin(const string& message, CellPtr value, CppErrorOrigin origin);
+
+static CellPtr make_error_with_origin(const string& message, CppErrorOrigin origin) {
+    return make_error_with_origin(message, nullptr, origin);
+}
+
+static CellPtr make_error_with_origin(const string& message, CellPtr value, CppErrorOrigin origin) {
     if (!make_error_fn) {
-        return make_shared<ErrCell>(message, move(value));
+        return make_error_cell_at(message, move(value), origin);
     }
 
-    return make_error_fn(message, move(value));
+    return make_error_fn(message, move(value), origin);
 }
+
+#define make_error(message, ...) make_error_with_origin((message) __VA_OPT__(,) __VA_ARGS__, HELIX_CPP_ERROR_ORIGIN)
 
 static CellPtr make_error_at(const string& message, ConstCellPtr source, CellPtr value = nullptr) {
     CellPtr error = make_error(message, move(value));
