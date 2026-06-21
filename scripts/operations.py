@@ -36,7 +36,21 @@ VALGRIND_ARGS = [
 PRESENT_SENTINEL = "<present>"
 
 
-def expected_output_matches(expected_value, actual_value):
+def comparable_output(value, ignored_fields):
+    if isinstance(value, dict):
+        return {
+            key: comparable_output(child, ignored_fields)
+            for key, child in value.items()
+            if key not in ignored_fields
+        }
+
+    if isinstance(value, list):
+        return [comparable_output(child, ignored_fields) for child in value]
+
+    return value
+
+
+def expected_output_matches(expected_value, actual_value, ignored_fields=frozenset()):
     if expected_value == PRESENT_SENTINEL:
         return True
 
@@ -45,19 +59,21 @@ def expected_output_matches(expected_value, actual_value):
             return False
 
         for key, expected_child in expected_value.items():
+            if key in ignored_fields:
+                continue
             if key not in actual_value:
                 return False
-            if not expected_output_matches(expected_child, actual_value[key]):
+            if not expected_output_matches(expected_child, actual_value[key], ignored_fields):
                 return False
 
-        return set(actual_value) == set(expected_value)
+        return set(actual_value) - ignored_fields == set(expected_value) - ignored_fields
 
     if isinstance(expected_value, list):
         if not isinstance(actual_value, list) or len(actual_value) != len(expected_value):
             return False
 
         return all(
-            expected_output_matches(expected_child, actual_child)
+            expected_output_matches(expected_child, actual_child, ignored_fields)
             for expected_child, actual_child in zip(expected_value, actual_value)
         )
 
@@ -269,7 +285,14 @@ def normalize_fragment_list(value):
     return [value] if isinstance(value, str) else value
 
 
-def evaluate_program_fixture(test_name, fixture, program_path, runtime, use_valgrind=False):
+def evaluate_program_fixture(
+    test_name,
+    fixture,
+    program_path,
+    runtime,
+    use_valgrind=False,
+    ignore_debug=False,
+):
     failure_lines = []
 
     smoke_test = fixture.get("mode") in {"smoke", "run-only"}
@@ -351,12 +374,16 @@ def evaluate_program_fixture(test_name, fixture, program_path, runtime, use_valg
         failure_lines.append(indent_block(yaml_output.rstrip()))
         return test_result(test_name, False, failure_lines)
 
-    if expected_output_matches(expected_output, actual_output):
+    ignored_fields = frozenset({"debug"}) if ignore_debug else frozenset()
+    if expected_output_matches(expected_output, actual_output, ignored_fields):
         return test_result(test_name, True)
 
     failure_lines.append("output mismatch")
     failure_lines.append("diff:")
-    failure_lines.append(indent_block(render_yaml_diff(expected_output, actual_output)))
+    failure_lines.append(indent_block(render_yaml_diff(
+        comparable_output(expected_output, ignored_fields),
+        comparable_output(actual_output, ignored_fields),
+    )))
     return test_result(test_name, False, failure_lines)
 
 
@@ -411,7 +438,7 @@ def run_fixture_tests(test_directory, run_test_case, fail_fast=False):
     return len(failed_results)
 
 
-def run_tests(runtime="cpp", use_valgrind=False, fail_fast=False):
+def run_tests(runtime="cpp", use_valgrind=False, fail_fast=False, ignore_debug=False):
     """Discovers and runs YAML fixtures in the 'tests' directory."""
     if use_valgrind and not command_exists("valgrind"):
         print("valgrind not found; install valgrind or run without --valgrind.")
@@ -449,7 +476,14 @@ def run_tests(runtime="cpp", use_valgrind=False, fail_fast=False):
                 should_delete_program = True
 
         try:
-            return evaluate_program_fixture(test_name, fixture, program_path, runtime, use_valgrind)
+            return evaluate_program_fixture(
+                test_name,
+                fixture,
+                program_path,
+                runtime,
+                use_valgrind,
+                ignore_debug,
+            )
         finally:
             if should_delete_program:
                 os.unlink(program_path)
@@ -457,7 +491,7 @@ def run_tests(runtime="cpp", use_valgrind=False, fail_fast=False):
     return run_fixture_tests("tests", run_test_case, fail_fast)
 
 
-def run_hcc_tests(runtime="cpp", use_valgrind=False, fail_fast=False):
+def run_hcc_tests(runtime="cpp", use_valgrind=False, fail_fast=False, ignore_debug=False):
     """Discovers and runs C-to-Helix fixtures in the 'hcc/tests' directory."""
     if use_valgrind and not command_exists("valgrind"):
         print("valgrind not found; install valgrind or run without --valgrind.")
@@ -523,7 +557,14 @@ def run_hcc_tests(runtime="cpp", use_valgrind=False, fail_fast=False):
                 runtime_fixture = dict(fixture)
                 runtime_fixture["expected"] = expected
 
-            return evaluate_program_fixture(test_name, runtime_fixture, program_path, runtime, use_valgrind)
+            return evaluate_program_fixture(
+                test_name,
+                runtime_fixture,
+                program_path,
+                runtime,
+                use_valgrind,
+                ignore_debug,
+            )
         except Exception as exc:
             return test_result(test_name, False, [f"hcc compile failed: {exc}"])
         finally:
@@ -638,7 +679,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
             sys.exit(1)
         if compile_libs and not compile_sfml_module(optimize_size, cpp_linenums):
             sys.exit(1)
-        num_failed = run_tests("cpp", use_valgrind, fail_fast)
+        num_failed = run_tests("cpp", use_valgrind, fail_fast, not cpp_linenums)
         if num_failed > 0:
             sys.exit(1)
         return
@@ -648,7 +689,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
             sys.exit(1)
         if compile_libs and not compile_sfml_module(optimize_size, cpp_linenums):
             sys.exit(1)
-        num_failed = run_hcc_tests("cpp", use_valgrind, fail_fast)
+        num_failed = run_hcc_tests("cpp", use_valgrind, fail_fast, not cpp_linenums)
         if num_failed > 0:
             sys.exit(1)
         return
@@ -668,7 +709,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         sys.exit(1)
 
 
-    num_failed = run_tests("cpp", use_valgrind, fail_fast)
+    num_failed = run_tests("cpp", use_valgrind, fail_fast, not cpp_linenums)
 
     if not run_cloc():
         sys.exit(1)
