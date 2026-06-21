@@ -17,7 +17,9 @@
 #endif
 
 #include <c4/yml/emit.hpp>
+#include <c4/yml/event_handler_tree.hpp>
 #include <c4/yml/parse.hpp>
+#include <c4/yml/parse_engine.hpp>
 #include <c4/yml/std/string.hpp>
 
 using namespace std;
@@ -67,7 +69,9 @@ static pair<string, string> split_typed_field_name(const string& field_name) {
 }
 
 static CellPtr typed_slot_cell_from_sugar(const string& type_name, CellPtr value) {
+    SourceLocation source_location = value ? value->source_location : SourceLocation {};
     shared_ptr<MapCell> slot_cell = make_shared<ScopeCell>();
+    slot_cell->source_location = move(source_location);
     slot_cell->set(CellField::type, make_shared<StrCell>(type_name));
     slot_cell->set(CellField::value, move(value));
     return slot_cell;
@@ -126,7 +130,41 @@ static shared_ptr<ScopeCell> load_native_module_from_library(const filesystem::p
 }
 #endif
 
+static SourceLocation source_location_from_ryml(c4::yml::ConstNodeRef node, const c4::yml::Parser* parser) {
+    if (!parser) {
+        return {};
+    }
+
+    const c4::yml::Location location = node.location(*parser);
+    if (!location || location.line == c4::yml::npos || location.col == c4::yml::npos) {
+        return {};
+    }
+
+    return {
+        ryml_text_to_string(location.name),
+        static_cast<int64_t>(location.line + 1),
+        static_cast<int64_t>(location.col + 1),
+        true,
+    };
+}
+
+static CellPtr with_source_location(
+    CellPtr cell,
+    c4::yml::ConstNodeRef node,
+    const c4::yml::Parser* parser) {
+    if (cell) {
+        cell->source_location = source_location_from_ryml(node, parser);
+    }
+    return cell;
+}
+
+static CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node, const c4::yml::Parser* parser);
+
 CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
+    return cell_from_ryml_node(node, nullptr);
+}
+
+static CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node, const c4::yml::Parser* parser) {
     while ((node.is_stream() || node.is_doc()) && node.has_children()) {
         node = node.first_child();
     }
@@ -144,31 +182,31 @@ CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
             ? static_pointer_cast<MapCell>(make_shared<VmCell>())
             : static_pointer_cast<MapCell>(make_shared<ScopeCell>());
         for (const auto child : node.children()) {
-            CellPtr child_cell = cell_from_ryml_node(child);
+            CellPtr child_cell = cell_from_ryml_node(child, parser);
             auto [field_name, type_name] = split_typed_field_name(ryml_text_to_string(child.key()));
             if (!type_name.empty()) {
                 child_cell = typed_slot_cell_from_sugar(type_name, move(child_cell));
             }
             map_cell->set(field_name, move(child_cell));
         }
-        return map_cell;
+        return with_source_location(map_cell, node, parser);
     }
 
     if (node.is_seq()) {
         shared_ptr<VecCell> vec_cell = make_shared<VecCell>();
         vec_cell->value.reserve(static_cast<size_t>(node.num_children()));
         for (const auto child : node.children()) {
-            CellPtr child_cell = cell_from_ryml_node(child);
+            CellPtr child_cell = cell_from_ryml_node(child, parser);
             vec_cell->append(move(child_cell));
         }
-        return vec_cell;
+        return with_source_location(vec_cell, node, parser);
     }
 
     if (node.has_val()) {
-        return scalar_cell_from_ryml(node.val());
+        return with_source_location(scalar_cell_from_ryml(node.val()), node, parser);
     }
 
-    return make_shared<StrCell>();
+    return with_source_location(make_shared<StrCell>(), node, parser);
 }
 
 static void expand_includes_in_root_map(const shared_ptr<VmCell>& root_cell, const filesystem::path& source_path) {
@@ -210,8 +248,12 @@ static void expand_includes_in_root_map(const shared_ptr<VmCell>& root_cell, con
 shared_ptr<VmCell> load_root_cell_from_yaml_file(const char* path) {
     const string file_text = read_yaml_file_text(path);
     const c4::csubstr yaml_text(file_text.data(), file_text.size());
-    c4::yml::Tree tree = c4::yml::parse_in_arena(path, yaml_text);
-    CellPtr root_cell = cell_from_ryml_node(tree.rootref());
+    c4::yml::ParserOptions parser_options {};
+    parser_options.locations(true);
+    c4::yml::Parser::handler_type event_handler {};
+    c4::yml::Parser parser(&event_handler, parser_options);
+    c4::yml::Tree tree = c4::yml::parse_in_arena(&parser, path, yaml_text);
+    CellPtr root_cell = cell_from_ryml_node(tree.rootref(), &parser);
     shared_ptr<VmCell> root_vm = expect_vm_cell(root_cell);
     if (!root_vm) {
         shared_ptr<MapCell> root_map = expect_map_cell(root_cell);
@@ -220,6 +262,7 @@ shared_ptr<VmCell> load_root_cell_from_yaml_file(const char* path) {
         }
 
         root_vm = make_shared<VmCell>();
+        root_vm->source_location = root_map->source_location;
         for (auto& [key, value] : root_map->value) {
             if (value) {
                 value->parent = nullptr;
