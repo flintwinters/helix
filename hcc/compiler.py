@@ -87,7 +87,7 @@ class HccCompiler:
         params = self.compile_params(function_type.args)
 
         function = {
-            "kind": "function",
+            "type": "function",
             "params": FlowList(params),
             "body": self.compile_compound(node.body),
         }
