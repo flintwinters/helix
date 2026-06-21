@@ -1,0 +1,18 @@
+program:
+  main: [call, "", []]
+expected:
+  main:
+    - call
+    - ""
+    - []
+  state:
+    status: error
+    frames: []
+    error: builtin resolution failed
+    result:
+      signal_type: error
+      message: builtin resolution failed
+      value:
+        type: unresolved_name
+        name: ""
+        context_type: VmCell
