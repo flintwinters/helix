@@ -3,7 +3,7 @@ program:
   outer:
     local: 7
     add_local:
-      kind: function
+      type: function
       params: [x]
       body:
         - [set, temp, [add, x, local]]
@@ -14,7 +14,7 @@ expected:
   outer:
     local: 7
     add_local:
-      kind: function
+      type: function
       params: [x]
       body:
         - [set, temp, [add, x, local]]
@@ -25,3 +25,5 @@ expected:
     result: 12
     frames: []
     status: finished
+
+x: 0:i32
