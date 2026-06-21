@@ -154,10 +154,12 @@ using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
 
 namespace CellField {
 inline constexpr const char* actor_type = "actor_type";
+inline constexpr const char* actual_type = "actual_type";
 inline constexpr const char* body = "body";
 inline constexpr const char* breakpoints = "breakpoints";
 inline constexpr const char* context_type = "context_type";
 inline constexpr const char* error = "error";
+inline constexpr const char* expected_type = "expected_type";
 inline constexpr const char* failed_segment = "failed_segment";
 inline constexpr const char* frames = "frames";
 inline constexpr const char* include = "include";
@@ -197,6 +199,7 @@ inline constexpr const char* return_signal = "return";
 inline constexpr const char* running = "running";
 inline constexpr const char* signal = "signal";
 inline constexpr const char* signaled = "signaled";
+inline constexpr const char* type_error = "type_error";
 inline constexpr const char* unresolved_actor = "unresolved_actor";
 inline constexpr const char* unresolved_name = "unresolved_name";
 }
