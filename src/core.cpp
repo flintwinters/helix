@@ -74,6 +74,27 @@ ErrorDetailValue make_vec_error_detail(vector<ErrorDetailValue> elements) {
     return detail;
 }
 
+static ErrorDetailValue make_signal_error_detail(const SigCell& signal_cell, const char* signal_type) {
+    unordered_map<string, ErrorDetailValue> fields;
+    fields[CellField::signal_type] = make_string_error_detail(signal_type);
+    if (signal_cell.value) {
+        fields[CellField::value] = make_cell_error_detail(signal_cell.value);
+    }
+    return make_map_error_detail(move(fields));
+}
+
+static ErrorDetailValue make_err_cell_error_detail(const ErrCell& error_cell) {
+    unordered_map<string, ErrorDetailValue> fields;
+    fields[CellField::signal_type] = make_string_error_detail(CellValue::error);
+    fields[CellField::message] = make_string_error_detail(error_cell.message);
+    if (!error_cell.details.empty()) {
+        fields[CellField::value] = make_map_error_detail(error_cell.details.fields);
+    } else if (error_cell.value) {
+        fields[CellField::value] = make_cell_error_detail(error_cell.value);
+    }
+    return make_map_error_detail(move(fields));
+}
+
 static unordered_map<string, ErrorDetailValue> error_detail_fields_from_map(const MapCell& map_cell) {
     unordered_map<string, ErrorDetailValue> fields;
     for (const auto& [key, value] : map_cell.value) {
@@ -108,8 +129,11 @@ ErrorDetailValue make_cell_error_detail(ConstCellPtr cell) {
     case Cell::Type::function:
         return make_string_error_detail("<function>");
     case Cell::Type::signal:
+        return make_signal_error_detail(static_cast<const SigCell&>(*cell), CellValue::signal);
     case Cell::Type::return_signal:
+        return make_signal_error_detail(static_cast<const SigCell&>(*cell), CellValue::return_signal);
     case Cell::Type::error_signal:
+        return make_err_cell_error_detail(static_cast<const ErrCell&>(*cell));
     case Cell::Type::base:
     default:
         return make_string_error_detail(cell_class_name(cell));
