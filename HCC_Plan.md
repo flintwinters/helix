@@ -38,7 +38,7 @@ Defer pointers, structs, arrays, heap allocation, and libc until the function/sc
 
 ## Generated Code Style
 
-Emit named functions using `kind: function`, `params`, and `body`.
+Emit named functions using `type: function`, `params`, and `body`.
 
 Use local names that resemble the C source. Avoid anonymous temporaries unless the C expression genuinely needs one to preserve evaluation order.
 
