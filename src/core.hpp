@@ -29,6 +29,28 @@ struct CppErrorOrigin {
     bool valid {false};
 };
 
+struct ErrorDetailValue {
+    enum class Type {
+        nil,
+        integer,
+        string,
+        map,
+        vec,
+    };
+
+    Type type {Type::nil};
+    int64_t integer {};
+    string text {};
+    unordered_map<string, ErrorDetailValue> fields {};
+    vector<ErrorDetailValue> elements {};
+};
+
+struct ErrorDetails {
+    bool empty() const noexcept;
+
+    unordered_map<string, ErrorDetailValue> fields {};
+};
+
 struct Cell {
     enum class Type {
         base,
@@ -151,6 +173,7 @@ struct ErrCell final : public SigCell {
     ErrCell(string initial_message, CellPtr initial_value);
 
     string message {};
+    ErrorDetails details {};
 };
 
 enum class VmStatus {
@@ -248,6 +271,8 @@ bool is_map_like_cell(ConstCellPtr cell);
 CellPtr source_location_cell(ConstCellPtr cell);
 void attach_source_location(const shared_ptr<MapCell>& details, ConstCellPtr source);
 void attach_error_location(CellPtr error, ConstCellPtr source);
+shared_ptr<MapCell> materialize_error_details(const ErrCell& error);
+void absorb_error_details(ErrCell& error, CellPtr details);
 CellPtr map_field_cell(ConstCellPtr map_cell, const string& key);
 CellPtr cell_at_path(CellPtr root_cell, ConstCellPtr path_cell);
 shared_ptr<VecCell> cell_path_from_root(const shared_ptr<VmCell>& root_cell, ConstCellPtr target_cell);
