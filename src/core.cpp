@@ -38,8 +38,41 @@ static void clear_existing_state(const shared_ptr<VmCell>& root_cell) {
     state->parent = nullptr;
 }
 
-CellPtr make_error_cell(const string& message, CellPtr value) {
-    return make_shared<ErrCell>(message, move(value));
+static CellPtr cpp_error_origin_cell(CppErrorOrigin origin) {
+    if (!origin.valid) {
+        return nullptr;
+    }
+
+    shared_ptr<MapCell> debug = make_shared<MapCell>();
+    debug->set(CellField::cpp_file, make_shared<StrCell>(origin.file ? origin.file : ""));
+    debug->set(CellField::cpp_line, make_shared<IntCell>(origin.line));
+    debug->set(CellField::cpp_function, make_shared<StrCell>(origin.function ? origin.function : ""));
+    return debug;
+}
+
+static void attach_cpp_error_origin(CellPtr error, CppErrorOrigin origin) {
+    CellPtr debug = cpp_error_origin_cell(origin);
+    if (!error || error->type != Cell::Type::error_signal || !debug) {
+        return;
+    }
+
+    ErrCell& error_cell = static_cast<ErrCell&>(*error);
+    shared_ptr<MapCell> details = expect_map_cell(error_cell.value);
+    if (!details) {
+        details = make_shared<MapCell>();
+        error_cell.value = details;
+    }
+    details->set(CellField::debug, move(debug));
+}
+
+CellPtr make_error_cell_at(const string& message, CppErrorOrigin origin) {
+    return make_error_cell_at(message, nullptr, origin);
+}
+
+CellPtr make_error_cell_at(const string& message, CellPtr value, CppErrorOrigin origin) {
+    CellPtr error = make_shared<ErrCell>(message, move(value));
+    attach_cpp_error_origin(error, origin);
+    return error;
 }
 
 bool is_signal_cell(ConstCellPtr cell) {
