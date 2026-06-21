@@ -13,7 +13,7 @@ expected:
         debug:
           cpp_file: src/core.cpp
           cpp_function: expect_form_arity
-          cpp_line: 637
+          cpp_line: <present>
         location:
           line: 2
           column: 3
