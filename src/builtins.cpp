@@ -12,6 +12,11 @@ static MakeErrorFn make_error_fn = nullptr;
 using VmCallbackFn = CellPtr(*)(CellPtr, const shared_ptr<VmCell>&);
 using IntBinaryOperation = int64_t(*)(int64_t, int64_t);
 
+struct BuiltinVmValidation {
+    shared_ptr<VmCell> vm {};
+    CellPtr error {};
+};
+
 static CellPtr make_error(const string& message, CellPtr value = nullptr) {
     if (!make_error_fn) {
         return make_shared<ErrCell>(message, move(value));
@@ -194,60 +199,57 @@ static bool is_truthy(ConstCellPtr cell) {
     return true;
 }
 
-static shared_ptr<VmCell> expect_builtin_vm(const vector<CellPtr>& arguments, CellPtr current_vm, const char* who) {
-    shared_ptr<VmCell> root_cell = expect_vm_cell(move(current_vm));
-    if (!root_cell) {
-        return nullptr;
-    }
-
-    CellPtr arity_error = expect_form_arity(arguments.size(), 2, who);
-    if (arity_error) {
-        return nullptr;
-    }
-
-    return root_cell;
-}
-
-static shared_ptr<VmCell> expect_builtin_vm(
+static BuiltinVmValidation expect_builtin_vm(
     const vector<CellPtr>& arguments,
     CellPtr current_vm,
     const char* who,
     size_t expected_arity) {
     shared_ptr<VmCell> root_cell = expect_vm_cell(move(current_vm));
     if (!root_cell) {
-        return nullptr;
+        return {nullptr, make_error(string(who) + " requires a map VM")};
     }
 
     CellPtr arity_error = expect_form_arity(arguments.size(), expected_arity, who);
     if (arity_error) {
-        return nullptr;
+        return {nullptr, arity_error};
     }
 
-    return root_cell;
+    return {root_cell, nullptr};
 }
 
-static shared_ptr<VmCell> resolve_child_vm(const vector<CellPtr>& arguments, CellPtr current_vm, const char* who) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), who);
-    if (!root_cell) {
-        return nullptr;
+static BuiltinVmValidation expect_builtin_vm(
+    const vector<CellPtr>& arguments,
+    CellPtr current_vm,
+    const char* who) {
+    return expect_builtin_vm(arguments, move(current_vm), who, 2);
+}
+
+static BuiltinVmValidation resolve_child_vm(const vector<CellPtr>& arguments, CellPtr current_vm, const char* who) {
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), who);
+    if (validation.error) {
+        return validation;
     }
 
     const CellPtr child_name = arguments[1];
     if (!child_name || child_name->type != Cell::Type::string) {
-        return nullptr;
+        return {nullptr, make_error(string(who) + " expects a child VM name")};
     }
 
     if (!resolve_cell_fn) {
-        return nullptr;
+        return {nullptr, make_error("builtin resolution is not initialized")};
     }
 
-    CellPtr resolved = resolve_cell_fn(child_name, root_cell);
+    CellPtr resolved = resolve_cell_fn(child_name, validation.vm);
+    if (is_signal_cell(resolved)) {
+        return {nullptr, resolved};
+    }
+
     shared_ptr<VmCell> child_vm = expect_vm_cell(move(resolved));
     if (!child_vm) {
-        return nullptr;
+        return {nullptr, make_error(string(who) + " expects a child VM name")};
     }
 
-    return child_vm;
+    return {child_vm, nullptr};
 }
 
 static CellPtr resolve_vec_or_signal(
@@ -274,10 +276,11 @@ static CellPtr builtin_int_binary(
     CellPtr current_vm,
     const char* who,
     IntBinaryOperation operation) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), who, 3);
-    if (!root_cell) {
-        return make_error(string(who) + " requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), who, 3);
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     const CellPtr left_cell = evaluate_int_or_error(arguments[1], root_cell, who);
     if (is_signal_cell(left_cell)) {
@@ -307,10 +310,11 @@ static int64_t mul_ints(int64_t left, int64_t right) {
 }
 
 static CellPtr builtin_show(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "show");
-    if (!root_cell) {
-        return make_error("show requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "show");
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr value = evaluate_or_signal(arguments[1], root_cell);
     if (is_signal_cell(value)) {
@@ -348,10 +352,11 @@ static CellPtr builtin_mul(const vector<CellPtr>& arguments, CellPtr current_vm)
 }
 
 static CellPtr builtin_div(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "div", 3);
-    if (!root_cell) {
-        return make_error("div requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "div", 3);
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     const CellPtr left_cell = evaluate_int_or_error(arguments[1], root_cell, "div");
     if (is_signal_cell(left_cell)) {
@@ -373,10 +378,11 @@ static CellPtr builtin_div(const vector<CellPtr>& arguments, CellPtr current_vm)
 }
 
 static CellPtr builtin_mod(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "mod", 3);
-    if (!root_cell) {
-        return make_error("mod requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "mod", 3);
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     const CellPtr left_cell = evaluate_int_or_error(arguments[1], root_cell, "mod");
     if (is_signal_cell(left_cell)) {
@@ -398,10 +404,11 @@ static CellPtr builtin_mod(const vector<CellPtr>& arguments, CellPtr current_vm)
 }
 
 static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "set", 3);
-    if (!root_cell) {
-        return make_error("set requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "set", 3);
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     const CellPtr name_cell = arguments[1];
     if (!name_cell || name_cell->type != Cell::Type::string) {
@@ -546,10 +553,11 @@ static CellPtr evaluate_function_body(const shared_ptr<ScopeCell>& call_scope, c
 }
 
 static CellPtr builtin_call(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "call", 3);
-    if (!root_cell) {
-        return make_error("call requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "call", 3);
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr function_cell = expect_user_function(resolve_or_signal(arguments[1], root_cell), "call");
     if (is_signal_cell(function_cell)) {
@@ -578,10 +586,11 @@ static CellPtr builtin_call(const vector<CellPtr>& arguments, CellPtr current_vm
 }
 
 static CellPtr builtin_return(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "return");
-    if (!root_cell) {
-        return make_error("return requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "return");
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr value = evaluate_or_signal(arguments[1], root_cell);
     if (is_signal_cell(value)) {
@@ -592,10 +601,11 @@ static CellPtr builtin_return(const vector<CellPtr>& arguments, CellPtr current_
 }
 
 static CellPtr builtin_eval(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "eval");
-    if (!root_cell) {
-        return make_error("eval requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "eval");
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr code = evaluate_or_signal(arguments[1], root_cell);
     if (is_signal_cell(code)) {
@@ -606,10 +616,11 @@ static CellPtr builtin_eval(const vector<CellPtr>& arguments, CellPtr current_vm
 }
 
 static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "list");
-    if (!root_cell) {
-        return make_error("list requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "list");
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr sequence_cell = resolve_vec_or_signal(arguments[1], root_cell, "list expects a vector sequence");
     if (is_signal_cell(sequence_cell)) {
@@ -623,10 +634,11 @@ static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm
 }
 
 static CellPtr builtin_append(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "append", 3);
-    if (!root_cell) {
-        return make_error("append requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "append", 3);
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr sequence_cell = resolve_vec_target_or_signal(arguments[1], root_cell, "append");
     if (is_signal_cell(sequence_cell)) {
@@ -644,10 +656,11 @@ static CellPtr builtin_append(const vector<CellPtr>& arguments, CellPtr current_
 }
 
 static CellPtr builtin_pop(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "pop");
-    if (!root_cell) {
-        return make_error("pop requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "pop");
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr sequence_cell = resolve_vec_target_or_signal(arguments[1], root_cell, "pop");
     if (is_signal_cell(sequence_cell)) {
@@ -665,10 +678,11 @@ static CellPtr builtin_pop(const vector<CellPtr>& arguments, CellPtr current_vm)
 }
 
 static CellPtr builtin_at(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "at", 3);
-    if (!root_cell) {
-        return make_error("at requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "at", 3);
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr sequence_cell = resolve_vec_target_or_signal(arguments[1], root_cell, "at");
     if (is_signal_cell(sequence_cell)) {
@@ -690,10 +704,11 @@ static CellPtr builtin_at(const vector<CellPtr>& arguments, CellPtr current_vm) 
 }
 
 static CellPtr builtin_get(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "get");
-    if (!root_cell) {
-        return make_error("get requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "get");
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr path_cell = resolve_vec_or_signal(arguments[1], root_cell, "get expects a vector path");
     if (is_signal_cell(path_cell)) {
@@ -704,10 +719,11 @@ static CellPtr builtin_get(const vector<CellPtr>& arguments, CellPtr current_vm)
 }
 
 static CellPtr builtin_copy(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "copy");
-    if (!root_cell) {
-        return make_error("copy requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "copy");
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr value = resolve_or_signal(arguments[1], root_cell);
     if (is_signal_cell(value)) {
@@ -722,10 +738,11 @@ static CellPtr builtin_copy(const vector<CellPtr>& arguments, CellPtr current_vm
 }
 
 static CellPtr builtin_if(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "if", 4);
-    if (!root_cell) {
-        return make_error("if requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "if", 4);
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr condition = evaluate_or_signal(arguments[1], root_cell);
     if (is_signal_cell(condition)) {
@@ -740,10 +757,11 @@ static CellPtr builtin_if(const vector<CellPtr>& arguments, CellPtr current_vm) 
 }
 
 static CellPtr builtin_while(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    shared_ptr<VmCell> root_cell = expect_builtin_vm(arguments, move(current_vm), "while", 3);
-    if (!root_cell) {
-        return make_error("while requires a map VM");
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "while", 3);
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> root_cell = validation.vm;
 
     CellPtr body_cell = resolve_vec_or_signal(arguments[2], root_cell, "while expects a vector body");
     if (is_signal_cell(body_cell)) {
@@ -775,10 +793,11 @@ static CellPtr builtin_start(const vector<CellPtr>& arguments, CellPtr current_v
         return make_error("start is not initialized");
     }
 
-    shared_ptr<VmCell> child_vm = resolve_child_vm(arguments, move(current_vm), "start");
-    if (!child_vm) {
-        return make_error("start expects a child VM name");
+    BuiltinVmValidation validation = resolve_child_vm(arguments, move(current_vm), "start");
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> child_vm = validation.vm;
 
     while (true) {
         CellPtr step_result = advance_vm_fn(child_vm);
@@ -802,10 +821,11 @@ static CellPtr builtin_step(const vector<CellPtr>& arguments, CellPtr current_vm
         return make_error("step is not initialized");
     }
 
-    shared_ptr<VmCell> child_vm = resolve_child_vm(arguments, move(current_vm), "step");
-    if (!child_vm) {
-        return make_error("step expects a child VM name");
+    BuiltinVmValidation validation = resolve_child_vm(arguments, move(current_vm), "step");
+    if (validation.error) {
+        return validation.error;
     }
+    shared_ptr<VmCell> child_vm = validation.vm;
 
     advance_vm_fn(child_vm);
     CellPtr status_cell = vm_status_cell(child_vm);
