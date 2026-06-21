@@ -17,3 +17,6 @@ expected:
         type: type_error
         expected_type: i32
         actual_type: IntCell
+        location:
+          line: 5
+          column: 3
