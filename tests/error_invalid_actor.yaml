@@ -1,0 +1,15 @@
+program:
+  main: [1, 2]
+expected:
+  main: [1, 2]
+  state:
+    status: error
+    frames: []
+    error: vector actor did not resolve to a builtin
+    result:
+      signal_type: error
+      message: vector actor did not resolve to a builtin
+      value:
+        type: invalid_actor
+        actor_type: IntCell
+        source: 1
