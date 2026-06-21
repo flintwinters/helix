@@ -18,6 +18,7 @@ struct BuiltinVmValidation {
 };
 
 static CellPtr make_error_with_origin(const string& message, CellPtr value, CppErrorOrigin origin);
+static CellPtr make_error_with_origin(const string& message, ErrorDetails details, CppErrorOrigin origin);
 
 static CellPtr make_error_with_origin(const string& message, CppErrorOrigin origin) {
     return make_error_with_origin(message, nullptr, origin);
@@ -29,6 +30,16 @@ static CellPtr make_error_with_origin(const string& message, CellPtr value, CppE
     }
 
     return make_error_fn(message, move(value), origin);
+}
+
+static CellPtr make_error_with_origin(const string& message, ErrorDetails details, CppErrorOrigin origin) {
+    if (!make_error_fn) {
+        return make_error_cell_at(message, move(details), origin);
+    }
+
+    CellPtr error = make_error_fn(message, nullptr, origin);
+    attach_error_details(error, move(details));
+    return error;
 }
 
 #define make_error(message, ...) make_error_with_origin((message) __VA_OPT__(,) __VA_ARGS__, HELIX_CPP_ERROR_ORIGIN)
@@ -167,12 +178,12 @@ static CellPtr resolve_or_signal(CellPtr node, const shared_ptr<VmCell>& root_ce
     }
 
     if (value && original && value.get() == original.get() && value->type == Cell::Type::string) {
-        shared_ptr<MapCell> details = make_shared<MapCell>();
-        details->set(CellField::type, make_shared<StrCell>(CellValue::unresolved_name));
-        details->set(CellField::name, make_shared<StrCell>(static_cast<const StrCell&>(*value).value));
-        details->set(CellField::context_type, make_shared<StrCell>(cell_class_name(root_cell)));
+        ErrorDetails details;
+        details.fields[CellField::type] = make_string_error_detail(CellValue::unresolved_name);
+        details.fields[CellField::name] = make_string_error_detail(static_cast<const StrCell&>(*value).value);
+        details.fields[CellField::context_type] = make_string_error_detail(cell_class_name(root_cell));
         attach_source_location(details, value);
-        return make_error("builtin resolution failed", details);
+        return make_error("builtin resolution failed", move(details));
     }
 
     return value;
