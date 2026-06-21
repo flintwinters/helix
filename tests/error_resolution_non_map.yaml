@@ -15,6 +15,10 @@ expected:
         type: resolution_error
         name: foo.bar
         context_type: VmCell
+        debug:
+          cpp_file: src/core.cpp
+          cpp_function: lookup_member
+          cpp_line: <present>
         location:
           line: 2
           column: 1
