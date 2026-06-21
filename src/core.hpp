@@ -15,6 +15,13 @@ struct MapCell;
 struct ScopeCell;
 struct VmCell;
 
+struct SourceLocation {
+    string file {};
+    int64_t line {};
+    int64_t column {};
+    bool valid {false};
+};
+
 struct Cell {
     enum class Type {
         base,
@@ -42,6 +49,7 @@ struct Cell {
     Type type {Type::base};
     const char* class_name {"Cell"};
     CellPtr parent {};
+    SourceLocation source_location {};
     virtual size_t size() const noexcept;
     virtual CellPtr call(const vector<CellPtr>& arguments, CellPtr current_vm) const;
     virtual CellPtr lookup(const string& name, const shared_ptr<VmCell>& root_cell) const;
@@ -157,13 +165,17 @@ inline constexpr const char* actor_type = "actor_type";
 inline constexpr const char* actual_type = "actual_type";
 inline constexpr const char* body = "body";
 inline constexpr const char* breakpoints = "breakpoints";
+inline constexpr const char* column = "column";
 inline constexpr const char* context_type = "context_type";
 inline constexpr const char* error = "error";
 inline constexpr const char* expected_type = "expected_type";
 inline constexpr const char* failed_segment = "failed_segment";
+inline constexpr const char* file = "file";
 inline constexpr const char* frames = "frames";
 inline constexpr const char* include = "include";
 inline constexpr const char* internal_body = "__body";
+inline constexpr const char* line = "line";
+inline constexpr const char* location = "location";
 inline constexpr const char* main = "main";
 inline constexpr const char* message = "message";
 inline constexpr const char* name = "name";
