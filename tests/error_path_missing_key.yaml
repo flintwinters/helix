@@ -13,6 +13,10 @@ expected:
       message: object path map key was not found
       value:
         type: path_error
+        debug:
+          cpp_file: src/core.cpp
+          cpp_function: make_path_error
+          cpp_line: <present>
         location:
           line: 3
           column: 5
