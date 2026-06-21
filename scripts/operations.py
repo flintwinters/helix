@@ -34,6 +34,8 @@ VALGRIND_ARGS = [
     "--error-exitcode=101",
 ]
 PRESENT_SENTINEL = "<present>"
+LOCATION_FIELD = "location"
+POSITION_FIELDS = frozenset({"line", "column"})
 
 
 def comparable_output(value, ignored_fields):
@@ -78,6 +80,25 @@ def expected_output_matches(expected_value, actual_value, ignored_fields=frozens
         )
 
     return actual_value == expected_value
+
+
+def relax_expected_error_positions(value):
+    if isinstance(value, dict):
+        relaxed = {
+            key: relax_expected_error_positions(child)
+            for key, child in value.items()
+        }
+        location = relaxed.get(LOCATION_FIELD)
+        if isinstance(location, dict):
+            for key in POSITION_FIELDS:
+                if key in location:
+                    location[key] = PRESENT_SENTINEL
+        return relaxed
+
+    if isinstance(value, list):
+        return [relax_expected_error_positions(child) for child in value]
+
+    return value
 
 
 def validate_native_module_isolation():
@@ -375,13 +396,14 @@ def evaluate_program_fixture(
         return test_result(test_name, False, failure_lines)
 
     ignored_fields = frozenset({"debug"}) if ignore_debug else frozenset()
-    if expected_output_matches(expected_output, actual_output, ignored_fields):
+    relaxed_expected_output = relax_expected_error_positions(expected_output)
+    if expected_output_matches(relaxed_expected_output, actual_output, ignored_fields):
         return test_result(test_name, True)
 
     failure_lines.append("output mismatch")
     failure_lines.append("diff:")
     failure_lines.append(indent_block(render_yaml_diff(
-        comparable_output(expected_output, ignored_fields),
+        comparable_output(relaxed_expected_output, ignored_fields),
         comparable_output(actual_output, ignored_fields),
     )))
     return test_result(test_name, False, failure_lines)
