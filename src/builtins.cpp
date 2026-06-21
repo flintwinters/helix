@@ -109,7 +109,9 @@ static CellPtr clone_cell_tree(ConstCellPtr cell) {
         return make_shared<RetCell>(clone_cell_tree(static_cast<const SigCell&>(*cell).value));
     case Cell::Type::error_signal: {
         const ErrCell& error = static_cast<const ErrCell&>(*cell);
-        return make_shared<ErrCell>(error.message, clone_cell_tree(error.value));
+        shared_ptr<ErrCell> copy = make_shared<ErrCell>(error.message, clone_cell_tree(error.value));
+        copy->details = error.details;
+        return copy;
     }
     case Cell::Type::signal:
         return make_shared<SigCell>(clone_cell_tree(static_cast<const SigCell&>(*cell).value));
@@ -470,7 +472,7 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
         return value;
     }
 
-    shared_ptr<MapCell> error_details = expect_map_cell(static_cast<ErrCell&>(*target_cell).value);
+    shared_ptr<MapCell> error_details = materialize_error_details(static_cast<ErrCell&>(*target_cell));
     const StrCell* type_cell = error_details ? map_field_string(error_details, CellField::type) : nullptr;
     const StrCell* prefix_cell = error_details ? map_field_string(error_details, CellField::resolved_prefix) : nullptr;
     const StrCell* segment_cell = error_details ? map_field_string(error_details, CellField::failed_segment) : nullptr;
