@@ -1,0 +1,38 @@
+program:
+  child:
+    main: [add, 1]
+  actions:
+    - [step, child]
+    - [show, [get, child_error_path]]
+  child_error_path: [child, state, error]
+  main: [list, actions]
+stdout: |
+  add expects exactly 2 arguments
+  ...
+expected:
+  child:
+    main: [add, 1]
+    state:
+      status: error
+      frames: []
+      error: add expects exactly 2 arguments
+      result:
+        signal_type: error
+        message: add expects exactly 2 arguments
+        value:
+          debug:
+            cpp_file: src/core.cpp
+            cpp_function: expect_form_arity
+            cpp_line: <present>
+          location:
+            line: 3
+            column: 5
+  actions:
+    - [step, child]
+    - [show, [get, child_error_path]]
+  child_error_path: [child, state, error]
+  main: [list, actions]
+  state:
+    result: null
+    frames: []
+    status: finished
