@@ -19,4 +19,7 @@ expected:
         receiver_type: ScopeCell
         failed_segment: missing
         resolved_prefix: outer
+        location:
+          line: 3
+          column: 1
         source: outer.missing.nucleus
