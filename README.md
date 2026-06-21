@@ -1,6 +1,6 @@
 # Helix
 
-Helix is an experimental C++ runtime for structured, versionable object graphs.
+Helix is an experimental C++ runtime for structured, versioned program state.
 
 ## Overview
 
