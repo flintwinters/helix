@@ -34,14 +34,20 @@ static void clear_vm_yield_reason(const shared_ptr<VmCell>& vm) {
     ensure_vm_state(vm)->value.erase(CellField::yield_reason);
 }
 
-static CellPtr breakpoint_error(const string& message, ConstCellPtr source) {
-    shared_ptr<MapCell> details = make_shared<MapCell>();
-    details->set(CellField::type, make_shared<StrCell>(CellValue::breakpoint_error));
-    if (source) {
-        details->set(CellField::source, const_pointer_cast<Cell>(source));
-        attach_source_location(details, source);
+static void attach_error_source_detail(ErrorDetails& details, ConstCellPtr source) {
+    if (!source) {
+        return;
     }
-    return make_error_cell(message, details);
+
+    details.fields[CellField::source] = make_cell_error_detail(source);
+    attach_source_location(details, source);
+}
+
+static CellPtr breakpoint_error(const string& message, ConstCellPtr source) {
+    ErrorDetails details;
+    details.fields[CellField::type] = make_string_error_detail(CellValue::breakpoint_error);
+    attach_error_source_detail(details, source);
+    return make_error_cell(message, move(details));
 }
 
 static bool vm_breakpoint_matches(const shared_ptr<VmCell>& vm, ConstCellPtr pc, CellPtr& error) {
@@ -92,31 +98,23 @@ static CellPtr yield_at_breakpoint(const shared_ptr<VmCell>& vm, CellPtr pc) {
     return vm_status_cell(vm);
 }
 
-static shared_ptr<MapCell> make_resolution_details(
+static ErrorDetails make_resolution_details(
     const string& type,
     const string& name,
     const Cell* context,
     CellPtr source = nullptr) {
-    shared_ptr<MapCell> details = make_shared<MapCell>();
-    details->set(CellField::type, make_shared<StrCell>(type));
-    details->set(CellField::name, make_shared<StrCell>(name));
-    details->set(CellField::context_type, make_shared<StrCell>(cell_class_name(context)));
-    if (source) {
-        details->set(CellField::source, source);
-        attach_source_location(details, source);
-    }
+    ErrorDetails details;
+    details.fields[CellField::type] = make_string_error_detail(type);
+    details.fields[CellField::name] = make_string_error_detail(name);
+    details.fields[CellField::context_type] = make_string_error_detail(cell_class_name(context));
+    attach_error_source_detail(details, source);
     return details;
 }
 
-static void attach_error_source(ErrCell& error, CellPtr source) {
-    if (!source) {
-        return;
-    }
-
-    shared_ptr<MapCell> details = make_shared<MapCell>();
+static void attach_error_location_only(ErrCell& error, CellPtr source) {
+    ErrorDetails details;
     attach_source_location(details, source);
-    details->set(CellField::source, move(source));
-    absorb_error_details(error, move(details));
+    attach_error_details(error, move(details));
 }
 
 static bool has_error_details(const ErrCell& error) {
@@ -155,10 +153,9 @@ static CellPtr resolve_cell(CellPtr node, const shared_ptr<VmCell>& root_cell) {
     if (resolved && resolved->type == Cell::Type::error_signal) {
         ErrCell& error = static_cast<ErrCell&>(*resolved);
         if (!has_error_details(error)) {
-            shared_ptr<MapCell> details = make_resolution_details(CellValue::resolution_error, name, context, node);
-            absorb_error_details(error, move(details));
+            attach_error_details(error, make_resolution_details(CellValue::resolution_error, name, context, node));
         } else {
-            attach_error_source(error, node);
+            attach_error_location_only(error, node);
         }
         return resolved;
     }
@@ -187,12 +184,11 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<VmCell>& root
     }
 
     if (!actor || actor->type != Cell::Type::function) {
-        shared_ptr<MapCell> details = make_shared<MapCell>();
-        details->set(CellField::type, make_shared<StrCell>(CellValue::invalid_actor));
-        details->set(CellField::actor_type, make_shared<StrCell>(cell_class_name(actor)));
-        details->set(CellField::source, form.value.front());
-        attach_source_location(details, form.value.front());
-        return make_error_cell("vector actor did not resolve to a builtin", details);
+        ErrorDetails details;
+        details.fields[CellField::type] = make_string_error_detail(CellValue::invalid_actor);
+        details.fields[CellField::actor_type] = make_string_error_detail(cell_class_name(actor));
+        attach_error_source_detail(details, form.value.front());
+        return make_error_cell("vector actor did not resolve to a builtin", move(details));
     }
 
     return actor->call(form.value, root_cell);
