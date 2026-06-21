@@ -111,9 +111,9 @@ static ErrorDetails make_resolution_details(
     return details;
 }
 
-static void attach_error_location_only(ErrCell& error, CellPtr source) {
+static void attach_error_source(ErrCell& error, CellPtr source) {
     ErrorDetails details;
-    attach_source_location(details, source);
+    attach_error_source_detail(details, source);
     attach_error_details(error, move(details));
 }
 
@@ -155,7 +155,7 @@ static CellPtr resolve_cell(CellPtr node, const shared_ptr<VmCell>& root_cell) {
         if (!has_error_details(error)) {
             attach_error_details(error, make_resolution_details(CellValue::resolution_error, name, context, node));
         } else {
-            attach_error_location_only(error, node);
+            attach_error_source(error, node);
         }
         return resolved;
     }
