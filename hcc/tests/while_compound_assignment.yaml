@@ -11,7 +11,7 @@ c_source: |
 expected:
   c:
     main:
-      kind: function
+      type: function
       params: []
       body:
         - [set, total, 0]
