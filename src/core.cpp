@@ -90,7 +90,7 @@ CellPtr map_field_cell(ConstCellPtr map_cell, const string& key) {
 
 static CellPtr make_path_error(const string& message, size_t segment_index, ConstCellPtr segment, ConstCellPtr receiver) {
     shared_ptr<MapCell> details = make_shared<MapCell>();
-    details->set(CellField::kind, make_shared<StrCell>(CellValue::path_error));
+    details->set(CellField::type, make_shared<StrCell>(CellValue::path_error));
     details->set(CellField::segment_index, make_shared<IntCell>(static_cast<int64_t>(segment_index)));
     details->set(CellField::receiver_type, make_shared<StrCell>(cell_class_name(receiver)));
     if (segment) {
@@ -315,7 +315,7 @@ CellPtr typed_slot_value(ConstCellPtr cell) {
 
 static CellPtr make_type_error_cell(const string& message, const string& expected_type, ConstCellPtr actual_value) {
     shared_ptr<MapCell> details = make_shared<MapCell>();
-    details->set(CellField::kind, make_shared<StrCell>(CellValue::type_error));
+    details->set(CellField::type, make_shared<StrCell>(CellValue::type_error));
     details->set(CellField::expected_type, make_shared<StrCell>(expected_type));
     details->set(CellField::actual_type, make_shared<StrCell>(cell_class_name(actual_value)));
     return make_error_cell(message, details);
@@ -637,7 +637,7 @@ static CellPtr make_lookup_error(
     const string& failed_segment,
     const string& resolved_prefix) {
     unordered_map<string, CellPtr> fields;
-    fields[CellField::kind] = make_shared<StrCell>(CellValue::lookup_error);
+    fields[CellField::type] = make_shared<StrCell>(CellValue::lookup_error);
     fields[CellField::name] = make_shared<StrCell>(queried_name);
     fields[CellField::receiver_type] = make_shared<StrCell>(cell_class_name(receiver));
     if (!failed_segment.empty()) {
