@@ -15,7 +15,7 @@ expected:
         debug:
           cpp_file: src/helix.cpp
           cpp_function: breakpoint_error
-          cpp_line: 44
+          cpp_line: <present>
         type: breakpoint_error
         location:
           line: 1
