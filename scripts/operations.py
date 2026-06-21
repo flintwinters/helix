@@ -48,12 +48,13 @@ def validate_native_module_isolation():
     return True
 
 
-def compile_cpp_flags(dynamic_libraries, optimize_size=False):
+def compile_cpp_flags(dynamic_libraries, optimize_size=False, cpp_linenums=True):
     enabled = "1" if dynamic_libraries else "0"
+    cpp_linenums_enabled = "1" if cpp_linenums else "0"
     flags = BASE_CPP_FLAGS
     if optimize_size:
         flags = f"{flags} {SIZE_OPTIMIZATION_FLAG}"
-    return f"{flags} -DHELIX_ENABLE_DYNAMIC_LIBRARIES={enabled}"
+    return f"{flags} -DHELIX_ENABLE_DYNAMIC_LIBRARIES={enabled} -DHELIX_ENABLE_CPP_LINENUMS={cpp_linenums_enabled}"
 
 
 def compile_linker_flags(dynamic_libraries):
@@ -66,13 +67,13 @@ def command_exists(command_name):
     return shutil.which(command_name) is not None
 
 
-def compile_main(dynamic_libraries=True, optimize_size=False):
+def compile_main(dynamic_libraries=True, optimize_size=False, cpp_linenums=True):
     """Compiles the runtime sources into an executable."""
     if not validate_native_module_isolation():
         return False
 
     os.makedirs(OBJECT_DIRECTORY, exist_ok=True)
-    cpp_flags = compile_cpp_flags(dynamic_libraries, optimize_size)
+    cpp_flags = compile_cpp_flags(dynamic_libraries, optimize_size, cpp_linenums)
 
     object_files = []
     for source_path in SOURCES.split():
@@ -104,10 +105,14 @@ def compile_main(dynamic_libraries=True, optimize_size=False):
     return True
 
 
-def compile_sfml_module(optimize_size=False):
+def compile_sfml_module(optimize_size=False, cpp_linenums=True):
     """Compiles the SFML wrapper into a native include module."""
     os.makedirs(os.path.dirname(SFML_MODULE), exist_ok=True)
-    cpp_flags = compile_cpp_flags(dynamic_libraries=True, optimize_size=optimize_size)
+    cpp_flags = compile_cpp_flags(
+        dynamic_libraries=True,
+        optimize_size=optimize_size,
+        cpp_linenums=cpp_linenums,
+    )
 
     compile_command = (
         f"{COMPILER} -fPIC -shared {SFML_MODULE_SOURCE} {cpp_flags} {INCLUDES} "
@@ -527,13 +532,13 @@ def split_runtime_output(stdout):
 
 def print_usage(script_name="run.py"):
     print("usage:")
-    print(f"  python3 {script_name} [--lib] [--no-dynamic-libraries] [--optimize-size] [--valgrind]")
+    print(f"  python3 {script_name} [--lib] [--no-dynamic-libraries] [--no-cpp-linenums] [--optimize-size] [--valgrind]")
     print("                                             # compile C++, optional libs, tidy, cloc, and run C++ fixtures")
-    print(f"  python3 {script_name} build [--lib] [--no-dynamic-libraries] [--optimize-size]")
+    print(f"  python3 {script_name} build [--lib] [--no-dynamic-libraries] [--no-cpp-linenums] [--optimize-size]")
     print("                                             # compile the C++ scaffold and optional libs only")
-    print(f"  python3 {script_name} cpp-test [--lib] [--no-dynamic-libraries] [--optimize-size] [--valgrind]")
+    print(f"  python3 {script_name} cpp-test [--lib] [--no-dynamic-libraries] [--no-cpp-linenums] [--optimize-size] [--valgrind]")
     print("                                             # compile C++, optional libs, and run native fixtures")
-    print(f"  python3 {script_name} hcc-test [--lib] [--no-dynamic-libraries] [--optimize-size] [--valgrind]")
+    print(f"  python3 {script_name} hcc-test [--lib] [--no-dynamic-libraries] [--no-cpp-linenums] [--optimize-size] [--valgrind]")
     print("                                             # compile C++, optional libs, and run HCC fixtures")
 
 
@@ -541,6 +546,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
     arguments = sys.argv[1:] if arguments is None else arguments
     compile_libs = False
     dynamic_libraries = True
+    cpp_linenums = True
     optimize_size = False
     use_valgrind = False
     filtered_arguments = []
@@ -551,6 +557,9 @@ def main(arguments=None, default_command="default", script_name="run.py"):
             continue
         if argument == "--no-dynamic-libraries":
             dynamic_libraries = False
+            continue
+        if argument == "--no-cpp-linenums":
+            cpp_linenums = False
             continue
         if argument == "--optimize-size":
             optimize_size = True
@@ -576,16 +585,16 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         sys.exit(1)
 
     if command == "build":
-        if not compile_main(dynamic_libraries, optimize_size):
+        if not compile_main(dynamic_libraries, optimize_size, cpp_linenums):
             sys.exit(1)
-        if compile_libs and not compile_sfml_module(optimize_size):
+        if compile_libs and not compile_sfml_module(optimize_size, cpp_linenums):
             sys.exit(1)
         return
 
     if command in {"cpp-test", "test-cpp"}:
-        if not compile_main(dynamic_libraries, optimize_size):
+        if not compile_main(dynamic_libraries, optimize_size, cpp_linenums):
             sys.exit(1)
-        if compile_libs and not compile_sfml_module(optimize_size):
+        if compile_libs and not compile_sfml_module(optimize_size, cpp_linenums):
             sys.exit(1)
         num_failed = run_tests("cpp", use_valgrind)
         if num_failed > 0:
@@ -593,9 +602,9 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         return
 
     if command in {"hcc-test", "test-hcc"}:
-        if not compile_main(dynamic_libraries, optimize_size):
+        if not compile_main(dynamic_libraries, optimize_size, cpp_linenums):
             sys.exit(1)
-        if compile_libs and not compile_sfml_module(optimize_size):
+        if compile_libs and not compile_sfml_module(optimize_size, cpp_linenums):
             sys.exit(1)
         num_failed = run_hcc_tests("cpp", use_valgrind)
         if num_failed > 0:
@@ -607,10 +616,10 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         print_usage(script_name)
         sys.exit(1)
 
-    if not compile_main(dynamic_libraries, optimize_size):
+    if not compile_main(dynamic_libraries, optimize_size, cpp_linenums):
         sys.exit(1)
 
-    if compile_libs and not compile_sfml_module(optimize_size):
+    if compile_libs and not compile_sfml_module(optimize_size, cpp_linenums):
         sys.exit(1)
 
     if not run_clang_tidy():
