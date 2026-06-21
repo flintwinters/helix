@@ -12,4 +12,7 @@ expected:
       value:
         type: invalid_actor
         actor_type: IntCell
+        location:
+          line: 2
+          column: 3
         source: 1
