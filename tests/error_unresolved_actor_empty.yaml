@@ -1,0 +1,18 @@
+program:
+  main: ["", 1]
+expected:
+  main:
+    - ""
+    - 1
+  state:
+    status: error
+    frames: []
+    error: vector actor could not be resolved
+    result:
+      signal_type: error
+      message: vector actor could not be resolved
+      value:
+        type: unresolved_actor
+        name: ""
+        context_type: VmCell
+        source: ""
