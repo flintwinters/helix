@@ -14,6 +14,10 @@ expected:
         name: bogus
         receiver_type: VmCell
         failed_segment: bogus
+        debug:
+          cpp_file: src/core.cpp
+          cpp_function: make_lookup_error
+          cpp_line: <present>
         location:
           line: 2
           column: 3
