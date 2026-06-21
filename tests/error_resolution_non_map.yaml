@@ -15,4 +15,7 @@ expected:
         type: resolution_error
         name: foo.bar
         context_type: VmCell
+        location:
+          line: 2
+          column: 1
         source: foo.bar
