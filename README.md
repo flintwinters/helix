@@ -1,22 +1,32 @@
 # Helix
 
 Helix is an experimental C++ runtime for structured, versionable object graphs.
-Programs are represented as YAML graphs, executed by a native runtime, and tested
-through fixture-based snapshots.
 
-The repository also includes HCC, a proof-of-concept compiler for lowering a
-small freestanding C subset into readable Helix YAML.
+## Overview
 
-## Current State
+- Native runtime for executing YAML object graphs as mutable computational state.
+- Working microVM-style execution model with stepping, child VMs, signals, frames, and object-path program counters.
+- Git-backed debugger workflow that turns every stepped YAML state into branchable execution history.
+- Fixture-tested language core covering control flow, functions, includes, typed slots, dotted lookup, errors, and builtins.
+- HCC compiler path that lowers a small freestanding C subset into readable Helix YAML and runs it through the same runtime tests.
+- Research codebase with real working mechanisms today and a larger object-system architecture still under active design.
 
-The runtime currently supports:
+## Working Today
 
-- YAML object graphs with a `main` entrypoint.
-- Symbol resolution, dotted lookup, includes, builtin forms, and mutable VM state.
-- Conditional execution, loops, function calls, child VM execution, stepping, and signals.
-- YAML fixture tests for runtime behavior and expected errors.
-- HCC fixture tests for C-to-Helix lowering and runtime execution.
-- A debugger workflow that snapshots stepped YAML state into a local git history.
+Programs are represented as YAML graphs and executed by a native C++ runtime. A
+program has a `main` entrypoint, mutable VM state, symbolic resolution, dotted
+lookup, includes, builtin forms, typed slots, conditionals, loops, functions,
+child VM execution, stepping, and signals.
+
+The debugger already versions execution state. `tui/helix_step.py` copies a
+target VM into `debug_<name>`, initializes git there, and commits each stepped
+YAML state. Runtime fields such as `state.status`, `state.frames`,
+`state.result`, and object-path program counters are ordinary versioned data, so
+execution can be inspected, rewound, branched, and resumed.
+
+HCC is included as a proof-of-concept compiler for lowering a small freestanding
+C subset into readable Helix YAML. Its emitted programs are checked both as YAML
+output and as executable input to the same C++ runtime.
 
 This is an early research codebase. The implementation is usable for the checked
 fixtures and demos, but the object model and runtime interfaces are still changing.
@@ -65,7 +75,7 @@ fixtures, demos, and documentation. Local build products, Python caches,
 debugger snapshots, compile databases, virtual environments, and transient
 program-state files are ignored.
 
-## Direction
+## Planned Direction
 
 The core abstraction is the microVM: a small, isolated, message-passing
 computational object represented through a YAML-like graph. A microVM owns state,
