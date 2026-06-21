@@ -138,7 +138,7 @@ static void preserve_error_debug(const ErrCell& error, const shared_ptr<MapCell>
 
     CellPtr debug = map_field_cell(existing_details, CellField::debug);
     if (debug && !map_field_cell(details, CellField::debug)) {
-        details->set(CellField::debug, move(debug));
+        details->value[CellField::debug] = move(debug);
     }
 }
 
