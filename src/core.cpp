@@ -18,6 +18,10 @@ Cell& Cell::operator=(Cell&&) = default;
 
 Cell::~Cell() = default;
 
+bool ErrorDetails::empty() const noexcept {
+    return fields.empty();
+}
+
 static void attach_parent_if_missing(const CellPtr& child, const CellPtr& parent) {
     if (!child || !parent || child->parent) {
         return;
@@ -38,31 +42,174 @@ static void clear_existing_state(const shared_ptr<VmCell>& root_cell) {
     state->parent = nullptr;
 }
 
-static CellPtr cpp_error_origin_cell(CppErrorOrigin origin) {
-    if (!origin.valid) {
-        return nullptr;
+static ErrorDetailValue nil_error_detail() {
+    return {};
+}
+
+static ErrorDetailValue int_error_detail(int64_t value) {
+    ErrorDetailValue detail;
+    detail.type = ErrorDetailValue::Type::integer;
+    detail.integer = value;
+    return detail;
+}
+
+static ErrorDetailValue string_error_detail(string value) {
+    ErrorDetailValue detail;
+    detail.type = ErrorDetailValue::Type::string;
+    detail.text = move(value);
+    return detail;
+}
+
+static ErrorDetailValue map_error_detail(unordered_map<string, ErrorDetailValue> fields) {
+    ErrorDetailValue detail;
+    detail.type = ErrorDetailValue::Type::map;
+    detail.fields = move(fields);
+    return detail;
+}
+
+static ErrorDetailValue vec_error_detail(vector<ErrorDetailValue> elements) {
+    ErrorDetailValue detail;
+    detail.type = ErrorDetailValue::Type::vec;
+    detail.elements = move(elements);
+    return detail;
+}
+
+static ErrorDetailValue error_detail_from_cell(ConstCellPtr cell);
+
+static unordered_map<string, ErrorDetailValue> error_detail_fields_from_map(const MapCell& map_cell) {
+    unordered_map<string, ErrorDetailValue> fields;
+    for (const auto& [key, value] : map_cell.value) {
+        fields[key] = error_detail_from_cell(value);
+    }
+    return fields;
+}
+
+static ErrorDetailValue error_detail_from_cell(ConstCellPtr cell) {
+    if (!cell || cell->type == Cell::Type::nil) {
+        return nil_error_detail();
     }
 
-    unordered_map<string, CellPtr> fields;
-    fields[CellField::cpp_file] = make_shared<StrCell>(origin.file ? origin.file : "");
-    fields[CellField::cpp_line] = make_shared<IntCell>(origin.line);
-    fields[CellField::cpp_function] = make_shared<StrCell>(origin.function ? origin.function : "");
-    return make_shared<MapCell>(move(fields));
+    switch (cell->type) {
+    case Cell::Type::map:
+    case Cell::Type::scope:
+    case Cell::Type::vm:
+        return map_error_detail(error_detail_fields_from_map(static_cast<const MapCell&>(*cell)));
+    case Cell::Type::vec: {
+        vector<ErrorDetailValue> elements;
+        const auto& vec_cell = static_cast<const VecCell&>(*cell);
+        elements.reserve(vec_cell.value.size());
+        for (const CellPtr& value : vec_cell.value) {
+            elements.push_back(error_detail_from_cell(value));
+        }
+        return vec_error_detail(move(elements));
+    }
+    case Cell::Type::integer:
+        return int_error_detail(static_cast<const IntCell&>(*cell).value);
+    case Cell::Type::string:
+        return string_error_detail(static_cast<const StrCell&>(*cell).value);
+    case Cell::Type::function:
+        return string_error_detail("<function>");
+    case Cell::Type::signal:
+    case Cell::Type::return_signal:
+    case Cell::Type::error_signal:
+    case Cell::Type::base:
+    default:
+        return string_error_detail(cell_class_name(cell));
+    }
+}
+
+static CellPtr cell_from_error_detail(const ErrorDetailValue& detail) {
+    switch (detail.type) {
+    case ErrorDetailValue::Type::integer:
+        return make_shared<IntCell>(detail.integer);
+    case ErrorDetailValue::Type::string:
+        return make_shared<StrCell>(detail.text);
+    case ErrorDetailValue::Type::map: {
+        unordered_map<string, CellPtr> fields;
+        for (const auto& [key, value] : detail.fields) {
+            fields[key] = cell_from_error_detail(value);
+        }
+        return make_shared<MapCell>(move(fields));
+    }
+    case ErrorDetailValue::Type::vec: {
+        vector<CellPtr> elements;
+        elements.reserve(detail.elements.size());
+        for (const ErrorDetailValue& value : detail.elements) {
+            elements.push_back(cell_from_error_detail(value));
+        }
+        return make_shared<VecCell>(move(elements));
+    }
+    case ErrorDetailValue::Type::nil:
+    default:
+        return make_shared<NilCell>();
+    }
+}
+
+static ErrorDetailValue source_location_detail(ConstCellPtr cell) {
+    if (!cell || !cell->source_location.valid) {
+        return {};
+    }
+
+    unordered_map<string, ErrorDetailValue> fields;
+    fields[CellField::line] = int_error_detail(cell->source_location.line);
+    fields[CellField::column] = int_error_detail(cell->source_location.column);
+    return map_error_detail(move(fields));
+}
+
+static void clear_transient_parent_links(const CellPtr& cell) {
+    if (!cell) {
+        return;
+    }
+
+    if (is_map_like_cell(cell)) {
+        for (auto& [_, child] : static_cast<MapCell&>(*cell).value) {
+            if (child && child->parent.get() == cell.get()) {
+                child->parent = nullptr;
+                clear_transient_parent_links(child);
+            }
+        }
+        return;
+    }
+
+    if (cell->type == Cell::Type::vec) {
+        for (CellPtr& child : static_cast<VecCell&>(*cell).value) {
+            if (child && child->parent.get() == cell.get()) {
+                child->parent = nullptr;
+                clear_transient_parent_links(child);
+            }
+        }
+        return;
+    }
+
+    if (is_signal_cell(cell)) {
+        CellPtr& value = static_cast<SigCell&>(*cell).value;
+        if (value && value->parent.get() == cell.get()) {
+            value->parent = nullptr;
+            clear_transient_parent_links(value);
+        }
+    }
+}
+
+static ErrorDetailValue cpp_error_origin_detail(CppErrorOrigin origin) {
+    if (!origin.valid) {
+        return {};
+    }
+
+    unordered_map<string, ErrorDetailValue> fields;
+    fields[CellField::cpp_file] = string_error_detail(origin.file ? origin.file : "");
+    fields[CellField::cpp_line] = int_error_detail(origin.line);
+    fields[CellField::cpp_function] = string_error_detail(origin.function ? origin.function : "");
+    return map_error_detail(move(fields));
 }
 
 static void attach_cpp_error_origin(CellPtr error, CppErrorOrigin origin) {
-    CellPtr debug = cpp_error_origin_cell(origin);
-    if (!error || error->type != Cell::Type::error_signal || !debug) {
+    ErrorDetailValue debug = cpp_error_origin_detail(origin);
+    if (!error || error->type != Cell::Type::error_signal || debug.type != ErrorDetailValue::Type::map) {
         return;
     }
 
     ErrCell& error_cell = static_cast<ErrCell&>(*error);
-    shared_ptr<MapCell> details = expect_map_cell(error_cell.value);
-    if (!details) {
-        details = make_shared<MapCell>();
-        error_cell.value = details;
-    }
-    details->value[CellField::debug] = move(debug);
+    error_cell.details.fields[CellField::debug] = move(debug);
 }
 
 CellPtr make_error_cell_at(const string& message, CppErrorOrigin origin) {
@@ -96,14 +243,12 @@ bool is_map_like_cell(ConstCellPtr cell) {
 }
 
 CellPtr source_location_cell(ConstCellPtr cell) {
-    if (!cell || !cell->source_location.valid) {
+    ErrorDetailValue location = source_location_detail(cell);
+    if (location.type != ErrorDetailValue::Type::map) {
         return nullptr;
     }
 
-    shared_ptr<MapCell> location = make_shared<MapCell>();
-    location->set(CellField::line, make_shared<IntCell>(cell->source_location.line));
-    location->set(CellField::column, make_shared<IntCell>(cell->source_location.column));
-    return location;
+    return cell_from_error_detail(location);
 }
 
 void attach_source_location(const shared_ptr<MapCell>& details, ConstCellPtr source) {
@@ -113,22 +258,44 @@ void attach_source_location(const shared_ptr<MapCell>& details, ConstCellPtr sou
 
     CellPtr location = source_location_cell(source);
     if (location) {
-        details->set(CellField::location, move(location));
+        details->value[CellField::location] = move(location);
     }
 }
 
 void attach_error_location(CellPtr error, ConstCellPtr source) {
-    if (!error || error->type != Cell::Type::error_signal || !source_location_cell(source)) {
+    ErrorDetailValue location = source_location_detail(source);
+    if (!error || error->type != Cell::Type::error_signal || location.type != ErrorDetailValue::Type::map) {
         return;
     }
 
     ErrCell& error_cell = static_cast<ErrCell&>(*error);
-    shared_ptr<MapCell> details = expect_map_cell(error_cell.value);
-    if (!details) {
-        details = make_shared<MapCell>();
-        error_cell.value = details;
+    error_cell.details.fields[CellField::location] = move(location);
+}
+
+shared_ptr<MapCell> materialize_error_details(const ErrCell& error) {
+    if (error.details.empty()) {
+        return nullptr;
     }
-    attach_source_location(details, source);
+
+    unordered_map<string, CellPtr> fields;
+    for (const auto& [key, value] : error.details.fields) {
+        fields[key] = cell_from_error_detail(value);
+    }
+    return make_shared<MapCell>(move(fields));
+}
+
+void absorb_error_details(ErrCell& error, CellPtr details) {
+    shared_ptr<MapCell> detail_map = expect_map_cell(details);
+    if (!detail_map) {
+        error.value = move(details);
+        return;
+    }
+
+    unordered_map<string, ErrorDetailValue> fields = error_detail_fields_from_map(*detail_map);
+    for (auto& [key, value] : fields) {
+        error.details.fields[key] = move(value);
+    }
+    clear_transient_parent_links(detail_map);
 }
 
 const char* cell_class_name(ConstCellPtr cell) {
@@ -944,6 +1111,7 @@ ErrCell::ErrCell() : SigCell(Type::error_signal, nullptr) {
 }
 
 ErrCell::ErrCell(string initial_message, CellPtr initial_value)
-    : SigCell(Type::error_signal, move(initial_value)), message(move(initial_message)) {
+    : SigCell(Type::error_signal, nullptr), message(move(initial_message)) {
     class_name = "ErrCell";
+    absorb_error_details(*this, move(initial_value));
 }
