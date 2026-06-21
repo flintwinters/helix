@@ -1,6 +1,7 @@
 #include <core.hpp>
 
 #include <algorithm>
+#include <limits>
 #include <utility>
 
 Cell::Cell() : parent(nullptr) {}
@@ -295,6 +296,61 @@ const IntCell* map_field_int(ConstCellPtr map_cell, const string& key) {
     }
 
     return &static_cast<const IntCell&>(*field);
+}
+
+bool is_typed_slot(ConstCellPtr cell) {
+    const StrCell* type_cell = map_field_string(cell, CellField::type);
+    return type_cell
+        && type_cell->value != CellValue::function
+        && map_field_cell(cell, CellField::value);
+}
+
+CellPtr typed_slot_value(ConstCellPtr cell) {
+    if (!is_typed_slot(cell)) {
+        return nullptr;
+    }
+
+    return map_field_cell(cell, CellField::value);
+}
+
+static CellPtr validate_i32_value(ConstCellPtr value) {
+    if (!value || value->type != Cell::Type::integer) {
+        return make_error_cell("i32 typed slot expects an integer value");
+    }
+
+    const int64_t integer = static_cast<const IntCell&>(*value).value;
+    if (integer < numeric_limits<int32_t>::min() || integer > numeric_limits<int32_t>::max()) {
+        return make_error_cell("i32 typed slot value is out of range");
+    }
+
+    return nullptr;
+}
+
+static CellPtr validate_typed_slot_value(ConstCellPtr slot_cell, ConstCellPtr value) {
+    const StrCell* type_cell = map_field_string(slot_cell, CellField::type);
+    if (!type_cell) {
+        return make_error_cell("typed slot is missing a type");
+    }
+
+    if (type_cell->value == "i32") {
+        return validate_i32_value(value);
+    }
+
+    return make_error_cell("unsupported typed slot type: " + type_cell->value);
+}
+
+CellPtr set_typed_slot_value(const shared_ptr<MapCell>& slot_cell, CellPtr value) {
+    if (!is_typed_slot(slot_cell)) {
+        return make_error_cell("set target is not a typed slot");
+    }
+
+    CellPtr error = validate_typed_slot_value(slot_cell, value);
+    if (error) {
+        return error;
+    }
+
+    slot_cell->set(CellField::value, move(value));
+    return nullptr;
 }
 
 shared_ptr<MapCell> expect_map_cell(CellPtr cell) {
@@ -614,6 +670,10 @@ CellPtr MapCell::lookup_member(const string& name, const shared_ptr<VmCell>&) co
     unordered_map<string, CellPtr>::const_iterator field_it = value.find(name);
     if (field_it == value.end()) {
         return nullptr;
+    }
+
+    if (is_typed_slot(field_it->second)) {
+        return typed_slot_value(field_it->second);
     }
 
     return field_it->second;
