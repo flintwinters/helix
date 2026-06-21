@@ -1,6 +1,12 @@
 ryml
 __pycache__
+.mypy_cache
+.uv-cache
+.venv
 .python-version
 .clangd
 .codex
 build
+compile_commands.json
+debug_*
+progstate
