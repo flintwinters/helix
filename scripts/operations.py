@@ -33,6 +33,37 @@ VALGRIND_ARGS = [
     "--show-leak-kinds=all",
     "--error-exitcode=101",
 ]
+PRESENT_SENTINEL = "<present>"
+
+
+def expected_output_matches(expected_value, actual_value):
+    if expected_value == PRESENT_SENTINEL:
+        return True
+
+    if isinstance(expected_value, dict):
+        if not isinstance(actual_value, dict):
+            return False
+
+        for key, expected_child in expected_value.items():
+            if key not in actual_value:
+                return False
+            if not expected_output_matches(expected_child, actual_value[key]):
+                return False
+
+        return set(actual_value) == set(expected_value)
+
+    if isinstance(expected_value, list):
+        if not isinstance(actual_value, list) or len(actual_value) != len(expected_value):
+            return False
+
+        return all(
+            expected_output_matches(expected_child, actual_child)
+            for expected_child, actual_child in zip(expected_value, actual_value)
+        )
+
+    return actual_value == expected_value
+
+
 def validate_native_module_isolation():
     """Ensures optional native libraries stay out of the core runtime binary."""
     core_sources = SOURCES.split()
@@ -320,7 +351,7 @@ def evaluate_program_fixture(test_name, fixture, program_path, runtime, use_valg
         failure_lines.append(indent_block(yaml_output.rstrip()))
         return test_result(test_name, False, failure_lines)
 
-    if actual_output == expected_output:
+    if expected_output_matches(expected_output, actual_output):
         return test_result(test_name, True)
 
     failure_lines.append("output mismatch")
