@@ -109,37 +109,25 @@ static shared_ptr<MapCell> make_resolution_details(
 }
 
 static void attach_error_source(ErrCell& error, CellPtr source) {
-    if (!source || !is_map_like_cell(error.value)) {
+    if (!source) {
         return;
     }
 
-    shared_ptr<MapCell> details = static_pointer_cast<MapCell>(error.value);
+    shared_ptr<MapCell> details = make_shared<MapCell>();
     attach_source_location(details, source);
     details->set(CellField::source, move(source));
+    absorb_error_details(error, move(details));
 }
 
 static bool has_error_details(const ErrCell& error) {
-    shared_ptr<MapCell> details = expect_map_cell(error.value);
-    if (!details) {
-        return error.value != nullptr;
+    if (error.value) {
+        return true;
     }
 
     return any_of(
-        details->value.begin(),
-        details->value.end(),
+        error.details.fields.begin(),
+        error.details.fields.end(),
         [](const auto& field) { return field.first != CellField::debug; });
-}
-
-static void preserve_error_debug(const ErrCell& error, const shared_ptr<MapCell>& details) {
-    shared_ptr<MapCell> existing_details = expect_map_cell(error.value);
-    if (!details || !existing_details) {
-        return;
-    }
-
-    CellPtr debug = map_field_cell(existing_details, CellField::debug);
-    if (debug && !map_field_cell(details, CellField::debug)) {
-        details->value[CellField::debug] = move(debug);
-    }
 }
 
 static const Cell* lookup_context(ConstCellPtr node, const shared_ptr<VmCell>& root_cell) {
@@ -168,8 +156,7 @@ static CellPtr resolve_cell(CellPtr node, const shared_ptr<VmCell>& root_cell) {
         ErrCell& error = static_cast<ErrCell&>(*resolved);
         if (!has_error_details(error)) {
             shared_ptr<MapCell> details = make_resolution_details(CellValue::resolution_error, name, context, node);
-            preserve_error_debug(error, details);
-            error.value = move(details);
+            absorb_error_details(error, move(details));
         } else {
             attach_error_source(error, node);
         }
