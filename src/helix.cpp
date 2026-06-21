@@ -35,7 +35,7 @@ static void clear_vm_yield_reason(const shared_ptr<VmCell>& vm) {
 
 static CellPtr breakpoint_error(const string& message, ConstCellPtr source) {
     shared_ptr<MapCell> details = make_shared<MapCell>();
-    details->set(CellField::kind, make_shared<StrCell>(CellValue::breakpoint_error));
+    details->set(CellField::type, make_shared<StrCell>(CellValue::breakpoint_error));
     if (source) {
         details->set(CellField::source, const_pointer_cast<Cell>(source));
     }
@@ -91,12 +91,12 @@ static CellPtr yield_at_breakpoint(const shared_ptr<VmCell>& vm, CellPtr pc) {
 }
 
 static shared_ptr<MapCell> make_resolution_details(
-    const string& kind,
+    const string& type,
     const string& name,
     const Cell* context,
     CellPtr source = nullptr) {
     shared_ptr<MapCell> details = make_shared<MapCell>();
-    details->set(CellField::kind, make_shared<StrCell>(kind));
+    details->set(CellField::type, make_shared<StrCell>(type));
     details->set(CellField::name, make_shared<StrCell>(name));
     details->set(CellField::context_type, make_shared<StrCell>(cell_class_name(context)));
     if (source) {
@@ -170,7 +170,7 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<VmCell>& root
 
     if (!actor || actor->type != Cell::Type::function) {
         shared_ptr<MapCell> details = make_shared<MapCell>();
-        details->set(CellField::kind, make_shared<StrCell>(CellValue::invalid_actor));
+        details->set(CellField::type, make_shared<StrCell>(CellValue::invalid_actor));
         details->set(CellField::actor_type, make_shared<StrCell>(cell_class_name(actor)));
         details->set(CellField::source, form.value.front());
         return make_error_cell("vector actor did not resolve to a builtin", details);
