@@ -15,4 +15,7 @@ expected:
         type: unresolved_actor
         name: ""
         context_type: VmCell
+        location:
+          line: 2
+          column: 4
         source: ""
