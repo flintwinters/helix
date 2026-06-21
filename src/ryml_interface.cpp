@@ -53,6 +53,26 @@ static CellPtr scalar_cell_from_ryml(c4::csubstr scalar) {
     return make_shared<StrCell>(text);
 }
 
+static pair<string, string> split_typed_field_name(const string& field_name) {
+    const size_t separator = field_name.find(':');
+    if (separator == string::npos) {
+        return {field_name, ""};
+    }
+
+    if (separator == 0 || separator == field_name.size() - 1 || field_name.find(':', separator + 1) != string::npos) {
+        throw runtime_error("typed field names must use name:type syntax");
+    }
+
+    return {field_name.substr(0, separator), field_name.substr(separator + 1)};
+}
+
+static CellPtr typed_slot_cell_from_sugar(const string& type_name, CellPtr value) {
+    shared_ptr<MapCell> slot_cell = make_shared<ScopeCell>();
+    slot_cell->set(CellField::type, make_shared<StrCell>(type_name));
+    slot_cell->set(CellField::value, move(value));
+    return slot_cell;
+}
+
 static filesystem::path resolve_include_path(const filesystem::path& source_path, const string& include_name) {
     const filesystem::path include_path(include_name);
     if (include_path.is_absolute()) {
@@ -125,7 +145,11 @@ CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
             : static_pointer_cast<MapCell>(make_shared<ScopeCell>());
         for (const auto child : node.children()) {
             CellPtr child_cell = cell_from_ryml_node(child);
-            map_cell->set(ryml_text_to_string(child.key()), move(child_cell));
+            auto [field_name, type_name] = split_typed_field_name(ryml_text_to_string(child.key()));
+            if (!type_name.empty()) {
+                child_cell = typed_slot_cell_from_sugar(type_name, move(child_cell));
+            }
+            map_cell->set(field_name, move(child_cell));
         }
         return map_cell;
     }
