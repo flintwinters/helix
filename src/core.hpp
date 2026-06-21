@@ -22,6 +22,13 @@ struct SourceLocation {
     bool valid {false};
 };
 
+struct CppErrorOrigin {
+    const char* file {};
+    const char* function {};
+    int line {};
+    bool valid {false};
+};
+
 struct Cell {
     enum class Type {
         base,
@@ -158,7 +165,7 @@ using EvalCellFn = CellPtr(*)(CellPtr, const shared_ptr<VmCell>&);
 using ResolveCellFn = CellPtr(*)(CellPtr, const shared_ptr<VmCell>&);
 using AdvanceVmFn = CellPtr(*)(const shared_ptr<VmCell>&);
 using RenderShowFn = string(*)(ConstCellPtr);
-using MakeErrorFn = CellPtr(*)(const string&, CellPtr);
+using MakeErrorFn = CellPtr(*)(const string&, CellPtr, CppErrorOrigin);
 
 namespace CellField {
 inline constexpr const char* actor_type = "actor_type";
@@ -167,6 +174,10 @@ inline constexpr const char* body = "body";
 inline constexpr const char* breakpoints = "breakpoints";
 inline constexpr const char* column = "column";
 inline constexpr const char* context_type = "context_type";
+inline constexpr const char* cpp_file = "cpp_file";
+inline constexpr const char* cpp_function = "cpp_function";
+inline constexpr const char* cpp_line = "cpp_line";
+inline constexpr const char* debug = "debug";
 inline constexpr const char* error = "error";
 inline constexpr const char* expected_type = "expected_type";
 inline constexpr const char* failed_segment = "failed_segment";
@@ -215,7 +226,21 @@ inline constexpr const char* unresolved_actor = "unresolved_actor";
 inline constexpr const char* unresolved_name = "unresolved_name";
 }
 
-CellPtr make_error_cell(const string& message, CellPtr value = nullptr);
+CellPtr make_error_cell_at(const string& message, CppErrorOrigin origin);
+CellPtr make_error_cell_at(const string& message, CellPtr value, CppErrorOrigin origin);
+
+#ifndef HELIX_ENABLE_CPP_LINENUMS
+#define HELIX_ENABLE_CPP_LINENUMS 1
+#endif
+
+#if HELIX_ENABLE_CPP_LINENUMS
+#define HELIX_CPP_ERROR_ORIGIN CppErrorOrigin{__FILE__, __func__, __LINE__, true}
+#else
+#define HELIX_CPP_ERROR_ORIGIN CppErrorOrigin{}
+#endif
+
+#define make_error_cell(message, ...) make_error_cell_at((message) __VA_OPT__(,) __VA_ARGS__, HELIX_CPP_ERROR_ORIGIN)
+
 bool is_signal_cell(ConstCellPtr cell);
 const char* cell_class_name(ConstCellPtr cell);
 const char* cell_class_name(const Cell* cell);
