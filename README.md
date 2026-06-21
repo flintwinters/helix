@@ -2,20 +2,25 @@
 
 Helix is an experimental C++ runtime for structured, versioned program state.
 
-## Overview
+## Current Features Overview
 
-- YAML programs run in a native C++ runtime, so program state can be stored,
-  inspected, and edited as ordinary structured data.
-- The runtime can step programs, call functions, run loops and branches, resolve
-  names, include files, enforce typed slots, and report structured errors.
-- Programs can start and step child VMs, which makes nested execution explicit
-  instead of hiding it inside a call stack.
-- The debugger saves each stepped YAML state as a git commit, so execution can
-  be rewound, branched, compared, and resumed with normal version-control tools.
-- HCC compiles a small C subset into readable Helix YAML, making compiled output
-  inspectable instead of opaque.
-- Runtime and compiler behavior are covered by YAML fixtures, so current behavior
-  is easy to review and regression-test.
+IMPLEMENTED NOW:
+- Running programs can be stored, inspected, and edited as ordinary human readable YAML.
+- Helix Micro Virtual Machines can run Helix code repeatably and disposably.
+- MicroVM running *state* and source code is fully human readable YAML.
+- Version a running program/VM - branch, checkout, and merge program state.
+- Breakpoints can trigger commits.
+- Programmatically start, step, and debug nested child VMs.
+
+## In progress
+
+- Compile C99 into readable Helix YAML, to use Helix's debuggability in C
+
+## Next
+
+- Run on RP2040
+- Run on FPGA RV32 softcore (icesugar pro, vexriscv, litex)
+- Lean4 library to operate on Helix YAML source as a hyperlinter
 
 ## Working Today
 
@@ -36,35 +41,6 @@ output and as executable input to the same C++ runtime.
 
 This is an early research codebase. The implementation is usable for the checked
 fixtures and demos, but the object model and runtime interfaces are still changing.
-
-## Tooling
-
-- Python 3.13 or newer.
-- `uv` for Python environment management.
-- `g++` with C++20 support.
-- A built `ryml` dependency at `ryml/build` for linking the C++ runtime.
-- Optional: `clang-tidy-20`, `cloc`, `valgrind`, and SFML development libraries.
-
-Common commands:
-
-```bash
-uv sync
-uv run python run.py build
-uv run python run.py
-uv run python run.py cpp-test
-uv run python run.py hcc-test
-./build/helix helix_demo.yaml
-uv run python -m hcc path/to/source.c -o program.yaml
-uv run python tui/helix_step.py program.yaml
-```
-
-`run.py` supports `build`, `cpp-test`, and `hcc-test`; with no subcommand it runs
-the default build, tidy, fixture, line-count, and binary-size checks. Shared
-options include `--fail-fast`, `--valgrind`, `--no-dynamic-libraries`,
-`--no-cpp-linenums`, `--optimize-size`, and `--lib`.
-
-HCC is available as `uv run python -m hcc`. It writes YAML to stdout by default
-or to `-o`; `--cpp` enables preprocessing before parsing.
 
 ## Debugger
 
