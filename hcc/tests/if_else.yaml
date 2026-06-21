@@ -12,7 +12,7 @@ c_source: |
 expected:
   c:
     main:
-      kind: function
+      type: function
       params: []
       body:
         - [set, flag, 0]
