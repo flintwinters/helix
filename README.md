@@ -4,6 +4,7 @@ Helix is an experimental C++ runtime for structured, versioned program state.
 
 ## Overview
 
+IMPLEMENTED:
 - Native runtime for executing YAML object graphs as mutable computational state.
 - Working microVM-style execution model with stepping, child VMs, signals, frames, and object-path program counters.
 - Git-backed debugger workflow that turns every stepped YAML state into branchable execution history.
