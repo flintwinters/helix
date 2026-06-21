@@ -164,7 +164,6 @@ inline constexpr const char* failed_segment = "failed_segment";
 inline constexpr const char* frames = "frames";
 inline constexpr const char* include = "include";
 inline constexpr const char* internal_body = "__body";
-inline constexpr const char* kind = "kind";
 inline constexpr const char* main = "main";
 inline constexpr const char* message = "message";
 inline constexpr const char* name = "name";
