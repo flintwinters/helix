@@ -24,8 +24,7 @@ IMPLEMENTED NOW:
 
 ## In progress
 
-### HCC
-#### Compile C99 into readable Helix YAML
+__HCC: Compile C99 into readable Helix YAML__
 - Use Helix's debuggability in C.
 - Rigorously test Microcontroller code before flashing
 - Use MicroVMs to emulate distributed systems field tests
