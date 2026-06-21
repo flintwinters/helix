@@ -1,0 +1,19 @@
+program:
+  x:i32: 5
+  main: [set, x, 2147483648]
+expected:
+  x:
+    type: i32
+    value: 5
+  main: [set, x, 2147483648]
+  state:
+    status: error
+    frames: []
+    error: i32 typed slot value is out of range
+    result:
+      signal_type: error
+      message: i32 typed slot value is out of range
+      value:
+        kind: type_error
+        expected_type: i32
+        actual_type: IntCell
