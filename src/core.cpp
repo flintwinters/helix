@@ -62,6 +62,43 @@ bool is_map_like_cell(ConstCellPtr cell) {
         || cell->type == Cell::Type::vm;
 }
 
+CellPtr source_location_cell(ConstCellPtr cell) {
+    if (!cell || !cell->source_location.valid) {
+        return nullptr;
+    }
+
+    shared_ptr<MapCell> location = make_shared<MapCell>();
+    location->set(CellField::file, make_shared<StrCell>(cell->source_location.file));
+    location->set(CellField::line, make_shared<IntCell>(cell->source_location.line));
+    location->set(CellField::column, make_shared<IntCell>(cell->source_location.column));
+    return location;
+}
+
+void attach_source_location(const shared_ptr<MapCell>& details, ConstCellPtr source) {
+    if (!details) {
+        return;
+    }
+
+    CellPtr location = source_location_cell(source);
+    if (location) {
+        details->set(CellField::location, move(location));
+    }
+}
+
+void attach_error_location(CellPtr error, ConstCellPtr source) {
+    if (!error || error->type != Cell::Type::error_signal || !source_location_cell(source)) {
+        return;
+    }
+
+    ErrCell& error_cell = static_cast<ErrCell&>(*error);
+    shared_ptr<MapCell> details = expect_map_cell(error_cell.value);
+    if (!details) {
+        details = make_shared<MapCell>();
+        error_cell.value = details;
+    }
+    attach_source_location(details, source);
+}
+
 const char* cell_class_name(ConstCellPtr cell) {
     if (!cell) {
         return "null";
@@ -96,6 +133,7 @@ static CellPtr make_path_error(const string& message, size_t segment_index, Cons
     if (segment) {
         details->set(CellField::segment, const_pointer_cast<Cell>(segment));
     }
+    attach_source_location(details, segment);
     return make_error_cell(message, details);
 }
 
@@ -318,6 +356,7 @@ static CellPtr make_type_error_cell(const string& message, const string& expecte
     details->set(CellField::type, make_shared<StrCell>(CellValue::type_error));
     details->set(CellField::expected_type, make_shared<StrCell>(expected_type));
     details->set(CellField::actual_type, make_shared<StrCell>(cell_class_name(actual_value)));
+    attach_source_location(details, actual_value);
     return make_error_cell(message, details);
 }
 
