@@ -177,6 +177,7 @@ inline constexpr const char* signal_type = "signal_type";
 inline constexpr const char* source = "source";
 inline constexpr const char* state = "state";
 inline constexpr const char* status = "status";
+inline constexpr const char* type = "type";
 inline constexpr const char* value = "value";
 inline constexpr const char* yield_reason = "yield_reason";
 }
