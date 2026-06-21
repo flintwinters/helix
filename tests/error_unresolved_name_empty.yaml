@@ -16,6 +16,10 @@ expected:
         type: unresolved_name
         name: ""
         context_type: VmCell
+        debug:
+          cpp_file: src/builtins.cpp
+          cpp_function: resolve_or_signal
+          cpp_line: <present>
         location:
           line: 3
           column: 4
