@@ -12,6 +12,10 @@ expected:
       signal_type: error
       message: VM breakpoints must be a vector
       value:
+        debug:
+          cpp_file: src/helix.cpp
+          cpp_function: breakpoint_error
+          cpp_line: 44
         type: breakpoint_error
         location:
           line: 1
