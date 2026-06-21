@@ -251,6 +251,7 @@ inline constexpr const char* unresolved_name = "unresolved_name";
 
 CellPtr make_error_cell_at(const string& message, CppErrorOrigin origin);
 CellPtr make_error_cell_at(const string& message, CellPtr value, CppErrorOrigin origin);
+CellPtr make_error_cell_at(const string& message, ErrorDetails details, CppErrorOrigin origin);
 
 #ifndef HELIX_ENABLE_CPP_LINENUMS
 #define HELIX_ENABLE_CPP_LINENUMS 1
@@ -268,11 +269,19 @@ bool is_signal_cell(ConstCellPtr cell);
 const char* cell_class_name(ConstCellPtr cell);
 const char* cell_class_name(const Cell* cell);
 bool is_map_like_cell(ConstCellPtr cell);
+ErrorDetailValue make_nil_error_detail();
+ErrorDetailValue make_int_error_detail(int64_t value);
+ErrorDetailValue make_string_error_detail(string value);
+ErrorDetailValue make_map_error_detail(unordered_map<string, ErrorDetailValue> fields);
+ErrorDetailValue make_vec_error_detail(vector<ErrorDetailValue> elements);
+ErrorDetailValue make_cell_error_detail(ConstCellPtr cell);
 CellPtr source_location_cell(ConstCellPtr cell);
 void attach_source_location(const shared_ptr<MapCell>& details, ConstCellPtr source);
+void attach_source_location(ErrorDetails& details, ConstCellPtr source);
 void attach_error_location(CellPtr error, ConstCellPtr source);
 shared_ptr<MapCell> materialize_error_details(const ErrCell& error);
 void absorb_error_details(ErrCell& error, CellPtr details);
+void attach_error_details(CellPtr error, ErrorDetails details);
 CellPtr map_field_cell(ConstCellPtr map_cell, const string& key);
 CellPtr cell_at_path(CellPtr root_cell, ConstCellPtr path_cell);
 shared_ptr<VecCell> cell_path_from_root(const shared_ptr<VmCell>& root_cell, ConstCellPtr target_cell);
