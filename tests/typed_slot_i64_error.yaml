@@ -1,0 +1,19 @@
+program:
+  foobar:i64: 5000000000
+  main: [set, foobar, null]
+expected:
+  foobar:
+    type: i64
+    value: 5000000000
+  main: [set, foobar, null]
+  state:
+    status: error
+    frames: []
+    error: i64 typed slot expects an integer value
+    result:
+      signal_type: error
+      message: i64 typed slot expects an integer value
+      value:
+        kind: type_error
+        expected_type: i64
+        actual_type: NilCell
