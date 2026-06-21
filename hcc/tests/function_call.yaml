@@ -11,12 +11,12 @@ c_source: |
 expected:
   c:
     plus_two:
-      kind: function
+      type: function
       params: [a]
       body:
         - [return, [add, a, 2]]
     main:
-      kind: function
+      type: function
       params: []
       body:
         - [set, x, 40]
