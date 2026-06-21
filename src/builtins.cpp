@@ -25,6 +25,12 @@ static CellPtr make_error(const string& message, CellPtr value = nullptr) {
     return make_error_fn(message, move(value));
 }
 
+static CellPtr make_error_at(const string& message, ConstCellPtr source, CellPtr value = nullptr) {
+    CellPtr error = make_error(message, move(value));
+    attach_error_location(error, move(source));
+    return error;
+}
+
 static CellPtr apply_vm_callback_or_signal(
     VmCallbackFn callback,
     CellPtr node,
@@ -108,7 +114,12 @@ static CellPtr clone_cell_tree(ConstCellPtr cell) {
 }
 
 static CellPtr evaluate_int_or_error(CellPtr node, const shared_ptr<VmCell>& root_cell, const char* who) {
-    return expect_int_cell(evaluate_or_signal(move(node), root_cell), who);
+    CellPtr source = node;
+    CellPtr result = expect_int_cell(evaluate_or_signal(move(node), root_cell), who);
+    if (result && result->type == Cell::Type::error_signal) {
+        attach_error_location(result, source);
+    }
+    return result;
 }
 
 static CellPtr vec_or_signal_from_callback(
@@ -117,6 +128,7 @@ static CellPtr vec_or_signal_from_callback(
     const shared_ptr<VmCell>& root_cell,
     const string& init_error_message,
     const string& type_error_message) {
+    CellPtr source = node;
     CellPtr value = apply_vm_callback_or_signal(
         callback,
         move(node),
@@ -127,7 +139,7 @@ static CellPtr vec_or_signal_from_callback(
     }
 
     if (!value || value->type != Cell::Type::vec) {
-        return make_error(type_error_message);
+        return make_error_at(type_error_message, source ? source : value);
     }
 
     return value;
@@ -149,6 +161,7 @@ static CellPtr resolve_or_signal(CellPtr node, const shared_ptr<VmCell>& root_ce
         details->set(CellField::type, make_shared<StrCell>(CellValue::unresolved_name));
         details->set(CellField::name, make_shared<StrCell>(static_cast<const StrCell&>(*value).value));
         details->set(CellField::context_type, make_shared<StrCell>(cell_class_name(root_cell)));
+        attach_source_location(details, value);
         return make_error("builtin resolution failed", details);
     }
 
@@ -211,6 +224,7 @@ static BuiltinVmValidation expect_builtin_vm(
 
     CellPtr arity_error = expect_form_arity(arguments.size(), expected_arity, who);
     if (arity_error) {
+        attach_error_location(arity_error, arguments.empty() ? nullptr : arguments.front());
         return {nullptr, arity_error};
     }
 
@@ -232,7 +246,7 @@ static BuiltinVmValidation resolve_child_vm(const vector<CellPtr>& arguments, Ce
 
     const CellPtr child_name = arguments[1];
     if (!child_name || child_name->type != Cell::Type::string) {
-        return {nullptr, make_error(string(who) + " expects a child VM name")};
+        return {nullptr, make_error_at(string(who) + " expects a child VM name", child_name)};
     }
 
     if (!resolve_cell_fn) {
@@ -246,7 +260,7 @@ static BuiltinVmValidation resolve_child_vm(const vector<CellPtr>& arguments, Ce
 
     shared_ptr<VmCell> child_vm = expect_vm_cell(move(resolved));
     if (!child_vm) {
-        return {nullptr, make_error(string(who) + " expects a child VM name")};
+        return {nullptr, make_error_at(string(who) + " expects a child VM name", child_name)};
     }
 
     return {child_vm, nullptr};
@@ -371,7 +385,7 @@ static CellPtr builtin_div(const vector<CellPtr>& arguments, CellPtr current_vm)
     const int64_t left = static_cast<const IntCell&>(*left_cell).value;
     const int64_t right = static_cast<const IntCell&>(*right_cell).value;
     if (right == 0) {
-        return make_error("div cannot divide by zero");
+        return make_error_at("div cannot divide by zero", arguments[2]);
     }
 
     return make_shared<IntCell>(left / right);
@@ -397,7 +411,7 @@ static CellPtr builtin_mod(const vector<CellPtr>& arguments, CellPtr current_vm)
     const int64_t left = static_cast<const IntCell&>(*left_cell).value;
     const int64_t right = static_cast<const IntCell&>(*right_cell).value;
     if (right == 0) {
-        return make_error("mod cannot divide by zero");
+        return make_error_at("mod cannot divide by zero", arguments[2]);
     }
 
     return make_shared<IntCell>(left % right);
@@ -412,7 +426,7 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
 
     const CellPtr name_cell = arguments[1];
     if (!name_cell || name_cell->type != Cell::Type::string) {
-        return make_error("set expects a string name");
+        return make_error_at("set expects a string name", name_cell);
     }
 
     const CellPtr value = evaluate_or_signal(arguments[2], root_cell);
@@ -437,7 +451,7 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
             target_parent = expect_map_cell(target_parent->parent);
         }
         if (!target_parent) {
-            return make_error("set dotted target must resolve to a map-like parent");
+            return make_error_at("set dotted target must resolve to a map-like parent", name_cell);
         }
 
         size_t last_dot = name.rfind('.');
@@ -465,7 +479,7 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
 
     shared_ptr<MapCell> receiver_map = expect_map_cell(receiver_cell);
     if (!receiver_map) {
-        return make_error("set dotted target must resolve to a map-like cell");
+        return make_error_at("set dotted target must resolve to a map-like cell", name_cell);
     }
 
     CellPtr assignment_error = assign_field_or_slot(receiver_map, segment_cell->value, value);
@@ -487,7 +501,7 @@ static CellPtr expect_user_function(CellPtr cell, const char* who) {
         return cell;
     }
     if (!is_user_function(cell)) {
-        return make_error(string(who) + " expects a function object");
+        return make_error_at(string(who) + " expects a function object", cell);
     }
     return cell;
 }
@@ -497,7 +511,7 @@ static CellPtr evaluate_call_arguments(
     const shared_ptr<VmCell>& root_cell,
     vector<CellPtr>& evaluated_arguments) {
     if (!arguments_cell || arguments_cell->type != Cell::Type::vec) {
-        return make_error("call expects an argument vector");
+        return make_error_at("call expects an argument vector", arguments_cell);
     }
 
     const VecCell& argument_expressions = static_cast<const VecCell&>(*arguments_cell);
@@ -524,7 +538,7 @@ static CellPtr bind_call_arguments(
     for (size_t index = 0; index < params.value.size(); ++index) {
         ConstCellPtr param_cell = params.value[index];
         if (!param_cell || param_cell->type != Cell::Type::string) {
-            return make_error("function parameters must be strings");
+            return make_error_at("function parameters must be strings", param_cell);
         }
 
         call_scope->set(static_cast<const StrCell&>(*param_cell).value, clone_cell_tree(evaluated_arguments[index]));
@@ -669,7 +683,7 @@ static CellPtr builtin_pop(const vector<CellPtr>& arguments, CellPtr current_vm)
     shared_ptr<VecCell> sequence = static_pointer_cast<VecCell>(sequence_cell);
 
     if (sequence->value.empty()) {
-        return make_error("pop expects a non-empty vector");
+        return make_error_at("pop expects a non-empty vector", arguments[1]);
     }
 
     CellPtr value = sequence->value.back();
@@ -697,7 +711,7 @@ static CellPtr builtin_at(const vector<CellPtr>& arguments, CellPtr current_vm) 
 
     const int64_t index = static_cast<const IntCell&>(*index_cell).value;
     if (index < 0 || static_cast<size_t>(index) >= sequence->value.size()) {
-        return make_error("at index is out of bounds");
+        return make_error_at("at index is out of bounds", arguments[2]);
     }
 
     return sequence->value[static_cast<size_t>(index)];
