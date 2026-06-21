@@ -1,0 +1,12 @@
+program:
+  x:i32: 5
+  main: [set, x, [add, x, 7]]
+expected:
+  x:
+    type: i32
+    value: 12
+  main: [set, x, [add, x, 7]]
+  state:
+    result: 12
+    frames: []
+    status: finished
