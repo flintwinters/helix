@@ -14,7 +14,7 @@ expected:
       signal_type: error
       message: lookup failed because the requested member was not found
       value:
-        kind: lookup_error
+        type: lookup_error
         name: outer.missing.nucleus
         receiver_type: ScopeCell
         failed_segment: missing
