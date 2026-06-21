@@ -43,11 +43,11 @@ static CellPtr cpp_error_origin_cell(CppErrorOrigin origin) {
         return nullptr;
     }
 
-    shared_ptr<MapCell> debug = make_shared<MapCell>();
-    debug->set(CellField::cpp_file, make_shared<StrCell>(origin.file ? origin.file : ""));
-    debug->set(CellField::cpp_line, make_shared<IntCell>(origin.line));
-    debug->set(CellField::cpp_function, make_shared<StrCell>(origin.function ? origin.function : ""));
-    return debug;
+    unordered_map<string, CellPtr> fields;
+    fields[CellField::cpp_file] = make_shared<StrCell>(origin.file ? origin.file : "");
+    fields[CellField::cpp_line] = make_shared<IntCell>(origin.line);
+    fields[CellField::cpp_function] = make_shared<StrCell>(origin.function ? origin.function : "");
+    return make_shared<MapCell>(move(fields));
 }
 
 static void attach_cpp_error_origin(CellPtr error, CppErrorOrigin origin) {
@@ -62,7 +62,7 @@ static void attach_cpp_error_origin(CellPtr error, CppErrorOrigin origin) {
         details = make_shared<MapCell>();
         error_cell.value = details;
     }
-    details->set(CellField::debug, move(debug));
+    details->value[CellField::debug] = move(debug);
 }
 
 CellPtr make_error_cell_at(const string& message, CppErrorOrigin origin) {
