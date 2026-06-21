@@ -68,7 +68,6 @@ CellPtr source_location_cell(ConstCellPtr cell) {
     }
 
     shared_ptr<MapCell> location = make_shared<MapCell>();
-    location->set(CellField::file, make_shared<StrCell>(cell->source_location.file));
     location->set(CellField::line, make_shared<IntCell>(cell->source_location.line));
     location->set(CellField::column, make_shared<IntCell>(cell->source_location.column));
     return location;
