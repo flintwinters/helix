@@ -1,0 +1,12 @@
+program:
+  foobar:i64: 5000000000
+  main: [set, foobar, [add, foobar, 2]]
+expected:
+  foobar:
+    type: i64
+    value: 5000000002
+  main: [set, foobar, [add, foobar, 2]]
+  state:
+    result: 5000000002
+    frames: []
+    status: finished
