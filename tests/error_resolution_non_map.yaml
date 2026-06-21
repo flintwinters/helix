@@ -1,0 +1,18 @@
+program:
+  foo: 1
+  main: foo.bar
+expected:
+  foo: 1
+  main: foo.bar
+  state:
+    status: error
+    frames: []
+    error: member lookup is not implemented for this cell
+    result:
+      signal_type: error
+      message: member lookup is not implemented for this cell
+      value:
+        type: resolution_error
+        name: foo.bar
+        context_type: VmCell
+        source: foo.bar
