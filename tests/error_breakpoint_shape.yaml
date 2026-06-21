@@ -13,4 +13,7 @@ expected:
       message: VM breakpoints must be a vector
       value:
         type: breakpoint_error
+        location:
+          line: 1
+          column: 1
         source: 5
