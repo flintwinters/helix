@@ -313,14 +313,22 @@ CellPtr typed_slot_value(ConstCellPtr cell) {
     return map_field_cell(cell, CellField::value);
 }
 
+static CellPtr make_type_error_cell(const string& message, const string& expected_type, ConstCellPtr actual_value) {
+    shared_ptr<MapCell> details = make_shared<MapCell>();
+    details->set(CellField::kind, make_shared<StrCell>(CellValue::type_error));
+    details->set(CellField::expected_type, make_shared<StrCell>(expected_type));
+    details->set(CellField::actual_type, make_shared<StrCell>(cell_class_name(actual_value)));
+    return make_error_cell(message, details);
+}
+
 static CellPtr validate_i32_value(ConstCellPtr value) {
     if (!value || value->type != Cell::Type::integer) {
-        return make_error_cell("i32 typed slot expects an integer value");
+        return make_type_error_cell("i32 typed slot expects an integer value", "i32", value);
     }
 
     const int64_t integer = static_cast<const IntCell&>(*value).value;
     if (integer < numeric_limits<int32_t>::min() || integer > numeric_limits<int32_t>::max()) {
-        return make_error_cell("i32 typed slot value is out of range");
+        return make_type_error_cell("i32 typed slot value is out of range", "i32", value);
     }
 
     return nullptr;
@@ -328,7 +336,7 @@ static CellPtr validate_i32_value(ConstCellPtr value) {
 
 static CellPtr validate_i64_value(ConstCellPtr value) {
     if (!value || value->type != Cell::Type::integer) {
-        return make_error_cell("i64 typed slot expects an integer value");
+        return make_type_error_cell("i64 typed slot expects an integer value", "i64", value);
     }
 
     return nullptr;
