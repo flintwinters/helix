@@ -281,6 +281,7 @@ void attach_source_location(ErrorDetails& details, ConstCellPtr source);
 void attach_error_location(CellPtr error, ConstCellPtr source);
 shared_ptr<MapCell> materialize_error_details(const ErrCell& error);
 void absorb_error_details(ErrCell& error, CellPtr details);
+void attach_error_details(ErrCell& error, ErrorDetails details);
 void attach_error_details(CellPtr error, ErrorDetails details);
 CellPtr map_field_cell(ConstCellPtr map_cell, const string& key);
 CellPtr cell_at_path(CellPtr root_cell, ConstCellPtr path_cell);
