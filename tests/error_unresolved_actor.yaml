@@ -10,7 +10,7 @@ expected:
       signal_type: error
       message: lookup failed because the requested member was not found
       value:
-        kind: lookup_error
+        type: lookup_error
         name: bogus
         receiver_type: VmCell
         failed_segment: bogus
