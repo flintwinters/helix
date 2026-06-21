@@ -141,7 +141,7 @@ static CellPtr resolve_or_signal(CellPtr node, const shared_ptr<VmCell>& root_ce
 
     if (value && original && value.get() == original.get() && value->type == Cell::Type::string) {
         shared_ptr<MapCell> details = make_shared<MapCell>();
-        details->set(CellField::kind, make_shared<StrCell>(CellValue::unresolved_name));
+        details->set(CellField::type, make_shared<StrCell>(CellValue::unresolved_name));
         details->set(CellField::name, make_shared<StrCell>(static_cast<const StrCell&>(*value).value));
         details->set(CellField::context_type, make_shared<StrCell>(cell_class_name(root_cell)));
         return make_error("builtin resolution failed", details);
@@ -442,10 +442,10 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
     }
 
     shared_ptr<MapCell> error_details = expect_map_cell(static_cast<ErrCell&>(*target_cell).value);
-    const StrCell* kind_cell = error_details ? map_field_string(error_details, CellField::kind) : nullptr;
+    const StrCell* type_cell = error_details ? map_field_string(error_details, CellField::type) : nullptr;
     const StrCell* prefix_cell = error_details ? map_field_string(error_details, CellField::resolved_prefix) : nullptr;
     const StrCell* segment_cell = error_details ? map_field_string(error_details, CellField::failed_segment) : nullptr;
-    if (!kind_cell || kind_cell->value != CellValue::lookup_error || !prefix_cell || !segment_cell) {
+    if (!type_cell || type_cell->value != CellValue::lookup_error || !prefix_cell || !segment_cell) {
         return target_cell;
     }
 
