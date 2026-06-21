@@ -168,6 +168,20 @@ static CellPtr resolve_name_like(CellPtr name_cell, const shared_ptr<VmCell>& ro
     return resolve_cell_fn(move(name_cell), root_cell);
 }
 
+static CellPtr assign_field_or_slot(const shared_ptr<MapCell>& receiver, const string& key, CellPtr value) {
+    if (!receiver) {
+        return make_error("set target must resolve to a map-like cell");
+    }
+
+    CellPtr existing = map_field_cell(receiver, key);
+    if (is_typed_slot(existing)) {
+        return set_typed_slot_value(static_pointer_cast<MapCell>(existing), move(value));
+    }
+
+    receiver->set(key, move(value));
+    return nullptr;
+}
+
 static bool is_truthy(ConstCellPtr cell) {
     if (!cell || cell->type == Cell::Type::nil) {
         return false;
@@ -402,19 +416,28 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
     const string& name = static_cast<const StrCell&>(*name_cell).value;
     shared_ptr<MapCell> target_scope = nearest_scope_like(name_cell, root_cell);
     if (name.find('.') == string::npos) {
-        target_scope->set(name, value);
+        CellPtr assignment_error = assign_field_or_slot(target_scope, name, value);
+        if (assignment_error) {
+            return assignment_error;
+        }
         return value;
     }
 
     CellPtr target_cell = resolve_name_like(name_cell, root_cell);
     if (!is_signal_cell(target_cell)) {
         shared_ptr<MapCell> target_parent = expect_map_cell(target_cell ? target_cell->parent : nullptr);
+        if (is_typed_slot(target_parent)) {
+            target_parent = expect_map_cell(target_parent->parent);
+        }
         if (!target_parent) {
             return make_error("set dotted target must resolve to a map-like parent");
         }
 
         size_t last_dot = name.rfind('.');
-        target_parent->set(name.substr(last_dot + 1), value);
+        CellPtr assignment_error = assign_field_or_slot(target_parent, name.substr(last_dot + 1), value);
+        if (assignment_error) {
+            return assignment_error;
+        }
         return value;
     }
 
@@ -438,7 +461,10 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
         return make_error("set dotted target must resolve to a map-like cell");
     }
 
-    receiver_map->set(segment_cell->value, value);
+    CellPtr assignment_error = assign_field_or_slot(receiver_map, segment_cell->value, value);
+    if (assignment_error) {
+        return assignment_error;
+    }
     return value;
 }
 
