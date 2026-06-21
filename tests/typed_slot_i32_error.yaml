@@ -1,0 +1,17 @@
+program:
+  x:
+    type: i32
+    value: 5
+  main: [set, x, null]
+expected:
+  x:
+    type: i32
+    value: 5
+  main: [set, x, null]
+  state:
+    status: error
+    frames: []
+    error: i32 typed slot expects an integer value
+    result:
+      signal_type: error
+      message: i32 typed slot expects an integer value
