@@ -17,7 +17,8 @@ from hcc import dump_program as dump_hcc_program
 INCLUDE_DIRECTORIES = ["include", "src", "ryml/src", "ryml/ext/c4core/src"]
 INCLUDES = " ".join(f"-I{directory}" for directory in INCLUDE_DIRECTORIES)
 COMPILER = "g++"
-CPP_FLAGS = "-std=c++20 -ffunction-sections -fdata-sections"
+BASE_CPP_FLAGS = "-std=c++20 -ffunction-sections -fdata-sections"
+SIZE_OPTIMIZATION_FLAG = "-Os"
 LINKER_FLAGS = "-Wl,--gc-sections -L ryml/build -lryml"
 DYNAMIC_LIBRARY_LINKER_FLAGS = "-rdynamic -ldl"
 SFML_MODULE = "build/sfml.so"
@@ -47,9 +48,12 @@ def validate_native_module_isolation():
     return True
 
 
-def compile_cpp_flags(dynamic_libraries):
+def compile_cpp_flags(dynamic_libraries, optimize_size=False):
     enabled = "1" if dynamic_libraries else "0"
-    return f"{CPP_FLAGS} -DHELIX_ENABLE_DYNAMIC_LIBRARIES={enabled}"
+    flags = BASE_CPP_FLAGS
+    if optimize_size:
+        flags = f"{flags} {SIZE_OPTIMIZATION_FLAG}"
+    return f"{flags} -DHELIX_ENABLE_DYNAMIC_LIBRARIES={enabled}"
 
 
 def compile_linker_flags(dynamic_libraries):
@@ -62,13 +66,13 @@ def command_exists(command_name):
     return shutil.which(command_name) is not None
 
 
-def compile_main(dynamic_libraries=True):
+def compile_main(dynamic_libraries=True, optimize_size=False):
     """Compiles the runtime sources into an executable."""
     if not validate_native_module_isolation():
         return False
 
     os.makedirs(OBJECT_DIRECTORY, exist_ok=True)
-    cpp_flags = compile_cpp_flags(dynamic_libraries)
+    cpp_flags = compile_cpp_flags(dynamic_libraries, optimize_size)
 
     object_files = []
     for source_path in SOURCES.split():
@@ -100,12 +104,13 @@ def compile_main(dynamic_libraries=True):
     return True
 
 
-def compile_sfml_module():
+def compile_sfml_module(optimize_size=False):
     """Compiles the SFML wrapper into a native include module."""
     os.makedirs(os.path.dirname(SFML_MODULE), exist_ok=True)
+    cpp_flags = compile_cpp_flags(dynamic_libraries=True, optimize_size=optimize_size)
 
     compile_command = (
-        f"{COMPILER} -fPIC -shared {SFML_MODULE_SOURCE} {CPP_FLAGS} {INCLUDES} "
+        f"{COMPILER} -fPIC -shared {SFML_MODULE_SOURCE} {cpp_flags} {INCLUDES} "
         f"-o {SFML_MODULE} {SFML_MODULE_LINKER_FLAGS}"
     )
     result = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
@@ -511,13 +516,13 @@ def split_runtime_output(stdout):
 
 def print_usage(script_name="run.py"):
     print("usage:")
-    print(f"  python3 {script_name} [--lib] [--no-dynamic-libraries]")
+    print(f"  python3 {script_name} [--lib] [--no-dynamic-libraries] [--optimize-size]")
     print("                                             # compile C++, optional libs, tidy, cloc, and run C++ fixtures")
-    print(f"  python3 {script_name} build [--lib] [--no-dynamic-libraries]")
+    print(f"  python3 {script_name} build [--lib] [--no-dynamic-libraries] [--optimize-size]")
     print("                                             # compile the C++ scaffold and optional libs only")
-    print(f"  python3 {script_name} cpp-test [--lib] [--no-dynamic-libraries]")
+    print(f"  python3 {script_name} cpp-test [--lib] [--no-dynamic-libraries] [--optimize-size]")
     print("                                             # compile C++, optional libs, and run native fixtures")
-    print(f"  python3 {script_name} hcc-test [--lib] [--no-dynamic-libraries]")
+    print(f"  python3 {script_name} hcc-test [--lib] [--no-dynamic-libraries] [--optimize-size]")
     print("                                             # compile C++, optional libs, and run HCC fixtures")
 
 
@@ -525,6 +530,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
     arguments = sys.argv[1:] if arguments is None else arguments
     compile_libs = False
     dynamic_libraries = True
+    optimize_size = False
     filtered_arguments = []
 
     for argument in arguments:
@@ -533,6 +539,9 @@ def main(arguments=None, default_command="default", script_name="run.py"):
             continue
         if argument == "--no-dynamic-libraries":
             dynamic_libraries = False
+            continue
+        if argument == "--optimize-size":
+            optimize_size = True
             continue
         filtered_arguments.append(argument)
 
@@ -552,16 +561,16 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         sys.exit(1)
 
     if command == "build":
-        if not compile_main(dynamic_libraries):
+        if not compile_main(dynamic_libraries, optimize_size):
             sys.exit(1)
-        if compile_libs and not compile_sfml_module():
+        if compile_libs and not compile_sfml_module(optimize_size):
             sys.exit(1)
         return
 
     if command in {"cpp-test", "test-cpp"}:
-        if not compile_main(dynamic_libraries):
+        if not compile_main(dynamic_libraries, optimize_size):
             sys.exit(1)
-        if compile_libs and not compile_sfml_module():
+        if compile_libs and not compile_sfml_module(optimize_size):
             sys.exit(1)
         num_failed = run_tests("cpp")
         if num_failed > 0:
@@ -569,9 +578,9 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         return
 
     if command in {"hcc-test", "test-hcc"}:
-        if not compile_main(dynamic_libraries):
+        if not compile_main(dynamic_libraries, optimize_size):
             sys.exit(1)
-        if compile_libs and not compile_sfml_module():
+        if compile_libs and not compile_sfml_module(optimize_size):
             sys.exit(1)
         num_failed = run_hcc_tests("cpp")
         if num_failed > 0:
@@ -583,10 +592,10 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         print_usage(script_name)
         sys.exit(1)
 
-    if not compile_main(dynamic_libraries):
+    if not compile_main(dynamic_libraries, optimize_size):
         sys.exit(1)
 
-    if compile_libs and not compile_sfml_module():
+    if compile_libs and not compile_sfml_module(optimize_size):
         sys.exit(1)
 
     if not run_clang_tidy():
