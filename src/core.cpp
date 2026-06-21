@@ -247,26 +247,6 @@ bool is_map_like_cell(ConstCellPtr cell) {
         || cell->type == Cell::Type::vm;
 }
 
-CellPtr source_location_cell(ConstCellPtr cell) {
-    ErrorDetailValue location = source_location_detail(cell);
-    if (location.type != ErrorDetailValue::Type::map) {
-        return nullptr;
-    }
-
-    return cell_from_error_detail(location);
-}
-
-void attach_source_location(const shared_ptr<MapCell>& details, ConstCellPtr source) {
-    if (!details) {
-        return;
-    }
-
-    CellPtr location = source_location_cell(source);
-    if (location) {
-        details->value[CellField::location] = move(location);
-    }
-}
-
 void attach_source_location(ErrorDetails& details, ConstCellPtr source) {
     ErrorDetailValue location = source_location_detail(source);
     if (location.type == ErrorDetailValue::Type::map) {
