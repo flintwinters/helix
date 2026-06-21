@@ -25,5 +25,3 @@ expected:
     result: 12
     frames: []
     status: finished
-
-x: 0:i32

@@ -17,7 +17,7 @@ from hcc import dump_program as dump_hcc_program
 INCLUDE_DIRECTORIES = ["include", "src", "ryml/src", "ryml/ext/c4core/src"]
 INCLUDES = " ".join(f"-I{directory}" for directory in INCLUDE_DIRECTORIES)
 COMPILER = "g++"
-CPP_FLAGS = "-std=c++20 -Os -ffunction-sections -fdata-sections"
+CPP_FLAGS = "-std=c++20 -ffunction-sections -fdata-sections"
 LINKER_FLAGS = "-Wl,--gc-sections -L ryml/build -lryml"
 DYNAMIC_LIBRARY_LINKER_FLAGS = "-rdynamic -ldl"
 SFML_MODULE = "build/sfml.so"
