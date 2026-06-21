@@ -9,3 +9,7 @@ expected:
     result:
       signal_type: error
       message: add expects exactly 2 arguments
+      value:
+        location:
+          line: 2
+          column: 3
