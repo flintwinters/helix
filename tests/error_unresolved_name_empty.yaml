@@ -16,3 +16,6 @@ expected:
         type: unresolved_name
         name: ""
         context_type: VmCell
+        location:
+          line: 3
+          column: 4
