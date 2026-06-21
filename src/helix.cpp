@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -117,6 +118,30 @@ static void attach_error_source(ErrCell& error, CellPtr source) {
     details->set(CellField::source, move(source));
 }
 
+static bool has_error_details(const ErrCell& error) {
+    shared_ptr<MapCell> details = expect_map_cell(error.value);
+    if (!details) {
+        return error.value != nullptr;
+    }
+
+    return any_of(
+        details->value.begin(),
+        details->value.end(),
+        [](const auto& field) { return field.first != CellField::debug; });
+}
+
+static void preserve_error_debug(const ErrCell& error, const shared_ptr<MapCell>& details) {
+    shared_ptr<MapCell> existing_details = expect_map_cell(error.value);
+    if (!details || !existing_details) {
+        return;
+    }
+
+    CellPtr debug = map_field_cell(existing_details, CellField::debug);
+    if (debug && !map_field_cell(details, CellField::debug)) {
+        details->set(CellField::debug, move(debug));
+    }
+}
+
 static const Cell* lookup_context(ConstCellPtr node, const shared_ptr<VmCell>& root_cell) {
     for (ConstCellPtr current = node; current; current = current->parent) {
         if (current->type == Cell::Type::scope || current->type == Cell::Type::vm) {
@@ -141,8 +166,10 @@ static CellPtr resolve_cell(CellPtr node, const shared_ptr<VmCell>& root_cell) {
     CellPtr resolved = context ? context->lookup(name, root_cell) : nullptr;
     if (resolved && resolved->type == Cell::Type::error_signal) {
         ErrCell& error = static_cast<ErrCell&>(*resolved);
-        if (!error.value) {
-            error.value = make_resolution_details(CellValue::resolution_error, name, context, node);
+        if (!has_error_details(error)) {
+            shared_ptr<MapCell> details = make_resolution_details(CellValue::resolution_error, name, context, node);
+            preserve_error_debug(error, details);
+            error.value = move(details);
         } else {
             attach_error_source(error, node);
         }
