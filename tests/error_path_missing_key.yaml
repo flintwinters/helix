@@ -13,6 +13,9 @@ expected:
       message: object path map key was not found
       value:
         type: path_error
+        location:
+          line: 3
+          column: 5
         segment_index: 0
         receiver_type: VmCell
         segment: missing
