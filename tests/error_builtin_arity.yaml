@@ -10,6 +10,10 @@ expected:
       signal_type: error
       message: add expects exactly 2 arguments
       value:
+        debug:
+          cpp_file: src/core.cpp
+          cpp_function: expect_form_arity
+          cpp_line: 637
         location:
           line: 2
           column: 3
