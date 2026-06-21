@@ -19,3 +19,6 @@ expected:
         type: type_error
         expected_type: i32
         actual_type: NilCell
+        location:
+          line: 7
+          column: 3
