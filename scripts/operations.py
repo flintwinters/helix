@@ -199,9 +199,12 @@ def run_binary_size_report():
     return True
 
 
-def runtime_command(program_path, runtime):
+def runtime_command(program_path, runtime, use_valgrind=False):
     if runtime == "cpp":
-        return [*VALGRIND_ARGS, f"./{EXECUTABLE}", program_path], True
+        command = [f"./{EXECUTABLE}", program_path]
+        if use_valgrind:
+            return [*VALGRIND_ARGS, *command], True
+        return command, False
     raise ValueError(f"unsupported runtime: {runtime}")
 
 
@@ -230,7 +233,7 @@ def normalize_fragment_list(value):
     return [value] if isinstance(value, str) else value
 
 
-def evaluate_program_fixture(test_name, fixture, program_path, runtime):
+def evaluate_program_fixture(test_name, fixture, program_path, runtime, use_valgrind=False):
     failure_lines = []
 
     smoke_test = fixture.get("mode") in {"smoke", "run-only"}
@@ -246,7 +249,7 @@ def evaluate_program_fixture(test_name, fixture, program_path, runtime):
             ["non-run-only fixtures must contain 'expected'"],
         )
 
-    command, under_valgrind = runtime_command(program_path, runtime)
+    command, under_valgrind = runtime_command(program_path, runtime, use_valgrind)
     result = subprocess.run(
         command,
         capture_output=True,
@@ -365,8 +368,12 @@ def run_fixture_tests(test_directory, run_test_case):
     return len(failed_results)
 
 
-def run_tests(runtime="cpp"):
+def run_tests(runtime="cpp", use_valgrind=False):
     """Discovers and runs YAML fixtures in the 'tests' directory."""
+    if use_valgrind and not command_exists("valgrind"):
+        print("valgrind not found; install valgrind or run without --valgrind.")
+        return 1
+
     def run_test_case(test_path):
         test_name = os.path.relpath(test_path, "tests")
         fixture, error = load_yaml_fixture(test_path, test_name)
@@ -399,7 +406,7 @@ def run_tests(runtime="cpp"):
                 should_delete_program = True
 
         try:
-            return evaluate_program_fixture(test_name, fixture, program_path, runtime)
+            return evaluate_program_fixture(test_name, fixture, program_path, runtime, use_valgrind)
         finally:
             if should_delete_program:
                 os.unlink(program_path)
@@ -407,8 +414,12 @@ def run_tests(runtime="cpp"):
     return run_fixture_tests("tests", run_test_case)
 
 
-def run_hcc_tests(runtime="cpp"):
+def run_hcc_tests(runtime="cpp", use_valgrind=False):
     """Discovers and runs C-to-Helix fixtures in the 'hcc/tests' directory."""
+    if use_valgrind and not command_exists("valgrind"):
+        print("valgrind not found; install valgrind or run without --valgrind.")
+        return 1
+
     def run_test_case(test_path):
         test_name = os.path.relpath(test_path, "hcc/tests")
         fixture, error = load_yaml_fixture(test_path, test_name)
@@ -469,7 +480,7 @@ def run_hcc_tests(runtime="cpp"):
                 runtime_fixture = dict(fixture)
                 runtime_fixture["expected"] = expected
 
-            return evaluate_program_fixture(test_name, runtime_fixture, program_path, runtime)
+            return evaluate_program_fixture(test_name, runtime_fixture, program_path, runtime, use_valgrind)
         except Exception as exc:
             return test_result(test_name, False, [f"hcc compile failed: {exc}"])
         finally:
@@ -516,13 +527,13 @@ def split_runtime_output(stdout):
 
 def print_usage(script_name="run.py"):
     print("usage:")
-    print(f"  python3 {script_name} [--lib] [--no-dynamic-libraries] [--optimize-size]")
+    print(f"  python3 {script_name} [--lib] [--no-dynamic-libraries] [--optimize-size] [--valgrind]")
     print("                                             # compile C++, optional libs, tidy, cloc, and run C++ fixtures")
     print(f"  python3 {script_name} build [--lib] [--no-dynamic-libraries] [--optimize-size]")
     print("                                             # compile the C++ scaffold and optional libs only")
-    print(f"  python3 {script_name} cpp-test [--lib] [--no-dynamic-libraries] [--optimize-size]")
+    print(f"  python3 {script_name} cpp-test [--lib] [--no-dynamic-libraries] [--optimize-size] [--valgrind]")
     print("                                             # compile C++, optional libs, and run native fixtures")
-    print(f"  python3 {script_name} hcc-test [--lib] [--no-dynamic-libraries] [--optimize-size]")
+    print(f"  python3 {script_name} hcc-test [--lib] [--no-dynamic-libraries] [--optimize-size] [--valgrind]")
     print("                                             # compile C++, optional libs, and run HCC fixtures")
 
 
@@ -531,6 +542,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
     compile_libs = False
     dynamic_libraries = True
     optimize_size = False
+    use_valgrind = False
     filtered_arguments = []
 
     for argument in arguments:
@@ -542,6 +554,9 @@ def main(arguments=None, default_command="default", script_name="run.py"):
             continue
         if argument == "--optimize-size":
             optimize_size = True
+            continue
+        if argument == "--valgrind":
+            use_valgrind = True
             continue
         filtered_arguments.append(argument)
 
@@ -572,7 +587,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
             sys.exit(1)
         if compile_libs and not compile_sfml_module(optimize_size):
             sys.exit(1)
-        num_failed = run_tests("cpp")
+        num_failed = run_tests("cpp", use_valgrind)
         if num_failed > 0:
             sys.exit(1)
         return
@@ -582,7 +597,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
             sys.exit(1)
         if compile_libs and not compile_sfml_module(optimize_size):
             sys.exit(1)
-        num_failed = run_hcc_tests("cpp")
+        num_failed = run_hcc_tests("cpp", use_valgrind)
         if num_failed > 0:
             sys.exit(1)
         return
@@ -602,7 +617,7 @@ def main(arguments=None, default_command="default", script_name="run.py"):
         sys.exit(1)
 
 
-    num_failed = run_tests("cpp")
+    num_failed = run_tests("cpp", use_valgrind)
 
     if not run_cloc():
         sys.exit(1)
