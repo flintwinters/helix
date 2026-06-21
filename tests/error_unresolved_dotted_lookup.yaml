@@ -19,6 +19,10 @@ expected:
         receiver_type: ScopeCell
         failed_segment: missing
         resolved_prefix: outer
+        debug:
+          cpp_file: src/core.cpp
+          cpp_function: make_lookup_error
+          cpp_line: <present>
         location:
           line: 3
           column: 1
