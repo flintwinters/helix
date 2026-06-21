@@ -1,0 +1,11 @@
+program:
+  main: [add, 1]
+expected:
+  main: [add, 1]
+  state:
+    status: error
+    frames: []
+    error: add expects exactly 2 arguments
+    result:
+      signal_type: error
+      message: add expects exactly 2 arguments
