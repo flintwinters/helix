@@ -2,8 +2,6 @@
 
 Helix is an experimental C++ runtime for structured, versioned program state.
 
-[![Helix demo video](https://img.youtube.com/vi/WamNcUSqt1w/hqdefault.jpg)](https://youtu.be/WamNcUSqt1w)
-
 ## Current Features Overview
 
 IMPLEMENTED NOW:
@@ -26,3 +24,5 @@ __HCC: Compile C99 into readable Helix YAML__
 - Run on RP2040
 - Run on FPGA RV32 softcore (icesugar pro, vexriscv, litex)
 - Some kind of Lean4 library to operate on Helix YAML source as a hyperlinter
+
+[![Helix demo video](https://img.youtube.com/vi/WamNcUSqt1w/hqdefault.jpg)](https://youtu.be/WamNcUSqt1w)
