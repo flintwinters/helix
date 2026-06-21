@@ -1,0 +1,16 @@
+program:
+  breakpoints: 5
+  main: 1
+expected:
+  breakpoints: 5
+  main: 1
+  state:
+    status: error
+    frames: []
+    error: VM breakpoints must be a vector
+    result:
+      signal_type: error
+      message: VM breakpoints must be a vector
+      value:
+        type: breakpoint_error
+        source: 5
