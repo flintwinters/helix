@@ -443,8 +443,8 @@ static CellPtr builtin_set(const vector<CellPtr>& arguments, CellPtr current_vm)
 }
 
 static bool is_user_function(ConstCellPtr cell) {
-    const StrCell* kind = map_field_string(cell, CellField::kind);
-    return kind && kind->value == CellValue::function
+    const StrCell* type = map_field_string(cell, CellField::type);
+    return type && type->value == CellValue::function
         && map_field_vec(cell, CellField::params)
         && map_field_vec(cell, CellField::body);
 }
