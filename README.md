@@ -4,13 +4,18 @@ Helix is an experimental C++ runtime for structured, versioned program state.
 
 ## Overview
 
-IMPLEMENTED:
-- Native runtime for executing YAML object graphs as mutable computational state.
-- Working microVM-style execution model with stepping, child VMs, signals, frames, and object-path program counters.
-- Git-backed debugger workflow that turns every stepped YAML state into branchable execution history.
-- Fixture-tested language core covering control flow, functions, includes, typed slots, dotted lookup, errors, and builtins.
-- HCC compiler path that lowers a small freestanding C subset into readable Helix YAML and runs it through the same runtime tests.
-- Research codebase with real working mechanisms today and a larger object-system architecture still under active design.
+- YAML programs run in a native C++ runtime, so program state can be stored,
+  inspected, and edited as ordinary structured data.
+- The runtime can step programs, call functions, run loops and branches, resolve
+  names, include files, enforce typed slots, and report structured errors.
+- Programs can start and step child VMs, which makes nested execution explicit
+  instead of hiding it inside a call stack.
+- The debugger saves each stepped YAML state as a git commit, so execution can
+  be rewound, branched, compared, and resumed with normal version-control tools.
+- HCC compiles a small C subset into readable Helix YAML, making compiled output
+  inspectable instead of opaque.
+- Runtime and compiler behavior are covered by YAML fixtures, so current behavior
+  is easy to review and regression-test.
 
 ## Working Today
 
