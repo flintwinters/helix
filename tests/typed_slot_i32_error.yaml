@@ -16,6 +16,6 @@ expected:
       signal_type: error
       message: i32 typed slot expects an integer value
       value:
-        kind: type_error
+        type: type_error
         expected_type: i32
         actual_type: NilCell
