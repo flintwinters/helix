@@ -25,4 +25,6 @@ __HCC: Compile C99 into readable Helix YAML__
 - Run on FPGA RV32 softcore (icesugar pro, vexriscv, litex)
 - Some kind of Lean4 library to operate on Helix YAML source as a hyperlinter
 
+## Demo (turn up volume)
+
 [![Helix demo video](https://img.youtube.com/vi/WamNcUSqt1w/hqdefault.jpg)](https://youtu.be/WamNcUSqt1w)
