@@ -2,15 +2,7 @@
 
 Helix is an experimental C++ runtime for structured, versioned program state.
 
-<iframe
-  width="560"
-  height="315"
-  src="https://www.youtube.com/embed/WamNcUSqt1w"
-  title="Helix demo video"
-  frameborder="0"
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-  allowfullscreen>
-</iframe>
+[![Helix demo video](https://img.youtube.com/vi/WamNcUSqt1w/hqdefault.jpg)](https://youtu.be/WamNcUSqt1w)
 
 ## Current Features Overview
 
