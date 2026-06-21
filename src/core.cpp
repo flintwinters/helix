@@ -326,6 +326,14 @@ static CellPtr validate_i32_value(ConstCellPtr value) {
     return nullptr;
 }
 
+static CellPtr validate_i64_value(ConstCellPtr value) {
+    if (!value || value->type != Cell::Type::integer) {
+        return make_error_cell("i64 typed slot expects an integer value");
+    }
+
+    return nullptr;
+}
+
 static CellPtr validate_typed_slot_value(ConstCellPtr slot_cell, ConstCellPtr value) {
     const StrCell* type_cell = map_field_string(slot_cell, CellField::type);
     if (!type_cell) {
@@ -334,6 +342,9 @@ static CellPtr validate_typed_slot_value(ConstCellPtr slot_cell, ConstCellPtr va
 
     if (type_cell->value == "i32") {
         return validate_i32_value(value);
+    }
+    if (type_cell->value == "i64") {
+        return validate_i64_value(value);
     }
 
     return make_error_cell("unsupported typed slot type: " + type_cell->value);
