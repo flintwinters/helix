@@ -17,6 +17,10 @@ expected:
         type: type_error
         expected_type: i64
         actual_type: NilCell
+        debug:
+          cpp_file: src/core.cpp
+          cpp_function: make_type_error_cell
+          cpp_line: <present>
         location:
           line: 5
           column: 3
