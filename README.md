@@ -4,8 +4,8 @@ Helix is an experimental C++ runtime for structured, versionable object graphs.
 Programs are represented as YAML graphs, executed by a native runtime, and tested
 through fixture-based snapshots.
 
-The repository also includes HCC, a small proof-of-concept compiler that lowers a
-freestanding subset of C into readable Helix YAML.
+The repository also includes HCC, a proof-of-concept compiler for lowering a
+small freestanding C subset into readable Helix YAML.
 
 ## Current State
 
@@ -21,7 +21,7 @@ The runtime currently supports:
 This is an early research codebase. The implementation is usable for the checked
 fixtures and demos, but the object model and runtime interfaces are still changing.
 
-## Requirements
+## Tooling
 
 - Python 3.13 or newer.
 - `uv` for Python environment management.
@@ -29,83 +29,34 @@ fixtures and demos, but the object model and runtime interfaces are still changi
 - A built `ryml` dependency at `ryml/build` for linking the C++ runtime.
 - Optional: `clang-tidy-20`, `cloc`, `valgrind`, and SFML development libraries.
 
-Install Python dependencies with:
+Common commands:
 
 ```bash
 uv sync
-```
-
-## Build and Test
-
-Build the C++ runtime:
-
-```bash
 uv run python run.py build
-```
-
-Run the default runtime checks:
-
-```bash
 uv run python run.py
-```
-
-Run only native YAML fixtures:
-
-```bash
 uv run python run.py cpp-test
-```
-
-Run HCC compiler fixtures:
-
-```bash
 uv run python run.py hcc-test
-```
-
-Useful options:
-
-- `--fail-fast` stops on the first failing fixture.
-- `--valgrind` runs fixtures under Valgrind when available.
-- `--no-dynamic-libraries` builds without dynamic library support.
-- `--no-cpp-linenums` disables C++ source-location debug output.
-- `--optimize-size` adds size optimization flags.
-- `--lib` also builds the optional SFML native module.
-
-## Running Programs
-
-After building, run a Helix YAML program with:
-
-```bash
 ./build/helix helix_demo.yaml
-```
-
-Compile a supported C source file to Helix YAML with:
-
-```bash
 uv run python -m hcc path/to/source.c -o program.yaml
-```
-
-Omit `-o` to write generated YAML to stdout. Pass `--cpp` when the C source
-needs preprocessing before parsing.
-
-## Debugger
-
-`tui/helix_step.py` advances a target YAML VM by one child-VM step. By default it
-copies the target into a local `debug_<name>` directory, initializes a git
-repository there, and commits each stepped state as a snapshot. Runtime state
-stored in YAML, including `state.status`, `state.frames`, `state.result`, and
-object-path program counters, becomes ordinary versioned program data.
-
-Step a program with:
-
-```bash
 uv run python tui/helix_step.py program.yaml
 ```
 
-Useful options:
+`run.py` supports `build`, `cpp-test`, and `hcc-test`; with no subcommand it runs
+the default build, tidy, fixture, line-count, and binary-size checks. Shared
+options include `--fail-fast`, `--valgrind`, `--no-dynamic-libraries`,
+`--no-cpp-linenums`, `--optimize-size`, and `--lib`.
 
-- `--tui` enables interactive branch and snapshot navigation.
-- `--no-vcs` runs without git-backed state history.
-- `--binary /path/to/helix` uses a specific runtime binary.
+HCC is available as `uv run python -m hcc`. It writes YAML to stdout by default
+or to `-o`; `--cpp` enables preprocessing before parsing.
+
+## Debugger
+
+`tui/helix_step.py` advances a target YAML VM by one child-VM step. The default
+workflow copies the target into `debug_<name>`, initializes git there, and
+commits each stepped state. `--tui` enables branch and snapshot navigation,
+`--no-vcs` disables the snapshot repository, and `--binary` selects a runtime
+binary.
 
 ## Repository Hygiene
 
