@@ -38,6 +38,7 @@ static CellPtr breakpoint_error(const string& message, ConstCellPtr source) {
     details->set(CellField::type, make_shared<StrCell>(CellValue::breakpoint_error));
     if (source) {
         details->set(CellField::source, const_pointer_cast<Cell>(source));
+        attach_source_location(details, source);
     }
     return make_error_cell(message, details);
 }
@@ -101,6 +102,7 @@ static shared_ptr<MapCell> make_resolution_details(
     details->set(CellField::context_type, make_shared<StrCell>(cell_class_name(context)));
     if (source) {
         details->set(CellField::source, source);
+        attach_source_location(details, source);
     }
     return details;
 }
@@ -110,7 +112,9 @@ static void attach_error_source(ErrCell& error, CellPtr source) {
         return;
     }
 
-    static_pointer_cast<MapCell>(error.value)->set(CellField::source, move(source));
+    shared_ptr<MapCell> details = static_pointer_cast<MapCell>(error.value);
+    attach_source_location(details, source);
+    details->set(CellField::source, move(source));
 }
 
 static const Cell* lookup_context(ConstCellPtr node, const shared_ptr<VmCell>& root_cell) {
@@ -173,6 +177,7 @@ static CellPtr evaluate_form(const VecCell& form, const shared_ptr<VmCell>& root
         details->set(CellField::type, make_shared<StrCell>(CellValue::invalid_actor));
         details->set(CellField::actor_type, make_shared<StrCell>(cell_class_name(actor)));
         details->set(CellField::source, form.value.front());
+        attach_source_location(details, form.value.front());
         return make_error_cell("vector actor did not resolve to a builtin", details);
     }
 
