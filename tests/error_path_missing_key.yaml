@@ -1,0 +1,18 @@
+program:
+  main: [get, [missing]]
+expected:
+  main:
+    - get
+    - - missing
+  state:
+    status: error
+    frames: []
+    error: object path map key was not found
+    result:
+      signal_type: error
+      message: object path map key was not found
+      value:
+        type: path_error
+        segment_index: 0
+        receiver_type: VmCell
+        segment: missing
