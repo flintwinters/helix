@@ -275,8 +275,6 @@ ErrorDetailValue make_string_error_detail(string value);
 ErrorDetailValue make_map_error_detail(unordered_map<string, ErrorDetailValue> fields);
 ErrorDetailValue make_vec_error_detail(vector<ErrorDetailValue> elements);
 ErrorDetailValue make_cell_error_detail(ConstCellPtr cell);
-CellPtr source_location_cell(ConstCellPtr cell);
-void attach_source_location(const shared_ptr<MapCell>& details, ConstCellPtr source);
 void attach_source_location(ErrorDetails& details, ConstCellPtr source);
 void attach_error_location(CellPtr error, ConstCellPtr source);
 shared_ptr<MapCell> materialize_error_details(const ErrCell& error);
