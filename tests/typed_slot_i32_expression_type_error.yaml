@@ -1,0 +1,26 @@
+program:
+  x:i32: 5
+  main: [set, x, [if, 0, 10, null]]
+expected:
+  x:
+    type: i32
+    value: 5
+  main: [set, x, [if, 0, 10, null]]
+  state:
+    status: error
+    frames: []
+    error: i32 typed slot expects an integer value
+    result:
+      signal_type: error
+      message: i32 typed slot expects an integer value
+      value:
+        type: type_error
+        expected_type: i32
+        actual_type: NilCell
+        debug:
+          cpp_file: src/core.cpp
+          cpp_function: make_type_error_cell
+          cpp_line: <present>
+        location:
+          line: 5
+          column: 3

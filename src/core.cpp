@@ -589,6 +589,19 @@ static CellPtr make_type_error_cell(const string& message, const string& expecte
     return make_error_cell(message, move(details));
 }
 
+static CellPtr make_type_error_cell(
+    const string& message,
+    const string& expected_type,
+    const string& actual_type,
+    ConstCellPtr source) {
+    ErrorDetails details;
+    details.fields[CellField::type] = make_string_error_detail(CellValue::type_error);
+    details.fields[CellField::expected_type] = make_string_error_detail(expected_type);
+    details.fields[CellField::actual_type] = make_string_error_detail(actual_type);
+    attach_source_location(details, source);
+    return make_error_cell(message, move(details));
+}
+
 static CellPtr validate_i32_value(ConstCellPtr value) {
     if (!value || value->type != Cell::Type::integer) {
         return make_type_error_cell("i32 typed slot expects an integer value", "i32", value);
@@ -623,7 +636,11 @@ static CellPtr validate_typed_slot_value(ConstCellPtr slot_cell, ConstCellPtr va
         return validate_i64_value(value);
     }
 
-    return make_error_cell("unsupported typed slot type: " + type_cell->value);
+    return make_type_error_cell(
+        "unsupported typed slot type: " + type_cell->value,
+        "i32 or i64",
+        type_cell->value,
+        slot_cell);
 }
 
 CellPtr set_typed_slot_value(const shared_ptr<MapCell>& slot_cell, CellPtr value) {

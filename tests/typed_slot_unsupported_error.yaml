@@ -1,0 +1,26 @@
+program:
+  x:f32: 5
+  main: [set, x, 6]
+expected:
+  x:
+    type: f32
+    value: 5
+  main: [set, x, 6]
+  state:
+    status: error
+    frames: []
+    error: 'unsupported typed slot type: f32'
+    result:
+      signal_type: error
+      message: 'unsupported typed slot type: f32'
+      value:
+        type: type_error
+        expected_type: i32 or i64
+        actual_type: f32
+        debug:
+          cpp_file: src/core.cpp
+          cpp_function: make_type_error_cell
+          cpp_line: <present>
+        location:
+          line: 2
+          column: 3
