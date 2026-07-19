@@ -29,6 +29,7 @@ The runtime starts at the root mapping's `main`. A vector such as `[add, x, 1]` 
 | `scripts/operations.py` | Canonical build, analysis, fixture discovery, runtime/HCC test harnesses |
 | `run.py`, `hcc/build.py` | Thin repository and HCC workflow entrypoints; keep policy in `scripts/operations.py` |
 | `hcc/compiler.py` | `pycparser` C AST lowering to human-readable Helix forms |
+| `HCC_Plan.md` | HCC development cockpit: mission, debugging invariants, current checkpoint, roadmap, and verification state |
 | `tests/`, `hcc/tests/` | Executable YAML specifications for runtime behavior and C lowering |
 | `tui/helix_step.py` | Out-of-process stepping and branchable per-target Git snapshots |
 | `lib/sfml/` | Optional `.so` module; it must remain isolated from the core runtime binary |
@@ -72,6 +73,6 @@ Runtime fixtures contain exactly one of `program` or `source`; non-smoke fixture
 
 ## Current Boundaries
 
-- HCC intentionally targets readable output over optimization. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. Comparisons are planned; pointers, aggregates, allocation, and libc remain deferred.
+- HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
 - The TUI invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository; it is not an in-process debugger.
-- Verification on 2026-07-12: HCC fixtures pass 3/3. Runtime fixtures pass 44/46; `demo_source.yaml` and `include.yaml` require the ignored root files `helix_demo.yaml` and `helix_demo_include.yaml`, which are currently absent.
+- Verification on 2026-07-19: HCC fixtures pass 3/3. Runtime fixtures most recently passed 44/46 on 2026-07-12; `demo_source.yaml` and `include.yaml` require the ignored root files `helix_demo.yaml` and `helix_demo_include.yaml`, which are currently absent.
