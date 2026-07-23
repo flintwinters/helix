@@ -1,0 +1,41 @@
+title: Helix Demo
+desc: |
+  The Helix programming system:
+  demonstration of versioned program state
+  and procedural debugging abilities.
+
+include: [helix_demo_include.yaml]
+
+x: 5
+y: 8
+main: [list, run]
+run:
+  - [step, cell_vm]
+  - [step, cell_vm]
+  - [show, cell_vm]
+  - [set, total, [add, x, y]]
+  - [set, total, [add, total, y]]
+  - [set, seen, simple_cell_vm.inner.value]
+  - [set, included_seen, helix_demo_include.inner.value]
+  - [start, cell_vm]
+
+simple_cell_vm:
+  inner:
+    value: 43
+
+cell_vm:
+  x: 3
+  y: 4
+
+  main: [list, run]
+  run:
+    - [set, 1st, [add, x, y]]
+    - [set, 2nd, [add, 1st, y]]
+    - [set, 3rd, [add, 2nd, y]]
+    - [set, 4th, [add, 3rd, y]]
+    - [start, cell_vm.internal_cell_vm]
+
+  internal_cell_vm:
+    a: 7
+    b: 8
+    main: [set, total, [add, a, b]]

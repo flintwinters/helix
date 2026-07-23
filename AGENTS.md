@@ -61,6 +61,7 @@ uv run python tui/helix_step.py program.yaml
 The project requires Python 3.13+, C++20 `g++`, and a locally built `ryml` library at `ryml/build`. Useful workflow flags include `--fail-fast`, `--valgrind`, `--no-dynamic-libraries`, `--no-cpp-linenums`, `--optimize-size`, and `--lib`.
 
 Runtime fixtures contain exactly one of `program` or `source`; non-smoke fixtures provide `expected`, with optional stdout assertions. HCC fixtures provide `c_source` and normally assert both emitted `expected` YAML and `expected_state`. Add or tighten the nearest fixture whenever semantics change.
+Raw YAML programs used by source-backed runtime fixtures belong under `tests/assets/`; fixture discovery deliberately excludes every `assets` subtree.
 
 ## Change Discipline
 
@@ -75,4 +76,4 @@ Runtime fixtures contain exactly one of `program` or `source`; non-smoke fixture
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
 - The TUI invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository; it is not an in-process debugger.
-- Verification on 2026-07-19: HCC fixtures pass 3/3. Runtime fixtures most recently passed 44/46 on 2026-07-12; `demo_source.yaml` and `include.yaml` require the ignored root files `helix_demo.yaml` and `helix_demo_include.yaml`, which are currently absent.
+- Verification on 2026-07-22: runtime fixtures pass 46/46. HCC fixtures most recently passed 3/3 on 2026-07-19.

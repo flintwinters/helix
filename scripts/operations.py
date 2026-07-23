@@ -36,6 +36,7 @@ VALGRIND_ARGS = [
 PRESENT_SENTINEL = "<present>"
 LOCATION_FIELD = "location"
 POSITION_FIELDS = frozenset({"line", "column"})
+FIXTURE_ASSET_DIRECTORY = "assets"
 
 
 def comparable_output(value, ignored_fields):
@@ -410,12 +411,19 @@ def evaluate_program_fixture(
 
 
 def discover_yaml_fixtures(test_directory):
-    return sorted(
-        os.path.join(root, file_name)
-        for root, _, files in os.walk(test_directory)
-        for file_name in files
-        if file_name.endswith((".yaml", ".yml"))
-    )
+    fixture_paths = []
+    for root, directories, files in os.walk(test_directory):
+        directories[:] = [
+            directory
+            for directory in directories
+            if directory != FIXTURE_ASSET_DIRECTORY
+        ]
+        fixture_paths.extend(
+            os.path.join(root, file_name)
+            for file_name in files
+            if file_name.endswith((".yaml", ".yml"))
+        )
+    return sorted(fixture_paths)
 
 
 def run_fixture_tests(test_directory, run_test_case, fail_fast=False):

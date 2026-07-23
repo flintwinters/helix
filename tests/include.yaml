@@ -1,10 +1,10 @@
 program:
   base: 1
-  include: [helix_demo_include.yaml]
+  include: [tests/assets/helix_demo_include.yaml]
   main: [set, seen, helix_demo_include.inner.value]
 expected:
   base: 1
-  include: [helix_demo_include.yaml]
+  include: [tests/assets/helix_demo_include.yaml]
   main: [set, seen, helix_demo_include.inner.value]
   seen: 44
   helix_demo_include:

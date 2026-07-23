@@ -1,4 +1,4 @@
-source: helix_demo.yaml
+source: tests/assets/helix_demo.yaml
 expected:
   1st: 7
   2nd: 11
