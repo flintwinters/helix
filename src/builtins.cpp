@@ -650,6 +650,19 @@ static CellPtr builtin_eval(const vector<CellPtr>& arguments, CellPtr current_vm
     return evaluate_or_signal(code, root_cell);
 }
 
+static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "list", 1);
+    if (validation.error) {
+        return validation.error;
+    }
+
+    shared_ptr<VecCell> names = make_shared<VecCell>();
+    for (string& name : visible_scope_names(arguments.front(), validation.vm)) {
+        names->append(make_shared<StrCell>(move(name)));
+    }
+    return names;
+}
+
 static CellPtr builtin_run(const vector<CellPtr>& arguments, CellPtr current_vm) {
     BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "run");
     if (validation.error) {
@@ -899,6 +912,7 @@ shared_ptr<ScopeCell> make_zygote() {
     install_builtin(zygote, "mod", builtin_mod);
     install_builtin(zygote, "set", builtin_set);
     install_builtin(zygote, "eval", builtin_eval);
+    install_builtin(zygote, "list", builtin_list);
     install_builtin(zygote, "run", builtin_run);
     install_builtin(zygote, "append", builtin_append);
     install_builtin(zygote, "pop", builtin_pop);

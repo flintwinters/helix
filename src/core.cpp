@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <set>
 #include <utility>
 
 Cell::Cell() : parent(nullptr) {}
@@ -983,10 +984,54 @@ CellPtr MapCell::lookup_member(const string& name, const shared_ptr<VmCell>&) co
     return field_it->second;
 }
 
+const Cell* lookup_context(ConstCellPtr node, const shared_ptr<VmCell>& root_cell) {
+    for (ConstCellPtr current = move(node); current; current = current->parent) {
+        if (current->type == Cell::Type::scope || current->type == Cell::Type::vm) {
+            return current.get();
+        }
+    }
+
+    return root_cell.get();
+}
+
+static vector<const Cell*> lookup_receivers(const Cell* start, const shared_ptr<VmCell>& root_cell) {
+    vector<const Cell*> receivers;
+    bool reached_root = false;
+
+    for (const Cell* current = start; current; current = current->parent.get()) {
+        receivers.push_back(current);
+        reached_root = reached_root || current == root_cell.get();
+    }
+
+    if (root_cell && !reached_root) {
+        receivers.push_back(root_cell.get());
+    }
+
+    return receivers;
+}
+
+vector<string> visible_scope_names(ConstCellPtr node, const shared_ptr<VmCell>& root_cell) {
+    set<string> names;
+    for (const Cell* receiver : lookup_receivers(lookup_context(move(node), root_cell), root_cell)) {
+        if (receiver->type != Cell::Type::map
+            && receiver->type != Cell::Type::scope
+            && receiver->type != Cell::Type::vm) {
+            continue;
+        }
+
+        const MapCell& map = static_cast<const MapCell&>(*receiver);
+        for (const auto& [name, _] : map.value) {
+            names.insert(name);
+        }
+    }
+
+    return {names.begin(), names.end()};
+}
+
 static CellPtr lookup_from_scope_like(const Cell* start, const string& name, const shared_ptr<VmCell>& root_cell) {
     CellPtr first_error = nullptr;
 
-    for (const Cell* current = start; current; current = current->parent.get()) {
+    for (const Cell* current : lookup_receivers(start, root_cell)) {
         CellPtr resolved = lookup_path_from_receiver(current, name, root_cell);
         if (resolved && resolved->type == Cell::Type::error_signal) {
             if (!first_error) {
@@ -995,17 +1040,6 @@ static CellPtr lookup_from_scope_like(const Cell* start, const string& name, con
             continue;
         }
         if (resolved) {
-            return resolved;
-        }
-    }
-
-    if (root_cell && root_cell.get() != start) {
-        CellPtr resolved = lookup_path_from_receiver(root_cell.get(), name, root_cell);
-        if (resolved && resolved->type == Cell::Type::error_signal) {
-            if (!first_error) {
-                first_error = resolved;
-            }
-        } else if (resolved) {
             return resolved;
         }
     }

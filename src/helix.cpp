@@ -128,16 +128,6 @@ static bool has_error_details(const ErrCell& error) {
         [](const auto& field) { return field.first != CellField::debug; });
 }
 
-static const Cell* lookup_context(ConstCellPtr node, const shared_ptr<VmCell>& root_cell) {
-    for (ConstCellPtr current = node; current; current = current->parent) {
-        if (current->type == Cell::Type::scope || current->type == Cell::Type::vm) {
-            return current.get();
-        }
-    }
-
-    return root_cell.get();
-}
-
 static CellPtr resolve_cell(CellPtr node, const shared_ptr<VmCell>& root_cell) {
     if (!node) {
         return nullptr;

@@ -1,0 +1,19 @@
+program:
+  main: [list, ignored]
+expected:
+  main: [list, ignored]
+  state:
+    status: error
+    frames: []
+    error: list expects exactly 0 arguments
+    result:
+      signal_type: error
+      message: list expects exactly 0 arguments
+      value:
+        debug:
+          cpp_file: src/core.cpp
+          cpp_function: expect_form_arity
+          cpp_line: <present>
+        location:
+          line: 2
+          column: 3

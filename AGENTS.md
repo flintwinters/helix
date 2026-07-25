@@ -43,6 +43,7 @@ The runtime starts at the root mapping's `main`. A vector such as `[add, x, 1]` 
 - Signals are control flow. Propagate return/error signals immediately and materialize terminal state consistently under `state` (`status`, `frames`, `result`, and `error` when applicable).
 - YAML shape is a public behavioral contract. Preserve source locations, structured error details, include semantics, and round-trippable state.
 - Builtin argument vectors include the actor at index zero; use the shared arity/type/error helpers rather than open-coding validation.
+- `run` arms a resumable vector sequence. `list` returns the sorted, deduplicated binding names reachable through the same lexical receiver chain as ordinary lookup.
 - Dotted lookup, function definition scope, nested VMs, breakpoints, and typed assignments depend on parent topology. Clone only where ownership/isolation requires it.
 - Typed field sugar (`x:i32: 5`) becomes `{type: i32, value: 5}`. Assignment validation currently supports `i32` and `i64`.
 
@@ -76,4 +77,4 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
 - The TUI invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository; it is not an in-process debugger.
-- Verification on 2026-07-22: runtime fixtures pass 46/46. HCC fixtures most recently passed 3/3 on 2026-07-19.
+- Verification on 2026-07-25: runtime fixtures pass 50/50. HCC fixtures pass 3/3.

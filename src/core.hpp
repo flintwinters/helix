@@ -282,6 +282,8 @@ void absorb_error_details(ErrCell& error, CellPtr details);
 void attach_error_details(ErrCell& error, ErrorDetails details);
 void attach_error_details(CellPtr error, ErrorDetails details);
 CellPtr map_field_cell(ConstCellPtr map_cell, const string& key);
+const Cell* lookup_context(ConstCellPtr node, const shared_ptr<VmCell>& root_cell);
+vector<string> visible_scope_names(ConstCellPtr node, const shared_ptr<VmCell>& root_cell);
 CellPtr cell_at_path(CellPtr root_cell, ConstCellPtr path_cell);
 shared_ptr<VecCell> cell_path_from_root(const shared_ptr<VmCell>& root_cell, ConstCellPtr target_cell);
 bool cell_paths_equal(ConstCellPtr left_path, ConstCellPtr right_path);

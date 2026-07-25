@@ -1,0 +1,21 @@
+program:
+  value: 1
+  main: [run, value]
+expected:
+  value: 1
+  main: [run, value]
+  state:
+    status: error
+    frames: []
+    error: run expects a vector sequence
+    result:
+      signal_type: error
+      message: run expects a vector sequence
+      value:
+        debug:
+          cpp_file: src/builtins.cpp
+          cpp_function: make_error_at
+          cpp_line: <present>
+        location:
+          line: 4
+          column: 3

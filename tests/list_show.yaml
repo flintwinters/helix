@@ -1,0 +1,45 @@
+program:
+  actions:
+    - [show, 101]
+    - [show, [list]]
+    - [show, 202]
+  main: [run, actions]
+stdout: |
+  101
+  ...
+  - actions
+  - add
+  - append
+  - at
+  - call
+  - copy
+  - div
+  - eval
+  - get
+  - if
+  - list
+  - main
+  - mod
+  - mul
+  - pop
+  - return
+  - run
+  - set
+  - show
+  - start
+  - state
+  - step
+  - sub
+  - while
+  202
+  ...
+expected:
+  actions:
+    - [show, 101]
+    - [show, [list]]
+    - [show, 202]
+  main: [run, actions]
+  state:
+    result: null
+    frames: []
+    status: finished

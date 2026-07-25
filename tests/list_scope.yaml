@@ -1,0 +1,57 @@
+program:
+  argument: 99
+  global_value: 9
+  type: root
+  inspector:
+    type: function
+    params: [argument]
+    body:
+      - [set, local_value, argument]
+      - [return, [list]]
+  main: [call, inspector, [7]]
+expected:
+  argument: 99
+  global_value: 9
+  type: root
+  inspector:
+    type: function
+    params: [argument]
+    body:
+      - [set, local_value, argument]
+      - [return, [list]]
+  main: [call, inspector, [7]]
+  state:
+    result:
+      - __body
+      - add
+      - append
+      - argument
+      - at
+      - body
+      - call
+      - copy
+      - div
+      - eval
+      - get
+      - global_value
+      - if
+      - inspector
+      - list
+      - local_value
+      - main
+      - mod
+      - mul
+      - params
+      - pop
+      - return
+      - run
+      - set
+      - show
+      - start
+      - state
+      - step
+      - sub
+      - type
+      - while
+    frames: []
+    status: finished
