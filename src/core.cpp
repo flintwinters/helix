@@ -778,7 +778,7 @@ CellPtr vm_result(const shared_ptr<VmCell>& vm) {
     return map_field_cell(ensure_vm_state(vm), CellField::result);
 }
 
-bool arm_list_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t start_index) {
+bool arm_sequence_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t start_index) {
     shared_ptr<VecCell> sequence_path = cell_path_from_root(vm, sequence_cell);
     if (!sequence_path) {
         return false;

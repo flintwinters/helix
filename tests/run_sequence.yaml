@@ -2,12 +2,12 @@ program:
   steps:
     - [set, first, [add, 1, 2]]
     - [set, second, [add, first, 5]]
-  main: [list, steps]
+  main: [run, steps]
 expected:
   steps:
     - [set, first, [add, 1, 2]]
     - [set, second, [add, first, 5]]
-  main: [list, steps]
+  main: [run, steps]
   first: 3
   second: 8
   state:

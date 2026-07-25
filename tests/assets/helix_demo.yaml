@@ -8,8 +8,8 @@ include: [helix_demo_include.yaml]
 
 x: 5
 y: 8
-main: [list, run]
-run:
+main: [run, actions]
+actions:
   - [step, cell_vm]
   - [step, cell_vm]
   - [show, cell_vm]
@@ -27,8 +27,8 @@ cell_vm:
   x: 3
   y: 4
 
-  main: [list, run]
-  run:
+  main: [run, actions]
+  actions:
     - [set, 1st, [add, x, y]]
     - [set, 2nd, [add, 1st, y]]
     - [set, 3rd, [add, 2nd, y]]

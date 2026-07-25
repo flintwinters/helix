@@ -10,7 +10,7 @@ program:
     - [set, quotient, [div, product, 6]]
     - [set, remainder, [mod, product, 6]]
     - [set, difference, [sub, product, 6]]
-  main: [list, actions]
+  main: [run, actions]
 expected:
   numbers: [1, 2, 3]
   actions:
@@ -23,7 +23,7 @@ expected:
     - [set, quotient, [div, product, 6]]
     - [set, remainder, [mod, product, 6]]
     - [set, difference, [sub, product, 6]]
-  main: [list, actions]
+  main: [run, actions]
   appended: [1, 2, 3]
   second: 2
   clone: [1, 2, 3]

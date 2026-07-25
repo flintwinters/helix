@@ -5,7 +5,7 @@ program:
     - [step, child]
     - [show, [get, child_error_path]]
   child_error_path: [child, state, error]
-  main: [list, actions]
+  main: [run, actions]
 stdout: |
   add expects exactly 2 arguments
   ...
@@ -31,7 +31,7 @@ expected:
     - [step, child]
     - [show, [get, child_error_path]]
   child_error_path: [child, state, error]
-  main: [list, actions]
+  main: [run, actions]
   state:
     result: null
     frames: []

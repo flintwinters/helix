@@ -306,7 +306,7 @@ void set_vm_status(const shared_ptr<VmCell>& vm, VmStatus status);
 void clear_vm_terminal_fields(const shared_ptr<VmCell>& vm);
 bool vm_is_terminal(const shared_ptr<VmCell>& vm);
 CellPtr vm_result(const shared_ptr<VmCell>& vm);
-bool arm_list_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t start_index = 0);
+bool arm_sequence_frame(const shared_ptr<VmCell>& vm, CellPtr sequence_cell, int64_t start_index = 0);
 shared_ptr<MapCell> make_finished_state_cell();
 void attach_finished_state(const shared_ptr<VmCell>& root_cell, CellPtr result);
 void attach_terminal_state(const shared_ptr<VmCell>& root_cell, CellPtr result);

@@ -14,7 +14,7 @@ It does not talk to the VM in-process. Instead, it matches the runtime that alre
 - write that stepped VM back to the original file
 
 That means one invocation advances the target file by exactly one Helix child-VM step.
-In the current runtime, one `step` call can still move through a larger chunk of work than one list element because `advance_vm()` may arm and then immediately resume a list-backed frame in the same call.
+In the current runtime, one `step` call can still move through a larger chunk of work than one sequence element because `advance_vm()` may arm and then immediately resume a vector-backed frame in the same call.
 
 ## Usage
 

@@ -6,13 +6,13 @@ program:
       - [set, first, 1]
       - [set, second, 2]
       - [set, third, 3]
-    main: [list, steps]
+    main: [run, steps]
   items:
     - [start, child]
     - [set, observed, child.first]
-  main: [list, items]
+  main: [run, items]
 expected:
-  main: [list, items]
+  main: [run, items]
   items:
     - [start, child]
     - [set, observed, child.first]
@@ -21,7 +21,7 @@ expected:
     breakpoints:
       - [steps, 1]
     first: 1
-    main: [list, steps]
+    main: [run, steps]
     state:
       frames:
         - [steps, 1]

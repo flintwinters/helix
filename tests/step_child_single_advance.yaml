@@ -7,12 +7,12 @@ program:
       - [set, second, [add, first, delta]]
       - [set, third, [add, second, delta]]
       - [set, fourth, [add, third, delta]]
-    main: [list, steps]
+    main: [run, steps]
   items:
     - [step, child]
     - [set, observed_child_index, [get, child_index_path]]
   child_index_path: [child, state, frames, 0, 1]
-  main: [list, items]
+  main: [run, items]
 expected:
   child:
     seed: 3
@@ -22,7 +22,7 @@ expected:
       - [set, second, [add, first, delta]]
       - [set, third, [add, second, delta]]
       - [set, fourth, [add, third, delta]]
-    main: [list, steps]
+    main: [run, steps]
     first: 7
     state:
       frames:
@@ -32,7 +32,7 @@ expected:
     - [step, child]
     - [set, observed_child_index, [get, child_index_path]]
   child_index_path: [child, state, frames, 0, 1]
-  main: [list, items]
+  main: [run, items]
   observed_child_index: 1
   state:
     result: null

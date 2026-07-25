@@ -650,20 +650,20 @@ static CellPtr builtin_eval(const vector<CellPtr>& arguments, CellPtr current_vm
     return evaluate_or_signal(code, root_cell);
 }
 
-static CellPtr builtin_list(const vector<CellPtr>& arguments, CellPtr current_vm) {
-    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "list");
+static CellPtr builtin_run(const vector<CellPtr>& arguments, CellPtr current_vm) {
+    BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "run");
     if (validation.error) {
         return validation.error;
     }
     shared_ptr<VmCell> root_cell = validation.vm;
 
-    CellPtr sequence_cell = resolve_vec_or_signal(arguments[1], root_cell, "list expects a vector sequence");
+    CellPtr sequence_cell = resolve_vec_or_signal(arguments[1], root_cell, "run expects a vector sequence");
     if (is_signal_cell(sequence_cell)) {
         return sequence_cell;
     }
 
-    if (!arm_list_frame(root_cell, sequence_cell)) {
-        return make_error("list sequence could not be represented as an object path");
+    if (!arm_sequence_frame(root_cell, sequence_cell)) {
+        return make_error("run sequence could not be represented as an object path");
     }
     return make_shared<NilCell>();
 }
@@ -899,7 +899,7 @@ shared_ptr<ScopeCell> make_zygote() {
     install_builtin(zygote, "mod", builtin_mod);
     install_builtin(zygote, "set", builtin_set);
     install_builtin(zygote, "eval", builtin_eval);
-    install_builtin(zygote, "list", builtin_list);
+    install_builtin(zygote, "run", builtin_run);
     install_builtin(zygote, "append", builtin_append);
     install_builtin(zygote, "pop", builtin_pop);
     install_builtin(zygote, "at", builtin_at);

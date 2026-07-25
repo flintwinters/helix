@@ -5,17 +5,17 @@ program:
     steps:
       - [set, first, [add, seed, delta]]
       - [set, second, [add, first, delta]]
-    main: [list, steps]
+    main: [run, steps]
   items:
     - [step, child]
     - [step, child]
     - [show, child.second]
-  main: [list, items]
+  main: [run, items]
 stdout: |
   14
   ...
 expected:
-  main: [list, items]
+  main: [run, items]
   items:
     - [step, child]
     - [step, child]
@@ -26,7 +26,7 @@ expected:
     steps:
       - [set, first, [add, seed, delta]]
       - [set, second, [add, first, delta]]
-    main: [list, steps]
+    main: [run, steps]
     first: 12
     second: 14
     state:
