@@ -216,6 +216,8 @@ Implemented and verified:
 - the deepest running VM in one unambiguous ancestry chain supplies the PC
 - application keys resolve only along that VM chain, nearest-first
 - F10/F5 delegate to existing step/start operations and reload emitted YAML
+- runtime values are merged into the original round-trip YAML tree so a step
+  preserves existing order, comments, quotes, and flow/block collection style
 - F9 checks out and reloads the previous versioned VM snapshot; at the initial
   snapshot it is a stable no-op, and a later forward action can reuse preserved
   future state

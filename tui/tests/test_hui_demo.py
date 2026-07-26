@@ -1,6 +1,8 @@
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -225,7 +227,7 @@ class RuntimeAndTerminalTests(unittest.TestCase):
                 return_value=True,
             ) as execute,
             mock.patch(
-                "tui.hui_demo.load_target_vm",
+                "tui.hui_demo.load_ordered_document",
                 return_value=restored,
             ) as reload_vm,
         ):
@@ -270,6 +272,49 @@ class RuntimeAndTerminalTests(unittest.TestCase):
 
 
 class HistoryAdapterTests(unittest.TestCase):
+    def test_first_step_preserves_literal_yaml_structure(self):
+        yaml = YAML(typ="safe")
+        runtime_state = yaml.load(FIXTURE.read_text(encoding="utf-8"))
+        runtime_state["workspace"]["task"]["doubled"] = 84
+
+        with tempfile.TemporaryDirectory(
+            prefix="hui-roundtrip-",
+            dir="build",
+        ) as directory:
+            target = Path(directory) / "demo.yaml"
+            shutil.copy2(FIXTURE, target)
+            original_text = target.read_text(encoding="utf-8")
+            with mock.patch(
+                "tui.helix_step.run_helix",
+                return_value={helix_step.WRAPPER_VM_NAME: runtime_state},
+            ):
+                helix_step.step_target_file(
+                    Path(__file__),
+                    target,
+                    target,
+                    "step",
+                    annotate_pc=False,
+                )
+            stepped_text = target.read_text(encoding="utf-8")
+            displayed_text = hui_demo.build_document(
+                hui_demo.load_ordered_document(target)
+            ).text
+
+        self.assertIn('help: "Return to the root controller"', stepped_text)
+        self.assertIn("release: 1 # final summary calibration", stepped_text)
+        self.assertIn("keybinds: [R]", stepped_text)
+        self.assertIn(
+            "      - [set, doubled, [mul, adjusted, 2]]",
+            stepped_text,
+        )
+        self.assertIn("    main: [run, steps]", stepped_text)
+        self.assertNotIn("<---", stepped_text)
+        self.assertEqual(displayed_text, stepped_text)
+        self.assertEqual(
+            stepped_text.replace("    doubled: 84\n", ""),
+            original_text,
+        )
+
     def test_forward_snapshot_disables_persisted_pc_annotation(self):
         repo = mock.Mock(head_is_detached=False)
         with (

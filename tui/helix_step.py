@@ -35,11 +35,20 @@ DEBUG_LOG_FORMAT = (
     "%C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(auto)%d%C(reset)"
 )
 YAML_LOADER = YAML(typ="safe")
+YAML_ROUND_TRIP = YAML(typ="rt")
+YAML_ROUND_TRIP.preserve_quotes = True
 YAML_DUMPER = YAML()
 YAML_DUMPER.default_flow_style = False
 YAML_DUMPER.sort_base_mapping_type_on_output = False
 YAML_DUMPER.width = 100
 YAML_DUMPER.indent(mapping=2, sequence=4, offset=2)
+
+
+def represent_explicit_null(representer, _):
+    return representer.represent_scalar("tag:yaml.org,2002:null", "null")
+
+
+YAML_DUMPER.representer.add_representer(type(None), represent_explicit_null)
 PYGIT2 = None
 CLI_OPERATION_FLAGS = (
     ("--continue", CONTINUE_OPERATION, "Run the forward-start action once."),
@@ -258,6 +267,41 @@ def to_ruamel_node(data):
     return data
 
 
+def merge_runtime_state(current, template):
+    """Merge runtime values into round-trip YAML nodes without restyling them."""
+    if isinstance(current, dict) and isinstance(template, CommentedMap):
+        for key in tuple(template):
+            if key not in current:
+                del template[key]
+
+        for key, value in current.items():
+            if key in template:
+                template[key] = merge_runtime_state(value, template[key])
+            else:
+                template[key] = to_ruamel_node(value)
+        return template
+
+    if isinstance(current, list) and isinstance(template, CommentedSeq):
+        shared_length = min(len(current), len(template))
+        for index in range(shared_length):
+            template[index] = merge_runtime_state(current[index], template[index])
+        while len(template) > len(current):
+            del template[-1]
+        for value in current[shared_length:]:
+            template.append(to_ruamel_node(value))
+        return template
+
+    if current == template:
+        return template
+    if (
+        isinstance(current, str)
+        and isinstance(template, str)
+        and type(template) is not str
+    ):
+        return type(template)(current)
+    return to_ruamel_node(current)
+
+
 def current_pc_path(data: dict) -> list | None:
     state = data.get(STATE_FIELD)
     if not isinstance(state, dict):
@@ -311,7 +355,7 @@ def add_pc_comment(root, pc_path: list) -> None:
 
 
 def dump_yaml(data: dict, destination: Path, annotate_pc: bool = True) -> None:
-    root = to_ruamel_node(data)
+    root = data if isinstance(data, CommentedMap) else to_ruamel_node(data)
     if annotate_pc:
         pc_path = current_pc_path(data)
         if pc_path is not None:
@@ -464,6 +508,12 @@ def step_target_file(
         raise FileNotFoundError(f"helix binary not found: {binary_path}")
 
     target_vm = load_target_vm(target_path, include_source_path)
+    presentation_vm = None
+    if not annotate_pc:
+        with target_path.open("r", encoding="utf-8") as handle:
+            loaded_presentation = YAML_ROUND_TRIP.load(handle)
+        if isinstance(loaded_presentation, CommentedMap):
+            presentation_vm = loaded_presentation
     wrapper_vm = build_wrapper_vm(target_vm, forward_primitive)
 
     with tempfile.NamedTemporaryFile(
@@ -481,7 +531,12 @@ def step_target_file(
         wrapper_output = run_helix(binary_path, wrapper_path)
         stepped_vm = extract_stepped_vm(wrapper_output)
         ordered_vm = reorder_like_template(stepped_vm, target_vm)
-        dump_yaml(ordered_vm, target_path, annotate_pc)
+        output_vm = (
+            merge_runtime_state(ordered_vm, presentation_vm)
+            if presentation_vm is not None
+            else ordered_vm
+        )
+        dump_yaml(output_vm, target_path, annotate_pc)
     finally:
         wrapper_path.unlink(missing_ok=True)
 

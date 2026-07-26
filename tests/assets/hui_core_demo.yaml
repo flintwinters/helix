@@ -1,7 +1,7 @@
 keybinds: [R]
 help: "Return to the root controller"
 title: "Orbital telemetry pipeline"
-release: 1
+release: 1 # final summary calibration
 unrelated-worker:
   keybinds: [X]
   help: "This sibling key must stay out of scope"

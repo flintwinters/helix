@@ -24,9 +24,9 @@ from tui.helix_step import (
     CONTINUE_OPERATION,
     STEP_BACKWARD_OPERATION,
     STEP_FORWARD_OPERATION,
+    YAML_DUMPER,
     ensure_debug_repo,
     execute_debug_operation,
-    load_target_vm,
     resolve_binary_path,
 )
 
@@ -73,13 +73,6 @@ PathTuple = tuple[str | int, ...]
 
 YAML_ROUND_TRIP = YAML(typ="rt")
 YAML_ROUND_TRIP.preserve_quotes = True
-YAML_DUMPER = YAML()
-YAML_DUMPER.default_flow_style = False
-YAML_DUMPER.sort_base_mapping_type_on_output = False
-YAML_DUMPER.width = 100
-YAML_DUMPER.indent(mapping=2, sequence=4, offset=2)
-
-
 @dataclass(frozen=True)
 class SemanticNode:
     path: PathTuple
@@ -499,7 +492,7 @@ def execute_runtime_operation(
         annotate_pc=False,
     ):
         raise RuntimeError(f"debug operation was not handled: {debug_operation}")
-    return load_target_vm(target_path)
+    return load_ordered_document(target_path)
 
 
 def run_demo(
