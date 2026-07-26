@@ -191,15 +191,17 @@ frontend while eliminating VS Code as a required presentation layer.
 canonical YAML directly, indexes mapping values and sequence items by semantic
 path, keeps selection and PC as ANSI-only overlays, navigates by semantic
 parent/child and document order, and delegates F10/F5 to the existing
-out-of-process step/start boundary. Its ordered nested-VM document demonstrates
+out-of-process step/start boundary. F9 navigates to the previous Git-backed
+debug snapshot through the same history boundary used by the existing Python
+debugger. Its ordered nested-VM document demonstrates
 nearest-first ancestor `keybinds`, excludes an unrelated sibling binding, and
 models a key press as a display-only switch to the declaring VM's persisted PC.
 The default launch copies that canonical document to `build/hui_demo.yaml`, so
 runtime operations mutate only generated working state.
 
 The demo intentionally does not establish evaluator interrupt semantics,
-persist interrupt state, edit YAML, own history, or replace the planned C++
-frontend.
+persist interrupt state, edit YAML, reimplement history storage, or replace the
+planned C++ frontend.
 
 ## Active Checkpoint: Python Literal-YAML Demo MVP
 
@@ -214,6 +216,9 @@ Implemented and verified:
 - the deepest running VM in one unambiguous ancestry chain supplies the PC
 - application keys resolve only along that VM chain, nearest-first
 - F10/F5 delegate to existing step/start operations and reload emitted YAML
+- F9 checks out and reloads the previous versioned VM snapshot; at the initial
+  snapshot it is a stable no-op, and a later forward action can reuse preserved
+  future state
 - the bundled `tests/assets/hui_core_demo.yaml` orbital-telemetry document is
   valid resumable Helix: its
   root/workspace/task frames form one running ancestry chain, F10 advances the

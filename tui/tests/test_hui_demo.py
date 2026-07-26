@@ -8,7 +8,7 @@ from unittest import mock
 from ruamel.yaml import YAML
 
 from scripts import operations
-from tui import hui_demo
+from tui import helix_step, hui_demo
 
 
 FIXTURE = Path(__file__).parents[2] / "tests" / "assets" / "hui_core_demo.yaml"
@@ -146,6 +146,17 @@ class ReducerTests(unittest.TestCase):
         state, _ = hui_demo.reduce_state(doc, state, hui_demo.PAGE_DOWN, 5)
         self.assertEqual(state.viewport, 5)
 
+    def test_f9_requests_one_backward_snapshot(self):
+        state = hui_demo.DemoState(selection=())
+        next_state, operation = hui_demo.reduce_state(
+            document(),
+            state,
+            hui_demo.F9,
+            5,
+        )
+        self.assertEqual(next_state, state)
+        self.assertEqual(operation, "back")
+
     def test_appkeys_resolve_active_to_ancestor_nearest_first(self):
         doc = document()
         active = ("workspace", "task")
@@ -178,7 +189,7 @@ class RuntimeAndTerminalTests(unittest.TestCase):
         second_frame = ANSI.sub("", terminal.output[1])
         self.assertIn("lines:6-10", second_frame.splitlines()[0])
 
-    def test_f10_and_f5_delegate_and_reload_yaml(self):
+    def test_f10_f5_and_f9_delegate_and_reload_yaml(self):
         calls = []
         yaml = YAML(typ="safe")
         initial = yaml.load(FIXTURE.read_text(encoding="utf-8"))
@@ -189,12 +200,66 @@ class RuntimeAndTerminalTests(unittest.TestCase):
             changed["global-value"] = len(calls)
             return changed
 
-        terminal = MemoryTerminal([hui_demo.F10, hui_demo.F5, hui_demo.CTRL_Q])
+        terminal = MemoryTerminal(
+            [hui_demo.F10, hui_demo.F5, hui_demo.F9, hui_demo.CTRL_Q]
+        )
         binary = Path("build/helix")
         hui_demo.run_demo(FIXTURE, binary, terminal, runtime)
-        self.assertEqual([call[0] for call in calls], ["step", "start"])
+        self.assertEqual(
+            [call[0] for call in calls],
+            ["step", "start", "back"],
+        )
         self.assertTrue(terminal.restored)
-        self.assertGreaterEqual(len(terminal.output), 3)
+        self.assertGreaterEqual(len(terminal.output), 4)
+
+    def test_versioned_runtime_maps_operations_and_disables_pc_comments(self):
+        restored = {"main": ["add", 1, 2]}
+        operations = (
+            ("step", hui_demo.STEP_FORWARD_OPERATION),
+            ("start", hui_demo.CONTINUE_OPERATION),
+            ("back", hui_demo.STEP_BACKWARD_OPERATION),
+        )
+        with (
+            mock.patch(
+                "tui.hui_demo.execute_debug_operation",
+                return_value=True,
+            ) as execute,
+            mock.patch(
+                "tui.hui_demo.load_target_vm",
+                return_value=restored,
+            ) as reload_vm,
+        ):
+            for operation, expected_debug_operation in operations:
+                self.assertIs(
+                    hui_demo.execute_runtime_operation(
+                        operation,
+                        Path("build/helix"),
+                        Path("build/debug_demo/demo.yaml"),
+                    ),
+                    restored,
+                )
+                execute.assert_called_with(
+                    expected_debug_operation,
+                    Path("build/helix"),
+                    Path("build/debug_demo/demo.yaml"),
+                    Path("build/debug_demo/demo.yaml"),
+                    annotate_pc=False,
+                )
+        self.assertEqual(reload_vm.call_count, len(operations))
+
+    def test_terminal_restores_after_backward_history_error(self):
+        def runtime(operation, binary_path, target_path):
+            raise RuntimeError("history failed")
+
+        terminal = MemoryTerminal([hui_demo.F9])
+        with self.assertRaisesRegex(RuntimeError, "history failed"):
+            hui_demo.run_demo(
+                FIXTURE,
+                Path("build/helix"),
+                terminal,
+                runtime,
+            )
+        self.assertTrue(terminal.restored)
 
     def test_terminal_restores_after_input_error(self):
         terminal = MemoryTerminal([], raise_on_read=True)
@@ -204,7 +269,87 @@ class RuntimeAndTerminalTests(unittest.TestCase):
         self.assertTrue(terminal.restored)
 
 
+class HistoryAdapterTests(unittest.TestCase):
+    def test_forward_snapshot_disables_persisted_pc_annotation(self):
+        repo = mock.Mock(head_is_detached=False)
+        with (
+            mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
+            mock.patch("tui.helix_step.step_target_file") as step,
+            mock.patch("tui.helix_step.commit_debug_snapshot") as commit,
+        ):
+            helix_step.step_and_commit(
+                Path("build/helix"),
+                Path("build/debug_demo/demo.yaml"),
+                Path("build/demo.yaml"),
+                "step",
+                annotate_pc=False,
+            )
+        step.assert_called_once_with(
+            Path("build/helix"),
+            Path("build/debug_demo/demo.yaml"),
+            Path("build/demo.yaml"),
+            "step",
+            False,
+        )
+        commit.assert_called_once_with(
+            Path("build/debug_demo"),
+            "VM state",
+        )
+
+    def test_forward_reuses_unannotated_snapshot_after_backward(self):
+        repo = mock.Mock(head_is_detached=True)
+        snapshot = object()
+        with (
+            mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
+            mock.patch(
+                "tui.helix_step.next_preserved_snapshot",
+                return_value=snapshot,
+            ),
+            mock.patch(
+                "tui.helix_step.preserved_snapshot_has_pc_comment",
+            ) as has_comment,
+            mock.patch("tui.helix_step.checkout_detached_commit") as checkout,
+            mock.patch("tui.helix_step.step_target_file") as step,
+        ):
+            helix_step.step_and_commit(
+                Path("build/helix"),
+                Path("build/debug_demo/demo.yaml"),
+                Path("build/demo.yaml"),
+                "step",
+                annotate_pc=False,
+            )
+        has_comment.assert_not_called()
+        checkout.assert_called_once_with(repo, snapshot)
+        step.assert_not_called()
+
+
 class EntrypointTests(unittest.TestCase):
+    def test_interactive_entrypoint_opens_versioned_working_copy(self):
+        target = Path("build/hui_demo.yaml")
+        debug_target = Path("build/debug_hui_demo/hui_demo.yaml")
+        binary = Path("build/helix")
+        terminal = object()
+        with (
+            mock.patch("tui.hui_demo.prepare_target_path", return_value=target),
+            mock.patch(
+                "tui.hui_demo.ensure_debug_repo",
+                return_value=debug_target,
+            ) as ensure,
+            mock.patch("tui.hui_demo.resolve_binary_path", return_value=binary),
+            mock.patch("tui.hui_demo.PosixTerminal", return_value=terminal),
+            mock.patch("tui.hui_demo.run_demo") as run,
+        ):
+            self.assertEqual(hui_demo.main([]), 0)
+        ensure.assert_called_once_with(target)
+        run.assert_called_once()
+        debug_path, resolved_binary, selected_terminal, runtime = run.call_args.args
+        self.assertEqual(
+            (debug_path, resolved_binary, selected_terminal),
+            (debug_target, binary, terminal),
+        )
+        self.assertIs(runtime.func, hui_demo.execute_runtime_operation)
+        self.assertEqual(runtime.keywords, {"include_source_path": target})
+
     def test_direct_script_help_resolves_project_imports(self):
         completed = subprocess.run(
             [

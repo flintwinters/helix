@@ -661,18 +661,28 @@ def step_and_commit(
     debug_target_path: Path,
     include_source_path: Path,
     forward_primitive: str,
+    annotate_pc: bool = True,
 ) -> None:
     repo = open_debug_repo(debug_target_path.parent)
     if repo.head_is_detached:
         next_snapshot = next_preserved_snapshot(repo)
-        if next_snapshot is not None and preserved_snapshot_has_pc_comment(
-            debug_target_path,
-            next_snapshot,
+        if next_snapshot is not None and (
+            not annotate_pc
+            or preserved_snapshot_has_pc_comment(
+                debug_target_path,
+                next_snapshot,
+            )
         ):
             checkout_detached_commit(repo, next_snapshot)
             return
 
-    step_target_file(binary_path, debug_target_path, include_source_path, forward_primitive)
+    step_target_file(
+        binary_path,
+        debug_target_path,
+        include_source_path,
+        forward_primitive,
+        annotate_pc,
+    )
     commit_debug_snapshot(debug_target_path.parent, "VM state")
 
 
@@ -699,6 +709,7 @@ def operation_handlers(
     binary_path: Path,
     debug_target_path: Path,
     include_source_path: Path,
+    annotate_pc: bool = True,
 ) -> dict[str, Callable[[], None]]:
     return {
         STEP_FORWARD_OPERATION: lambda: step_and_commit(
@@ -706,18 +717,21 @@ def operation_handlers(
             debug_target_path,
             include_source_path,
             "step",
+            annotate_pc,
         ),
         UP_ARROW: lambda: step_and_commit(
             binary_path,
             debug_target_path,
             include_source_path,
             "step",
+            annotate_pc,
         ),
         CONTINUE_OPERATION: lambda: step_and_commit(
             binary_path,
             debug_target_path,
             include_source_path,
             "start",
+            annotate_pc,
         ),
         STEP_BACKWARD_OPERATION: lambda: checkout_previous_snapshot(debug_target_path),
         DOWN_ARROW: lambda: checkout_previous_snapshot(debug_target_path),
@@ -735,8 +749,14 @@ def execute_debug_operation(
     binary_path: Path,
     debug_target_path: Path,
     include_source_path: Path,
+    annotate_pc: bool = True,
 ) -> bool:
-    handler = operation_handlers(binary_path, debug_target_path, include_source_path).get(operation)
+    handler = operation_handlers(
+        binary_path,
+        debug_target_path,
+        include_source_path,
+        annotate_pc,
+    ).get(operation)
     if handler is None:
         return False
 

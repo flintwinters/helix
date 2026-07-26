@@ -11,6 +11,7 @@ import sys
 import termios
 import tty
 from dataclasses import dataclass, replace
+from functools import partial
 from pathlib import Path
 from typing import Callable, Iterable, Protocol
 
@@ -19,7 +20,15 @@ from ruamel.yaml import YAML
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from tui.helix_step import load_target_vm, resolve_binary_path, step_target_file
+from tui.helix_step import (
+    CONTINUE_OPERATION,
+    STEP_BACKWARD_OPERATION,
+    STEP_FORWARD_OPERATION,
+    ensure_debug_repo,
+    execute_debug_operation,
+    load_target_vm,
+    resolve_binary_path,
+)
 
 
 ESCAPE = "\x1b"
@@ -30,6 +39,7 @@ LEFT = "\x1b[D"
 PAGE_UP = "\x1b[5~"
 PAGE_DOWN = "\x1b[6~"
 F5 = "\x1b[15~"
+F9 = "\x1b[20~"
 F10 = "\x1b[21~"
 CTRL_Q = "\x11"
 
@@ -329,6 +339,8 @@ def reduce_state(
         return state, "step"
     if key == F5:
         return state, "start"
+    if key == F9:
+        return state, "back"
 
     context = state.context_vm if state.context_vm is not None else document.active_vm
     declaring_vm = resolve_appkey(document, context, key)
@@ -458,7 +470,7 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
 
     footer = (
         f" {format_path(state.selection)}  ↑↓ node ← parent → child "
-        "PgUp/PgDn view F10 step F5 continue Ctrl-Q quit"
+        "PgUp/PgDn view F9 back F10 step F5 continue Ctrl-Q quit"
     )
     output.append(f"{PATH_STYLE}{fit(footer, content_width)}{RESET}")
     return "\r\n".join(output)
@@ -468,14 +480,25 @@ def execute_runtime_operation(
     operation: str,
     binary_path: Path,
     target_path: Path,
+    *,
+    include_source_path: Path | None = None,
 ) -> dict:
-    step_target_file(
+    operations = {
+        "step": STEP_FORWARD_OPERATION,
+        "start": CONTINUE_OPERATION,
+        "back": STEP_BACKWARD_OPERATION,
+    }
+    debug_operation = operations.get(operation)
+    if debug_operation is None:
+        raise ValueError(f"unsupported HUI runtime operation: {operation}")
+    if not execute_debug_operation(
+        debug_operation,
         binary_path,
         target_path,
-        target_path,
-        operation,
+        include_source_path or target_path,
         annotate_pc=False,
-    )
+    ):
+        raise RuntimeError(f"debug operation was not handled: {debug_operation}")
     return load_target_vm(target_path)
 
 
@@ -560,7 +583,16 @@ def main(arguments: list[str] | None = None) -> int:
     args = parse_args(arguments)
     target_path = prepare_target_path(args.target)
     try:
-        run_demo(target_path, resolve_binary_path(args.binary), PosixTerminal())
+        debug_target_path = ensure_debug_repo(target_path)
+        run_demo(
+            debug_target_path,
+            resolve_binary_path(args.binary),
+            PosixTerminal(),
+            partial(
+                execute_runtime_operation,
+                include_source_path=target_path,
+            ),
+        )
     except Exception as error:
         print(f"hui demo: {error}", file=sys.stderr)
         return 1
