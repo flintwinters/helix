@@ -1,0 +1,54 @@
+source: tests/assets/hui_core_demo.yaml
+expected:
+  keybinds: [R]
+  help: Return to the root controller
+  title: Orbital telemetry pipeline
+  release: 1
+  unrelated-worker:
+    keybinds: [X]
+    help: This sibling key must stay out of scope
+    main: [add, 98, 1]
+    state:
+      status: ready
+      frames: []
+  workspace:
+    keybinds: [W]
+    help: Inspect the workspace controller
+    environment: staging
+    offset: 2
+    task:
+      keybinds: [T]
+      help: Inspect the active telemetry task
+      enabled: true
+      last-error: null
+      sample: 40
+      adjusted: 42
+      doubled: 84
+      summary: 85
+      steps:
+        - [set, adjusted, [add, sample, offset]]
+        - [set, doubled, [mul, adjusted, 2]]
+        - [set, summary, [add, doubled, release]]
+      main: [run, steps]
+      state:
+        result: null
+        frames: []
+        status: finished
+    actions:
+      - [step, task]
+      - [step, task]
+      - [step, task]
+    main: [run, actions]
+    state:
+      result: null
+      frames: []
+      status: finished
+  actions:
+    - [step, workspace]
+    - [step, workspace]
+    - [step, workspace]
+  main: [run, actions]
+  state:
+    result: null
+    frames: []
+    status: finished

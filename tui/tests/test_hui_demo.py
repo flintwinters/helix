@@ -11,7 +11,7 @@ from scripts import operations
 from tui import hui_demo
 
 
-FIXTURE = Path(__file__).parents[1] / "hui_demo.yaml"
+FIXTURE = Path(__file__).parents[2] / "tests" / "assets" / "hui_core_demo.yaml"
 ANSI = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
 
@@ -117,6 +117,23 @@ class RenderingTests(unittest.TestCase):
 
 
 class ReducerTests(unittest.TestCase):
+    def test_demo_is_a_coherent_nested_running_vm_chain(self):
+        doc = document()
+        self.assertEqual(doc.active_vm, ("workspace", "task"))
+        self.assertEqual(
+            hui_demo.pc_path(doc.data, doc.active_vm),
+            ("workspace", "task", "steps", 1),
+        )
+        self.assertEqual(
+            list(hui_demo.vm_ancestors(doc, doc.active_vm)),
+            [("workspace", "task"), ("workspace",), ()],
+        )
+        self.assertEqual(
+            doc.data["workspace"]["task"]["adjusted"],
+            doc.data["workspace"]["task"]["sample"]
+            + doc.data["workspace"]["offset"],
+        )
+
     def test_semantic_traversal_parent_child_and_viewport(self):
         doc = document()
         state = hui_demo.DemoState(selection=())
@@ -148,10 +165,10 @@ class ReducerTests(unittest.TestCase):
         state, operation = hui_demo.reduce_state(doc, state, "W", 20)
         self.assertIsNone(operation)
         self.assertEqual(state.context_vm, ("workspace",))
-        self.assertEqual(state.selection, ("workspace", "main"))
+        self.assertEqual(state.selection, ("workspace", "actions", 1))
         state, _ = hui_demo.reduce_state(doc, state, "R", 20)
         self.assertEqual(state.context_vm, ())
-        self.assertEqual(state.selection, ("main",))
+        self.assertEqual(state.selection, ("actions", 1))
 
 
 class RuntimeAndTerminalTests(unittest.TestCase):
@@ -190,7 +207,11 @@ class RuntimeAndTerminalTests(unittest.TestCase):
 class EntrypointTests(unittest.TestCase):
     def test_direct_script_help_resolves_project_imports(self):
         completed = subprocess.run(
-            [sys.executable, str(FIXTURE.with_name("hui_demo.py")), "--help"],
+            [
+                sys.executable,
+                str(Path(__file__).parents[1] / "hui_demo.py"),
+                "--help",
+            ],
             cwd=Path(__file__).parents[2],
             capture_output=True,
             text=True,

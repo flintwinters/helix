@@ -119,8 +119,9 @@ def prepare_target_path(raw_target: str | None) -> Path:
     if raw_target is not None:
         return Path(raw_target).expanduser().resolve()
 
-    source_path = Path(__file__).with_name("hui_demo.yaml")
-    target_path = Path(__file__).resolve().parents[1] / "build" / "hui_demo.yaml"
+    project_root = Path(__file__).resolve().parents[1]
+    source_path = project_root / "tests" / "assets" / "hui_core_demo.yaml"
+    target_path = project_root / "build" / "hui_demo.yaml"
     target_path.parent.mkdir(exist_ok=True)
     shutil.copy2(source_path, target_path)
     return target_path

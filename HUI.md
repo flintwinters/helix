@@ -214,6 +214,11 @@ Implemented and verified:
 - the deepest running VM in one unambiguous ancestry chain supplies the PC
 - application keys resolve only along that VM chain, nearest-first
 - F10/F5 delegate to existing step/start operations and reload emitted YAML
+- the bundled `tests/assets/hui_core_demo.yaml` orbital-telemetry document is
+  valid resumable Helix: its
+  root/workspace/task frames form one running ancestry chain, F10 advances the
+  nested computation, and continuation finishes with `doubled: 84` and
+  `summary: 85`
 - normal exit and failures restore the terminal boundary
 - `uv run python run.py hui-test` runs scripted tests without a PTY or timing
 - `uv run python run.py hui-demo` is the canonical interactive launch
