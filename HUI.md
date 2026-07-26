@@ -212,6 +212,7 @@ Implemented and verified:
 - F10/F5 delegate to existing step/start operations and reload emitted YAML
 - normal exit and failures restore the terminal boundary
 - `uv run python run.py hui-test` runs scripted tests without a PTY or timing
+- `uv run python run.py hui-demo` is the canonical interactive launch
 
 Hands-on use of this intentionally small prototype is the remaining evidence
 needed before freezing these interaction contracts for C++.

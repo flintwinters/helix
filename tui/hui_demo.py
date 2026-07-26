@@ -15,6 +15,9 @@ from typing import Callable, Iterable, Protocol
 
 from ruamel.yaml import YAML
 
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from tui.helix_step import load_target_vm, resolve_binary_path, step_target_file
 
 
@@ -93,7 +96,7 @@ class Terminal(Protocol):
     def dimensions(self) -> tuple[int, int]: ...
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(arguments: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prototype literal-YAML Helix terminal interface.")
     parser.add_argument(
         "target",
@@ -102,7 +105,7 @@ def parse_args() -> argparse.Namespace:
         help="Ordered nested-VM YAML document to display.",
     )
     parser.add_argument("--binary", default=None, help="Path to the compiled Helix runtime.")
-    return parser.parse_args()
+    return parser.parse_args(arguments)
 
 
 def canonical_yaml(data: dict) -> str:
@@ -466,8 +469,8 @@ class PosixTerminal:
         return size.lines, size.columns
 
 
-def main() -> int:
-    args = parse_args()
+def main(arguments: list[str] | None = None) -> int:
+    args = parse_args(arguments)
     target_path = Path(args.target).expanduser().resolve()
     try:
         run_demo(target_path, resolve_binary_path(args.binary), PosixTerminal())

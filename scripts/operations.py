@@ -659,6 +659,8 @@ def print_usage(script_name="run.py"):
     print("                                             # compile C++, optional libs, and run HCC fixtures")
     print(f"  python3 {script_name} hui-test [--fail-fast]")
     print("                                             # run deterministic Python HUI demo tests")
+    print(f"  python3 {script_name} hui-demo [target.yaml] [--binary path]")
+    print("                                             # launch the interactive literal-YAML HUI demo")
 
 
 def main(arguments=None, default_command="default", script_name="run.py"):
@@ -692,12 +694,22 @@ def main(arguments=None, default_command="default", script_name="run.py"):
             continue
         filtered_arguments.append(argument)
 
+    command = filtered_arguments[0] if filtered_arguments else default_command
+
+    if command == "hui-demo":
+        if compile_libs or use_valgrind or not dynamic_libraries or not cpp_linenums or optimize_size or fail_fast:
+            print("hui-demo accepts only its target and --binary options.")
+            sys.exit(1)
+        from tui.hui_demo import main as run_hui_demo
+
+        if run_hui_demo(filtered_arguments[1:]) != 0:
+            sys.exit(1)
+        return
+
     if len(filtered_arguments) > 1:
         print(f"unknown arguments: {' '.join(filtered_arguments[1:])}")
         print_usage(script_name)
         sys.exit(1)
-
-    command = filtered_arguments[0] if filtered_arguments else default_command
 
     if command in {"-h", "--help", "help"}:
         print_usage(script_name)

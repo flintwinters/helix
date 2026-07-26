@@ -1,9 +1,13 @@
 import re
+import subprocess
+import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from ruamel.yaml import YAML
 
+from scripts import operations
 from tui import hui_demo
 
 
@@ -136,6 +140,29 @@ class RuntimeAndTerminalTests(unittest.TestCase):
             hui_demo.run_demo(FIXTURE, Path("build/helix"), terminal)
         self.assertTrue(terminal.entered)
         self.assertTrue(terminal.restored)
+
+
+class EntrypointTests(unittest.TestCase):
+    def test_direct_script_help_resolves_project_imports(self):
+        completed = subprocess.run(
+            [sys.executable, str(FIXTURE.with_name("hui_demo.py")), "--help"],
+            cwd=Path(__file__).parents[2],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("Prototype literal-YAML Helix terminal interface", completed.stdout)
+
+    def test_root_workflow_routes_demo_arguments(self):
+        with mock.patch("tui.hui_demo.main", return_value=0) as run_demo:
+            operations.main(
+                ["hui-demo", "example.yaml", "--binary", "custom-helix"],
+                script_name="run.py",
+            )
+        run_demo.assert_called_once_with(
+            ["example.yaml", "--binary", "custom-helix"]
+        )
 
 
 if __name__ == "__main__":
