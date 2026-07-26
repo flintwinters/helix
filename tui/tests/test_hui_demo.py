@@ -68,6 +68,32 @@ class RenderingTests(unittest.TestCase):
         self.assertEqual(hui_demo.canonical_yaml(doc.data), before)
         self.assertNotIn("<---", before)
 
+    def test_yaml_syntax_colors_are_renderer_only(self):
+        line = "answer: [true, 42, 'text'] # note"
+        styled = hui_demo.overlay_line(line, False, False)
+        self.assertIn(f"{hui_demo.YAML_KEY_STYLE}answer", styled)
+        self.assertIn(f"{hui_demo.YAML_LITERAL_STYLE}true", styled)
+        self.assertIn(f"{hui_demo.YAML_NUMBER_STYLE}42", styled)
+        self.assertIn(f"{hui_demo.YAML_STRING_STYLE}'text'", styled)
+        self.assertIn(f"{hui_demo.YAML_COMMENT_STYLE}# note", styled)
+        self.assertEqual(ANSI.sub("", styled), line)
+
+    def test_pc_and_selection_backgrounds_preserve_syntax_foregrounds(self):
+        line = "status: running"
+        styled = hui_demo.overlay_line(line, True, True)
+        self.assertTrue(styled.startswith(hui_demo.PC_SELECTION_STYLE))
+        self.assertIn(f"{hui_demo.YAML_KEY_STYLE}status", styled)
+        self.assertIn(f"{hui_demo.YAML_STYLE}running", styled)
+
+    def test_yaml_quotes_and_plain_hashes_do_not_start_comments(self):
+        line = "values: [a#b, \"c:#d\", 'e:#f'] # note"
+        styled = hui_demo.highlight_yaml(line)
+        self.assertEqual(styled.count(hui_demo.YAML_COMMENT_STYLE), 1)
+        self.assertIn(f"{hui_demo.YAML_STYLE}a#b", styled)
+        self.assertIn(f"{hui_demo.YAML_STRING_STYLE}\"c:#d\"", styled)
+        self.assertIn(f"{hui_demo.YAML_STRING_STYLE}'e:#f'", styled)
+        self.assertEqual(ANSI.sub("", styled), line)
+
     def test_viewport_clips_to_fixed_dimensions(self):
         doc = document()
         state = hui_demo.DemoState(selection=("state", "frames", 0, 0))

@@ -39,9 +39,15 @@ CHROME = "\x1b[38;5;235;48;5;214m"
 PATH_STYLE = "\x1b[38;5;109;48;5;237m"
 FOOTER_STYLE = "\x1b[38;5;223;48;5;237m"
 YAML_STYLE = "\x1b[38;5;223m"
-PC_STYLE = "\x1b[38;5;235;48;5;167m"
-SELECTION_STYLE = "\x1b[38;5;235;48;5;142m"
-PC_SELECTION_STYLE = "\x1b[38;5;235;48;5;208m"
+YAML_KEY_STYLE = "\x1b[38;5;109m"
+YAML_STRING_STYLE = "\x1b[38;5;142m"
+YAML_NUMBER_STYLE = "\x1b[38;5;208m"
+YAML_LITERAL_STYLE = "\x1b[38;5;175m"
+YAML_PUNCTUATION_STYLE = "\x1b[38;5;245m"
+YAML_COMMENT_STYLE = "\x1b[38;5;243m"
+PC_STYLE = "\x1b[48;5;167m"
+SELECTION_STYLE = "\x1b[48;5;58m"
+PC_SELECTION_STYLE = "\x1b[48;5;130m"
 CLEAR_HOME = "\x1b[2J\x1b[H"
 HIDE_CURSOR = "\x1b[?25l"
 SHOW_CURSOR = "\x1b[?25h"
@@ -338,6 +344,70 @@ def reduce_state(
     return state, None
 
 
+def yaml_token_style(token: str, is_key: bool) -> str:
+    if is_key:
+        return YAML_KEY_STYLE
+    if token in {"true", "false", "null", "~"}:
+        return YAML_LITERAL_STYLE
+    try:
+        float(token.replace("_", ""))
+    except ValueError:
+        return YAML_STYLE
+    return YAML_NUMBER_STYLE
+
+
+def highlight_yaml(line: str) -> str:
+    """Add foreground colors without changing a single YAML character."""
+    output: list[str] = []
+    index = 0
+    punctuation = "[]{}:,"
+    while index < len(line):
+        character = line[index]
+        if character == "#" and (index == 0 or line[index - 1].isspace()):
+            output.append(f"{YAML_COMMENT_STYLE}{line[index:]}")
+            break
+        if character in "\"'":
+            quote = character
+            end = index + 1
+            while end < len(line):
+                if quote == '"' and line[end] == "\\":
+                    end += 2
+                    continue
+                if line[end] == quote:
+                    end += 1
+                    if quote == "'" and end < len(line) and line[end] == "'":
+                        end += 1
+                        continue
+                    break
+                end += 1
+            output.append(f"{YAML_STRING_STYLE}{line[index:end]}")
+            index = end
+            continue
+        if character in punctuation or (
+            character == "-" and line[:index].strip() == ""
+        ):
+            output.append(f"{YAML_PUNCTUATION_STYLE}{character}")
+            index += 1
+            continue
+        if character.isspace():
+            output.append(character)
+            index += 1
+            continue
+
+        end = index
+        while (
+            end < len(line)
+            and not line[end].isspace()
+            and line[end] not in f"{punctuation}\"'"
+        ):
+            end += 1
+        token = line[index:end]
+        remainder = line[end:].lstrip()
+        output.append(f"{yaml_token_style(token, remainder.startswith(':'))}{token}")
+        index = end
+    return "".join(output)
+
+
 def overlay_line(line: str, selected: bool, active_pc: bool) -> str:
     if selected and active_pc:
         style = PC_SELECTION_STYLE
@@ -346,8 +416,8 @@ def overlay_line(line: str, selected: bool, active_pc: bool) -> str:
     elif selected:
         style = SELECTION_STYLE
     else:
-        style = YAML_STYLE
-    return f"{style}{line}{RESET}{BG}"
+        style = ""
+    return f"{style}{highlight_yaml(line)}{RESET}{BG}"
 
 
 def fit(text: str, width: int) -> str:

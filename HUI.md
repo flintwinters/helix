@@ -207,6 +207,8 @@ Implemented and verified:
 
 - ANSI-stripped YAML content is exactly the canonical ordered document
 - selection and active PC are independent, non-persisted overlays
+- YAML keys, scalars, literals, numbers, punctuation, strings, and comments
+  have distinct renderer-only syntax colors that survive PC/selection overlays
 - Up/Down traverse semantic nodes; Left/Right traverse parent/first-child
 - PgUp/PgDn clip a deterministic fixed-size viewport
 - the deepest running VM in one unambiguous ancestry chain supplies the PC

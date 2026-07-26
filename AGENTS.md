@@ -72,7 +72,8 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 ## HUI Demo Invariants
 
 - Canonical ordered YAML remains the displayed content; selection and PC
-  styling are ANSI-only overlays and are never persisted.
+  styling and syntax highlighting are ANSI-only overlays and are never
+  persisted.
 - Navigation targets semantic mapping values and sequence items identified by
   object paths, independently from viewport rows.
 - The active PC is the deepest running VM's first frame path, or its `main`
@@ -99,4 +100,4 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
 - The legacy Python debugger invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository. The Python literal-YAML HUI demo is the current behavioral prototype for semantic navigation, PC overlays, scoped keys, and debugger controls. Neither is the target architecture; `HUI.md` defines the portable C++ replacement that keeps terminal behavior outside the evaluator and runs through POSIX or embedded serial byte streams.
-- Verification on 2026-07-26: HUI demo tests pass 15/15. Runtime fixtures pass 50/50. HCC fixtures pass 3/3.
+- Verification on 2026-07-26: HUI demo tests pass 18/18. Runtime fixtures pass 50/50. HCC fixtures pass 3/3.
