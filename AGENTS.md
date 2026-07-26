@@ -30,6 +30,7 @@ The runtime starts at the root mapping's `main`. A vector such as `[add, x, 1]` 
 | `run.py`, `hcc/build.py` | Thin repository and HCC workflow entrypoints; keep policy in `scripts/operations.py` |
 | `hcc/compiler.py` | `pycparser` C AST lowering to human-readable Helix forms |
 | `HCC_Plan.md` | HCC development cockpit: mission, debugging invariants, current checkpoint, roadmap, and verification state |
+| `HUI.md` | Canonical direction and implementation cockpit for the literal-YAML C++ terminal interface |
 | `tests/`, `hcc/tests/` | Executable YAML specifications for runtime behavior and C lowering |
 | `tui/helix_step.py` | Out-of-process stepping and branchable per-target Git snapshots |
 | `lib/sfml/` | Optional `.so` module; it must remain isolated from the core runtime binary |
@@ -76,5 +77,5 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 ## Current Boundaries
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
-- The TUI invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository; it is not an in-process debugger.
+- The current Python TUI invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository; it is not an in-process debugger. `HUI.md` defines its replacement: a portable C++ frontend that presents literal YAML directly, keeps terminal behavior outside the evaluator, and runs through POSIX or embedded serial byte streams.
 - Verification on 2026-07-25: runtime fixtures pass 50/50. HCC fixtures pass 3/3.
