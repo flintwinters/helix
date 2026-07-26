@@ -14,6 +14,12 @@ viewport movement, editing modes, and debugger commands.
 The long-term interface must run directly on embedded targets over a TTY without
 requiring Python or a Helix-aware host application.
 
+The Python HUI demo is a deliberately disposable behavioral prototype. It
+exists to settle literal-text navigation, key scope, prototype interrupt
+context, and deterministic testing contracts before those contracts are
+implemented in portable C++. It is neither the portability boundary nor a
+second evaluator.
+
 ## Governing Direction
 
 The canonical HUI implementation is a portable C++ frontend adjacent to, but
@@ -49,8 +55,10 @@ main-menu:
 ```
 
 HUI displays those exact YAML fields. Pressing a declared key selects or jumps
-to the corresponding object in the YAML text. Invocation, stepping, or editing
-then operates on that same object through the runtime.
+to the declaring VM's existing PC in the YAML text. The demo resolves
+`keybinds` only on the active VM and its VM ancestors, nearest-first. It never
+scans siblings, unrelated descendants, or the viewport. Invocation, stepping,
+or editing then operates on that same literal document through the runtime.
 
 The source author's YAML organization is therefore the interface organization.
 Help, previews, executable forms, live values, and persisted VM state remain
@@ -148,6 +156,13 @@ snapshots during migration.
   terminal size, and selection.
 - Keys attached to executable objects navigate the literal source first.
   Execution remains an explicit runtime operation.
+- Selection moves among semantic YAML nodes rather than arbitrary screen rows.
+- The active PC comes from the active VM's first `state.frames` path, including
+  its terminal sequence index, and falls back to that VM's `main` path.
+- Selection, active PC, and the demo's prototype execution context are
+  independent display state. None is serialized as a YAML annotation.
+- Application keys are scoped to the active VM ancestry chain and resolve
+  nearest-first.
 - The interface uses no animation or transition.
 - Screen organization follows the project's dense Gruvbox-dark operator-panel
   rules without obscuring or duplicating the YAML.
@@ -172,7 +187,36 @@ VS Code supplies text rendering, highlighting, cursor navigation, editing, and
 file refresh. HUI will bring those responsibilities into the portable C++
 frontend while eliminating VS Code as a required presentation layer.
 
-## Active Checkpoint: Literal YAML C++ Vertical Slice
+`tui/hui_demo.py` is the current interaction prototype. It renders the ordered
+canonical YAML directly, indexes mapping values and sequence items by semantic
+path, keeps selection and PC as ANSI-only overlays, navigates by semantic
+parent/child and document order, and delegates F10/F5 to the existing
+out-of-process step/start boundary. Its ordered nested-VM document demonstrates
+nearest-first ancestor `keybinds`, excludes an unrelated sibling binding, and
+models a key press as a display-only switch to the declaring VM's persisted PC.
+
+The demo intentionally does not establish evaluator interrupt semantics,
+persist interrupt state, edit YAML, own history, or replace the planned C++
+frontend.
+
+## Active Checkpoint: Python Literal-YAML Demo MVP
+
+Implemented and verified:
+
+- ANSI-stripped YAML content is exactly the canonical ordered document
+- selection and active PC are independent, non-persisted overlays
+- Up/Down traverse semantic nodes; Left/Right traverse parent/first-child
+- PgUp/PgDn clip a deterministic fixed-size viewport
+- the deepest running VM in one unambiguous ancestry chain supplies the PC
+- application keys resolve only along that VM chain, nearest-first
+- F10/F5 delegate to existing step/start operations and reload emitted YAML
+- normal exit and failures restore the terminal boundary
+- `uv run python run.py hui-test` runs scripted tests without a PTY or timing
+
+Hands-on use of this intentionally small prototype is the remaining evidence
+needed before freezing these interaction contracts for C++.
+
+## Next Checkpoint: Literal YAML C++ Vertical Slice
 
 Build the smallest in-process desktop HUI that proves the durable ownership
 boundary before adding editing or application keybind behavior.
@@ -198,6 +242,14 @@ place to verify behavior. Its frontend logic and tests must not depend on
 POSIX-specific APIs, so an embedded adapter can reuse them unchanged.
 
 ## Roadmap
+
+### 0. Prove interaction semantics in Python
+
+- exercise literal ordered YAML rendering with display-only overlays
+- test semantic node navigation and fixed viewport behavior
+- test active-PC discovery and VM-ancestor-only application key scope
+- keep prototype interrupt context isolated from persisted runtime semantics
+- capture every behavior through scripted input and fixed dimensions
 
 ### 1. Establish the portable boundary
 
@@ -254,6 +306,11 @@ HUI testing must be routinized through a single root-level command added to
 `run.py` and implemented in `scripts/operations.py`. Tests must not depend on a
 human terminal, VS Code, timing, or ad-hoc shell scripts.
 
+The current prototype suite is `uv run python run.py hui-test`, backed by
+`tui/tests`. It drives exact key strings and terminal dimensions through an
+in-memory terminal. Desktop/in-memory byte-stream parity remains an acceptance
+criterion for the portable C++ checkpoint.
+
 Each HUI behavior should be verified across the applicable dimensions:
 
 1. exact visible text after ANSI control bytes are removed
@@ -292,3 +349,9 @@ work after context clearing.
 - 2026-07-26: Kept Git and snapshot storage separate from core HUI interaction
   so constrained targets can retain the same interface without hosting a
   repository.
+- 2026-07-26: Added a Python interaction prototype to validate semantic YAML
+  navigation before committing the behavior to the portable C++ frontend.
+- 2026-07-26: Defined the active PC as the first persisted frame path, with
+  `main` as the unframed fallback, independently from semantic selection.
+- 2026-07-26: Scoped application keys to the active VM and its VM ancestors,
+  nearest-first; prototype context switching remains display-only.

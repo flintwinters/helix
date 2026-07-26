@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import unittest
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -605,6 +606,13 @@ def run_hcc_tests(runtime="cpp", use_valgrind=False, fail_fast=False, ignore_deb
     return run_fixture_tests("hcc/tests", run_test_case, fail_fast)
 
 
+def run_hui_tests(fail_fast=False):
+    """Runs deterministic scripted tests for the Python literal-YAML HUI demo."""
+    suite = unittest.defaultTestLoader.discover("tui/tests")
+    result = unittest.TextTestRunner(verbosity=2, failfast=fail_fast).run(suite)
+    return len(result.failures) + len(result.errors)
+
+
 def render_yaml(value):
     return yaml.safe_dump(value, sort_keys=True).rstrip()
 
@@ -649,6 +657,8 @@ def print_usage(script_name="run.py"):
     print("                                             # compile C++, optional libs, and run native fixtures")
     print(f"  python3 {script_name} hcc-test [--lib] [--no-dynamic-libraries] [--no-cpp-linenums] [--optimize-size] [--valgrind] [--fail-fast]")
     print("                                             # compile C++, optional libs, and run HCC fixtures")
+    print(f"  python3 {script_name} hui-test [--fail-fast]")
+    print("                                             # run deterministic Python HUI demo tests")
 
 
 def main(arguments=None, default_command="default", script_name="run.py"):
@@ -721,6 +731,14 @@ def main(arguments=None, default_command="default", script_name="run.py"):
             sys.exit(1)
         num_failed = run_hcc_tests("cpp", use_valgrind, fail_fast, not cpp_linenums)
         if num_failed > 0:
+            sys.exit(1)
+        return
+
+    if command in {"hui-test", "test-hui"}:
+        if compile_libs or use_valgrind or not dynamic_libraries or not cpp_linenums or optimize_size:
+            print("hui-test accepts only --fail-fast.")
+            sys.exit(1)
+        if run_hui_tests(fail_fast) > 0:
             sys.exit(1)
         return
 

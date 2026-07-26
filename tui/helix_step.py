@@ -310,11 +310,12 @@ def add_pc_comment(root, pc_path: list) -> None:
         parent.yaml_add_eol_comment(comment, key=final_segment)
 
 
-def dump_yaml(data: dict, destination: Path) -> None:
+def dump_yaml(data: dict, destination: Path, annotate_pc: bool = True) -> None:
     root = to_ruamel_node(data)
-    pc_path = current_pc_path(data)
-    if pc_path is not None:
-        add_pc_comment(root, pc_path)
+    if annotate_pc:
+        pc_path = current_pc_path(data)
+        if pc_path is not None:
+            add_pc_comment(root, pc_path)
 
     with destination.open("w", encoding="utf-8") as handle:
         YAML_DUMPER.dump(root, handle)
@@ -457,6 +458,7 @@ def step_target_file(
     target_path: Path,
     include_source_path: Path,
     forward_primitive: str,
+    annotate_pc: bool = True,
 ) -> None:
     if not binary_path.is_file():
         raise FileNotFoundError(f"helix binary not found: {binary_path}")
@@ -479,7 +481,7 @@ def step_target_file(
         wrapper_output = run_helix(binary_path, wrapper_path)
         stepped_vm = extract_stepped_vm(wrapper_output)
         ordered_vm = reorder_like_template(stepped_vm, target_vm)
-        dump_yaml(ordered_vm, target_path)
+        dump_yaml(ordered_vm, target_path, annotate_pc)
     finally:
         wrapper_path.unlink(missing_ok=True)
 

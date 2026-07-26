@@ -30,9 +30,10 @@ The runtime starts at the root mapping's `main`. A vector such as `[add, x, 1]` 
 | `run.py`, `hcc/build.py` | Thin repository and HCC workflow entrypoints; keep policy in `scripts/operations.py` |
 | `hcc/compiler.py` | `pycparser` C AST lowering to human-readable Helix forms |
 | `HCC_Plan.md` | HCC development cockpit: mission, debugging invariants, current checkpoint, roadmap, and verification state |
-| `HUI.md` | Canonical direction and implementation cockpit for the literal-YAML C++ terminal interface |
+| `HUI.md` | Python interaction checkpoint and canonical direction for the literal-YAML C++ terminal interface |
 | `tests/`, `hcc/tests/` | Executable YAML specifications for runtime behavior and C lowering |
 | `tui/helix_step.py` | Out-of-process stepping and branchable per-target Git snapshots |
+| `tui/hui_demo.py`, `tui/tests/` | Literal-YAML interaction prototype and deterministic scripted tests |
 | `lib/sfml/` | Optional `.so` module; it must remain isolated from the core runtime binary |
 
 `ryml/`, `build/`, `debug_*`, caches, and local lock/environment files are ignored dependencies or generated state, not primary project source.
@@ -58,12 +59,31 @@ uv run python run.py                     # build, tidy, runtime fixtures, LOC, s
 ./build/helix path/to/program.yaml       # execute one Helix program
 uv run python -m hcc input.c -o out.yaml
 uv run python tui/helix_step.py program.yaml
+uv run python tui/hui_demo.py             # launch the ordered nested-VM demo
+uv run python run.py hui-test             # deterministic HUI demo tests
 ```
 
 The project requires Python 3.13+, C++20 `g++`, and a locally built `ryml` library at `ryml/build`. Useful workflow flags include `--fail-fast`, `--valgrind`, `--no-dynamic-libraries`, `--no-cpp-linenums`, `--optimize-size`, and `--lib`.
 
 Runtime fixtures contain exactly one of `program` or `source`; non-smoke fixtures provide `expected`, with optional stdout assertions. HCC fixtures provide `c_source` and normally assert both emitted `expected` YAML and `expected_state`. Add or tighten the nearest fixture whenever semantics change.
 Raw YAML programs used by source-backed runtime fixtures belong under `tests/assets/`; fixture discovery deliberately excludes every `assets` subtree.
+
+## HUI Demo Invariants
+
+- Canonical ordered YAML remains the displayed content; selection and PC
+  styling are ANSI-only overlays and are never persisted.
+- Navigation targets semantic mapping values and sequence items identified by
+  object paths, independently from viewport rows.
+- The active PC is the deepest running VM's first frame path, or its `main`
+  path when unframed. The demo fixture guarantees one running VM ancestry
+  chain.
+- Application keys resolve only from the active VM through its VM ancestors,
+  nearest-first. Siblings, unrelated descendants, and viewport proximity are
+  irrelevant.
+- Prototype interrupts only switch displayed execution context to the
+  declaring VM's existing PC; they do not define evaluator interrupt semantics.
+- HUI tests use scripted input and fixed terminal dimensions through
+  `uv run python run.py hui-test`, without a PTY, timing, or manual steps.
 
 ## Change Discipline
 
@@ -77,5 +97,5 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 ## Current Boundaries
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
-- The current Python TUI invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository; it is not an in-process debugger. `HUI.md` defines its replacement: a portable C++ frontend that presents literal YAML directly, keeps terminal behavior outside the evaluator, and runs through POSIX or embedded serial byte streams.
-- Verification on 2026-07-25: runtime fixtures pass 50/50. HCC fixtures pass 3/3.
+- The legacy Python debugger invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository. The Python literal-YAML HUI demo is the current behavioral prototype for semantic navigation, PC overlays, scoped keys, and debugger controls. Neither is the target architecture; `HUI.md` defines the portable C++ replacement that keeps terminal behavior outside the evaluator and runs through POSIX or embedded serial byte streams.
+- Verification on 2026-07-26: HUI demo tests pass 9/9. Runtime fixtures pass 50/50. HCC fixtures pass 3/3.

@@ -1,0 +1,36 @@
+keybinds: [R]
+help: Return to the root execution context
+global-value: 11
+sibling:
+  keybinds: [X]
+  help: This unrelated VM key must never be active
+  main: [identity, 99]
+  state:
+    status: ready
+    frames: []
+workspace:
+  keybinds: [W]
+  help: Return to the workspace execution context
+  ordinary-value: 22
+  task:
+    keybinds: [T]
+    help: Return to the active task execution context
+    steps:
+      - [set, result, [add, ordinary-input, 1]]
+      - [identity, result]
+    ordinary-input: 41
+    main: [run, steps]
+    state:
+      status: running
+      frames:
+        - [steps, 1]
+  main: [start, task]
+  state:
+    status: running
+    frames:
+      - [main]
+main: [start, workspace]
+state:
+  status: running
+  frames:
+    - [main]
