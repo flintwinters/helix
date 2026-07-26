@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import io
 import os
+import shutil
 import sys
 import termios
 import tty
@@ -101,11 +102,22 @@ def parse_args(arguments: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "target",
         nargs="?",
-        default=str(Path(__file__).with_name("hui_demo.yaml")),
+        default=None,
         help="Ordered nested-VM YAML document to display.",
     )
     parser.add_argument("--binary", default=None, help="Path to the compiled Helix runtime.")
     return parser.parse_args(arguments)
+
+
+def prepare_target_path(raw_target: str | None) -> Path:
+    if raw_target is not None:
+        return Path(raw_target).expanduser().resolve()
+
+    source_path = Path(__file__).with_name("hui_demo.yaml")
+    target_path = Path(__file__).resolve().parents[1] / "build" / "hui_demo.yaml"
+    target_path.parent.mkdir(exist_ok=True)
+    shutil.copy2(source_path, target_path)
+    return target_path
 
 
 def canonical_yaml(data: dict) -> str:
@@ -345,8 +357,10 @@ def fit(text: str, width: int) -> str:
 def render(document: Document, state: DemoState, rows: int, columns: int) -> str:
     rows = max(3, rows)
     columns = max(1, columns)
+    content_width = max(1, columns - 1)
     body_height = rows - 2
-    state = clamp_viewport(document, state, body_height)
+    maximum_viewport = max(0, len(document.lines) - body_height)
+    viewport = max(0, min(state.viewport, maximum_viewport))
     context_vm = state.context_vm if state.context_vm is not None else document.active_vm
     active_pc = pc_path(document.data, context_vm)
     selected_line = document.node_by_path.get(state.selection, document.nodes[0]).line
@@ -355,15 +369,17 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
 
     status = (
         f" HUI DEMO  vm:{format_path(context_vm)}  pc:{format_path(active_pc)} "
-        f" lines:{state.viewport + 1}-{min(len(document.lines), state.viewport + body_height)}"
+        f" lines:{viewport + 1}-{min(len(document.lines), viewport + body_height)}"
     )
-    output = [f"{CLEAR_HOME}{HIDE_CURSOR}{BG}{CHROME}{fit(status, columns)}{RESET}{BG}"]
+    output = [
+        f"{CLEAR_HOME}{HIDE_CURSOR}{BG}{CHROME}{fit(status, content_width)}{RESET}{BG}"
+    ]
     for row in range(body_height):
-        line_index = state.viewport + row
+        line_index = viewport + row
         line = document.lines[line_index] if line_index < len(document.lines) else ""
         output.append(
             overlay_line(
-                fit(line, columns),
+                fit(line, content_width),
                 selected=line_index == selected_line,
                 active_pc=line_index == pc_line,
             )
@@ -373,8 +389,8 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
         f" {format_path(state.selection)}  ↑↓ node ← parent → child "
         "PgUp/PgDn view F10 step F5 continue Ctrl-Q quit"
     )
-    output.append(f"{PATH_STYLE}{fit(footer, columns)}{RESET}")
-    return "\n".join(output)
+    output.append(f"{PATH_STYLE}{fit(footer, content_width)}{RESET}")
+    return "\r\n".join(output)
 
 
 def execute_runtime_operation(
@@ -471,7 +487,7 @@ class PosixTerminal:
 
 def main(arguments: list[str] | None = None) -> int:
     args = parse_args(arguments)
-    target_path = Path(args.target).expanduser().resolve()
+    target_path = prepare_target_path(args.target)
     try:
         run_demo(target_path, resolve_binary_path(args.binary), PosixTerminal())
     except Exception as error:

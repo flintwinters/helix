@@ -17,7 +17,7 @@ workspace:
     help: Return to the active task execution context
     steps:
       - [set, result, [add, ordinary-input, 1]]
-      - [identity, result]
+      - [set, completed, result]
     ordinary-input: 41
     main: [run, steps]
     state:

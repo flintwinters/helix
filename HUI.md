@@ -194,6 +194,8 @@ parent/child and document order, and delegates F10/F5 to the existing
 out-of-process step/start boundary. Its ordered nested-VM document demonstrates
 nearest-first ancestor `keybinds`, excludes an unrelated sibling binding, and
 models a key press as a display-only switch to the declaring VM's persisted PC.
+The default launch copies that canonical document to `build/hui_demo.yaml`, so
+runtime operations mutate only generated working state.
 
 The demo intentionally does not establish evaluator interrupt semantics,
 persist interrupt state, edit YAML, own history, or replace the planned C++

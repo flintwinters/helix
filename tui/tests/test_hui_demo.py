@@ -74,7 +74,20 @@ class RenderingTests(unittest.TestCase):
         rendered = hui_demo.render(doc, state, 7, 31)
         visible = ANSI.sub("", rendered).splitlines()
         self.assertEqual(len(visible), 7)
-        self.assertTrue(all(len(line) == 31 for line in visible))
+        self.assertTrue(all(len(line) == 30 for line in visible))
+
+    def test_render_preserves_page_scrolled_viewport(self):
+        doc = document()
+        state = hui_demo.DemoState(selection=(), viewport=5)
+        rendered = ANSI.sub("", hui_demo.render(doc, state, 7, 72))
+        self.assertIn("lines:6-10", rendered.splitlines()[0])
+
+    def test_rows_reserve_last_column_and_do_not_double_space(self):
+        doc = document()
+        rendered = ANSI.sub("", hui_demo.render(doc, hui_demo.DemoState(()), 6, 20))
+        visible = rendered.splitlines()
+        self.assertEqual(len(visible), 6)
+        self.assertTrue(all(len(line) == 19 for line in visible))
 
 
 class ReducerTests(unittest.TestCase):
@@ -116,6 +129,12 @@ class ReducerTests(unittest.TestCase):
 
 
 class RuntimeAndTerminalTests(unittest.TestCase):
+    def test_page_down_remains_visible_in_next_interactive_frame(self):
+        terminal = MemoryTerminal([hui_demo.PAGE_DOWN, hui_demo.CTRL_Q], rows=7)
+        hui_demo.run_demo(FIXTURE, Path("build/helix"), terminal)
+        second_frame = ANSI.sub("", terminal.output[1])
+        self.assertIn("lines:6-10", second_frame.splitlines()[0])
+
     def test_f10_and_f5_delegate_and_reload_yaml(self):
         calls = []
         yaml = YAML(typ="safe")
@@ -163,6 +182,16 @@ class EntrypointTests(unittest.TestCase):
         run_demo.assert_called_once_with(
             ["example.yaml", "--binary", "custom-helix"]
         )
+
+    def test_default_demo_uses_a_fresh_generated_working_copy(self):
+        with (
+            mock.patch("tui.hui_demo.Path.mkdir") as mkdir,
+            mock.patch("tui.hui_demo.shutil.copy2") as copy2,
+        ):
+            target = hui_demo.prepare_target_path(None)
+        self.assertEqual(target, Path(__file__).parents[2] / "build" / "hui_demo.yaml")
+        mkdir.assert_called_once_with(exist_ok=True)
+        copy2.assert_called_once_with(FIXTURE, target)
 
 
 if __name__ == "__main__":
