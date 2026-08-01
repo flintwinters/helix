@@ -48,10 +48,16 @@ def build(
     dispatch(arguments)
 
 
-def test_arguments(command: str, fail_fast: bool, valgrind: bool) -> list[str]:
+def test_arguments(
+    command: str,
+    fail_fast: bool,
+    valgrind: bool,
+    optimize_size: bool = False,
+) -> list[str]:
     arguments = [command]
     arguments += ["--fail-fast"] if fail_fast else []
     arguments += ["--valgrind"] if valgrind else []
+    arguments += ["--optimize-size"] if optimize_size else []
     return arguments
 
 
@@ -59,9 +65,10 @@ def test_arguments(command: str, fail_fast: bool, valgrind: bool) -> list[str]:
 def cpp_test(
     fail_fast: bool = typer.Option(False, "--fail-fast"),
     valgrind: bool = typer.Option(False, "--valgrind"),
+    optimize_size: bool = typer.Option(False, "--optimize-size"),
 ) -> None:
     """Build and run native runtime fixtures."""
-    dispatch(test_arguments("cpp-test", fail_fast, valgrind))
+    dispatch(test_arguments("cpp-test", fail_fast, valgrind, optimize_size))
 
 
 @app.command("hcc-test")

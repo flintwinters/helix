@@ -22,6 +22,7 @@ BASE_CPP_FLAGS = "-std=c++20 -ffunction-sections -fdata-sections"
 SIZE_OPTIMIZATION_FLAG = "-Os"
 LINKER_FLAGS = "-Wl,--gc-sections -L ryml/build -lryml"
 DYNAMIC_LIBRARY_LINKER_FLAGS = "-rdynamic -ldl"
+SIZE_OPTIMIZATION_LINKER_FLAG = "-s"
 SFML_MODULE = "build/sfml.so"
 SFML_MODULE_SOURCE = "lib/sfml/sfmlwrapper.cpp"
 SFML_MODULE_LINKER_FLAGS = "-lsfml-graphics -lsfml-window -lsfml-system"
@@ -118,7 +119,19 @@ def validate_native_module_isolation():
     return True
 
 
+def production_build_features(dynamic_libraries, cpp_linenums, optimize_size):
+    """Resolve feature switches implied by the production size profile."""
+    if optimize_size:
+        return False, False
+    return dynamic_libraries, cpp_linenums
+
+
 def compile_cpp_flags(dynamic_libraries, optimize_size=False, cpp_linenums=True):
+    dynamic_libraries, cpp_linenums = production_build_features(
+        dynamic_libraries,
+        cpp_linenums,
+        optimize_size,
+    )
     enabled = "1" if dynamic_libraries else "0"
     cpp_linenums_enabled = "1" if cpp_linenums else "0"
     flags = BASE_CPP_FLAGS
@@ -127,10 +140,18 @@ def compile_cpp_flags(dynamic_libraries, optimize_size=False, cpp_linenums=True)
     return f"{flags} -DHELIX_ENABLE_DYNAMIC_LIBRARIES={enabled} -DHELIX_ENABLE_CPP_LINENUMS={cpp_linenums_enabled}"
 
 
-def compile_linker_flags(dynamic_libraries):
+def compile_linker_flags(dynamic_libraries, optimize_size=False):
+    dynamic_libraries, _ = production_build_features(
+        dynamic_libraries,
+        cpp_linenums=False,
+        optimize_size=optimize_size,
+    )
+    flags = LINKER_FLAGS
     if dynamic_libraries:
-        return f"{LINKER_FLAGS} {DYNAMIC_LIBRARY_LINKER_FLAGS}"
-    return LINKER_FLAGS
+        flags = f"{flags} {DYNAMIC_LIBRARY_LINKER_FLAGS}"
+    if optimize_size:
+        flags = f"{flags} {SIZE_OPTIMIZATION_LINKER_FLAG}"
+    return flags
 
 
 def command_exists(command_name):
@@ -162,7 +183,7 @@ def compile_main(dynamic_libraries=True, optimize_size=False, cpp_linenums=True)
             return False
 
     link_command = (
-        f"{COMPILER} {' '.join(object_files)} {cpp_flags} -o {EXECUTABLE} {compile_linker_flags(dynamic_libraries)}"
+        f"{COMPILER} {' '.join(object_files)} {cpp_flags} -o {EXECUTABLE} {compile_linker_flags(dynamic_libraries, optimize_size)}"
     )
     result = subprocess.run(link_command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
@@ -695,6 +716,12 @@ def main(arguments=None, default_command="default", script_name="manage.py"):
         filtered_arguments.append(argument)
 
     command = filtered_arguments[0] if filtered_arguments else default_command
+
+    dynamic_libraries, cpp_linenums = production_build_features(
+        dynamic_libraries,
+        cpp_linenums,
+        optimize_size,
+    )
 
     if command == "hui-demo":
         if compile_libs or use_valgrind or not dynamic_libraries or not cpp_linenums or optimize_size or fail_fast:
