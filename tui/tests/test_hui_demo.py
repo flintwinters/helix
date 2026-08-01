@@ -110,6 +110,7 @@ class RenderingTests(unittest.TestCase):
                 if parameter
             }
             self.assertNotIn(7, parameters, match.group(0))
+            self.assertNotIn(4, parameters, match.group(0))
             if 48 in parameters or not parameters.isdisjoint(
                 {*range(40, 50), *range(100, 108)}
             ):
