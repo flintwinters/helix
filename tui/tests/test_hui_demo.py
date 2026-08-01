@@ -262,6 +262,21 @@ class ReducerTests(unittest.TestCase):
         self.assertIsNone(next_state.context_vm)
         self.assertEqual(operation, "back")
 
+    def test_finished_program_suppresses_forward_controls_but_not_back(self):
+        data = hui_demo.load_ordered_document(FIXTURE)
+        data["state"]["status"] = "finished"
+        data["state"]["frames"] = []
+        doc = hui_demo.build_document(data)
+        state = hui_demo.DemoState(selection=("main",))
+
+        for key in (hui_demo.DOWN, hui_demo.F10, hui_demo.F5):
+            next_state, operation = hui_demo.reduce_state(doc, state, key, 20)
+            self.assertEqual(next_state, state)
+            self.assertIsNone(operation)
+
+        _, operation = hui_demo.reduce_state(doc, state, hui_demo.UP, 20)
+        self.assertEqual(operation, "back")
+
     def test_back_after_appkey_returns_to_versioned_yaml_pc(self):
         doc = document()
         state = hui_demo.DemoState(selection=doc.active_vm)
@@ -587,6 +602,10 @@ class HistoryAdapterTests(unittest.TestCase):
     def test_forward_snapshot_disables_persisted_pc_annotation(self):
         repo = mock.Mock(head_is_detached=False)
         with (
+            mock.patch(
+                "tui.helix_step.load_target_vm",
+                return_value={"main": ["add", 1, 2]},
+            ),
             mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
             mock.patch("tui.helix_step.step_target_file") as step,
             mock.patch(
@@ -646,6 +665,10 @@ class HistoryAdapterTests(unittest.TestCase):
     def test_textually_null_step_does_not_create_snapshot(self):
         repo = mock.Mock(head_is_detached=False)
         with (
+            mock.patch(
+                "tui.helix_step.load_target_vm",
+                return_value={"main": ["add", 1, 2]},
+            ),
             mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
             mock.patch("tui.helix_step.step_target_file") as step,
             mock.patch(
@@ -665,9 +688,40 @@ class HistoryAdapterTests(unittest.TestCase):
         changed.assert_called_once_with(Path("build/debug_demo/demo.yaml"))
         commit.assert_not_called()
 
+    def test_finished_program_never_opens_history_or_invokes_helix(self):
+        finished_vm = {
+            "main": ["add", 1, 2],
+            "state": {"status": "finished", "frames": [], "result": 3},
+        }
+        with (
+            mock.patch(
+                "tui.helix_step.load_target_vm",
+                return_value=finished_vm,
+            ) as load,
+            mock.patch("tui.helix_step.open_debug_repo") as open_repo,
+            mock.patch("tui.helix_step.step_target_file") as step,
+            mock.patch("tui.helix_step.commit_debug_snapshot") as commit,
+        ):
+            helix_step.step_and_commit(
+                Path("missing-helix-binary"),
+                Path("build/debug_demo/demo.yaml"),
+                Path("build/demo.yaml"),
+                "step",
+                annotate_pc=False,
+            )
+
+        load.assert_called_once()
+        open_repo.assert_not_called()
+        step.assert_not_called()
+        commit.assert_not_called()
+
     def test_detached_null_step_does_not_create_history_branch(self):
         repo = mock.Mock(head_is_detached=True)
         with (
+            mock.patch(
+                "tui.helix_step.load_target_vm",
+                return_value={"main": ["add", 1, 2]},
+            ),
             mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
             mock.patch(
                 "tui.helix_step.next_preserved_snapshot",
@@ -696,6 +750,10 @@ class HistoryAdapterTests(unittest.TestCase):
         repo = mock.Mock(head_is_detached=True)
         snapshot = object()
         with (
+            mock.patch(
+                "tui.helix_step.load_target_vm",
+                return_value={"main": ["add", 1, 2]},
+            ),
             mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
             mock.patch(
                 "tui.helix_step.next_preserved_snapshot",

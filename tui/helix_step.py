@@ -21,6 +21,7 @@ STATE_FIELD = "state"
 FRAMES_FIELD = "frames"
 STATUS_FIELD = "status"
 RUNNING_STATUS = "running"
+TERMINAL_STATUSES = {"finished", "error", "signaled"}
 DOWN_ARROW = "\x1b[B"
 UP_ARROW = "\x1b[A"
 RIGHT_ARROW = "\x1b[C"
@@ -178,6 +179,12 @@ def running_vm_path(target_vm: dict) -> tuple:
     if not all(deepest[: len(path)] == path for path in running_paths):
         raise ValueError("continue requires one unambiguous running VM ancestry chain")
     return deepest
+
+
+def vm_can_advance(target_vm: dict) -> bool:
+    state = target_vm.get(STATE_FIELD)
+    status = state.get(STATUS_FIELD) if isinstance(state, dict) else None
+    return status not in TERMINAL_STATUSES
 
 
 def vm_reference(path: tuple) -> str:
@@ -558,6 +565,8 @@ def step_target_file(
         raise FileNotFoundError(f"helix binary not found: {binary_path}")
 
     target_vm = load_target_vm(target_path, include_source_path)
+    if not vm_can_advance(target_vm):
+        return
     presentation_vm = None
     if not annotate_pc:
         with target_path.open("r", encoding="utf-8") as handle:
@@ -772,6 +781,9 @@ def step_and_commit(
     forward_primitive: str,
     annotate_pc: bool = True,
 ) -> None:
+    if not vm_can_advance(load_target_vm(debug_target_path, include_source_path)):
+        return
+
     repo = open_debug_repo(debug_target_path.parent)
     if repo.head_is_detached:
         next_snapshot = next_preserved_snapshot(repo)

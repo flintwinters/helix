@@ -150,9 +150,9 @@ snapshots during migration.
 - Selection, current-PC, breakpoint, error, and change indicators are visual
   overlays associated with object paths, not persisted YAML comments.
 - Styling never changes YAML content or runtime behavior.
-- Rendering never sets a terminal background color; foreground colors, bold,
-  and underline provide structure over the terminal's natural background.
-  Reverse video is not used as an implicit substitute background.
+- Rendering retains the terminal's natural background except for the explicit
+  full-width selected-row highlight. Reverse video is not used as an implicit
+  substitute background.
 - The same object path used by frames and breakpoints identifies the
   corresponding displayed text.
 - Rendering is deterministic for a given YAML document, semantic overlay state,
@@ -235,6 +235,8 @@ Implemented and verified:
 - appkey context switches are ephemeral overlays: every step, continue, or
   back operation clears them and derives the PC from the reloaded YAML, so an
   appkey can neither mask backward movement nor alter versioned history
+- finished, errored, and signaled programs suppress step/continue before
+  runtime invocation or history replay; external YAML back remains available
 - Up/F9 backward navigation is external version control over YAML text: it
   never calls Helix or depends on a runtime binary, and dirty saved edits are
   versioned target-only before the previous text is checked out

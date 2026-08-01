@@ -30,6 +30,7 @@ from tui.helix_step import (
     resolve_binary_path,
     restore_previous_yaml_snapshot,
     running_vm_path,
+    vm_can_advance,
 )
 
 
@@ -586,6 +587,8 @@ def reduce_state(
     if key == UP:
         return replace(state, context_vm=None), "back"
     if key == DOWN:
+        if not vm_can_advance(document.data):
+            return state, None
         return replace(state, context_vm=None), "step"
     if key == LEFT:
         node = document.node_by_path.get(state.selection)
@@ -603,8 +606,12 @@ def reduce_state(
         maximum = max(0, len(document.lines) - body_height)
         return replace(state, viewport=min(maximum, state.viewport + body_height)), None
     if key == F10:
+        if not vm_can_advance(document.data):
+            return state, None
         return replace(state, context_vm=None), "step"
     if key == F5:
+        if not vm_can_advance(document.data):
+            return state, None
         return replace(state, context_vm=None), "start"
     if key == F9:
         return replace(state, context_vm=None), "back"
