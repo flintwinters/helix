@@ -819,7 +819,7 @@ class EntrypointTests(unittest.TestCase):
         with mock.patch("tui.hui_demo.main", return_value=0) as run_demo:
             operations.main(
                 ["hui-demo", "example.yaml", "--binary", "custom-helix"],
-                script_name="run.py",
+                script_name="manage.py",
             )
         run_demo.assert_called_once_with(
             ["example.yaml", "--binary", "custom-helix"]

@@ -647,7 +647,7 @@ def split_runtime_output(stdout):
     return None, stdout
 
 
-def print_usage(script_name="run.py"):
+def print_usage(script_name="manage.py"):
     print("usage:")
     print(f"  python3 {script_name} [--lib] [--no-dynamic-libraries] [--no-cpp-linenums] [--optimize-size] [--valgrind] [--fail-fast]")
     print("                                             # compile C++, optional libs, tidy, cloc, and run C++ fixtures")
@@ -663,7 +663,7 @@ def print_usage(script_name="run.py"):
     print("                                             # launch the interactive literal-YAML HUI demo")
 
 
-def main(arguments=None, default_command="default", script_name="run.py"):
+def main(arguments=None, default_command="default", script_name="manage.py"):
     arguments = sys.argv[1:] if arguments is None else arguments
     compile_libs = False
     dynamic_libraries = True

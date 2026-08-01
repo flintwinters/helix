@@ -28,7 +28,7 @@ The runtime starts at the root mapping's `main`. A vector such as `[add, x, 1]` 
 | `src/ryml_interface.*` | YAML-to-Cell conversion, source locations, `include`, `name:type` sugar, YAML emission, native modules |
 | `scripts/operations.py` | Canonical build, analysis, fixture discovery, runtime/HCC test harnesses |
 | `manage.py` | Canonical Typer/Rich repository command surface; delegates policy to `scripts/operations.py` |
-| `run.py`, `hcc/build.py` | Compatibility entrypoints; not canonical workflow surfaces |
+| `hcc/build.py` | Compatibility HCC entrypoint; not a canonical workflow surface |
 | `hcc/compiler.py` | `pycparser` C AST lowering to human-readable Helix forms |
 | `HCC_Plan.md` | HCC development cockpit: mission, debugging invariants, current checkpoint, roadmap, and verification state |
 | `HUI.md` | Python interaction checkpoint and canonical direction for the literal-YAML C++ terminal interface |
