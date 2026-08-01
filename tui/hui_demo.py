@@ -496,9 +496,9 @@ def reduce_state(
             None,
         )
     if key == UP:
-        return state, "step"
-    if key == DOWN:
         return state, "back"
+    if key == DOWN:
+        return state, "step"
     if key == LEFT:
         node = document.node_by_path.get(state.selection)
         if node is not None and node.parent is not None:
@@ -666,7 +666,7 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
         )
     else:
         footer = (
-            f" {format_path(state.selection)}  ↑ step ↓ back ← parent → child "
+            f" {format_path(state.selection)}  ↑ back ↓ step ← parent → child "
             "Esc write F9 back F10 step F5 continue Ctrl-Q quit"
         )
     output.append(f"{PATH_STYLE}{fit(footer, content_width)}{RESET}")

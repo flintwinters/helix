@@ -774,7 +774,7 @@ def operation_handlers(
             "step",
             annotate_pc,
         ),
-        UP_ARROW: lambda: step_and_commit(
+        DOWN_ARROW: lambda: step_and_commit(
             binary_path,
             debug_target_path,
             include_source_path,
@@ -789,7 +789,7 @@ def operation_handlers(
             annotate_pc,
         ),
         STEP_BACKWARD_OPERATION: lambda: checkout_previous_snapshot(debug_target_path),
-        DOWN_ARROW: lambda: checkout_previous_snapshot(debug_target_path),
+        UP_ARROW: lambda: checkout_previous_snapshot(debug_target_path),
         NEXT_BRANCH_OPERATION: lambda: checkout_adjacent_branch(debug_target_path, 1),
         RIGHT_ARROW: lambda: checkout_adjacent_branch(debug_target_path, 1),
         PREVIOUS_BRANCH_OPERATION: lambda: checkout_adjacent_branch(debug_target_path, -1),

@@ -143,10 +143,10 @@ class ReducerTests(unittest.TestCase):
         self.assertEqual(state.selection, ("keybinds",))
         unchanged, operation = hui_demo.reduce_state(doc, state, hui_demo.UP, 5)
         self.assertEqual(unchanged, state)
-        self.assertEqual(operation, "step")
+        self.assertEqual(operation, "back")
         unchanged, operation = hui_demo.reduce_state(doc, state, hui_demo.DOWN, 5)
         self.assertEqual(unchanged, state)
-        self.assertEqual(operation, "back")
+        self.assertEqual(operation, "step")
         state, _ = hui_demo.reduce_state(doc, state, hui_demo.RIGHT, 5)
         self.assertEqual(state.selection, ("keybinds", 0))
         state, _ = hui_demo.reduce_state(doc, state, hui_demo.LEFT, 5)
@@ -301,7 +301,7 @@ class RuntimeAndTerminalTests(unittest.TestCase):
         hui_demo.run_demo(FIXTURE, binary, terminal, runtime)
         self.assertEqual(
             [call[0] for call in calls],
-            ["step", "back", "step", "start", "back"],
+            ["back", "step", "step", "start", "back"],
         )
         self.assertTrue(terminal.restored)
         self.assertGreaterEqual(len(terminal.output), 6)
@@ -364,6 +364,29 @@ class RuntimeAndTerminalTests(unittest.TestCase):
 
 
 class HistoryAdapterTests(unittest.TestCase):
+    def test_legacy_debugger_arrows_match_down_forward_up_back(self):
+        target = Path("build/debug_demo/demo.yaml")
+        with (
+            mock.patch("tui.helix_step.step_and_commit") as step,
+            mock.patch("tui.helix_step.checkout_previous_snapshot") as back,
+        ):
+            handlers = helix_step.operation_handlers(
+                Path("build/helix"),
+                target,
+                Path("build/demo.yaml"),
+                annotate_pc=False,
+            )
+            handlers[helix_step.DOWN_ARROW]()
+            handlers[helix_step.UP_ARROW]()
+        step.assert_called_once_with(
+            Path("build/helix"),
+            target,
+            Path("build/demo.yaml"),
+            "step",
+            False,
+        )
+        back.assert_called_once_with(target)
+
     def test_first_step_preserves_literal_yaml_structure(self):
         yaml = YAML(typ="safe")
         runtime_state = yaml.load(FIXTURE.read_text(encoding="utf-8"))

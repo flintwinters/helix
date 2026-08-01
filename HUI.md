@@ -211,7 +211,8 @@ Implemented and verified:
 - selection and active PC are independent, non-persisted overlays
 - YAML keys, scalars, literals, numbers, punctuation, strings, and comments
   have distinct renderer-only syntax colors that survive PC/selection overlays
-- Up/Down traverse semantic nodes; Left/Right traverse parent/first-child
+- run-mode Down steps forward and Up restores the previous versioned state;
+  Left/Right traverse semantic parent/first-child
 - PgUp/PgDn clip a deterministic fixed-size viewport
 - the deepest running VM in one unambiguous ancestry chain supplies the PC
 - application keys resolve only along that VM chain, nearest-first
@@ -227,7 +228,7 @@ Implemented and verified:
   nested computation, and continuation finishes with `doubled: 84` and
   `summary: 85`
 - normal exit and failures restore the terminal boundary
-- run mode maps Up/F10 to one forward step and Down/F9 to the previous
+- run mode maps Down/F10 to one forward step and Up/F9 to the previous
   versioned state; scoped appkeys and F5 apply only in run mode
 - Escape toggles write mode, whose arrows, Home/End, printable input,
   Backspace/Delete, and Enter behave as literal text editing controls
