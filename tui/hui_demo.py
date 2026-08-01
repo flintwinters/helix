@@ -9,6 +9,7 @@ import os
 import shutil
 import sys
 import termios
+import tempfile
 import tty
 from dataclasses import dataclass, replace
 from functools import partial
@@ -42,12 +43,16 @@ F5 = "\x1b[15~"
 F9 = "\x1b[20~"
 F10 = "\x1b[21~"
 CTRL_Q = "\x11"
+BACKSPACE = "\x7f"
+DELETE = "\x1b[3~"
+HOME = "\x1b[H"
+END = "\x1b[F"
+ENTER_KEYS = ("\r", "\n")
 
 RESET = "\x1b[0m"
 BG = "\x1b[48;5;235m"
 CHROME = "\x1b[38;5;235;48;5;214m"
 PATH_STYLE = "\x1b[38;5;109;48;5;237m"
-FOOTER_STYLE = "\x1b[38;5;223;48;5;237m"
 YAML_STYLE = "\x1b[38;5;223m"
 YAML_KEY_STYLE = "\x1b[38;5;109m"
 YAML_STRING_STYLE = "\x1b[38;5;142m"
@@ -61,6 +66,8 @@ PC_SELECTION_STYLE = "\x1b[48;5;130m"
 CLEAR_HOME = "\x1b[2J\x1b[H"
 HIDE_CURSOR = "\x1b[?25l"
 SHOW_CURSOR = "\x1b[?25h"
+RUN_MODE = "RUN"
+WRITE_MODE = "WRITE"
 
 MAIN_FIELD = "main"
 STATE_FIELD = "state"
@@ -78,6 +85,26 @@ class SemanticNode:
     path: PathTuple
     parent: PathTuple | None
     line: int
+    column: int = 0
+
+
+@dataclass(frozen=True)
+class EditorBuffer:
+    lines: tuple[str, ...]
+    cursor_line: int
+    cursor_column: int
+    trailing_newline: bool = True
+
+    @classmethod
+    def from_text(cls, text: str, line: int, column: int) -> "EditorBuffer":
+        lines = tuple(text.rstrip("\n").split("\n")) or ("",)
+        cursor_line = max(0, min(line, len(lines) - 1))
+        cursor_column = max(0, min(column, len(lines[cursor_line])))
+        return cls(lines, cursor_line, cursor_column, text.endswith("\n"))
+
+    def text(self) -> str:
+        suffix = "\n" if self.trailing_newline else ""
+        return "\n".join(self.lines) + suffix
 
 
 @dataclass(frozen=True)
@@ -86,6 +113,9 @@ class DemoState:
     viewport: int = 0
     context_vm: PathTuple | None = None
     exiting: bool = False
+    mode: str = RUN_MODE
+    editor: EditorBuffer | None = None
+    message: str = ""
 
 
 @dataclass(frozen=True)
@@ -139,6 +169,13 @@ def canonical_yaml(data: dict) -> str:
 def load_ordered_document(path: Path) -> dict:
     with path.open("r", encoding="utf-8") as handle:
         loaded = YAML_ROUND_TRIP.load(handle)
+    if not isinstance(loaded, dict):
+        raise ValueError("HUI document must be a top-level YAML mapping")
+    return loaded
+
+
+def parse_document(text: str) -> dict:
+    loaded = YAML_ROUND_TRIP.load(text)
     if not isinstance(loaded, dict):
         raise ValueError("HUI document must be a top-level YAML mapping")
     return loaded
@@ -216,22 +253,22 @@ def semantic_nodes(parsed, data) -> tuple[SemanticNode, ...]:
         if isinstance(node, dict):
             for key, child in node.items():
                 child_path = (*path, key)
-                line, _ = node.lc.value(key)
-                nodes.append(SemanticNode(child_path, path, line))
+                line, column = node.lc.value(key)
+                nodes.append(SemanticNode(child_path, path, line, column))
                 visit(child, child_path)
         elif isinstance(node, list):
             for index, child in enumerate(node):
                 child_path = (*path, index)
-                line, _ = node.lc.item(index)
-                nodes.append(SemanticNode(child_path, path, line))
+                line, column = node.lc.item(index)
+                nodes.append(SemanticNode(child_path, path, line, column))
                 visit(child, child_path)
 
     visit(parsed, ())
     return tuple(nodes)
 
 
-def build_document(data: dict) -> Document:
-    text = canonical_yaml(data)
+def build_document(data: dict, text: str | None = None) -> Document:
+    text = canonical_yaml(data) if text is None else text
     parsed = YAML_ROUND_TRIP.load(text)
     nodes = semantic_nodes(parsed, data)
     return Document(
@@ -244,20 +281,16 @@ def build_document(data: dict) -> Document:
     )
 
 
+def load_document(path: Path) -> Document:
+    text = path.read_text(encoding="utf-8")
+    return build_document(parse_document(text), text)
+
+
 def first_child(document: Document, path: PathTuple) -> PathTuple | None:
     for node in document.nodes:
         if node.parent == path:
             return node.path
     return None
-
-
-def move_selection(document: Document, state: DemoState, offset: int) -> DemoState:
-    index = next(
-        (index for index, node in enumerate(document.nodes) if node.path == state.selection),
-        0,
-    )
-    next_index = max(0, min(len(document.nodes) - 1, index + offset))
-    return replace(state, selection=document.nodes[next_index].path)
 
 
 def vm_ancestors(document: Document, vm_path: PathTuple) -> Iterable[PathTuple]:
@@ -301,18 +334,171 @@ def clamp_viewport(document: Document, state: DemoState, body_height: int) -> De
     return replace(state, viewport=max(0, min(viewport, maximum)))
 
 
+def clamp_editor_viewport(state: DemoState, body_height: int) -> DemoState:
+    editor = state.editor
+    if editor is None:
+        return state
+    maximum = max(0, len(editor.lines) - max(1, body_height))
+    viewport = max(0, min(state.viewport, maximum))
+    if editor.cursor_line < viewport:
+        viewport = editor.cursor_line
+    elif editor.cursor_line >= viewport + body_height:
+        viewport = editor.cursor_line - body_height + 1
+    return replace(state, viewport=max(0, min(viewport, maximum)))
+
+
+def replace_editor_line(
+    editor: EditorBuffer,
+    line: str,
+    cursor_line: int | None = None,
+    cursor_column: int | None = None,
+    lines: tuple[str, ...] | None = None,
+) -> EditorBuffer:
+    updated_lines = list(editor.lines if lines is None else lines)
+    line_index = editor.cursor_line if cursor_line is None else cursor_line
+    updated_lines[line_index] = line
+    return replace(
+        editor,
+        lines=tuple(updated_lines),
+        cursor_line=line_index,
+        cursor_column=(
+            editor.cursor_column if cursor_column is None else cursor_column
+        ),
+    )
+
+
+def edit_buffer(editor: EditorBuffer, key: str) -> EditorBuffer:
+    line_index = editor.cursor_line
+    column = editor.cursor_column
+    line = editor.lines[line_index]
+
+    if key == UP:
+        next_line = max(0, line_index - 1)
+        return replace(
+            editor,
+            cursor_line=next_line,
+            cursor_column=min(column, len(editor.lines[next_line])),
+        )
+    if key == DOWN:
+        next_line = min(len(editor.lines) - 1, line_index + 1)
+        return replace(
+            editor,
+            cursor_line=next_line,
+            cursor_column=min(column, len(editor.lines[next_line])),
+        )
+    if key == LEFT:
+        if column > 0:
+            return replace(editor, cursor_column=column - 1)
+        if line_index > 0:
+            return replace(
+                editor,
+                cursor_line=line_index - 1,
+                cursor_column=len(editor.lines[line_index - 1]),
+            )
+        return editor
+    if key == RIGHT:
+        if column < len(line):
+            return replace(editor, cursor_column=column + 1)
+        if line_index + 1 < len(editor.lines):
+            return replace(editor, cursor_line=line_index + 1, cursor_column=0)
+        return editor
+    if key == HOME:
+        return replace(editor, cursor_column=0)
+    if key == END:
+        return replace(editor, cursor_column=len(line))
+    if key in ENTER_KEYS:
+        lines = list(editor.lines)
+        lines[line_index : line_index + 1] = [line[:column], line[column:]]
+        return replace(
+            editor,
+            lines=tuple(lines),
+            cursor_line=line_index + 1,
+            cursor_column=0,
+        )
+    if key == BACKSPACE:
+        if column > 0:
+            return replace_editor_line(
+                editor,
+                line[: column - 1] + line[column:],
+                cursor_column=column - 1,
+            )
+        if line_index > 0:
+            lines = list(editor.lines)
+            previous = lines[line_index - 1]
+            lines[line_index - 1 : line_index + 1] = [previous + line]
+            return replace(
+                editor,
+                lines=tuple(lines),
+                cursor_line=line_index - 1,
+                cursor_column=len(previous),
+            )
+        return editor
+    if key == DELETE:
+        if column < len(line):
+            return replace_editor_line(
+                editor,
+                line[:column] + line[column + 1 :],
+            )
+        if line_index + 1 < len(editor.lines):
+            lines = list(editor.lines)
+            lines[line_index : line_index + 2] = [line + lines[line_index + 1]]
+            return replace(editor, lines=tuple(lines))
+        return editor
+    if key == "\t":
+        key = "  "
+    if key and all(character.isprintable() for character in key):
+        return replace_editor_line(
+            editor,
+            line[:column] + key + line[column:],
+            cursor_column=column + len(key),
+        )
+    return editor
+
+
 def reduce_state(
     document: Document,
     state: DemoState,
     key: str,
     body_height: int,
 ) -> tuple[DemoState, str | None]:
-    if key in (CTRL_Q, ESCAPE):
+    if key == CTRL_Q:
         return replace(state, exiting=True), None
+    if state.mode == WRITE_MODE:
+        if key == ESCAPE:
+            return state, "save"
+        editor = state.editor
+        if editor is None:
+            raise ValueError("write mode requires an editor buffer")
+        return (
+            clamp_editor_viewport(
+                replace(
+                    state,
+                    editor=edit_buffer(editor, key),
+                    message="",
+                ),
+                body_height,
+            ),
+            None,
+        )
+    if key == ESCAPE:
+        node = document.node_by_path.get(state.selection, document.nodes[0])
+        editor = EditorBuffer.from_text(document.text, node.line, node.column)
+        return (
+            clamp_editor_viewport(
+                replace(
+                    state,
+                    mode=WRITE_MODE,
+                    editor=editor,
+                    message="",
+                ),
+                body_height,
+            ),
+            None,
+        )
     if key == UP:
-        return clamp_viewport(document, move_selection(document, state, -1), body_height), None
+        return state, "step"
     if key == DOWN:
-        return clamp_viewport(document, move_selection(document, state, 1), body_height), None
+        return state, "back"
     if key == LEFT:
         node = document.node_by_path.get(state.selection)
         if node is not None and node.parent is not None:
@@ -435,7 +621,12 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
     columns = max(1, columns)
     content_width = max(1, columns - 1)
     body_height = rows - 2
-    maximum_viewport = max(0, len(document.lines) - body_height)
+    display_lines = (
+        state.editor.lines
+        if state.mode == WRITE_MODE and state.editor is not None
+        else document.lines
+    )
+    maximum_viewport = max(0, len(display_lines) - body_height)
     viewport = max(0, min(state.viewport, maximum_viewport))
     context_vm = state.context_vm if state.context_vm is not None else document.active_vm
     active_pc = pc_path(document.data, context_vm)
@@ -444,29 +635,47 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
     pc_line = pc_node.line if pc_node is not None else -1
 
     status = (
-        f" HUI DEMO  vm:{format_path(context_vm)}  pc:{format_path(active_pc)} "
-        f" lines:{viewport + 1}-{min(len(document.lines), viewport + body_height)}"
+        f" {state.mode}  vm:{format_path(context_vm)}  pc:{format_path(active_pc)} "
+        f" lines:{viewport + 1}-{min(len(display_lines), viewport + body_height)}"
     )
+    if state.message:
+        status += f"  {state.message}"
     output = [
         f"{CLEAR_HOME}{HIDE_CURSOR}{BG}{CHROME}{fit(status, content_width)}{RESET}{BG}"
     ]
     for row in range(body_height):
         line_index = viewport + row
-        line = document.lines[line_index] if line_index < len(document.lines) else ""
+        line = display_lines[line_index] if line_index < len(display_lines) else ""
         output.append(
             overlay_line(
                 fit(line, content_width),
-                selected=line_index == selected_line,
-                active_pc=line_index == pc_line,
+                selected=(
+                    state.mode == RUN_MODE and line_index == selected_line
+                ),
+                active_pc=(
+                    state.mode == RUN_MODE and line_index == pc_line
+                ),
             )
         )
 
-    footer = (
-        f" {format_path(state.selection)}  ↑↓ node ← parent → child "
-        "PgUp/PgDn view F9 back F10 step F5 continue Ctrl-Q quit"
-    )
+    if state.mode == WRITE_MODE and state.editor is not None:
+        footer = (
+            f" WRITE  Ln {state.editor.cursor_line + 1},"
+            f" Col {state.editor.cursor_column + 1}  Esc validate/save/run "
+            "arrows move Enter split Backspace/Delete edit Ctrl-Q quit"
+        )
+    else:
+        footer = (
+            f" {format_path(state.selection)}  ↑ step ↓ back ← parent → child "
+            "Esc write F9 back F10 step F5 continue Ctrl-Q quit"
+        )
     output.append(f"{PATH_STYLE}{fit(footer, content_width)}{RESET}")
-    return "\r\n".join(output)
+    rendered = "\r\n".join(output)
+    if state.mode == WRITE_MODE and state.editor is not None:
+        cursor_row = 2 + state.editor.cursor_line - viewport
+        cursor_column = min(content_width, state.editor.cursor_column + 1)
+        rendered += f"{SHOW_CURSOR}\x1b[{cursor_row};{cursor_column}H"
+    return rendered
 
 
 def execute_runtime_operation(
@@ -495,13 +704,51 @@ def execute_runtime_operation(
     return load_ordered_document(target_path)
 
 
+def save_editor_document(target_path: Path, editor: EditorBuffer) -> Document:
+    text = editor.text()
+    document = build_document(parse_document(text), text)
+    temporary_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            prefix=f".{target_path.name}.",
+            suffix=".edit",
+            dir=target_path.parent,
+            delete=False,
+        ) as handle:
+            handle.write(text)
+            temporary_path = Path(handle.name)
+        os.replace(temporary_path, target_path)
+        temporary_path = None
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
+    return document
+
+
+def reconcile_document_state(
+    document: Document,
+    state: DemoState,
+) -> DemoState:
+    context = state.context_vm
+    if context not in vm_paths(document.data):
+        context = None
+    active_vm = context if context is not None else document.active_vm
+    return replace(
+        state,
+        context_vm=context,
+        selection=pc_path(document.data, active_vm),
+    )
+
+
 def run_demo(
     target_path: Path,
     binary_path: Path,
     terminal: Terminal,
     runtime_operation: Callable[[str, Path, Path], dict] = execute_runtime_operation,
 ) -> None:
-    document = build_document(load_ordered_document(target_path))
+    document = load_document(target_path)
     state = DemoState(selection=pc_path(document.data, document.active_vm))
 
     with terminal:
@@ -510,18 +757,30 @@ def run_demo(
             terminal.write(render(document, state, rows, columns))
             key = terminal.read_key()
             state, operation = reduce_state(document, state, key, max(1, rows - 2))
-            if operation is not None:
+            if operation == "save":
+                try:
+                    if state.editor is None:
+                        raise ValueError("write mode requires an editor buffer")
+                    document = save_editor_document(target_path, state.editor)
+                except Exception as error:
+                    state = replace(
+                        state,
+                        message=f"YAML ERROR: {str(error).splitlines()[0]}",
+                    )
+                else:
+                    state = reconcile_document_state(
+                        document,
+                        replace(
+                            state,
+                            mode=RUN_MODE,
+                            editor=None,
+                            message="",
+                        ),
+                    )
+            elif operation is not None:
                 data = runtime_operation(operation, binary_path, target_path)
                 document = build_document(data)
-                context = state.context_vm
-                if context not in vm_paths(document.data):
-                    context = None
-                active_vm = context if context is not None else document.active_vm
-                state = replace(
-                    state,
-                    context_vm=context,
-                    selection=pc_path(document.data, active_vm),
-                )
+                state = reconcile_document_state(document, state)
 
 
 class PosixTerminal:

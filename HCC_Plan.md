@@ -61,7 +61,7 @@ Implemented:
 
 Verified:
 
-- `uv run python hcc/build.py`: 3 passed, 0 failed
+- `uv run python manage.py hcc-test`: 3 passed, 0 failed
 - fixtures cover function calls, `if`/`else`, and a `while` loop
 
 Critical debugging gap:
@@ -155,7 +155,7 @@ demonstrate strong debugging value.
 The canonical command is:
 
 ```bash
-uv run python hcc/build.py
+uv run python manage.py hcc-test
 ```
 
 Every supported construct should eventually be tested across four observable

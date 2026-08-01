@@ -136,12 +136,18 @@ class ReducerTests(unittest.TestCase):
             + doc.data["workspace"]["offset"],
         )
 
-    def test_semantic_traversal_parent_child_and_viewport(self):
+    def test_run_arrows_drive_pc_and_left_right_traverse_semantics(self):
         doc = document()
         state = hui_demo.DemoState(selection=())
         state, _ = hui_demo.reduce_state(doc, state, hui_demo.RIGHT, 5)
         self.assertEqual(state.selection, ("keybinds",))
-        state, _ = hui_demo.reduce_state(doc, state, hui_demo.DOWN, 5)
+        unchanged, operation = hui_demo.reduce_state(doc, state, hui_demo.UP, 5)
+        self.assertEqual(unchanged, state)
+        self.assertEqual(operation, "step")
+        unchanged, operation = hui_demo.reduce_state(doc, state, hui_demo.DOWN, 5)
+        self.assertEqual(unchanged, state)
+        self.assertEqual(operation, "back")
+        state, _ = hui_demo.reduce_state(doc, state, hui_demo.RIGHT, 5)
         self.assertEqual(state.selection, ("keybinds", 0))
         state, _ = hui_demo.reduce_state(doc, state, hui_demo.LEFT, 5)
         self.assertEqual(state.selection, ("keybinds",))
@@ -158,6 +164,18 @@ class ReducerTests(unittest.TestCase):
         )
         self.assertEqual(next_state, state)
         self.assertEqual(operation, "back")
+
+    def test_escape_enters_write_mode_without_exiting(self):
+        doc = document()
+        state = hui_demo.DemoState(selection=("workspace", "task", "main"))
+        state, operation = hui_demo.reduce_state(doc, state, hui_demo.ESCAPE, 8)
+        self.assertIsNone(operation)
+        self.assertEqual(state.mode, hui_demo.WRITE_MODE)
+        self.assertFalse(state.exiting)
+        self.assertEqual(state.editor.text(), doc.text)
+        state, operation = hui_demo.reduce_state(doc, state, hui_demo.ESCAPE, 8)
+        self.assertEqual(operation, "save")
+        self.assertFalse(state.exiting)
 
     def test_appkeys_resolve_active_to_ancestor_nearest_first(self):
         doc = document()
@@ -184,6 +202,73 @@ class ReducerTests(unittest.TestCase):
         self.assertEqual(state.selection, ("actions", 1))
 
 
+class EditorTests(unittest.TestCase):
+    def test_text_editor_keys_insert_split_join_delete_and_move(self):
+        editor = hui_demo.EditorBuffer(("abc", "de"), 0, 2, True)
+        editor = hui_demo.edit_buffer(editor, "X")
+        self.assertEqual((editor.lines, editor.cursor_column), (("abXc", "de"), 3))
+        editor = hui_demo.edit_buffer(editor, hui_demo.ENTER_KEYS[0])
+        self.assertEqual(editor.lines, ("abX", "c", "de"))
+        editor = hui_demo.edit_buffer(editor, hui_demo.BACKSPACE)
+        self.assertEqual(editor.lines, ("abXc", "de"))
+        editor = hui_demo.edit_buffer(editor, hui_demo.DOWN)
+        editor = hui_demo.edit_buffer(editor, hui_demo.HOME)
+        editor = hui_demo.edit_buffer(editor, hui_demo.DELETE)
+        self.assertEqual(editor.lines, ("abXc", "e"))
+        editor = hui_demo.edit_buffer(editor, hui_demo.END)
+        editor = hui_demo.edit_buffer(editor, hui_demo.RIGHT)
+        self.assertEqual((editor.cursor_line, editor.cursor_column), (1, 1))
+
+    def test_write_mode_suppresses_runtime_and_appkeys(self):
+        calls = []
+
+        def runtime(operation, binary_path, target_path):
+            calls.append(operation)
+            return hui_demo.load_ordered_document(FIXTURE)
+
+        terminal = MemoryTerminal(
+            [hui_demo.ESCAPE, "R", hui_demo.F5, hui_demo.UP, hui_demo.CTRL_Q]
+        )
+        hui_demo.run_demo(FIXTURE, Path("build/helix"), terminal, runtime)
+        self.assertEqual(calls, [])
+        self.assertIn(" WRITE ", ANSI.sub("", terminal.output[-1]))
+
+    def test_valid_write_saves_exact_text_and_returns_to_run(self):
+        source = "main: [add, 1, 2]\n"
+        with tempfile.TemporaryDirectory(prefix="hui-edit-", dir="build") as directory:
+            target = Path(directory) / "edit.yaml"
+            target.write_text(source, encoding="utf-8")
+            terminal = MemoryTerminal(
+                [hui_demo.ESCAPE, hui_demo.END, " # note", hui_demo.ESCAPE, hui_demo.CTRL_Q]
+            )
+            hui_demo.run_demo(target, Path("build/helix"), terminal)
+            self.assertEqual(
+                target.read_text(encoding="utf-8"),
+                "main: [add, 1, 2] # note\n",
+            )
+        self.assertIn(" RUN ", ANSI.sub("", terminal.output[-1]))
+
+    def test_invalid_write_stays_buffered_and_does_not_touch_disk(self):
+        source = "main: [add, 1, 2]\n"
+        with tempfile.TemporaryDirectory(prefix="hui-edit-", dir="build") as directory:
+            target = Path(directory) / "edit.yaml"
+            target.write_text(source, encoding="utf-8")
+            terminal = MemoryTerminal(
+                [
+                    hui_demo.ESCAPE,
+                    hui_demo.LEFT,
+                    hui_demo.LEFT,
+                    hui_demo.DELETE,
+                    hui_demo.ESCAPE,
+                    hui_demo.CTRL_Q,
+                ]
+            )
+            hui_demo.run_demo(target, Path("build/helix"), terminal)
+            self.assertEqual(target.read_text(encoding="utf-8"), source)
+        final_frame = ANSI.sub("", terminal.output[-1])
+        self.assertIn(" WRITE ", final_frame)
+        self.assertIn("YAML ERROR", final_frame)
+
 class RuntimeAndTerminalTests(unittest.TestCase):
     def test_page_down_remains_visible_in_next_interactive_frame(self):
         terminal = MemoryTerminal([hui_demo.PAGE_DOWN, hui_demo.CTRL_Q], rows=7)
@@ -191,7 +276,7 @@ class RuntimeAndTerminalTests(unittest.TestCase):
         second_frame = ANSI.sub("", terminal.output[1])
         self.assertIn("lines:6-10", second_frame.splitlines()[0])
 
-    def test_f10_f5_and_f9_delegate_and_reload_yaml(self):
+    def test_run_arrows_and_function_keys_delegate_and_reload_yaml(self):
         calls = []
         yaml = YAML(typ="safe")
         initial = yaml.load(FIXTURE.read_text(encoding="utf-8"))
@@ -203,16 +288,23 @@ class RuntimeAndTerminalTests(unittest.TestCase):
             return changed
 
         terminal = MemoryTerminal(
-            [hui_demo.F10, hui_demo.F5, hui_demo.F9, hui_demo.CTRL_Q]
+            [
+                hui_demo.UP,
+                hui_demo.DOWN,
+                hui_demo.F10,
+                hui_demo.F5,
+                hui_demo.F9,
+                hui_demo.CTRL_Q,
+            ]
         )
         binary = Path("build/helix")
         hui_demo.run_demo(FIXTURE, binary, terminal, runtime)
         self.assertEqual(
             [call[0] for call in calls],
-            ["step", "start", "back"],
+            ["step", "back", "step", "start", "back"],
         )
         self.assertTrue(terminal.restored)
-        self.assertGreaterEqual(len(terminal.output), 4)
+        self.assertGreaterEqual(len(terminal.output), 6)
 
     def test_versioned_runtime_maps_operations_and_disables_pc_comments(self):
         restored = {"main": ["add", 1, 2]}

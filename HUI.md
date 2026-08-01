@@ -227,8 +227,14 @@ Implemented and verified:
   nested computation, and continuation finishes with `doubled: 84` and
   `summary: 85`
 - normal exit and failures restore the terminal boundary
-- `uv run python run.py hui-test` runs scripted tests without a PTY or timing
-- `uv run python run.py hui-demo` is the canonical interactive launch
+- run mode maps Up/F10 to one forward step and Down/F9 to the previous
+  versioned state; scoped appkeys and F5 apply only in run mode
+- Escape toggles write mode, whose arrows, Home/End, printable input,
+  Backspace/Delete, and Enter behave as literal text editing controls
+- Escape validates and atomically saves a write buffer before returning to run
+  mode; invalid YAML stays buffered and leaves the persisted VM unchanged
+- `uv run python manage.py hui-test` runs scripted tests without a PTY or timing
+- `uv run python manage.py hui-demo` is the canonical interactive launch
 
 Hands-on use of this intentionally small prototype is the remaining evidence
 needed before freezing these interaction contracts for C++.
@@ -250,7 +256,7 @@ Acceptance criteria:
 - no evaluation, resolution, frame, or serialization behavior is reimplemented
   in HUI
 - deterministic automated tests use the in-memory byte stream
-- HUI tests run through one obvious root-level `run.py` command backed by
+- HUI tests run through one obvious root-level `manage.py` command backed by
   `scripts/operations.py`
 - existing runtime and HCC fixtures continue to pass
 
@@ -319,11 +325,11 @@ POSIX-specific APIs, so an embedded adapter can reuse them unchanged.
 
 ## Verification Contract
 
-HUI testing must be routinized through a single root-level command added to
-`run.py` and implemented in `scripts/operations.py`. Tests must not depend on a
+HUI testing is routinized through the root-level Typer/Rich `manage.py` command
+and implemented in `scripts/operations.py`. Tests must not depend on a
 human terminal, VS Code, timing, or ad-hoc shell scripts.
 
-The current prototype suite is `uv run python run.py hui-test`, backed by
+The current prototype suite is `uv run python manage.py hui-test`, backed by
 `tui/tests`. It drives exact key strings and terminal dimensions through an
 in-memory terminal. Desktop/in-memory byte-stream parity remains an acceptance
 criterion for the portable C++ checkpoint.
