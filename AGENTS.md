@@ -93,8 +93,10 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
   sample data. Its nested frames and already-applied mutations must remain
   mutually consistent and are verified by a source-backed runtime fixture.
 - Interactive HUI execution uses the existing per-target Git-backed debug copy:
-  F10 and F5 commit forward states, while F9 checks out the previous snapshot.
-  Syntax and PC presentation remain absent from persisted YAML.
+  F10 and F5 commit textually changed forward states, while F9 checks out the
+  previous snapshot. A runtime operation that leaves persisted YAML unchanged
+  creates no history entry. Syntax and PC presentation remain absent from
+  persisted YAML.
 - HUI runtime reloads merge values into the original round-trip YAML tree.
   Existing mapping order, comments, scalar quotes, and flow/block collection
   choices are literal source structure and must survive stepping.
@@ -114,4 +116,4 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
 - The legacy Python debugger invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository. The Python literal-YAML HUI demo is the current behavioral prototype for semantic navigation, PC overlays, scoped keys, and debugger controls. Neither is the target architecture; `HUI.md` defines the portable C++ replacement that keeps terminal behavior outside the evaluator and runs through POSIX or embedded serial byte streams.
-- Verification on 2026-07-31: HUI demo and workflow tests pass 35/35. Runtime fixtures pass 51/51. HCC fixtures pass 3/3.
+- Verification on 2026-07-31: HUI demo and workflow tests pass 37/37. Runtime fixtures pass 51/51. HCC fixtures pass 3/3.

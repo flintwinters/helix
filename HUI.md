@@ -222,6 +222,8 @@ Implemented and verified:
 - F9 checks out and reloads the previous versioned VM snapshot; at the initial
   snapshot it is a stable no-op, and a later forward action can reuse preserved
   future state
+- forward runtime operations create snapshots only when the persisted YAML
+  text changes; textually null steps are absent from program history
 - the bundled `tests/assets/hui_core_demo.yaml` orbital-telemetry document is
   valid resumable Helix: its
   root/workspace/task frames form one running ancestry chain, F10 advances the

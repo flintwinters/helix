@@ -738,7 +738,8 @@ def step_and_commit(
         forward_primitive,
         annotate_pc,
     )
-    commit_debug_snapshot(debug_target_path.parent, "VM state")
+    if debug_repo_has_uncommitted_changes(debug_target_path.parent):
+        commit_debug_snapshot(debug_target_path.parent, "VM state")
 
 
 def preserve_snapshot_ref(repo, commit_id) -> None:

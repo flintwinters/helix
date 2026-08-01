@@ -435,6 +435,10 @@ class HistoryAdapterTests(unittest.TestCase):
         with (
             mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
             mock.patch("tui.helix_step.step_target_file") as step,
+            mock.patch(
+                "tui.helix_step.debug_repo_has_uncommitted_changes",
+                return_value=True,
+            ),
             mock.patch("tui.helix_step.commit_debug_snapshot") as commit,
         ):
             helix_step.step_and_commit(
@@ -455,6 +459,55 @@ class HistoryAdapterTests(unittest.TestCase):
             Path("build/debug_demo"),
             "VM state",
         )
+
+    def test_textually_null_step_does_not_create_snapshot(self):
+        repo = mock.Mock(head_is_detached=False)
+        with (
+            mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
+            mock.patch("tui.helix_step.step_target_file") as step,
+            mock.patch(
+                "tui.helix_step.debug_repo_has_uncommitted_changes",
+                return_value=False,
+            ) as changed,
+            mock.patch("tui.helix_step.commit_debug_snapshot") as commit,
+        ):
+            helix_step.step_and_commit(
+                Path("build/helix"),
+                Path("build/debug_demo/demo.yaml"),
+                Path("build/demo.yaml"),
+                "step",
+                annotate_pc=False,
+            )
+        step.assert_called_once()
+        changed.assert_called_once_with(Path("build/debug_demo"))
+        commit.assert_not_called()
+
+    def test_detached_null_step_does_not_create_history_branch(self):
+        repo = mock.Mock(head_is_detached=True)
+        with (
+            mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
+            mock.patch(
+                "tui.helix_step.next_preserved_snapshot",
+                return_value=None,
+            ),
+            mock.patch("tui.helix_step.step_target_file") as step,
+            mock.patch(
+                "tui.helix_step.debug_repo_has_uncommitted_changes",
+                return_value=False,
+            ),
+            mock.patch("tui.helix_step.checkout_detached_commit") as checkout,
+            mock.patch("tui.helix_step.commit_debug_snapshot") as commit,
+        ):
+            helix_step.step_and_commit(
+                Path("build/helix"),
+                Path("build/debug_demo/demo.yaml"),
+                Path("build/demo.yaml"),
+                "step",
+                annotate_pc=False,
+            )
+        step.assert_called_once()
+        checkout.assert_not_called()
+        commit.assert_not_called()
 
     def test_forward_reuses_unannotated_snapshot_after_backward(self):
         repo = mock.Mock(head_is_detached=True)
