@@ -23,12 +23,12 @@ if __package__ in (None, ""):
 
 from tui.helix_step import (
     CONTINUE_OPERATION,
-    STEP_BACKWARD_OPERATION,
     STEP_FORWARD_OPERATION,
     YAML_DUMPER,
     ensure_debug_repo,
     execute_debug_operation,
     resolve_binary_path,
+    restore_previous_yaml_snapshot,
 )
 
 
@@ -821,10 +821,13 @@ def execute_runtime_operation(
     *,
     include_source_path: Path | None = None,
 ) -> dict:
+    if operation == "back":
+        restore_previous_yaml_snapshot(target_path)
+        return load_ordered_document(target_path)
+
     operations = {
         "step": STEP_FORWARD_OPERATION,
         "start": CONTINUE_OPERATION,
-        "back": STEP_BACKWARD_OPERATION,
     }
     debug_operation = operations.get(operation)
     if debug_operation is None:

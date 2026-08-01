@@ -398,12 +398,11 @@ class RuntimeAndTerminalTests(unittest.TestCase):
         self.assertTrue(terminal.restored)
         self.assertGreaterEqual(len(terminal.output), 6)
 
-    def test_versioned_runtime_maps_operations_and_disables_pc_comments(self):
+    def test_forward_operations_use_runtime_while_back_is_external(self):
         restored = {"main": ["add", 1, 2]}
         operations = (
             ("step", hui_demo.STEP_FORWARD_OPERATION),
             ("start", hui_demo.CONTINUE_OPERATION),
-            ("back", hui_demo.STEP_BACKWARD_OPERATION),
         )
         with (
             mock.patch(
@@ -414,6 +413,9 @@ class RuntimeAndTerminalTests(unittest.TestCase):
                 "tui.hui_demo.load_ordered_document",
                 return_value=restored,
             ) as reload_vm,
+            mock.patch(
+                "tui.hui_demo.restore_previous_yaml_snapshot",
+            ) as restore,
         ):
             for operation, expected_debug_operation in operations:
                 self.assertIs(
@@ -431,7 +433,17 @@ class RuntimeAndTerminalTests(unittest.TestCase):
                     Path("build/debug_demo/demo.yaml"),
                     annotate_pc=False,
                 )
-        self.assertEqual(reload_vm.call_count, len(operations))
+            self.assertIs(
+                hui_demo.execute_runtime_operation(
+                    "back",
+                    Path("missing-helix-binary"),
+                    Path("build/debug_demo/demo.yaml"),
+                ),
+                restored,
+            )
+        restore.assert_called_once_with(Path("build/debug_demo/demo.yaml"))
+        self.assertEqual(execute.call_count, len(operations))
+        self.assertEqual(reload_vm.call_count, len(operations) + 1)
 
     def test_terminal_restores_after_backward_history_error(self):
         def runtime(operation, binary_path, target_path):
@@ -456,11 +468,11 @@ class RuntimeAndTerminalTests(unittest.TestCase):
 
 
 class HistoryAdapterTests(unittest.TestCase):
-    def test_legacy_debugger_arrows_match_down_forward_up_back(self):
+    def test_legacy_debugger_arrows_match_down_forward_up_external_back(self):
         target = Path("build/debug_demo/demo.yaml")
         with (
             mock.patch("tui.helix_step.step_and_commit") as step,
-            mock.patch("tui.helix_step.checkout_previous_snapshot") as back,
+            mock.patch("tui.helix_step.restore_previous_yaml_snapshot") as back,
         ):
             handlers = helix_step.operation_handlers(
                 Path("build/helix"),
@@ -478,6 +490,38 @@ class HistoryAdapterTests(unittest.TestCase):
             False,
         )
         back.assert_called_once_with(target)
+
+    def test_external_back_versions_dirty_yaml_before_checkout(self):
+        target = Path("build/debug_demo/demo.yaml")
+        with (
+            mock.patch(
+                "tui.helix_step.debug_target_has_uncommitted_changes",
+                return_value=True,
+            ) as changed,
+            mock.patch("tui.helix_step.commit_manual_edit_to_fork") as preserve,
+            mock.patch("tui.helix_step.checkout_previous_snapshot") as checkout,
+        ):
+            helix_step.restore_previous_yaml_snapshot(target)
+        changed.assert_called_once_with(target)
+        preserve.assert_called_once_with(target)
+        checkout.assert_called_once_with(target)
+
+    def test_yaml_snapshots_stage_only_the_debug_target(self):
+        repo = mock.Mock()
+        repo.head_is_unborn = True
+        pygit2 = mock.Mock()
+        pygit2.Signature.return_value = object()
+        with (
+            mock.patch("tui.helix_step.load_pygit2", return_value=pygit2),
+            mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
+        ):
+            helix_step.commit_debug_snapshot(
+                Path("build/debug_demo"),
+                "VM state",
+                "demo.yaml",
+            )
+        repo.index.add.assert_called_once_with("demo.yaml")
+        repo.index.add_all.assert_not_called()
 
     def test_first_step_preserves_literal_yaml_structure(self):
         yaml = YAML(typ="safe")
@@ -528,7 +572,7 @@ class HistoryAdapterTests(unittest.TestCase):
             mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
             mock.patch("tui.helix_step.step_target_file") as step,
             mock.patch(
-                "tui.helix_step.debug_repo_has_uncommitted_changes",
+                "tui.helix_step.debug_target_has_uncommitted_changes",
                 return_value=True,
             ),
             mock.patch("tui.helix_step.commit_debug_snapshot") as commit,
@@ -550,6 +594,7 @@ class HistoryAdapterTests(unittest.TestCase):
         commit.assert_called_once_with(
             Path("build/debug_demo"),
             "VM state",
+            "demo.yaml",
         )
 
     def test_textually_null_step_does_not_create_snapshot(self):
@@ -558,7 +603,7 @@ class HistoryAdapterTests(unittest.TestCase):
             mock.patch("tui.helix_step.open_debug_repo", return_value=repo),
             mock.patch("tui.helix_step.step_target_file") as step,
             mock.patch(
-                "tui.helix_step.debug_repo_has_uncommitted_changes",
+                "tui.helix_step.debug_target_has_uncommitted_changes",
                 return_value=False,
             ) as changed,
             mock.patch("tui.helix_step.commit_debug_snapshot") as commit,
@@ -571,7 +616,7 @@ class HistoryAdapterTests(unittest.TestCase):
                 annotate_pc=False,
             )
         step.assert_called_once()
-        changed.assert_called_once_with(Path("build/debug_demo"))
+        changed.assert_called_once_with(Path("build/debug_demo/demo.yaml"))
         commit.assert_not_called()
 
     def test_detached_null_step_does_not_create_history_branch(self):
@@ -584,7 +629,7 @@ class HistoryAdapterTests(unittest.TestCase):
             ),
             mock.patch("tui.helix_step.step_target_file") as step,
             mock.patch(
-                "tui.helix_step.debug_repo_has_uncommitted_changes",
+                "tui.helix_step.debug_target_has_uncommitted_changes",
                 return_value=False,
             ),
             mock.patch("tui.helix_step.checkout_detached_commit") as checkout,

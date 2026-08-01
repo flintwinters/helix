@@ -228,6 +228,9 @@ Implemented and verified:
 - F9 checks out and reloads the previous versioned VM snapshot; at the initial
   snapshot it is a stable no-op, and a later forward action can reuse preserved
   future state
+- Up/F9 backward navigation is external version control over YAML text: it
+  never calls Helix or depends on a runtime binary, and dirty saved edits are
+  versioned target-only before the previous text is checked out
 - forward runtime operations create snapshots only when the persisted YAML
   text changes; textually null steps are absent from program history
 - the bundled `tests/assets/hui_core_demo.yaml` orbital-telemetry document is

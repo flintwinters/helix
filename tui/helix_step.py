@@ -410,19 +410,27 @@ def debug_repo_has_commits(debug_directory: Path) -> bool:
     return not open_debug_repo(debug_directory).head_is_unborn
 
 
-def commit_debug_snapshot(debug_directory: Path, message: str) -> None:
+def commit_debug_snapshot(
+    debug_directory: Path,
+    message: str,
+    target_name: str,
+) -> None:
     pygit2 = load_pygit2()
     repo = open_debug_repo(debug_directory)
     signature = pygit2.Signature("Hx Db", "helix-debugger@example.com")
-    repo.index.add_all()
+    repo.index.add(target_name)
     repo.index.write()
     tree = repo.index.write_tree()
     parents = [] if repo.head_is_unborn else [repo.head.target]
     repo.create_commit("HEAD", signature, signature, message, tree, parents)
 
 
-def debug_repo_has_uncommitted_changes(debug_directory: Path) -> bool:
-    return bool(open_debug_repo(debug_directory).status())
+def debug_target_has_uncommitted_changes(debug_target_path: Path) -> bool:
+    return bool(
+        open_debug_repo(debug_target_path.parent).status_file(
+            debug_target_path.name
+        )
+    )
 
 
 def run_git_log(debug_directory: Path, *args: str) -> str:
@@ -481,7 +489,11 @@ def ensure_debug_repo(target_path: Path) -> Path:
         init_debug_repo(debug_target_path.parent)
 
     if not debug_repo_has_commits(debug_target_path.parent):
-        commit_debug_snapshot(debug_target_path.parent, "Record initial debug VM state")
+        commit_debug_snapshot(
+            debug_target_path.parent,
+            "Record initial debug VM state",
+            debug_target_path.name,
+        )
 
     return debug_target_path
 
@@ -602,11 +614,15 @@ def create_branch_at_head(debug_target_path: Path) -> None:
 
 
 def commit_manual_edit_to_fork(debug_target_path: Path) -> None:
-    if not debug_repo_has_uncommitted_changes(debug_target_path.parent):
+    if not debug_target_has_uncommitted_changes(debug_target_path):
         return
 
     create_branch_at_head(debug_target_path)
-    commit_debug_snapshot(debug_target_path.parent, "Manual VM edit")
+    commit_debug_snapshot(
+        debug_target_path.parent,
+        "Manual VM edit",
+        debug_target_path.name,
+    )
 
 
 def branch_log_order(debug_directory: Path) -> list[str]:
@@ -738,8 +754,12 @@ def step_and_commit(
         forward_primitive,
         annotate_pc,
     )
-    if debug_repo_has_uncommitted_changes(debug_target_path.parent):
-        commit_debug_snapshot(debug_target_path.parent, "VM state")
+    if debug_target_has_uncommitted_changes(debug_target_path):
+        commit_debug_snapshot(
+            debug_target_path.parent,
+            "VM state",
+            debug_target_path.name,
+        )
 
 
 def preserve_snapshot_ref(repo, commit_id) -> None:
@@ -759,6 +779,13 @@ def checkout_previous_snapshot(debug_target_path: Path) -> None:
     parent_commit = head_commit.parents[0]
     preserve_snapshot_ref(repo, head_commit.id)
     checkout_detached_commit(repo, parent_commit)
+
+
+def restore_previous_yaml_snapshot(debug_target_path: Path) -> None:
+    """Version current text if needed, then restore its previous Git snapshot."""
+    if debug_target_has_uncommitted_changes(debug_target_path):
+        commit_manual_edit_to_fork(debug_target_path)
+    checkout_previous_snapshot(debug_target_path)
 
 
 def operation_handlers(
@@ -789,8 +816,8 @@ def operation_handlers(
             "start",
             annotate_pc,
         ),
-        STEP_BACKWARD_OPERATION: lambda: checkout_previous_snapshot(debug_target_path),
-        UP_ARROW: lambda: checkout_previous_snapshot(debug_target_path),
+        STEP_BACKWARD_OPERATION: lambda: restore_previous_yaml_snapshot(debug_target_path),
+        UP_ARROW: lambda: restore_previous_yaml_snapshot(debug_target_path),
         NEXT_BRANCH_OPERATION: lambda: checkout_adjacent_branch(debug_target_path, 1),
         RIGHT_ARROW: lambda: checkout_adjacent_branch(debug_target_path, 1),
         PREVIOUS_BRANCH_OPERATION: lambda: checkout_adjacent_branch(debug_target_path, -1),
@@ -816,7 +843,14 @@ def execute_debug_operation(
     if handler is None:
         return False
 
-    if debug_repo_has_uncommitted_changes(debug_target_path.parent):
+    operation_preserves_dirty_text = operation in (
+        STEP_BACKWARD_OPERATION,
+        UP_ARROW,
+    )
+    if (
+        not operation_preserves_dirty_text
+        and debug_target_has_uncommitted_changes(debug_target_path)
+    ):
         commit_manual_edit_to_fork(debug_target_path)
         if operation in (FORK_BRANCH_OPERATION, SPACE_KEY):
             return True
