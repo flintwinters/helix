@@ -215,6 +215,8 @@ Implemented and verified:
 
 - ANSI-stripped YAML content is exactly the canonical ordered document
 - selection and active PC are independent, non-persisted overlays
+- the selected run-mode row alone receives a full-width background highlight;
+  every other row retains the terminal's natural background
 - YAML keys, scalars, literals, numbers, punctuation, strings, and comments
   have distinct renderer-only syntax colors that survive PC/selection overlays
 - run-mode Down steps forward and Up restores the previous versioned state;

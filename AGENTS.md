@@ -75,10 +75,10 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 - Canonical ordered YAML remains the displayed content; selection and PC
   styling and syntax highlighting are ANSI-only overlays and are never
   persisted.
-- HUI presentation never sets a terminal background color. Title, footer, PC,
-  selection, syntax, and mode distinctions use foreground color and text
-  attributes over the terminal's natural background; reverse video is also
-  excluded.
+- HUI presentation retains the terminal's natural background except for one
+  localized full-width highlight on the currently selected run-mode row.
+  Title, footer, PC, syntax, and mode distinctions otherwise use foreground
+  color and text attributes; reverse video remains excluded.
 - Navigation targets semantic mapping values and sequence items identified by
   object paths, independently from viewport rows.
 - Escape toggles run/write modes. In run mode Down steps forward and Up checks

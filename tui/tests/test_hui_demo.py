@@ -95,21 +95,26 @@ class RenderingTests(unittest.TestCase):
         self.assertIn(f"{hui_demo.YAML_KEY_STYLE}status", styled)
         self.assertIn(f"{hui_demo.YAML_STYLE}running", styled)
 
-    def test_renderer_never_sets_background_or_reverse_video(self):
+    def test_renderer_uses_background_only_for_selected_row(self):
         rendered = hui_demo.render(
             document(),
-            hui_demo.DemoState(("workspace", "task", "steps", 1)),
+            hui_demo.DemoState(("keybinds",)),
             12,
             72,
         )
-        forbidden = {*range(40, 50), *range(100, 108), 7}
+        background_styles = []
         for match in re.finditer(r"\x1b\[([0-9;]*)m", rendered):
             parameters = {
                 int(parameter)
                 for parameter in match.group(1).split(";")
                 if parameter
             }
-            self.assertTrue(parameters.isdisjoint(forbidden), match.group(0))
+            self.assertNotIn(7, parameters, match.group(0))
+            if 48 in parameters or not parameters.isdisjoint(
+                {*range(40, 50), *range(100, 108)}
+            ):
+                background_styles.append(match.group(0))
+        self.assertEqual(background_styles, [hui_demo.SELECTION_STYLE])
 
     def test_run_mode_highlights_only_currently_active_keybind_scalars(self):
         doc = document()
