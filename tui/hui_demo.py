@@ -29,6 +29,7 @@ from tui.helix_step import (
     execute_debug_operation,
     resolve_binary_path,
     restore_previous_yaml_snapshot,
+    running_vm_path,
 )
 
 
@@ -230,20 +231,7 @@ def is_path_prefix(prefix: PathTuple, path: PathTuple) -> bool:
 
 
 def discover_active_vm(data) -> PathTuple:
-    running = []
-    for path in vm_paths(data):
-        vm = value_at(data, path)
-        state = vm.get(STATE_FIELD)
-        if isinstance(state, dict) and state.get(STATUS_FIELD) == RUNNING_STATUS:
-            running.append(path)
-
-    if not running:
-        return ()
-
-    deepest = max(running, key=len)
-    if not all(is_path_prefix(path, deepest) for path in running):
-        raise ValueError("demo requires one unambiguous running VM ancestry chain")
-    return deepest
+    return running_vm_path(data)
 
 
 def pc_path(data, vm_path: PathTuple) -> PathTuple:
@@ -596,9 +584,9 @@ def reduce_state(
             None,
         )
     if key == UP:
-        return state, "back"
+        return replace(state, context_vm=None), "back"
     if key == DOWN:
-        return state, "step"
+        return replace(state, context_vm=None), "step"
     if key == LEFT:
         node = document.node_by_path.get(state.selection)
         if node is not None and node.parent is not None:
@@ -615,11 +603,11 @@ def reduce_state(
         maximum = max(0, len(document.lines) - body_height)
         return replace(state, viewport=min(maximum, state.viewport + body_height)), None
     if key == F10:
-        return state, "step"
+        return replace(state, context_vm=None), "step"
     if key == F5:
-        return state, "start"
+        return replace(state, context_vm=None), "start"
     if key == F9:
-        return state, "back"
+        return replace(state, context_vm=None), "back"
 
     context = state.context_vm if state.context_vm is not None else document.active_vm
     declaring_vm = resolve_appkey(document, context, key)
@@ -919,7 +907,10 @@ def run_demo(
             elif operation is not None:
                 data = runtime_operation(operation, binary_path, target_path)
                 document = build_document(data)
-                state = reconcile_document_state(document, state)
+                state = reconcile_document_state(
+                    document,
+                    replace(state, context_vm=None),
+                )
 
 
 class PosixTerminal:

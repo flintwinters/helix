@@ -247,15 +247,28 @@ class ReducerTests(unittest.TestCase):
         self.assertEqual(state.viewport, 5)
 
     def test_f9_requests_one_backward_snapshot(self):
-        state = hui_demo.DemoState(selection=())
+        state = hui_demo.DemoState(selection=(), context_vm=("workspace",))
         next_state, operation = hui_demo.reduce_state(
             document(),
             state,
             hui_demo.F9,
             5,
         )
-        self.assertEqual(next_state, state)
+        self.assertIsNone(next_state.context_vm)
         self.assertEqual(operation, "back")
+
+    def test_back_after_appkey_returns_to_versioned_yaml_pc(self):
+        doc = document()
+        state = hui_demo.DemoState(selection=doc.active_vm)
+        state, _ = hui_demo.reduce_state(doc, state, "W", 20)
+        self.assertEqual(state.context_vm, ("workspace",))
+
+        state, operation = hui_demo.reduce_state(doc, state, hui_demo.F9, 20)
+        self.assertEqual(operation, "back")
+        self.assertIsNone(state.context_vm)
+
+        state = hui_demo.reconcile_document_state(doc, state)
+        self.assertEqual(state.selection, ("workspace", "task", "steps", 1))
 
     def test_escape_enters_write_mode_without_exiting(self):
         doc = document()
@@ -596,6 +609,34 @@ class HistoryAdapterTests(unittest.TestCase):
             "VM state",
             "demo.yaml",
         )
+
+    def test_continue_targets_deepest_running_vm_run_block(self):
+        target_vm = helix_step.load_target_vm(FIXTURE)
+
+        wrapper = helix_step.build_wrapper_vm(target_vm, "start")
+
+        self.assertEqual(
+            wrapper["main"],
+            ["start", "__debug_target__.workspace.task"],
+        )
+
+    def test_step_still_targets_root_vm(self):
+        target_vm = helix_step.load_target_vm(FIXTURE)
+
+        wrapper = helix_step.build_wrapper_vm(target_vm, "step")
+
+        self.assertEqual(wrapper["main"], ["step", "__debug_target__"])
+
+    def test_continue_rejects_ambiguous_running_vm_siblings(self):
+        target_vm = {
+            "left": {"main": ["add", 1, 1], "state": {"status": "running"}},
+            "right": {"main": ["add", 2, 2], "state": {"status": "running"}},
+            "main": ["add", 0, 0],
+            "state": {"status": "running"},
+        }
+
+        with self.assertRaisesRegex(ValueError, "unambiguous running VM ancestry"):
+            helix_step.build_wrapper_vm(target_vm, "start")
 
     def test_textually_null_step_does_not_create_snapshot(self):
         repo = mock.Mock(head_is_detached=False)

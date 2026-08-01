@@ -222,12 +222,17 @@ Implemented and verified:
 - PgUp/PgDn clip a deterministic fixed-size viewport
 - the deepest running VM in one unambiguous ancestry chain supplies the PC
 - application keys resolve only along that VM chain, nearest-first
-- F10/F5 delegate to existing step/start operations and reload emitted YAML
+- F10 delegates one root step; F5 starts only the deepest running VM that owns
+  the displayed PC, so continue ends at the current `run` block rather than
+  advancing its running VM ancestors; both reload emitted YAML
 - runtime values are merged into the original round-trip YAML tree so a step
   preserves existing order, comments, quotes, and flow/block collection style
 - F9 checks out and reloads the previous versioned VM snapshot; at the initial
   snapshot it is a stable no-op, and a later forward action can reuse preserved
   future state
+- appkey context switches are ephemeral overlays: every step, continue, or
+  back operation clears them and derives the PC from the reloaded YAML, so an
+  appkey can neither mask backward movement nor alter versioned history
 - Up/F9 backward navigation is external version control over YAML text: it
   never calls Helix or depends on a runtime binary, and dirty saved edits are
   versioned target-only before the previous text is checked out

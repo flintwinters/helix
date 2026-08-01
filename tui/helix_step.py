@@ -19,6 +19,8 @@ INCLUDE_FIELD = "include"
 MAIN_FIELD = "main"
 STATE_FIELD = "state"
 FRAMES_FIELD = "frames"
+STATUS_FIELD = "status"
+RUNNING_STATUS = "running"
 DOWN_ARROW = "\x1b[B"
 UP_ARROW = "\x1b[A"
 RIGHT_ARROW = "\x1b[C"
@@ -149,10 +151,46 @@ def load_target_vm(target_path: Path, include_source_path: Path | None = None) -
     return expand_root_includes(loaded, include_source_path or target_path)
 
 
+def running_vm_path(target_vm: dict) -> tuple:
+    """Return the deepest VM on the single running ancestry chain."""
+    running_paths: list[tuple] = []
+
+    def visit(value, path: tuple) -> None:
+        if isinstance(value, dict):
+            state = value.get(STATE_FIELD)
+            if (
+                MAIN_FIELD in value
+                and isinstance(state, dict)
+                and state.get(STATUS_FIELD) == RUNNING_STATUS
+            ):
+                running_paths.append(path)
+            for key, child in value.items():
+                visit(child, path + (key,))
+        elif isinstance(value, list):
+            for index, child in enumerate(value):
+                visit(child, path + (index,))
+
+    visit(target_vm, ())
+    if not running_paths:
+        return ()
+
+    deepest = max(running_paths, key=len)
+    if not all(deepest[: len(path)] == path for path in running_paths):
+        raise ValueError("continue requires one unambiguous running VM ancestry chain")
+    return deepest
+
+
+def vm_reference(path: tuple) -> str:
+    if not all(isinstance(component, str) for component in path):
+        raise ValueError("continue target VM path must contain only mapping keys")
+    return ".".join((WRAPPER_VM_NAME, *path))
+
+
 def build_wrapper_vm(target_vm: dict, forward_primitive: str) -> dict:
+    target_path = running_vm_path(target_vm) if forward_primitive == "start" else ()
     return {
         WRAPPER_VM_NAME: target_vm,
-        MAIN_FIELD: [forward_primitive, WRAPPER_VM_NAME],
+        MAIN_FIELD: [forward_primitive, vm_reference(target_path)],
     }
 
 
