@@ -20,7 +20,6 @@ workspace:
     enabled: true
     last-error: null
     sample: 40
-    adjusted: 42
     steps:
       - [set, adjusted, [add, sample, offset]]
       - [set, doubled, [mul, adjusted, 2]]
@@ -29,8 +28,9 @@ workspace:
     state:
       status: running
       frames:
-        - [steps, 1]
+        - [steps, 0]
   actions:
+    - [step, task]
     - [step, task]
     - [step, task]
     - [step, task]
@@ -40,6 +40,7 @@ workspace:
     frames:
       - [actions, 1]
 actions:
+  - [step, workspace]
   - [step, workspace]
   - [step, workspace]
   - [step, workspace]

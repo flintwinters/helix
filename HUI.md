@@ -202,8 +202,9 @@ debug snapshot through the same history boundary used by the existing Python
 debugger. Its ordered nested-VM document demonstrates
 nearest-first ancestor `keybinds`, excludes an unrelated sibling binding, and
 models a key press as a display-only switch to the declaring VM's persisted PC.
-The default launch copies that canonical document to `build/hui_demo.yaml`, so
-runtime operations mutate only generated working state.
+The default launch copies that canonical document to a unique file under
+`build/`, so runtime operations mutate only generated working state and each
+session begins with independent debug history.
 
 The demo intentionally does not establish evaluator interrupt semantics,
 persist interrupt state, edit YAML, reimplement history storage, or replace the
@@ -244,8 +245,9 @@ Implemented and verified:
   text changes; textually null steps are absent from program history
 - the bundled `tests/assets/hui_core_demo.yaml` orbital-telemetry document is
   valid resumable Helix: its
-  root/workspace/task frames form one running ancestry chain, F10 advances the
-  nested computation, and continuation finishes with `doubled: 84` and
+  root/workspace/task frames form one running ancestry chain, its active task
+  PC begins at `steps[0]`, F10 advances the nested computation, and
+  continuation finishes with `doubled: 84` and
   `summary: 85`
 - normal exit and failures restore the terminal boundary
 - run mode maps Down/F10 to one forward step and Up/F9 to the previous
@@ -256,6 +258,7 @@ Implemented and verified:
   mode; invalid YAML stays buffered and leaves the persisted VM unchanged
 - `uv run python manage.py hui-test` runs scripted tests without a PTY or timing
 - `uv run python manage.py hui-demo` is the canonical interactive launch
+  and creates a unique project-local working copy and debug history per session
 
 Hands-on use of this intentionally small prototype is the remaining evidence
 needed before freezing these interaction contracts for C++.

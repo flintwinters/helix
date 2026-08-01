@@ -63,7 +63,7 @@ class RenderingTests(unittest.TestCase):
     def test_pc_and_selection_are_overlays_without_yaml_mutation(self):
         doc = document()
         before = hui_demo.canonical_yaml(doc.data)
-        state = hui_demo.DemoState(selection=("workspace", "task", "steps", 1))
+        state = hui_demo.DemoState(selection=("workspace", "task", "steps", 0))
         rendered = hui_demo.render(doc, state, 40, 100)
         self.assertIn(hui_demo.PC_SELECTION_STYLE, rendered)
         self.assertEqual(hui_demo.canonical_yaml(doc.data), before)
@@ -221,17 +221,13 @@ class ReducerTests(unittest.TestCase):
         self.assertEqual(doc.active_vm, ("workspace", "task"))
         self.assertEqual(
             hui_demo.pc_path(doc.data, doc.active_vm),
-            ("workspace", "task", "steps", 1),
+            ("workspace", "task", "steps", 0),
         )
         self.assertEqual(
             list(hui_demo.vm_ancestors(doc, doc.active_vm)),
             [("workspace", "task"), ("workspace",), ()],
         )
-        self.assertEqual(
-            doc.data["workspace"]["task"]["adjusted"],
-            doc.data["workspace"]["task"]["sample"]
-            + doc.data["workspace"]["offset"],
-        )
+        self.assertNotIn("adjusted", doc.data["workspace"]["task"])
 
     def test_run_arrows_drive_pc_and_left_right_traverse_semantics(self):
         doc = document()
@@ -288,7 +284,7 @@ class ReducerTests(unittest.TestCase):
         self.assertIsNone(state.context_vm)
 
         state = hui_demo.reconcile_document_state(doc, state)
-        self.assertEqual(state.selection, ("workspace", "task", "steps", 1))
+        self.assertEqual(state.selection, ("workspace", "task", "steps", 0))
 
     def test_escape_enters_write_mode_without_exiting(self):
         doc = document()
@@ -832,11 +828,24 @@ class EntrypointTests(unittest.TestCase):
     def test_default_demo_uses_a_fresh_generated_working_copy(self):
         with (
             mock.patch("tui.hui_demo.Path.mkdir") as mkdir,
+            mock.patch("tui.hui_demo.tempfile.NamedTemporaryFile") as temporary,
             mock.patch("tui.hui_demo.shutil.copy2") as copy2,
         ):
+            temporary.return_value.__enter__.return_value.name = (
+                Path(__file__).parents[2] / "build" / "hui_demo_unique.yaml"
+            )
             target = hui_demo.prepare_target_path(None)
-        self.assertEqual(target, Path(__file__).parents[2] / "build" / "hui_demo.yaml")
+        self.assertEqual(
+            target,
+            Path(__file__).parents[2] / "build" / "hui_demo_unique.yaml",
+        )
         mkdir.assert_called_once_with(exist_ok=True)
+        temporary.assert_called_once_with(
+            dir=Path(__file__).parents[2] / "build",
+            prefix="hui_demo_",
+            suffix=".yaml",
+            delete=False,
+        )
         copy2.assert_called_once_with(FIXTURE, target)
 
 

@@ -99,8 +99,9 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
   This context is cleared before every step, continue, or back action so the
   reloaded YAML snapshot is always the sole source of history and PC truth.
 - The bundled HUI document is executable Helix state, not presentation-only
-  sample data. Its nested frames and already-applied mutations must remain
-  mutually consistent and are verified by a source-backed runtime fixture.
+  sample data. Its deepest active frame begins at the first task instruction;
+  nested frames remain mutually consistent and are verified by a source-backed
+  runtime fixture.
 - Interactive HUI execution uses the existing per-target Git-backed debug copy:
   F10 and F5 commit textually changed forward states, while F9 checks out the
   previous snapshot. A runtime operation that leaves persisted YAML unchanged
@@ -121,6 +122,8 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
   choices are literal source structure and must survive stepping.
 - HUI tests use scripted input and fixed terminal dimensions through
   `uv run python manage.py hui-test`, without a PTY, timing, or manual steps.
+- A default no-target launch creates a unique project-local working copy, so
+  an earlier session's debug repository can never determine the initial PC.
 
 ## Change Discipline
 
@@ -135,4 +138,4 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
 - The legacy Python debugger invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository. The Python literal-YAML HUI demo is the current behavioral prototype for semantic navigation, PC overlays, scoped keys, and debugger controls. Neither is the target architecture; `HUI.md` defines the portable C++ replacement that keeps terminal behavior outside the evaluator and runs through POSIX or embedded serial byte streams.
-- Verification on 2026-07-31: HUI demo and workflow tests pass 49/49. Runtime fixtures pass 51/51. HCC fixtures pass 3/3.
+- Verification on 2026-08-01: HUI demo and workflow tests pass 49/49. Runtime fixtures pass 51/51. HCC fixtures pass 3/3.

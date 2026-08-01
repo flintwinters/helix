@@ -38,12 +38,14 @@ expected:
       - [step, task]
       - [step, task]
       - [step, task]
+      - [step, task]
     main: [run, actions]
     state:
       result: null
       frames: []
       status: finished
   actions:
+    - [step, workspace]
     - [step, workspace]
     - [step, workspace]
     - [step, workspace]

@@ -167,8 +167,15 @@ def prepare_target_path(raw_target: str | None) -> Path:
 
     project_root = Path(__file__).resolve().parents[1]
     source_path = project_root / "tests" / "assets" / "hui_core_demo.yaml"
-    target_path = project_root / "build" / "hui_demo.yaml"
-    target_path.parent.mkdir(exist_ok=True)
+    build_directory = project_root / "build"
+    build_directory.mkdir(exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        dir=build_directory,
+        prefix="hui_demo_",
+        suffix=".yaml",
+        delete=False,
+    ) as handle:
+        target_path = Path(handle.name)
     shutil.copy2(source_path, target_path)
     return target_path
 
