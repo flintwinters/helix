@@ -150,6 +150,9 @@ snapshots during migration.
 - Selection, current-PC, breakpoint, error, and change indicators are visual
   overlays associated with object paths, not persisted YAML comments.
 - Styling never changes YAML content or runtime behavior.
+- Rendering never sets a terminal background color; foreground colors, bold,
+  and underline provide structure over the terminal's natural background.
+  Reverse video is not used as an implicit substitute background.
 - The same object path used by frames and breakpoints identifies the
   corresponding displayed text.
 - Rendering is deterministic for a given YAML document, semantic overlay state,

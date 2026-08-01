@@ -50,9 +50,8 @@ END = "\x1b[F"
 ENTER_KEYS = ("\r", "\n")
 
 RESET = "\x1b[0m"
-BG = "\x1b[48;5;235m"
-CHROME = "\x1b[38;5;235;48;5;214m"
-PATH_STYLE = "\x1b[38;5;109;48;5;237m"
+CHROME = "\x1b[38;5;214;1m"
+PATH_STYLE = "\x1b[38;5;109m"
 YAML_STYLE = "\x1b[38;5;223m"
 YAML_KEY_STYLE = "\x1b[38;5;109m"
 YAML_STRING_STYLE = "\x1b[38;5;142m"
@@ -60,9 +59,9 @@ YAML_NUMBER_STYLE = "\x1b[38;5;208m"
 YAML_LITERAL_STYLE = "\x1b[38;5;175m"
 YAML_PUNCTUATION_STYLE = "\x1b[38;5;245m"
 YAML_COMMENT_STYLE = "\x1b[38;5;243m"
-PC_STYLE = "\x1b[48;5;167m"
-SELECTION_STYLE = "\x1b[48;5;58m"
-PC_SELECTION_STYLE = "\x1b[48;5;130m"
+PC_STYLE = "\x1b[38;5;167;1m"
+SELECTION_STYLE = "\x1b[38;5;142;4m"
+PC_SELECTION_STYLE = "\x1b[38;5;208;1;4m"
 CLEAR_HOME = "\x1b[2J\x1b[H"
 HIDE_CURSOR = "\x1b[?25l"
 SHOW_CURSOR = "\x1b[?25h"
@@ -609,7 +608,7 @@ def overlay_line(line: str, selected: bool, active_pc: bool) -> str:
         style = SELECTION_STYLE
     else:
         style = ""
-    return f"{style}{highlight_yaml(line)}{RESET}{BG}"
+    return f"{style}{highlight_yaml(line)}{RESET}"
 
 
 def fit(text: str, width: int) -> str:
@@ -641,7 +640,7 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
     if state.message:
         status += f"  {state.message}"
     output = [
-        f"{CLEAR_HOME}{HIDE_CURSOR}{BG}{CHROME}{fit(status, content_width)}{RESET}{BG}"
+        f"{CLEAR_HOME}{HIDE_CURSOR}{CHROME}{fit(status, content_width)}{RESET}"
     ]
     for row in range(body_height):
         line_index = viewport + row

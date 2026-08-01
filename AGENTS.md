@@ -75,6 +75,10 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 - Canonical ordered YAML remains the displayed content; selection and PC
   styling and syntax highlighting are ANSI-only overlays and are never
   persisted.
+- HUI presentation never sets a terminal background color. Title, footer, PC,
+  selection, syntax, and mode distinctions use foreground color and text
+  attributes over the terminal's natural background; reverse video is also
+  excluded.
 - Navigation targets semantic mapping values and sequence items identified by
   object paths, independently from viewport rows.
 - Escape toggles run/write modes. In run mode Down steps forward and Up checks
@@ -116,4 +120,4 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
 - The legacy Python debugger invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository. The Python literal-YAML HUI demo is the current behavioral prototype for semantic navigation, PC overlays, scoped keys, and debugger controls. Neither is the target architecture; `HUI.md` defines the portable C++ replacement that keeps terminal behavior outside the evaluator and runs through POSIX or embedded serial byte streams.
-- Verification on 2026-07-31: HUI demo and workflow tests pass 37/37. Runtime fixtures pass 51/51. HCC fixtures pass 3/3.
+- Verification on 2026-07-31: HUI demo and workflow tests pass 38/38. Runtime fixtures pass 51/51. HCC fixtures pass 3/3.

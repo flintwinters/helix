@@ -58,7 +58,6 @@ class RenderingTests(unittest.TestCase):
             for line in doc.lines
         )
         stripped = ANSI.sub("", styled).replace("\x1b", "")
-        stripped = stripped.replace(hui_demo.BG, "")
         self.assertEqual(stripped, doc.text)
 
     def test_pc_and_selection_are_overlays_without_yaml_mutation(self):
@@ -80,12 +79,28 @@ class RenderingTests(unittest.TestCase):
         self.assertIn(f"{hui_demo.YAML_COMMENT_STYLE}# note", styled)
         self.assertEqual(ANSI.sub("", styled), line)
 
-    def test_pc_and_selection_backgrounds_preserve_syntax_foregrounds(self):
+    def test_pc_and_selection_styles_preserve_syntax_foregrounds(self):
         line = "status: running"
         styled = hui_demo.overlay_line(line, True, True)
         self.assertTrue(styled.startswith(hui_demo.PC_SELECTION_STYLE))
         self.assertIn(f"{hui_demo.YAML_KEY_STYLE}status", styled)
         self.assertIn(f"{hui_demo.YAML_STYLE}running", styled)
+
+    def test_renderer_never_sets_background_or_reverse_video(self):
+        rendered = hui_demo.render(
+            document(),
+            hui_demo.DemoState(("workspace", "task", "steps", 1)),
+            12,
+            72,
+        )
+        forbidden = {*range(40, 50), *range(100, 108), 7}
+        for match in re.finditer(r"\x1b\[([0-9;]*)m", rendered):
+            parameters = {
+                int(parameter)
+                for parameter in match.group(1).split(";")
+                if parameter
+            }
+            self.assertTrue(parameters.isdisjoint(forbidden), match.group(0))
 
     def test_yaml_quotes_and_plain_hashes_do_not_start_comments(self):
         line = "values: [a#b, \"c:#d\", 'e:#f'] # note"
