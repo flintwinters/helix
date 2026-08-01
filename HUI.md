@@ -166,6 +166,9 @@ snapshots during migration.
   independent display state. None is serialized as a YAML annotation.
 - Application keys are scoped to the active VM ancestry chain and resolve
   nearest-first.
+- Run mode highlights the literal source declarations of keys that currently
+  resolve; shadowed, unrelated, and write-mode bindings receive no command
+  highlight.
 - The interface uses no animation or transition.
 - Screen organization follows the project's dense Gruvbox-dark operator-panel
   rules without obscuring or duplicating the YAML.

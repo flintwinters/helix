@@ -78,6 +78,15 @@ class RenderingTests(unittest.TestCase):
         self.assertIn(f"{hui_demo.YAML_STRING_STYLE}'text'", styled)
         self.assertIn(f"{hui_demo.YAML_COMMENT_STYLE}# note", styled)
         self.assertEqual(ANSI.sub("", styled), line)
+        appkey_line = "keybinds: [K, R]"
+        appkey_styled = hui_demo.overlay_line(
+            appkey_line,
+            False,
+            False,
+            ((11, 12),),
+        )
+        self.assertIn(f"{hui_demo.APPKEY_STYLE}{hui_demo.YAML_STYLE}K", appkey_styled)
+        self.assertEqual(ANSI.sub("", appkey_styled), appkey_line)
 
     def test_pc_and_selection_styles_preserve_syntax_foregrounds(self):
         line = "status: running"
@@ -101,6 +110,74 @@ class RenderingTests(unittest.TestCase):
                 if parameter
             }
             self.assertTrue(parameters.isdisjoint(forbidden), match.group(0))
+
+    def test_run_mode_highlights_only_currently_active_keybind_scalars(self):
+        doc = document()
+        state = hui_demo.DemoState(("workspace", "task", "steps", 1))
+        rendered_lines = hui_demo.render(doc, state, 60, 100).split("\r\n")
+        active_spans = hui_demo.active_appkey_spans(
+            doc,
+            ("workspace", "task"),
+        )
+        active_lines = {declaration.line for declaration in active_spans}
+        expected_lines = {
+            doc.node_by_path[("keybinds",)].line,
+            doc.node_by_path[("workspace", "keybinds")].line,
+            doc.node_by_path[("workspace", "task", "keybinds")].line,
+        }
+        self.assertEqual(active_lines, expected_lines)
+        for line_index in expected_lines:
+            self.assertIn(hui_demo.APPKEY_STYLE, rendered_lines[line_index + 1])
+        sibling_line = doc.node_by_path[("unrelated-worker", "keybinds")].line
+        self.assertNotIn(hui_demo.APPKEY_STYLE, rendered_lines[sibling_line + 1])
+        root_declaration = next(
+            declaration
+            for declaration in active_spans
+            if declaration.vm_path == ()
+        )
+        root_line = doc.lines[root_declaration.line]
+        self.assertEqual(
+            root_line[root_declaration.start : root_declaration.end],
+            "R",
+        )
+        workspace_keys = {
+            declaration.key
+            for declaration in hui_demo.active_appkey_spans(doc, ("workspace",))
+        }
+        self.assertEqual(workspace_keys, {"W", "R"})
+
+    def test_write_mode_removes_active_keybind_highlights(self):
+        doc = document()
+        run_state = hui_demo.DemoState(("workspace", "task", "main"))
+        write_state, _ = hui_demo.reduce_state(
+            doc,
+            run_state,
+            hui_demo.ESCAPE,
+            58,
+        )
+        rendered = hui_demo.render(doc, write_state, 60, 100)
+        self.assertNotIn(hui_demo.APPKEY_STYLE, rendered)
+
+    def test_shadowed_ancestor_keybind_is_not_highlighted(self):
+        doc = hui_demo.build_document(
+            {
+                "keybinds": ["K"],
+                "child": {
+                    "keybinds": ["K"],
+                    "main": ["add", 1, 2],
+                    "state": {
+                        "status": "running",
+                        "frames": [["main"]],
+                    },
+                },
+                "main": ["step", "child"],
+            }
+        )
+        active = hui_demo.active_appkey_spans(doc, ("child",))
+        self.assertEqual(
+            [(declaration.key, declaration.vm_path) for declaration in active],
+            [("K", ("child",))],
+        )
 
     def test_yaml_quotes_and_plain_hashes_do_not_start_comments(self):
         line = "values: [a#b, \"c:#d\", 'e:#f'] # note"

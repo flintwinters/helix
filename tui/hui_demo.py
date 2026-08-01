@@ -59,6 +59,8 @@ YAML_NUMBER_STYLE = "\x1b[38;5;208m"
 YAML_LITERAL_STYLE = "\x1b[38;5;175m"
 YAML_PUNCTUATION_STYLE = "\x1b[38;5;245m"
 YAML_COMMENT_STYLE = "\x1b[38;5;243m"
+APPKEY_STYLE = "\x1b[3m"
+APPKEY_STYLE_END = "\x1b[23m"
 PC_STYLE = "\x1b[38;5;167;1m"
 SELECTION_STYLE = "\x1b[38;5;142;4m"
 PC_SELECTION_STYLE = "\x1b[38;5;208;1;4m"
@@ -125,6 +127,16 @@ class Document:
     nodes: tuple[SemanticNode, ...]
     node_by_path: dict[PathTuple, SemanticNode]
     active_vm: PathTuple
+    appkey_declarations: tuple["AppkeyDeclaration", ...]
+
+
+@dataclass(frozen=True)
+class AppkeyDeclaration:
+    key: str
+    vm_path: PathTuple
+    line: int
+    start: int
+    end: int
 
 
 class Terminal(Protocol):
@@ -266,17 +278,88 @@ def semantic_nodes(parsed, data) -> tuple[SemanticNode, ...]:
     return tuple(nodes)
 
 
+def yaml_scalar_end(line: str, start: int) -> int:
+    if start >= len(line):
+        return start
+    quote = line[start] if line[start] in "\"'" else None
+    if quote is not None:
+        end = start + 1
+        while end < len(line):
+            if quote == '"' and line[end] == "\\":
+                end += 2
+                continue
+            if line[end] == quote:
+                end += 1
+                if quote == "'" and end < len(line) and line[end] == "'":
+                    end += 1
+                    continue
+                return end
+            end += 1
+        return end
+
+    end = start
+    while end < len(line):
+        character = line[end]
+        if character.isspace() or character in ",]}#":
+            break
+        end += 1
+    return end
+
+
+def appkey_declarations(
+    data,
+    node_by_path: dict[PathTuple, SemanticNode],
+    lines: tuple[str, ...],
+) -> tuple[AppkeyDeclaration, ...]:
+    declarations: list[AppkeyDeclaration] = []
+    for vm_path in vm_paths(data):
+        vm = value_at(data, vm_path)
+        keybinds = vm.get(KEYBINDS_FIELD)
+        if isinstance(keybinds, str):
+            entries = [(None, keybinds)]
+        elif isinstance(keybinds, list):
+            entries = [
+                (index, key)
+                for index, key in enumerate(keybinds)
+                if isinstance(key, str)
+            ]
+        else:
+            entries = []
+        for index, key in entries:
+            path = (
+                (*vm_path, KEYBINDS_FIELD)
+                if index is None
+                else (*vm_path, KEYBINDS_FIELD, index)
+            )
+            node = node_by_path.get(path)
+            if node is None:
+                continue
+            declarations.append(
+                AppkeyDeclaration(
+                    key,
+                    vm_path,
+                    node.line,
+                    node.column,
+                    yaml_scalar_end(lines[node.line], node.column),
+                )
+            )
+    return tuple(declarations)
+
+
 def build_document(data: dict, text: str | None = None) -> Document:
     text = canonical_yaml(data) if text is None else text
     parsed = YAML_ROUND_TRIP.load(text)
     nodes = semantic_nodes(parsed, data)
+    lines = tuple(text.rstrip("\n").splitlines())
+    node_by_path = {node.path: node for node in nodes}
     return Document(
         data=data,
         text=text,
-        lines=tuple(text.rstrip("\n").splitlines()),
+        lines=lines,
         nodes=nodes,
-        node_by_path={node.path: node for node in nodes},
+        node_by_path=node_by_path,
         active_vm=discover_active_vm(data),
+        appkey_declarations=appkey_declarations(data, node_by_path, lines),
     )
 
 
@@ -315,6 +398,24 @@ def resolve_appkey(document: Document, context_vm: PathTuple, key: str) -> PathT
         if key in normalized_appkeys(vm.get(KEYBINDS_FIELD)):
             return vm_path
     return None
+
+
+def active_appkey_spans(
+    document: Document,
+    context_vm: PathTuple,
+) -> tuple[AppkeyDeclaration, ...]:
+    """Return exact declarations whose keys dispatch in the current context."""
+    active: list[AppkeyDeclaration] = []
+    claimed_keys: set[str] = set()
+    for vm_path in vm_ancestors(document, context_vm):
+        for declaration in document.appkey_declarations:
+            if declaration.vm_path != vm_path:
+                continue
+            if declaration.key in claimed_keys:
+                continue
+            claimed_keys.add(declaration.key)
+            active.append(declaration)
+    return tuple(active)
 
 
 def format_path(path: PathTuple) -> str:
@@ -599,7 +700,30 @@ def highlight_yaml(line: str) -> str:
     return "".join(output)
 
 
-def overlay_line(line: str, selected: bool, active_pc: bool) -> str:
+def highlight_yaml_ranges(
+    line: str,
+    ranges: tuple[tuple[int, int], ...],
+) -> str:
+    output: list[str] = []
+    cursor = 0
+    for start, end in sorted(ranges):
+        start = max(cursor, min(start, len(line)))
+        end = max(start, min(end, len(line)))
+        output.append(highlight_yaml(line[cursor:start]))
+        output.append(APPKEY_STYLE)
+        output.append(highlight_yaml(line[start:end]))
+        output.append(APPKEY_STYLE_END)
+        cursor = end
+    output.append(highlight_yaml(line[cursor:]))
+    return "".join(output)
+
+
+def overlay_line(
+    line: str,
+    selected: bool,
+    active_pc: bool,
+    active_appkey_ranges: tuple[tuple[int, int], ...] = (),
+) -> str:
     if selected and active_pc:
         style = PC_SELECTION_STYLE
     elif active_pc:
@@ -608,7 +732,7 @@ def overlay_line(line: str, selected: bool, active_pc: bool) -> str:
         style = SELECTION_STYLE
     else:
         style = ""
-    return f"{style}{highlight_yaml(line)}{RESET}"
+    return f"{style}{highlight_yaml_ranges(line, active_appkey_ranges)}{RESET}"
 
 
 def fit(text: str, width: int) -> str:
@@ -632,6 +756,16 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
     selected_line = document.node_by_path.get(state.selection, document.nodes[0]).line
     pc_node = document.node_by_path.get(active_pc)
     pc_line = pc_node.line if pc_node is not None else -1
+    active_declarations = (
+        active_appkey_spans(document, context_vm)
+        if state.mode == RUN_MODE
+        else ()
+    )
+    appkey_ranges_by_line: dict[int, list[tuple[int, int]]] = {}
+    for declaration in active_declarations:
+        appkey_ranges_by_line.setdefault(declaration.line, []).append(
+            (declaration.start, declaration.end)
+        )
 
     status = (
         f" {state.mode}  vm:{format_path(context_vm)}  pc:{format_path(active_pc)} "
@@ -653,6 +787,9 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
                 ),
                 active_pc=(
                     state.mode == RUN_MODE and line_index == pc_line
+                ),
+                active_appkey_ranges=tuple(
+                    appkey_ranges_by_line.get(line_index, ())
                 ),
             )
         )

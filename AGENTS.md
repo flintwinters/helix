@@ -91,6 +91,9 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 - Application keys resolve only from the active VM through its VM ancestors,
   nearest-first. Siblings, unrelated descendants, and viewport proximity are
   irrelevant.
+- In run mode, source lines declaring currently dispatchable application keys
+  are highlighted from that same nearest-first resolution result. Shadowed and
+  out-of-scope bindings, and every binding in write mode, remain unmarked.
 - Prototype interrupts only switch displayed execution context to the
   declaring VM's existing PC; they do not define evaluator interrupt semantics.
 - The bundled HUI document is executable Helix state, not presentation-only
@@ -120,4 +123,4 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
 - The legacy Python debugger invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository. The Python literal-YAML HUI demo is the current behavioral prototype for semantic navigation, PC overlays, scoped keys, and debugger controls. Neither is the target architecture; `HUI.md` defines the portable C++ replacement that keeps terminal behavior outside the evaluator and runs through POSIX or embedded serial byte streams.
-- Verification on 2026-07-31: HUI demo and workflow tests pass 38/38. Runtime fixtures pass 51/51. HCC fixtures pass 3/3.
+- Verification on 2026-07-31: HUI demo and workflow tests pass 41/41. Runtime fixtures pass 51/51. HCC fixtures pass 3/3.
