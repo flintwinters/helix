@@ -66,10 +66,18 @@ uv run python manage.py hui-demo         # canonical interactive demo launch
 uv run python manage.py hui-test         # deterministic HUI demo tests
 ```
 
-The project requires Python 3.13+, C++20 `g++`, and a locally built `ryml` library at `ryml/build`. Useful workflow flags include `--fail-fast`, `--valgrind`, `--no-dynamic-libraries`, `--no-cpp-linenums`, `--optimize-size`, and `--lib`.
+The project requires Python 3.13+, C++20 `g++`, CMake, and the ryml source tree
+at `ryml/`; canonical builds configure and compile the selected ryml profile
+under `build/dependencies/`. Useful workflow flags include `--fail-fast`,
+`--valgrind`, `--no-dynamic-libraries`, `--no-cpp-linenums`, `--optimize-size`,
+and `--lib`.
 `--optimize-size` is the production/microcontroller profile: it implies `-Os`,
-strips the executable, disables C++ error-origin metadata, and disables dynamic
-library loading and symbol exports. It is therefore incompatible with `--lib`.
+LTO, and `-fno-rtti`; rebuilds static ryml as `MinSizeRel` with LTO, RTTI
+disabled, and short diagnostics; strips the executable; disables C++
+error-origin metadata; and disables dynamic library loading and symbol exports.
+It is therefore incompatible with `--lib`. Normal and size-optimized ryml
+artifacts use isolated project-local build directories so their cached CMake
+profiles cannot contaminate one another.
 
 Runtime fixtures contain exactly one of `program` or `source`; non-smoke fixtures provide `expected`, with optional stdout assertions. HCC fixtures provide `c_source` and normally assert both emitted `expected` YAML and `expected_state`. Add or tighten the nearest fixture whenever semantics change.
 Raw YAML programs used by source-backed runtime fixtures belong under `tests/assets/`; fixture discovery deliberately excludes every `assets` subtree.
@@ -142,4 +150,4 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
 - The legacy Python debugger invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository. The Python literal-YAML HUI demo is the current behavioral prototype for semantic navigation, PC overlays, scoped keys, and debugger controls. Neither is the target architecture; `HUI.md` defines the portable C++ replacement that keeps terminal behavior outside the evaluator and runs through POSIX or embedded serial byte streams.
-- Verification on 2026-08-01: HUI demo and workflow tests pass 52/52. Runtime fixtures pass 51/51. HCC fixtures pass 3/3.
+- Verification on 2026-08-01: HUI demo and workflow tests pass 54/54. Runtime fixtures pass 51/51 in both normal and production-size profiles. HCC fixtures pass 3/3.

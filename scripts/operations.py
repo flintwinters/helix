@@ -19,10 +19,12 @@ INCLUDE_DIRECTORIES = ["include", "src", "ryml/src", "ryml/ext/c4core/src"]
 INCLUDES = " ".join(f"-I{directory}" for directory in INCLUDE_DIRECTORIES)
 COMPILER = "g++"
 BASE_CPP_FLAGS = "-std=c++20 -ffunction-sections -fdata-sections"
-SIZE_OPTIMIZATION_FLAG = "-Os"
-LINKER_FLAGS = "-Wl,--gc-sections -L ryml/build -lryml"
+SIZE_OPTIMIZATION_FLAGS = "-Os -flto -fno-rtti"
+RYML_SOURCE_DIRECTORY = "ryml"
+RYML_BUILD_ROOT = "build/dependencies"
+LINKER_FLAGS = "-Wl,--gc-sections"
 DYNAMIC_LIBRARY_LINKER_FLAGS = "-rdynamic -ldl"
-SIZE_OPTIMIZATION_LINKER_FLAG = "-s"
+SIZE_OPTIMIZATION_LINKER_FLAGS = "-flto -s"
 SFML_MODULE = "build/sfml.so"
 SFML_MODULE_SOURCE = "lib/sfml/sfmlwrapper.cpp"
 SFML_MODULE_LINKER_FLAGS = "-lsfml-graphics -lsfml-window -lsfml-system"
@@ -136,7 +138,7 @@ def compile_cpp_flags(dynamic_libraries, optimize_size=False, cpp_linenums=True)
     cpp_linenums_enabled = "1" if cpp_linenums else "0"
     flags = BASE_CPP_FLAGS
     if optimize_size:
-        flags = f"{flags} {SIZE_OPTIMIZATION_FLAG}"
+        flags = f"{flags} {SIZE_OPTIMIZATION_FLAGS}"
     return f"{flags} -DHELIX_ENABLE_DYNAMIC_LIBRARIES={enabled} -DHELIX_ENABLE_CPP_LINENUMS={cpp_linenums_enabled}"
 
 
@@ -146,11 +148,11 @@ def compile_linker_flags(dynamic_libraries, optimize_size=False):
         cpp_linenums=False,
         optimize_size=optimize_size,
     )
-    flags = LINKER_FLAGS
+    flags = f"{LINKER_FLAGS} -L {ryml_build_directory(optimize_size)} -lryml"
     if dynamic_libraries:
         flags = f"{flags} {DYNAMIC_LIBRARY_LINKER_FLAGS}"
     if optimize_size:
-        flags = f"{flags} {SIZE_OPTIMIZATION_LINKER_FLAG}"
+        flags = f"{flags} {SIZE_OPTIMIZATION_LINKER_FLAGS}"
     return flags
 
 
@@ -158,9 +160,60 @@ def command_exists(command_name):
     return shutil.which(command_name) is not None
 
 
+def ryml_build_directory(optimize_size=False):
+    profile = "min-size" if optimize_size else "release"
+    return f"{RYML_BUILD_ROOT}/ryml-{profile}"
+
+
+def configure_ryml(optimize_size=False):
+    """Build ryml with flags matching the selected Helix build profile."""
+    build_type = "MinSizeRel" if optimize_size else "Release"
+    build_directory = ryml_build_directory(optimize_size)
+    configure_command = [
+        "cmake",
+        "-S",
+        RYML_SOURCE_DIRECTORY,
+        "-B",
+        build_directory,
+        f"-DCMAKE_BUILD_TYPE={build_type}",
+        f"-DCMAKE_INTERPROCEDURAL_OPTIMIZATION={'ON' if optimize_size else 'OFF'}",
+        f"-DRYML_SHORT_ERR_MSG={'ON' if optimize_size else 'OFF'}",
+    ]
+    if optimize_size:
+        configure_command.append(
+            "-DCMAKE_CXX_FLAGS_MINSIZEREL=-Os -DNDEBUG -flto -fno-rtti"
+        )
+    else:
+        configure_command.append("-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG")
+
+    commands = (
+        (configure_command, "ryml configuration failed."),
+        (
+            [
+                "cmake",
+                "--build",
+                build_directory,
+                "--config",
+                build_type,
+            ],
+            "ryml compilation failed.",
+        ),
+    )
+    for command, failure_message in commands:
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(failure_message)
+            if result.stderr.strip():
+                print(result.stderr)
+            return False
+    return True
+
+
 def compile_main(dynamic_libraries=True, optimize_size=False, cpp_linenums=True):
     """Compiles the runtime sources into an executable."""
     if not validate_native_module_isolation():
+        return False
+    if not configure_ryml(optimize_size):
         return False
 
     os.makedirs(OBJECT_DIRECTORY, exist_ok=True)
