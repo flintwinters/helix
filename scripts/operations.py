@@ -1,9 +1,11 @@
 import difflib
+import http.client
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -28,6 +30,9 @@ SIZE_OPTIMIZATION_LINKER_FLAGS = "-flto -s"
 SFML_MODULE = "build/sfml.so"
 SFML_MODULE_SOURCE = "lib/sfml/sfmlwrapper.cpp"
 SFML_MODULE_LINKER_FLAGS = "-lsfml-graphics -lsfml-window -lsfml-system"
+WEBDEMO_MODULE = "webdemo/web.so"
+WEBDEMO_MODULE_SOURCE = "webdemo/web.cpp"
+WEBDEMO_TEST_PROGRAM = "webdemo/server_test.yaml"
 EXECUTABLE = "build/helix"
 SOURCES = "src/helix.cpp src/builtins.cpp src/core.cpp src/utils.cpp src/ryml_interface.cpp"
 OBJECT_DIRECTORY = "build/obj"
@@ -249,9 +254,9 @@ def compile_main(dynamic_libraries=True, optimize_size=False, cpp_linenums=True)
     return True
 
 
-def compile_sfml_module(optimize_size=False, cpp_linenums=True):
-    """Compiles the SFML wrapper into a native include module."""
-    os.makedirs(os.path.dirname(SFML_MODULE), exist_ok=True)
+def compile_native_module(module, source, linker_flags, label, optimize_size=False, cpp_linenums=True):
+    """Compile an isolated Helix native include module."""
+    os.makedirs(os.path.dirname(module), exist_ok=True)
     cpp_flags = compile_cpp_flags(
         dynamic_libraries=True,
         optimize_size=optimize_size,
@@ -259,17 +264,93 @@ def compile_sfml_module(optimize_size=False, cpp_linenums=True):
     )
 
     compile_command = (
-        f"{COMPILER} -fPIC -shared {SFML_MODULE_SOURCE} {cpp_flags} {INCLUDES} "
-        f"-o {SFML_MODULE} {SFML_MODULE_LINKER_FLAGS}"
+        f"{COMPILER} -fPIC -shared {source} {cpp_flags} {INCLUDES} "
+        f"-o {module} {linker_flags}"
     )
     result = subprocess.run(compile_command, shell=True, capture_output=True, text=True)
     if result.returncode != 0:
-        print("SFML module compilation failed.")
+        print(f"{label} module compilation failed.")
         if result.stderr.strip():
             print(result.stderr)
         return False
 
-    print("SFML module compilation successful.")
+    print(f"{label} module compilation successful.")
+    return True
+
+
+def compile_sfml_module(optimize_size=False, cpp_linenums=True):
+    """Compiles the SFML wrapper into a native include module."""
+    return compile_native_module(
+        SFML_MODULE,
+        SFML_MODULE_SOURCE,
+        SFML_MODULE_LINKER_FLAGS,
+        "SFML",
+        optimize_size,
+        cpp_linenums,
+    )
+
+
+def compile_webdemo_module():
+    """Compiles the loopback HTTP capability used by the Helix web demo."""
+    return compile_native_module(
+        WEBDEMO_MODULE,
+        WEBDEMO_MODULE_SOURCE,
+        "",
+        "Web demo",
+    )
+
+
+def build_webdemo():
+    """Build the runtime and the native module required by webdemo/server.yaml."""
+    return compile_main(dynamic_libraries=True) and compile_webdemo_module()
+
+
+def run_webdemo_test():
+    """Exercise the bounded Helix web server through one real HTTP request."""
+    if not build_webdemo():
+        return False
+
+    server = subprocess.Popen(
+        [EXECUTABLE, WEBDEMO_TEST_PROGRAM],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        for _ in range(100):
+            try:
+                connection = http.client.HTTPConnection("127.0.0.1", 18080, timeout=1)
+                connection.request("GET", "/")
+                response = connection.getresponse()
+                body = response.read().decode("utf-8")
+                connection.close()
+                break
+            except ConnectionRefusedError:
+                time.sleep(0.01)
+        else:
+            print("Web demo did not begin listening on 127.0.0.1:18080.")
+            return False
+
+        stdout, stderr = server.communicate(timeout=5)
+        if response.status != 200 or body != "Helix webdemo test response":
+            print(f"Unexpected web demo response: status={response.status}, body={body!r}")
+            return False
+        if server.returncode != 0:
+            print("Web demo server exited unsuccessfully.")
+            if stderr.strip():
+                print(stderr)
+            if stdout.strip():
+                print(stdout)
+            return False
+    except subprocess.TimeoutExpired:
+        print("Web demo server did not exit after its one configured request.")
+        return False
+    finally:
+        if server.poll() is None:
+            server.terminate()
+            server.communicate()
+
+    print("Web demo test passed.")
     return True
 
 

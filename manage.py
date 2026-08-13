@@ -100,5 +100,19 @@ def hui_demo(
     dispatch(arguments)
 
 
+@app.command()
+def webdemo() -> None:
+    """Build the isolated HTTP module used by webdemo/server.yaml."""
+    if not operations.build_webdemo():
+        raise typer.Exit(code=1)
+
+
+@app.command("webdemo-test")
+def webdemo_test() -> None:
+    """Build and verify the Helix web server with one HTTP request."""
+    if not operations.run_webdemo_test():
+        raise typer.Exit(code=1)
+
+
 if __name__ == "__main__":
     app()

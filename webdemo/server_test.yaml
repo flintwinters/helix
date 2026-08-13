@@ -1,0 +1,6 @@
+include: [web.so]
+main:
+  - web.serve
+  - port: 18080
+    max_requests: 1
+    body: Helix webdemo test response

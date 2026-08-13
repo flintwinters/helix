@@ -36,6 +36,7 @@ The runtime starts at the root mapping's `main`. A vector such as `[add, x, 1]` 
 | `tui/helix_step.py` | Out-of-process stepping and branchable per-target Git snapshots |
 | `tui/hui_demo.py`, `tui/tests/` | Literal-YAML interaction prototype and deterministic scripted tests |
 | `lib/sfml/` | Optional `.so` module; it must remain isolated from the core runtime binary |
+| `webdemo/` | Loopback HTTP native boundary and the Helix YAML server/page demonstration |
 
 `ryml/`, `build/`, `debug_*`, caches, and local lock/environment files are ignored dependencies or generated state, not primary project source.
 
@@ -64,6 +65,8 @@ uv run python tui/helix_step.py program.yaml
 uv run python tui/hui_demo.py             # launch the ordered nested-VM demo
 uv run python manage.py hui-demo         # canonical interactive demo launch
 uv run python manage.py hui-test         # deterministic HUI demo tests
+uv run python manage.py webdemo          # build the Helix HTTP demo module
+uv run python manage.py webdemo-test     # verify one real HTTP request
 ```
 
 The project requires Python 3.13+, C++20 `g++`, CMake, and the ryml source tree
