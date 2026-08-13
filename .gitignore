@@ -7,6 +7,7 @@ __pycache__
 .clangd
 .codex
 build
+webdemo/web.so
 compile_commands.json
 debug_*
 progstate
