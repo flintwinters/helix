@@ -305,8 +305,18 @@ def build_webdemo():
     return compile_main(dynamic_libraries=True) and compile_webdemo_module()
 
 
+def request_webdemo(path):
+    """Request one path from the bounded loopback web-demo process."""
+    connection = http.client.HTTPConnection("127.0.0.1", 18080, timeout=1)
+    connection.request("GET", path)
+    response = connection.getresponse()
+    result = response.status, response.read().decode("utf-8")
+    connection.close()
+    return result
+
+
 def run_webdemo_test():
-    """Exercise the bounded Helix web server through one real HTTP request."""
+    """Exercise the bounded Helix web server through its declared endpoint objects."""
     if not build_webdemo():
         return False
 
@@ -319,11 +329,11 @@ def run_webdemo_test():
     try:
         for _ in range(100):
             try:
-                connection = http.client.HTTPConnection("127.0.0.1", 18080, timeout=1)
-                connection.request("GET", "/")
-                response = connection.getresponse()
-                body = response.read().decode("utf-8")
-                connection.close()
+                responses = [
+                    request_webdemo("/"),
+                    request_webdemo("/health"),
+                    request_webdemo("/missing"),
+                ]
                 break
             except ConnectionRefusedError:
                 time.sleep(0.01)
@@ -332,8 +342,13 @@ def run_webdemo_test():
             return False
 
         stdout, stderr = server.communicate(timeout=5)
-        if response.status != 200 or body != "Helix webdemo test response":
-            print(f"Unexpected web demo response: status={response.status}, body={body!r}")
+        expected_responses = [
+            (200, "Helix webdemo root response"),
+            (200, "Helix webdemo health response"),
+            (404, "Not found"),
+        ]
+        if responses != expected_responses:
+            print(f"Unexpected web demo responses: {responses!r}")
             return False
         if server.returncode != 0:
             print("Web demo server exited unsuccessfully.")

@@ -2,5 +2,8 @@ include: [web.so]
 main:
   - web.serve
   - port: 18080
-    max_requests: 1
-    body: Helix webdemo test response
+    max_requests: 3
+  - - path: /
+      body: Helix webdemo root response
+    - path: /health
+      body: Helix webdemo health response

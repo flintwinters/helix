@@ -14,6 +14,11 @@ namespace {
 constexpr size_t RequestBufferSize = 16 * 1024;
 constexpr int ListenBacklog = 16;
 
+struct Endpoint {
+    string path {};
+    string body {};
+};
+
 class FileDescriptor {
 public:
     explicit FileDescriptor(int descriptor = -1) : descriptor_(descriptor) {}
@@ -49,11 +54,68 @@ bool write_all(int descriptor, const string& response) {
     return true;
 }
 
+string response_for(int status, const string& reason, const string& body) {
+    return "HTTP/1.1 " + to_string(status) + " " + reason + "\r\n"
+        "Content-Type: text/html; charset=utf-8\r\n"
+        "Content-Length: " + to_string(body.size()) + "\r\n"
+        "Connection: close\r\n\r\n" + body;
+}
+
+CellPtr endpoints_from(const CellPtr& endpoints_cell, vector<Endpoint>& endpoints) {
+    if (!endpoints_cell || endpoints_cell->type != Cell::Type::vec) {
+        return error("web.serve expects an endpoint vector");
+    }
+    const shared_ptr<VecCell> endpoint_cells = static_pointer_cast<VecCell>(endpoints_cell);
+
+    endpoints.reserve(endpoint_cells->value.size());
+    for (const CellPtr& endpoint_cell : endpoint_cells->value) {
+        const shared_ptr<ScopeCell> endpoint = expect_scope_cell(endpoint_cell);
+        const StrCell* path = endpoint ? map_field_string(endpoint, "path") : nullptr;
+        const StrCell* body = endpoint ? map_field_string(endpoint, "body") : nullptr;
+        if (!path || path->value.empty() || path->value.front() != '/' || !body) {
+            return error("each web endpoint requires a slash-prefixed string path and string body");
+        }
+        for (const Endpoint& existing : endpoints) {
+            if (existing.path == path->value) {
+                return error("web.serve endpoint paths must be unique");
+            }
+        }
+        endpoints.push_back({path->value, body->value});
+    }
+
+    return nullptr;
+}
+
+string request_path_from(int descriptor) {
+    char request[RequestBufferSize];
+    const ssize_t received = recv(descriptor, request, sizeof(request), 0);
+    if (received <= 0) {
+        return {};
+    }
+
+    const string request_text(request, static_cast<size_t>(received));
+    const size_t first_space = request_text.find(' ');
+    const size_t second_space = request_text.find(' ', first_space + 1);
+    if (first_space == string::npos || second_space == string::npos) {
+        return {};
+    }
+    return request_text.substr(first_space + 1, second_space - first_space - 1);
+}
+
+const Endpoint* endpoint_for(const vector<Endpoint>& endpoints, const string& path) {
+    for (const Endpoint& endpoint : endpoints) {
+        if (endpoint.path == path) {
+            return &endpoint;
+        }
+    }
+    return nullptr;
+}
+
 CellPtr builtin_serve(const vector<CellPtr>& arguments, CellPtr current_vm) {
     if (!expect_vm_cell(move(current_vm))) {
         return error("web.serve requires a map VM");
     }
-    if (CellPtr arity_error = expect_form_arity(arguments.size(), 2, "web.serve")) {
+    if (CellPtr arity_error = expect_form_arity(arguments.size(), 3, "web.serve")) {
         return arity_error;
     }
 
@@ -63,24 +125,19 @@ CellPtr builtin_serve(const vector<CellPtr>& arguments, CellPtr current_vm) {
     }
 
     const IntCell* port_cell = map_field_int(config, "port");
-    const StrCell* body_cell = map_field_string(config, "body");
     const IntCell* max_requests_cell = map_field_int(config, "max_requests");
     if (!port_cell || port_cell->value < 1 || port_cell->value > 65535) {
         return error("web.serve configuration requires port between 1 and 65535");
     }
-    if (!body_cell) {
-        return error("web.serve configuration requires a string body");
-    }
-
     const int64_t max_requests = max_requests_cell ? max_requests_cell->value : 0;
     if (max_requests < 0) {
         return error("web.serve max_requests must be zero or positive");
     }
 
-    const string response = "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html; charset=utf-8\r\n"
-        "Content-Length: " + to_string(body_cell->value.size()) + "\r\n"
-        "Connection: close\r\n\r\n" + body_cell->value;
+    vector<Endpoint> endpoints;
+    if (CellPtr endpoint_error = endpoints_from(arguments[2], endpoints)) {
+        return endpoint_error;
+    }
 
     FileDescriptor listener(socket(AF_INET, SOCK_STREAM, 0));
     if (listener.get() < 0) {
@@ -113,9 +170,11 @@ CellPtr builtin_serve(const vector<CellPtr>& arguments, CellPtr current_vm) {
         }
 
         FileDescriptor client(accepted);
-        char request[RequestBufferSize];
-        while (recv(client.get(), request, sizeof(request), 0) < 0 && errno == EINTR) {
-        }
+        const string path = request_path_from(client.get());
+        const Endpoint* endpoint = endpoint_for(endpoints, path);
+        const string response = endpoint
+            ? response_for(200, "OK", endpoint->body)
+            : response_for(404, "Not Found", "Not found");
         if (!write_all(client.get(), response)) {
             return error("web.serve could not write a response");
         }
