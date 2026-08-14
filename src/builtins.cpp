@@ -550,18 +550,21 @@ static CellPtr evaluate_call_arguments(
 static CellPtr bind_call_arguments(
     const shared_ptr<ScopeCell>& call_scope,
     ConstCellPtr params_cell,
-    const vector<CellPtr>& evaluated_arguments) {
+    const vector<CellPtr>& evaluated_arguments,
+    const char* who) {
     const VecCell& params = static_cast<const VecCell&>(*params_cell);
     if (params.value.size() != evaluated_arguments.size()) {
-        return make_error("call argument count does not match function parameters");
+        return make_error(string(who) + " argument count does not match function parameters");
+    }
+
+    for (ConstCellPtr param_cell : params.value) {
+        if (!param_cell || param_cell->type != Cell::Type::string) {
+            return make_error_at("function parameters must be strings", param_cell);
+        }
     }
 
     for (size_t index = 0; index < params.value.size(); ++index) {
         ConstCellPtr param_cell = params.value[index];
-        if (!param_cell || param_cell->type != Cell::Type::string) {
-            return make_error_at("function parameters must be strings", param_cell);
-        }
-
         call_scope->set(static_cast<const StrCell&>(*param_cell).value, clone_cell_tree(evaluated_arguments[index]));
     }
     return nullptr;
@@ -587,6 +590,31 @@ static CellPtr evaluate_function_body(const shared_ptr<ScopeCell>& call_scope, c
     return clone_cell_tree(result);
 }
 
+static CellPtr invoke_resolved_user_function(
+    CellPtr function_cell,
+    const vector<CellPtr>& evaluated_arguments,
+    const shared_ptr<VmCell>& root_cell,
+    const char* who) {
+    shared_ptr<ScopeCell> call_scope = make_shared<ScopeCell>();
+    call_scope->parent = function_cell;
+
+    CellPtr binding_error = bind_call_arguments(
+        call_scope,
+        map_field_vec(function_cell, CellField::params),
+        evaluated_arguments,
+        who);
+    if (binding_error) {
+        call_scope->parent = nullptr;
+        return binding_error;
+    }
+
+    call_scope->set(CellField::internal_body, clone_cell_tree(map_field_vec(function_cell, CellField::body)));
+    CellPtr result = evaluate_function_body(call_scope, root_cell);
+    call_scope->clear_descendant_parent_links();
+    call_scope->parent = nullptr;
+    return result;
+}
+
 static CellPtr builtin_call(const vector<CellPtr>& arguments, CellPtr current_vm) {
     BuiltinVmValidation validation = expect_builtin_vm(arguments, move(current_vm), "call", 3);
     if (validation.error) {
@@ -605,19 +633,26 @@ static CellPtr builtin_call(const vector<CellPtr>& arguments, CellPtr current_vm
         return argument_error;
     }
 
-    shared_ptr<ScopeCell> call_scope = make_shared<ScopeCell>();
-    call_scope->parent = function_cell;
+    return invoke_resolved_user_function(function_cell, evaluated_arguments, root_cell, "call");
+}
 
-    CellPtr binding_error = bind_call_arguments(call_scope, map_field_vec(function_cell, CellField::params), evaluated_arguments);
-    if (binding_error) {
-        return binding_error;
+CellPtr invoke_message_handler(CellPtr handler_expression, CellPtr message, CellPtr current_vm) {
+    shared_ptr<VmCell> root_cell = expect_vm_cell(move(current_vm));
+    if (!root_cell) {
+        return make_error("message handler requires a map VM");
     }
 
-    call_scope->set(CellField::internal_body, clone_cell_tree(map_field_vec(function_cell, CellField::body)));
-    CellPtr result = evaluate_function_body(call_scope, root_cell);
-    call_scope->clear_descendant_parent_links();
-    call_scope->parent = nullptr;
-    return result;
+    CellPtr function_cell = expect_user_function(
+        resolve_or_signal(move(handler_expression), root_cell),
+        "message handler");
+    if (is_signal_cell(function_cell)) {
+        return function_cell;
+    }
+
+    vector<CellPtr> message_argument {
+        message ? move(message) : static_pointer_cast<Cell>(make_shared<NilCell>()),
+    };
+    return invoke_resolved_user_function(function_cell, message_argument, root_cell, "message handler");
 }
 
 static CellPtr builtin_return(const vector<CellPtr>& arguments, CellPtr current_vm) {

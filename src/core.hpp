@@ -322,4 +322,5 @@ void initialize_builtins(
     RenderShowFn render_show_fn,
     MakeErrorFn make_error_fn);
 
+CellPtr invoke_message_handler(CellPtr handler_expression, CellPtr message, CellPtr current_vm);
 shared_ptr<ScopeCell> make_zygote();
