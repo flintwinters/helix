@@ -109,7 +109,7 @@ def webdemo() -> None:
 
 @app.command("webdemo-test")
 def webdemo_test() -> None:
-    """Build and verify the Helix web server with one HTTP request."""
+    """Build and verify stateless Helix message-handler turns over HTTP."""
     if not operations.run_webdemo_test():
         raise typer.Exit(code=1)
 

@@ -36,7 +36,7 @@ The runtime starts at the root mapping's `main`. A vector such as `[add, x, 1]` 
 | `tui/helix_step.py` | Out-of-process stepping and branchable per-target Git snapshots |
 | `tui/hui_demo.py`, `tui/tests/` | Literal-YAML interaction prototype and deterministic scripted tests |
 | `lib/sfml/` | Optional `.so` module; it must remain isolated from the core runtime binary |
-| `webdemo/` | Loopback HTTP native boundary and the Helix YAML server/page demonstration |
+| `webdemo/` | HTTP substrate for stateless one-turn Helix message-handler functions |
 
 `ryml/`, `build/`, `debug_*`, caches, and local lock/environment files are ignored dependencies or generated state, not primary project source.
 
@@ -47,6 +47,7 @@ The runtime starts at the root mapping's `main`. A vector such as `[add, x, 1]` 
 - Signals are control flow. Propagate return/error signals immediately and materialize terminal state consistently under `state` (`status`, `frames`, `result`, and `error` when applicable).
 - YAML shape is a public behavioral contract. Preserve source locations, structured error details, include semantics, and round-trippable state.
 - Builtin argument vectors include the actor at index zero; use the shared arity/type/error helpers rather than open-coding validation.
+- Native communication modules invoke Helix handlers through `invoke_message_handler`; one call consumes one message and returns one response without module-owned handler state.
 - `run` arms a resumable vector sequence. `list` returns the sorted, deduplicated binding names reachable through the same lexical receiver chain as ordinary lookup.
 - Dotted lookup, function definition scope, nested VMs, breakpoints, and typed assignments depend on parent topology. Clone only where ownership/isolation requires it.
 - Typed field sugar (`x:i32: 5`) becomes `{type: i32, value: 5}`. Assignment validation currently supports `i32` and `i64`.
@@ -66,7 +67,7 @@ uv run python tui/hui_demo.py             # launch the ordered nested-VM demo
 uv run python manage.py hui-demo         # canonical interactive demo launch
 uv run python manage.py hui-test         # deterministic HUI demo tests
 uv run python manage.py webdemo          # build the Helix HTTP demo module
-uv run python manage.py webdemo-test     # verify one real HTTP request
+uv run python manage.py webdemo-test     # verify Helix message-handler turns over HTTP
 ```
 
 The project requires Python 3.13+, C++20 `g++`, CMake, and the ryml source tree
@@ -153,4 +154,4 @@ Raw YAML programs used by source-backed runtime fixtures belong under `tests/ass
 
 - HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
 - The legacy Python debugger invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository. The Python literal-YAML HUI demo is the current behavioral prototype for semantic navigation, PC overlays, scoped keys, and debugger controls. Neither is the target architecture; `HUI.md` defines the portable C++ replacement that keeps terminal behavior outside the evaluator and runs through POSIX or embedded serial byte streams.
-- Verification on 2026-08-01: HUI demo and workflow tests pass 54/54. Runtime fixtures pass 51/51 in both normal and production-size profiles. HCC fixtures pass 3/3.
+- Verification on 2026-08-13: the stateless HTTP message-handler workflow passes its structured, raw, empty, and malformed-body turns. Runtime fixtures pass 52/52 in both normal and production-size profiles, and HCC fixtures pass 3/3. HUI demo and workflow tests were last verified at 54/54 on 2026-08-01.

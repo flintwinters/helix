@@ -1,9 +1,17 @@
 include: [web.so]
+response_template:
+  status: 201
+  content_type: application/yaml; charset=utf-8
+  body: null
+handler:
+  type: function
+  params: [message]
+  body:
+    - [set, response, [copy, response_template]]
+    - [set, response.body, message]
+    - [return, response]
 main:
   - web.serve
   - port: 18080
-    max_requests: 3
-  - - path: /
-      body: Helix webdemo root response
-    - path: /health
-      body: Helix webdemo health response
+    max_requests: 4
+  - handler

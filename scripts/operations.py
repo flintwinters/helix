@@ -305,18 +305,18 @@ def build_webdemo():
     return compile_main(dynamic_libraries=True) and compile_webdemo_module()
 
 
-def request_webdemo(path):
-    """Request one path from the bounded loopback web-demo process."""
+def request_webdemo(method, path, body=None, headers=None):
+    """Send one request to the bounded loopback web-demo process."""
     connection = http.client.HTTPConnection("127.0.0.1", 18080, timeout=1)
-    connection.request("GET", path)
+    connection.request(method, path, body=body, headers=headers or {})
     response = connection.getresponse()
-    result = response.status, response.read().decode("utf-8")
+    result = response.status, response.getheader("Content-Type"), response.read()
     connection.close()
     return result
 
 
 def run_webdemo_test():
-    """Exercise the bounded Helix web server through its declared endpoint objects."""
+    """Exercise one-turn Helix message handling over the HTTP substrate."""
     if not build_webdemo():
         return False
 
@@ -327,12 +327,28 @@ def run_webdemo_test():
         text=True,
     )
     try:
+        yaml_value = {
+            "items": [1, "null", None],
+            "label": "42",
+        }
+        yaml_body = yaml.safe_dump(yaml_value, sort_keys=False).encode("utf-8")
         for _ in range(100):
             try:
                 responses = [
-                    request_webdemo("/"),
-                    request_webdemo("/health"),
-                    request_webdemo("/missing"),
+                    request_webdemo(
+                        "POST",
+                        "/echo?mode=test",
+                        yaml_body,
+                        {"Content-Type": "application/yaml; charset=utf-8"},
+                    ),
+                    request_webdemo("GET", "/empty"),
+                    request_webdemo("POST", "/text", "héllo".encode("utf-8")),
+                    request_webdemo(
+                        "POST",
+                        "/invalid",
+                        b"[unterminated",
+                        {"Content-Type": "application/yaml"},
+                    ),
                 ]
                 break
             except ConnectionRefusedError:
@@ -342,13 +358,37 @@ def run_webdemo_test():
             return False
 
         stdout, stderr = server.communicate(timeout=5)
-        expected_responses = [
-            (200, "Helix webdemo root response"),
-            (200, "Helix webdemo health response"),
-            (404, "Not found"),
+        expected_messages = [
+            {
+                "method": "POST",
+                "path": "/echo?mode=test",
+                "content_type": "application/yaml; charset=utf-8",
+                "body": yaml_value,
+            },
+            {
+                "method": "GET",
+                "path": "/empty",
+                "content_type": None,
+                "body": None,
+            },
+            {
+                "method": "POST",
+                "path": "/text",
+                "content_type": None,
+                "body": "héllo",
+            },
         ]
-        if responses != expected_responses:
-            print(f"Unexpected web demo responses: {responses!r}")
+        for index, expected_message in enumerate(expected_messages):
+            status, content_type, body = responses[index]
+            actual_message = yaml.safe_load(body)
+            if status != 201 or content_type != "application/yaml; charset=utf-8" or actual_message != expected_message:
+                print(
+                    "Unexpected web demo handler response: "
+                    f"status={status}, content_type={content_type!r}, body={actual_message!r}"
+                )
+                return False
+        if responses[3] != (400, "text/plain; charset=utf-8", b"Invalid YAML body"):
+            print(f"Unexpected malformed-YAML response: {responses[3]!r}")
             return False
         if server.returncode != 0:
             print("Web demo server exited unsuccessfully.")
@@ -358,7 +398,17 @@ def run_webdemo_test():
                 print(stdout)
             return False
     except subprocess.TimeoutExpired:
-        print("Web demo server did not exit after its one configured request.")
+        print("Web demo server did not exit after its configured requests.")
+        return False
+    except (OSError, http.client.HTTPException) as error:
+        if server.poll() is None:
+            server.terminate()
+        stdout, stderr = server.communicate()
+        print(f"Web demo HTTP exchange failed: {error}")
+        if stderr.strip():
+            print(stderr)
+        if stdout.strip():
+            print(stdout)
         return False
     finally:
         if server.poll() is None:

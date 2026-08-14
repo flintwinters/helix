@@ -37,8 +37,23 @@ static string ryml_text_to_string(c4::csubstr text) {
     return {text.str, text.len};
 }
 
-static CellPtr scalar_cell_from_ryml(c4::csubstr scalar) {
+static bool requires_quoted_yaml_scalar(const string& text) {
+    if (text.empty() || text == "null") {
+        return true;
+    }
+
+    int64_t integer_value = 0;
+    const char* begin = text.data();
+    const char* end = begin + text.size();
+    const auto result = from_chars(begin, end, integer_value);
+    return result.ec == errc {} && result.ptr == end;
+}
+
+static CellPtr scalar_cell_from_ryml(c4::csubstr scalar, bool quoted) {
     const string text = ryml_text_to_string(scalar);
+    if (quoted) {
+        return make_shared<StrCell>(text);
+    }
     if (text == "null") {
         return make_shared<NilCell>();
     }
@@ -164,6 +179,27 @@ CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node) {
     return cell_from_ryml_node(node, nullptr);
 }
 
+[[noreturn]] static void throw_yaml_parse_error(
+    c4::csubstr message,
+    const c4::yml::ErrorDataParse&,
+    void*) {
+    throw runtime_error(ryml_text_to_string(message));
+}
+
+CellPtr parse_yaml_cell(const string& yaml_text) {
+    const c4::csubstr source(yaml_text.data(), yaml_text.size());
+    c4::yml::Callbacks callbacks {};
+    callbacks.set_error_parse(throw_yaml_parse_error);
+    c4::yml::Parser::handler_type event_handler(callbacks);
+    c4::yml::Parser parser(&event_handler);
+    c4::yml::Tree tree = c4::yml::parse_in_arena(&parser, source);
+    c4::yml::ConstNodeRef root = tree.rootref();
+    if (root.is_stream() && root.num_children() != 1) {
+        throw runtime_error("message YAML must contain exactly one document");
+    }
+    return cell_from_ryml_node(root);
+}
+
 static CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node, const c4::yml::Parser* parser) {
     while ((node.is_stream() || node.is_doc()) && node.has_children()) {
         node = node.first_child();
@@ -203,7 +239,7 @@ static CellPtr cell_from_ryml_node(c4::yml::ConstNodeRef node, const c4::yml::Pa
     }
 
     if (node.has_val()) {
-        return with_source_location(scalar_cell_from_ryml(node.val()), node, parser);
+        return with_source_location(scalar_cell_from_ryml(node.val(), node.is_val_quoted()), node, parser);
     }
 
     return with_source_location(make_shared<StrCell>(), node, parser);
@@ -278,7 +314,7 @@ shared_ptr<VmCell> load_root_cell_from_yaml_file(const char* path) {
     return root_vm;
 }
 
-void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
+static void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node, bool quote_strings) {
     if (!cell) {
         node << "null";
         return;
@@ -295,7 +331,10 @@ void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
         for (const auto& [key, value] : map_cell.value) {
             auto child = node.append_child();
             child << c4::yml::key(key);
-            write_cell_to_ryml_node(value, child);
+            if (quote_strings || requires_quoted_yaml_scalar(key)) {
+                child |= c4::yml::KEY_DQUO;
+            }
+            write_cell_to_ryml_node(value, child, quote_strings);
         }
         return;
     }
@@ -304,7 +343,7 @@ void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
         const auto& vec_cell = static_cast<const VecCell&>(*cell);
         for (const CellPtr& value : vec_cell.value) {
             auto child = node.append_child();
-            write_cell_to_ryml_node(value, child);
+            write_cell_to_ryml_node(value, child, quote_strings);
         }
         return;
     }
@@ -313,6 +352,9 @@ void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
         return;
     case Cell::Type::string:
         node << static_cast<const StrCell&>(*cell).value;
+        if (quote_strings || requires_quoted_yaml_scalar(static_cast<const StrCell&>(*cell).value)) {
+            node |= c4::yml::VAL_DQUO;
+        }
         return;
     case Cell::Type::nil:
         node << "null";
@@ -326,7 +368,7 @@ void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
         const auto& sig_cell = static_cast<const SigCell&>(*cell);
         node[CellField::signal_type] << (cell->type == Cell::Type::return_signal ? CellValue::return_signal : CellValue::signal);
         if (sig_cell.value) {
-            write_cell_to_ryml_node(sig_cell.value, node[CellField::value]);
+            write_cell_to_ryml_node(sig_cell.value, node[CellField::value], quote_strings);
         }
         return;
     }
@@ -337,9 +379,9 @@ void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
         node[CellField::message] << err_cell.message;
         shared_ptr<MapCell> details = materialize_error_details(err_cell);
         if (details) {
-            write_cell_to_ryml_node(details, node[CellField::value]);
+            write_cell_to_ryml_node(details, node[CellField::value], quote_strings);
         } else if (err_cell.value) {
-            write_cell_to_ryml_node(err_cell.value, node[CellField::value]);
+            write_cell_to_ryml_node(err_cell.value, node[CellField::value], quote_strings);
         }
         return;
     }
@@ -350,6 +392,10 @@ void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
     }
 }
 
+void write_cell_to_ryml_node(ConstCellPtr cell, c4::yml::NodeRef node) {
+    write_cell_to_ryml_node(move(cell), node, false);
+}
+
 c4::yml::Tree ryml_tree_from_cell(ConstCellPtr root_cell) {
     c4::yml::Tree tree {};
     write_cell_to_ryml_node(root_cell, tree.rootref());
@@ -358,4 +404,10 @@ c4::yml::Tree ryml_tree_from_cell(ConstCellPtr root_cell) {
 
 string emit_yaml_from_cell(ConstCellPtr root_cell) {
     return c4::yml::emitrs_yaml<string>(ryml_tree_from_cell(root_cell));
+}
+
+string emit_round_trip_yaml_from_cell(ConstCellPtr root_cell) {
+    c4::yml::Tree tree {};
+    write_cell_to_ryml_node(move(root_cell), tree.rootref(), true);
+    return c4::yml::emitrs_yaml<string>(tree);
 }

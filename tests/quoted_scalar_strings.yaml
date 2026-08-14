@@ -1,0 +1,14 @@
+program:
+  quoted_null: "null"
+  quoted_integer: "42"
+  quoted_empty: ""
+  main: [copy, quoted_integer]
+expected:
+  quoted_null: "null"
+  quoted_integer: "42"
+  quoted_empty: ""
+  main: [copy, quoted_integer]
+  state:
+    result: "42"
+    frames: []
+    status: finished

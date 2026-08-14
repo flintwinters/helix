@@ -1,21 +1,33 @@
 # Helix web demo
 
-This is a minimal HTTP server whose configuration and endpoint objects are
-written in Helix YAML. The isolated `web.so` native include supplies only the
-loopback socket boundary; `server.yaml` owns the routes and their page bodies.
+This is a minimal HTTP-backed message handler written in Helix YAML. The
+isolated `web.so` native include owns HTTP transport and framing; `server.yaml`
+owns a pure Helix function that performs exactly one `message -> response`
+turn for each request.
 
-`web.serve` takes its server options followed directly by its endpoint array:
+`web.serve` takes its server options followed by a Helix function:
 
 ```yaml
+response:
+  status: 200
+  content_type: text/plain; charset=utf-8
+  body: Hello
+handler:
+  type: function
+  params: [message]
+  body:
+    - [return, response]
 main:
   - web.serve
   - {port: 8080, max_requests: 0}
-  - - {path: /, body: Home page}
-    - {path: /health, body: ok}
+  - handler
 ```
 
-Each endpoint needs a unique slash-prefixed `path` and a string `body`. A path
-without an endpoint returns `404 Not Found`.
+The function receives an HTTP request map with `method`, `path`, `content_type`,
+and `body`. It returns a map containing `body` plus optional `status` (default
+`200`) and `content_type` (default `application/yaml; charset=utf-8`). An
+`application/yaml` body may be any Helix/YAML mapping, sequence, integer,
+string, or null. Other media types carry raw string bodies.
 
 Build it through the repository entrypoint:
 
@@ -32,7 +44,7 @@ Then run the Helix program and visit <http://127.0.0.1:8080>:
 The listener is deliberately restricted to `127.0.0.1`. Set `max_requests` to
 zero for a long-running server, or to a positive number for a bounded run.
 
-Verify one real HTTP request with:
+Verify structured YAML, raw text, empty-body, and malformed-body turns with:
 
 ```bash
 uv run python manage.py webdemo-test
