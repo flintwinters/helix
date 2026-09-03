@@ -1,157 +1,121 @@
 # Helix Conceptual Map
 
-## Purpose
+## Motivation
 
-Helix is an experimental C++ runtime in which readable YAML is both program source and persisted VM state. Programs are object graphs, vector forms are executable expressions, and completed or suspended execution is serialized back to YAML. HCC is the companion Python compiler that lowers a small C subset into readable Helix YAML.
+Helix makes execution state readable, persistent, and branchable. YAML is both
+program source and serialized VM state: programs are object graphs, vectors are
+executable forms, and suspended or completed execution can be inspected,
+edited, versioned, and resumed. HCC exists to bring that debugging model to C;
+readable generated YAML serves debugging fidelity rather than being an end in
+itself.
 
-## System Flow
+Prefer designs that keep state and control flow explicit. Preserve human-readable
+representation and deterministic behavior across execution, serialization, and
+debugger boundaries. Platform integrations should expose narrow capabilities
+without hiding program state or contaminating the portable core.
+
+## Architecture
 
 ```text
-C source -> pycparser AST -> hcc/compiler.py -> Helix YAML
-                                               |
-YAML file -> ryml_interface -> Cell graph -> resolver/evaluator -> builtins
-                                               |                    |
-                                               +---- VM state <-----+
-                                                        |
-                                             YAML on stdout / TUI snapshots
+C source -> pycparser -> HCC ---------> Helix YAML
+                                          |
+YAML -> ryml interface -> Cell graph -> evaluator -> builtins
+                             ^                            |
+                             +------ serialized state ---+
+                                          |
+                                  debugger / native module
 ```
 
-The runtime starts at the root mapping's `main`. A vector such as `[add, x, 1]` resolves its first element as the actor and evaluates through the builtin zygote. The top-level mapping is a `VmCell`; nested mappings containing `main` also become `VmCell`s, while other mappings become `ScopeCell`s.
+The root mapping and nested mappings containing `main` are VMs; other mappings
+are scopes. Evaluation begins at the root `main`. Parent links define lexical
+and object topology, while resumable frames identify executable objects by
+root-relative paths.
 
-## Ownership Map
-
-| Area | Responsibility |
+| Area | Authority |
 | --- | --- |
-| `src/core.hpp`, `src/core.cpp` | Cell hierarchy, parent links, lookup and object paths, structured errors, typed slots, VM state helpers |
-| `src/helix.cpp` | Name resolution, form evaluation, frames, breakpoints, VM lifecycle, executable entrypoint |
-| `src/builtins.cpp` | Zygote builtin installation, arithmetic/data/control forms, functions, child `start`/`step` |
-| `src/ryml_interface.*` | YAML-to-Cell conversion, source locations, `include`, `name:type` sugar, YAML emission, native modules |
-| `scripts/operations.py` | Canonical build, analysis, fixture discovery, runtime/HCC test harnesses |
-| `manage.py` | Canonical Typer/Rich repository command surface; delegates policy to `scripts/operations.py` |
-| `hcc/build.py` | Compatibility HCC entrypoint; not a canonical workflow surface |
-| `hcc/compiler.py` | `pycparser` C AST lowering to human-readable Helix forms |
-| `HCC_Plan.md` | HCC development cockpit: mission, debugging invariants, current checkpoint, roadmap, and verification state |
-| `HUI.md` | Python interaction checkpoint and canonical direction for the literal-YAML C++ terminal interface |
-| `tests/`, `hcc/tests/` | Executable YAML specifications for runtime behavior and C lowering |
-| `tui/helix_step.py` | Out-of-process stepping and branchable per-target Git snapshots |
-| `tui/hui_demo.py`, `tui/tests/` | Literal-YAML interaction prototype and deterministic scripted tests |
-| `lib/sfml/` | Optional `.so` module; it must remain isolated from the core runtime binary |
-| `webdemo/` | HTTP substrate for stateless one-turn Helix message-handler functions |
+| `src/core.*` | Cell model, ownership topology, lookup paths, errors, typed slots, VM state |
+| `src/helix.cpp` | Resolution, evaluation, frames, breakpoints, VM lifecycle, executable |
+| `src/builtins.cpp` | Builtin zygote, data/control forms, functions, nested-VM operations |
+| `src/ryml_interface.*` | YAML conversion/emission, locations, includes, field sugar, native modules |
+| `hcc/compiler.py` | C AST lowering to readable Helix forms |
+| `tui/` | Host-side debugger and literal-YAML interaction prototype |
+| `webdemo/`, `lib/` | Optional native integrations isolated from the core runtime |
+| `manage.py`, `scripts/operations.py` | Canonical command surface and workflow policy |
+| `tests/`, `hcc/tests/`, `tui/tests/` | Executable behavioral specifications |
 
-`ryml/`, `build/`, `debug_*`, caches, and local lock/environment files are ignored dependencies or generated state, not primary project source.
+`HCC_Plan.md` and `HUI.md` are the authoritative design cockpits for their
+subsystems. `ryml/`, `build/`, debug repositories, caches, and local environment
+files are dependencies or generated state, not primary source.
 
-## Runtime Invariants
+## Durable Invariants
 
-- Parent links define lexical/object resolution. Attach children through `MapCell::set()` and `VecCell::append()`; clear links deliberately when detaching trees.
-- Persist resumable execution as root-relative object paths in `state.frames`, never as opaque pointers. VM statuses are `ready`, `running`, `finished`, `error`, or `signaled`.
-- Signals are control flow. Propagate return/error signals immediately and materialize terminal state consistently under `state` (`status`, `frames`, `result`, and `error` when applicable).
-- YAML shape is a public behavioral contract. Preserve source locations, structured error details, include semantics, and round-trippable state.
-- Builtin argument vectors include the actor at index zero; use the shared arity/type/error helpers rather than open-coding validation.
-- Native communication modules invoke Helix handlers through `invoke_message_handler`; one call consumes one message and returns one response without module-owned handler state.
-- `run` arms a resumable vector sequence. `list` returns the sorted, deduplicated binding names reachable through the same lexical receiver chain as ordinary lookup.
-- Dotted lookup, function definition scope, nested VMs, breakpoints, and typed assignments depend on parent topology. Clone only where ownership/isolation requires it.
-- Typed field sugar (`x:i32: 5`) becomes `{type: i32, value: 5}`. Assignment validation currently supports `i32` and `i64`.
+- Attach and detach cells through the shared container APIs; parent topology is
+  semantic and controls lookup, functions, nested VMs, breakpoints, and types.
+- Persist frames as root-relative object paths, never opaque process pointers.
+- Treat signals as control flow and materialize terminal VM state consistently.
+- Treat YAML shape as a public contract. Preserve locations, structured errors,
+  include behavior, and round-trippable state.
+- Reuse shared builtin arity, type, and error helpers. Builtin argument vectors
+  include the actor at index zero.
+- Clone only when ownership or isolation requires it.
+- Native communication is stateless per turn: invoke a Helix handler with one
+  message and return one response without module-owned handler state.
+- HUI styling, selection, and PC presentation are overlays, never persisted
+  source. Navigation follows semantic object paths, and history remains external
+  versioned YAML rather than evaluator state.
 
 ## Canonical Workflows
 
 ```bash
-uv run python manage.py build           # build build/helix
-uv run python manage.py cpp-test        # build and run tests/*.yaml
-uv run python manage.py cpp-test --optimize-size  # verify production-size runtime
-uv run python manage.py hcc-test        # build and run hcc/tests/*.yaml
-uv run python manage.py                 # build, tidy, runtime fixtures, LOC, size
-./build/helix path/to/program.yaml       # execute one Helix program
+uv run python manage.py build
+uv run python manage.py cpp-test
+uv run python manage.py cpp-test --optimize-size
+uv run python manage.py hcc-test
+uv run python manage.py hui-test
+uv run python manage.py webdemo-test
+uv run python manage.py                 # full default workflow
+./build/helix path/to/program.yaml
 uv run python -m hcc input.c -o out.yaml
-uv run python tui/helix_step.py program.yaml
-uv run python tui/hui_demo.py             # launch the ordered nested-VM demo
-uv run python manage.py hui-demo         # canonical interactive demo launch
-uv run python manage.py hui-test         # deterministic HUI demo tests
-uv run python manage.py webdemo          # build the Helix HTTP demo module
-uv run python manage.py webdemo-test     # verify Helix message-handler turns over HTTP
+uv run python manage.py hui-demo
+uv run python manage.py webdemo
 ```
 
-The project requires Python 3.13+, C++20 `g++`, CMake, and the ryml source tree
-at `ryml/`; canonical builds configure and compile the selected ryml profile
-under `build/dependencies/`. Useful workflow flags include `--fail-fast`,
-`--valgrind`, `--no-dynamic-libraries`, `--no-cpp-linenums`, `--optimize-size`,
-and `--lib`.
-`--optimize-size` is the production/microcontroller profile: it implies `-Os`,
-LTO, and `-fno-rtti`; rebuilds static ryml as `MinSizeRel` with LTO, RTTI
-disabled, and short diagnostics; strips the executable; disables C++
-error-origin metadata; and disables dynamic library loading and symbol exports.
-It is therefore incompatible with `--lib`. Normal and size-optimized ryml
-artifacts use isolated project-local build directories so their cached CMake
-profiles cannot contaminate one another.
+The project requires Python 3.13+, `uv`, C++20 `g++`, CMake, and `ryml/`.
+`--optimize-size` is the stripped, LTO, no-RTTI production profile and excludes
+dynamic module loading; it is incompatible with `--lib`.
 
-Runtime fixtures contain exactly one of `program` or `source`; non-smoke fixtures provide `expected`, with optional stdout assertions. HCC fixtures provide `c_source` and normally assert both emitted `expected` YAML and `expected_state`. Add or tighten the nearest fixture whenever semantics change.
-Raw YAML programs used by source-backed runtime fixtures belong under `tests/assets/`; fixture discovery deliberately excludes every `assets` subtree.
+Tests belong in the established fixture suites and run through `manage.py`.
+Runtime fixtures contain exactly one of `program` or `source`; raw programs for
+source-backed fixtures live under `tests/assets/`. HCC fixtures assert emitted
+YAML and final state. Do not create ad-hoc test scripts or use `/tmp` for tests.
 
-## HUI Demo Invariants
+## Current Jobs
 
-- Canonical ordered YAML remains the displayed content; selection and PC
-  styling and syntax highlighting are ANSI-only overlays and are never
-  persisted.
-- HUI presentation retains the terminal's natural background except for one
-  localized full-width highlight on the currently selected run-mode row.
-  Title, footer, PC, syntax, and mode distinctions otherwise use foreground
-  color and text attributes; reverse video remains excluded.
-- Navigation targets semantic mapping values and sequence items identified by
-  object paths, independently from viewport rows.
-- Escape toggles run/write modes. In run mode Down steps forward and Up checks
-  out the previous versioned state; runtime controls and scoped appkeys apply
-  only in run mode. Write mode is a literal text editor with cursor movement,
-  insertion, deletion, line splitting/joining, and atomic validated saves.
-- The active PC is the deepest running VM's first frame path, or its `main`
-  path when unframed. The demo fixture guarantees one running VM ancestry
-  chain.
-- Application keys resolve only from the active VM through its VM ancestors,
-  nearest-first. Siblings, unrelated descendants, and viewport proximity are
-  irrelevant.
-- In run mode, source lines declaring currently dispatchable application keys
-  are highlighted from that same nearest-first resolution result. Shadowed and
-  out-of-scope bindings, and every binding in write mode, remain unmarked.
-- Prototype interrupts only switch displayed execution context to the
-  declaring VM's existing PC; they do not define evaluator interrupt semantics.
-  This context is cleared before every step, continue, or back action so the
-  reloaded YAML snapshot is always the sole source of history and PC truth.
-- The bundled HUI document is executable Helix state, not presentation-only
-  sample data. Its deepest active frame begins at the first task instruction;
-  nested frames remain mutually consistent and are verified by a source-backed
-  runtime fixture.
-- Interactive HUI execution uses the existing per-target Git-backed debug copy:
-  F10 and F5 commit textually changed forward states, while F9 checks out the
-  previous snapshot. A runtime operation that leaves persisted YAML unchanged
-  creates no history entry. Syntax and PC presentation remain absent from
-  persisted YAML.
-- F5 continues only the deepest running VM that owns the displayed PC. Its
-  `start` operation completes the current `run` block without advancing the
-  running ancestor VMs; F10 remains a root-level single step.
-- Finished, errored, and signaled root VMs reject step and continue before the
-  runtime or snapshot graph is touched. Backward YAML history remains available.
-- Up/F9 backward navigation is purely external YAML version control. It never
-  invokes Helix, requires no runtime binary, and preserves dirty edited text as
-  a target-scoped version before checking out the previous snapshot. Unrelated
-  files in the debug directory are never staged. Only the absence of an earlier
-  recorded text at history root prevents further movement.
-- HUI runtime reloads merge values into the original round-trip YAML tree.
-  Existing mapping order, comments, scalar quotes, and flow/block collection
-  choices are literal source structure and must survive stepping.
-- HUI tests use scripted input and fixed terminal dimensions through
-  `uv run python manage.py hui-test`, without a PTY, timing, or manual steps.
-- A default no-target launch creates a unique project-local working copy, so
-  an earlier session's debug repository can never determine the initial PC.
+- HCC: carry C file, line, and column provenance through generated YAML,
+  serialization, frames, runtime errors, and debugger presentation. Do this
+  before expanding the supported C subset. See `HCC_Plan.md`.
+- HUI: replace the proven Python interaction prototype with the smallest
+  portable C++ vertical slice. Keep frontend logic behind a byte-stream boundary,
+  test it with an in-memory adapter, and implement POSIX without moving terminal
+  concerns into the evaluator. See `HUI.md`.
+- Embedded direction: keep the size-optimized runtime viable for RP2040 and an
+  FPGA RV32 softcore; defer broad platform work until the C debugging and C++ HUI
+  boundaries are sound.
 
 ## Change Discipline
 
-- Formulate behavior as explicit invariants and inspect declarations before naming or changing anything; never guess symbols.
-- Reuse and extend existing helpers. Centralize repeated behavior and avoid expedient compatibility paths or parallel implementations.
-- Keep production code and tests in the same logical checkpoint. Run the narrowest relevant suite, then the broader suite when shared runtime behavior changes.
-- Do not stop merely because the tree is dirty. Preserve intent, stage explicit paths only—never `git add .` or `git add -A`—and commit every verified logical checkpoint with a detailed message.
-- Update this map when architectural ownership, invariants, workflows, or project state materially changes.
-- For UI work: use a dense high-contrast gruvbox dark presentation, minimal labels/spacing/borders, and no animations or transitions.
-
-## Current Boundaries
-
-- HCC exists to apply Helix's debugging capabilities to C programs; readable output serves debugging fidelity rather than being the final objective. `HCC_Plan.md` is the canonical cockpit for HCC priorities and state. The current lowerer handles integers, locals, functions/calls, returns, `if`, `while`, and arithmetic. C source provenance is the next architectural checkpoint; comparisons, pointers, aggregates, allocation, and libc remain deferred.
-- The legacy Python debugger invokes the compiled runtime through temporary wrapper YAML and stores snapshots in a per-target debug repository. The Python literal-YAML HUI demo is the current behavioral prototype for semantic navigation, PC overlays, scoped keys, and debugger controls. Neither is the target architecture; `HUI.md` defines the portable C++ replacement that keeps terminal behavior outside the evaluator and runs through POSIX or embedded serial byte streams.
-- Verification on 2026-08-13: the stateless HTTP message-handler workflow passes its structured, raw, empty, and malformed-body turns. Runtime fixtures pass 52/52 in both normal and production-size profiles, and HCC fixtures pass 3/3. HUI demo and workflow tests were last verified at 54/54 on 2026-08-01.
+- Search declarations and existing implementations before designing or naming
+  anything. Reuse shared modules and helpers.
+- Keep each invariant authoritative in one place. Abstract concepts that must
+  evolve together; tolerate limited duplication when concepts vary independently.
+- Prefer the smallest elegant design that preserves the architecture. Avoid
+  compatibility paths and parallel implementations without a durable need.
+- Add or tighten the nearest routinized fixture with every semantic change. Run
+  the narrow suite first and broader suites when shared contracts change.
+- Preserve unrelated work in dirty trees. Stage explicit paths only; never use
+  `git add .` or `git add -A`.
+- Commit every verified logical checkpoint with a detailed message.
+- Keep this file concise and architectural. Update it only when motivation,
+  ownership, durable invariants, workflows, or current high-level jobs change.
+- UI work uses dense high-contrast gruvbox dark styling, minimal chrome, and no
+  animations or transitions.
