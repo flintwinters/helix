@@ -16,14 +16,9 @@ without hiding program state or contaminating the portable core.
 
 ## Architecture
 
-```text
-C source -> pycparser -> HCC ---------> Helix YAML
-                                          |
-YAML -> ryml interface -> Cell graph -> evaluator -> builtins
-                             ^                            |
-                             +------ serialized state ---+
-                                          |
-                                  debugger / native module
+```mermaid
+flowchart LR
+    C[C source] --> HCC --> YAML[Helix YAML] --> Runtime --> State[Serialized state]
 ```
 
 The root mapping and nested mappings containing `main` are VMs; other mappings
