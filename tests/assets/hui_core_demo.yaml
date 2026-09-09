@@ -1,21 +1,33 @@
-keybinds: [R]
+keybinds:
+  r: main
+  h: help
+  p: title
 help: "Return to the root controller"
 title: "Orbital telemetry pipeline"
 release: 1 # final summary calibration
 unrelated-worker:
-  keybinds: [X]
+  keybinds:
+    x: main
   help: "This sibling key must stay out of scope"
   main: [add, 98, 1]
   state:
     status: ready
     frames: []
 workspace:
-  keybinds: [W]
+  keybinds:
+    w: main
+    e: environment
+    o: offset
+    t: task
   help: "Inspect the workspace controller"
   environment: staging
   offset: 2
   task:
-    keybinds: [T]
+    keybinds:
+      t: main
+      e: enabled
+      l: last-error
+      s: sample
     help: "Inspect the active telemetry task"
     enabled: true
     last-error: null
@@ -26,9 +38,8 @@ workspace:
       - [set, summary, [add, doubled, release]]
     main: [run, steps]
     state:
-      status: running
-      frames:
-        - [steps, 0]
+      status: ready
+      frames: []
   actions:
     - [step, task]
     - [step, task]
@@ -36,9 +47,8 @@ workspace:
     - [step, task]
   main: [run, actions]
   state:
-    status: running
-    frames:
-      - [actions, 1]
+    status: ready
+    frames: []
 actions:
   - [step, workspace]
   - [step, workspace]
@@ -48,4 +58,4 @@ main: [run, actions]
 state:
   status: running
   frames:
-    - [actions, 1]
+    - [actions, 0]

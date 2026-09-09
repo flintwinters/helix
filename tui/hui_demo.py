@@ -49,6 +49,14 @@ BACKSPACE = "\x7f"
 DELETE = "\x1b[3~"
 HOME = "\x1b[H"
 END = "\x1b[F"
+CTRL_LEFT = "\x1b[1;5D"
+CTRL_RIGHT = "\x1b[1;5C"
+CTRL_UP = "\x1b[1;5A"
+CTRL_DOWN = "\x1b[1;5B"
+CTRL_HOME = "\x1b[1;5H"
+CTRL_END = "\x1b[1;5F"
+CTRL_DELETE = "\x1b[3;5~"
+CTRL_BACKSPACE_KEYS = ("\x08", "\x17")
 ENTER_KEYS = ("\r", "\n")
 
 RESET = "\x1b[0m"
@@ -61,9 +69,12 @@ YAML_NUMBER_STYLE = "\x1b[38;5;208m"
 YAML_LITERAL_STYLE = "\x1b[38;5;175m"
 YAML_PUNCTUATION_STYLE = "\x1b[38;5;245m"
 YAML_COMMENT_STYLE = "\x1b[38;5;243m"
-APPKEY_STYLE = "\x1b[3m"
-APPKEY_STYLE_END = "\x1b[23m"
+LINE_NUMBER_STYLE = "\x1b[38;5;240m"
+YAML_ACTOR_STYLE = "\x1b[38;5;214m"
+APPKEY_STYLE = "\x1b[4m"
+APPKEY_STYLE_END = "\x1b[24m"
 PC_STYLE = "\x1b[38;5;167;1m"
+ANCESTOR_FRAME_STYLE = "\x1b[48;5;238m"
 SELECTION_STYLE = "\x1b[48;5;237;38;5;142m"
 PC_SELECTION_STYLE = "\x1b[48;5;237;38;5;208;1m"
 CLEAR_HOME = "\x1b[2J\x1b[H"
@@ -71,6 +82,8 @@ HIDE_CURSOR = "\x1b[?25l"
 SHOW_CURSOR = "\x1b[?25h"
 RUN_MODE = "RUN"
 WRITE_MODE = "WRITE"
+HEADER_ROWS = 2
+FOOTER_ROWS = 1
 
 MAIN_FIELD = "main"
 STATE_FIELD = "state"
@@ -125,17 +138,28 @@ class DemoState:
 class Document:
     data: dict
     text: str
+    source_path: Path | None
     lines: tuple[str, ...]
     nodes: tuple[SemanticNode, ...]
     node_by_path: dict[PathTuple, SemanticNode]
     active_vm: PathTuple
     appkey_declarations: tuple["AppkeyDeclaration", ...]
+    keybound_block_names: tuple["TextSpan", ...]
+
+
+@dataclass(frozen=True)
+class TextSpan:
+    vm_path: PathTuple
+    line: int
+    start: int
+    end: int
 
 
 @dataclass(frozen=True)
 class AppkeyDeclaration:
     key: str
     vm_path: PathTuple
+    target_path: PathTuple | None
     line: int
     start: int
     end: int
@@ -253,6 +277,30 @@ def pc_path(data, vm_path: PathTuple) -> PathTuple:
     return (*vm_path, MAIN_FIELD)
 
 
+def ancestor_frame_paths(
+    document: Document,
+    context_vm: PathTuple,
+) -> tuple[PathTuple, ...]:
+    """Return suspended frame paths behind the current execution point."""
+    current_pc = pc_path(document.data, context_vm)
+    paths: list[PathTuple] = []
+    for vm_path in vm_ancestors(document, context_vm):
+        vm = value_at(document.data, vm_path)
+        state = vm.get(STATE_FIELD)
+        if not isinstance(state, dict) or state.get(STATUS_FIELD) != RUNNING_STATUS:
+            continue
+        frames = state.get(FRAMES_FIELD)
+        if not isinstance(frames, list):
+            continue
+        for frame in frames:
+            if not isinstance(frame, list):
+                continue
+            path = (*vm_path, *frame)
+            if path != current_pc and path not in paths:
+                paths.append(path)
+    return tuple(paths)
+
+
 def semantic_nodes(parsed, data) -> tuple[SemanticNode, ...]:
     nodes: list[SemanticNode] = [SemanticNode((), None, 0)]
 
@@ -302,7 +350,15 @@ def yaml_scalar_end(line: str, start: int) -> int:
     return end
 
 
+def yaml_mapping_key_end(line: str, start: int) -> int:
+    if start < len(line) and line[start] in "\"'":
+        return yaml_scalar_end(line, start)
+    separator = line.find(":", start)
+    return len(line) if separator < 0 else separator
+
+
 def appkey_declarations(
+    parsed,
     data,
     node_by_path: dict[PathTuple, SemanticNode],
     lines: tuple[str, ...],
@@ -312,37 +368,86 @@ def appkey_declarations(
         vm = value_at(data, vm_path)
         keybinds = vm.get(KEYBINDS_FIELD)
         if isinstance(keybinds, str):
-            entries = [(None, keybinds)]
+            entries = [(None, keybinds, None)]
         elif isinstance(keybinds, list):
             entries = [
-                (index, key)
+                (index, key, None)
                 for index, key in enumerate(keybinds)
                 if isinstance(key, str)
             ]
+        elif isinstance(keybinds, dict):
+            entries = [
+                (key, key, (*vm_path, *target.split(".")))
+                for key, target in keybinds.items()
+                if isinstance(key, str) and isinstance(target, str)
+            ]
         else:
             entries = []
-        for index, key in entries:
-            path = (
-                (*vm_path, KEYBINDS_FIELD)
-                if index is None
-                else (*vm_path, KEYBINDS_FIELD, index)
-            )
-            node = node_by_path.get(path)
-            if node is None:
-                continue
+        for index, key, target_path in entries:
+            if isinstance(keybinds, dict):
+                keybinds_node = value_at(parsed, (*vm_path, KEYBINDS_FIELD))
+                line, column = keybinds_node.lc.key(key)
+            else:
+                path = (
+                    (*vm_path, KEYBINDS_FIELD)
+                    if index is None
+                    else (*vm_path, KEYBINDS_FIELD, index)
+                )
+                node = node_by_path.get(path)
+                if node is None:
+                    continue
+                line, column = node.line, node.column
             declarations.append(
                 AppkeyDeclaration(
                     key,
                     vm_path,
-                    node.line,
-                    node.column,
-                    yaml_scalar_end(lines[node.line], node.column),
+                    target_path,
+                    line,
+                    column,
+                    (
+                        yaml_mapping_key_end(lines[line], column)
+                        if isinstance(keybinds, dict)
+                        else yaml_scalar_end(lines[line], column)
+                    ),
                 )
             )
     return tuple(declarations)
 
 
-def build_document(data: dict, text: str | None = None) -> Document:
+def keybound_block_name_spans(
+    parsed,
+    data,
+    lines: tuple[str, ...],
+) -> tuple[TextSpan, ...]:
+    """Return the source spans of named VMs that declare application keys."""
+    spans: list[TextSpan] = []
+    for vm_path in vm_paths(data):
+        if not vm_path:
+            continue
+        vm = value_at(data, vm_path)
+        if not normalized_appkeys(vm.get(KEYBINDS_FIELD)):
+            continue
+        parent = value_at(parsed, vm_path[:-1])
+        name = vm_path[-1]
+        if not isinstance(parent, dict) or name not in parent:
+            continue
+        line, start = parent.lc.key(name)
+        spans.append(
+            TextSpan(
+                vm_path,
+                line,
+                start,
+                yaml_mapping_key_end(lines[line], start),
+            )
+        )
+    return tuple(spans)
+
+
+def build_document(
+    data: dict,
+    text: str | None = None,
+    source_path: Path | None = None,
+) -> Document:
     text = canonical_yaml(data) if text is None else text
     parsed = YAML_ROUND_TRIP.load(text)
     nodes = semantic_nodes(parsed, data)
@@ -351,17 +456,19 @@ def build_document(data: dict, text: str | None = None) -> Document:
     return Document(
         data=data,
         text=text,
+        source_path=source_path,
         lines=lines,
         nodes=nodes,
         node_by_path=node_by_path,
         active_vm=discover_active_vm(data),
-        appkey_declarations=appkey_declarations(data, node_by_path, lines),
+        appkey_declarations=appkey_declarations(parsed, data, node_by_path, lines),
+        keybound_block_names=keybound_block_name_spans(parsed, data, lines),
     )
 
 
 def load_document(path: Path) -> Document:
     text = path.read_text(encoding="utf-8")
-    return build_document(parse_document(text), text)
+    return build_document(parse_document(text), text, path.resolve())
 
 
 def first_child(document: Document, path: PathTuple) -> PathTuple | None:
@@ -385,14 +492,20 @@ def normalized_appkeys(value) -> tuple[str, ...]:
         return (value,)
     if isinstance(value, list):
         return tuple(key for key in value if isinstance(key, str))
+    if isinstance(value, dict):
+        return tuple(key for key in value if isinstance(key, str))
     return ()
 
 
-def resolve_appkey(document: Document, context_vm: PathTuple, key: str) -> PathTuple | None:
+def resolve_appkey(
+    document: Document,
+    context_vm: PathTuple,
+    key: str,
+) -> AppkeyDeclaration | None:
     for vm_path in vm_ancestors(document, context_vm):
-        vm = value_at(document.data, vm_path)
-        if key in normalized_appkeys(vm.get(KEYBINDS_FIELD)):
-            return vm_path
+        for declaration in document.appkey_declarations:
+            if declaration.vm_path == vm_path and declaration.key == key:
+                return declaration
     return None
 
 
@@ -463,11 +576,69 @@ def replace_editor_line(
     )
 
 
+def editor_text_and_offset(editor: EditorBuffer) -> tuple[str, int]:
+    """Flatten an editor buffer and locate its cursor in that text."""
+    offset = sum(len(line) + 1 for line in editor.lines[: editor.cursor_line])
+    return "\n".join(editor.lines), offset + editor.cursor_column
+
+
+def editor_at_offset(editor: EditorBuffer, text: str, offset: int) -> EditorBuffer:
+    """Replace flattened text and place the cursor at a bounded offset."""
+    offset = max(0, min(offset, len(text)))
+    prefix = text[:offset]
+    lines = tuple(text.split("\n"))
+    return replace(
+        editor,
+        lines=lines,
+        cursor_line=prefix.count("\n"),
+        cursor_column=len(prefix.rsplit("\n", 1)[-1]),
+    )
+
+
+def is_word_character(character: str) -> bool:
+    return character.isalnum() or character == "_"
+
+
+def previous_word_boundary(text: str, offset: int) -> int:
+    while offset > 0 and not is_word_character(text[offset - 1]):
+        offset -= 1
+    while offset > 0 and is_word_character(text[offset - 1]):
+        offset -= 1
+    return offset
+
+
+def next_word_boundary(text: str, offset: int) -> int:
+    while offset < len(text) and is_word_character(text[offset]):
+        offset += 1
+    while offset < len(text) and not is_word_character(text[offset]):
+        offset += 1
+    return offset
+
+
 def edit_buffer(editor: EditorBuffer, key: str) -> EditorBuffer:
     line_index = editor.cursor_line
     column = editor.cursor_column
     line = editor.lines[line_index]
 
+    if key in {CTRL_LEFT, CTRL_RIGHT, CTRL_DELETE, *CTRL_BACKSPACE_KEYS}:
+        text, offset = editor_text_and_offset(editor)
+        if key == CTRL_LEFT:
+            return editor_at_offset(editor, text, previous_word_boundary(text, offset))
+        if key == CTRL_RIGHT:
+            return editor_at_offset(editor, text, next_word_boundary(text, offset))
+        if key == CTRL_DELETE:
+            end = next_word_boundary(text, offset)
+            return editor_at_offset(editor, text[:offset] + text[end:], offset)
+        start = previous_word_boundary(text, offset)
+        return editor_at_offset(editor, text[:start] + text[offset:], start)
+    if key in {CTRL_UP, CTRL_HOME}:
+        return replace(editor, cursor_line=0, cursor_column=0)
+    if key in {CTRL_DOWN, CTRL_END}:
+        return replace(
+            editor,
+            cursor_line=len(editor.lines) - 1,
+            cursor_column=len(editor.lines[-1]),
+        )
     if key == UP:
         next_line = max(0, line_index - 1)
         return replace(
@@ -624,13 +795,15 @@ def reduce_state(
         return replace(state, context_vm=None), "back"
 
     context = state.context_vm if state.context_vm is not None else document.active_vm
-    declaring_vm = resolve_appkey(document, context, key)
-    if declaring_vm is not None:
-        selection = pc_path(document.data, declaring_vm)
+    binding = resolve_appkey(document, context, key)
+    if binding is not None:
+        selection = binding.target_path or pc_path(document.data, binding.vm_path)
+        if selection not in document.node_by_path:
+            return state, None
         return (
             clamp_viewport(
                 document,
-                replace(state, context_vm=declaring_vm, selection=selection),
+                replace(state, context_vm=binding.vm_path, selection=selection),
                 body_height,
             ),
             None,
@@ -655,6 +828,14 @@ def highlight_yaml(line: str) -> str:
     output: list[str] = []
     index = 0
     punctuation = "[]{}:,"
+    sequence_awaiting_first: list[bool] = []
+
+    def scalar_style(default: str) -> str:
+        if sequence_awaiting_first and sequence_awaiting_first[-1]:
+            sequence_awaiting_first[-1] = False
+            return YAML_ACTOR_STYLE
+        return default
+
     while index < len(line):
         character = line[index]
         if character == "#" and (index == 0 or line[index - 1].isspace()):
@@ -674,13 +855,19 @@ def highlight_yaml(line: str) -> str:
                         continue
                     break
                 end += 1
-            output.append(f"{YAML_STRING_STYLE}{line[index:end]}")
+            output.append(f"{scalar_style(YAML_STRING_STYLE)}{line[index:end]}")
             index = end
             continue
         if character in punctuation or (
             character == "-" and line[:index].strip() == ""
         ):
             output.append(f"{YAML_PUNCTUATION_STYLE}{character}")
+            if character == "[":
+                if sequence_awaiting_first and sequence_awaiting_first[-1]:
+                    sequence_awaiting_first[-1] = False
+                sequence_awaiting_first.append(True)
+            elif character == "]" and sequence_awaiting_first:
+                sequence_awaiting_first.pop()
             index += 1
             continue
         if character.isspace():
@@ -697,7 +884,8 @@ def highlight_yaml(line: str) -> str:
             end += 1
         token = line[index:end]
         remainder = line[end:].lstrip()
-        output.append(f"{yaml_token_style(token, remainder.startswith(':'))}{token}")
+        token_style = yaml_token_style(token, remainder.startswith(':'))
+        output.append(f"{scalar_style(token_style)}{token}")
         index = end
     return "".join(output)
 
@@ -706,17 +894,30 @@ def highlight_yaml_ranges(
     line: str,
     ranges: tuple[tuple[int, int], ...],
 ) -> str:
+    starts: dict[int, int] = {}
+    ends: dict[int, int] = {}
+    for raw_start, raw_end in ranges:
+        start = max(0, min(raw_start, len(line)))
+        end = max(start, min(raw_end, len(line)))
+        starts[start] = starts.get(start, 0) + 1
+        ends[end] = ends.get(end, 0) + 1
+
     output: list[str] = []
-    cursor = 0
-    for start, end in sorted(ranges):
-        start = max(cursor, min(start, len(line)))
-        end = max(start, min(end, len(line)))
-        output.append(highlight_yaml(line[cursor:start]))
-        output.append(APPKEY_STYLE)
-        output.append(highlight_yaml(line[start:end]))
-        output.append(APPKEY_STYLE_END)
-        cursor = end
-    output.append(highlight_yaml(line[cursor:]))
+    highlighted = highlight_yaml(line)
+    visible_index = 0
+    index = 0
+    while index < len(highlighted):
+        if highlighted[index] == "\x1b":
+            escape_end = highlighted.find("m", index) + 1
+            output.append(highlighted[index:escape_end])
+            index = escape_end
+            continue
+        output.extend(APPKEY_STYLE_END for _ in range(ends.get(visible_index, 0)))
+        output.extend(APPKEY_STYLE for _ in range(starts.get(visible_index, 0)))
+        output.append(highlighted[index])
+        visible_index += 1
+        index += 1
+    output.extend(APPKEY_STYLE_END for _ in range(ends.get(visible_index, 0)))
     return "".join(output)
 
 
@@ -725,6 +926,8 @@ def overlay_line(
     selected: bool,
     active_pc: bool,
     active_appkey_ranges: tuple[tuple[int, int], ...] = (),
+    ancestor_frame: bool = False,
+    gutter: str = "",
 ) -> str:
     if selected and active_pc:
         style = PC_SELECTION_STYLE
@@ -732,25 +935,43 @@ def overlay_line(
         style = PC_STYLE
     elif selected:
         style = SELECTION_STYLE
+    elif ancestor_frame:
+        style = ANCESTOR_FRAME_STYLE
     else:
         style = ""
-    return f"{style}{highlight_yaml_ranges(line, active_appkey_ranges)}{RESET}"
+    styled_gutter = f"{LINE_NUMBER_STYLE}{gutter}\x1b[39m" if gutter else ""
+    return (
+        f"{style}{styled_gutter}"
+        f"{highlight_yaml_ranges(line, active_appkey_ranges)}{RESET}"
+    )
 
 
 def fit(text: str, width: int) -> str:
     return text[:width].ljust(width)
 
 
+def display_source_path(source_path: Path | None) -> str:
+    if source_path is None:
+        return "<memory>"
+    try:
+        return f"./{source_path.relative_to(Path.cwd())}"
+    except ValueError:
+        return str(source_path)
+
+
 def render(document: Document, state: DemoState, rows: int, columns: int) -> str:
-    rows = max(3, rows)
+    rows = max(HEADER_ROWS + FOOTER_ROWS + 1, rows)
     columns = max(1, columns)
     content_width = max(1, columns - 1)
-    body_height = rows - 2
+    body_height = rows - HEADER_ROWS - FOOTER_ROWS
     display_lines = (
         state.editor.lines
         if state.mode == WRITE_MODE and state.editor is not None
         else document.lines
     )
+    line_number_width = len(str(max(1, len(display_lines))))
+    gutter_width = line_number_width + 3
+    yaml_width = max(1, content_width - gutter_width)
     maximum_viewport = max(0, len(display_lines) - body_height)
     viewport = max(0, min(state.viewport, maximum_viewport))
     context_vm = state.context_vm if state.context_vm is not None else document.active_vm
@@ -758,41 +979,70 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
     selected_line = document.node_by_path.get(state.selection, document.nodes[0]).line
     pc_node = document.node_by_path.get(active_pc)
     pc_line = pc_node.line if pc_node is not None else -1
+    ancestor_frame_lines = {
+        node.line
+        for path in ancestor_frame_paths(document, context_vm)
+        if (node := document.node_by_path.get(path)) is not None
+    }
     active_declarations = (
         active_appkey_spans(document, context_vm)
         if state.mode == RUN_MODE
         else ()
     )
     appkey_ranges_by_line: dict[int, list[tuple[int, int]]] = {}
+    if state.mode == RUN_MODE:
+        active_vm_paths = {
+            declaration.vm_path for declaration in active_declarations
+        }
+        for span in document.keybound_block_names:
+            if span.vm_path not in active_vm_paths:
+                continue
+            appkey_ranges_by_line.setdefault(span.line, []).append(
+                (span.start, span.end)
+            )
     for declaration in active_declarations:
         appkey_ranges_by_line.setdefault(declaration.line, []).append(
             (declaration.start, declaration.end)
         )
 
-    status = (
-        f" {state.mode}  vm:{format_path(context_vm)}  pc:{format_path(active_pc)} "
-        f" lines:{viewport + 1}-{min(len(display_lines), viewport + body_height)}"
-    )
+    status = f" {state.mode}"
     if state.message:
         status += f"  {state.message}"
+    status += (
+        f"  lines:{viewport + 1}-{min(len(display_lines), viewport + body_height)}"
+        f"  vm:{format_path(context_vm)}  pc:{format_path(active_pc)}"
+    )
     output = [
-        f"{CLEAR_HOME}{HIDE_CURSOR}{CHROME}{fit(status, content_width)}{RESET}"
+        f"{CLEAR_HOME}{HIDE_CURSOR}{PATH_STYLE}"
+        f"{fit(f' FILE  {display_source_path(document.source_path)}', content_width)}"
+        f"{RESET}",
+        f"{CHROME}{fit(status, content_width)}{RESET}",
     ]
     for row in range(body_height):
         line_index = viewport + row
         line = display_lines[line_index] if line_index < len(display_lines) else ""
+        gutter = (
+            f"{line_index + 1:>{line_number_width}} │ "
+            if line_index < len(display_lines)
+            else " " * gutter_width
+        )
         output.append(
             overlay_line(
-                fit(line, content_width),
+                fit(line, yaml_width),
                 selected=(
                     state.mode == RUN_MODE and line_index == selected_line
                 ),
                 active_pc=(
                     state.mode == RUN_MODE and line_index == pc_line
                 ),
+                ancestor_frame=(
+                    state.mode == RUN_MODE
+                    and line_index in ancestor_frame_lines
+                ),
                 active_appkey_ranges=tuple(
                     appkey_ranges_by_line.get(line_index, ())
                 ),
+                gutter=gutter,
             )
         )
 
@@ -800,7 +1050,7 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
         footer = (
             f" WRITE  Ln {state.editor.cursor_line + 1},"
             f" Col {state.editor.cursor_column + 1}  Esc validate/save/run "
-            "arrows move Enter split Backspace/Delete edit Ctrl-Q quit"
+            "arrows move Ctrl-arrows/Backspace/Delete by word Ctrl-Q quit"
         )
     else:
         footer = (
@@ -810,8 +1060,11 @@ def render(document: Document, state: DemoState, rows: int, columns: int) -> str
     output.append(f"{PATH_STYLE}{fit(footer, content_width)}{RESET}")
     rendered = "\r\n".join(output)
     if state.mode == WRITE_MODE and state.editor is not None:
-        cursor_row = 2 + state.editor.cursor_line - viewport
-        cursor_column = min(content_width, state.editor.cursor_column + 1)
+        cursor_row = HEADER_ROWS + 1 + state.editor.cursor_line - viewport
+        cursor_column = min(
+            content_width,
+            gutter_width + state.editor.cursor_column + 1,
+        )
         rendered += f"{SHOW_CURSOR}\x1b[{cursor_row};{cursor_column}H"
     return rendered
 
@@ -847,7 +1100,7 @@ def execute_runtime_operation(
 
 def save_editor_document(target_path: Path, editor: EditorBuffer) -> Document:
     text = editor.text()
-    document = build_document(parse_document(text), text)
+    document = build_document(parse_document(text), text, target_path.resolve())
     temporary_path = None
     try:
         with tempfile.NamedTemporaryFile(
@@ -897,7 +1150,12 @@ def run_demo(
             rows, columns = terminal.dimensions()
             terminal.write(render(document, state, rows, columns))
             key = terminal.read_key()
-            state, operation = reduce_state(document, state, key, max(1, rows - 2))
+            state, operation = reduce_state(
+                document,
+                state,
+                key,
+                max(1, rows - HEADER_ROWS - FOOTER_ROWS),
+            )
             if operation == "save":
                 try:
                     if state.editor is None:
@@ -920,7 +1178,7 @@ def run_demo(
                     )
             elif operation is not None:
                 data = runtime_operation(operation, binary_path, target_path)
-                document = build_document(data)
+                document = build_document(data, source_path=target_path.resolve())
                 state = reconcile_document_state(
                     document,
                     replace(state, context_vm=None),

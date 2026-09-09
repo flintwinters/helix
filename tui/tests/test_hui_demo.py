@@ -47,10 +47,30 @@ class MemoryTerminal:
 
 
 def document():
-    return hui_demo.build_document(hui_demo.load_ordered_document(FIXTURE))
+    return hui_demo.load_document(FIXTURE)
+
+
+def descended_document():
+    data = hui_demo.load_ordered_document(FIXTURE)
+    data["state"]["frames"] = [["actions", 1]]
+    data["workspace"]["state"] = {
+        "status": "running",
+        "frames": [["actions", 1]],
+    }
+    data["workspace"]["task"]["state"] = {
+        "status": "running",
+        "frames": [["steps", 0]],
+    }
+    return hui_demo.build_document(data)
 
 
 class RenderingTests(unittest.TestCase):
+    def test_status_shows_yaml_file_path(self):
+        doc = document()
+        rendered = hui_demo.render(doc, hui_demo.DemoState(()), 12, 240)
+        status = ANSI.sub("", rendered).splitlines()[0]
+        self.assertIn("FILE  ./tests/assets/hui_core_demo.yaml", status)
+
     def test_canonical_yaml_is_exact_after_ansi_is_removed(self):
         doc = document()
         styled = "".join(
@@ -63,8 +83,8 @@ class RenderingTests(unittest.TestCase):
     def test_pc_and_selection_are_overlays_without_yaml_mutation(self):
         doc = document()
         before = hui_demo.canonical_yaml(doc.data)
-        state = hui_demo.DemoState(selection=("workspace", "task", "steps", 0))
-        rendered = hui_demo.render(doc, state, 40, 100)
+        state = hui_demo.DemoState(selection=("actions", 0))
+        rendered = hui_demo.render(doc, state, 60, 100)
         self.assertIn(hui_demo.PC_SELECTION_STYLE, rendered)
         self.assertEqual(hui_demo.canonical_yaml(doc.data), before)
         self.assertNotIn("<---", before)
@@ -73,7 +93,7 @@ class RenderingTests(unittest.TestCase):
         line = "answer: [true, 42, 'text'] # note"
         styled = hui_demo.overlay_line(line, False, False)
         self.assertIn(f"{hui_demo.YAML_KEY_STYLE}answer", styled)
-        self.assertIn(f"{hui_demo.YAML_LITERAL_STYLE}true", styled)
+        self.assertIn(f"{hui_demo.YAML_ACTOR_STYLE}true", styled)
         self.assertIn(f"{hui_demo.YAML_NUMBER_STYLE}42", styled)
         self.assertIn(f"{hui_demo.YAML_STRING_STYLE}'text'", styled)
         self.assertIn(f"{hui_demo.YAML_COMMENT_STYLE}# note", styled)
@@ -85,8 +105,23 @@ class RenderingTests(unittest.TestCase):
             False,
             ((11, 12),),
         )
-        self.assertIn(f"{hui_demo.APPKEY_STYLE}{hui_demo.YAML_STYLE}K", appkey_styled)
+        self.assertIn(
+            f"{hui_demo.YAML_ACTOR_STYLE}{hui_demo.APPKEY_STYLE}K",
+            appkey_styled,
+        )
+        self.assertEqual(hui_demo.APPKEY_STYLE, "\x1b[4m")
+        self.assertEqual(hui_demo.APPKEY_STYLE_END, "\x1b[24m")
         self.assertEqual(ANSI.sub("", appkey_styled), appkey_line)
+
+    def test_first_scalar_in_every_flow_array_is_a_non_bold_yellow_actor(self):
+        line = "main: [run, [add, 1, 2], tail]"
+        styled = hui_demo.highlight_yaml(line)
+        self.assertIn(f"{hui_demo.YAML_ACTOR_STYLE}run", styled)
+        self.assertIn(f"{hui_demo.YAML_ACTOR_STYLE}add", styled)
+        self.assertIn(f"{hui_demo.YAML_STYLE}tail", styled)
+        self.assertNotIn(f"{hui_demo.YAML_ACTOR_STYLE}run\x1b[1m", styled)
+        self.assertNotIn(";1m", hui_demo.YAML_ACTOR_STYLE)
+        self.assertEqual(ANSI.sub("", styled), line)
 
     def test_pc_and_selection_styles_preserve_syntax_foregrounds(self):
         line = "status: running"
@@ -95,7 +130,7 @@ class RenderingTests(unittest.TestCase):
         self.assertIn(f"{hui_demo.YAML_KEY_STYLE}status", styled)
         self.assertIn(f"{hui_demo.YAML_STYLE}running", styled)
 
-    def test_renderer_uses_background_only_for_selected_row(self):
+    def test_visible_background_styles_are_explicit_and_never_reverse_video(self):
         rendered = hui_demo.render(
             document(),
             hui_demo.DemoState(("keybinds",)),
@@ -110,32 +145,116 @@ class RenderingTests(unittest.TestCase):
                 if parameter
             }
             self.assertNotIn(7, parameters, match.group(0))
-            self.assertNotIn(4, parameters, match.group(0))
             if 48 in parameters or not parameters.isdisjoint(
                 {*range(40, 50), *range(100, 108)}
             ):
                 background_styles.append(match.group(0))
         self.assertEqual(background_styles, [hui_demo.SELECTION_STYLE])
 
+    def test_suspended_ancestor_frames_receive_lighter_row_highlights(self):
+        self.assertEqual(hui_demo.ANCESTOR_FRAME_STYLE, "\x1b[48;5;238m")
+        doc = descended_document()
+        state = hui_demo.DemoState(("workspace", "task", "steps", 0))
+        rows = len(doc.lines) + hui_demo.HEADER_ROWS + hui_demo.FOOTER_ROWS
+        rendered_lines = hui_demo.render(doc, state, rows, 100).split("\r\n")
+        frame_paths = hui_demo.ancestor_frame_paths(
+            doc,
+            ("workspace", "task"),
+        )
+        self.assertEqual(
+            set(frame_paths),
+            {("actions", 1), ("workspace", "actions", 1)},
+        )
+        for path in frame_paths:
+            line = doc.node_by_path[path].line
+            self.assertIn(
+                hui_demo.ANCESTOR_FRAME_STYLE,
+                rendered_lines[line + hui_demo.HEADER_ROWS],
+            )
+        current_line = doc.node_by_path[("workspace", "task", "steps", 0)].line
+        self.assertNotIn(
+            hui_demo.ANCESTOR_FRAME_STYLE,
+            rendered_lines[current_line + hui_demo.HEADER_ROWS],
+        )
+
+    def test_run_mode_underlines_only_currently_accessible_block_names(self):
+        doc = descended_document()
+        rendered_lines = hui_demo.render(
+            doc,
+            hui_demo.DemoState(("workspace", "task", "main")),
+            60,
+            100,
+        ).split("\r\n")
+        expected_names = {"workspace", "task"}
+        self.assertEqual(
+            len(doc.keybound_block_names),
+            3,
+        )
+        underlined_names = {
+            doc.lines[span.line][span.start : span.end]
+            for span in doc.keybound_block_names
+            if hui_demo.APPKEY_STYLE
+            in rendered_lines[span.line + hui_demo.HEADER_ROWS]
+        }
+        self.assertEqual(underlined_names, expected_names)
+
+        workspace_render = hui_demo.render(
+            doc,
+            hui_demo.DemoState(("workspace",), context_vm=("workspace",)),
+            60,
+            100,
+        ).split("\r\n")
+        workspace_names = {
+            doc.lines[span.line][span.start : span.end]
+            for span in doc.keybound_block_names
+            if hui_demo.APPKEY_STYLE
+            in workspace_render[span.line + hui_demo.HEADER_ROWS]
+        }
+        self.assertEqual(workspace_names, {"workspace"})
+
+    def test_underlining_preserves_mapping_key_syntax_color(self):
+        doc = document()
+        task_span = next(
+            span
+            for span in doc.keybound_block_names
+            if span.vm_path == ("workspace", "task")
+        )
+        rendered_line = hui_demo.render(
+            doc,
+            hui_demo.DemoState(
+                ("workspace", "task", "main"),
+                context_vm=("workspace", "task"),
+            ),
+            60,
+            100,
+        ).split("\r\n")[task_span.line + hui_demo.HEADER_ROWS]
+        self.assertIn(
+            f"{hui_demo.YAML_KEY_STYLE}{hui_demo.APPKEY_STYLE}task",
+            rendered_line,
+        )
+
     def test_run_mode_highlights_only_currently_active_keybind_scalars(self):
         doc = document()
-        state = hui_demo.DemoState(("workspace", "task", "steps", 1))
+        state = hui_demo.DemoState(
+            ("workspace", "task", "steps", 1),
+            context_vm=("workspace", "task"),
+        )
         rendered_lines = hui_demo.render(doc, state, 60, 100).split("\r\n")
         active_spans = hui_demo.active_appkey_spans(
             doc,
             ("workspace", "task"),
         )
         active_lines = {declaration.line for declaration in active_spans}
-        expected_lines = {
-            doc.node_by_path[("keybinds",)].line,
-            doc.node_by_path[("workspace", "keybinds")].line,
-            doc.node_by_path[("workspace", "task", "keybinds")].line,
-        }
-        self.assertEqual(active_lines, expected_lines)
-        for line_index in expected_lines:
-            self.assertIn(hui_demo.APPKEY_STYLE, rendered_lines[line_index + 1])
+        for line_index in active_lines:
+            self.assertIn(
+                hui_demo.APPKEY_STYLE,
+                rendered_lines[line_index + hui_demo.HEADER_ROWS],
+            )
         sibling_line = doc.node_by_path[("unrelated-worker", "keybinds")].line
-        self.assertNotIn(hui_demo.APPKEY_STYLE, rendered_lines[sibling_line + 1])
+        self.assertNotIn(
+            hui_demo.APPKEY_STYLE,
+            rendered_lines[sibling_line + hui_demo.HEADER_ROWS],
+        )
         root_declaration = next(
             declaration
             for declaration in active_spans
@@ -144,13 +263,24 @@ class RenderingTests(unittest.TestCase):
         root_line = doc.lines[root_declaration.line]
         self.assertEqual(
             root_line[root_declaration.start : root_declaration.end],
-            "R",
+            "r",
         )
         workspace_keys = {
             declaration.key
             for declaration in hui_demo.active_appkey_spans(doc, ("workspace",))
         }
-        self.assertEqual(workspace_keys, {"W", "R"})
+        self.assertEqual(workspace_keys, {"r", "h", "p", "w", "e", "o", "t"})
+
+    def test_demo_exposes_many_lowercase_keybinds(self):
+        declarations = document().appkey_declarations
+        self.assertEqual(len(declarations), 12)
+        self.assertTrue(
+            all(
+                declaration.key.isalpha()
+                and declaration.key.islower()
+                for declaration in declarations
+            )
+        )
 
     def test_write_mode_removes_active_keybind_highlights(self):
         doc = document()
@@ -189,7 +319,7 @@ class RenderingTests(unittest.TestCase):
         line = "values: [a#b, \"c:#d\", 'e:#f'] # note"
         styled = hui_demo.highlight_yaml(line)
         self.assertEqual(styled.count(hui_demo.YAML_COMMENT_STYLE), 1)
-        self.assertIn(f"{hui_demo.YAML_STYLE}a#b", styled)
+        self.assertIn(f"{hui_demo.YAML_ACTOR_STYLE}a#b", styled)
         self.assertIn(f"{hui_demo.YAML_STRING_STYLE}\"c:#d\"", styled)
         self.assertIn(f"{hui_demo.YAML_STRING_STYLE}'e:#f'", styled)
         self.assertEqual(ANSI.sub("", styled), line)
@@ -202,11 +332,28 @@ class RenderingTests(unittest.TestCase):
         self.assertEqual(len(visible), 7)
         self.assertTrue(all(len(line) == 30 for line in visible))
 
+    def test_body_has_right_aligned_line_number_gutter(self):
+        doc = document()
+        rendered = ANSI.sub("", hui_demo.render(doc, hui_demo.DemoState(()), 7, 72))
+        body = rendered.splitlines()[hui_demo.HEADER_ROWS : -hui_demo.FOOTER_ROWS]
+        width = len(str(len(doc.lines)))
+        self.assertTrue(body[0].startswith(f"{1:>{width}} │ "))
+        self.assertTrue(body[1].startswith(f"{2:>{width}} │ "))
+
+    def test_write_cursor_is_offset_by_line_number_gutter(self):
+        doc = document()
+        editor = hui_demo.EditorBuffer.from_text(doc.text, 1, 0)
+        state = hui_demo.DemoState((), mode=hui_demo.WRITE_MODE, editor=editor)
+        rendered = hui_demo.render(doc, state, 7, 72)
+        gutter_width = len(str(len(editor.lines))) + 3
+        cursor_row = hui_demo.HEADER_ROWS + editor.cursor_line + 1
+        self.assertTrue(rendered.endswith(f"\x1b[{cursor_row};{gutter_width + 1}H"))
+
     def test_render_preserves_page_scrolled_viewport(self):
         doc = document()
         state = hui_demo.DemoState(selection=(), viewport=5)
         rendered = ANSI.sub("", hui_demo.render(doc, state, 7, 72))
-        self.assertIn("lines:6-10", rendered.splitlines()[0])
+        self.assertIn("lines:6-9", rendered.splitlines()[1])
 
     def test_rows_reserve_last_column_and_do_not_double_space(self):
         doc = document()
@@ -217,16 +364,21 @@ class RenderingTests(unittest.TestCase):
 
 
 class ReducerTests(unittest.TestCase):
-    def test_demo_is_a_coherent_nested_running_vm_chain(self):
+    def test_demo_starts_before_the_first_root_action(self):
         doc = document()
-        self.assertEqual(doc.active_vm, ("workspace", "task"))
+        self.assertEqual(doc.active_vm, ())
         self.assertEqual(
             hui_demo.pc_path(doc.data, doc.active_vm),
-            ("workspace", "task", "steps", 0),
+            ("actions", 0),
         )
         self.assertEqual(
             list(hui_demo.vm_ancestors(doc, doc.active_vm)),
-            [("workspace", "task"), ("workspace",), ()],
+            [()],
+        )
+        self.assertEqual(doc.data["workspace"]["state"]["status"], "ready")
+        self.assertEqual(
+            doc.data["workspace"]["task"]["state"]["status"],
+            "ready",
         )
         self.assertNotIn("adjusted", doc.data["workspace"]["task"])
 
@@ -242,7 +394,7 @@ class ReducerTests(unittest.TestCase):
         self.assertEqual(unchanged, state)
         self.assertEqual(operation, "step")
         state, _ = hui_demo.reduce_state(doc, state, hui_demo.RIGHT, 5)
-        self.assertEqual(state.selection, ("keybinds", 0))
+        self.assertEqual(state.selection, ("keybinds", "r"))
         state, _ = hui_demo.reduce_state(doc, state, hui_demo.LEFT, 5)
         self.assertEqual(state.selection, ("keybinds",))
         state, _ = hui_demo.reduce_state(doc, state, hui_demo.PAGE_DOWN, 5)
@@ -275,9 +427,9 @@ class ReducerTests(unittest.TestCase):
         self.assertEqual(operation, "back")
 
     def test_back_after_appkey_returns_to_versioned_yaml_pc(self):
-        doc = document()
+        doc = descended_document()
         state = hui_demo.DemoState(selection=doc.active_vm)
-        state, _ = hui_demo.reduce_state(doc, state, "W", 20)
+        state, _ = hui_demo.reduce_state(doc, state, "w", 20)
         self.assertEqual(state.context_vm, ("workspace",))
 
         state, operation = hui_demo.reduce_state(doc, state, hui_demo.F9, 20)
@@ -302,26 +454,54 @@ class ReducerTests(unittest.TestCase):
     def test_appkeys_resolve_active_to_ancestor_nearest_first(self):
         doc = document()
         active = ("workspace", "task")
-        self.assertEqual(hui_demo.resolve_appkey(doc, active, "T"), active)
-        self.assertEqual(hui_demo.resolve_appkey(doc, active, "W"), ("workspace",))
-        self.assertEqual(hui_demo.resolve_appkey(doc, active, "R"), ())
+        expected = {
+            "t": (("workspace", "task"), ("workspace", "task", "main")),
+            "s": (("workspace", "task"), ("workspace", "task", "sample")),
+            "w": (("workspace",), ("workspace", "main")),
+            "o": (("workspace",), ("workspace", "offset")),
+            "r": ((), ("main",)),
+            "h": ((), ("help",)),
+        }
+        for key, (vm_path, target_path) in expected.items():
+            binding = hui_demo.resolve_appkey(doc, active, key)
+            self.assertIsNotNone(binding)
+            self.assertEqual((binding.vm_path, binding.target_path), (vm_path, target_path))
 
     def test_appkeys_exclude_siblings_and_unrelated_descendants(self):
         doc = document()
         self.assertIsNone(
-            hui_demo.resolve_appkey(doc, ("workspace", "task"), "X")
+            hui_demo.resolve_appkey(doc, ("workspace", "task"), "x")
         )
 
     def test_prototype_interrupt_switches_context_to_existing_pc(self):
-        doc = document()
+        doc = descended_document()
         state = hui_demo.DemoState(selection=("workspace", "task", "main"))
-        state, operation = hui_demo.reduce_state(doc, state, "W", 20)
+        state, operation = hui_demo.reduce_state(doc, state, "w", 20)
         self.assertIsNone(operation)
         self.assertEqual(state.context_vm, ("workspace",))
-        self.assertEqual(state.selection, ("workspace", "actions", 1))
-        state, _ = hui_demo.reduce_state(doc, state, "R", 20)
+        self.assertEqual(state.selection, ("workspace", "main"))
+        state, _ = hui_demo.reduce_state(doc, state, "r", 20)
         self.assertEqual(state.context_vm, ())
-        self.assertEqual(state.selection, ("actions", 1))
+        self.assertEqual(state.selection, ("main",))
+
+    def test_mapped_appkeys_select_distinct_content(self):
+        doc = descended_document()
+        state = hui_demo.DemoState(
+            selection=("workspace", "task", "main"),
+            context_vm=("workspace", "task"),
+        )
+        destinations = {
+            "t": ("workspace", "task", "main"),
+            "e": ("workspace", "task", "enabled"),
+            "l": ("workspace", "task", "last-error"),
+            "s": ("workspace", "task", "sample"),
+            "o": ("workspace", "offset"),
+            "h": ("help",),
+        }
+        for key, destination in destinations.items():
+            next_state, operation = hui_demo.reduce_state(doc, state, key, 20)
+            self.assertIsNone(operation)
+            self.assertEqual(next_state.selection, destination)
 
 
 class EditorTests(unittest.TestCase):
@@ -340,6 +520,32 @@ class EditorTests(unittest.TestCase):
         editor = hui_demo.edit_buffer(editor, hui_demo.END)
         editor = hui_demo.edit_buffer(editor, hui_demo.RIGHT)
         self.assertEqual((editor.cursor_line, editor.cursor_column), (1, 1))
+
+    def test_control_navigation_and_deletion_use_word_and_document_boundaries(self):
+        for key in hui_demo.CTRL_BACKSPACE_KEYS:
+            deleted = hui_demo.edit_buffer(
+                hui_demo.EditorBuffer(("alpha beta",), 0, 10, True),
+                key,
+            )
+            self.assertEqual((deleted.lines, deleted.cursor_column), (("alpha ",), 6))
+
+        editor = hui_demo.EditorBuffer(("alpha beta", "gamma delta"), 0, 10, True)
+        editor = hui_demo.edit_buffer(editor, hui_demo.CTRL_LEFT)
+        self.assertEqual((editor.cursor_line, editor.cursor_column), (0, 6))
+        editor = hui_demo.edit_buffer(editor, hui_demo.CTRL_BACKSPACE_KEYS[0])
+        self.assertEqual((editor.lines, editor.cursor_column), (("beta", "gamma delta"), 0))
+        editor = hui_demo.edit_buffer(editor, hui_demo.CTRL_RIGHT)
+        self.assertEqual((editor.cursor_line, editor.cursor_column), (1, 0))
+        editor = hui_demo.edit_buffer(editor, hui_demo.CTRL_DELETE)
+        self.assertEqual(editor.lines, ("beta", "delta"))
+        editor = hui_demo.edit_buffer(editor, hui_demo.CTRL_END)
+        self.assertEqual((editor.cursor_line, editor.cursor_column), (1, 5))
+        editor = hui_demo.edit_buffer(editor, hui_demo.CTRL_UP)
+        self.assertEqual((editor.cursor_line, editor.cursor_column), (0, 0))
+        editor = hui_demo.edit_buffer(editor, hui_demo.CTRL_DOWN)
+        self.assertEqual((editor.cursor_line, editor.cursor_column), (1, 5))
+        editor = hui_demo.edit_buffer(editor, hui_demo.CTRL_HOME)
+        self.assertEqual((editor.cursor_line, editor.cursor_column), (0, 0))
 
     def test_write_mode_suppresses_runtime_and_appkeys(self):
         calls = []
@@ -396,7 +602,7 @@ class RuntimeAndTerminalTests(unittest.TestCase):
         terminal = MemoryTerminal([hui_demo.PAGE_DOWN, hui_demo.CTRL_Q], rows=7)
         hui_demo.run_demo(FIXTURE, Path("build/helix"), terminal)
         second_frame = ANSI.sub("", terminal.output[1])
-        self.assertIn("lines:6-10", second_frame.splitlines()[0])
+        self.assertIn("lines:5-8", second_frame.splitlines()[1])
 
     def test_run_arrows_and_function_keys_delegate_and_reload_yaml(self):
         calls = []
@@ -583,7 +789,7 @@ class HistoryAdapterTests(unittest.TestCase):
 
         self.assertIn('help: "Return to the root controller"', stepped_text)
         self.assertIn("release: 1 # final summary calibration", stepped_text)
-        self.assertIn("keybinds: [R]", stepped_text)
+        self.assertIn("  h: help", stepped_text)
         self.assertIn(
             "      - [set, doubled, [mul, adjusted, 2]]",
             stepped_text,
@@ -632,7 +838,7 @@ class HistoryAdapterTests(unittest.TestCase):
         )
 
     def test_continue_targets_deepest_running_vm_run_block(self):
-        target_vm = helix_step.load_target_vm(FIXTURE)
+        target_vm = descended_document().data
 
         wrapper = helix_step.build_wrapper_vm(target_vm, "start")
 

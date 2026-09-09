@@ -49,13 +49,17 @@ Given:
 
 ```yaml
 main-menu:
-  keybinds: [M, Home, <]
+  keybinds:
+    h: help
+    p: preview
   help: Open the main menu
+  preview: Current system preview
   main: [do-stuff]
 ```
 
-HUI displays those exact YAML fields. Pressing a declared key selects or jumps
-to the declaring VM's existing PC in the YAML text. The demo resolves
+HUI displays those exact YAML fields. Pressing a mapped lowercase key selects
+its relative semantic path, so distinct keys expose distinct literal content;
+legacy scalar/list declarations jump to the declaring VM's existing PC. The demo resolves
 `keybinds` only on the active VM and its VM ancestors, nearest-first. It never
 scans siblings, unrelated descendants, or the viewport. Invocation, stepping,
 or editing then operates on that same literal document through the runtime.
@@ -151,12 +155,16 @@ snapshots during migration.
   overlays associated with object paths, not persisted YAML comments.
 - Styling never changes YAML content or runtime behavior.
 - Rendering retains the terminal's natural background except for the explicit
-  full-width selected-row highlight. Reverse video is not used as an implicit
-  substitute background.
+  full-width selected-row highlight and lighter highlights on suspended
+  stack-frame rows in the active VM ancestry. Reverse video is not used as an
+  implicit substitute background.
 - The same object path used by frames and breakpoints identifies the
   corresponding displayed text.
 - Rendering is deterministic for a given YAML document, semantic overlay state,
   terminal size, and selection.
+- A dedicated top row displays the active YAML document's file path, using a
+  compact explicit `./` prefix for project-local files; runtime status occupies
+  the separate row below it.
 - Keys attached to executable objects navigate the literal source first.
   Execution remains an explicit runtime operation.
 - Selection moves among semantic YAML nodes rather than arbitrary screen rows.
@@ -166,9 +174,10 @@ snapshots during migration.
   independent display state. None is serialized as a YAML annotation.
 - Application keys are scoped to the active VM ancestry chain and resolve
   nearest-first.
-- Run mode highlights the literal source declarations of keys that currently
-  resolve; shadowed, unrelated, and write-mode bindings receive no command
-  highlight.
+- Run mode underlines named VMs and literal key declarations only when their
+  keys currently resolve. Shadowed and unrelated declarations receive no
+  command underline, write mode receives no keybinding overlays, and applying
+  an underline preserves the YAML token's existing syntax color.
 - The interface uses no animation or transition.
 - Screen organization follows the project's dense Gruvbox-dark operator-panel
   rules without obscuring or duplicating the YAML.
@@ -220,6 +229,8 @@ Implemented and verified:
   every other row retains the terminal's natural background
 - YAML keys, scalars, literals, numbers, punctuation, strings, and comments
   have distinct renderer-only syntax colors that survive PC/selection overlays
+- the first scalar in every flow array uses a non-bold yellow foreground so
+  executable vector actors remain visually distinct
 - run-mode Down steps forward and Up restores the previous versioned state;
   Left/Right traverse semantic parent/first-child
 - PgUp/PgDn clip a deterministic fixed-size viewport
@@ -244,11 +255,9 @@ Implemented and verified:
 - forward runtime operations create snapshots only when the persisted YAML
   text changes; textually null steps are absent from program history
 - the bundled `tests/assets/hui_core_demo.yaml` orbital-telemetry document is
-  valid resumable Helix: its
-  root/workspace/task frames form one running ancestry chain, its active task
-  PC begins at `steps[0]`, F10 advances the nested computation, and
-  continuation finishes with `doubled: 84` and
-  `summary: 85`
+  valid resumable Helix: its root PC begins at `actions[0]`, descendant VMs
+  remain ready until explicit stepping enters them, and continuation finishes
+  with `doubled: 84` and `summary: 85`
 - normal exit and failures restore the terminal boundary
 - run mode maps Down/F10 to one forward step and Up/F9 to the previous
   versioned state; scoped appkeys and F5 apply only in run mode
