@@ -2,6 +2,8 @@
 
 Helix is an experimental C++ runtime for structured, versioned program state.
 
+[Explore the project page](https://flintwinters.github.io/helix/).
+
 ## Current Features Overview
 
 IMPLEMENTED NOW:

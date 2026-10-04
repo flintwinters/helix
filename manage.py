@@ -107,6 +107,14 @@ def webdemo() -> None:
         raise typer.Exit(code=1)
 
 
+@app.command("site-check")
+def site_check() -> None:
+    """Check project-page links, local assets, and search metadata."""
+    from scripts.site_checks import check_site
+
+    check_site()
+
+
 @app.command("webdemo-test")
 def webdemo_test() -> None:
     """Build and verify stateless Helix message-handler turns over HTTP."""

@@ -37,6 +37,7 @@ The runtime starts at the root mapping's `main`. A vector such as `[add, x, 1]` 
 | `tui/hui_demo.py`, `tui/tests/` | Literal-YAML interaction prototype and deterministic scripted tests |
 | `lib/sfml/` | Optional `.so` module; it must remain isolated from the core runtime binary |
 | `webdemo/` | HTTP substrate for stateless one-turn Helix message-handler functions |
+| `site/`, `.github/workflows/pages.yml` | Static public project page, published to GitHub Pages from `main`; use the canonical `flintwinters/helix` repository name in public URLs |
 
 `ryml/`, `build/`, `debug_*`, caches, and local lock/environment files are ignored dependencies or generated state, not primary project source.
 
@@ -68,6 +69,7 @@ uv run python manage.py hui-demo         # canonical interactive demo launch
 uv run python manage.py hui-test         # deterministic HUI demo tests
 uv run python manage.py webdemo          # build the Helix HTTP demo module
 uv run python manage.py webdemo-test     # verify Helix message-handler turns over HTTP
+uv run python manage.py site-check       # check project-page links, assets, and SEO metadata
 ```
 
 The project requires Python 3.13+, C++20 `g++`, CMake, and the ryml source tree

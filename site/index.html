@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Helix — A YAML runtime for readable, versioned program state</title>
+  <meta name="description" content="Explore Helix, an experimental C++ runtime where YAML holds program source and resumable VM state. Inspect, step, and version execution with Git.">
+  <link rel="canonical" href="https://flintwinters.github.io/helix/">
+  <meta name="theme-color" content="#282828">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Helix — Your running program, in plain sight">
+  <meta property="og:description" content="Program source and resumable execution state in readable YAML. Explore an experimental approach to debugging and versioning programs.">
+  <meta property="og:url" content="https://flintwinters.github.io/helix/">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"SoftwareSourceCode","name":"Helix","description":"An experimental C++ runtime in which readable YAML is both program source and persisted VM state.","url":"https://flintwinters.github.io/helix/","codeRepository":"https://github.com/flintwinters/helix","programmingLanguage":["C++","Python","YAML"],"runtimePlatform":"C++20"}
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="wrap"><a class="brand" href="#" aria-label="Helix home"><span aria-hidden="true">⌘</span> HELIX</a><nav aria-label="Main navigation"><a href="#idea">The idea</a><a href="#try">Try it</a><a href="https://github.com/flintwinters/helix">GitHub ↗</a></nav></header>
+  <main id="main" class="wrap">
+    <section class="hero" aria-labelledby="hero-title">
+      <div><p class="eyebrow">EXPERIMENTAL C++ RUNTIME / READABLE YAML</p><h1 id="hero-title">Your running program.<br><em>In plain sight.</em></h1><p class="lead">What if you could read a paused program, save it in Git, and branch its next move?</p><p>Helix puts program source and resumable execution state in the same human-readable YAML document. Open it. Inspect it. Step through it. Keep the interesting moments.</p><div class="actions"><a class="button" href="#try">Explore Helix <span aria-hidden="true">↓</span></a><a class="text-link" href="https://youtu.be/WamNcUSqt1w">Watch the demo ↗</a></div><p class="note">An active experiment in making execution visible.</p></div>
+      <figure class="terminal"><figcaption><span class="dot" aria-hidden="true"></span> hello.yaml <span class="tag">SOURCE</span></figcaption><pre><code><span class="key">answer:</span> <span class="number">0</span>
+<span class="key">main:</span> [<span class="actor">set</span>, answer, [<span class="actor">add</span>, <span class="number">40</span>, <span class="number">2</span>]]</code></pre><div class="terminal-rule">./build/helix hello.yaml</div><pre><code><span class="key">answer:</span> <span class="number">42</span>
+<span class="comment"># Execution is serialized back to YAML,
+# alongside your program and VM state.</span></code></pre><p class="caption">A tiny program. A readable result.<br>The output excerpt above shows the updated value.</p></figure>
+    </section>
+    <section id="idea" class="section"><p class="eyebrow">01 / THE IDEA</p><h2>A program you can keep looking at.</h2><p class="intro">A conventional debugger lets you peek into execution. Helix explores what happens when execution itself becomes a document you can inspect, edit, and version.</p><div class="grid"><article><span class="index">[01]</span><h3>Read the whole state</h3><p>Values, executable forms, and VM state live in an object graph represented as YAML. Suspended frames use object paths, so saved execution can be loaded again.</p></article><article><span class="index">[02]</span><h3>Make history tangible</h3><p>The Python debugger stores snapshots in a per-target Git repository. Step forward, check out an earlier state, or branch an execution to explore another path.</p></article><article><span class="index">[03]</span><h3>Zoom into nested VMs</h3><p>Start and step child virtual machines programmatically. The literal-YAML terminal prototype lets you navigate structured state and follow the active program counter.</p></article></div></section>
+    <section class="section workflow"><div><p class="eyebrow">02 / A DIFFERENT DEBUGGING LOOP</p><h2>Keep the moment.<br>Explore what comes next.</h2><p>When a run becomes interesting, its YAML state becomes a checkpoint. Inspect the values, preserve the snapshot, and use the debugger’s Git history to revisit it.</p><p>This is the motivating direction: reproducible experiments where the state that explains a result remains readable.</p></div><ol class="steps"><li><span>01</span><div><h3>Run or step</h3><p>Evaluate forms and enter nested virtual machines.</p></div></li><li><span>02</span><div><h3>Inspect the YAML</h3><p>Read values, status, and suspended frame paths.</p></div></li><li><span>03</span><div><h3>Version and revisit</h3><p>Use recorded snapshots to return to earlier execution.</p></div></li></ol></section>
+    <section class="section"><p class="eyebrow">03 / WORKING TODAY, BUILDING TOWARD</p><h2>Small runtime. Ambitious questions.</h2><div class="grid two"><article><p class="status">AVAILABLE NOW</p><h3>The Helix runtime and debugger</h3><p>A C++20 runtime with YAML input and output, nested VMs, stepping, breakpoints, structured errors, typed integer assignments, and Git-backed debugging tools.</p><p>The Python HUI prototype keeps literal YAML on screen, with semantic navigation, program-counter highlighting, and backward snapshot navigation.</p><a class="text-link" href="https://github.com/flintwinters/helix/blob/main/tui/README.md">Explore the debugger ↗</a></article><article><p class="status future">IN DEVELOPMENT</p><h3>Bring this visibility to C</h3><p>HCC lowers a small C subset into Helix YAML: integer locals, functions, calls, returns, branching, loops, and arithmetic.</p><p>Connecting execution back to original C source is the next checkpoint. Microcontroller testing, distributed-system experiments, and a portable C++ terminal interface are directions under exploration.</p><a class="text-link" href="https://github.com/flintwinters/helix/blob/main/HCC_Plan.md">Read the compiler roadmap ↗</a></article></div><p class="boundary">Helix is experimental. HCC is a small compiler slice, and hardware targets are planned work. This is a project to explore and help shape.</p></section>
+    <section id="try" class="section"><p class="eyebrow">04 / TAKE IT FOR A SPIN</p><h2>Start with one readable program.</h2><p class="intro">You’ll need Python 3.13+, uv, a C++20-capable g++, CMake, and the ryml source tree. The repository’s fixture tests are executable examples of runtime behavior.</p><div class="grid two"><div class="terminal"><div class="terminal-rule">BUILD &amp; EXPLORE</div><pre><code>git clone https://github.com/flintwinters/helix.git
+cd helix
+git clone https://github.com/biojppm/rapidyaml.git ryml
+uv run python manage.py build
+uv run python manage.py cpp-test
+uv run python manage.py hui-demo</code></pre></div><div class="start-copy"><h3>Follow your curiosity</h3><p>Launch the terminal demo to see nested execution. Read a fixture to learn a form. Inspect the compiler’s output to see how C becomes a Helix object graph.</p><div class="actions"><a class="button" href="https://github.com/flintwinters/helix">View the source ↗</a><a class="text-link" href="https://github.com/flintwinters/helix/tree/main/tests">Read the examples ↗</a></div><p>Found a useful experiment or a rough edge? <a href="https://github.com/flintwinters/helix/issues">Open an issue</a> and help shape the next step.</p></div></div></section>
+  </main>
+  <footer class="wrap"><span class="brand">HELIX</span><p>Readable source. Visible execution. Versioned state.</p><a href="https://github.com/flintwinters/helix">Built in the open ↗</a></footer>
+</body>
+</html>
