@@ -1,0 +1,35 @@
+# Integer cents avoid floating-point money. Repeated accounts and refunds aggregate.
+ledger:
+  - {account: hosting, cents: 1200}
+  - {account: hosting, cents: 800}
+  - {account: travel, cents: 5000}
+  - {account: travel, cents: -1000}
+  - {account: domain, cents: 1500}
+  - {account: placeholder, cents: 0}
+statement:
+  - {account: hosting, cents: 2000}
+  - {account: travel, cents: 4500}
+  - {account: equipment, cents: 3000}
+  - {account: new_zero, cents: 0}
+total_by_account:
+  [fn, [rows],
+    [fold, [fn, [acc, row],
+      [let, {account: [get, row, "account"]},
+        [set, acc, account, [add, [get, acc, account, 0], [get, row, "cents"]]]]], {}, rows]]
+reconcile:
+  [fn, [expected_rows, actual_rows],
+    [let,
+      {expected: [total_by_account, expected_rows],
+       actual: [total_by_account, actual_rows],
+       accounts: [concat, [keys, expected], [filter, [fn, [account], [not, [has, expected, account]]], [keys, actual]]],
+       differences: [filter, [fn, [account],
+         [or, [not, [has, expected, account]], [not, [has, actual, account]],
+           [ne, [get, expected, account, 0], [get, actual, account, 0]]]], accounts]},
+      [map, [fn, [account],
+        [set, [set, [set, [set, [set, [set, {}, "account", account],
+          "in_ledger", [has, expected, account]], "in_statement", [has, actual, account]],
+          "expected_cents", [get, expected, account, 0]], "actual_cents", [get, actual, account, 0]],
+          "delta_cents", [sub, [get, actual, account, 0], [get, expected, account, 0]]]], differences]]]
+discrepancies: [reconcile, ledger, statement]
+balanced: [reconcile, ledger, ledger]
+empty: [reconcile, [], []]
