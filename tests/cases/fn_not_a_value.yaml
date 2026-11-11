@@ -1,0 +1,2 @@
+double: [fn, [n], [mul, n, 2]]
+r: [len, double]

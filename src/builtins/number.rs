@@ -106,7 +106,7 @@ fn to_int(value: &Yaml) -> Result<Yaml, Fault> {
         Yaml::Integer(_) => Ok(value.clone()),
         Yaml::Real(_) => {
             let truncated = as_f64(value).unwrap_or(f64::NAN).trunc();
-            if (-9.223372036854775808e18..9.223372036854775808e18).contains(&truncated) {
+            if (i64::MIN as f64..-(i64::MIN as f64)).contains(&truncated) {
                 Ok(Yaml::Integer(truncated as i64))
             } else {
                 Err(Fault::at(0, "overflow", "float is outside the i64 range".to_string()))

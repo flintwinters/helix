@@ -7,7 +7,7 @@ use crate::span::Span;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HelixError {
-    /// Stable machine-readable category (`parse`, `unbound`, `type`, `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`).
+    /// Stable machine-readable category; the full list is in `LANGUAGE.md`.
     pub kind: &'static str,
     pub message: String,
     /// Root-relative object path of the offending node; absent for parse errors.

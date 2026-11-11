@@ -1,4 +1,4 @@
-//! Builtin actors as pure functions over evaluated values. The VM owns evaluation order
+//! Builtin actors as pure functions over evaluated values. The evaluator owns evaluation order
 //! (including the forms listed by `is_form`); this module owns arity, typing and the operations.
 //!
 //! Type rules: there is no silent coercion except numeric promotion. `int` op `int` stays `int`;
@@ -13,7 +13,7 @@ mod fault;
 mod number;
 mod value;
 
-pub use fault::Fault;
+use fault::Fault;
 use value::{equal, type_name};
 
 /// `(name, minimum, maximum)` argument counts; a `None` maximum is unbounded.
@@ -52,7 +52,7 @@ pub fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
     }
 }
 
-/// A boolean operand at argument `arg`, as used by `not`, `and`, `or` and the `if` condition.
+/// A boolean operand at argument `arg`: `not`, and every condition the evaluator's forms test.
 pub fn boolean(value: &Yaml, arg: usize) -> Result<bool, Fault> {
     match value {
         Yaml::Boolean(b) => Ok(*b),
@@ -61,10 +61,10 @@ pub fn boolean(value: &Yaml, arg: usize) -> Result<bool, Fault> {
 }
 
 /// A list operand at argument `arg`, as used by the iteration forms.
-pub fn list(value: &Yaml, arg: usize) -> Result<&[Yaml], Fault> {
+pub fn list(value: Yaml, arg: usize) -> Result<Vec<Yaml>, Fault> {
     match value {
         Yaml::Array(items) => Ok(items),
-        other => Err(Fault::expected(arg, "list", other)),
+        other => Err(Fault::expected(arg, "list", &other)),
     }
 }
 

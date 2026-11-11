@@ -25,7 +25,7 @@ struct Node {
     span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Graph {
     nodes: Vec<Node>,
 }
@@ -99,12 +99,6 @@ struct Builder {
     /// Open containers; for maps, `key` holds the pending key awaiting its value.
     stack: Vec<(NodeId, Option<String>)>,
     error: Option<HelixError>,
-}
-
-impl Default for Graph {
-    fn default() -> Self {
-        Graph { nodes: Vec::new() }
-    }
 }
 
 impl Builder {

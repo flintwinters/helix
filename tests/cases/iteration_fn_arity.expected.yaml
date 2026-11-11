@@ -1,7 +1,7 @@
 status: error
 error:
   kind: arity
-  message: "function takes 2 arguments, but `map` passes 1"
+  message: "function `/r/1` takes 2 arguments, got 1"
   path: /r/1
   line: 1
   column: 10

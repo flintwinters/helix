@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: arity
+  message: "`fn` takes 2 arguments, got 1"
+  path: /f
+  line: 2
+  column: 4
