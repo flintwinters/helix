@@ -1,0 +1,23 @@
+# Validate inline records without aborting at the first bad record.
+projects:
+  - {name: core, owner: runtime, dependencies: []}
+  - {name: cli, owner: tools, dependencies: ["core"]}
+  - {name: cli, dependencies: ["ghost"]}
+  - {owner: docs, dependencies: []}
+validate:
+  [fn, [records],
+    [let,
+      {names: [map, [fn, [record], [get, record, "name", null]], records],
+       counts: [fold, [fn, [acc, name], [if, [eq, name, null], acc, [set, acc, name, [add, [get, acc, name, 0], 1]]]], {}, names]},
+      [map,
+        [fn, [record],
+          [let,
+            {missing: [filter, [fn, [field], [not, [has, record, field]]], ["name", "owner", "dependencies"]],
+             name: [get, record, "name", null],
+             broken: [filter, [fn, [dep], [not, [has, names, dep]]], [get, record, "dependencies", []]],
+             duplicate: [and, [ne, name, null], [gt, [get, counts, name, 0], 1]]},
+            [set, [set, [set, [set, {}, "name", name], "missing", missing], "duplicate", duplicate], "broken", broken]]],
+        records]]]
+report: [validate, projects]
+valid: [validate, [{name: core, owner: runtime, dependencies: []}, {name: cli, owner: tools, dependencies: ["core"]}]]
+empty: [validate, []]

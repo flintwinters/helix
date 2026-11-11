@@ -1,0 +1,136 @@
+status: finished
+root:
+  projects:
+    - name: core
+      owner: runtime
+      dependencies: []
+    - name: cli
+      owner: tools
+      dependencies:
+        - "core"
+    - name: cli
+      dependencies:
+        - "ghost"
+    - owner: docs
+      dependencies: []
+  validate:
+    - fn
+    - - records
+    - - let
+      - names:
+          - map
+          - - fn
+            - - record
+            - - get
+              - record
+              - "name"
+              - ~
+          - records
+        counts:
+          - fold
+          - - fn
+            - - acc
+              - name
+            - - if
+              - - eq
+                - name
+                - ~
+              - acc
+              - - set
+                - acc
+                - name
+                - - add
+                  - - get
+                    - acc
+                    - name
+                    - 0
+                  - 1
+          - {}
+          - names
+      - - map
+        - - fn
+          - - record
+          - - let
+            - missing:
+                - filter
+                - - fn
+                  - - field
+                  - - not
+                    - - has
+                      - record
+                      - field
+                - - "name"
+                  - "owner"
+                  - "dependencies"
+              name:
+                - get
+                - record
+                - "name"
+                - ~
+              broken:
+                - filter
+                - - fn
+                  - - dep
+                  - - not
+                    - - has
+                      - names
+                      - dep
+                - - get
+                  - record
+                  - "dependencies"
+                  - []
+              duplicate:
+                - and
+                - - ne
+                  - name
+                  - ~
+                - - gt
+                  - - get
+                    - counts
+                    - name
+                    - 0
+                  - 1
+            - - set
+              - - set
+                - - set
+                  - - set
+                    - {}
+                    - "name"
+                    - name
+                  - "missing"
+                  - missing
+                - "duplicate"
+                - duplicate
+              - "broken"
+              - broken
+        - records
+  report:
+    - name: core
+      missing: []
+      duplicate: false
+      broken: []
+    - name: cli
+      missing: []
+      duplicate: true
+      broken: []
+    - name: cli
+      missing:
+        - "owner"
+      duplicate: true
+      broken:
+        - "ghost"
+    - name: ~
+      missing:
+        - "name"
+      duplicate: false
+      broken: []
+  valid:
+    - name: core
+      missing: []
+      duplicate: false
+      broken: []
+    - name: cli
+      missing: []
+      duplicate: false
+      broken: []
+  empty: []
