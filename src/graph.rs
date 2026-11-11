@@ -10,7 +10,6 @@ use crate::span::Span;
 
 pub type NodeId = usize;
 
-#[derive(Debug)]
 pub enum Kind {
     /// `plain` is true for unquoted strings, which are symbols when they appear as expression arguments.
     Scalar { value: Yaml, plain: bool },
@@ -18,14 +17,13 @@ pub enum Kind {
     Map(Vec<(String, NodeId)>),
 }
 
-#[derive(Debug)]
 struct Node {
     kind: Kind,
     parent: Option<NodeId>,
     span: Span,
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct Graph {
     nodes: Vec<Node>,
 }
@@ -102,10 +100,9 @@ struct Builder {
 }
 
 impl Builder {
+    /// Record the first error; `on_event` ignores everything after it.
     fn fail(&mut self, kind: &'static str, message: &str, at: Marker) {
-        if self.error.is_none() {
-            self.error = Some(HelixError { kind, message: message.into(), path: None, span: span(&at) });
-        }
+        self.error = Some(HelixError { kind, message: message.into(), path: None, span: span(&at) });
     }
 
     /// Attach a new node to the open container (or make it the root) and return its id.

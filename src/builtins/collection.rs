@@ -149,7 +149,7 @@ fn keys(value: &Yaml) -> Result<Yaml, Fault> {
 /// Map: key present. List: element present (by `eq`). String: substring present.
 fn has(args: &[Yaml]) -> Result<Yaml, Fault> {
     let found = match (&args[0], &args[1]) {
-        (Yaml::Hash(h), Yaml::String(k)) => h.contains_key(&Yaml::String(k.clone())),
+        (Yaml::Hash(h), key @ Yaml::String(_)) => h.contains_key(key),
         (Yaml::Hash(_), other) => return Err(Fault::expected(1, "string key", other)),
         (Yaml::Array(v), needle) => v.iter().any(|element| equal(element, needle)),
         (Yaml::String(s), Yaml::String(needle)) => s.contains(needle.as_str()),

@@ -5,7 +5,6 @@ use yaml_rust2::yaml::Hash;
 
 use crate::span::Span;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HelixError {
     /// Stable machine-readable category; the full list is in `LANGUAGE.md`.
     pub kind: &'static str,

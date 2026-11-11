@@ -184,27 +184,25 @@ impl Evaluator {
     }
 
     fn apply(&mut self, id: NodeId, actor: Actor, args: &[NodeId]) -> Result<Yaml, HelixError> {
-        let name = match actor {
-            Actor::Function(function) => {
-                let values = args.iter().map(|&arg| self.value_arg(arg)).collect::<Result<Vec<_>, _>>()?;
-                return self.call(id, function, values);
+        if let Actor::Builtin(name) = &actor {
+            let (min, max) = builtins::arity(name).expect("actor is a builtin");
+            if args.len() < min || max.is_some_and(|m| args.len() > m) {
+                let expected = match max {
+                    Some(m) if m == min => arguments(m),
+                    Some(m) => format!("{min} to {}", arguments(m)),
+                    None => format!("at least {}", arguments(min)),
+                };
+                return Err(self.err(id, "arity", format!("`{name}` takes {expected}, got {}", args.len())));
             }
-            Actor::Builtin(name) => name,
-        };
-        let (min, max) = builtins::arity(&name).expect("actor is a builtin");
-        if args.len() < min || max.is_some_and(|m| args.len() > m) {
-            let expected = match max {
-                Some(m) if m == min => arguments(m),
-                Some(m) => format!("{min} to {}", arguments(m)),
-                None => format!("at least {}", arguments(min)),
-            };
-            return Err(self.err(id, "arity", format!("`{name}` takes {expected}, got {}", args.len())));
-        }
-        if builtins::is_form(&name) {
-            return self.apply_form(id, &name, args);
+            if builtins::is_form(name) {
+                return self.apply_form(id, name, args);
+            }
         }
         let values = args.iter().map(|&arg| self.value_arg(arg)).collect::<Result<Vec<_>, _>>()?;
-        builtins::apply(&name, &values).map_err(|fault| self.err(fault.arg.map_or(id, |i| args[i]), fault.kind, fault.message))
+        match actor {
+            Actor::Function(function) => self.call(id, function, values),
+            Actor::Builtin(name) => builtins::apply(&name, &values).map_err(|fault| self.err(fault.arg.map_or(id, |i| args[i]), fault.kind, fault.message)),
+        }
     }
 
     /// Run a function body with `args` bound to its parameters; `site` is blamed for a wrong
@@ -276,7 +274,7 @@ impl Evaluator {
                 let mut kept = Vec::new();
                 for item in self.list_arg(args[1])? {
                     let keep = self.call_arg(args[0], vec![item.clone()])?;
-                    if self.truth(keep, args[0])? {
+                    if self.truth(&keep, args[0])? {
                         kept.push(item);
                     }
                 }
@@ -296,7 +294,7 @@ impl Evaluator {
                 let mut state = self.value_arg(args[2])?;
                 for _ in 0..MAX_STEPS {
                     let done = self.call_arg(args[0], vec![state.clone()])?;
-                    if self.truth(done, args[0])? {
+                    if self.truth(&done, args[0])? {
                         return Ok(state);
                     }
                     state = self.call_arg(args[1], vec![state])?;
@@ -319,13 +317,13 @@ impl Evaluator {
     }
 
     /// A value that must be a boolean; `blame` is the node that produced it.
-    fn truth(&self, value: Yaml, blame: NodeId) -> Result<bool, HelixError> {
-        builtins::boolean(&value, 0).map_err(|fault| self.err(blame, fault.kind, fault.message))
+    fn truth(&self, value: &Yaml, blame: NodeId) -> Result<bool, HelixError> {
+        builtins::boolean(value, 0).map_err(|fault| self.err(blame, fault.kind, fault.message))
     }
 
     fn condition(&mut self, id: NodeId) -> Result<bool, HelixError> {
         let value = self.value_arg(id)?;
-        self.truth(value, id)
+        self.truth(&value, id)
     }
 
     fn list_arg(&mut self, id: NodeId) -> Result<Vec<Yaml>, HelixError> {

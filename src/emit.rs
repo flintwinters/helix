@@ -59,7 +59,6 @@ fn scalar(value: &Yaml) -> String {
         Yaml::Integer(i) => i.to_string(),
         Yaml::Real(text) => text.clone(),
         Yaml::Boolean(b) => b.to_string(),
-        Yaml::Null => "~".to_string(),
         Yaml::String(s) => string(s, false),
         Yaml::Array(_) => "[]".to_string(),
         Yaml::Hash(_) => "{}".to_string(),

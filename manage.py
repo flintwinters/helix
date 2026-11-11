@@ -50,8 +50,7 @@ def root_section(state: str) -> str | None:
 def test(bless: bool) -> int:
     if (code := build()) != 0:
         return code
-    cases = sorted(CASES.glob("*.yaml"))
-    cases = [c for c in cases if not c.name.endswith(".expected.yaml")]
+    cases = [c for c in sorted(CASES.glob("*.yaml")) if not c.name.endswith(".expected.yaml")]
     failures = []
     for case in cases:
         expected_path = case.with_suffix(".expected.yaml")
