@@ -3,6 +3,7 @@
 mod builtins;
 mod emit;
 mod error;
+mod eval;
 mod graph;
 mod span;
 mod vm;

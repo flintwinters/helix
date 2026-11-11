@@ -4,6 +4,8 @@ Helix is an experimental runtime in which readable YAML is both program source a
 
 The previous C++ implementation lives in `flintwinters/helixcpp`.
 
+Fix bugs without asking.
+
 ## Motivation
 
 Program and machine state share one human-readable representation, so a suspended run can be read, diffed, edited, and resumed as plainly as source. Every design choice should keep that round trip lossless and legible.
@@ -13,7 +15,8 @@ Program and machine state share one human-readable representation, so a suspende
 Rust crate `helix` (lib + `helix run <file|->` CLI); `./manage.py` is the single entrypoint (`build`, `run`, `test [--bless]`).
 
 - `src/graph.rs`: YAML (via `yaml-rust2` events) into an arena of nodes with parent links and 1-indexed line/column spans; root-relative paths (`/inner/y/1`); lexical `lookup` walks parent links through enclosing maps.
-- `src/vm.rs`: `Vm` with the five statuses, memoized evaluation with cycle detection, and `state()` serialization (`status` plus `root` or `error`). A sequence is an expression iff its head is a plain scalar naming a builtin; plain-string arguments are symbols, quoted strings are literals. Owns evaluation order (the lazy `if`, `and`, `or`).
+- `src/vm.rs`: `Vm` with the five statuses and `state()` serialization (`status` plus `root` or `error`), around an `Evaluator`.
+- `src/eval.rs`: `Evaluator` owns the graph, memoized evaluation with cycle detection, and evaluation order (the lazy `if`, `and`, `or`). A sequence is an expression iff its head is a plain scalar naming a builtin; plain-string arguments are symbols, quoted strings are literals.
 - `src/builtins.rs` (+ `builtins/{number,collection,fault,value}.rs`): pure builtins over evaluated values, with the arity table. `fault` and `value` are the shared leaf modules (children must not import their parent: hyperlinter treats that as a cycle). Failures are `Fault`s the VM maps onto the blamed argument node. The user-facing semantics live in `LANGUAGE.md`; keep it in sync when builtins change.
 - `src/emit.rs`: Helix's own block-YAML emitter. It exists so output stays re-readable: it quotes strings that would re-read as another type or, as the first item of a list, as an expression head.
 - `src/error.rs`: `HelixError` with stable `kind`, message, root-relative `path`, and `line`/`column`; serialized under `error:`.

@@ -1,14 +1,12 @@
-//! The VM: evaluates vector forms (actor first) over the object graph and serializes its state to YAML.
-
-use std::collections::{HashMap, HashSet};
+//! The VM: lifecycle status around an evaluator, and the serialized state document.
 
 use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
 
-use crate::builtins;
 use crate::emit;
 use crate::error::{s, HelixError};
-use crate::graph::{Graph, Kind, NodeId, ROOT};
+use crate::eval::Evaluator;
+use crate::graph::{Graph, ROOT};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
@@ -32,19 +30,17 @@ impl Status {
 }
 
 pub struct Vm {
-    graph: Option<Graph>,
+    evaluator: Option<Evaluator>,
     status: Status,
     result: Option<Yaml>,
     error: Option<HelixError>,
-    memo: HashMap<NodeId, Yaml>,
-    active: HashSet<NodeId>,
 }
 
 impl Vm {
     pub fn load(src: &str) -> Vm {
-        let mut vm = Vm { graph: None, status: Status::Ready, result: None, error: None, memo: HashMap::new(), active: HashSet::new() };
+        let mut vm = Vm { evaluator: None, status: Status::Ready, result: None, error: None };
         match Graph::parse(src) {
-            Ok(g) => vm.graph = Some(g),
+            Ok(graph) => vm.evaluator = Some(Evaluator::new(graph)),
             Err(e) => vm.fail(e),
         }
         vm
@@ -59,7 +55,8 @@ impl Vm {
             return;
         }
         self.status = Status::Running;
-        match self.eval(ROOT) {
+        let evaluator = self.evaluator.as_mut().expect("a ready VM has a graph");
+        match evaluator.eval(ROOT) {
             Ok(v) => {
                 self.result = Some(v);
                 self.status = Status::Finished;
@@ -88,120 +85,5 @@ impl Vm {
     fn fail(&mut self, e: HelixError) {
         self.status = Status::Error;
         self.error = Some(e);
-    }
-
-    fn graph(&self) -> &Graph {
-        self.graph.as_ref().expect("graph is present unless status is error")
-    }
-
-    fn err(&self, id: NodeId, kind: &'static str, message: String) -> HelixError {
-        let g = self.graph();
-        HelixError { kind, message, path: Some(g.path(id)), span: g.span(id) }
-    }
-
-    /// Evaluate a node to plain YAML data, memoized, with cycle detection.
-    fn eval(&mut self, id: NodeId) -> Result<Yaml, HelixError> {
-        if let Some(v) = self.memo.get(&id) {
-            return Ok(v.clone());
-        }
-        if !self.active.insert(id) {
-            return Err(self.err(id, "cycle", "value depends on itself".into()));
-        }
-        let result = self.eval_uncached(id);
-        self.active.remove(&id);
-        let v = result?;
-        self.memo.insert(id, v.clone());
-        Ok(v)
-    }
-
-    fn eval_uncached(&mut self, id: NodeId) -> Result<Yaml, HelixError> {
-        enum Shape {
-            Scalar(Yaml),
-            Seq(Vec<NodeId>, Option<String>),
-            Map(Vec<(String, NodeId)>),
-        }
-        let shape = match self.graph().kind(id) {
-            Kind::Scalar { value, .. } => Shape::Scalar(value.clone()),
-            Kind::Map(entries) => Shape::Map(entries.clone()),
-            Kind::Seq(items) => Shape::Seq(items.clone(), self.actor(items)),
-        };
-        match shape {
-            Shape::Scalar(v) => Ok(v),
-            Shape::Map(entries) => {
-                let mut h = Hash::new();
-                for (k, child) in entries {
-                    h.insert(Yaml::String(k), self.eval(child)?);
-                }
-                Ok(Yaml::Hash(h))
-            }
-            Shape::Seq(items, Some(actor)) => self.apply(id, &actor, &items[1..]),
-            Shape::Seq(items, None) => Ok(Yaml::Array(items.into_iter().map(|c| self.eval(c)).collect::<Result<_, _>>()?)),
-        }
-    }
-
-    fn actor(&self, items: &[NodeId]) -> Option<String> {
-        match self.graph().kind(*items.first()?) {
-            Kind::Scalar { value: Yaml::String(name), plain: true } if builtins::arity(name).is_some() => Some(name.clone()),
-            _ => None,
-        }
-    }
-
-    /// Evaluate one expression. A sequence is an expression iff its head is a plain scalar naming a builtin.
-    fn apply(&mut self, id: NodeId, actor: &str, args: &[NodeId]) -> Result<Yaml, HelixError> {
-        let (min, max) = builtins::arity(actor).expect("actor is a builtin");
-        if args.len() < min || max.is_some_and(|m| args.len() > m) {
-            let expected = match max {
-                Some(1) => "1 argument".to_string(),
-                Some(m) if m == min => format!("{min} arguments"),
-                _ => format!("at least {min} arguments"),
-            };
-            return Err(self.err(id, "arity", format!("`{actor}` takes {expected}, got {}", args.len())));
-        }
-        if builtins::is_lazy(actor) {
-            return self.apply_lazy(id, actor, args);
-        }
-        let values = args.iter().map(|&arg| self.value_arg(arg)).collect::<Result<Vec<_>, _>>()?;
-        builtins::apply(actor, &values).map_err(|fault| self.fault(id, args, fault))
-    }
-
-    /// Blame the argument a builtin names, or the whole expression.
-    fn fault(&self, id: NodeId, args: &[NodeId], fault: builtins::Fault) -> HelixError {
-        self.err(fault.arg.map_or(id, |i| args[i]), fault.kind, fault.message)
-    }
-
-    /// `if` evaluates only the branch it selects; `and`/`or` stop at the first `false`/`true`.
-    /// Every operand that is evaluated must be a boolean, and the result is a boolean.
-    fn apply_lazy(&mut self, id: NodeId, actor: &str, args: &[NodeId]) -> Result<Yaml, HelixError> {
-        if actor == "if" {
-            let condition = self.boolean_arg(id, args, 0)?;
-            return self.value_arg(if condition { args[1] } else { args[2] });
-        }
-        let stop_on = actor == "or";
-        for index in 0..args.len() {
-            if self.boolean_arg(id, args, index)? == stop_on {
-                return Ok(Yaml::Boolean(stop_on));
-            }
-        }
-        Ok(Yaml::Boolean(!stop_on))
-    }
-
-    fn boolean_arg(&mut self, id: NodeId, args: &[NodeId], index: usize) -> Result<bool, HelixError> {
-        let value = self.value_arg(args[index])?;
-        builtins::boolean(&value, index).map_err(|fault| self.fault(id, args, fault))
-    }
-
-    /// Evaluate an expression argument: plain strings are symbols resolved through parent links.
-    fn value_arg(&mut self, id: NodeId) -> Result<Yaml, HelixError> {
-        let symbol = match self.graph().kind(id) {
-            Kind::Scalar { value: Yaml::String(name), plain: true } => Some(name.clone()),
-            _ => None,
-        };
-        match symbol {
-            Some(name) => {
-                let target = self.graph().lookup(id, &name).ok_or_else(|| self.err(id, "unbound", format!("unbound symbol `{name}`")))?;
-                self.eval(target)
-            }
-            None => self.eval(id),
-        }
     }
 }
