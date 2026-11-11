@@ -1,0 +1,102 @@
+# A readable 100+ line program: stable priority ordering of an inline work queue.
+# Lower numbers run first; equal priorities retain arrival order.
+# Insertion uses until rather than recursion, so queue length does not consume
+# the function-call depth budget. This is intentionally a small-queue algorithm.
+# Insertion scans and copies each prefix: quadratic work, unsuitable for large queues.
+# The lazy or guard prevents an out-of-range read when appending at the end.
+queue:
+  - id: docs
+    priority: 3
+    owner: writer
+  - id: parser-fix
+    priority: 1
+    owner: runtime
+  - id: release
+    priority: 2
+    owner: tools
+  - id: evaluator-fix
+    priority: 1
+    owner: runtime
+  - id: security
+    priority: -1
+    owner: runtime
+  - id: cleanup
+    priority: 3
+    owner: tools
+insert:
+  - fn
+  - [ordered, item]
+  - - let
+    - position:
+        - until
+        - - fn
+          - [index]
+          - - or
+            - [ge, index, [len, ordered]]
+            - - gt
+              - [get, [get, ordered, index], "priority"]
+              - [get, item, "priority"]
+        - [fn, [index], [add, index, 1]]
+        - 0
+    - - concat
+      - [slice, ordered, 0, position]
+      - [append, [], item]
+      - [slice, ordered, position, [len, ordered]]
+sort_queue:
+  - fn
+  - [items]
+  - [fold, insert, [], items]
+sorted: [sort_queue, queue]
+# Use the report as a dispatch list, retaining full records in sorted above.
+dispatch:
+  - map
+  - [fn, [item], [get, item, "id"]]
+  - sorted
+# Applying the transformation twice must preserve both values and tie order.
+idempotent: [eq, [sort_queue, sorted], sorted]
+empty: [sort_queue, []]
+singleton:
+  - sort_queue
+  - - id: only
+      priority: 0
+      owner: tools
+already_sorted:
+  - sort_queue
+  - - id: first
+      priority: -2
+    - id: second
+      priority: 0
+    - id: third
+      priority: 4
+reverse_sorted:
+  - sort_queue
+  - - id: third
+      priority: 4
+    - id: second
+      priority: 0
+    - id: first
+      priority: -2
+# Equal-priority records carry distinct payloads to expose unstable sorting.
+equal_priority:
+  - sort_queue
+  - - id: arrived-first
+      priority: 2
+      payload: {attempts: 0}
+    - id: arrived-second
+      priority: 2
+      payload: {attempts: 1}
+    - id: arrived-third
+      priority: 2
+      payload: {attempts: 2}
+# A separate call verifies no prior invocation leaks an insertion position.
+second_queue:
+  - sort_queue
+  - - id: later
+      priority: 10
+    - id: earlier
+      priority: -10
+# Confirm that sorting returned a new list rather than changing source order.
+original_order:
+  - map
+  - [fn, [item], [get, item, "id"]]
+  - queue

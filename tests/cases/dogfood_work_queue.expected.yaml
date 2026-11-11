@@ -1,0 +1,141 @@
+status: finished
+root:
+  queue:
+    - id: docs
+      priority: 3
+      owner: writer
+    - id: parser-fix
+      priority: 1
+      owner: runtime
+    - id: release
+      priority: 2
+      owner: tools
+    - id: evaluator-fix
+      priority: 1
+      owner: runtime
+    - id: security
+      priority: -1
+      owner: runtime
+    - id: cleanup
+      priority: 3
+      owner: tools
+  insert:
+    - fn
+    - - ordered
+      - item
+    - - let
+      - position:
+          - until
+          - - fn
+            - - index
+            - - or
+              - - ge
+                - index
+                - - len
+                  - ordered
+              - - gt
+                - - get
+                  - - get
+                    - ordered
+                    - index
+                  - "priority"
+                - - get
+                  - item
+                  - "priority"
+          - - fn
+            - - index
+            - - add
+              - index
+              - 1
+          - 0
+      - - concat
+        - - slice
+          - ordered
+          - 0
+          - position
+        - - append
+          - []
+          - item
+        - - slice
+          - ordered
+          - position
+          - - len
+            - ordered
+  sort_queue:
+    - fn
+    - - items
+    - - fold
+      - insert
+      - []
+      - items
+  sorted:
+    - id: security
+      priority: -1
+      owner: runtime
+    - id: parser-fix
+      priority: 1
+      owner: runtime
+    - id: evaluator-fix
+      priority: 1
+      owner: runtime
+    - id: release
+      priority: 2
+      owner: tools
+    - id: docs
+      priority: 3
+      owner: writer
+    - id: cleanup
+      priority: 3
+      owner: tools
+  dispatch:
+    - "security"
+    - parser-fix
+    - evaluator-fix
+    - release
+    - docs
+    - cleanup
+  idempotent: true
+  empty: []
+  singleton:
+    - id: only
+      priority: 0
+      owner: tools
+  already_sorted:
+    - id: first
+      priority: -2
+    - id: second
+      priority: 0
+    - id: third
+      priority: 4
+  reverse_sorted:
+    - id: first
+      priority: -2
+    - id: second
+      priority: 0
+    - id: third
+      priority: 4
+  equal_priority:
+    - id: arrived-first
+      priority: 2
+      payload:
+        attempts: 0
+    - id: arrived-second
+      priority: 2
+      payload:
+        attempts: 1
+    - id: arrived-third
+      priority: 2
+      payload:
+        attempts: 2
+  second_queue:
+    - id: earlier
+      priority: -10
+    - id: later
+      priority: 10
+  original_order:
+    - "docs"
+    - parser-fix
+    - release
+    - evaluator-fix
+    - security
+    - cleanup

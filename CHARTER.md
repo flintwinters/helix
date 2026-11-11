@@ -171,6 +171,8 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 
 - `dogfood_expense_reconciliation`: aggregate duplicate accounts and refunds in integer cents; report mismatched totals and accounts present on only one side, including zero balances; balanced and empty ledgers yield no findings. Friction: currency units and matching keys are conventions in user code, with no decimal-money type.
 
+- `dogfood_work_queue`: a 100+ line stable priority-sort program with dispatch output, negative priorities, equal-priority payloads, sorted/reversed/empty/singleton inputs, independent calls, idempotence and source-order preservation. Friction: no comparator-based sort builtin; insertion sort repeatedly copies lists and is suitable only for small queues.
+
 ### With suspend/resume (section 2)
 - [ ] A long computation stopped midway, its state read in `git diff`, resumed to the same result as an uninterrupted run
 - [ ] Fix a mistake by hand-editing a suspended state and resuming it
