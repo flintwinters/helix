@@ -159,6 +159,12 @@ Real programs, in order of ambition, grouped by what unlocks them. Each one is a
 - [ ] Reconcile two inline inventories or expense lists and use the discrepancies to correct the originals
 - [ ] A friction log: every awkward moment from the programs above becomes a charter item or a deliberate "no"
 
+### Pure-core test coverage and friction
+
+Golden coverage is evidence of executable examples, not evidence of real-world adoption; the usage milestones above remain open.
+
+- `dogfood_config_diff`: added/removed/changed keys, nested value changes, null versus absence, unchanged and empty snapshots. Friction: building report records requires nested `set` calls because symbols in ordinary map values are literal data; nested changes are reported at the top-level key.
+
 ### With suspend/resume (section 2)
 - [ ] A long computation stopped midway, its state read in `git diff`, resumed to the same result as an uninterrupted run
 - [ ] Fix a mistake by hand-editing a suspended state and resuming it

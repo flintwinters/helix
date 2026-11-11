@@ -1,0 +1,114 @@
+status: finished
+root:
+  before:
+    workers: 2
+    legacy: true
+    nullable: ~
+    enabled: false
+    port: 8000
+    nested:
+      timeout: 30
+    empty: 0
+  after:
+    workers: 4
+    nullable: ~
+    enabled: true
+    port: 8000
+    nested:
+      timeout: 60
+    added_null: ~
+    empty: 0
+  compare:
+    - fn
+    - - old
+      - new
+    - - let
+      - added:
+          - filter
+          - - fn
+            - - key
+            - - not
+              - - has
+                - old
+                - key
+          - - keys
+            - new
+        removed:
+          - filter
+          - - fn
+            - - key
+            - - not
+              - - has
+                - new
+                - key
+          - - keys
+            - old
+        changed:
+          - filter
+          - - fn
+            - - key
+            - - and
+              - - has
+                - new
+                - key
+              - - ne
+                - - get
+                  - old
+                  - key
+                - - get
+                  - new
+                  - key
+          - - keys
+            - old
+      - - set
+        - - set
+          - - set
+            - {}
+            - "added"
+            - added
+          - "removed"
+          - removed
+        - "changed"
+        - - map
+          - - fn
+            - - key
+            - - set
+              - - set
+                - - set
+                  - {}
+                  - "key"
+                  - key
+                - "before"
+                - - get
+                  - old
+                  - key
+              - "after"
+              - - get
+                - new
+                - key
+          - changed
+  report:
+    added:
+      - "added_null"
+    removed:
+      - "legacy"
+    changed:
+      - key: workers
+        before: 2
+        after: 4
+      - key: enabled
+        before: false
+        after: true
+      - key: nested
+        before:
+          timeout: 30
+        after:
+          timeout: 60
+  unchanged:
+    added: []
+    removed: []
+    changed: []
+  empty:
+    added: []
+    removed: []
+    changed: []

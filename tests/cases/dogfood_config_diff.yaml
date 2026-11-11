@@ -1,0 +1,28 @@
+# Review snapshots: distinguish missing keys from explicit null, false and zero.
+before:
+  workers: 2
+  legacy: true
+  nullable: null
+  enabled: false
+  port: 8000
+  nested: {timeout: 30}
+  empty: 0
+after:
+  workers: 4
+  nullable: null
+  enabled: true
+  port: 8000
+  nested: {timeout: 60}
+  added_null: null
+  empty: 0
+compare:
+  [fn, [old, new],
+    [let,
+      {added: [filter, [fn, [key], [not, [has, old, key]]], [keys, new]],
+       removed: [filter, [fn, [key], [not, [has, new, key]]], [keys, old]],
+       changed: [filter, [fn, [key], [and, [has, new, key], [ne, [get, old, key], [get, new, key]]]], [keys, old]]},
+      [set, [set, [set, {}, "added", added], "removed", removed], "changed",
+        [map, [fn, [key], [set, [set, [set, {}, "key", key], "before", [get, old, key]], "after", [get, new, key]]], changed]]]]
+report: [compare, before, after]
+unchanged: [compare, before, before]
+empty: [compare, {}, {}]
