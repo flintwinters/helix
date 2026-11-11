@@ -1,0 +1,20 @@
+status: finished
+root:
+  safe_div:
+    - fn
+    - - a
+      - b
+    - - try
+      - - div
+        - a
+        - b
+      - - fn
+        - - e
+        - 0
+  ok: 5
+  recovered: 0
+  first_kind: divide_by_zero
+  detail: no index 9
+  unhandled_branch: 5
+  nested: missing
+  checked: one is not two

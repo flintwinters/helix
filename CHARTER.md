@@ -96,10 +96,10 @@ A daily driver has to do things.
 
 ## 4. Errors I can actually debug
 
-- [ ] `try` / recover form, with the error available as data
+- [x] `try` / recover form, with the error available as data
 - [ ] Error values carry a call chain with paths and source spans
 - [ ] Error output is readable by a human *and* machine-parseable
-- [ ] Asserts, with messages
+- [x] Asserts, with messages
 - [ ] Failed runs are resumable after fixing the cause, where it makes sense
 - [ ] Nothing panics: malformed input always yields a structured error
 

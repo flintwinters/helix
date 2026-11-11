@@ -1,0 +1,8 @@
+safe_div: [fn, [a, b], [try, [div, a, b], [fn, [e], 0]]]
+ok: [safe_div, 10, 2]
+recovered: [safe_div, 10, 0]
+first_kind: [try, [div, 1, 0], [fn, [e], [get, e, "kind"]]]
+detail: [try, [get, [1, 2], 9], [fn, [e], [get, e, "message"]]]
+unhandled_branch: [try, 5, [fn, [e], [div, 1, 0]]]
+nested: [try, [try, [div, 1, 0], [fn, [e], [get, [], 0]]], [fn, [e], [get, e, "kind"]]]
+checked: [try, [assert, [eq, 1, 2], "one is not two"], [fn, [e], [get, e, "message"]]]

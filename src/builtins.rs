@@ -26,6 +26,7 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("len", 1, Some(1)), ("concat", 2, None), ("slice", 3, Some(3)), ("get", 2, Some(3)), ("set", 3, Some(3)),
     ("append", 2, None), ("keys", 1, Some(1)), ("has", 2, Some(2)),
     ("str", 1, Some(1)), ("int", 1, Some(1)), ("float", 1, Some(1)), ("type", 1, Some(1)),
+    ("assert", 1, Some(2)), ("try", 2, Some(2)),
 ];
 
 /// `(minimum, maximum)` argument counts; `None` overall means not a builtin.
@@ -35,7 +36,7 @@ pub fn arity(actor: &str) -> Option<(usize, Option<usize>)> {
 
 /// Forms decide which arguments to evaluate (or call user functions), so the evaluator drives them.
 pub fn is_form(actor: &str) -> bool {
-    matches!(actor, "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until")
+    matches!(actor, "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until" | "try")
 }
 
 /// Apply a strict (eagerly evaluated) builtin.
@@ -48,6 +49,7 @@ pub fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
         "len" | "concat" | "slice" | "get" | "set" | "append" | "keys" | "has" => collection::apply(actor, args),
         "str" => text(&args[0]),
         "type" => Ok(Yaml::String(type_name(&args[0]).to_string())),
+        "assert" => assert(args),
         _ => unreachable!("`{actor}` is not a strict builtin"),
     }
 }
@@ -79,4 +81,16 @@ fn text(value: &Yaml) -> Result<Yaml, Fault> {
         other => return Err(Fault::expected(0, "a scalar", other)),
     };
     Ok(Yaml::String(rendered))
+}
+
+/// `assert`: `null` when the condition holds, else an `assertion` fault carrying the message.
+fn assert(args: &[Yaml]) -> Result<Yaml, Fault> {
+    if boolean(&args[0], 0)? {
+        return Ok(Yaml::Null);
+    }
+    match args.get(1) {
+        None => Err(Fault::whole("assertion", "assertion failed".into())),
+        Some(Yaml::String(message)) => Err(Fault::whole("assertion", message.clone())),
+        Some(other) => Err(Fault::expected(1, "string message", other)),
+    }
 }

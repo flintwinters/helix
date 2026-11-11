@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: assertion
+  message: assertion failed
+  path: /check
+  line: 1
+  column: 8

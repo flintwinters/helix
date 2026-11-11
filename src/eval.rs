@@ -231,7 +231,7 @@ impl Evaluator {
     }
 
     /// Forms with their own evaluation order: `if`, `cond`, `and`, `or` evaluate only what they
-    /// need; `fn` yields its own source; `let` evaluates its body with the bindings in scope; the
+    /// need; `try` hands an error from its first argument to its handler as a map; `fn` yields its own source; `let` evaluates its body with the bindings in scope; the
     /// iteration forms call the function designated by their first argument.
     fn apply_form(&mut self, id: NodeId, actor: &str, args: &[NodeId]) -> Result<Yaml, HelixError> {
         match actor {
@@ -301,6 +301,10 @@ impl Evaluator {
                 }
                 Err(self.err(id, "limit", format!("`until` did not finish within {MAX_STEPS} steps")))
             }
+            "try" => match self.value_arg(args[0]) {
+                Ok(value) => Ok(value),
+                Err(error) => self.call_arg(args[1], vec![error.to_yaml()]),
+            },
             _ => unreachable!("`{actor}` is not a form"),
         }
     }

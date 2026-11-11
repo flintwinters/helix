@@ -1,0 +1,2 @@
+total: 3
+check: [assert, [eq, total, 4], "total must be 4"]

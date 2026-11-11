@@ -29,7 +29,7 @@ Rust crate `helix` (lib + `helix run <file|->` CLI); `./manage.py` is the single
 The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items there only when they work end to end with a golden case. The list below is the immediate agent queue.
 
 1. Suspend/resume: persist execution position as root-relative paths and resume from serialized state (today the VM runs to completion or error in one `run`; `ready`/`running`/`signaled` are never persisted).
-2. Grow the language past the pure core (done: values, operators, control flow, functions, iteration): side effects/signals, `try`/errors-as-data, imports. Functions are not first-class values.
+2. Grow the language past the pure core (done: values, operators, control flow, functions, iteration): side effects/signals, imports (done: `try`/errors-as-data, `assert`). Functions are not first-class values.
 3. Preserve source locations in the output for evaluated values, not only for errors.
 4. Exercise hyperlinter as the Rust code grows and feed general (non-Helix-specific) gaps back upstream: Rust function-cycle/dead-code coverage, and the `runtime/` ledger location (README says state lives under `.git/hyperlinter/`).
 5. Decide the fate of YAML anchors/aliases and non-scalar keys (currently rejected as `unsupported`).
