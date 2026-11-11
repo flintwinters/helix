@@ -147,14 +147,27 @@ The difference between a language and a language I enjoy using.
 
 ## 8. Dogfooding milestones
 
-Real programs, in order of ambition. Each one is a checkbox only when I actually use it.
+Real programs, in order of ambition, grouped by what unlocks them. Each one is a checkbox only when I actually use it, not when it merely could work. Keep each one in the repo (a golden case in `tests/cases/` once its output is deterministic) and write down what was awkward: that friction is the real roadmap.
 
+### With today's pure core
+- [ ] Classic small problems as golden cases: FizzBuzz, primes, word frequency over inline text
+- [ ] A 100+ line program (an expression evaluator, a sort, a small state machine) written without fighting the language
+- [ ] One real data-reshaping task: paste YAML data in, compute a report, use the emitted `root`
+- [ ] A friction log: every awkward moment from the programs above becomes a charter item or a deliberate "no"
+
+### With suspend/resume (section 2)
+- [ ] A long computation stopped midway, its state read in `git diff`, resumed to the same result as an uninterrupted run
+- [ ] Fix a mistake by hand-editing a suspended state and resuming it
+
+### With effects and imports (sections 3–5)
 - [ ] Replace one small shell script with Helix
 - [ ] A config-transform pipeline (read YAML in, compute, write YAML out)
 - [ ] A task runner for this repo (`./manage.py` logic expressed in Helix)
 - [ ] A long-running workflow that suspends on an external event and resumes days later
 - [ ] A program that inspects and edits another Helix program's saved state
 - [ ] Helix running its own test suite
+
+### The bar
 - [ ] A week where I reach for Helix first without thinking about it
 
 ---
