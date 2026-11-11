@@ -1,0 +1,10 @@
+# Dogfood: FizzBuzz over 1..15.
+range: [fn, [lo, hi], [until, [fn, [xs], [eq, [len, xs], [sub, hi, lo]]], [fn, [xs], [append, xs, [add, lo, [len, xs]]]], []]]
+fizzbuzz:
+  [fn, [n],
+    [cond,
+      [eq, [mod, n, 15], 0], "FizzBuzz",
+      [eq, [mod, n, 3], 0], "Fizz",
+      [eq, [mod, n, 5], 0], "Buzz",
+      n]]
+out: [map, fizzbuzz, [range, 1, 16]]

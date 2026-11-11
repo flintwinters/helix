@@ -1,0 +1,70 @@
+status: finished
+root:
+  range:
+    - fn
+    - - lo
+      - hi
+    - - until
+      - - fn
+        - - xs
+        - - eq
+          - - len
+            - xs
+          - - sub
+            - hi
+            - lo
+      - - fn
+        - - xs
+        - - append
+          - xs
+          - - add
+            - lo
+            - - len
+              - xs
+      - []
+  divisible:
+    - fn
+    - - n
+      - d
+    - - cond
+      - - gt
+        - - mul
+          - d
+          - d
+        - n
+      - false
+      - - eq
+        - - mod
+          - n
+          - d
+        - 0
+      - true
+      - - divisible
+        - n
+        - - add
+          - d
+          - 1
+  prime:
+    - fn
+    - - n
+    - - not
+      - - divisible
+        - n
+        - 2
+  primes:
+    - 2
+    - 3
+    - 5
+    - 7
+    - 11
+    - 13
+    - 17
+    - 19
+    - 23
+    - 29
+    - 31
+    - 37
+    - 41
+    - 43
+    - 47
+  count: 15

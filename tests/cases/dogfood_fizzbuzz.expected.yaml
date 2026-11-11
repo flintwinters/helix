@@ -1,0 +1,63 @@
+status: finished
+root:
+  range:
+    - fn
+    - - lo
+      - hi
+    - - until
+      - - fn
+        - - xs
+        - - eq
+          - - len
+            - xs
+          - - sub
+            - hi
+            - lo
+      - - fn
+        - - xs
+        - - append
+          - xs
+          - - add
+            - lo
+            - - len
+              - xs
+      - []
+  fizzbuzz:
+    - fn
+    - - n
+    - - cond
+      - - eq
+        - - mod
+          - n
+          - 15
+        - 0
+      - "FizzBuzz"
+      - - eq
+        - - mod
+          - n
+          - 3
+        - 0
+      - "Fizz"
+      - - eq
+        - - mod
+          - n
+          - 5
+        - 0
+      - "Buzz"
+      - n
+  out:
+    - 1
+    - 2
+    - Fizz
+    - 4
+    - Buzz
+    - Fizz
+    - 7
+    - 8
+    - Fizz
+    - Buzz
+    - 11
+    - Fizz
+    - 13
+    - 14
+    - FizzBuzz

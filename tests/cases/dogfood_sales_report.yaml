@@ -1,0 +1,16 @@
+# Dogfood: reshape a list of records into a summary report.
+sales:
+  - {region: north, item: apples, qty: 3, price: 1.5}
+  - {region: south, item: pears, qty: 8, price: 2.0}
+  - {region: north, item: plums, qty: 5, price: 0.5}
+  - {region: east, item: apples, qty: 2, price: 1.5}
+  - {region: south, item: apples, qty: 6, price: 1.5}
+report:
+  orders: [len, sales]
+  units: [fold, [fn, [t, s], [add, t, [get, s, "qty"]]], 0, sales]
+  revenue: [fold, [fn, [t, s], [add, t, [mul, [get, s, "qty"], [get, s, "price"]]]], 0, sales]
+  units_by_region:
+    [fold,
+      [fn, [acc, s], [let, {r: [get, s, "region"]}, [set, acc, r, [add, [get, acc, r, 0], [get, s, "qty"]]]]],
+      {}, sales]
+  big_orders: [map, [fn, [s], [get, s, "item"]], [filter, [fn, [s], [ge, [get, s, "qty"], 5]], sales]]

@@ -124,8 +124,13 @@ fn set(args: &[Yaml]) -> Result<Yaml, Fault> {
             Ok(Yaml::Array(out))
         }
         Yaml::Hash(h) => {
+            // Replacing an existing key keeps its position; `insert` alone would move it to the end.
             let mut out = h.clone();
-            out.insert(key(args, 1)?, args[2].clone());
+            let k = key(args, 1)?;
+            match out.get_mut(&k) {
+                Some(slot) => *slot = args[2].clone(),
+                None => drop(out.insert(k, args[2].clone())),
+            }
             Ok(Yaml::Hash(out))
         }
         other => Err(Fault::expected(0, "list or map", other)),

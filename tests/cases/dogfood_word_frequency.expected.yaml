@@ -1,0 +1,113 @@
+status: finished
+root:
+  text: the cat and the hat and the bat sat on the mat
+  range:
+    - fn
+    - - lo
+      - hi
+    - - until
+      - - fn
+        - - xs
+        - - eq
+          - - len
+            - xs
+          - - sub
+            - hi
+            - lo
+      - - fn
+        - - xs
+        - - append
+          - xs
+          - - add
+            - lo
+            - - len
+              - xs
+      - []
+  chars:
+    - fn
+    - - s
+    - - map
+      - - fn
+        - - i
+        - - slice
+          - s
+          - i
+          - - add
+            - i
+            - 1
+      - - range
+        - 0
+        - - len
+          - s
+  flush:
+    - fn
+    - - acc
+    - - if
+      - - eq
+        - - get
+          - acc
+          - "word"
+        - ""
+      - acc
+      - words:
+          - append
+          - - get
+            - acc
+            - "words"
+          - - get
+            - acc
+            - "word"
+        word: ""
+  step:
+    - fn
+    - - acc
+      - c
+    - - if
+      - - eq
+        - c
+        - " "
+      - - flush
+        - acc
+      - - set
+        - acc
+        - "word"
+        - - concat
+          - - get
+            - acc
+            - "word"
+          - c
+  split:
+    - fn
+    - - s
+    - - get
+      - - flush
+        - - fold
+          - step
+          - words: []
+            word: ""
+          - - chars
+            - s
+      - "words"
+  words:
+    - "the"
+    - cat
+    - and
+    - the
+    - hat
+    - and
+    - the
+    - bat
+    - sat
+    - "on"
+    - the
+    - mat
+  counts:
+    the: 4
+    cat: 1
+    and: 2
+    hat: 1
+    bat: 1
+    sat: 1
+    "on": 1
+    mat: 1
+  distinct: 8

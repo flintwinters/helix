@@ -1,0 +1,93 @@
+status: finished
+root:
+  program:
+    op: add
+    args:
+      - op: mul
+        args:
+          - 2
+          - 3
+      - op: neg
+        args:
+          - 4
+      - op: max
+        args:
+          - 7
+          - op: mul
+            args:
+              - 2
+              - 5
+          - 1
+  apply_op:
+    - fn
+    - - op
+      - xs
+    - - cond
+      - - eq
+        - op
+        - "add"
+      - - fold
+        - - fn
+          - - a
+            - b
+          - - add
+            - a
+            - b
+        - 0
+        - xs
+      - - eq
+        - op
+        - "mul"
+      - - fold
+        - - fn
+          - - a
+            - b
+          - - mul
+            - a
+            - b
+        - 1
+        - xs
+      - - eq
+        - op
+        - "max"
+      - - fold
+        - - fn
+          - - a
+            - b
+          - - if
+            - - gt
+              - a
+              - b
+            - a
+            - b
+        - - get
+          - xs
+          - 0
+        - xs
+      - - eq
+        - op
+        - "neg"
+      - - neg
+        - - get
+          - xs
+          - 0
+      - ~
+  calc:
+    - fn
+    - - node
+    - - if
+      - - eq
+        - - type
+          - node
+        - "integer"
+      - node
+      - - apply_op
+        - - get
+          - node
+          - "op"
+        - - map
+          - calc
+          - - get
+            - node
+            - "args"
+  result: 12
