@@ -1,0 +1,202 @@
+//! The object graph: YAML parsed into an arena of nodes with parent links and source spans.
+//! Parent links define lexical/object resolution; paths are always root-relative.
+
+use yaml_rust2::parser::{Event, MarkedEventReceiver, Parser};
+use yaml_rust2::scanner::{Marker, TScalarStyle};
+use yaml_rust2::Yaml;
+
+use crate::error::HelixError;
+
+pub type NodeId = usize;
+
+/// 1-indexed source location.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Span {
+    pub line: usize,
+    pub col: usize,
+}
+
+#[derive(Debug)]
+pub enum Kind {
+    /// `plain` is true for unquoted strings, which are symbols when they appear as expression arguments.
+    Scalar { value: Yaml, plain: bool },
+    Seq(Vec<NodeId>),
+    Map(Vec<(String, NodeId)>),
+}
+
+#[derive(Debug)]
+pub struct Node {
+    pub kind: Kind,
+    pub parent: Option<NodeId>,
+    pub span: Span,
+}
+
+#[derive(Debug)]
+pub struct Graph {
+    nodes: Vec<Node>,
+}
+
+pub const ROOT: NodeId = 0;
+
+impl Graph {
+    pub fn parse(src: &str) -> Result<Graph, HelixError> {
+        let mut builder = Builder::default();
+        Parser::new_from_str(src)
+            .load(&mut builder, false)
+            .map_err(|e| HelixError {
+                kind: "parse",
+                message: e.to_string(),
+                path: None,
+                span: span(e.marker()),
+            })?;
+        if let Some(err) = builder.error {
+            return Err(err);
+        }
+        if builder.graph.nodes.is_empty() {
+            return Err(HelixError {
+                kind: "parse",
+                message: "empty document".into(),
+                path: None,
+                span: Span { line: 1, col: 1 },
+            });
+        }
+        Ok(builder.graph)
+    }
+
+    pub fn node(&self, id: NodeId) -> &Node {
+        &self.nodes[id]
+    }
+
+    /// Root-relative path such as `/` or `/inner/y/1`.
+    pub fn path(&self, id: NodeId) -> String {
+        let mut parts = Vec::new();
+        let mut cur = id;
+        while let Some(parent) = self.nodes[cur].parent {
+            parts.push(match &self.nodes[parent].kind {
+                Kind::Map(entries) => entries.iter().find(|(_, c)| *c == cur).map(|(k, _)| k.clone()),
+                Kind::Seq(items) => items.iter().position(|c| *c == cur).map(|i| i.to_string()),
+                Kind::Scalar { .. } => None,
+            }
+            .expect("child is listed in its parent"));
+            cur = parent;
+        }
+        parts.reverse();
+        format!("/{}", parts.join("/"))
+    }
+
+    /// Nearest enclosing map (starting at the parent of `from`) that defines `name`.
+    pub fn lookup(&self, from: NodeId, name: &str) -> Option<NodeId> {
+        let mut cur = self.nodes[from].parent;
+        while let Some(id) = cur {
+            if let Kind::Map(entries) = &self.nodes[id].kind {
+                if let Some((_, child)) = entries.iter().find(|(k, _)| k == name) {
+                    return Some(*child);
+                }
+            }
+            cur = self.nodes[id].parent;
+        }
+        None
+    }
+}
+
+/// yaml-rust2 markers have 1-indexed lines but 0-indexed columns; spans are 1-indexed on both axes.
+fn span(m: &Marker) -> Span {
+    Span { line: m.line(), col: m.col() + 1 }
+}
+
+#[derive(Default)]
+struct Builder {
+    graph: Graph,
+    /// Open containers; for maps, `key` holds the pending key awaiting its value.
+    stack: Vec<(NodeId, Option<String>)>,
+    error: Option<HelixError>,
+}
+
+impl Default for Graph {
+    fn default() -> Self {
+        Graph { nodes: Vec::new() }
+    }
+}
+
+impl Builder {
+    fn fail(&mut self, kind: &'static str, message: &str, at: Marker) {
+        if self.error.is_none() {
+            self.error = Some(HelixError { kind, message: message.into(), path: None, span: span(&at) });
+        }
+    }
+
+    /// Attach a new node to the open container (or make it the root) and return its id.
+    fn add(&mut self, kind: Kind, at: Marker) -> Option<NodeId> {
+        let id = self.graph.nodes.len();
+        let parent = self.stack.last().map(|(p, _)| *p);
+        if let Some(parent) = parent {
+            match &mut self.graph.nodes[parent].kind {
+                Kind::Seq(items) => items.push(id),
+                Kind::Map(entries) => {
+                    let key = self.stack.last_mut().and_then(|(_, k)| k.take())?;
+                    entries.push((key, id));
+                }
+                Kind::Scalar { .. } => unreachable!("scalars never open"),
+            }
+        }
+        self.graph.nodes.push(Node { kind, parent, span: span(&at) });
+        Some(id)
+    }
+
+    fn pending_key(&self) -> Option<bool> {
+        let (id, key) = self.stack.last()?;
+        matches!(self.graph.nodes[*id].kind, Kind::Map(_)).then(|| key.is_none())
+    }
+}
+
+impl MarkedEventReceiver for Builder {
+    fn on_event(&mut self, ev: Event, at: Marker) {
+        if self.error.is_some() {
+            return;
+        }
+        match ev {
+            Event::Scalar(text, style, _, _) => {
+                if self.pending_key() == Some(true) {
+                    self.stack.last_mut().unwrap().1 = Some(text);
+                    return;
+                }
+                let plain = style == TScalarStyle::Plain;
+                let value = if plain { infer(&text) } else { Yaml::String(text) };
+                let plain = plain && matches!(value, Yaml::String(_));
+                self.add(Kind::Scalar { value, plain }, at);
+            }
+            Event::SequenceStart(..) | Event::MappingStart(..) => {
+                if self.pending_key() == Some(true) {
+                    return self.fail("unsupported", "mapping keys must be scalars", at);
+                }
+                let kind = if matches!(ev, Event::SequenceStart(..)) { Kind::Seq(vec![]) } else { Kind::Map(vec![]) };
+                if let Some(id) = self.add(kind, at) {
+                    self.stack.push((id, None));
+                }
+            }
+            Event::SequenceEnd | Event::MappingEnd => {
+                self.stack.pop();
+            }
+            Event::Alias(_) => self.fail("unsupported", "aliases are not supported", at),
+            _ => {}
+        }
+    }
+}
+
+/// YAML 1.2 core-schema inference for plain scalars (floats are kept verbatim as `Real`).
+fn infer(text: &str) -> Yaml {
+    match text {
+        "" | "~" | "null" | "Null" | "NULL" => Yaml::Null,
+        "true" | "True" | "TRUE" => Yaml::Boolean(true),
+        "false" | "False" | "FALSE" => Yaml::Boolean(false),
+        _ => {
+            if let Ok(i) = text.parse::<i64>() {
+                Yaml::Integer(i)
+            } else if text.parse::<f64>().is_ok() && text.chars().next().is_some_and(|c| c.is_ascii_digit() || c == '-' || c == '+' || c == '.') {
+                Yaml::Real(text.to_string())
+            } else {
+                Yaml::String(text.to_string())
+            }
+        }
+    }
+}

@@ -1,0 +1,6 @@
+status: error
+error:
+  kind: parse
+  message: "while parsing a flow sequence, expected ',' or ']' at byte 11 line 2 column 1"
+  line: 2
+  column: 1

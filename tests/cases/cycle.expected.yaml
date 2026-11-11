@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: cycle
+  message: value depends on itself
+  path: /a
+  line: 1
+  column: 4

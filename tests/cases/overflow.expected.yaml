@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: overflow
+  message: "`add` overflowed i64"
+  path: /b
+  line: 2
+  column: 4

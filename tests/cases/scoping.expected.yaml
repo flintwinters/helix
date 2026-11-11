@@ -1,0 +1,7 @@
+status: finished
+root:
+  x: 10
+  inner:
+    "y": 2
+    x: 1
+    w: 2

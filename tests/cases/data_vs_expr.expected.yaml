@@ -1,0 +1,11 @@
+status: finished
+root:
+  x: 10
+  list:
+    - a
+    - b
+    - 3
+  text: add
+  data:
+    - 3
+    - b
