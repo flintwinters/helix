@@ -109,26 +109,26 @@ impl Builder {
     }
 
     /// Attach a new node to the open container (or make it the root) and return its id.
-    fn add(&mut self, kind: Kind, at: Marker) -> Option<NodeId> {
+    fn add(&mut self, kind: Kind, at: Marker) -> NodeId {
         let id = self.graph.nodes.len();
         let parent = self.stack.last().map(|(p, _)| *p);
         if let Some(parent) = parent {
             match &mut self.graph.nodes[parent].kind {
                 Kind::Seq(items) => items.push(id),
                 Kind::Map(entries) => {
-                    let key = self.stack.last_mut().and_then(|(_, k)| k.take())?;
+                    let key = self.stack.last_mut().and_then(|(_, k)| k.take()).expect("a map value follows its key");
                     entries.push((key, id));
                 }
                 Kind::Scalar { .. } => unreachable!("scalars never open"),
             }
         }
         self.graph.nodes.push(Node { kind, parent, span: span(&at) });
-        Some(id)
+        id
     }
 
-    fn pending_key(&self) -> Option<bool> {
-        let (id, key) = self.stack.last()?;
-        matches!(self.graph.nodes[*id].kind, Kind::Map(_)).then(|| key.is_none())
+    /// Whether the open container is a map whose next scalar is a key.
+    fn awaiting_key(&self) -> bool {
+        self.stack.last().is_some_and(|(id, key)| matches!(self.graph.nodes[*id].kind, Kind::Map(_)) && key.is_none())
     }
 }
 
@@ -139,7 +139,7 @@ impl MarkedEventReceiver for Builder {
         }
         match ev {
             Event::Scalar(text, style, _, _) => {
-                if self.pending_key() == Some(true) {
+                if self.awaiting_key() {
                     self.stack.last_mut().unwrap().1 = Some(text);
                     return;
                 }
@@ -149,13 +149,12 @@ impl MarkedEventReceiver for Builder {
                 self.add(Kind::Scalar { value, plain }, at);
             }
             Event::SequenceStart(..) | Event::MappingStart(..) => {
-                if self.pending_key() == Some(true) {
+                if self.awaiting_key() {
                     return self.fail("unsupported", "mapping keys must be scalars", at);
                 }
                 let kind = if matches!(ev, Event::SequenceStart(..)) { Kind::Seq(vec![]) } else { Kind::Map(vec![]) };
-                if let Some(id) = self.add(kind, at) {
-                    self.stack.push((id, None));
-                }
+                let id = self.add(kind, at);
+                self.stack.push((id, None));
             }
             Event::SequenceEnd | Event::MappingEnd => {
                 self.stack.pop();

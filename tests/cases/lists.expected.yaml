@@ -20,7 +20,7 @@ root:
     - 1
     - 2
   replaced:
-    - ten
+    - "ten"
     - 20
     - 30
   window:

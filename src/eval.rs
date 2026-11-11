@@ -166,7 +166,7 @@ impl Evaluator {
                 Kind::Map(entries) => entry(entries),
                 // Parameters and `let` bindings are in scope only in the body, the third item.
                 Kind::Seq(items) if items.get(2) == Some(&child) => match (self.form(id), self.graph.kind(items[1])) {
-                    (Some("fn"), _) => self.parameters(id).ok()?.iter().position(|p| *p == name).and_then(|i| {
+                    (Some("fn"), _) => self.parameters(id).ok().and_then(|params| params.iter().position(|p| *p == name)).and_then(|i| {
                         let frame = self.frames.iter().rev().find(|f| f.function == id)?;
                         Some(Binding::Value(frame.args[i].clone()))
                     }),

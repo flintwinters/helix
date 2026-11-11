@@ -13,7 +13,7 @@ root:
     age: 36
     email: ada@example.com
   names:
-    - name
+    - "name"
     - age
     - email
   size: 2

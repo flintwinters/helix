@@ -2,7 +2,7 @@ status: finished
 root:
   x: 10
   list:
-    - a
+    - "a"
     - b
     - 3
   text: add

@@ -1,0 +1,4 @@
+# A quoted head naming a user function is data, and must stay quoted in saved state.
+f: [fn, [x], [add, x, 1]]
+call: [f, 1]
+data: ["f", 1]

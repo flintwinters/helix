@@ -1,0 +1,12 @@
+status: finished
+root:
+  f:
+    - fn
+    - - x
+    - - add
+      - x
+      - 1
+  call: 2
+  data:
+    - "f"
+    - 1

@@ -4,8 +4,6 @@
 
 use yaml_rust2::Yaml;
 
-use crate::builtins;
-
 pub fn document(value: &Yaml) -> String {
     let mut out = String::new();
     block(value, 0, &mut out);
@@ -18,7 +16,7 @@ fn block(value: &Yaml, indent: usize, out: &mut String) {
     match value {
         Yaml::Hash(entries) => {
             for (key, entry) in entries {
-                out.push_str(&format!("{pad}{}:", string(&key_text(key), false)));
+                out.push_str(&format!("{pad}{}:", scalar(key)));
                 nested(entry, indent + 2, out);
             }
         }
@@ -56,14 +54,6 @@ fn is_container(value: &Yaml) -> bool {
     matches!(value, Yaml::Hash(h) if !h.is_empty()) || matches!(value, Yaml::Array(a) if !a.is_empty())
 }
 
-/// Map keys are always strings in Helix.
-fn key_text(key: &Yaml) -> String {
-    match key {
-        Yaml::String(s) => s.clone(),
-        other => scalar(other),
-    }
-}
-
 fn scalar(value: &Yaml) -> String {
     match value {
         Yaml::Integer(i) => i.to_string(),
@@ -77,14 +67,14 @@ fn scalar(value: &Yaml) -> String {
     }
 }
 
-/// Plain only when unambiguous: identifier-like text that is not a YAML keyword, and, as the first
-/// item of a sequence (`head`), not a builtin name (which would re-read as an expression).
+/// Plain only when unambiguous: identifier-like text that is not a YAML keyword and not the first
+/// item of a sequence (`head`), where it could re-read as an expression naming a builtin or any
+/// user function in scope, which the emitter cannot see.
 fn string(text: &str, head: bool) -> String {
     const KEYWORDS: [&str; 10] = ["true", "false", "null", "yes", "no", "on", "off", "y", "n", "~"];
-    let mut chars = text.chars();
-    let plain_start = chars.next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_' || c == '/');
+    let plain_start = text.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_' || c == '/');
     let plain_rest = text.chars().all(|c| c.is_ascii_alphanumeric() || " _./@()+=-".contains(c));
-    let reserved = KEYWORDS.contains(&text.to_ascii_lowercase().as_str()) || (head && builtins::arity(text).is_some());
+    let reserved = head || KEYWORDS.contains(&text.to_ascii_lowercase().as_str());
     if plain_start && plain_rest && !text.ends_with(' ') && !reserved {
         return text.to_string();
     }
