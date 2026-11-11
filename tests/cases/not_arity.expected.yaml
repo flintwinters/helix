@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: arity
+  message: "`not` takes 1 argument, got 2"
+  path: /x
+  line: 1
+  column: 4

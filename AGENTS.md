@@ -13,7 +13,8 @@ Program and machine state share one human-readable representation, so a suspende
 Rust crate `helix` (lib + `helix run <file|->` CLI); `./manage.py` is the single entrypoint (`build`, `run`, `test [--bless]`).
 
 - `src/graph.rs`: YAML (via `yaml-rust2` events) into an arena of nodes with parent links and 1-indexed line/column spans; root-relative paths (`/inner/y/1`); lexical `lookup` walks parent links through enclosing maps.
-- `src/vm.rs`: `Vm` with the five statuses, memoized evaluation with cycle detection, and `state()` serialization (`status` plus `root` or `error`). A sequence is an expression iff its head is a plain scalar naming a builtin (`add`, `sub`, `mul`, exactly 2 integer args); plain-string arguments are symbols, quoted strings are literals.
+- `src/vm.rs`: `Vm` with the five statuses, memoized evaluation with cycle detection, and `state()` serialization (`status` plus `root` or `error`). A sequence is an expression iff its head is a plain scalar naming a builtin; plain-string arguments are symbols, quoted strings are literals. Owns evaluation order (the lazy `if`).
+- `src/builtins.rs`: pure builtins over evaluated values (arity, typing, checked integer arithmetic, comparisons, `not`): `add mul` (variadic), `sub div mod eq ne lt le gt ge`, `not`, `if`. Failures are `Fault`s the VM maps onto the blamed argument node.
 - `src/error.rs`: `HelixError` with stable `kind`, message, root-relative `path`, and `line`/`column`; serialized under `error:`.
 - Tests: golden cases in `tests/cases/NAME.yaml` + `NAME.expected.yaml`; finished states are also checked to round-trip (emitted `root` re-run is a fixpoint).
 

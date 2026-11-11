@@ -1,5 +1,6 @@
 //! Helix: readable YAML is both program source and persisted VM state.
 
+mod builtins;
 mod error;
 mod graph;
 mod span;

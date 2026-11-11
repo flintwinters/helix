@@ -1,0 +1,7 @@
+debug: false
+n: 7
+negated: [not, debug]
+size: [if, [lt, n, 10], "small", "big"]
+lazy: [if, true, 1, [div, 1, 0]]
+nested: [if, [not, [eq, n, 7]], 0, [if, debug, 1, 2]]
+symbol_branch: [if, debug, n, [mul, n, 2]]

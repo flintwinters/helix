@@ -38,13 +38,16 @@ The minimum for writing a non-trivial program.
 - [ ] Clear, documented type rules (no silent coercion)
 
 ### Operators
-- [ ] Comparison: `eq`, `ne`, `lt`, `le`, `gt`, `ge`
-- [ ] Boolean: `and`, `or`, `not`
-- [ ] Arithmetic completion: `div`, `mod`, `neg`, float math
-- [ ] Variadic forms where natural (`[add, 1, 2, 3]`)
+- [x] Comparison: `eq`, `ne`, `lt`, `le`, `gt`, `ge`
+- [x] `not`
+- [ ] Short-circuiting `and`, `or`
+- [x] Integer `div` and `mod` (truncating; divide-by-zero is a structured error)
+- [ ] `neg` and float math
+- [x] Variadic `add` and `mul` (`[add, 1, 2, 3]`)
 
 ### Control flow
-- [ ] `if` / `cond` (lazy: only the chosen branch runs)
+- [x] `if` (lazy: only the chosen branch runs)
+- [ ] `cond` for multi-way branches
 - [ ] Local bindings (`let`)
 - [ ] Iteration: `map`, `filter`, `fold`, `each`
 - [ ] A way to loop until a condition without unbounded recursion

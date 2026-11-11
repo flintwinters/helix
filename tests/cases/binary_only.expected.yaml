@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: arity
+  message: "`div` takes 2 arguments, got 3"
+  path: /x
+  line: 1
+  column: 4

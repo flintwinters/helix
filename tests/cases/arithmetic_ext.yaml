@@ -1,0 +1,7 @@
+sum: [add, 1, 2, 3, 4]
+product: [mul, 2, 3, 4]
+quotient: [div, 17, 5]
+neg_quotient: [div, -17, 5]
+remainder: [mod, 17, 5]
+neg_remainder: [mod, -17, 5]
+difference: [sub, 10, 4]

@@ -5,6 +5,7 @@ use std::collections::{HashMap, HashSet};
 use yaml_rust2::yaml::Hash;
 use yaml_rust2::{Yaml, YamlEmitter};
 
+use crate::builtins;
 use crate::error::{s, HelixError};
 use crate::graph::{Graph, Kind, NodeId, ROOT};
 
@@ -28,9 +29,6 @@ impl Status {
         }
     }
 }
-
-/// Builtin actors. A sequence is an expression iff its head is a plain scalar naming one of these.
-const BUILTINS: [&str; 3] = ["add", "sub", "mul"];
 
 pub struct Vm {
     graph: Option<Graph>,
@@ -145,55 +143,57 @@ impl Vm {
 
     fn actor(&self, items: &[NodeId]) -> Option<String> {
         match self.graph().kind(*items.first()?) {
-            Kind::Scalar { value: Yaml::String(name), plain: true } if BUILTINS.contains(&name.as_str()) => Some(name.clone()),
+            Kind::Scalar { value: Yaml::String(name), plain: true } if builtins::arity(name).is_some() => Some(name.clone()),
             _ => None,
         }
     }
 
+    /// Evaluate one expression. A sequence is an expression iff its head is a plain scalar naming a builtin.
     fn apply(&mut self, id: NodeId, actor: &str, args: &[NodeId]) -> Result<Yaml, HelixError> {
-        if args.len() != 2 {
-            return Err(self.err(id, "arity", format!("`{actor}` takes 2 arguments, got {}", args.len())));
+        let (min, max) = builtins::arity(actor).expect("actor is a builtin");
+        if args.len() < min || max.is_some_and(|m| args.len() > m) {
+            let expected = match max {
+                Some(1) => "1 argument".to_string(),
+                Some(m) if m == min => format!("{min} arguments"),
+                _ => format!("at least {min} arguments"),
+            };
+            return Err(self.err(id, "arity", format!("`{actor}` takes {expected}, got {}", args.len())));
         }
-        let a = self.int_arg(args[0])?;
-        let b = self.int_arg(args[1])?;
-        let r = match actor {
-            "add" => a.checked_add(b),
-            "sub" => a.checked_sub(b),
-            "mul" => a.checked_mul(b),
-            _ => unreachable!("actor is a builtin"),
+        if actor == "if" {
+            return self.apply_if(id, args);
+        }
+        let values = args.iter().map(|&arg| self.value_arg(arg)).collect::<Result<Vec<_>, _>>()?;
+        builtins::apply(actor, &values).map_err(|fault| self.fault(id, args, fault))
+    }
+
+    /// Blame the argument a builtin names, or the whole expression.
+    fn fault(&self, id: NodeId, args: &[NodeId], fault: builtins::Fault) -> HelixError {
+        self.err(fault.arg.map_or(id, |i| args[i]), fault.kind, fault.message)
+    }
+
+    /// `[if, cond, then, else]` evaluates only the branch it selects.
+    fn apply_if(&mut self, id: NodeId, args: &[NodeId]) -> Result<Yaml, HelixError> {
+        let condition = self.value_arg(args[0])?;
+        let chosen = match builtins::condition(&condition) {
+            Ok(true) => args[1],
+            Ok(false) => args[2],
+            Err(fault) => return Err(self.fault(id, args, fault)),
         };
-        r.map(Yaml::Integer).ok_or_else(|| self.err(id, "overflow", format!("`{actor}` overflowed i64")))
+        self.value_arg(chosen)
     }
 
     /// Evaluate an expression argument: plain strings are symbols resolved through parent links.
-    fn int_arg(&mut self, id: NodeId) -> Result<i64, HelixError> {
+    fn value_arg(&mut self, id: NodeId) -> Result<Yaml, HelixError> {
         let symbol = match self.graph().kind(id) {
             Kind::Scalar { value: Yaml::String(name), plain: true } => Some(name.clone()),
             _ => None,
         };
-        let v = match symbol {
+        match symbol {
             Some(name) => {
                 let target = self.graph().lookup(id, &name).ok_or_else(|| self.err(id, "unbound", format!("unbound symbol `{name}`")))?;
-                self.eval(target)?
+                self.eval(target)
             }
-            None => self.eval(id)?,
-        };
-        match v {
-            Yaml::Integer(i) => Ok(i),
-            other => Err(self.err(id, "type", format!("expected integer, got {}", type_name(&other)))),
+            None => self.eval(id),
         }
-    }
-}
-
-fn type_name(v: &Yaml) -> &'static str {
-    match v {
-        Yaml::Integer(_) => "integer",
-        Yaml::Real(_) => "float",
-        Yaml::String(_) => "string",
-        Yaml::Boolean(_) => "boolean",
-        Yaml::Array(_) => "sequence",
-        Yaml::Hash(_) => "mapping",
-        Yaml::Null => "null",
-        _ => "invalid value",
     }
 }

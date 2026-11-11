@@ -1,0 +1,9 @@
+status: finished
+root:
+  sum: 10
+  product: 24
+  quotient: 3
+  neg_quotient: -3
+  remainder: 2
+  neg_remainder: -2
+  difference: 6
