@@ -3,6 +3,7 @@
 
     ./manage.py build               cargo build
     ./manage.py run FILE            run a program, print its serialized VM state
+    ./manage.py lint [ARGS...]      structural lint via the hyperlinter submodule (JSON; pass --format=text for people)
     ./manage.py test [--bless]      golden-test every tests/cases/*.yaml (--bless rewrites expectations)
 
 Golden cases: tests/cases/NAME.yaml is the program, NAME.expected.yaml the exact serialized state.
@@ -17,10 +18,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 CASES = ROOT / "tests" / "cases"
 BIN = ROOT / "target" / "debug" / "helix"
+HYPERLINTER = ROOT / "hyperlinter"
 
 
 def build() -> int:
     return subprocess.call(["cargo", "build", "--quiet"], cwd=ROOT)
+
+
+def lint(extra: list[str]) -> int:
+    """Run hyperlinter from the host root (required so it loads this repo's Cargo.toml and baseline)."""
+    tsx = HYPERLINTER / "node_modules" / ".bin" / "tsx"
+    if not tsx.exists():
+        subprocess.check_call(["git", "submodule", "update", "--init", "hyperlinter"], cwd=ROOT)
+        subprocess.check_call(["npm", "--prefix", str(HYPERLINTER), "ci", "--include=dev"], cwd=ROOT)
+    return subprocess.call([str(tsx), str(HYPERLINTER / "src" / "cli.ts"), *extra], cwd=ROOT)
 
 
 def helix(*args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
@@ -61,11 +72,14 @@ def test(bless: bool) -> int:
 
 
 def main() -> int:
+    if sys.argv[1:2] == ["lint"]:  # forward everything verbatim, including flags argparse would reject
+        return lint(sys.argv[2:])
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("build")
     sub.add_parser("run").add_argument("file")
     sub.add_parser("test").add_argument("--bless", action="store_true")
+    sub.add_parser("lint", help="forwards all remaining args to hyperlinter")
     args = ap.parse_args()
     if args.cmd == "build":
         return build()

@@ -1,0 +1,3 @@
+[submodule "hyperlinter"]
+	path = hyperlinter
+	url = https://github.com/flintwinters/hyperlinter.git

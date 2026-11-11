@@ -17,12 +17,15 @@ Rust crate `helix` (lib + `helix run <file|->` CLI); `./manage.py` is the single
 - `src/error.rs`: `HelixError` with stable `kind`, message, root-relative `path`, and `line`/`column`; serialized under `error:`.
 - Tests: golden cases in `tests/cases/NAME.yaml` + `NAME.expected.yaml`; finished states are also checked to round-trip (emitted `root` re-run is a fixpoint).
 
+- Lint: `hyperlinter/` is a submodule (`flintwinters/hyperlinter`); `./manage.py lint [--format=text]` runs it from the repo root (it loads Cargo.toml and `.git/hyperlinter/` baselines there). Its ledger lands in git-ignored `runtime/`. Keep the tree at zero diagnostics; do not weaken policy or write a baseline to silence findings. Rust gets module-level rules only (structure, public surface, entrypoint bypass, file limit, scoring); function cycles, dead implementation, and clone rules are TypeScript-only so far, verified by probe (a mutual-recursion pair and an uncalled private fn in a scratch module were not flagged). Lib modules are private with facade re-exports in `src/lib.rs`; consumers import from the crate root.
+
 ## Current Big Tasks
 
 1. Suspend/resume: persist execution position as root-relative paths and resume from serialized state (today the VM runs to completion or error in one `run`; `ready`/`running`/`signaled` are never persisted).
 2. Grow the language beyond integer arithmetic: user-defined actors, control flow, side effects/signals.
 3. Preserve source locations in the output for evaluated values, not only for errors.
-4. Decide the fate of YAML anchors/aliases and non-scalar keys (currently rejected as `unsupported`).
+4. Exercise hyperlinter as the Rust code grows and feed general (non-Helix-specific) gaps back upstream: Rust function-cycle/dead-code coverage, and the `runtime/` ledger location (README says state lives under `.git/hyperlinter/`).
+5. Decide the fate of YAML anchors/aliases and non-scalar keys (currently rejected as `unsupported`).
 
 ## Invariants
 

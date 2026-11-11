@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::process::ExitCode;
 
-use helix::vm::{Status, Vm};
+use helix::{Status, Vm};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
