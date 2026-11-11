@@ -153,22 +153,43 @@ Real programs, in order of ambition, grouped by what unlocks them. Each one is a
 - [ ] Classic small problems as golden cases: FizzBuzz, primes, word frequency over inline text
 - [ ] A 100+ line program (an expression evaluator, a sort, a small state machine) written without fighting the language
 - [ ] One real data-reshaping task: paste YAML data in, compute a report, use the emitted `root`
+- [ ] Compare two inline configuration snapshots and use a report of added, removed and changed keys to review a real change
+- [ ] Validate an inline project inventory (required fields, duplicate names, broken references) and fix the real data from its findings
+- [ ] Compute a dependency order for a small set of real tasks, with a useful result when dependencies are missing or cyclic
+- [ ] Reconcile two inline inventories or expense lists and use the discrepancies to correct the originals
 - [ ] A friction log: every awkward moment from the programs above becomes a charter item or a deliberate "no"
 
 ### With suspend/resume (section 2)
 - [ ] A long computation stopped midway, its state read in `git diff`, resumed to the same result as an uninterrupted run
 - [ ] Fix a mistake by hand-editing a suspended state and resuming it
+- [ ] Stop and resume inside nested function calls and iteration; inspect the saved locals and remaining work without consulting a trace
+- [ ] Move a suspended run to another checkout or machine and finish it using only its state and declared dependencies
+- [ ] Keep two edited branches of one suspended run, finish both, and use their state diff to explain why the results differ
 
 ### With effects and imports (sections 3–5)
 - [ ] Replace one small shell script with Helix
 - [ ] A config-transform pipeline (read YAML in, compute, write YAML out)
+- [ ] Audit real project files for broken local links or missing referenced files and use the report to repair them
+- [ ] Turn a real CSV export into a JSON or YAML summary used in a recurring report
+- [ ] Generate a changelog draft from git history, with the source commits retained in the saved state for review
+- [ ] Call a paginated HTTP API, save progress between pages, and resume after a failed request without fetching completed pages again
+- [ ] Run a batch file transformation with a preview, an explicit apply step, and a manifest sufficient to undo the changes
+- [ ] Share one imported helper between two real scripts and update it without copying code between them
+- [ ] Recover a failed external-command workflow after fixing its input, without repeating already completed successful steps
 - [ ] A task runner for this repo (`./manage.py` logic expressed in Helix)
 - [ ] A long-running workflow that suspends on an external event and resumes days later
 - [ ] A program that inspects and edits another Helix program's saved state
 - [ ] Helix running its own test suite
 
+### With daily tooling and trust (sections 6–7)
+- [ ] Diagnose a real failed script using only its saved state, structured error and inspection tools; turn the failure into a regression case
+- [ ] Run an unfamiliar Helix program with restricted file, command and network permissions; understand and grant only the effects it needs
+- [ ] Upgrade Helix and resume a state saved by the previous version, following the documented compatibility or migration path
+- [ ] Give someone else a useful script and have them install Helix, run it and adapt it using only the documentation
+
 ### The bar
 - [ ] A week where I reach for Helix first without thinking about it
+- [ ] Three recurring personal or repo workflows stay in Helix for a month; record each fallback to Python or shell and the reason
 
 ---
 
