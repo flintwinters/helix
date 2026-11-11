@@ -1,0 +1,11 @@
+status: finished
+root:
+  t: true
+  f: false
+  both: false
+  either: true
+  all: true
+  none: false
+  skips_error_and: false
+  skips_error_or: true
+  skips_type_error: false

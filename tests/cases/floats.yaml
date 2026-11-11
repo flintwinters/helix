@@ -1,0 +1,16 @@
+pi: 3.5
+whole: 2.0
+sum: [add, pi, 1]
+product: [mul, 2, 0.25]
+quotient: [div, 7.0, 2]
+int_division_stays_int: [div, 7, 2]
+remainder: [mod, 7.5, 2]
+negated: [neg, pi]
+negated_int: [neg, 4]
+mixed_order: [lt, 3, pi]
+equal_across_types: [eq, 1, 1.0]
+exponent: [mul, 1e3, 2]
+truncated: [int, -2.9]
+widened: [float, 3]
+parsed_float: [float, "2.50"]
+parsed_int: [int, " 42 "]

@@ -1,7 +1,7 @@
 status: error
 error:
   kind: type
-  message: "expected integer, got string"
+  message: "expected number, got string"
   path: /b/1
   line: 2
   column: 10

@@ -1,0 +1,10 @@
+name: world
+greeting: [concat, "hello, ", name, "!"]
+length: [len, greeting]
+unicode_length: [len, "héllo"]
+middle: [slice, greeting, 7, 12]
+empty_slice: [slice, name, 2, 2]
+has_sub: [has, greeting, "world"]
+lacks_sub: [has, greeting, "xyz"]
+ordered: [lt, "apple", "banana"]
+as_text: [concat, "n=", [str, 42], " ok=", [str, true], " x=", [str, 1.5], " z=", [str, null]]

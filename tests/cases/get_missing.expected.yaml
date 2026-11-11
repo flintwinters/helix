@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: missing
+  message: "no key `b`"
+  path: /x/2
+  line: 2
+  column: 13

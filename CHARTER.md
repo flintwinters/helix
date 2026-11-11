@@ -30,19 +30,19 @@ How to use this file: tick a box only when the feature works end to end *and* ha
 The minimum for writing a non-trivial program.
 
 ### Values
-- [ ] Strings (literal, concatenation, length, slicing)
-- [ ] Floats
-- [ ] Booleans and null as first-class values in expressions
-- [ ] Lists with index, length, append, concat
-- [ ] Maps with get, set, keys, has
-- [ ] Clear, documented type rules (no silent coercion)
+- [x] Strings (literal, concatenation, length, slicing)
+- [x] Floats
+- [x] Booleans and null as first-class values in expressions
+- [x] Lists with index, length, append, concat
+- [x] Maps with get, set, keys, has
+- [x] Clear, documented type rules (no silent coercion) — see `LANGUAGE.md`
 
 ### Operators
 - [x] Comparison: `eq`, `ne`, `lt`, `le`, `gt`, `ge`
 - [x] `not`
-- [ ] Short-circuiting `and`, `or`
+- [x] Short-circuiting `and`, `or`
 - [x] Integer `div` and `mod` (truncating; divide-by-zero is a structured error)
-- [ ] `neg` and float math
+- [x] `neg` and float math
 - [x] Variadic `add` and `mul` (`[add, 1, 2, 3]`)
 
 ### Control flow
@@ -140,7 +140,7 @@ The difference between a language and a language I enjoy using.
 - [ ] Fuzzing of the parser and evaluator
 - [ ] Sandbox/permission model for effects (files, network, commands)
 - [ ] Stability promise: documented what may change and what is frozen
-- [ ] Language reference and a tutorial that a stranger could follow
+- [ ] Language reference (started: `LANGUAGE.md`) and a tutorial that a stranger could follow
 - [ ] A changelog
 
 ---

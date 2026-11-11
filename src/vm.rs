@@ -3,9 +3,10 @@
 use std::collections::{HashMap, HashSet};
 
 use yaml_rust2::yaml::Hash;
-use yaml_rust2::{Yaml, YamlEmitter};
+use yaml_rust2::Yaml;
 
 use crate::builtins;
+use crate::emit;
 use crate::error::{s, HelixError};
 use crate::graph::{Graph, Kind, NodeId, ROOT};
 
@@ -81,10 +82,7 @@ impl Vm {
     }
 
     pub fn state_string(&self) -> String {
-        let mut out = String::new();
-        YamlEmitter::new(&mut out).dump(&self.state()).expect("emit to String cannot fail");
-        let body = out.strip_prefix("---\n").unwrap_or(&out);
-        format!("{body}\n")
+        emit::document(&self.state())
     }
 
     fn fail(&mut self, e: HelixError) {
@@ -159,8 +157,8 @@ impl Vm {
             };
             return Err(self.err(id, "arity", format!("`{actor}` takes {expected}, got {}", args.len())));
         }
-        if actor == "if" {
-            return self.apply_if(id, args);
+        if builtins::is_lazy(actor) {
+            return self.apply_lazy(id, actor, args);
         }
         let values = args.iter().map(|&arg| self.value_arg(arg)).collect::<Result<Vec<_>, _>>()?;
         builtins::apply(actor, &values).map_err(|fault| self.fault(id, args, fault))
@@ -171,15 +169,25 @@ impl Vm {
         self.err(fault.arg.map_or(id, |i| args[i]), fault.kind, fault.message)
     }
 
-    /// `[if, cond, then, else]` evaluates only the branch it selects.
-    fn apply_if(&mut self, id: NodeId, args: &[NodeId]) -> Result<Yaml, HelixError> {
-        let condition = self.value_arg(args[0])?;
-        let chosen = match builtins::condition(&condition) {
-            Ok(true) => args[1],
-            Ok(false) => args[2],
-            Err(fault) => return Err(self.fault(id, args, fault)),
-        };
-        self.value_arg(chosen)
+    /// `if` evaluates only the branch it selects; `and`/`or` stop at the first `false`/`true`.
+    /// Every operand that is evaluated must be a boolean, and the result is a boolean.
+    fn apply_lazy(&mut self, id: NodeId, actor: &str, args: &[NodeId]) -> Result<Yaml, HelixError> {
+        if actor == "if" {
+            let condition = self.boolean_arg(id, args, 0)?;
+            return self.value_arg(if condition { args[1] } else { args[2] });
+        }
+        let stop_on = actor == "or";
+        for index in 0..args.len() {
+            if self.boolean_arg(id, args, index)? == stop_on {
+                return Ok(Yaml::Boolean(stop_on));
+            }
+        }
+        Ok(Yaml::Boolean(!stop_on))
+    }
+
+    fn boolean_arg(&mut self, id: NodeId, args: &[NodeId], index: usize) -> Result<bool, HelixError> {
+        let value = self.value_arg(args[index])?;
+        builtins::boolean(&value, index).map_err(|fault| self.fault(id, args, fault))
     }
 
     /// Evaluate an expression argument: plain strings are symbols resolved through parent links.

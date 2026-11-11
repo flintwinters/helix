@@ -1,0 +1,12 @@
+user:
+  name: ada
+  age: 36
+name: [get, user, "name"]
+missing_ok: [get, user, "email", "n/a"]
+older: [set, user, "age", 37]
+extended: [set, user, "email", "ada@example.com"]
+names: [keys, extended]
+size: [len, user]
+has_name: [has, user, "name"]
+has_email: [has, user, "email"]
+same: [eq, user, [set, user, "age", 36]]

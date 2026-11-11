@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: missing
+  message: no index 5
+  path: /x/2
+  line: 1
+  column: 18

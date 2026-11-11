@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: overflow
+  message: "`mul` produced a non-finite float"
+  path: /x
+  line: 1
+  column: 4

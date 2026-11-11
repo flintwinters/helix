@@ -190,7 +190,7 @@ fn infer(text: &str) -> Yaml {
         _ => {
             if let Ok(i) = text.parse::<i64>() {
                 Yaml::Integer(i)
-            } else if text.parse::<f64>().is_ok() && text.chars().next().is_some_and(|c| c.is_ascii_digit() || c == '-' || c == '+' || c == '.') {
+            } else if text.parse::<f64>().is_ok_and(f64::is_finite) && text.bytes().any(|b| b.is_ascii_digit()) {
                 Yaml::Real(text.to_string())
             } else {
                 Yaml::String(text.to_string())

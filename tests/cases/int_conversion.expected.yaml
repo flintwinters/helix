@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: conversion
+  message: "cannot parse `12abc` as an integer"
+  path: /x/1
+  line: 1
+  column: 10
