@@ -102,6 +102,12 @@ A daily driver has to do things.
 - [x] Asserts, with messages
 - [ ] Failed runs are resumable after fixing the cause, where it makes sense
 - [ ] Nothing panics: malformed input always yields a structured error
+- [ ] `raise`: user code raises its own error with a user-chosen `kind`, message and data payload
+- [ ] Re-raise from a handler, preserving the original error as a `cause` chain
+- [ ] Match handlers on error `kind`, so an unexpected kind is not swallowed
+- [ ] `finally` / cleanup that runs on both success and failure (needed before effects)
+- [ ] Errors are values in the saved state: a caught error stays readable in `root`, and the state diff shows it appear
+- [ ] Validation can collect every problem in one run instead of stopping at the first
 
 ---
 
@@ -154,10 +160,10 @@ Real programs, in order of ambition, grouped by what unlocks them. Each one is a
 - [ ] A 100+ line program (an expression evaluator, a sort, a small state machine) written without fighting the language
 - [ ] One real data-reshaping task: paste YAML data in, compute a report, use the emitted `root`
 - [ ] Compare two inline configuration snapshots and use a report of added, removed and changed keys to review a real change
-- [ ] Validate an inline project inventory (required fields, duplicate names, broken references) and fix the real data from its findings
-- [ ] Compute a dependency order for a small set of real tasks, with a useful result when dependencies are missing or cyclic
-- [ ] Reconcile two inline inventories or expense lists and use the discrepancies to correct the originals
-- [ ] A friction log: every awkward moment from the programs above becomes a charter item or a deliberate "no"
+- [ ] Validate an inline project inventory (required fields, duplicate names, broken references) using `assert`/`try` so one bad record is reported as error data without stopping the rest, and fix the real data from its findings
+- [ ] Compute a dependency order for a small set of real tasks; missing and cyclic dependencies surface as raised, kind-matched errors that a caller recovers from, not special-cased return values
+- [ ] Reconcile two inline inventories or expense lists, with `assert` invariants (totals balance, no negative stock) whose failures name the offending record, and use them to correct the originals
+- [ ] A friction log: every awkward moment from the programs above, especially around error handling, becomes a charter item or a deliberate "no"
 
 ### Pure-core test coverage and friction
 
@@ -173,9 +179,20 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 
 - `dogfood_work_queue`: a 100+ line stable priority-sort program with dispatch output, negative priorities, equal-priority payloads, sorted/reversed/empty/singleton inputs, independent calls, idempotence and source-order preservation. Friction: no comparator-based sort builtin; insertion sort repeatedly copies lists and is suitable only for small queues.
 
+### Errors as a first-class feature (section 4)
+- [ ] Parse and validate a messy inline dataset where every row may be malformed; `try` turns each failure into a record, and the report lists all of them with path and line
+- [ ] A calculator or expression evaluator that raises its own `syntax`/`arity` errors and recovers per input line, never aborting the batch
+- [ ] A retry loop: attempt a failing step, inspect the error's `kind`, retry on transient kinds, give up on the rest, and keep the attempt history in the state
+- [ ] Wrap a low-level error in a domain error with `cause`, then read the full chain from the saved state without a debugger
+- [ ] A function whose `assert` preconditions document its contract; call it wrongly and fix the caller from the assertion message alone
+- [ ] Turn a failed run's saved error into a regression golden case in under a minute (error, expected state, fix)
+- [ ] Cleanup with `finally` around a multi-step job, proven by a golden case where a middle step fails
+- [ ] Diff two runs of one program, one passing and one failing, and explain the failure from the state diff alone
+
 ### With suspend/resume (section 2)
 - [ ] A long computation stopped midway, its state read in `git diff`, resumed to the same result as an uninterrupted run
 - [ ] Fix a mistake by hand-editing a suspended state and resuming it
+- [ ] Resume a run that stopped on an error after fixing its cause by hand, without redoing the work that preceded it
 - [ ] Stop and resume inside nested function calls and iteration; inspect the saved locals and remaining work without consulting a trace
 - [ ] Move a suspended run to another checkout or machine and finish it using only its state and declared dependencies
 - [ ] Keep two edited branches of one suspended run, finish both, and use their state diff to explain why the results differ
