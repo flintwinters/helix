@@ -119,6 +119,11 @@ A daily driver has to do things.
 - [ ] Nested `try` composes: an inner handler's error is itself catchable, with the outer chain intact
 - [ ] Errors raised inside `map`/`filter`/`fold`/`each` report the iteration index and element path
 - [ ] An `unreachable`/`todo` marker that fails loudly with its own kind
+- [ ] Parse errors from malformed YAML carry the same structured shape (kind, path, line, column) as runtime errors, with a source excerpt pointing at the offending span
+- [ ] Error `data` payloads must be plain serializable values, so a saved error always re-reads and re-runs as a fixpoint
+- [ ] Optional `default`/`or_else` shorthand for the common "use this value if the expression fails" recovery, without a full `try`
+- [ ] Warnings as a separate non-fatal channel (unused binding, shadowed name) that appears in the state without changing status, and can be promoted to errors
+- [ ] A static check pass catches errors that are knowable without running (unknown form, wrong arity, unresolved symbol) and reports them as the same structured errors
 
 ---
 
