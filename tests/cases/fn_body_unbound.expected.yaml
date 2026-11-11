@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: unbound
+  message: "unbound symbol `missing`"
+  path: /f/2/2
+  line: 1
+  column: 23

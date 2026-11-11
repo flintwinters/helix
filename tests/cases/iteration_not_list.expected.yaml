@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: type
+  message: "expected list, got integer"
+  path: /r/2
+  line: 1
+  column: 24

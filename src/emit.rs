@@ -88,6 +88,11 @@ fn string(text: &str, head: bool) -> String {
     if plain_start && plain_rest && !text.ends_with(' ') && !reserved {
         return text.to_string();
     }
+    quoted(text)
+}
+
+/// Double-quoted text that re-reads as a literal string.
+pub(crate) fn quoted(text: &str) -> String {
     let mut quoted = String::from("\"");
     for c in text.chars() {
         match c {

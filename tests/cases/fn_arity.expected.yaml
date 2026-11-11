@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: arity
+  message: "`double` takes 1 argument, got 2"
+  path: /bad
+  line: 2
+  column: 6

@@ -1,5 +1,5 @@
 //! Builtin actors as pure functions over evaluated values. The VM owns evaluation order
-//! (including the lazy `if`, `and`, `or`); this module owns arity, typing and the operations.
+//! (including the forms listed by `is_form`); this module owns arity, typing and the operations.
 //!
 //! Type rules: there is no silent coercion except numeric promotion. `int` op `int` stays `int`;
 //! if either operand is a `float` the result is a `float`. Ordering (`lt`..`ge`) compares two numbers
@@ -21,6 +21,8 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("add", 2, None), ("mul", 2, None), ("sub", 2, Some(2)), ("div", 2, Some(2)), ("mod", 2, Some(2)), ("neg", 1, Some(1)),
     ("eq", 2, Some(2)), ("ne", 2, Some(2)), ("lt", 2, Some(2)), ("le", 2, Some(2)), ("gt", 2, Some(2)), ("ge", 2, Some(2)),
     ("not", 1, Some(1)), ("and", 2, None), ("or", 2, None), ("if", 3, Some(3)),
+    ("cond", 3, None), ("let", 2, Some(2)), ("fn", 2, Some(2)),
+    ("map", 2, Some(2)), ("filter", 2, Some(2)), ("fold", 3, Some(3)), ("each", 2, Some(2)), ("until", 3, Some(3)),
     ("len", 1, Some(1)), ("concat", 2, None), ("slice", 3, Some(3)), ("get", 2, Some(3)), ("set", 3, Some(3)),
     ("append", 2, None), ("keys", 1, Some(1)), ("has", 2, Some(2)),
     ("str", 1, Some(1)), ("int", 1, Some(1)), ("float", 1, Some(1)), ("type", 1, Some(1)),
@@ -31,9 +33,9 @@ pub fn arity(actor: &str) -> Option<(usize, Option<usize>)> {
     ARITIES.iter().find(|(name, ..)| *name == actor).map(|&(_, min, max)| (min, max))
 }
 
-/// Lazy builtins decide which arguments to evaluate, so the VM drives them.
-pub fn is_lazy(actor: &str) -> bool {
-    matches!(actor, "if" | "and" | "or")
+/// Forms decide which arguments to evaluate (or call user functions), so the evaluator drives them.
+pub fn is_form(actor: &str) -> bool {
+    matches!(actor, "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until")
 }
 
 /// Apply a strict (eagerly evaluated) builtin.
@@ -55,6 +57,14 @@ pub fn boolean(value: &Yaml, arg: usize) -> Result<bool, Fault> {
     match value {
         Yaml::Boolean(b) => Ok(*b),
         other => Err(Fault::expected(arg, "boolean", other)),
+    }
+}
+
+/// A list operand at argument `arg`, as used by the iteration forms.
+pub fn list(value: &Yaml, arg: usize) -> Result<&[Yaml], Fault> {
+    match value {
+        Yaml::Array(items) => Ok(items),
+        other => Err(Fault::expected(arg, "list", other)),
     }
 }
 

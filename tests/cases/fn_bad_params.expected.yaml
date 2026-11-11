@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: type
+  message: parameters must be a list of names
+  path: /broken/1
+  line: 1
+  column: 14

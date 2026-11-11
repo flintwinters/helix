@@ -1,0 +1,10 @@
+status: finished
+root:
+  double:
+    - fn
+    - - n
+    - - mul
+      - n
+      - 2
+  reached: 1024
+  countdown: -2

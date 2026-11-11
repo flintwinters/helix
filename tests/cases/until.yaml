@@ -1,0 +1,3 @@
+double: [fn, [n], [mul, n, 2]]
+reached: [until, [fn, [n], [gt, n, 1000]], double, 1]
+countdown: [until, [fn, [n], [le, n, 0]], [fn, [n], [sub, n, 3]], 10]

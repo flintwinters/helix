@@ -16,7 +16,7 @@ Rust crate `helix` (lib + `helix run <file|->` CLI); `./manage.py` is the single
 
 - `src/graph.rs`: YAML (via `yaml-rust2` events) into an arena of nodes with parent links and 1-indexed line/column spans; root-relative paths (`/inner/y/1`); lexical `lookup` walks parent links through enclosing maps.
 - `src/vm.rs`: `Vm` with the five statuses and `state()` serialization (`status` plus `root` or `error`), around an `Evaluator`.
-- `src/eval.rs`: `Evaluator` owns the graph, memoized evaluation with cycle detection, and evaluation order (the lazy `if`, `and`, `or`). A sequence is an expression iff its head is a plain scalar naming a builtin; plain-string arguments are symbols, quoted strings are literals.
+- `src/eval.rs`: `Evaluator` owns the graph, memoized evaluation with cycle detection, lexical symbol resolution (`resolve`: enclosing maps, `fn` parameters read from the call `Frame` stack, `let` bindings), and the forms with their own evaluation order (`builtins::is_form`: `if`/`cond`/`and`/`or`/`let`/`fn` and the iteration forms). A sequence is an expression iff its head is a plain scalar naming a builtin or resolving to a user `[fn, [params], body]`; plain-string arguments are symbols, quoted strings are literals. Nodes inside a `fn` are never memoized; recursion is bounded by `MAX_DEPTH`. A `fn` evaluates to its raw source (`Evaluator::raw`, emitted verbatim via `Yaml::Real`) so saved state stays re-readable.
 - `src/builtins.rs` (+ `builtins/{number,collection,fault,value}.rs`): pure builtins over evaluated values, with the arity table. `fault` and `value` are the shared leaf modules (children must not import their parent: hyperlinter treats that as a cycle). Failures are `Fault`s the VM maps onto the blamed argument node. The user-facing semantics live in `LANGUAGE.md`; keep it in sync when builtins change.
 - `src/emit.rs`: Helix's own block-YAML emitter. It exists so output stays re-readable: it quotes strings that would re-read as another type or, as the first item of a list, as an expression head.
 - `src/error.rs`: `HelixError` with stable `kind`, message, root-relative `path`, and `line`/`column`; serialized under `error:`.
@@ -29,7 +29,7 @@ Rust crate `helix` (lib + `helix run <file|->` CLI); `./manage.py` is the single
 The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items there only when they work end to end with a golden case. The list below is the immediate agent queue.
 
 1. Suspend/resume: persist execution position as root-relative paths and resume from serialized state (today the VM runs to completion or error in one `run`; `ready`/`running`/`signaled` are never persisted).
-2. Grow the language beyond integer arithmetic: user-defined actors, control flow, side effects/signals.
+2. Grow the language past the pure core (done: values, operators, control flow, functions, iteration): side effects/signals, `try`/errors-as-data, imports. Functions are not first-class values (parameters hold data only).
 3. Preserve source locations in the output for evaluated values, not only for errors.
 4. Exercise hyperlinter as the Rust code grows and feed general (non-Helix-specific) gaps back upstream: Rust function-cycle/dead-code coverage, and the `runtime/` ledger location (README says state lives under `.git/hyperlinter/`).
 5. Decide the fate of YAML anchors/aliases and non-scalar keys (currently rejected as `unsupported`).

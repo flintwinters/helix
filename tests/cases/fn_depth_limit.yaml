@@ -1,0 +1,2 @@
+spin: [fn, [n], [spin, [add, n, 1]]]
+never: [spin, 0]

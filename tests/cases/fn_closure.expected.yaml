@@ -1,0 +1,13 @@
+status: finished
+root:
+  rate: 3
+  scale:
+    - fn
+    - - n
+    - - mul
+      - n
+      - rate
+  here: 15
+  inner:
+    rate: 10
+    there: 15

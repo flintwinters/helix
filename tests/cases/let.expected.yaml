@@ -1,0 +1,18 @@
+status: finished
+root:
+  area: 9
+  shadow:
+    w: 100
+    v: 2
+  in_fn:
+    - fn
+    - - n
+    - - let
+      - sq:
+          - mul
+          - n
+          - n
+      - - add
+        - sq
+        - 1
+  r: 26

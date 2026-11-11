@@ -1,0 +1,37 @@
+status: finished
+root:
+  xs:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+  double:
+    - fn
+    - - n
+    - - mul
+      - n
+      - 2
+  doubled:
+    - 2
+    - 4
+    - 6
+    - 8
+    - 10
+    - 12
+  evens:
+    - 2
+    - 4
+    - 6
+  total: 21
+  empty_fold: 7
+  shift: 100
+  shifted:
+    - 101
+    - 102
+    - 103
+    - 104
+    - 105
+    - 106
+  done: ~

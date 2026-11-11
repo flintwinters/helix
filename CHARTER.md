@@ -6,7 +6,7 @@ The test for "daily driver" is simple: I start a task in Helix instead of Python
 
 How to use this file: tick a box only when the feature works end to end *and* has a golden case in `tests/cases/` (run `./manage.py test`). A feature that only works in a demo stays unticked. Edit freely; this file is for humans, while `AGENTS.md` holds the agent-facing architecture and invariants.
 
-**Where we are:** walking skeleton only. YAML parses into an object graph, three integer builtins evaluate, and the result serializes back to YAML.
+**Where we are:** a pure, total-ish expression language (values, operators, control flow, functions, iteration) that runs to completion; no suspend/resume or effects yet.
 
 ---
 
@@ -47,17 +47,17 @@ The minimum for writing a non-trivial program.
 
 ### Control flow
 - [x] `if` (lazy: only the chosen branch runs)
-- [ ] `cond` for multi-way branches
-- [ ] Local bindings (`let`)
-- [ ] Iteration: `map`, `filter`, `fold`, `each`
-- [ ] A way to loop until a condition without unbounded recursion
+- [x] `cond` for multi-way branches
+- [x] Local bindings (`let`)
+- [x] Iteration: `map`, `filter`, `fold`, `each`
+- [x] A way to loop until a condition without unbounded recursion
 
 ### Functions
-- [ ] User-defined actors (functions) declared in YAML
-- [ ] Parameters and return values
-- [ ] Closures over the enclosing object graph
-- [ ] Recursion, with a stack-depth limit that fails cleanly
-- [ ] Documented evaluation order (and what is lazy)
+- [x] User-defined actors (functions) declared in YAML
+- [x] Parameters and return values
+- [x] Closures over the enclosing object graph
+- [x] Recursion, with a stack-depth limit that fails cleanly
+- [x] Documented evaluation order (and what is lazy)
 
 ---
 
@@ -163,7 +163,7 @@ Real programs, in order of ambition. Each one is a checkbox only when I actually
 
 Decide these before the features that depend on them.
 
-- [ ] How are user-defined actors declared in YAML so they stay readable?
+- [x] How are user-defined actors declared in YAML so they stay readable? `name: [fn, [params], body]`; called as `[name, args...]`
 - [ ] What is the evaluation model for effects: pull, push, or explicit yield?
 - [ ] Does a suspended state embed the source, reference it, or both?
 - [ ] Strict types, gradual types, or none?

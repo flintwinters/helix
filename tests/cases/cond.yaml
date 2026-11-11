@@ -1,0 +1,5 @@
+grade: [fn, [n], [cond, [ge, n, 90], "A", [ge, n, 80], "B", "C"]]
+a: [grade, 95]
+b: [grade, 85]
+c: [grade, 10]
+lazy: [cond, true, "ok", [div, 1, 0], "never", "fallback"]

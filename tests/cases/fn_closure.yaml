@@ -1,0 +1,6 @@
+rate: 3
+scale: [fn, [n], [mul, n, rate]]
+here: [scale, 5]
+inner:
+  rate: 10
+  there: [scale, 5]

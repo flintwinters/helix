@@ -82,18 +82,9 @@ impl Graph {
         format!("/{}", parts.join("/"))
     }
 
-    /// Nearest enclosing map (starting at the parent of `from`) that defines `name`.
-    pub fn lookup(&self, from: NodeId, name: &str) -> Option<NodeId> {
-        let mut cur = self.nodes[from].parent;
-        while let Some(id) = cur {
-            if let Kind::Map(entries) = &self.nodes[id].kind {
-                if let Some((_, child)) = entries.iter().find(|(k, _)| k == name) {
-                    return Some(*child);
-                }
-            }
-            cur = self.nodes[id].parent;
-        }
-        None
+    /// The enclosing container; parent links are what lexical resolution walks.
+    pub fn parent(&self, id: NodeId) -> Option<NodeId> {
+        self.nodes[id].parent
     }
 }
 

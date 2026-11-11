@@ -1,0 +1,19 @@
+status: finished
+root:
+  grade:
+    - fn
+    - - n
+    - - cond
+      - - ge
+        - n
+        - 90
+      - "A"
+      - - ge
+        - n
+        - 80
+      - "B"
+      - "C"
+  a: A
+  b: B
+  c: C
+  lazy: ok

@@ -1,0 +1,5 @@
+double: [fn, [n], [mul, n, 2]]
+sum3: [fn, [a, b, c], [add, a, b, c]]
+answer: [double, 21]
+total: [sum3, 1, 2, 3]
+nested: [double, [double, 4]]

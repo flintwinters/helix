@@ -1,0 +1,35 @@
+status: finished
+root:
+  fact:
+    - fn
+    - - n
+    - - if
+      - - le
+        - n
+        - 1
+      - 1
+      - - mul
+        - n
+        - - fact
+          - - sub
+            - n
+            - 1
+  fib:
+    - fn
+    - - n
+    - - if
+      - - lt
+        - n
+        - 2
+      - n
+      - - add
+        - - fib
+          - - sub
+            - n
+            - 1
+        - - fib
+          - - sub
+            - n
+            - 2
+  f10: 3628800
+  fib15: 610

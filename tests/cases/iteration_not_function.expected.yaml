@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: type
+  message: "expected a function (`[fn, [params], body]` or its name)"
+  path: /r/1
+  line: 2
+  column: 10

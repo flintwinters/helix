@@ -1,0 +1,20 @@
+status: finished
+root:
+  double:
+    - fn
+    - - n
+    - - mul
+      - n
+      - 2
+  sum3:
+    - fn
+    - - a
+      - b
+      - c
+    - - add
+      - a
+      - b
+      - c
+  answer: 42
+  total: 6
+  nested: 16
