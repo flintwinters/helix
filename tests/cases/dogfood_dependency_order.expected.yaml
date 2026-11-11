@@ -1,0 +1,188 @@
+status: finished
+root:
+  ready:
+    - fn
+    - - pending
+      - order
+    - - filter
+      - - fn
+        - - task
+        - - fold
+          - - fn
+            - - ok
+              - dep
+            - - and
+              - ok
+              - - has
+                - order
+                - dep
+          - true
+          - - get
+            - pending
+            - task
+      - - keys
+        - pending
+  done:
+    - fn
+    - - state
+    - - eq
+      - - len
+        - - ready
+          - - get
+            - state
+            - "pending"
+          - - get
+            - state
+            - "order"
+      - 0
+  step:
+    - fn
+    - - state
+    - - let
+      - pending:
+          - get
+          - state
+          - "pending"
+        order:
+          - get
+          - state
+          - "order"
+        batch:
+          - ready
+          - pending
+          - order
+        remaining:
+          - filter
+          - - fn
+            - - task
+            - - not
+              - - has
+                - batch
+                - task
+          - - keys
+            - pending
+      - - set
+        - - set
+          - {}
+          - "order"
+          - - concat
+            - order
+            - batch
+        - "pending"
+        - - fold
+          - - fn
+            - - acc
+              - task
+            - - set
+              - acc
+              - task
+              - - get
+                - pending
+                - task
+          - {}
+          - remaining
+  plan:
+    - fn
+    - - tasks
+    - - let
+      - initial:
+          - set
+          - - set
+            - {}
+            - "pending"
+            - tasks
+          - "order"
+          - []
+        final:
+          - until
+          - done
+          - step
+          - initial
+        missing:
+          - fold
+          - - fn
+            - - acc
+              - task
+            - - concat
+              - acc
+              - - map
+                - - fn
+                  - - dep
+                  - - set
+                    - - set
+                      - {}
+                      - "task"
+                      - task
+                    - "dependency"
+                    - dep
+                - - filter
+                  - - fn
+                    - - dep
+                    - - not
+                      - - has
+                        - tasks
+                        - dep
+                  - - get
+                    - tasks
+                    - task
+          - []
+          - - keys
+            - tasks
+      - - set
+        - - set
+          - final
+          - "missing"
+          - missing
+        - "status"
+        - - if
+          - - eq
+            - - len
+              - - get
+                - final
+                - "pending"
+            - 0
+          - "finished"
+          - "blocked"
+  checks:
+    order:
+      - "build"
+      - test
+      - lint
+      - review
+    pending: {}
+    missing: []
+    status: finished
+  missing:
+    order:
+      - "docs"
+    pending:
+      test:
+        - "compile"
+    missing:
+      - task: test
+        dependency: compile
+    status: blocked
+  cycle:
+    order:
+      - "independent"
+    pending:
+      a:
+        - "b"
+      b:
+        - "a"
+      downstream:
+        - "a"
+    missing: []
+    status: blocked
+  self_cycle:
+    pending:
+      self:
+        - "self"
+    order: []
+    missing: []
+    status: blocked
+  empty:
+    pending: {}
+    order: []
+    missing: []
+    status: finished

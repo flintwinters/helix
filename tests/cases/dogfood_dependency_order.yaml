@@ -1,0 +1,38 @@
+# Plan repository checks in stable batches. A stall preserves the blocked graph.
+ready:
+  [fn, [pending, order],
+    [filter,
+      [fn, [task], [fold, [fn, [ok, dep], [and, ok, [has, order, dep]]], true, [get, pending, task]]],
+      [keys, pending]]]
+done:
+  [fn, [state],
+    [eq, [len, [ready, [get, state, "pending"], [get, state, "order"]]], 0]]
+step:
+  [fn, [state],
+    [let,
+      {pending: [get, state, "pending"],
+       order: [get, state, "order"],
+       batch: [ready, pending, order],
+       remaining: [filter, [fn, [task], [not, [has, batch, task]]], [keys, pending]]},
+      [set,
+        [set, {}, "order", [concat, order, batch]],
+        "pending", [fold, [fn, [acc, task], [set, acc, task, [get, pending, task]]], {}, remaining]]]]
+plan:
+  [fn, [tasks],
+    [let,
+      {initial: [set, [set, {}, "pending", tasks], "order", []],
+       final: [until, done, step, initial],
+       missing: [fold,
+         [fn, [acc, task],
+           [concat, acc,
+             [map, [fn, [dep], [set, [set, {}, "task", task], "dependency", dep]],
+               [filter, [fn, [dep], [not, [has, tasks, dep]]], [get, tasks, task]]]]],
+         [], [keys, tasks]]},
+      [set, [set, final, "missing", missing], "status",
+        [if, [eq, [len, [get, final, "pending"]], 0], "finished", "blocked"]]]]
+# Diamond dependencies are deliberately supplied out of execution order.
+checks: [plan, {test: ["build"], lint: ["build"], review: ["test", "lint"], build: []}]
+missing: [plan, {test: ["compile"], docs: []}]
+cycle: [plan, {a: ["b"], b: ["a"], downstream: ["a"], independent: []}]
+self_cycle: [plan, {self: ["self"]}]
+empty: [plan, {}]
