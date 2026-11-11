@@ -100,7 +100,7 @@ impl Vm {
 
     fn err(&self, id: NodeId, kind: &'static str, message: String) -> HelixError {
         let g = self.graph();
-        HelixError { kind, message, path: Some(g.path(id)), span: g.node(id).span }
+        HelixError { kind, message, path: Some(g.path(id)), span: g.span(id) }
     }
 
     /// Evaluate a node to plain YAML data, memoized, with cycle detection.
@@ -124,7 +124,7 @@ impl Vm {
             Seq(Vec<NodeId>, Option<String>),
             Map(Vec<(String, NodeId)>),
         }
-        let shape = match &self.graph().node(id).kind {
+        let shape = match self.graph().kind(id) {
             Kind::Scalar { value, .. } => Shape::Scalar(value.clone()),
             Kind::Map(entries) => Shape::Map(entries.clone()),
             Kind::Seq(items) => Shape::Seq(items.clone(), self.actor(items)),
@@ -144,7 +144,7 @@ impl Vm {
     }
 
     fn actor(&self, items: &[NodeId]) -> Option<String> {
-        match &self.graph().node(*items.first()?).kind {
+        match self.graph().kind(*items.first()?) {
             Kind::Scalar { value: Yaml::String(name), plain: true } if BUILTINS.contains(&name.as_str()) => Some(name.clone()),
             _ => None,
         }
@@ -167,7 +167,7 @@ impl Vm {
 
     /// Evaluate an expression argument: plain strings are symbols resolved through parent links.
     fn int_arg(&mut self, id: NodeId) -> Result<i64, HelixError> {
-        let symbol = match &self.graph().node(id).kind {
+        let symbol = match self.graph().kind(id) {
             Kind::Scalar { value: Yaml::String(name), plain: true } => Some(name.clone()),
             _ => None,
         };

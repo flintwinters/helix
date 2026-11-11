@@ -6,15 +6,9 @@ use yaml_rust2::scanner::{Marker, TScalarStyle};
 use yaml_rust2::Yaml;
 
 use crate::error::HelixError;
+use crate::span::Span;
 
 pub type NodeId = usize;
-
-/// 1-indexed source location.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Span {
-    pub line: usize,
-    pub col: usize,
-}
 
 #[derive(Debug)]
 pub enum Kind {
@@ -25,10 +19,10 @@ pub enum Kind {
 }
 
 #[derive(Debug)]
-pub struct Node {
-    pub kind: Kind,
-    pub parent: Option<NodeId>,
-    pub span: Span,
+struct Node {
+    kind: Kind,
+    parent: Option<NodeId>,
+    span: Span,
 }
 
 #[derive(Debug)]
@@ -63,8 +57,12 @@ impl Graph {
         Ok(builder.graph)
     }
 
-    pub fn node(&self, id: NodeId) -> &Node {
-        &self.nodes[id]
+    pub fn kind(&self, id: NodeId) -> &Kind {
+        &self.nodes[id].kind
+    }
+
+    pub fn span(&self, id: NodeId) -> Span {
+        self.nodes[id].span
     }
 
     /// Root-relative path such as `/` or `/inner/y/1`.

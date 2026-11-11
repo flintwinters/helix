@@ -3,7 +3,7 @@
 use yaml_rust2::Yaml;
 use yaml_rust2::yaml::Hash;
 
-use crate::graph::Span;
+use crate::span::Span;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HelixError {
