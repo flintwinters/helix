@@ -108,6 +108,17 @@ A daily driver has to do things.
 - [ ] `finally` / cleanup that runs on both success and failure (needed before effects)
 - [ ] Errors are values in the saved state: a caught error stays readable in `root`, and the state diff shows it appear
 - [ ] Validation can collect every problem in one run instead of stopping at the first
+- [ ] Builtin and user-raised errors have one identical shape, so a handler cannot tell (and need not care) which produced it
+- [ ] A documented, stable catalog of builtin error `kind`s in `LANGUAGE.md`, each with a golden case
+- [ ] Raised errors point at the `raise` site (path, line, column), not at the handler
+- [ ] Resource limits (stack depth, cycles) are catchable errors with their own kinds, never crashes
+- [ ] Unresolved symbols and misspelled forms suggest the nearest known name
+- [ ] Wrong-arity and wrong-type errors name the expected and actual types or counts
+- [ ] Distinct process exit codes for error classes (bad input, runtime error, uncaught user error), documented
+- [ ] Inspect a caught error with ordinary accessors (`kind`, `message`, `path`, `cause`), not by pattern-matching its map
+- [ ] Nested `try` composes: an inner handler's error is itself catchable, with the outer chain intact
+- [ ] Errors raised inside `map`/`filter`/`fold`/`each` report the iteration index and element path
+- [ ] An `unreachable`/`todo` marker that fails loudly with its own kind
 
 ---
 
