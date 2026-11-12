@@ -54,9 +54,10 @@ The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items 
 
 ## CLI Quick Reference
 
-- `./manage.py --help` discovers tooling; `./manage.py test --list` discovers regression suites.
-- `./manage.py eval '[add, 20, 22]'` builds and evaluates inline YAML; `eval --check SOURCE` collects independent errors. Both emit ordinary VM state and preserve exit codes.
-- `./manage.py cli ARGS...` builds and forwards arguments verbatim to the Rust CLI; file/stdin commands remain available directly through `manage.py`. Commands resolve files/imports from the repository root.
+- `./manage.py` shows the command tree: `build`, `runtime` (execution/recovery), `inspect` (modules/inventory), `quality` (test/lint). Append `--help` at any level; flat commands remain equivalent shortcuts.
+- `./manage.py --help-json` emits the versioned command/argument tree and suite contracts without builds or third-party dependencies. `quality test --describe` explains suites; `--list` preserves name-only discovery. Parser definitions and suite descriptions live in `tooling/cli.py`; keep that authoritative.
+- `./manage.py runtime eval '[add, 20, 22]'` builds and emits ordinary VM state; `eval --check SOURCE` collects independent errors. Runtime exit codes are 0/1/2 for success/evaluation failure/usage or unreadable input.
+- `runtime cli ARGS...` builds and forwards Rust CLI arguments; `quality lint ARGS...` forwards hyperlinter arguments. Wrapper `--help` is local; `-- --help` forwards help. Commands resolve files/imports from the repository root.
 
 ## Change Discipline
 

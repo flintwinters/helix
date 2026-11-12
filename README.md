@@ -6,7 +6,7 @@ The central idea is that program source and machine state should share one reada
 
 ## Try it
 
-You need Rust with Cargo (supporting the 2024 edition), Python 3.10 or newer, and [PyYAML](https://pypi.org/project/PyYAML/). The Python entrypoint imports PyYAML for all commands.
+You need Rust with Cargo (supporting the 2024 edition), Python 3.10 or newer, and [PyYAML](https://pypi.org/project/PyYAML/). Help, command discovery, builds, and runtime invocation work without PyYAML; tests and inventory use it.
 
 ```sh
 python3 -m pip install PyYAML
@@ -53,7 +53,31 @@ The longer-term direction is declarative machine configuration through first-cla
 
 ## Development
 
-`./manage.py` is the single entrypoint for project tooling:
+`./manage.py` is the single entrypoint for project tooling. Commands form a tree:
+`runtime` evaluates programs and recovery state, `inspect` discovers modules and source,
+and `quality` runs tests and lint. `build` compiles the crate directly. Bare commands
+and groups show help; append `--help` at any level for arguments and examples.
+Existing flat commands remain equivalent shortcuts.
+
+```sh
+./manage.py                         # show the command tree
+./manage.py runtime --help          # discover execution commands
+./manage.py runtime eval '[add, 20, 22]'
+./manage.py inspect std math
+./manage.py quality test --describe # suite names and contracts, without building
+./manage.py quality test --suite cli
+./manage.py --help-json             # versioned JSON tree, arguments, shortcuts, suites
+```
+
+Help, JSON discovery, and suite listings require only Python's standard library.
+Tests and inventory also require PyYAML. Runtime commands build automatically.
+All paths resolve from the repository root, including when invoked from another directory.
+Runtime output stays on stdout; exit codes are 0 for success, 1 for evaluation/test
+failure, and 2 for invalid usage or unreadable input. Build and forwarded tools retain
+their own exit codes. `cli --help` and `lint --help` describe the wrapper;
+use `cli -- --help` or `lint -- --help` to pass help to the underlying tool.
+
+Common shortcuts:
 
 ```sh
 ./manage.py eval '[add, 20, 22]'  # evaluate inline YAML; emits state, exits 0/1

@@ -1,25 +1,5 @@
 #!/usr/bin/env python3
-"""Single entrypoint for building, running, and testing Helix.
-
-    ./manage.py build               cargo build
-    ./manage.py eval SOURCE         evaluate inline YAML (use --check to collect errors)
-    ./manage.py cli [ARGS...]       build and forward arguments directly to Helix
-    ./manage.py run FILE            run a program, print its serialized VM state
-    ./manage.py recover FILE        run with an editable pure recovery checkpoint on failure
-    ./manage.py resume STATE        retry edited recovery source, keeping completed root fields
-    ./manage.py check FILE          type phase: print the state with every error found (`phase: type`, `errors:`)
-    ./manage.py std [MODULE]        list standard modules or print module source
-    ./manage.py inventory           group source files by directory through a Helix shim
-    ./manage.py lint [ARGS...]      structural lint via the hyperlinter submodule (JSON; pass --format=text for people)
-    ./manage.py test [--suite NAME] [--bless]   regression suites (--list discovers names)
-
-Golden cases: tests/cases/NAME.yaml is the program, NAME.expected.yaml the exact serialized state
-(`helix run`). tests/check/ holds the same for `helix check`. Every case also runs twice and must
-produce identical output (deterministic resolution).
-Finished cases are also checked for round-trip stability: feeding the emitted `root` back in as a
-program must reproduce the same `root`.
-"""
-import argparse
+"""Single entrypoint for Helix; use --help or --help-json to discover commands."""
 import subprocess
 import sys
 import os
@@ -27,7 +7,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-import yaml
+from tooling.cli import SUITES, parse
 
 ROOT = Path(__file__).resolve().parent
 CASES = ROOT / "tests" / "cases"
@@ -77,6 +57,8 @@ ERROR_FIELDS = {"kind", "message", "line", "column"}  # `path` is omitted for er
 def malformed_state(out: str, returncode: int) -> str | None:
     """Why `out` is not a well-formed serialized state (None if it is): the contract that nothing panics
     and every error is structured, machine-parseable data."""
+    import yaml
+
     if returncode not in (0, 1):
         return f"exit code {returncode} (panic?)"
     try:
@@ -193,54 +175,33 @@ def regression(bless: bool, suites: list[str] | None) -> int:
     return 1 if failures else 0
 
 
-SUITES = ("golden", "robustness", "harness", "cli", "generated", "imports", "library", "parser", "fuzz", "scale")
-
-
 def main() -> int:
-    if sys.argv[1:2] == ["cli"]:
-        return build() or subprocess.call([str(BIN), *sys.argv[2:]], cwd=ROOT)
-    if sys.argv[1:2] == ["lint"]:  # forward everything verbatim, including flags argparse would reject
-        return lint(sys.argv[2:])
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("build")
-    sub.add_parser("cli", help="build and forward all remaining arguments to Helix")
-    inline = sub.add_parser("eval", help="evaluate inline YAML and emit VM state")
-    inline.add_argument("source", help="YAML program; quote it as one shell argument")
-    inline.add_argument("--check", action="store_true", help="collect independent evaluation errors")
-    sub.add_parser("inventory", help="Helix-powered source inventory by directory")
-    sub.add_parser("run").add_argument("file")
-    sub.add_parser("recover").add_argument("file")
-    sub.add_parser("resume").add_argument("file")
-    sub.add_parser("check").add_argument("file")
-    testing = sub.add_parser("test")
-    testing.add_argument("--bless", action="store_true")
-    testing.add_argument("--suite", action="append", choices=SUITES, help="repeat to select suites; default: all")
-    testing.add_argument("--list", action="store_true", help="list available suites")
-    sub.add_parser("std").add_argument("module", nargs="?")
-    sub.add_parser("lint", help="forwards all remaining args to hyperlinter")
-    args = ap.parse_args()
-    if args.cmd == "eval":
+    args = parse(sys.argv[1:])
+    if args is None:
+        return 0
+    command = args.command
+    if command == "lint":
+        return lint(args.extra)
+    if command == "cli":
+        return build() or subprocess.call([str(BIN), *args.extra], cwd=ROOT)
+    if command == "eval":
         if (code := build()) != 0:
             return code
         return subprocess.run([str(BIN), "check" if args.check else "run", "-"],
                               input=args.source, text=True, cwd=ROOT).returncode
-    if args.cmd == "inventory":
+    if command == "inventory":
         from tooling.inventory import inventory
         return build() or inventory(helix, ROOT)
-    if args.cmd == "build":
+    if command == "build":
         return build()
-    if args.cmd in ("run", "recover", "resume"):
-        return build() or subprocess.call([str(BIN), args.cmd, args.file], cwd=ROOT)
-    if args.cmd == "check":
-        return build() or subprocess.call([str(BIN), "check", args.file], cwd=ROOT)
-    if args.cmd == "std":
+    if command in ("run", "recover", "resume", "check"):
+        return build() or subprocess.call([str(BIN), command, args.file], cwd=ROOT)
+    if command == "std":
         return build() or subprocess.call([str(BIN), "std", *([args.module] if args.module else [])], cwd=ROOT)
-    if args.list:
-        print("\n".join(SUITES))
+    if args.list or args.describe:
+        for name, description in SUITES.items():
+            print(f"{name}: {description}" if args.describe else name)
         return 0
-    if args.bless and args.suite and args.suite != ["golden"]:
-        ap.error("--bless requires --suite golden (or no suite selection)")
     return test(args.bless, args.suite)
 
 
