@@ -1,4 +1,5 @@
 """Explicit test execution contexts, fixture selection and bounded case concurrency."""
+import shlex
 import subprocess
 import sys
 from collections.abc import Callable, Mapping
@@ -7,8 +8,8 @@ from pathlib import Path
 from types import MappingProxyType
 
 from tooling.cli import DEFAULT_TEST_JOBS, SUITES
-from tooling.test_reports import failure as test_failure
 from tooling.output import DEFAULT_FORMAT
+from tooling.test_reports import failure as test_failure
 
 
 def discover_cases(directories, root, patterns=None):
@@ -115,7 +116,7 @@ class TestContext:
 
     def __post_init__(self):
         commands = self.commands if self.commands is not None else {
-            self.root / "tests" / "cases": "run", self.root / "tests" / "check": "check",
+            self.root / "tests" / "cases": "run", self.root / "tests" / "check": "check --evaluate",
         }
         object.__setattr__(self, "commands", MappingProxyType(dict(commands)))
 
@@ -147,7 +148,7 @@ class TestContext:
         src = case.read_text()
         command = self.commands[case.parent]
         for variant in chain((src,), self.mutations(src)):
-            run = self.helix(command, "-", stdin=variant)
+            run = self.helix(*shlex.split(command), "-", stdin=variant)
             if (why := self.malformed_state(run.stdout, run.returncode)) is not None:
                 return [test_failure(self.root, case, "robustness", why, command, run, source=variant)]
         return []
@@ -159,12 +160,12 @@ class TestContext:
         failures = []
         expected_path = case.with_suffix(".expected.yaml")
         command = self.commands[case.parent]
-        run = self.helix(command, str(case.relative_to(self.root)))
+        run = self.helix(*shlex.split(command), str(case.relative_to(self.root)))
         out = run.stdout
         if (why := self.malformed_state(out, run.returncode)) is not None:
             failures.append(test_failure(self.root, case, "state", why, command, run))
             return failures
-        repeated = self.helix(command, str(case.relative_to(self.root)))
+        repeated = self.helix(*shlex.split(command), str(case.relative_to(self.root)))
         if (repeated.returncode, repeated.stdout, repeated.stderr) != (run.returncode, out, run.stderr):
             failures.append(test_failure(self.root, case, "determinism", "two runs differ", command, repeated, expected=out))
             return failures

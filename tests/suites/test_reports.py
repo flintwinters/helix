@@ -52,7 +52,7 @@ def verify_structured_results(h):
     stdout, stderr = io.StringIO(), io.StringIO()
     with patch.object(contracts, "run", side_effect=failing), \
          contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-        assert h.regression(False, ["startup"]) == 1
+        assert h.regression(False, ["startup"], output_format="json") == 1
     report = json.loads(stdout.getvalue())
     assert not stderr.getvalue()
     assert report["version"] == 1 and report["exit_code"] == report["failure_count"] == 1
@@ -64,5 +64,5 @@ def verify_structured_results(h):
     stdout = io.StringIO()
     with patch.object(contracts, "run", side_effect=RuntimeError("unexpected crash")), \
          contextlib.redirect_stdout(stdout):
-        assert h.regression(False, ["startup"]) == 1
+        assert h.regression(False, ["startup"], output_format="json") == 1
     assert "unexpected crash" in json.loads(stdout.getvalue())["results"][0]["failures"][0]

@@ -131,17 +131,33 @@ A daily driver has to do things.
 
 The difference between a language and a language I enjoy using.
 
-- [ ] `helix run` with sensible exit codes (exists, extend as features land)
-- [ ] REPL
-- [ ] Formatter with canonical output
-- [ ] `helix check`: parse and static checks without running
-- [ ] Step/trace mode: watch evaluation move through the graph
-- [ ] Inspect a state file: status, current position, pending effect, summary
-- [ ] Watch mode: re-run on change
-- [ ] Editor support: JSON Schema for programs, then an LSP
-- [ ] Shell completion and a helpful `--help`
+- [x] `helix run` with sensible exit codes (exists, extend as features land)
+- [x] REPL
+- [x] Formatter with canonical output
+- [x] `helix check`: parse and static checks without running
+- [x] Step/trace mode: watch evaluation move through the graph
+- [x] Inspect a state file: status, current position, pending effect, summary
+- [x] Watch mode: re-run on change
+- [x] Editor support: JSON Schema for programs, then an LSP
+- [x] Shell completion and a helpful `--help`
 - [x] In-language test runner (assertions plus semantic golden state comparison in `std:test`; file discovery and byte comparison remain host duties)
-- [ ] Single-command install (prebuilt binary or `cargo install`)
+- [x] Single-command install (prebuilt binary or `cargo install`)
+
+
+Evidence: `daily_interactive`, `daily_inspection` and `tooling_source` golden
+cases accompany the `interactive`, `inspection` and `static` suites. The CLI
+suite verifies run exit codes and project wrappers; installation is exercised
+with `cargo install --path . --locked` into a project-local prefix and execution
+outside the checkout. Completion covers bash, zsh and fish. The LSP provides
+full-document synchronization, static diagnostics and formatting, alongside a
+structural JSON Schema.
+
+Plain `check` parses and checks known builtin arities without evaluating or
+opening imports; dynamic calls and value-dependent type failures remain runtime
+checks under `check --evaluate`. Step/trace expose engine transitions; inspection
+reads ordinary saved states and inspection snapshots, not restorable disk
+continuations. Watch follows transitive imports by content. These boundaries
+leave section 2's complete suspend/resume promise unchanged.
 
 ---
 

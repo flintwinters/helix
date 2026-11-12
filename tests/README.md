@@ -156,3 +156,11 @@ historical reports.
 Memory and compiled-mutation artifacts use unique per-run directories. Their root `report.json` files identify the latest run directory; concurrent runs cannot replace each other's inputs, RSS files or compiled binaries. Successful mutation runs remove their build target after retaining source/control logs.
 
 Immutable execution profiles record run/step/checkpoint allocation counts and timings in `runtime/execution-profile.log`. Ordinary-data roots must remain emission fixpoints, including scalars and empty containers. Function and machine values use named object graphs and are checked through inspection and execution contracts rather than source reconstruction.
+
+Daily tooling contracts are grouped into `static` (non-executing diagnostics,
+source-format equivalence/idempotence, schema and LSP framing), `interactive`
+(REPL, transitive/missing import watch changes, completions, local Cargo install),
+and `inspection` (bounded stepping, trace parity and observational saved-state
+validation). Their source witnesses live in `tests/cases/`; subprocess artifacts
+stay in `runtime/`. Evaluation golden fixtures under `tests/check/` explicitly
+use `check --evaluate`; plain `check` never evaluates a program.

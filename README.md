@@ -164,3 +164,41 @@ The earlier C++ experiment lives in
 Use `./manage.py --help` or `--help-json` for command discovery,
 `./manage.py test --describe` for suite contracts, and `./manage.py std [module]`
 to discover embedded libraries and read their source.
+
+## Daily tooling
+
+Install from this checkout with `cargo install --path . --locked`; Cargo puts
+`helix` in its configured binary directory (normally `~/.cargo/bin`). The
+`interactive` suite installs to a project-local directory and runs the result
+outside the checkout. `helix --help` lists commands; `./manage.py --help-json`
+describes project tooling. Successful runs exit 0, evaluation/validation failures
+exit 1, and invalid arguments or unreadable input exit 2.
+
+- `helix repl` evaluates independent YAML documents, one per line. Use `:begin`
+  and `:end` for multiline input, `:cancel` to discard it, and `:quit` to leave.
+- `helix fmt program.yaml` writes canonical source to stdout. It preserves
+  executable quoting and verifies graph equivalence; comments and presentation
+  are normalized. Save to a separate file before replacing the original.
+- `helix check program.yaml` parses and checks statically known builtin arities,
+  including uncalled function bodies. It neither evaluates nor reads imports.
+  Dynamic calls, imported definitions and value-dependent type errors remain
+  runtime checks. `helix check --evaluate program.yaml` retains the earlier
+  independent-error collection behavior. `./manage.py eval --check SOURCE`
+  continues to select that evaluation behavior.
+- `helix step program.yaml --steps 10` prints one inspection; `helix trace
+  program.yaml --limit 100` streams inspections as YAML documents. Omit the
+  limit to trace to a terminal status. These are observable engine transitions,
+  not source-line breakpoints.
+- `helix inspect state.yaml` summarizes a saved run or step inspection without
+  executing it. Inspection snapshots are not disk-resumable continuations.
+- `helix watch program.yaml` emits an initial run and reruns when source or
+  transitive import contents change, including missing imports later created.
+  `--interval-ms` controls polling and `--iterations` bounds run attempts (including unreadable-input attempts).
+- `helix schema` emits the structural program schema; [editor setup](editor/README.md)
+  explains its limits and the `helix lsp` stdio server.
+- `helix completion bash` (or `zsh`, `fish`) prints a script to source in that
+  shell; checked-in scripts live in `completions/`.
+
+The corresponding project commands live under `./manage.py runtime`; saved
+state inspection is `./manage.py inspect state FILE`. Verify these contracts
+with `./manage.py test --suite static --suite interactive --suite inspection`.

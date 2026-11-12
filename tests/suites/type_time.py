@@ -3,7 +3,7 @@ import yaml
 
 
 def state(h, command, source):
-    result = h.helix(command, "-", stdin=source)
+    result = h.helix(command, *(["--evaluate"] if command == "check" else []), "-", stdin=source)
     assert h.malformed_state(result.stdout, result.returncode) is None, result
     return yaml.safe_load(result.stdout)
 
@@ -75,7 +75,7 @@ def verify_check_mode(h):
         assert checked["mode"] == "check" and "phase" not in checked
         assert "phase" not in checked["errors"][0]
     # The same dependency can fail in both phases; deduplicate only within each phase.
-    result = h.helix("check", "tests/check/mixed_phases.yaml")
+    result = h.helix("check", "--evaluate", "tests/check/mixed_phases.yaml")
     assert h.malformed_state(result.stdout, result.returncode) is None, result
     checked = yaml.safe_load(result.stdout)
     assert checked["mode"] == "check" and "phase" not in checked

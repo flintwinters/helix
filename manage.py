@@ -103,7 +103,7 @@ def main() -> int:
     if command == "eval":
         if (code := build()) != 0:
             return code
-        return subprocess.run([str(BIN), "check" if args.check else "run", "-"],
+        return subprocess.run([str(BIN), *(["check", "--evaluate"] if args.check else ["run"]), "-"],
                               input=args.source, text=True, cwd=ROOT).returncode
     if command == "exec":
         return build() or subprocess.call([str(BIN), "exec", *([args.output_format] if args.output_format else []), "--", args.source], cwd=ROOT)
@@ -113,7 +113,16 @@ def main() -> int:
     if command == "build":
         return build(report=True, output_format=args.format)
     if command in ("run", "recover", "resume", "check"):
-        return build() or subprocess.call([str(BIN), command, args.file], cwd=ROOT)
+        return build() or subprocess.call([str(BIN), command, *(["--evaluate"] if command == "check" and args.evaluate else []), args.file], cwd=ROOT)
+    if command in ("fmt", "step", "trace", "watch", "state", "repl", "schema", "lsp", "completion"):
+        extra = [args.file] if hasattr(args, "file") else []
+        for name in ("steps", "limit", "interval_ms", "iterations"):
+            value = getattr(args, name, None)
+            if value is not None:
+                extra.extend(["--" + name.replace("_", "-"), str(value)])
+        if command == "completion":
+            extra.append(args.shell)
+        return build() or subprocess.call([str(BIN), "inspect" if command == "state" else command, *extra], cwd=ROOT)
     if command == "sandbox":
         return build() or subprocess.call([str(BIN), "sandbox", args.root, args.file], cwd=ROOT)
     if command == "std":

@@ -1,20 +1,29 @@
+mod cli_tools;
+
 use std::path::Path;
 use std::process::ExitCode;
 
 use helix::{Status, Vm, json_document, yaml_document};
 use yaml_rust2::Yaml;
 
-const USAGE: &str = "usage: helix exec [--json | --yaml] [PROGRAM | -]    inline source or stdin; default raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check <file.yaml | ->    evaluate and collect independent errors; type_time enforces purity\n       helix std [module]    list the standard modules, or print one's source\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
+const USAGE: &str = "usage: helix exec [--json | --yaml] [PROGRAM | -]    inline source or stdin; default raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check [--evaluate] <file.yaml | ->    static checks; --evaluate collects runtime errors\n       helix fmt <file.yaml | ->    canonical source on stdout\n       helix repl    evaluate one YAML document per line\n       helix watch FILE [--interval-ms N] [--iterations N]    re-run on dependency changes\n       helix step FILE [--steps N]    inspect after N transitions\n       helix trace FILE [--limit N]    stream transition inspections\n       helix inspect <state.yaml | ->    summarize saved state without execution\n       helix schema    print program JSON Schema\n       helix lsp    serve Language Server Protocol on stdin/stdout\n       helix completion <bash | zsh | fish>    print shell completion script\n       helix std [module]    list the standard modules, or print one's source\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    if let Some(code) = cli_tools::dispatch(&args) {
+        return code;
+    }
     match args
         .iter()
         .map(String::as_str)
         .collect::<Vec<_>>()
         .as_slice()
     {
-        ["--help" | "-h"] | ["exec", "--help" | "-h"] => {
+        ["--help" | "-h"] => {
+            println!("{USAGE}");
+            ExitCode::SUCCESS
+        }
+        [cmd, "--help" | "-h"] if helix::tooling_interactive::COMMANDS.contains(cmd) => {
             println!("{USAGE}");
             ExitCode::SUCCESS
         }
@@ -35,7 +44,7 @@ fn main() -> ExitCode {
         ["run", path] => run(path, "run"),
         ["recover", path] => run(path, "recover"),
         ["resume", path] => run(path, "resume"),
-        ["check", path] => run(path, "check"),
+        ["check", "--evaluate", path] | ["check", path, "--evaluate"] => run(path, "check"),
         ["sandbox", root, path] => execute(path, "run", Some(root), "raw"),
         ["std"] => {
             helix::std_modules().for_each(|name| println!("std:{name}"));
@@ -54,11 +63,7 @@ fn main() -> ExitCode {
                 ExitCode::from(2)
             }
         },
-        [cmd, ..]
-            if !matches!(
-                *cmd,
-                "exec" | "run" | "check" | "recover" | "resume" | "sandbox" | "std"
-            ) =>
+        [cmd, ..] if !helix::tooling_interactive::COMMANDS.contains(cmd) =>
         {
             eprintln!("unknown command `{cmd}`; {USAGE}");
             ExitCode::from(2)

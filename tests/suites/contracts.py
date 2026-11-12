@@ -102,9 +102,12 @@ def cli(h):
     verify_recovery(h)
     from tests.suites.inventory import verify
     verify(h)
-    for args in [(), ("unknown",), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
+    for args in [(), ("unknown",), ("unknown", "--help"), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
         result = h.helix(*args)
         assert result.returncode == 2 and not result.stdout and result.stderr, (args, result)
+    for command in ("run", "check", "fmt", "step", "trace", "inspect", "watch", "repl", "lsp", "schema", "completion"):
+        help_result = h.helix(command, "--help")
+        assert help_result.returncode == 0 and "usage:" in help_result.stdout and not help_result.stderr
     missing = h.helix("run", "runtime/definitely-missing-helix-input.yaml")
     assert missing.returncode == 2 and not missing.stdout and "cannot read" in missing.stderr
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="cli-") as directory:
@@ -112,8 +115,8 @@ def cli(h):
         for command in ("run", "check"):
             for program, code in [("answer: [add, 20, 22]\n", 0), ("answer: [div, 1, 0]\n", 1), ("[", 1)]:
                 source.write_text(program)
-                file = h.helix(command, str(source))
-                stdin = h.helix(command, "-", stdin=program)
+                file = h.helix(command, *(["--evaluate"] if command == "check" else []), str(source))
+                stdin = h.helix(command, *(["--evaluate"] if command == "check" else []), "-", stdin=program)
                 assert file.returncode == stdin.returncode == code
                 assert file.stdout == stdin.stdout and not file.stderr and not stdin.stderr
                 assert h.malformed_state(file.stdout, code) is None
@@ -216,6 +219,9 @@ def imports(h):
 
 def run(name, h):
     try:
+        if name in {"static", "interactive", "inspection"}:
+            from importlib import import_module
+            return import_module(f"tooling.checks_{name}").check(h)
         if name in globals():
             globals()[name](h)
         else:
@@ -261,7 +267,7 @@ def fuzz(h):
             source = source[:pos] + rng.choice(alphabet) + source[pos + rng.randrange(2):]
         command = rng.choice(("run", "check"))
         def fails(candidate):
-            result = h.helix(command, "-", stdin=candidate)
+            result = h.helix(command, *(["--evaluate"] if command == "check" else []), "-", stdin=candidate)
             return h.malformed_state(result.stdout, result.returncode)
         why = fails(source)
         if why:

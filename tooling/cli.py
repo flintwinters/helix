@@ -29,6 +29,9 @@ class AgentParser(argparse.ArgumentParser):
 DEFAULT_TEST_JOBS = 4
 
 SUITES = {
+    "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
+    "interactive": "REPL, dependency watch, completion and local installation",
+    "inspection": "Stepping, trace streams and observational saved-state summaries",
     "startup": "Build-free discovery stays independent of execution and test-only imports",
     "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
     "golden": "Exact YAML states, deterministic evaluation, and finished-root round trips",
@@ -100,12 +103,35 @@ def parser():
     runtime = group("runtime", "Evaluate YAML programs and work with recovery state")
     for name, description in {
         "run": "Evaluate a YAML file or stdin and emit VM state",
-        "check": "Collect independent evaluation errors (uncalled bodies are not checked)",
+        "check": "Parse and statically check without executing (use --evaluate for collected runtime errors)",
         "recover": "Evaluate with editable pure recovery source on failure",
         "resume": "Retry edited recovery source, preserving completed root fields",
     }.items():
         leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} - < program.yaml")
         leaf.add_argument("file", metavar="FILE", help="YAML file, or - for stdin; relative to repository root")
+    leaves["check"].add_argument("--evaluate", action="store_true", help="execute and collect independent runtime errors")
+    for name, description in {
+        "fmt": "Emit canonical YAML source without executing",
+        "step": "Inspect a program after a bounded number of transitions",
+        "trace": "Stream evaluation transitions as YAML documents",
+        "watch": "Re-run when program or transitive import contents change",
+    }.items():
+        leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} program.yaml")
+        leaf.add_argument("file", metavar="FILE", help="source file (or - except for watch)")
+        if name == "step":
+            leaf.add_argument("--steps", type=int, default=1, help="number of transitions (default: 1)")
+        if name == "trace":
+            leaf.add_argument("--limit", type=int, help="maximum transitions")
+        if name == "watch":
+            leaf.add_argument("--interval-ms", type=int, default=250, help="poll interval in milliseconds")
+            leaf.add_argument("--iterations", type=int, help="exit after this many run attempts")
+    for name, description in {"repl": "Evaluate one YAML document per input line",
+                              "lsp": "Serve the Language Server Protocol over stdio",
+                              "schema": "Print the program JSON Schema"}.items():
+        command(runtime, name, description, ["runtime", name], f"runtime {name}")
+    completion = command(runtime, "completion", "Print shell completion definitions",
+                         ["runtime", "completion"], "runtime completion bash")
+    completion.add_argument("shell", choices=("bash", "zsh", "fish"))
     sandbox = command(runtime, "sandbox", "Evaluate with file imports confined to ROOT (- denies file imports)",
                       ["runtime", "sandbox"], "runtime sandbox - program.yaml")
     sandbox.add_argument("root", metavar="ROOT", help="allowed import directory, or - for embedded modules only")
@@ -124,6 +150,9 @@ def parser():
                   ["runtime", "cli"], "runtime cli std math")
     raw.add_argument("args", nargs=argparse.REMAINDER, help="Rust CLI arguments; use -- to forward --help")
     inspect = group("inspect", "Discover standard library source and repository structure")
+    state = command(inspect, "state", "Summarize a saved state without executing it",
+                    ["inspect", "state"], "inspect state state.yaml")
+    state.add_argument("file", metavar="FILE", help="state file, or - for stdin")
     modules = command(inspect, "std", "List standard modules or print one module's source",
                       ["inspect", "std"], "inspect std math")
     modules.add_argument("module", nargs="?", help="module name, optionally prefixed with std:")

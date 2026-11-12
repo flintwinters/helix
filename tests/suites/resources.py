@@ -7,7 +7,7 @@ import yaml
 
 
 def failure(h, source, kind, command="run"):
-    result = h.helix(command, "-", stdin=source)
+    result = h.helix(command, *(["--evaluate"] if command == "check" else []), "-", stdin=source)
     assert h.malformed_state(result.stdout, result.returncode) is None, result
     state = yaml.safe_load(result.stdout)
     errors = state.get("errors", [state.get("error")])
@@ -18,7 +18,7 @@ def failure(h, source, kind, command="run"):
 def verify(h):
     # The last accepted syntax depth and first rejected depth; check takes a separate traversal.
     for command in ("run", "check"):
-        accepted = h.helix(command, "-", stdin="[" * 64 + "0" + "]" * 64)
+        accepted = h.helix(command, *(["--evaluate"] if command == "check" else []), "-", stdin="[" * 64 + "0" + "]" * 64)
         assert accepted.returncode == 0, accepted
         failure(h, "[" * 65 + "0" + "]" * 65, "depth", command)
         failure(h, "[" * 4096 + "0" + "]" * 4096, ("depth", "parse"), command)

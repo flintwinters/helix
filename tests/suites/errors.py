@@ -12,7 +12,7 @@ def verify(h):
         program = base / "program.yaml"
         program.write_text('m: [import, "helper.yaml"]\nvalue: [m.middle]\n')
         for command in ["run", "check", "recover"]:
-            result = h.helix(command, str(program))
+            result = h.helix(command, *(["--evaluate"] if command == "check" else []), str(program))
             state = yaml.safe_load(result.stdout)
             assert result.returncode == 1 and not result.stderr, result
             error = state["errors"][0] if command == "check" else state["error"]
