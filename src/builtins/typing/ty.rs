@@ -7,9 +7,17 @@ use yaml_rust2::Yaml;
 
 use crate::value::{equal, is_function, type_name};
 
-/// Runs a refinement's `[fn, [value], body]` source on a value. `Err` is a failure inside the
-/// predicate, reported as a violation rather than aborting the check.
-pub type Pred<'a> = dyn FnMut(&Yaml, &Yaml) -> Result<bool, String> + 'a;
+/// Evaluates predicate source on a value. Typing owns the boolean-result contract;
+/// execution failures become violations rather than aborting the check.
+pub type Pred<'a> = dyn FnMut(&Yaml, &Yaml) -> Result<Yaml, String> + 'a;
+
+/// Refinements and whole-record constraints share the same predicate-result contract.
+pub(super) fn verdict(pred: &mut Pred, check: &Yaml, value: &Yaml) -> Result<bool, String> {
+    match pred(check, value)? {
+        Yaml::Boolean(verdict) => Ok(verdict),
+        other => Err(format!("returned {}, expected boolean", type_name(&other))),
+    }
+}
 
 const PRIMITIVES: [&str; 11] = ["any", "never", "integer", "float", "string", "boolean", "null", "list", "map", "secret", "function"];
 
@@ -212,7 +220,7 @@ fn check(value: &Yaml, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violati
             let before = out.len();
             check(value, base, at, pred, out);
             if out.len() == before {
-                match pred(predicate, value) {
+                match verdict(pred, predicate, value) {
                     Ok(true) => {}
                     Ok(false) => out.push(Violation { at: at.into(), message: "failed its refinement check".into() }),
                     Err(why) => out.push(Violation { at: at.into(), message: format!("refinement check failed to run: {why}") }),

@@ -12,6 +12,7 @@ use yaml_rust2::{yaml::Hash, Yaml};
 use crate::emit;
 use crate::error::HelixError;
 use crate::graph::{Graph, Kind, NodeId, ROOT};
+use crate::value::is_function;
 
 /// Parsing persisted source and adding it to a graph have different blame policies.
 pub(crate) enum LoadError {
@@ -32,6 +33,12 @@ pub(crate) struct Grafts {
 }
 
 impl Grafts {
+    /// Literal function-shaped lists stay data; only executable heads can be reloaded.
+    pub(crate) fn load_function(&mut self, graph: &mut Graph, value: &Yaml) -> Result<Option<NodeId>, LoadError> {
+        if !is_function(value) { return Ok(None); }
+        self.load(graph, value).map(Some)
+    }
+
     /// Reconstitute each distinct source once; reuse the same lexical root on later calls.
     pub(crate) fn load(&mut self, graph: &mut Graph, value: &Yaml) -> Result<NodeId, LoadError> {
         let text = emit::document(value);

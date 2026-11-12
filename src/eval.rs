@@ -16,7 +16,6 @@ use crate::error::HelixError;
 use crate::graph::{Graph, Kind, NodeId, ROOT};
 use crate::link::{self, Modules};
 use crate::source;
-use crate::value;
 
 /// Nested user-function calls allowed before failing with a `depth` error.
 const MAX_DEPTH: usize = 200;
@@ -253,13 +252,10 @@ impl Evaluator {
 
     /// Reconstitute persisted function source with its captured lexical bindings.
     fn function_value(&mut self, value: &Yaml, blame: NodeId) -> Result<Option<NodeId>, HelixError> {
-        if !value::is_function(value) {
-            return Ok(None);
-        }
-        let root = self.grafts.load(&mut self.graph, value).map_err(|error| match error {
+        let Some(root) = self.grafts.load_function(&mut self.graph, value).map_err(|error| match error {
             source::LoadError::Parse(error) => self.err(blame, "type", error.message),
             source::LoadError::Graft(error) => error,
-        })?;
+        })? else { return Ok(None); };
         if self.graph.form(root) == Some("closure") {
             let Kind::Seq(parts) = self.graph.kind(root) else { unreachable!() };
             if parts.len() != 3 || !matches!(self.graph.kind(parts[1]), Kind::Map(_)) || self.graph.form(parts[2]) != Some("fn") {
@@ -467,17 +463,13 @@ impl Evaluator {
 
     /// Run a refinement's predicate source on `value`. The source arrives as data, so it is grafted
     /// into the graph (once per distinct source) and called like any function.
-    fn predicate(&mut self, check: &Yaml, value: &Yaml) -> Result<bool, String> {
+    fn predicate(&mut self, check: &Yaml, value: &Yaml) -> Result<Yaml, String> {
         let id = self.grafts.load(&mut self.graph, check).map_err(|error| error.error().message)?;
         let function = self.function(id).map_err(|error| error.message)?.ok_or("a refinement check must be `[fn, [value], body]`")?;
         if self.parameters(function).map_err(|e| e.message)?.len() != 1 {
             return Err("a refinement check takes exactly 1 parameter".into());
         }
-        match self.call(id, function, vec![value.clone()]) {
-            Ok(Yaml::Boolean(verdict)) => Ok(verdict),
-            Ok(other) => Err(format!("returned {}, expected boolean", value::type_name(&other))),
-            Err(e) => Err(format!("{}: {}", e.kind, e.message)),
-        }
+        self.call(id, function, vec![value.clone()]).map_err(|e| format!("{}: {}", e.kind, e.message))
     }
 
     /// Where `value` does not fit `ty`; `blame` is the node a malformed `ty` is attributed to.

@@ -15,7 +15,7 @@ use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
 
 use super::construct::{descriptor, reflect};
-use super::ty::{check_ty, mapping, subtype, Field, Pred, Ty};
+use super::ty::{check_ty, mapping, subtype, verdict, Field, Pred, Ty};
 use crate::builtins::fault::Fault;
 use crate::value::equal;
 
@@ -281,7 +281,7 @@ fn constrained(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
     let values = Yaml::Hash(class.slots.iter().filter_map(|slot| slot.value.as_ref().map(|(v, _)| (Yaml::String(slot.name.to_string()), v.clone()))).collect());
     let mut found = Vec::new();
     for (i, check) in class.constraints.iter().enumerate() {
-        let why = match pred(check, &values) {
+        let why = match verdict(pred, check, &values) {
             Ok(true) => continue,
             Ok(false) => format!("constraint {i} of `{}` does not hold", class.name),
             Err(why) => format!("constraint {i} of `{}` failed to run: {why}", class.name),
