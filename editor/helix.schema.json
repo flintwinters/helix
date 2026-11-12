@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Helix program",
+  "description": "A Helix program is a YAML value. Plain actor-first vectors are expressions; quoted heads are data. JSON Schema cannot distinguish YAML quoting or statically determine computed types. Use helix lsp for source diagnostics.",
+  "$ref": "#/$defs/value",
+  "$defs": {
+    "value": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "boolean"},
+        {"type": "number"},
+        {"type": "string"},
+        {"type": "array", "items": {"$ref": "#/$defs/value"}, "description": "Actor-first expression or ordinary list; quote the head to force data."},
+        {"type": "object", "additionalProperties": {"$ref": "#/$defs/value"}, "description": "Ordered named fields; names form lexical bindings."}
+      ]
+    }
+  }
+}

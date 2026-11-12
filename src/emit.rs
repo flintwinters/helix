@@ -36,6 +36,8 @@ impl Encoded {
                 value: Yaml::String(text),
                 plain,
             } => Self::Scalar(if *plain { text.clone() } else { quoted(text) }),
+            // Source identity retains numeric spelling; value emission may normalize it.
+            Kind::Scalar { value: Yaml::Real(text), .. } => Self::Scalar(text.clone()),
             Kind::Scalar { value, .. } => Self::value(value, false),
             Kind::Seq(items) => {
                 Self::List(items.iter().map(|id| Self::source(graph, *id)).collect())
@@ -62,12 +64,34 @@ impl Encoded {
             Self::Map(_) => "{}",
         }
     }
+    fn write_inline(&self, indent: usize, out: &mut String) {
+        // Only source plain scalars contain literal newlines here: quoted strings
+        // already use escapes. YAML needs one extra break to avoid folding them.
+        let mut after_break = false;
+        for ch in self.inline().chars() {
+            if ch == '\n' {
+                if !after_break {
+                    out.push('\n');
+                }
+                out.push('\n');
+                after_break = true;
+            } else {
+                if after_break {
+                    out.push_str(&" ".repeat(indent));
+                }
+                out.push(ch);
+                after_break = false;
+            }
+        }
+    }
     fn nested(&self, indent: usize, out: &mut String) {
         if self.container() {
             out.push('\n');
             self.block(indent, out, false)
         } else {
-            out.push_str(&format!(" {}\n", self.inline()));
+            out.push(' ');
+            self.write_inline(indent, out);
+            out.push('\n');
         }
     }
     fn block(&self, indent: usize, out: &mut String, inline: bool) {
@@ -92,7 +116,7 @@ impl Encoded {
                     if item.container() {
                         item.block(indent + 2, out, true);
                     } else {
-                        out.push_str(item.inline());
+                        item.write_inline(indent + 2, out);
                         out.push('\n');
                     }
                 }
@@ -105,7 +129,7 @@ impl Encoded {
         if self.container() {
             self.block(0, &mut out, false)
         } else {
-            out.push_str(self.inline());
+            self.write_inline(2, &mut out);
             out.push('\n');
         }
         out
@@ -114,6 +138,11 @@ impl Encoded {
 
 pub fn document(value: &Yaml) -> String {
     Encoded::value(value, false).document()
+}
+
+/// Canonical source layout retains symbolic versus quoted scalar identity.
+pub(crate) fn source(graph: &crate::model::Graph) -> String {
+    Encoded::source(graph, crate::model::ROOT).document()
 }
 
 /// Pure source recovery freezes only ordinary-data root fields. Runtime objects are retried
