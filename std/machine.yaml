@@ -1,0 +1,18 @@
+# Abstract machine classes, resolved entirely at type time: no machine or network is contacted.
+# Each class is small so configs mix in only what they manage; `machine` combines them all.
+port: [refine, integer, [fn, [n], [and, [ge, n, 1], [le, n, 65535]]]]
+host: [class, "host", [record, "hostname", string]]
+packages: [class, "packages", [record, "packages", [default, [list_of, string], []]]]
+# Managed file contents keyed by absolute path.
+files: [class, "files", [record, "files", [default, [map_of, string], {}]]]
+# Desired service states keyed by service name.
+services: [class, "services", [record, "services", [default, [map_of, [enum, "running", "stopped"]], {}]]]
+users: [class, "users", [record, "users", [default, [list_of, string], []]]]
+machine: [extend, "machine", [list, host, packages, files, services, users], [record], {}]
+# Fleet checks are ordinary predicates over a list of realized machine configs.
+hostnames:
+  - fn
+  - [[fleet, list]]
+  - [map, [fn, [m], [get, [get, m, "values"], "hostname"]], fleet]
+  - list
+unique_hostnames: [fn, [[fleet, list]], [eq, [duplicates, [hostnames, fleet]], []], boolean]

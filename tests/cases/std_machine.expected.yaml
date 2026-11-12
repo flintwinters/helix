@@ -1,0 +1,504 @@
+status: finished
+root:
+  m:
+    port:
+      type: refine
+      of: integer
+      check:
+        - fn
+        - - n
+        - - and
+          - - ge
+            - n
+            - 1
+          - - le
+            - n
+            - 65535
+    host:
+      type: class
+      name: host
+      parents: []
+      fields:
+        hostname: string
+      values: {}
+      provenance:
+        hostname:
+          type: host
+      concrete: false
+    packages:
+      type: class
+      name: packages
+      parents: []
+      fields:
+        packages:
+          type: default
+          of:
+            type: list
+            of: string
+          default: []
+      values: {}
+      provenance:
+        packages:
+          type: packages
+      concrete: false
+    files:
+      type: class
+      name: files
+      parents: []
+      fields:
+        files:
+          type: default
+          of:
+            type: map
+            of: string
+          default: {}
+      values: {}
+      provenance:
+        files:
+          type: files
+      concrete: false
+    services:
+      type: class
+      name: services
+      parents: []
+      fields:
+        services:
+          type: default
+          of:
+            type: map
+            of:
+              type: enum
+              values:
+                - "running"
+                - stopped
+          default: {}
+      values: {}
+      provenance:
+        services:
+          type: services
+      concrete: false
+    users:
+      type: class
+      name: users
+      parents: []
+      fields:
+        users:
+          type: default
+          of:
+            type: list
+            of: string
+          default: []
+      values: {}
+      provenance:
+        users:
+          type: users
+      concrete: false
+    machine:
+      type: class
+      name: machine
+      parents:
+        - "host"
+        - packages
+        - files
+        - services
+        - users
+      fields:
+        hostname: string
+        packages:
+          type: default
+          of:
+            type: list
+            of: string
+          default: []
+        files:
+          type: default
+          of:
+            type: map
+            of: string
+          default: {}
+        services:
+          type: default
+          of:
+            type: map
+            of:
+              type: enum
+              values:
+                - "running"
+                - stopped
+          default: {}
+        users:
+          type: default
+          of:
+            type: list
+            of: string
+          default: []
+      values: {}
+      provenance:
+        hostname:
+          type: host
+        packages:
+          type: packages
+        files:
+          type: files
+        services:
+          type: services
+        users:
+          type: users
+      concrete: false
+    hostnames:
+      - fn
+      - - - fleet
+          - list
+      - - map
+        - - fn
+          - - m
+          - - get
+            - - get
+              - m
+              - "values"
+            - "hostname"
+        - fleet
+      - list
+    unique_hostnames:
+      - fn
+      - - - fleet
+          - list
+      - - eq
+        - - duplicates
+          - - hostnames
+            - fleet
+        - []
+      - boolean
+  web1:
+    type: class
+    name: web1
+    parents:
+      - "machine"
+    fields:
+      hostname: string
+      packages:
+        type: default
+        of:
+          type: list
+          of: string
+        default: []
+      files:
+        type: default
+        of:
+          type: map
+          of: string
+        default: {}
+      services:
+        type: default
+        of:
+          type: map
+          of:
+            type: enum
+            values:
+              - "running"
+              - stopped
+        default: {}
+      users:
+        type: default
+        of:
+          type: list
+          of: string
+        default: []
+    values:
+      hostname: w1
+      packages:
+        - "nginx"
+      files: {}
+      services:
+        nginx: running
+      users:
+        - "deploy"
+    provenance:
+      hostname:
+        type: host
+        value: web1
+      packages:
+        type: packages
+        value: web1
+      files:
+        type: files
+        value: default of files
+      services:
+        type: services
+        value: web1
+      users:
+        type: users
+        value: web1
+    concrete: true
+  web2:
+    type: class
+    name: web2
+    parents:
+      - "machine"
+    fields:
+      hostname: string
+      packages:
+        type: default
+        of:
+          type: list
+          of: string
+        default: []
+      files:
+        type: default
+        of:
+          type: map
+          of: string
+        default: {}
+      services:
+        type: default
+        of:
+          type: map
+          of:
+            type: enum
+            values:
+              - "running"
+              - stopped
+        default: {}
+      users:
+        type: default
+        of:
+          type: list
+          of: string
+        default: []
+    values:
+      hostname: w2
+      packages: []
+      files: {}
+      services: {}
+      users: []
+    provenance:
+      hostname:
+        type: host
+        value: web2
+      packages:
+        type: packages
+        value: default of packages
+      files:
+        type: files
+        value: default of files
+      services:
+        type: services
+        value: default of services
+      users:
+        type: users
+        value: default of users
+    concrete: true
+  dup:
+    type: class
+    name: dup
+    parents:
+      - "machine"
+    fields:
+      hostname: string
+      packages:
+        type: default
+        of:
+          type: list
+          of: string
+        default: []
+      files:
+        type: default
+        of:
+          type: map
+          of: string
+        default: {}
+      services:
+        type: default
+        of:
+          type: map
+          of:
+            type: enum
+            values:
+              - "running"
+              - stopped
+        default: {}
+      users:
+        type: default
+        of:
+          type: list
+          of: string
+        default: []
+    values:
+      hostname: w1
+      packages: []
+      files: {}
+      services: {}
+      users: []
+    provenance:
+      hostname:
+        type: host
+        value: dup
+      packages:
+        type: packages
+        value: default of packages
+      files:
+        type: files
+        value: default of files
+      services:
+        type: services
+        value: default of services
+      users:
+        type: users
+        value: default of users
+    concrete: true
+  fleet:
+    - type: class
+      name: web1
+      parents:
+        - "machine"
+      fields:
+        hostname: string
+        packages:
+          type: default
+          of:
+            type: list
+            of: string
+          default: []
+        files:
+          type: default
+          of:
+            type: map
+            of: string
+          default: {}
+        services:
+          type: default
+          of:
+            type: map
+            of:
+              type: enum
+              values:
+                - "running"
+                - stopped
+          default: {}
+        users:
+          type: default
+          of:
+            type: list
+            of: string
+          default: []
+      values:
+        hostname: w1
+        packages:
+          - "nginx"
+        files: {}
+        services:
+          nginx: running
+        users:
+          - "deploy"
+      provenance:
+        hostname:
+          type: host
+          value: web1
+        packages:
+          type: packages
+          value: web1
+        files:
+          type: files
+          value: default of files
+        services:
+          type: services
+          value: web1
+        users:
+          type: users
+          value: web1
+      concrete: true
+    - type: class
+      name: web2
+      parents:
+        - "machine"
+      fields:
+        hostname: string
+        packages:
+          type: default
+          of:
+            type: list
+            of: string
+          default: []
+        files:
+          type: default
+          of:
+            type: map
+            of: string
+          default: {}
+        services:
+          type: default
+          of:
+            type: map
+            of:
+              type: enum
+              values:
+                - "running"
+                - stopped
+          default: {}
+        users:
+          type: default
+          of:
+            type: list
+            of: string
+          default: []
+      values:
+        hostname: w2
+        packages: []
+        files: {}
+        services: {}
+        users: []
+      provenance:
+        hostname:
+          type: host
+          value: web2
+        packages:
+          type: packages
+          value: default of packages
+        files:
+          type: files
+          value: default of files
+        services:
+          type: services
+          value: default of services
+        users:
+          type: users
+          value: default of users
+      concrete: true
+  unique: true
+  clashing: false
+  partial:
+    type: class
+    name: partial
+    parents:
+      - "host"
+      - packages
+    fields:
+      hostname: string
+      packages:
+        type: default
+        of:
+          type: list
+          of: string
+        default: []
+    values:
+      hostname: p
+      packages: []
+    provenance:
+      hostname:
+        type: host
+        value: partial
+      packages:
+        type: packages
+        value: partial
+    concrete: true
+  partial_fields:
+    - "hostname"
+    - packages
+  abstract: false
+  missing_hostname: abstract
+  bad_service: type
+  bad_file: type
+  ports:
+    - true
+    - false
+    - false
