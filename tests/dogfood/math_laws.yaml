@@ -1,0 +1,25 @@
+# Small exact integers plus exactly representable fractions avoid rounding oracles.
+t: [import, std:test]
+l: [import, std:list]
+m: [import, std:math]
+values: [-4, -1, -0.5, 0, 0.5, 1, 4]
+pairs: [l.flat_map, values, [fn, [a], [map, [fn, [b], [list, a, b]], values]]]
+unary:
+  - t.property
+  - "absolute value, sign and square agree with independent arithmetic laws"
+  - values
+  - [fn, [x], [and, [ge, [m.abs, x], 0], [eq, [mul, [m.sign, x], [m.abs, x]], x], [eq, [m.abs, [neg, x]], [m.abs, x]], [eq, [m.square, x], [mul, x, x]], [eq, [m.sign, x], [if, [eq, x, 0], 0, [div, x, [m.abs, x]]]]]]
+ordering:
+  - t.property
+  - "min/max select endpoints and conserve their sum"
+  - pairs
+  - [fn, [row], [let, {a: [get, row, 0], b: [get, row, 1], lo: [m.min, a, b], hi: [m.max, a, b]}, [and, [le, lo, a], [le, lo, b], [ge, hi, a], [ge, hi, b], [or, [eq, lo, a], [eq, lo, b]], [or, [eq, hi, a], [eq, hi, b]], [eq, [add, lo, hi], [add, a, b]]]]]
+intervals: [filter, [fn, [row], [le, [get, row, 0], [get, row, 1]]], pairs]
+clamps: [l.flat_map, intervals, [fn, [bounds], [map, [fn, [x], [list, x, [get, bounds, 0], [get, bounds, 1]]], values]]]
+clamping:
+  - t.property
+  - "clamp selects the nearest endpoint or preserves the interior"
+  - clamps
+  - [fn, [row], [let, {x: [get, row, 0], lo: [get, row, 1], hi: [get, row, 2], actual: [m.clamp, x, lo, hi]}, [and, [eq, actual, [cond, [lt, x, lo], lo, [gt, x, hi], hi, x]], [ge, actual, lo], [le, actual, hi], [eq, [m.clamp, actual, lo, hi], actual]]]]
+coverage: [t.suite, [{name: pair_count, run: [fn, [], [t.equal, [len, pairs], 49]]}, {name: clamp_count, run: [fn, [], [t.equal, [len, clamps], 196]]}]]
+report: [t.table, [list, [dict, "name", "coverage", "input", coverage], [dict, "name", "unary", "input", unary], [dict, "name", "ordering", "input", ordering], [dict, "name", "clamping", "input", clamping]], [fn, [child], [t.require_pass, child]]]

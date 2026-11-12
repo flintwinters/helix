@@ -1,0 +1,37 @@
+# All maps over two keys with absent/null/false values, in both key orders.
+t: [import, std:test]
+l: [import, std:list]
+m: [import, std:map]
+choices: [list, null, false]
+singles: [l.flat_map, [list, "a", "b"], [fn, [key], [map, [fn, [value], [dict, key, value]], choices]]]
+pairs: [l.flat_map, choices, [fn, [a], [l.flat_map, choices, [fn, [b], [list, [dict, "a", a, "b", b], [dict, "b", b, "a", a]]]]]]
+samples: [concat, [list, {}], singles, pairs]
+merges: [l.flat_map, samples, [fn, [left], [map, [fn, [right], [list, left, right]], samples]]]
+# Build expected keys separately from values: map equality alone ignores order.
+merge_law:
+  - t.property
+  - "merge keeps left positions and takes right values including null and false"
+  - merges
+  - - fn
+    - [row]
+    - - let
+      - left: [get, row, 0]
+        right: [get, row, 1]
+        result: [m.merge, left, right]
+        expected_keys: [concat, [keys, left], [filter, [fn, [key], [not, [has, left, key]]], [keys, right]]]
+      - [and, [eq, [keys, result], expected_keys], [l.all, expected_keys, [fn, [key], [eq, [get, result, key], [if, [has, right, key], [get, right, key], [get, left, key]]]]]]
+removals: [l.flat_map, samples, [fn, [source], [map, [fn, [key], [list, source, key]], [list, "a", "b", "missing"]]]]
+remove_law:
+  - t.property
+  - "remove preserves every survivor value and its order"
+  - removals
+  - - fn
+    - [row]
+    - - let
+      - source: [get, row, 0]
+        key: [get, row, 1]
+        result: [m.remove, source, key]
+        survivors: [filter, [fn, [name], [ne, name, key]], [keys, source]]
+      - [and, [eq, [keys, result], survivors], [l.all, survivors, [fn, [name], [eq, [get, result, name], [get, source, name]]]], [eq, [m.remove, result, key], result]]
+coverage: [t.suite, [{name: map_count, run: [fn, [], [t.equal, [len, samples], 13]]}, {name: merge_count, run: [fn, [], [t.equal, [len, merges], 169]]}, {name: removal_count, run: [fn, [], [t.equal, [len, removals], 39]]}]]
+report: [t.table, [list, [dict, "name", "coverage", "input", coverage], [dict, "name", "merge", "input", merge_law], [dict, "name", "remove", "input", remove_law]], [fn, [child], [t.require_pass, child]]]
