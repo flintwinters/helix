@@ -6,7 +6,9 @@ The test for "daily driver" is simple: I start a task in Helix instead of Python
 
 How to use this file: tick a box only when the feature works end to end *and* has a golden case in `tests/cases/` (run `./manage.py test`). A feature that only works in a demo stays unticked. Edit freely; this file is for humans, while `AGENTS.md` holds the agent-facing architecture and invariants.
 
-**Where we are:** a pure, total-ish expression language (values, operators, control flow, functions, iteration) that runs to completion; no suspend/resume or effects yet.
+**Where it is headed:** the niche Nix and Ansible occupy, declarative machine configuration, approached through types. A machine config is a type, fully resolved at type time and inheriting from abstract machine type classes; section 8 holds that road. Daily-driver scripting comes first because the config language has to be a language worth using.
+
+**Where we are:** a pure, total-ish expression language (values, operators, control flow, functions, iteration) that runs to completion; no suspend/resume, effects or types yet.
 
 ---
 
@@ -151,7 +153,48 @@ The difference between a language and a language I enjoy using.
 
 ---
 
-## 8. Dogfooding milestones
+## 8. Types: declarative, first-class, and the machine-config niche
+
+The long-range target. A type is ordinary readable YAML, a value like any other, and a machine config is a type rather than a script: everything about it is known and checked at type time, before any effect touches a machine.
+
+### Declarative types
+- [ ] A type is declared as plain YAML data in the object graph (fields, their types, defaults), not in a separate schema language
+- [ ] Scalar, list, map and record types, plus optional fields, unions, enums and literal types
+- [ ] Refinements: a type can carry a predicate (`port` is an int in 1..65535), written as an ordinary Helix expression
+- [ ] Annotate a value or a `fn` parameter/result with a type; a mismatch is a structured `type` error blaming the offending node with path and line
+- [ ] Type checking collects every violation in one pass instead of stopping at the first
+- [ ] Types survive in the saved state and round-trip: emitted `root` re-read yields the same types
+- [ ] `helix check` type-checks a program without running it or performing effects
+
+### First-class types
+- [ ] Types are values: bind them with `let`, pass them to and return them from functions, store them in lists and maps
+- [ ] Type constructors are ordinary functions from types (and values) to types (`[list_of, t]`, `[with_field, t, name, u]`)
+- [ ] Reflection: read a type's fields, defaults and parents as data; ask `[is, value, t]` and `[subtype, a, b]`
+- [ ] Type-time evaluation: a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
+- [ ] Type-time errors are the same structured errors as run-time ones, with the phase recorded in the state
+
+### Type classes and inheritance
+- [ ] Abstract type classes: declare required fields and constraints without a concrete value (`machine`, `server`, `has_ssh`)
+- [ ] A type inherits from one or more classes; the result is the merge of their fields, defaults and constraints
+- [ ] Documented, deterministic merge and override rules (which parent wins, what counts as a conflict, how lists and maps combine)
+- [ ] Conflicts between parents are type-time errors that name both sources, never silent last-writer-wins
+- [ ] An abstract class cannot be realized until every required field is filled; the error lists what is missing and which class demanded it
+- [ ] Provenance: for any field of a resolved type, the state shows which class or override supplied it
+- [ ] Parametric classes: a class takes arguments (`[web_server, {port: 8080}]`) and yields a class
+
+### Machine configs as type-time types
+- [ ] A machine config is a concrete type inheriting from abstract machine classes; it is fully resolved at type time with no machine contact
+- [ ] The resolved config serializes to YAML that reads as the complete, flattened description of the machine and diffs well in `git diff`
+- [ ] Same inputs, same resolved config: resolution is deterministic and pinned (imports, versions) so a config is reproducible
+- [ ] Fleet-level checks at type time: constraints across several machine types (unique hostnames, every client's server exists, no port clashes)
+- [ ] Realization is a separate, explicit step: compare a resolved config with a machine's observed state and produce a plan as data
+- [ ] Applying a plan uses the effect system (section 3), is idempotent, and suspends/resumes per step (section 2) with the pending step visible in the state
+- [ ] Drift report: what the machine has that its type does not say, and the reverse
+- [ ] Secrets are referenced by a typed handle, never inlined into a resolved config or saved state
+
+---
+
+## 9. Dogfooding milestones
 
 Real programs, in order of ambition, grouped by what unlocks them. Each one is a checkbox only when I actually use it, not when it merely could work. Keep each one in the repo (a golden case in `tests/cases/` once its output is deterministic) and write down what was awkward: that friction is the real roadmap.
 
@@ -218,6 +261,15 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 - [ ] Upgrade Helix and resume a state saved by the previous version, following the documented compatibility or migration path
 - [ ] Give someone else a useful script and have them install Helix, run it and adapt it using only the documentation
 
+### With types and machine configs (section 8)
+- [ ] Replace the hand-rolled field checks in `dogfood_project_inventory` with a declared type; the type error report matches or beats the hand-written one
+- [ ] Write a function that takes a type and returns a derived type, and use it to remove real duplication between two declarations
+- [ ] Model my own machines as types: a laptop and a server sharing abstract classes, differing only in what they override
+- [ ] Introduce a deliberate conflict between two parent classes and fix it from the type-time error alone
+- [ ] Review a config change as a `git diff` of the resolved type before anything is applied
+- [ ] Manage one real piece of one real machine (a dotfile set, a package list, a service) from its Helix type for a month
+- [ ] Rebuild a machine, or bring up a second one, from its type alone and record everything that had to be done by hand
+
 ### The bar
 - [ ] A week where I reach for Helix first without thinking about it
 - [ ] Three recurring personal or repo workflows stay in Helix for a month; record each fallback to Python or shell and the reason
@@ -231,6 +283,9 @@ Decide these before the features that depend on them.
 - [x] How are user-defined actors declared in YAML so they stay readable? `name: [fn, [params], body]`; called as `[name, args...]`
 - [ ] What is the evaluation model for effects: pull, push, or explicit yield?
 - [ ] Does a suspended state embed the source, reference it, or both?
-- [ ] Strict types, gradual types, or none?
+- [ ] Types are coming (section 8), but how strict is ordinary scripting: must everything be annotated, or are types gradual and opt-in outside configs?
+- [ ] Is inheritance nominal (declared parents) or structural (anything with the right fields satisfies a class), or both?
+- [ ] What separates type time from run time in a language whose source is its state: a distinct phase, a status, or a marked region of the graph?
+- [ ] How do parent classes merge: Nix-module-style priorities and merge functions, CUE-style unification, or linearized inheritance?
 - [ ] What is the story for secrets in persisted state?
 - [ ] Which parts of `flintwinters/helixcpp` are worth carrying over, and which are better left behind?

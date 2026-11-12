@@ -10,6 +10,8 @@ Fix bugs without asking.
 
 Program and machine state share one human-readable representation, so a suspended run can be read, diffed, edited, and resumed as plainly as source. Every design choice should keep that round trip lossless and legible.
 
+The ultimate niche is declarative machine configuration (where Nix and Ansible sit), reached through declarative, first-class types: a machine config is a type resolved entirely at type time, inheriting from abstract machine type classes, and applying it is a separate effectful step (`CHARTER.md` section 8). Nothing of this is implemented yet.
+
 ## Architecture
 
 Rust crate `helix` (lib + `helix run <file|->` CLI); `./manage.py` is the single entrypoint (`build`, `run`, `test [--bless]`).
