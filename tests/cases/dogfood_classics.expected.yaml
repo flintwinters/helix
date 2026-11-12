@@ -60,6 +60,66 @@ root:
           - done
           - step
           - - list
+    unique:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - seen
+            - item
+          - - if
+            - - has
+              - seen
+              - item
+            - seen
+            - - append
+              - seen
+              - item
+        - []
+        - xs
+    sort_by:
+      - fn
+      - - xs
+        - before
+      - - fold
+        - - fn
+          - - ordered
+            - item
+          - - let
+            - position:
+                - until
+                - - fn
+                  - - index
+                  - - or
+                    - - ge
+                      - index
+                      - - len
+                        - ordered
+                    - - before
+                      - item
+                      - - get
+                        - ordered
+                        - index
+                - - fn
+                  - - index
+                  - - add
+                    - index
+                    - 1
+                - 0
+            - - concat
+              - - slice
+                - ordered
+                - 0
+                - position
+              - - list
+                - item
+              - - slice
+                - ordered
+                - position
+                - - len
+                  - ordered
+        - []
+        - xs
   fizzbuzz:
     - fn
     - - n

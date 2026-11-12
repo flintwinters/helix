@@ -95,7 +95,7 @@ Standard libraries are Helix source embedded in the executable:
 | Import | Exports |
 |--------|---------|
 | `std:math` | `abs(n)`, `sign(n)`, `min(a,b)`, `max(a,b)`, `clamp(n,lo,hi)`, `square(n)` |
-| `std:list` | `sum(xs)`, `product(xs)`, `reverse(xs)`, `range(n)` (integers from zero while less than `n`, bounded by the iteration limit) |
+| `std:list` | `sum(xs)`, `product(xs)`, `reverse(xs)`, `range(n)` (integers from zero while less than `n`, bounded by the iteration limit), `unique(xs)` (first occurrence, structural/numeric equality), `sort_by(xs, before)` (stable; strict ordering predicate) |
 
 `./manage.py std` lists modules; `./manage.py std math` prints a module's source. The binary also accepts `helix std [module]`.
 

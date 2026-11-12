@@ -19,55 +19,141 @@ root:
     - id: cleanup
       priority: 3
       owner: tools
-  insert:
-    - fn
-    - - ordered
-      - item
-    - - let
-      - position:
-          - until
-          - - fn
-            - - index
-            - - or
-              - - ge
-                - index
+  lists:
+    sum:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - add
+            - acc
+            - x
+        - 0
+        - xs
+    product:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - mul
+            - acc
+            - x
+        - 1
+        - xs
+    reverse:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - concat
+            - - list
+              - x
+            - acc
+        - - list
+        - xs
+    range:
+      - fn
+      - - n
+      - - let
+        - done:
+            - fn
+            - - xs
+            - - ge
+              - - len
+                - xs
+              - n
+          step:
+            - fn
+            - - xs
+            - - append
+              - xs
+              - - len
+                - xs
+        - - until
+          - done
+          - step
+          - - list
+    unique:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - seen
+            - item
+          - - if
+            - - has
+              - seen
+              - item
+            - seen
+            - - append
+              - seen
+              - item
+        - []
+        - xs
+    sort_by:
+      - fn
+      - - xs
+        - before
+      - - fold
+        - - fn
+          - - ordered
+            - item
+          - - let
+            - position:
+                - until
+                - - fn
+                  - - index
+                  - - or
+                    - - ge
+                      - index
+                      - - len
+                        - ordered
+                    - - before
+                      - item
+                      - - get
+                        - ordered
+                        - index
+                - - fn
+                  - - index
+                  - - add
+                    - index
+                    - 1
+                - 0
+            - - concat
+              - - slice
+                - ordered
+                - 0
+                - position
+              - - list
+                - item
+              - - slice
+                - ordered
+                - position
                 - - len
                   - ordered
-              - - gt
-                - - get
-                  - - get
-                    - ordered
-                    - index
-                  - "priority"
-                - - get
-                  - item
-                  - "priority"
-          - - fn
-            - - index
-            - - add
-              - index
-              - 1
-          - 0
-      - - concat
-        - - slice
-          - ordered
-          - 0
-          - position
-        - - append
-          - []
-          - item
-        - - slice
-          - ordered
-          - position
-          - - len
-            - ordered
+        - []
+        - xs
   sort_queue:
     - fn
     - - items
-    - - fold
-      - insert
-      - []
+    - - lists.sort_by
       - items
+      - - fn
+        - - a
+          - b
+        - - lt
+          - - get
+            - a
+            - "priority"
+          - - get
+            - b
+            - "priority"
   sorted:
     - id: security
       priority: -1

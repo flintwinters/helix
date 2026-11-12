@@ -1,4 +1,4 @@
-# A readable 100+ line program: stable priority ordering of an inline work queue.
+# Stable priority ordering using the shared Helix standard-library sort.
 # Lower numbers run first; equal priorities retain arrival order.
 # Insertion uses until rather than recursion, so queue length does not consume
 # the function-call depth budget. This is intentionally a small-queue algorithm.
@@ -23,29 +23,11 @@ queue:
   - id: cleanup
     priority: 3
     owner: tools
-insert:
-  - fn
-  - [ordered, item]
-  - - let
-    - position:
-        - until
-        - - fn
-          - [index]
-          - - or
-            - [ge, index, [len, ordered]]
-            - - gt
-              - [get, [get, ordered, index], "priority"]
-              - [get, item, "priority"]
-        - [fn, [index], [add, index, 1]]
-        - 0
-    - - concat
-      - [slice, ordered, 0, position]
-      - [append, [], item]
-      - [slice, ordered, position, [len, ordered]]
+lists: [import, std:list]
 sort_queue:
   - fn
   - [items]
-  - [fold, insert, [], items]
+  - [lists.sort_by, items, [fn, [a, b], [lt, [get, a, "priority"], [get, b, "priority"]]]]
 sorted: [sort_queue, queue]
 # Use the report as a dispatch list, retaining full records in sorted above.
 dispatch:

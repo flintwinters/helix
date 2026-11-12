@@ -1,0 +1,232 @@
+status: finished
+root:
+  l:
+    sum:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - add
+            - acc
+            - x
+        - 0
+        - xs
+    product:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - mul
+            - acc
+            - x
+        - 1
+        - xs
+    reverse:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - concat
+            - - list
+              - x
+            - acc
+        - - list
+        - xs
+    range:
+      - fn
+      - - n
+      - - let
+        - done:
+            - fn
+            - - xs
+            - - ge
+              - - len
+                - xs
+              - n
+          step:
+            - fn
+            - - xs
+            - - append
+              - xs
+              - - len
+                - xs
+        - - until
+          - done
+          - step
+          - - list
+    unique:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - seen
+            - item
+          - - if
+            - - has
+              - seen
+              - item
+            - seen
+            - - append
+              - seen
+              - item
+        - []
+        - xs
+    sort_by:
+      - fn
+      - - xs
+        - before
+      - - fold
+        - - fn
+          - - ordered
+            - item
+          - - let
+            - position:
+                - until
+                - - fn
+                  - - index
+                  - - or
+                    - - ge
+                      - index
+                      - - len
+                        - ordered
+                    - - before
+                      - item
+                      - - get
+                        - ordered
+                        - index
+                - - fn
+                  - - index
+                  - - add
+                    - index
+                    - 1
+                - 0
+            - - concat
+              - - slice
+                - ordered
+                - 0
+                - position
+              - - list
+                - item
+              - - slice
+                - ordered
+                - position
+                - - len
+                  - ordered
+        - []
+        - xs
+  empty_unique: []
+  unique:
+    - 3
+    - 1
+    - 2
+  numeric:
+    - 1
+    - 2.0
+  nested:
+    - - 1
+      - 2
+    - a: 1
+    - ~
+    - false
+  text:
+    - "é"
+    - x
+  empty_sort: []
+  singleton:
+    - 7
+  ascending:
+    - -1
+    - 0
+    - 2
+    - 2
+    - 3
+  descending:
+    - 3
+    - 2
+    - 1
+  words:
+    - "a"
+    - b
+    - z
+  again:
+    - -1
+    - 0
+    - 2
+    - 2
+    - 3
+  bad_list: type
+  bad_predicate: type
+  small_range:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+  reverse_sorted:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+  size_sort_ok: ~
+  size_unique_ok: ~

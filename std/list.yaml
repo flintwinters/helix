@@ -3,3 +3,42 @@ sum: [fn, [xs], [fold, [fn, [acc, x], [add, acc, x]], 0, xs]]
 product: [fn, [xs], [fold, [fn, [acc, x], [mul, acc, x]], 1, xs]]
 reverse: [fn, [xs], [fold, [fn, [acc, x], [concat, [list, x], acc]], [list], xs]]
 range: [fn, [n], [let, {done: [fn, [xs], [ge, [len, xs], n]], step: [fn, [xs], [append, xs, [len, xs]]]}, [until, done, step, [list]]]]
+# Keep the first occurrence of each structurally equal value (including numeric equality).
+# Repeated scans and immutable list copies make this suitable for small inputs.
+unique:
+  - fn
+  - [xs]
+  - - fold
+    - - fn
+      - [seen, item]
+      - - if
+        - [has, seen, item]
+        - seen
+        - [append, seen, item]
+    - []
+    - xs
+# Stable insertion sort. `before(a, b)` must be a strict ordering predicate.
+# Each insertion scans the ordered prefix; comparisons and copying are quadratic.
+# until avoids recursion proportional to input length; runtime iteration limits apply.
+sort_by:
+  - fn
+  - [xs, before]
+  - - fold
+    - - fn
+      - [ordered, item]
+      - - let
+        - position:
+            - until
+            - - fn
+              - [index]
+              - - or
+                - [ge, index, [len, ordered]]
+                - [before, item, [get, ordered, index]]
+            - [fn, [index], [add, index, 1]]
+            - 0
+        - - concat
+          - [slice, ordered, 0, position]
+          - [list, item]
+          - [slice, ordered, position, [len, ordered]]
+    - []
+    - xs
