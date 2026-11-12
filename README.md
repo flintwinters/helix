@@ -115,11 +115,15 @@ unfinished fields after an error, but cannot restore active calls or iterations.
 `./manage.py` is the project tooling entrypoint. Run it without arguments to
 browse commands, or append `--help` at any level.
 
-Project help, suite/module discovery, builds, and test reports default to versioned
-JSON. Test reports contain per-suite status, failure arrays, and captured diagnostics;
-usage errors are JSON on stderr with exit code 2. Use `./manage.py --format=text`
-before a command for readable project reports. `--help-json` remains an alias for
-the full JSON command catalog. Language execution, module source, inventory, and
+Project help, suite/module discovery, builds, and tests default to concise text.
+Help shows the current command level. Tests show suite outcomes, case counts,
+skip reasons, and full failure diagnostics; successful stdout is suppressed, while
+stderr warnings remain visible. Usage errors go to stderr with exit code 2.
+Use `./manage.py --format=json` before a command for complete versioned reports,
+including captured successful test output. `--help-json` requests the full command
+catalog without building. This keeps routine agent context focused on decisions
+while retaining explicit machine-readable evidence.
+Language execution, module source, inventory, and
 forwarded tools keep their own output contracts (YAML, raw pipeline data, or the
 tool's chosen format).
 
@@ -129,7 +133,7 @@ python3 -m pip install PyYAML                # needed for tests and inventory
 ./manage.py test --suite golden --suite cli # a focused test run
 ./manage.py test                            # all suites
 ./manage.py lint                            # JSON lint report
-./manage.py --format=text test --suite golden # explicit readable test report
+./manage.py --format=json test --suite golden # complete machine-readable report
 ```
 
 Lint uses the [hyperlinter](https://github.com/flintwinters/hyperlinter) submodule

@@ -8,6 +8,7 @@ from types import MappingProxyType
 
 from tooling.cli import DEFAULT_TEST_JOBS, SUITES
 from tooling.test_reports import failure as test_failure
+from tooling.output import DEFAULT_FORMAT
 
 
 def discover_cases(directories, root, patterns=None):
@@ -181,7 +182,7 @@ class TestContext:
         return failures
 
     def regression(self, bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_JOBS,
-                   cases: list[Path] | None = None, output_format: str = "json") -> int:
+                   cases: list[Path] | None = None, output_format: str = DEFAULT_FORMAT) -> int:
         import contextlib
         import io
         from tooling.output import test_report

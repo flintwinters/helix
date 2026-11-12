@@ -2,13 +2,13 @@
 import argparse
 import textwrap
 
-from tooling.output import emit
+from tooling.output import DEFAULT_FORMAT, emit
 
 
 class AgentParser(argparse.ArgumentParser):
-    """Structured discovery and usage failures unless text is explicitly selected."""
+    """Scoped text discovery by default; complete structured reports on request."""
 
-    output_format = "json"
+    output_format = DEFAULT_FORMAT
 
     def print_help(self, file=None):
         if self.output_format == "text":
@@ -55,8 +55,8 @@ SUITES = {
 }
 
 CONTRACT = (
-    "Project discovery, build and test reports default to versioned JSON; "
-    "--format=text before the command selects human-readable reports. "
+    "Project reports default to concise text; "
+    "--format=json before the command selects complete versioned reports. "
     "Runtime commands build automatically and emit YAML on stdout. "
     "Exit codes: 0 success, 1 evaluation/test failure, 2 invalid usage or unreadable input "
     "(build and forwarded tools retain their own codes). "
@@ -74,8 +74,8 @@ def parser():
         epilog=textwrap.fill(CONTRACT, width=88), formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     root.add_argument("--help-json", action="store_true", help="print the complete command/argument tree as JSON without building")
-    root.add_argument("--format", choices=("json", "text"), default="json",
-                      help="project report format (default: json); place before the command; runtime/forwarded output keeps its own format")
+    root.add_argument("--format", choices=("json", "text"), default=DEFAULT_FORMAT,
+                      help="project report format (default: %(default)s); place before the command; runtime/forwarded output keeps its own format")
     aliases = {}
     leaves = {}
 
@@ -133,7 +133,7 @@ def parser():
     testing = command(quality, "test", "Run regression suites or discover their contracts",
                       ["quality", "test"], "quality test --suite golden --suite cli")
     testing.add_argument("--bless", action="store_true", help="rewrite golden expectations; requires only golden or default suite selection")
-    testing.add_argument("--suite", action="append", choices=SUITES, help="repeat to select suites; default: all")
+    testing.add_argument("--suite", action="append", choices=SUITES, metavar="SUITE", help="repeat to select suites; default: all")
     testing.add_argument("--case", action="append", metavar="GLOB",
                          help="filter fixture stems or repository-relative paths; repeat for a union; requires golden/robustness suites only")
     testing.add_argument("--jobs", type=int, default=DEFAULT_TEST_JOBS, metavar="N",
@@ -146,7 +146,7 @@ def parser():
     root.epilog += "\n\nShortcuts (equivalent to the full paths):\n" + "\n".join(
         f"  {name:<10} {' '.join(path)}" for name, path in aliases.items() if len(path) > 1
     )
-    testing.epilog += "\n\nSuites:\n" + "\n".join(f"  {name}: {description}" for name, description in SUITES.items())
+    testing.epilog += "\nDiscover suite contracts: ./manage.py test --describe"
     testing.formatter_class = argparse.RawDescriptionHelpFormatter
     root.discovery = {"shortcuts": aliases, "suites": SUITES}
     return root, aliases, leaves
@@ -172,7 +172,7 @@ def describe(parser):
 
 def parse(argv):
     root, aliases, leaves = parser()
-    output_format = "json"
+    output_format = DEFAULT_FORMAT
     if argv and (argv[0] == "--format" or argv[0].startswith("--format=")):
         if argv[0] == "--format":
             if len(argv) < 2:

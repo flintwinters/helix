@@ -45,16 +45,16 @@ def verify(h):
     assert catalog["version"] == 1
     assert set(catalog["tree"]["commands"]) == {"build", "runtime", "inspect", "quality"}
     assert list(catalog["suites"]) == list(SUITES)
-    assert json.loads(invoke("quality", "test", "--list").stdout)["suites"] == list(SUITES)
+    assert json.loads(invoke("--format=json", "quality", "test", "--list").stdout)["suites"] == list(SUITES)
     assert invoke("--format=text", "test", "--list").stdout.splitlines() == list(SUITES)
-    descriptions = invoke("test", "--describe")
+    descriptions = invoke("--format=json", "test", "--describe")
     assert descriptions.returncode == 0
     assert json.loads(descriptions.stdout)["suites"] == SUITES
-    assert json.loads(help_result.stdout) == catalog
+    assert json.loads(invoke("--format=json", "--help").stdout) == catalog
     assert "usage:" in invoke("--format", "text", "--help").stdout
 
     def walk(node, path=()):
-        help_result = invoke(*path, "--help")
+        help_result = invoke("--format=json", *path, "--help")
         assert help_result.returncode == 0 and not help_result.stderr, path
         assert json.loads(help_result.stdout)["tree"] == node
         for name, child in node["commands"].items():
@@ -62,7 +62,7 @@ def verify(h):
 
     walk(catalog["tree"])
     for path in [(), ("runtime",), ("inspect",), ("quality",)]:
-        result = invoke(*path)
+        result = invoke("--format=json", *path)
         assert result.returncode == 0 and json.loads(result.stdout)["tree"] and not result.stderr
     # Discovery needs only Python's standard library, with no Cargo or PyYAML.
     bare = subprocess.run(
@@ -72,7 +72,7 @@ def verify(h):
     assert bare.returncode == 0 and json.loads(bare.stdout) == catalog
     # Invalid fixture selection must fail before trying to build, even without Cargo.
     unmatched = subprocess.run(
-        [sys.executable, str(h.root / "manage.py"), "test", "--suite", "golden",
+        [sys.executable, str(h.root / "manage.py"), "--format=json", "test", "--suite", "golden",
          "--case", "__no_fixture_for_context_contract__"],
         cwd=h.root, env={**os.environ, "PATH": ""}, capture_output=True, text=True, timeout=10,
     )
@@ -81,21 +81,21 @@ def verify(h):
                  ("quality", "test", "--suite", "unknown"),
                  ("quality", "test", "--bless", "--suite", "cli"),
                  ("--help-json", "build")]:
-        result = invoke(*args)
+        result = invoke("--format=json", *args)
         assert result.returncode == 2 and not result.stdout, args
         assert json.loads(result.stderr)["error"]["kind"] == "usage", args
     text_error = invoke("--format=text", "runtime", "unknown")
     assert text_error.returncode == 2 and "error:" in text_error.stderr
     assert json.loads(unmatched.stderr)["error"]["kind"] == "selection"
     missing_cargo = subprocess.run(
-        [sys.executable, str(h.root / "manage.py"), "build"], cwd=h.root,
+        [sys.executable, str(h.root / "manage.py"), "--format=json", "build"], cwd=h.root,
         env={**os.environ, "PATH": ""}, capture_output=True, text=True, timeout=10,
     )
     assert missing_cargo.returncode == 2 and not missing_cargo.stderr
     build_error = json.loads(missing_cargo.stdout)
     assert build_error["exit_code"] == 2 and build_error["status"] == "failed"
     for args in [("test", "--suite", "startup"), ("build",), ("std",)]:
-        result = invoke(*args)
+        result = invoke("--format=json", *args)
         report = json.loads(result.stdout)
         assert result.returncode == report["exit_code"] == 0, report
         assert report["version"] == 1

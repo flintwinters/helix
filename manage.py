@@ -5,14 +5,14 @@ import os
 from pathlib import Path
 
 from tooling.cli import DEFAULT_TEST_JOBS, SUITES, parse
-from tooling.output import emit
+from tooling.output import DEFAULT_FORMAT, emit
 
 ROOT = Path(__file__).resolve().parent
 BIN = ROOT / os.environ.get("CARGO_TARGET_DIR", "target") / "debug" / "helix"
 HYPERLINTER = ROOT / "hyperlinter"
 
 
-def build(*, report=False, output_format="json") -> int:
+def build(*, report=False, output_format=DEFAULT_FORMAT) -> int:
     import subprocess
 
     try:
@@ -20,6 +20,8 @@ def build(*, report=False, output_format="json") -> int:
     except OSError as error:
         result = subprocess.CompletedProcess(["cargo", "build", "--quiet"], 2, "", str(error))
     if output_format == "text":
+        if report:
+            print(f"build: {'failed' if result.returncode else 'passed'} (exit {result.returncode})")
         print(result.stdout, end="")
         print(result.stderr, end="", file=sys.stderr)
     elif report or result.returncode:
@@ -49,7 +51,7 @@ def test_context():
 
 
 def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS,
-         patterns: list[str] | None = None, output_format: str = "json") -> int:
+         patterns: list[str] | None = None, output_format: str = DEFAULT_FORMAT) -> int:
     from dataclasses import replace
     from tooling.test_runner import discover_cases
 
@@ -69,7 +71,7 @@ def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_
     import shutil
     import tempfile
 
-    if (code := build()) != 0:
+    if (code := build(output_format=output_format)) != 0:
         return code
     (ROOT / "runtime").mkdir(exist_ok=True)
     # Freeze this run's executable so another build cannot replace it mid-suite.

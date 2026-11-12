@@ -10,7 +10,7 @@ The ultimate application is declarative machine configuration through first-clas
 
 ## Architecture
 
-- Project tooling defaults to structured, versioned reports; human-readable presentation is explicit. Wrappers preserve language and pipeline wire contracts.
+- Project tooling defaults to concise, scoped text with actionable failures; complete versioned JSON is explicit. Optimize agent output for decision-relevant information and progressive discovery, not serialization alone. Wrappers preserve language and pipeline wire contracts.
 - `src/model.rs` defines source graphs, dedicated runtime values and explicit execution state. Code, collections and machine versions share immutable storage with copy-on-write updates. Runtime functions and VMs are distinct from ordinary lists/maps.
 - `src/graph.rs` preserves lexical topology, scalar quoting and source spans. Inspectable references are source-qualified paths with string-key and integer-index segments; arena indices and allocation addresses have no language meaning.
 - `src/eval.rs` is the sole iterative request/continuation engine. Calls, actor and argument resolution, lazy forms, iteration progress, annotations, error unwinding, memoization, cycle guards, resource budgets and phase state are explicit. Functions retain original code and lexical environments; execution never emits or reparses function source.
