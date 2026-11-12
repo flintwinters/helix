@@ -1,0 +1,54 @@
+# Deterministic damaged-source generation for host-supervised parser/evaluator tests.
+# Unicode scalar offsets; all Python splitlines boundaries, with CRLF kept together.
+# Duplicates and order are intentional; each variant is a list of source slice spans.
+l: [import, std:list]
+plan:
+  - fn
+  - [[source, string]]
+  - [generate, source, [len, source]]
+  - list
+# Eager arguments keep scanning work out of per-variant lexical lookups.
+generate:
+  - fn
+  - [source, size]
+  - - let
+    - scan:
+        - until
+        - [fn, [s], [ge, [get, s, "index"], size]]
+        - - fn
+          - [s]
+          - - let
+            - i: [get, s, "index"]
+              c: [slice, source, i, [add, i, 1]]
+              end: [add, i, [if, [and, [eq, c, "\r"], [lt, [add, i, 1], size], [eq, [slice, source, [add, i, 1], [add, i, 2]], "\n"]], 2, 1]]
+            - - if
+              - [has, ["\n", "\r", "\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"], c]
+              - [dict, "index", end, "start", end, "bounds", [append, [get, s, "bounds"], [list, [get, s, "start"], end]]]
+              - [set, s, "index", end]
+        - {index: 0, start: 0, bounds: []}
+      offsets:
+        - until
+        - [fn, [s], [ge, [get, s, "index"], size]]
+        - [fn, [s], [dict, "index", [add, [get, s, "index"], 5], "offsets", [append, [get, s, "offsets"], [get, s, "index"]]]]
+        - {index: 0, offsets: []}
+    - [finish, size, scan, [get, offsets, "offsets"]]
+  - list
+finish:
+  - fn
+  - [size, scan, offsets]
+  - [render, size, [if, [lt, [get, scan, "start"], size], [append, [get, scan, "bounds"], [list, [get, scan, "start"], size]], [get, scan, "bounds"]], offsets]
+render:
+  - fn
+  - [size, bounds, offsets]
+  - - let
+    - lines:
+        - map
+        - - fn
+          - [index]
+          - - let
+            - pair: [get, bounds, [div, index, 2]]
+              prefix: [list, 0, [get, pair, 0]]
+            - [if, [eq, [mod, index, 2], 0], [list, prefix], [list, prefix, [list, [get, pair, 1], size]]]
+        - [l.range, [mul, [len, bounds], 2]]
+      prefixes: [map, [fn, [offset], [list, [list, 0, offset]]], offsets]
+    - [concat, lines, prefixes]

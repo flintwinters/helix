@@ -1,0 +1,11 @@
+- let
+- f: [import, std:fuzz]
+- empty: [f.plan, ""]
+  single: [f.plan, "abcdef"]
+  lines: [f.plan, "a: 1\nb: 2\n"]
+  unterminated: [f.plan, "a\nb"]
+  crlf: [f.plan, "a\r\nb\rc\n"]
+  boundaries: [f.plan, "a\vb\fc\x1cd\x1de\x1ef\x85g\u2028h\u2029"]
+  unicode: [f.plan, "🙂é世界éx"]
+  wrong_source: [try, [f.plan, 42], [fn, [e], [get, e, "kind"]]]
+  wrong_arity: [try, [f.plan], [fn, [e], [get, e, "kind"]]]
