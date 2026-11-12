@@ -167,7 +167,7 @@ impl View {
                 let index = self
                     .pending
                     .iter()
-                    .position(|v| matches!(v,Pending::Runtime(v) if v==value))
+                    .position(|v| matches!(v,Pending::Runtime(v) if v.same_view(value)))
                     .unwrap_or_else(|| {
                         self.pending.push(Pending::Runtime(value.clone()));
                         self.pending.len() - 1

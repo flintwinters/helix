@@ -8,8 +8,15 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 
-const MAX_DEPTH: usize = 200;
-const MAX_STEPS: usize = 100_000;
+use crate::model::Limits;
+impl Default for Limits {
+    fn default() -> Self {
+        Self {
+            max_depth: 200,
+            max_iterations: 100_000,
+        }
+    }
+}
 use crate::model::{Outcome, Vm};
 
 use crate::model::{Actor, Atomic, Binding, Mode, Operation, Program, Request, Scope};
@@ -126,6 +133,7 @@ impl Evaluator {
             requests: vec![request],
             answer: None,
             depth: 0,
+            limits: Limits::default(),
         }
     }
     pub fn child(function: Arc<Function>) -> Self {
@@ -277,11 +285,11 @@ impl Evaluator {
                         ),
                     ));
                 }
-                if self.depth >= MAX_DEPTH {
+                if self.depth >= self.limits.max_depth {
                     return Err(self.err(
                         site,
                         "depth",
-                        format!("calls nested deeper than {MAX_DEPTH}"),
+                        format!("calls nested deeper than {}", self.limits.max_depth),
                     ));
                 }
                 let environment =
@@ -840,11 +848,14 @@ impl Evaluator {
             unreachable!()
         };
         if name == "until" {
-            if count >= MAX_STEPS {
+            if count >= self.limits.max_iterations {
                 return Err(self.err(
                     site,
                     "limit",
-                    format!("`until` did not finish within {MAX_STEPS} steps"),
+                    format!(
+                        "`until` did not finish within {} steps",
+                        self.limits.max_iterations
+                    ),
                 ));
             }
             let callback = args[0];
@@ -1265,8 +1276,11 @@ impl Evaluator {
                     Value::Hash(
                         [
                             (s("call_depth"), Value::Integer(self.depth as i64)),
-                            (s("max_depth"), Value::Integer(MAX_DEPTH as i64)),
-                            (s("max_iterations"), Value::Integer(MAX_STEPS as i64)),
+                            (s("max_depth"), Value::Integer(self.limits.max_depth as i64)),
+                            (
+                                s("max_iterations"),
+                                Value::Integer(self.limits.max_iterations as i64),
+                            ),
                         ]
                         .into_iter()
                         .collect(),
@@ -1320,11 +1334,13 @@ impl Evaluator {
         nodes
     }
     pub fn for_node(&self, node: NodeId) -> Self {
-        Self::start(
+        let mut state = Self::start(
             self.program.clone(),
             Vec::new(),
             Request::Eval(node, Mode::Node),
-        )
+        );
+        state.limits = self.limits;
+        state
     }
 }
 fn arguments(n: usize) -> String {

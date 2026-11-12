@@ -42,13 +42,19 @@ def root_section(state: str) -> str | None:
     """Re-executable ordinary-data root block; object graphs are inspection, not snapshots."""
     import yaml
     lines = state.splitlines()
-    if not lines or lines[0] != "status: finished" or "root:" not in lines:
+    if not lines or lines[0] != "status: finished":
         return None
     parsed = yaml.safe_load(state)
     if "objects" in parsed:
         return None
+    position = next((i for i, line in enumerate(lines) if line == "root:" or line.startswith("root: ")), None)
+    if position is None:
+        return None
+    inline = lines[position][len("root:"):].strip()
+    if inline:
+        return inline + "\n"
     body = []
-    for line in lines[lines.index("root:") + 1 :]:
+    for line in lines[position + 1 :]:
         if not line.startswith("  "):
             break
         body.append(line[2:])
@@ -96,7 +102,7 @@ def mutations(src: str):
 
 def robustness(cases: list[Path]) -> list[str]:
     failures = []
-    for case in cases:
+    for index, case in enumerate(cases, 1):
         src = case.read_text()
         command = COMMANDS[case.parent]
         for variant in [src, *mutations(src)]:
@@ -104,6 +110,8 @@ def robustness(cases: list[Path]) -> list[str]:
             if (why := malformed_state(run.stdout, run.returncode)) is not None:
                 failures.append(f"{case.name}: {why}\n--- program\n{variant}--- stderr\n{run.stderr}")
                 break
+        if index % 10 == 0 or index == len(cases):
+            print(f"robustness: {index}/{len(cases)} inputs checked", flush=True)
     return failures
 
 

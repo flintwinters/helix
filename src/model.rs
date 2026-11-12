@@ -174,6 +174,12 @@ pub(crate) enum Operation {
     Violations(Value, Value),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Limits {
+    pub max_depth: usize,
+    pub max_iterations: usize,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Evaluator {
     pub program: Arc<Program>,
@@ -183,6 +189,7 @@ pub(crate) struct Evaluator {
     pub(crate) requests: Vec<Request>,
     pub(crate) answer: Option<Outcome>,
     pub(crate) depth: usize,
+    pub(crate) limits: Limits,
 }
 
 #[derive(Clone, Debug, PartialEq)]

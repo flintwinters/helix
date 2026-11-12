@@ -20,16 +20,34 @@ fn finish_by_steps(mut vm: Vm) -> Vm {
 fn equivalent(source: &str) -> Vm {
     let ready = Vm::load(source);
     let initial = ready.inspect();
+    assert_eq!(initial["limits"]["max_depth"].as_i64(), Some(200));
+    assert_eq!(initial["limits"]["max_iterations"].as_i64(), Some(100_000));
     let mut uninterrupted = ready.clone();
     uninterrupted.run();
     let mut stepped = ready.clone();
     let mut retained = Vec::new();
+    let mut seed = 714209_u64;
     for index in 0..100_000 {
         if !active(&stepped) {
             break;
         }
-        if index % 137 == 0 && retained.len() < 12 {
-            retained.push((stepped.clone(), stepped.inspect()));
+        // Fixed-seed reservoir sampling covers pauses throughout execution, including late
+        // child calls and unwinding, while keeping the number of retained versions bounded.
+        if index % 137 == 0 {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let candidate = if retained.len() < 12 {
+                retained.len()
+            } else {
+                (seed as usize) % (index / 137 + 1)
+            };
+            if candidate < 12 {
+                let saved = (stepped.clone(), stepped.inspect());
+                if candidate == retained.len() {
+                    retained.push(saved)
+                } else {
+                    retained[candidate] = saved;
+                }
+            }
         }
         let next = stepped.step();
         stepped = next;
@@ -226,6 +244,9 @@ child: [vm, factory]
 child_type: [is, child, vm]
 child_equal: [eq, child, [vm, factory]]
 advanced_equal: [eq, [step, child], [step, [vm, factory]]]
+code_scalar_kinds: [ne, [fn, [], 1], [fn, [], 1.0]]
+code_symbol_is_not_map: [ne, [fn, [], integer], [fn, [], {symbol: "integer"}]]
+code_map_order: [ne, [fn, [], {a: 1, b: 2}], [fn, [], {b: 2, a: 1}]]
 "#;
     let vm = equivalent(source);
     assert_eq!(vm.status(), Status::Finished, "{}", vm.state_string());
@@ -238,6 +259,9 @@ advanced_equal: [eq, [step, child], [step, [vm, factory]]]
         "child_type",
         "child_equal",
         "advanced_equal",
+        "code_scalar_kinds",
+        "code_symbol_is_not_map",
+        "code_map_order",
     ] {
         assert_eq!(value[key].as_bool(), Some(true), "{key}");
     }
@@ -245,5 +269,26 @@ advanced_equal: [eq, [step, child], [step, [vm, factory]]]
     assert!(
         view.len() < 100_000,
         "recursive environments expanded indefinitely"
+    );
+}
+
+#[test]
+fn inspection_keeps_distinct_source_locations_for_equal_functions() {
+    let mut vm = Vm::load(
+        "first: [fn, [], [div, 1, 0]]\nsecond: [fn, [], [div, 1, 0]]\nequal: [eq, first, second]",
+    );
+    vm.run();
+    let state = vm.state();
+    assert_eq!(state["root"]["equal"].as_bool(), Some(true));
+    let first = state["root"]["first"]["ref"].as_str().unwrap();
+    let second = state["root"]["second"]["ref"].as_str().unwrap();
+    assert_ne!(first, second);
+    assert_eq!(
+        state["objects"][first]["location"]["path"][0].as_str(),
+        Some("first")
+    );
+    assert_eq!(
+        state["objects"][second]["location"]["path"][0].as_str(),
+        Some("second")
     );
 }

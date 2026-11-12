@@ -1,19 +1,17 @@
 //! The object graph: YAML parsed into an arena of nodes with parent links and source spans.
 //! Parent links define lexical/object resolution; paths are always root-relative.
 
-
-
+use yaml_rust2::Yaml;
 use yaml_rust2::parser::{Event, MarkedEventReceiver, Parser};
 use yaml_rust2::scanner::{Marker, TScalarStyle};
-use yaml_rust2::Yaml;
 
 use crate::error::HelixError;
 use crate::span::Span;
 
 pub type NodeId = usize;
 
-pub(crate) use crate::model::{Kind,Graph,Node};
 pub(crate) use crate::model::ROOT;
+pub(crate) use crate::model::{Graph, Kind, Node};
 
 impl Graph {
     pub fn parse(src: &str) -> Result<Graph, HelixError> {
@@ -24,9 +22,12 @@ impl Graph {
                 kind: "parse".into(),
                 message: e.to_string(),
                 file: None,
-                path: None, reference:None,
+                path: None,
+                reference: None,
                 span: span(e.marker()),
-                data: None, calls: Vec::new(), cause: None,
+                data: None,
+                calls: Vec::new(),
+                cause: None,
             })?;
         if let Some(err) = builder.error {
             return Err(err);
@@ -36,9 +37,12 @@ impl Graph {
                 kind: "parse".into(),
                 message: "empty document".into(),
                 file: None,
-                path: None, reference:None,
+                path: None,
+                reference: None,
                 span: Span { line: 1, col: 1 },
-                data: None, calls: Vec::new(), cause: None,
+                data: None,
+                calls: Vec::new(),
+                cause: None,
             });
         }
         Ok(builder.graph)
@@ -57,12 +61,17 @@ impl Graph {
         let mut parts = Vec::new();
         let mut cur = id;
         while let Some(parent) = self.nodes[cur].parent {
-            parts.push(match &self.nodes[parent].kind {
-                Kind::Map(entries) => entries.iter().find(|(_, c)| *c == cur).map(|(k, _)| k.clone()),
-                Kind::Seq(items) => items.iter().position(|c| *c == cur).map(|i| i.to_string()),
-                Kind::Scalar { .. } => None,
-            }
-            .expect("child is listed in its parent"));
+            parts.push(
+                match &self.nodes[parent].kind {
+                    Kind::Map(entries) => entries
+                        .iter()
+                        .find(|(_, c)| *c == cur)
+                        .map(|(k, _)| k.clone()),
+                    Kind::Seq(items) => items.iter().position(|c| *c == cur).map(|i| i.to_string()),
+                    Kind::Scalar { .. } => None,
+                }
+                .expect("child is listed in its parent"),
+            );
             cur = parent;
         }
         parts.reverse();
@@ -70,35 +79,105 @@ impl Graph {
     }
 
     /// String keys and integer indices are distinct even for empty, numeric or slash keys.
-    pub fn segments(&self,id:NodeId)->Vec<crate::model::Segment> {
+    pub fn segments(&self, id: NodeId) -> Vec<crate::model::Segment> {
         use crate::model::Segment;
-        let mut parts=Vec::new();let mut cur=id;
-        while let Some(parent)=self.parent(cur) {
+        let mut parts = Vec::new();
+        let mut cur = id;
+        while let Some(parent) = self.parent(cur) {
             parts.push(match self.kind(parent) {
-                Kind::Map(entries)=>Segment::Key(entries.iter().find(|(_,c)|*c==cur).unwrap().0.clone()),
-                Kind::Seq(items)=>Segment::Index(items.iter().position(|c|*c==cur).unwrap()),_=>unreachable!(),
-            });cur=parent;
+                Kind::Map(entries) => {
+                    Segment::Key(entries.iter().find(|(_, c)| *c == cur).unwrap().0.clone())
+                }
+                Kind::Seq(items) => Segment::Index(items.iter().position(|c| *c == cur).unwrap()),
+                _ => unreachable!(),
+            });
+            cur = parent;
         }
-        parts.reverse();parts
+        parts.reverse();
+        parts
     }
-    pub fn reference(&self,id:NodeId)->crate::value::Value {
+    pub fn reference(&self, id: NodeId) -> crate::value::Value {
+        use crate::model::{Segment, string as s};
         use crate::value::Value as V;
-        use crate::model::{Segment,string as s};
-        V::Hash([(s("source"),s(self.source(id).unwrap_or("<root>"))),(s("path"),V::Array(self.segments(id).into_iter().map(|segment|match segment {Segment::Key(key)=>V::String(key),Segment::Index(index)=>V::Integer(index as i64)}).collect()))].into_iter().collect())
+        V::Hash(
+            [
+                (s("source"), s(self.source(id).unwrap_or("<root>"))),
+                (
+                    s("path"),
+                    V::Array(
+                        self.segments(id)
+                            .into_iter()
+                            .map(|segment| match segment {
+                                Segment::Key(key) => V::String(key),
+                                Segment::Index(index) => V::Integer(index as i64),
+                            })
+                            .collect(),
+                    ),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+        )
     }
 
     /// Shared code views are built once, bottom-up, over the immutable linked source arena.
-    pub fn code_views(&self)->Vec<crate::value::Value> {
+    pub fn code_views(&self) -> Vec<crate::value::Value> {
         use crate::value::Value as V;
-        let mut code=vec![V::Null;self.nodes.len()];
+        let mut code = vec![V::Null; self.nodes.len()];
         for id in (0..self.nodes.len()).rev() {
-            code[id]=match self.kind(id) {
-                Kind::Scalar {value:Yaml::String(text),plain:true}=>V::Hash([(V::String("symbol".into()),V::String(text.clone()))].into_iter().collect()),
-                Kind::Scalar {value,..}=>V::from_yaml(value),
-                Kind::Seq(items)=>V::Array(items.iter().map(|&c|code[c].clone()).collect()),
-                Kind::Map(entries)=>V::Hash(entries.iter().map(|(k,c)|(V::String(k.clone()),code[*c].clone())).collect()),
+            code[id] = match self.kind(id) {
+                Kind::Scalar {
+                    value: Yaml::String(text),
+                    plain: true,
+                } => V::Hash(
+                    [(V::String("symbol".into()), V::String(text.clone()))]
+                        .into_iter()
+                        .collect(),
+                ),
+                Kind::Scalar { value, .. } => V::from_yaml(value),
+                Kind::Seq(items) => V::Array(items.iter().map(|&c| code[c].clone()).collect()),
+                Kind::Map(entries) => V::Hash(
+                    entries
+                        .iter()
+                        .map(|(k, c)| (V::String(k.clone()), code[*c].clone()))
+                        .collect(),
+                ),
             };
-        }code
+        }
+        code
+    }
+
+    /// Structural code equality uses authoritative syntax, never an inspection projection.
+    /// Container order and scalar kinds/quoting matter because code controls evaluation order.
+    pub fn same_code(&self, left: NodeId, other: &Graph, right: NodeId) -> bool {
+        let mut pending = vec![(left, right)];
+        while let Some((a, b)) = pending.pop() {
+            match (self.kind(a), other.kind(b)) {
+                (
+                    Kind::Scalar {
+                        value: a,
+                        plain: ap,
+                    },
+                    Kind::Scalar {
+                        value: b,
+                        plain: bp,
+                    },
+                ) if a == b && ap == bp => {}
+                (Kind::Seq(a), Kind::Seq(b)) if a.len() == b.len() => {
+                    pending.extend(a.iter().copied().zip(b.iter().copied()))
+                }
+                (Kind::Map(a), Kind::Map(b)) if a.len() == b.len() => {
+                    for ((key, a), (other, b)) in a.iter().zip(b) {
+                        if key != other {
+                            return false;
+                        }
+                        pending.push((*a, *b));
+                    }
+                }
+                _ => return false,
+            }
+        }
+        true
     }
 
     /// Append another graph as a detached subtree (its root has no parent) and return its root id.
@@ -109,10 +188,19 @@ impl Graph {
         for node in other.nodes {
             let kind = match node.kind {
                 Kind::Seq(items) => Kind::Seq(shift(&items)),
-                Kind::Map(entries) => Kind::Map(entries.into_iter().map(|(k, id)| (k, id + offset)).collect()),
+                Kind::Map(entries) => Kind::Map(
+                    entries
+                        .into_iter()
+                        .map(|(k, id)| (k, id + offset))
+                        .collect(),
+                ),
                 scalar => scalar,
             };
-            self.nodes.push(Node { kind, parent: node.parent.map(|p| p + offset), span: node.span });
+            self.nodes.push(Node {
+                kind,
+                parent: node.parent.map(|p| p + offset),
+                span: node.span,
+            });
         }
         offset
     }
@@ -133,20 +221,35 @@ impl Graph {
 
     /// An error of `kind` blamed on node `id`, with its path, span and file.
     pub fn error(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
-        HelixError { kind: kind.into(), message, file: self.source(id).map(str::to_string), path: Some(self.path(id)), reference:Some(self.segments(id)), span: self.span(id), data: None, calls: Vec::new(), cause: None }
+        HelixError {
+            kind: kind.into(),
+            message,
+            file: self.source(id).map(str::to_string),
+            path: Some(self.path(id)),
+            reference: Some(self.segments(id)),
+            span: self.span(id),
+            data: None,
+            calls: Vec::new(),
+            cause: None,
+        }
     }
 
     /// A plain (unquoted) string, which is a symbol in expression position.
     pub fn symbol(&self, id: NodeId) -> Option<&str> {
         match self.kind(id) {
-            Kind::Scalar { value: Yaml::String(name), plain: true } => Some(name),
+            Kind::Scalar {
+                value: Yaml::String(name),
+                plain: true,
+            } => Some(name),
             _ => None,
         }
     }
 
     /// The symbol heading a sequence (quoted heads are data).
     pub fn form(&self, id: NodeId) -> Option<&str> {
-        let Kind::Seq(items) = self.kind(id) else { return None };
+        let Kind::Seq(items) = self.kind(id) else {
+            return None;
+        };
         self.symbol(*items.first()?)
     }
 
@@ -158,7 +261,10 @@ impl Graph {
 
 /// yaml-rust2 markers have 1-indexed lines but 0-indexed columns; spans are 1-indexed on both axes.
 fn span(m: &Marker) -> Span {
-    Span { line: m.line(), col: m.col() + 1 }
+    Span {
+        line: m.line(),
+        col: m.col() + 1,
+    }
 }
 
 #[derive(Default)]
@@ -172,7 +278,17 @@ struct Builder {
 impl Builder {
     /// Record the first error; `on_event` ignores everything after it.
     fn fail(&mut self, kind: &'static str, message: &str, at: Marker) {
-        self.error = Some(HelixError { kind: kind.into(), message: message.into(), file: None, path: None, reference:None, span: span(&at), data: None, calls: Vec::new(), cause: None });
+        self.error = Some(HelixError {
+            kind: kind.into(),
+            message: message.into(),
+            file: None,
+            path: None,
+            reference: None,
+            span: span(&at),
+            data: None,
+            calls: Vec::new(),
+            cause: None,
+        });
     }
 
     /// Attach a new node to the open container (or make it the root) and return its id.
@@ -183,19 +299,29 @@ impl Builder {
             match &mut self.graph.nodes[parent].kind {
                 Kind::Seq(items) => items.push(id),
                 Kind::Map(entries) => {
-                    let key = self.stack.last_mut().and_then(|(_, k)| k.take()).expect("a map value follows its key");
+                    let key = self
+                        .stack
+                        .last_mut()
+                        .and_then(|(_, k)| k.take())
+                        .expect("a map value follows its key");
                     entries.push((key, id));
                 }
                 Kind::Scalar { .. } => unreachable!("scalars never open"),
             }
         }
-        self.graph.nodes.push(Node { kind, parent, span: span(&at) });
+        self.graph.nodes.push(Node {
+            kind,
+            parent,
+            span: span(&at),
+        });
         id
     }
 
     /// Whether the open container is a map whose next scalar is a key.
     fn awaiting_key(&self) -> bool {
-        self.stack.last().is_some_and(|(id, key)| matches!(self.graph.nodes[*id].kind, Kind::Map(_)) && key.is_none())
+        self.stack.last().is_some_and(|(id, key)| {
+            matches!(self.graph.nodes[*id].kind, Kind::Map(_)) && key.is_none()
+        })
     }
 }
 
@@ -208,14 +334,19 @@ impl MarkedEventReceiver for Builder {
             Event::Scalar(text, style, _, _) => {
                 if self.awaiting_key() {
                     let id = self.stack.last().unwrap().0;
-                    if matches!(self.graph.kind(id), Kind::Map(entries) if entries.iter().any(|(key, _)| key == &text)) {
+                    if matches!(self.graph.kind(id), Kind::Map(entries) if entries.iter().any(|(key, _)| key == &text))
+                    {
                         return self.fail("parse", "duplicate mapping key", at);
                     }
                     self.stack.last_mut().unwrap().1 = Some(text);
                     return;
                 }
                 let plain = style == TScalarStyle::Plain;
-                let value = if plain { infer(&text) } else { Yaml::String(text) };
+                let value = if plain {
+                    infer(&text)
+                } else {
+                    Yaml::String(text)
+                };
                 let plain = plain && matches!(value, Yaml::String(_));
                 self.add(Kind::Scalar { value, plain }, at);
             }
@@ -223,7 +354,11 @@ impl MarkedEventReceiver for Builder {
                 if self.awaiting_key() {
                     return self.fail("unsupported", "mapping keys must be scalars", at);
                 }
-                let kind = if matches!(ev, Event::SequenceStart(..)) { Kind::Seq(vec![]) } else { Kind::Map(vec![]) };
+                let kind = if matches!(ev, Event::SequenceStart(..)) {
+                    Kind::Seq(vec![])
+                } else {
+                    Kind::Map(vec![])
+                };
                 let id = self.add(kind, at);
                 self.stack.push((id, None));
             }
@@ -245,7 +380,9 @@ fn infer(text: &str) -> Yaml {
         _ => {
             if let Ok(i) = text.parse::<i64>() {
                 Yaml::Integer(i)
-            } else if text.parse::<f64>().is_ok_and(f64::is_finite) && text.bytes().any(|b| b.is_ascii_digit()) {
+            } else if text.parse::<f64>().is_ok_and(f64::is_finite)
+                && text.bytes().any(|b| b.is_ascii_digit())
+            {
                 Yaml::Real(text.to_string())
             } else {
                 Yaml::String(text.to_string())

@@ -104,7 +104,7 @@ impl PartialEq for Value {
             }
             (Self::Boolean(a), Self::Boolean(b)) => a == b,
             (Self::Null, Self::Null) => true,
-            _ => equal_values(self.clone(), other.clone()),
+            _ => equal_values(self.clone(), other.clone(), false),
         }
     }
 }
@@ -116,10 +116,11 @@ impl PartialEq for crate::model::Function {
         equal_values(
             Value::Function(Arc::new(self.clone())),
             Value::Function(Arc::new(other.clone())),
+            false,
         )
     }
 }
-fn equal_values(left: Value, right: Value) -> bool {
+fn equal_values(left: Value, right: Value, inspection: bool) -> bool {
     use crate::model::{Binding, Function, NodeId};
     enum Pair {
         Values(Value, Value),
@@ -127,6 +128,7 @@ fn equal_values(left: Value, right: Value) -> bool {
     }
     let mut pending = vec![Pair::Values(left, right)];
     let mut seen = std::collections::HashSet::new();
+    let mut seen_objects = std::collections::HashSet::new();
     while let Some(pair) = pending.pop() {
         let (a, b) = match pair {
             Pair::Values(a, b) => (a, b),
@@ -138,7 +140,7 @@ fn equal_values(left: Value, right: Value) -> bool {
                 if !seen.insert((Arc::as_ptr(&a) as usize, an, Arc::as_ptr(&b) as usize, bn)) {
                     continue;
                 }
-                if a.program.code[an] != b.program.code[bn] {
+                if !a.program.graph.same_code(an, &b.program.graph, bn) {
                     return false;
                 }
                 let links = a.free_bindings(an);
@@ -167,9 +169,14 @@ fn equal_values(left: Value, right: Value) -> bool {
             (Value::Null, Value::Null) => {}
             (Value::Boolean(a), Value::Boolean(b)) if a == b => {}
             (Value::Integer(a), Value::Integer(b)) if a == b => {}
-            (Value::Float(a), Value::Float(b)) if a == b => {}
+            (Value::Float(a), Value::Float(b))
+                if if inspection {
+                    a.to_bits() == b.to_bits()
+                } else {
+                    a == b
+                } => {}
             (Value::Integer(a), Value::Float(b)) | (Value::Float(b), Value::Integer(a))
-                if mixed(a, b).is_eq() => {}
+                if !inspection && mixed(a, b).is_eq() => {}
             (Value::String(a), Value::String(b)) if a == b => {}
             (Value::Array(a), Value::Array(b)) if a.len() == b.len() => pending.extend(
                 a.iter()
@@ -178,6 +185,9 @@ fn equal_values(left: Value, right: Value) -> bool {
                     .map(|(a, b)| Pair::Values(a, b)),
             ),
             (Value::Hash(a), Value::Hash(b)) if a.len() == b.len() => {
+                if inspection && !a.keys().zip(b.keys()).all(|(a, b)| a == b) {
+                    return false;
+                }
                 for (k, v) in a.iter() {
                     let Some(w) = b.get(k) else { return false };
                     pending.push(Pair::Values(v.clone(), w.clone()));
@@ -187,10 +197,60 @@ fn equal_values(left: Value, right: Value) -> bool {
                 if Arc::ptr_eq(&a, &b) {
                     continue;
                 }
-                let (an, bn) = (a.node, b.node);
-                pending.push(Pair::Code(a, an, b, bn));
+                if inspection {
+                    if a.node != b.node
+                        || a.program != b.program
+                        || a.environment.len() != b.environment.len()
+                    {
+                        return false;
+                    }
+                    if !seen_objects.insert((0, Arc::as_ptr(&a) as usize, Arc::as_ptr(&b) as usize))
+                    {
+                        continue;
+                    }
+                    for (a, b) in a.environment.iter().zip(&b.environment) {
+                        if a.function != b.function || a.args.len() != b.args.len() {
+                            return false;
+                        }
+                        pending.extend(
+                            a.args
+                                .iter()
+                                .cloned()
+                                .zip(b.args.iter().cloned())
+                                .map(|(a, b)| Pair::Values(a, b)),
+                        );
+                    }
+                } else {
+                    let (an, bn) = (a.node, b.node);
+                    pending.push(Pair::Code(a, an, b, bn));
+                }
             }
-            (Value::Machine(a), Value::Machine(b)) if a.logical_eq(&b) => {}
+            (Value::Machine(a), Value::Machine(b)) => {
+                if Arc::ptr_eq(&a, &b) {
+                    continue;
+                }
+                if inspection {
+                    if a.status != b.status
+                        || a.checking != b.checking
+                        || a.source_file != b.source_file
+                    {
+                        return false;
+                    }
+                    match (&a.evaluator, &b.evaluator) {
+                        (Some(a), Some(b))
+                            if a.program == b.program && a.requests.len() == b.requests.len() => {}
+                        (None, None) => {}
+                        _ => return false,
+                    }
+                    if !seen_objects.insert((1, Arc::as_ptr(&a) as usize, Arc::as_ptr(&b) as usize))
+                    {
+                        continue;
+                    }
+                    pending.push(Pair::Values(a.inspection(), b.inspection()));
+                } else if !a.logical_eq(&b) {
+                    return false;
+                }
+            }
             _ => return false,
         }
     }
@@ -213,6 +273,11 @@ pub(crate) fn mixed(integer: i64, float: f64) -> std::cmp::Ordering {
     }
 }
 impl Value {
+    /// Inspection sharing preserves source identity, scalar kinds and displayed collection order.
+    /// Language equality deliberately abstracts some of those presentation details.
+    pub(crate) fn same_view(&self, other: &Self) -> bool {
+        equal_values(self.clone(), other.clone(), true)
+    }
     pub fn as_str(&self) -> Option<&str> {
         if let Self::String(s) = self {
             Some(s)

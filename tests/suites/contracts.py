@@ -37,7 +37,10 @@ def harness(h):
     assert h.root_section("status: finished\nroot:\n  a: 1\n") == "a: 1\n"
     assert h.root_section("status: finished\nroot:\n  a: 1\nphase: type\n") == "a: 1\n"
     assert h.root_section("status: error\n") is None
-    assert h.root_section("status: finished\nroot: 42\n") is None
+    assert h.root_section("status: finished\nroot: 42\n") == "42\n"
+    assert h.root_section("status: finished\nroot: []\n") == "[]\n"
+    assert h.root_section("status: finished\nroot: {}\n") == "{}\n"
+    assert h.root_section("status: finished\nroot: null\n") == "null\n"
     assert h.root_section("status: finished\nroot:\n  ref: object0\nobjects: {}\n") is None
     assert h.root_section("status: finished\nroot:\n  representation: object_graph\n") == "representation: object_graph\n"
     assert "" in list(h.mutations("a: 1\nb: 2\n"))
@@ -203,7 +206,7 @@ def imports(h):
 def run(name, h):
     try:
         globals()[name](h)
-        print(f"{name}: passed (generated seed=714209)" if name == "generated" else f"{name}: passed")
+        print(f"{name}: passed (generated seed=714209)" if name == "generated" else f"{name}: passed", flush=True)
         return []
     except Exception as error:
         import traceback

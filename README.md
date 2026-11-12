@@ -108,7 +108,7 @@ The Rust crate exposes a library and a CLI. The source is organized around:
 | `src/value.rs`, `src/inspect.rs` | Exact equality, shared values and named object-graph inspection |
 | `src/link.rs`, `src/library.rs`, `std/` | File imports and embedded Helix libraries |
 | `src/emit.rs`, `src/error.rs` | Round-trippable YAML output and structured diagnostics |
-| `tests/` | Programs paired with expected YAML states |
+| `tests/` | Golden fixtures, host suites and Rust execution/VM contracts |
 
 Read [AGENTS.md](AGENTS.md) for architectural invariants and change discipline.
 
