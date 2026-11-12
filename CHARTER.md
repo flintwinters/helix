@@ -256,6 +256,40 @@ A type should read like the value it describes with the specifics left open: som
   - [ ] The saved state records which phase failed
   - [ ] A type-time failure stops before any run-time effect is attempted
 
+### Expanding the type algebra
+
+Grow a coherent algebra of descriptions, with a stated meaning for each operation before choosing its syntax. Membership, subtyping and equivalence are different questions: checking one value must not be mistaken for proving a relationship between types. Every new former must compose with existing types, reflection, diagnostics and the YAML round trip.
+
+- [ ] Define types by the values they admit, with explicit top (`any`) and bottom (no inhabitants), and distinguish bottom from the literal `null` type
+- [ ] Add intersections alongside unions; document their interaction with refinements, optional fields and open/closed records
+- [ ] Define the subtyping order and type equivalence; decide when equivalent declarations compare equal and how that relates to ordinary `eq`
+- [ ] Define union as least upper bound and intersection as greatest lower bound wherever the supported fragment can represent them; specify any approximation explicitly
+- [ ] Expand collection descriptions with fixed-length tuples, heterogeneous positions, typed map keys and record row constraints; state width/depth subtyping rules
+- [ ] Add function types with parameter/result variance and explicit effect contracts, including the purity required of type-time functions
+- [ ] Support named recursive types with explicit rules for guardedness, unfolding, equality and termination of checking; distinguish recursive descriptions from erroneous evaluation cycles
+- [ ] Explore type difference, complement and negation only with a defined universe and a documented decidable fragment; do not promise closure where the implementation cannot provide it
+- [ ] Specify refinement implication and constraint composition: which facts are decidable, which require evidence, and which remain unknown
+- [ ] Normalize types without losing their original declarations or provenance; document whether normalization is canonical and when it preserves meaning
+- [ ] Connect inheritance to the algebra: inherited constraints combine by intersection, while default selection and explicit overrides have separately stated rules
+- [ ] For each former, document membership, subtyping, equivalence, reflection, serialization and failure behavior, with positive, negative and boundary golden cases
+
+### Strengthening and proving the type system
+
+The goal is justified guarantees, with the assumptions and limits visible. Executable examples and randomized checks find counterexamples; they are not proofs. Arbitrary Helix refinement predicates make general implication and equivalence undecidable, so a bounded checker must distinguish proved, disproved and unknown rather than silently treating exhausted resources as an answer.
+
+- [ ] Write a small formal core with syntax, value/type domains, evaluation rules, typing judgments and effect judgments; state precisely which implemented features it covers
+- [ ] State and prove the algebraic laws for the supported fragment: subtype reflexivity/transitivity, equivalence, union/intersection bounds, commutativity, associativity, idempotence, absorption, and top/bottom identities
+- [ ] Prove membership and subtyping algorithms sound against the core semantics; claim completeness only for explicitly identified fragments
+- [ ] Specify decidability and resource bounds per operation; expose unknown or exhausted checks as structured results, distinct from rejection and from malformed declarations
+- [ ] Prove normalization preserves denotation; prove termination and, if canonical forms are promised, confluence or uniqueness up to the documented equivalence
+- [ ] Prove preservation and progress for the typed core, accounting for structured errors, effects and the boundary with unannotated code; state what successful checking actually rules out
+- [ ] Prove type-time evaluation cannot perform run-time effects and is deterministic under its declared inputs; separate resource-bounded failure from mathematical termination
+- [ ] Prove inherited constraints are preserved by composition and parent order cannot change a successful result; treat defaults and override conflicts under their own rules
+- [ ] Prove type serialization/reflection preserve meaning and that checked annotations retain their meaning after save/reload; extend the argument to suspended execution when resume exists
+- [ ] Mechanize the core definitions and proofs in a chosen proof assistant, recording assumptions and trusted components; keep a precise correspondence with the Rust implementation
+- [ ] Add reproducible algebra-law, generated counterexample and differential checks through `./manage.py`, reusing the golden and round-trip infrastructure; retain minimized failures as regression cases
+- [ ] Make proof checking discoverable through `./manage.py` and run it alongside implementation checks; a changed semantic rule requires updating its proof obligations and executable cases together
+
 ### Type classes and inheritance
 
 An abstract class is an incomplete description: some fields fixed, some defaulted, some demanded but left open. Inheriting is composing descriptions, and a concrete type is one with nothing left open. This is not object-oriented inheritance: no methods, no dispatch, no behaviour is inherited, only fields, defaults and constraints, so the result of inheriting is always a plain flattened type that could have been written out by hand. Classes are meant to be small and combined freely (`server` plus `has_ssh` plus `monitored`) rather than arranged in a deep tree. Because several parents will disagree, the merge rules are the heart of this group: they must be few, written down, deterministic, and they must refuse to guess. An ambiguity the author did not resolve is an error, never a precedence rule that picks a winner quietly.
