@@ -1,0 +1,3 @@
+# A handler matches the kinds it expects and re-raises the rest, so nothing is swallowed.
+guard: [fn, [e], [cond, [eq, [get, e, "kind"], "transient"], "retry", [raise, e]]]
+expected: [try, [raise, "transient", "flaky"], guard]

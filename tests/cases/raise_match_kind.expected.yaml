@@ -1,0 +1,15 @@
+status: finished
+root:
+  guard:
+    - fn
+    - - e
+    - - cond
+      - - eq
+        - - get
+          - e
+          - "kind"
+        - "transient"
+      - "retry"
+      - - raise
+        - e
+  expected: retry

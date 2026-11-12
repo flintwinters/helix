@@ -1,0 +1,3 @@
+# The handler only expects `transient`; any other kind propagates out unchanged.
+guard: [fn, [e], [cond, [eq, [get, e, "kind"], "transient"], "retry", [raise, e]]]
+unexpected: [try, [raise, "fatal", "disk gone"], guard]

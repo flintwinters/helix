@@ -102,28 +102,12 @@ A daily driver has to do things.
 - [x] Asserts, with messages
 - [ ] Failed runs are resumable after fixing the cause, where it makes sense
 - [ ] Nothing panics: malformed input always yields a structured error
-- [ ] `raise`: user code raises its own error with a user-chosen `kind`, message and data payload
+- [x] `raise`: user code raises its own error with a user-chosen `kind`, message and data payload
 - [ ] Re-raise from a handler, preserving the original error as a `cause` chain
-- [ ] Match handlers on error `kind`, so an unexpected kind is not swallowed
+- [x] Match handlers on error `kind`, so an unexpected kind is not swallowed
 - [ ] `finally` / cleanup that runs on both success and failure (needed before effects)
-- [ ] Errors are values in the saved state: a caught error stays readable in `root`, and the state diff shows it appear
+- [x] Errors are values in the saved state: a caught error stays readable in `root`, and the state diff shows it appear
 - [ ] Validation can collect every problem in one run instead of stopping at the first
-- [ ] Builtin and user-raised errors have one identical shape, so a handler cannot tell (and need not care) which produced it
-- [ ] A documented, stable catalog of builtin error `kind`s in `LANGUAGE.md`, each with a golden case
-- [ ] Raised errors point at the `raise` site (path, line, column), not at the handler
-- [ ] Resource limits (stack depth, cycles) are catchable errors with their own kinds, never crashes
-- [ ] Unresolved symbols and misspelled forms suggest the nearest known name
-- [ ] Wrong-arity and wrong-type errors name the expected and actual types or counts
-- [ ] Distinct process exit codes for error classes (bad input, runtime error, uncaught user error), documented
-- [ ] Inspect a caught error with ordinary accessors (`kind`, `message`, `path`, `cause`), not by pattern-matching its map
-- [ ] Nested `try` composes: an inner handler's error is itself catchable, with the outer chain intact
-- [ ] Errors raised inside `map`/`filter`/`fold`/`each` report the iteration index and element path
-- [ ] An `unreachable`/`todo` marker that fails loudly with its own kind
-- [ ] Parse errors from malformed YAML carry the same structured shape (kind, path, line, column) as runtime errors, with a source excerpt pointing at the offending span
-- [ ] Error `data` payloads must be plain serializable values, so a saved error always re-reads and re-runs as a fixpoint
-- [ ] Optional `default`/`or_else` shorthand for the common "use this value if the expression fails" recovery, without a full `try`
-- [ ] Warnings as a separate non-fatal channel (unused binding, shadowed name) that appears in the state without changing status, and can be promoted to errors
-- [ ] A static check pass catches errors that are knowable without running (unknown form, wrong arity, unresolved symbol) and reports them as the same structured errors
 
 ---
 

@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: fatal
+  message: disk gone
+  path: /guard/2/3
+  line: 2
+  column: 71
