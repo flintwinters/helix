@@ -1,0 +1,16 @@
+status: finished
+root:
+  sets:
+    - - 2
+      - 1
+      - 3
+    - - ~
+    - - 1
+  stack:
+    - false
+    - - ~
+    - empty
+  queue:
+    - ~
+    - - false
+    - empty

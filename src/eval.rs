@@ -5,7 +5,7 @@ use crate::graph::{Graph, Kind, NodeId, ROOT};
 use crate::link;
 use crate::value::{Hash, Value};
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::model::Limits;
@@ -14,6 +14,10 @@ impl Default for Limits {
         Self {
             max_depth: 200,
             max_iterations: 100_000,
+            max_work: 2_000_000,
+            max_values: 128_000_000,
+            max_value_size: 1_000_000,
+            max_eval_depth: 512,
         }
     }
 }
@@ -112,8 +116,12 @@ impl Function {
     }
 }
 impl Evaluator {
-    pub fn new(mut graph: Graph, main: Option<&Path>) -> Result<Self, HelixError> {
-        let modules = link::link(&mut graph, main)?;
+    pub fn new(
+        mut graph: Graph,
+        main: Option<&Path>,
+        roots: Option<&[PathBuf]>,
+    ) -> Result<Self, HelixError> {
+        let modules = link::link(&mut graph, main, roots)?;
         Ok(Self::start(
             Arc::new(Program {
                 code: graph.code_views(),
@@ -125,6 +133,7 @@ impl Evaluator {
         ))
     }
     fn start(program: Arc<Program>, environment: Vec<Scope>, request: Request) -> Self {
+        let limits = Limits::default();
         Self {
             program,
             environment,
@@ -133,7 +142,10 @@ impl Evaluator {
             requests: vec![request],
             answer: None,
             depth: 0,
-            limits: Limits::default(),
+            type_time: false,
+            remaining_work: limits.max_work,
+            remaining_values: limits.max_values,
+            limits,
         }
     }
     pub fn child(function: Arc<Function>) -> Self {
@@ -147,7 +159,11 @@ impl Evaluator {
         &self.program.graph
     }
     fn err(&self, id: NodeId, kind: &str, message: impl Into<String>) -> HelixError {
-        self.graph().error(id, kind, message.into())
+        let mut error = self.graph().error(id, kind, message.into());
+        if self.type_time {
+            error.phase = Some("type");
+        }
+        error
     }
     fn take(&mut self) -> Outcome {
         self.answer
@@ -170,7 +186,10 @@ impl Evaluator {
     fn finish(&mut self, value: Value) {
         self.answer = Some(Ok(value));
     }
-    fn fail(&mut self, error: HelixError) {
+    fn fail(&mut self, mut error: HelixError) {
+        if self.type_time {
+            error.phase = Some("type");
+        }
         self.answer = Some(Err(error));
     }
     pub fn take_child(&mut self) -> Option<Vm> {
@@ -202,7 +221,8 @@ impl Evaluator {
         if matches!(self.answer, Some(Err(_)))
             && !matches!(
                 request,
-                Request::Finish(..)
+                Request::TypeEnd { .. }
+                    | Request::Finish(..)
                     | Request::CallTrace(..)
                     | Request::CallEnd { .. }
                     | Request::Try(..)
@@ -219,9 +239,19 @@ impl Evaluator {
     }
     fn dispatch(&mut self, request: Request) -> Result<(), HelixError> {
         match request {
+            Request::TypeEnd { previous, memo } => {
+                self.type_time = previous;
+                if let Some(memo) = memo {
+                    self.memo = memo;
+                }
+            }
             Request::Eval(id, mode) => self.evaluate(id, mode)?,
             Request::Finish(id, depth, local) => {
                 self.active.remove(&(id, depth));
+                if let Some(Ok(value)) = &self.answer {
+                    let value = value.clone();
+                    self.charge_value(id, &value)?;
+                }
                 if !local {
                     if let Some(Ok(value)) = &self.answer {
                         self.memo.insert(id, value.clone());
@@ -402,6 +432,12 @@ impl Evaluator {
                         s("function"),
                         s(&function.program.graph.path(function.node)),
                     );
+                    if let Some(file) = function.program.graph.source(function.node) {
+                        location.insert(s("function_file"), s(file));
+                    }
+                    let definition = function.program.graph.span(function.node);
+                    location.insert(s("function_line"), Value::Integer(definition.line as i64));
+                    location.insert(s("function_column"), Value::Integer(definition.col as i64));
                     error.calls.push(Value::Hash(location));
                 }
             }
@@ -525,10 +561,28 @@ impl Evaluator {
         Ok(())
     }
     fn evaluate(&mut self, id: NodeId, mode: Mode) -> Result<(), HelixError> {
+        self.remaining_work = self.remaining_work.checked_sub(1).ok_or_else(|| {
+            self.err(
+                id,
+                "limit",
+                format!("evaluation exceeds {} node visits", self.limits.max_work),
+            )
+        })?;
+        if self.active.len() >= self.limits.max_eval_depth {
+            return Err(self.err(
+                id,
+                "depth",
+                format!(
+                    "evaluation nested deeper than {} nodes",
+                    self.limits.max_eval_depth
+                ),
+            ));
+        }
         if mode == Mode::Argument {
             if let Some(name) = self.graph().symbol(id) {
                 match self.resolve(id, name) {
                     Some(Binding::Value(value)) => {
+                        self.charge_value(id, &value)?;
                         self.finish(value);
                         return Ok(());
                     }
@@ -546,8 +600,9 @@ impl Evaluator {
                 }
             }
         }
-        if let Some(value) = self.memo.get(&id) {
-            self.finish(value.clone());
+        if let Some(value) = self.memo.get(&id).cloned() {
+            self.charge_value(id, &value)?;
+            self.finish(value);
             return Ok(());
         }
         let local = self.in_function(id);
@@ -653,6 +708,20 @@ impl Evaluator {
     }
     fn form(&mut self, id: NodeId, name: &str, args: Vec<NodeId>) -> Result<(), HelixError> {
         match name {
+            "type_time" => {
+                let previous = self.type_time;
+                self.type_time = true;
+                let memo = if previous {
+                    None
+                } else {
+                    Some(std::mem::take(&mut self.memo))
+                };
+                self.push(Request::TypeEnd { previous, memo });
+                if let Some(import) = self.program.modules.file_import() {
+                    return Err(self.err(import,"effect","file import is not allowed in type time; use embedded std modules or supply source data directly"));
+                }
+                self.eval(args[0], true);
+            }
             "fn" => {
                 let function = Arc::new(Function {
                     program: self.program.clone(),
@@ -1201,6 +1270,54 @@ impl Evaluator {
         }
         Ok(())
     }
+    fn charge_value(&mut self, id: NodeId, value: &Value) -> Result<(), HelixError> {
+        let mut pending = vec![(value, 0)];
+        let mut produced = 0;
+        while let Some((value, depth)) = pending.pop() {
+            if depth > crate::graph::MAX_NESTING {
+                return Err(self.err(
+                    id,
+                    "depth",
+                    format!(
+                        "value nested deeper than {} containers",
+                        crate::graph::MAX_NESTING
+                    ),
+                ));
+            }
+            let size = match value {
+                Value::String(text) => 1 + text.len(),
+                _ => 1,
+            };
+            produced += size;
+            if produced > self.limits.max_value_size {
+                return Err(self.err(
+                    id,
+                    "limit",
+                    format!("value exceeds {} units", self.limits.max_value_size),
+                ));
+            }
+            self.remaining_values = self.remaining_values.checked_sub(size).ok_or_else(|| {
+                self.err(
+                    id,
+                    "limit",
+                    format!(
+                        "evaluation exceeds {} produced value units",
+                        self.limits.max_values
+                    ),
+                )
+            })?;
+            match value {
+                Value::Array(items) => pending.extend(items.iter().map(|v| (v, depth + 1))),
+                Value::Hash(entries) => pending.extend(
+                    entries
+                        .iter()
+                        .flat_map(|(k, v)| [(k, depth + 1), (v, depth + 1)]),
+                ),
+                _ => {}
+            }
+        }
+        Ok(())
+    }
     pub fn inspection(&self) -> Value {
         let graph = self.graph();
         let requests = self
@@ -1228,6 +1345,31 @@ impl Evaluator {
             [
                 (s("continuations"), Value::Array(requests.into())),
                 (s("location"), location),
+                (
+                    s("phase"),
+                    if self.type_time {
+                        s("type")
+                    } else {
+                        Value::Null
+                    },
+                ),
+                (
+                    s("budgets"),
+                    Value::Hash(
+                        [
+                            (
+                                s("remaining_work"),
+                                Value::Integer(self.remaining_work as i64),
+                            ),
+                            (
+                                s("remaining_values"),
+                                Value::Integer(self.remaining_values as i64),
+                            ),
+                        ]
+                        .into_iter()
+                        .collect(),
+                    ),
+                ),
                 (
                     s("active"),
                     Value::Array(
@@ -1277,6 +1419,19 @@ impl Evaluator {
                         [
                             (s("call_depth"), Value::Integer(self.depth as i64)),
                             (s("max_depth"), Value::Integer(self.limits.max_depth as i64)),
+                            (s("max_work"), Value::Integer(self.limits.max_work as i64)),
+                            (
+                                s("max_values"),
+                                Value::Integer(self.limits.max_values as i64),
+                            ),
+                            (
+                                s("max_value_size"),
+                                Value::Integer(self.limits.max_value_size as i64),
+                            ),
+                            (
+                                s("max_eval_depth"),
+                                Value::Integer(self.limits.max_eval_depth as i64),
+                            ),
                             (
                                 s("max_iterations"),
                                 Value::Integer(self.limits.max_iterations as i64),
@@ -1339,7 +1494,10 @@ impl Evaluator {
             Vec::new(),
             Request::Eval(node, Mode::Node),
         );
+        state.memo = self.memo.clone();
         state.limits = self.limits;
+        state.remaining_work = self.remaining_work;
+        state.remaining_values = self.remaining_values;
         state
     }
 }
@@ -1430,6 +1588,35 @@ impl Request {
         };
         let number = |n: usize| Value::Integer(n as i64);
         match self {
+            Self::TypeEnd { previous, memo } => object(
+                "type_time_return",
+                vec![
+                    ("previous", Value::Boolean(*previous)),
+                    (
+                        "memo",
+                        memo.as_ref()
+                            .map(|memo| {
+                                let mut entries = memo.iter().collect::<Vec<_>>();
+                                entries.sort_by_key(|(id, _)| **id);
+                                Value::Array(
+                                    entries
+                                        .into_iter()
+                                        .map(|(node, value)| {
+                                            object(
+                                                "memo",
+                                                vec![
+                                                    ("location", g.reference(*node)),
+                                                    ("value", value.clone()),
+                                                ],
+                                            )
+                                        })
+                                        .collect(),
+                                )
+                            })
+                            .unwrap_or(Value::Null),
+                    ),
+                ],
+            ),
             Self::Eval(id, mode) => object(
                 "evaluate",
                 vec![

@@ -3,19 +3,32 @@ import argparse
 import json
 import textwrap
 
+DEFAULT_TEST_JOBS = 4
+
 SUITES = {
+    "startup": "Build-free discovery stays independent of execution and test-only imports",
+    "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
     "golden": "Exact YAML states, deterministic evaluation, and finished-root round trips",
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",
     "cli": "Runtime and project CLI contracts, imports, inventory, and recovery",
+    "pipeline": "helix exec inline/stdin execution, raw strings, YAML results, errors and shell pipes",
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
     "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",
+    "errors": "Navigable function definitions, imported call chains, caught errors and causes",
     "imports": "Module resolution, isolation, cycles, and source blame",
     "execution": "Immutable stepping, retained branches, nested machines and explicit continuations",
     "library": "Rust public VM API contracts via cargo test",
     "parser": "YAML syntax, unsupported constructs, paths, and source locations",
     "fuzz": "Bounded fixed-seed token mutations and failure minimization",
+    "type_algebra": "Independent nested-type membership oracle, ordered violations and invalid declarations",
+    "semantics": "Every builtin result witness and declared arity boundary, Unicode and precise blame",
+    "permissions": "Embedded-only and confined imports, transitive denial, path and symlink escapes",
+    "mutants": "Compile isolated arithmetic, source-blame and serialization faults; require suite failures",
+    "memory": "Linux GNU-time peak RSS and scaling, including constant-state long runs",
+    "resources": "Syntax, graph, recursion, iteration, import and computed-growth boundaries",
     "scale": "Large arithmetic maps with execution-time bounds",
+    "speed": "Repeated CLI speed benchmarks with warmup, correctness checks and runtime/speed reports",
 }
 
 CONTRACT = (
@@ -66,6 +79,13 @@ def parser():
     }.items():
         leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} - < program.yaml")
         leaf.add_argument("file", metavar="FILE", help="YAML file, or - for stdin; relative to repository root")
+    sandbox = command(runtime, "sandbox", "Evaluate with file imports confined to ROOT (- denies file imports)",
+                      ["runtime", "sandbox"], "runtime sandbox - program.yaml")
+    sandbox.add_argument("root", metavar="ROOT", help="allowed import directory, or - for embedded modules only")
+    sandbox.add_argument("file", metavar="FILE", help="YAML file, or - for stdin")
+    pipeline = command(runtime, "exec", "Evaluate inline YAML or stdin; emit raw strings or YAML values",
+                       ["runtime", "exec"], "runtime exec '\"[add, 20, 22]\"' | ./manage.py runtime exec")
+    pipeline.add_argument("source", nargs="?", default="-", metavar="PROGRAM", help="inline YAML, or - for stdin (default)")
     inline = command(runtime, "eval", "Evaluate inline YAML and emit VM state",
                      ["runtime", "eval"], "runtime eval '[add, 20, 22]'")
     inline.add_argument("source", metavar="SOURCE", help="YAML program quoted as one shell argument; use -- before a leading dash")
@@ -84,6 +104,8 @@ def parser():
                       ["quality", "test"], "quality test --suite golden --suite cli")
     testing.add_argument("--bless", action="store_true", help="rewrite golden expectations; requires only golden or default suite selection")
     testing.add_argument("--suite", action="append", choices=SUITES, help="repeat to select suites; default: all")
+    testing.add_argument("--jobs", type=int, default=DEFAULT_TEST_JOBS, metavar="N",
+                         help="golden/robustness case workers (default: %(default)s; 1 runs serially)")
     testing.add_argument("--list", action="store_true", help="list suite names without building")
     testing.add_argument("--describe", action="store_true", help="list suites and their contracts without building")
     lint = command(quality, "lint", "Run hyperlinter (JSON by default); forward remaining arguments",
@@ -140,6 +162,8 @@ def parse(argv):
     if args.command is None:
         args.help_parser.print_help()
         return None
+    if args.command == "test" and args.jobs < 1:
+        args.help_parser.error("--jobs must be positive")
     if args.command == "test" and args.bless and args.suite and set(args.suite) != {"golden"}:
         args.help_parser.error("--bless requires --suite golden (or no suite selection)")
     return args

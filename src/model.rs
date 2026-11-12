@@ -73,6 +73,10 @@ pub(crate) enum Mode {
 /// Each pending operation is plain, owned state; error handlers are continuations too.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Request {
+    TypeEnd {
+        previous: bool,
+        memo: Option<HashMap<NodeId, Value>>,
+    },
     Eval(NodeId, Mode),
     Finish(NodeId, usize, bool),
     Actor(NodeId, Vec<NodeId>),
@@ -178,6 +182,10 @@ pub(crate) enum Operation {
 pub(crate) struct Limits {
     pub max_depth: usize,
     pub max_iterations: usize,
+    pub max_work: usize,
+    pub max_values: usize,
+    pub max_value_size: usize,
+    pub max_eval_depth: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -190,6 +198,9 @@ pub(crate) struct Evaluator {
     pub(crate) answer: Option<Outcome>,
     pub(crate) depth: usize,
     pub(crate) limits: Limits,
+    pub(crate) type_time: bool,
+    pub(crate) remaining_work: usize,
+    pub(crate) remaining_values: usize,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -221,6 +232,7 @@ pub(crate) struct Graph {
 pub(crate) struct HelixError {
     /// Stable machine-readable category; the full list is in `LANGUAGE.md`.
     pub kind: String,
+    pub(crate) phase: Option<&'static str>,
     pub message: String,
     /// The imported file the error lies in; absent for the program itself. `path`, `line` and
     /// `column` are relative to that file.
@@ -241,6 +253,7 @@ pub(crate) struct HelixError {
 pub(crate) struct Modules {
     pub(crate) linked: HashMap<NodeId, NodeId>,
     pub(crate) roots: HashSet<NodeId>,
+    pub(crate) first_file_import: Option<NodeId>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

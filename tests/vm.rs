@@ -65,3 +65,32 @@ fn terminal_execution_survives_check_and_repeated_checks() {
         assert_eq!(vm.state_string(), saved);
     }
 }
+
+#[test]
+fn resource_guards_apply_to_library_callers() {
+    for (source, kind) in [
+        ("[".repeat(65) + "0" + &"]".repeat(65), "depth"),
+        ("[until, [fn, [s], false], [fn, [s], [concat, s, s]], \"x\"]".into(), "limit"),
+    ] {
+        let mut vm = Vm::load(&source);
+        vm.run();
+        assert_eq!(vm.status(), Status::Error);
+        assert_eq!(vm.state()["error"]["kind"].as_str(), Some(kind));
+    }
+    let mut recursion = Vm::load("f: [fn, [n], [if, [eq, n, 0], 0, [f, [sub, n, 1]]]]\nr: [f, 200]");
+    recursion.run();
+    assert_eq!(recursion.status(), Status::Error);
+    assert_eq!(recursion.state()["error"]["kind"].as_str(), Some("depth"));
+}
+
+#[test]
+fn embedded_only_loading_does_not_grant_file_access() {
+    let mut denied = Vm::load_sandboxed("m: [import, Cargo.toml]", None, &[]);
+    assert_eq!(denied.status(), Status::Error);
+    assert_eq!(denied.state()["error"]["kind"].as_str(), Some("permission"));
+    let mut allowed = Vm::load_sandboxed("m: [import, std:math]\nr: [m.square, 3]", None, &[]);
+    allowed.run();
+    assert_eq!(allowed.state()["root"]["r"].as_i64(), Some(9));
+    denied.run();
+    assert_eq!(denied.status(), Status::Error);
+}

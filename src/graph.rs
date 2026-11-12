@@ -10,14 +10,36 @@ use crate::span::Span;
 
 pub type NodeId = usize;
 
-pub(crate) use crate::model::ROOT;
-pub(crate) use crate::model::{Graph, Kind, Node};
+pub(crate) use crate::model::{Graph, Kind, Node, ROOT};
+pub(crate) const MAX_NODES: usize = 100_000;
+pub(crate) const MAX_NESTING: usize = 64;
 
 impl Graph {
     pub fn parse(src: &str) -> Result<Graph, HelixError> {
-        let mut builder = Builder::default();
-        Parser::new_from_str(src)
-            .load(&mut builder, false)
+        Self::parse_document(src, false)
+    }
+
+    /// Parse exactly one data document, checking the entire input stream.
+    pub(crate) fn parse_data(src: &str) -> Result<Graph, HelixError> {
+        Self::parse_document(src, true)
+    }
+
+    fn parse_document(src: &str, data_only: bool) -> Result<Graph, HelixError> {
+        let source_lines = src
+            .split_inclusive('\n')
+            .flat_map(|line| {
+                let line = line.strip_suffix('\n').unwrap_or(line);
+                line.strip_suffix('\r').unwrap_or(line).split('\r')
+            })
+            .collect();
+        let mut builder = Builder {
+            source_lines,
+            ends_with_break: src.ends_with(['\r', '\n']),
+            reject_tags: data_only,
+            ..Builder::default()
+        };
+        let parsed = Parser::new_from_str(src)
+            .load(&mut builder, data_only)
             .map_err(|e| HelixError {
                 kind: "parse".into(),
                 message: e.to_string(),
@@ -25,13 +47,15 @@ impl Graph {
                 path: None,
                 reference: None,
                 span: span(e.marker()),
+                phase: None,
                 data: None,
                 calls: Vec::new(),
                 cause: None,
-            })?;
+            });
         if let Some(err) = builder.error {
             return Err(err);
         }
+        parsed?;
         if builder.graph.nodes.is_empty() {
             return Err(HelixError {
                 kind: "parse".into(),
@@ -40,6 +64,7 @@ impl Graph {
                 path: None,
                 reference: None,
                 span: Span { line: 1, col: 1 },
+                phase: None,
                 data: None,
                 calls: Vec::new(),
                 cause: None,
@@ -182,7 +207,10 @@ impl Graph {
 
     /// Append another graph as a detached subtree (its root has no parent) and return its root id.
     /// Used for code that arrives as data, such as a refinement's predicate.
-    pub fn graft(&mut self, other: Graph) -> NodeId {
+    pub fn graft(&mut self, other: Graph) -> Result<NodeId, HelixError> {
+        if self.nodes.len() + other.nodes.len() > MAX_NODES {
+            return Err(self.error(ROOT, "limit", format!("graph exceeds {MAX_NODES} nodes")));
+        }
         let offset = self.nodes.len();
         let shift = |ids: &[NodeId]| ids.iter().map(|id| id + offset).collect::<Vec<_>>();
         for node in other.nodes {
@@ -202,7 +230,7 @@ impl Graph {
                 span: node.span,
             });
         }
-        offset
+        Ok(offset)
     }
 
     /// Record that the subtree grafted at `root` is the file `name`; its errors report it.
@@ -228,6 +256,7 @@ impl Graph {
             path: Some(self.path(id)),
             reference: Some(self.segments(id)),
             span: self.span(id),
+            phase: None,
             data: None,
             calls: Vec::new(),
             cause: None,
@@ -268,14 +297,18 @@ fn span(m: &Marker) -> Span {
 }
 
 #[derive(Default)]
-struct Builder {
+struct Builder<'src> {
     graph: Graph,
+    source_lines: Vec<&'src str>,
+    ends_with_break: bool,
+    /// Data conversion cannot preserve or interpret explicit YAML tags.
+    reject_tags: bool,
     /// Open containers; for maps, `key` holds the pending key awaiting its value.
     stack: Vec<(NodeId, Option<String>)>,
     error: Option<HelixError>,
 }
 
-impl Builder {
+impl Builder<'_> {
     /// Record the first error; `on_event` ignores everything after it.
     fn fail(&mut self, kind: &'static str, message: &str, at: Marker) {
         self.error = Some(HelixError {
@@ -285,10 +318,54 @@ impl Builder {
             path: None,
             reference: None,
             span: span(&at),
+            phase: None,
             data: None,
             calls: Vec::new(),
             cause: None,
         });
+    }
+
+    /// Correct yaml-rust2 0.13 empty-block chomping: clip/strip discard all
+    /// breaks; keep retains content-line breaks, never the header break.
+    fn block_scalar(&self, mut text: String, style: TScalarStyle, at: Marker) -> String {
+        if matches!(style, TScalarStyle::Literal | TScalarStyle::Folded)
+            && text.chars().all(|ch| ch == '\n')
+        {
+            // At EOF the scanner marks the header; otherwise it marks the next
+            // content/token line. For an empty block, the preceding nonblank line is its header.
+            let marked = at.line() - 1;
+            let indicator = if style == TScalarStyle::Literal {
+                '|'
+            } else {
+                '>'
+            };
+            let starts_here = self.source_lines[marked].chars().nth(at.col()) == Some(indicator);
+            let header_line = if starts_here {
+                marked
+            } else {
+                (0..marked)
+                    .rev()
+                    .find(|&line| !self.source_lines[line].trim().is_empty())
+                    .unwrap_or(marked)
+            };
+            let keep = block_keep(self.source_lines[header_line], indicator);
+            let content_line = header_line + 1;
+            let blank_lines = self
+                .source_lines
+                .iter()
+                .skip(content_line)
+                .take_while(|line| line.chars().all(|ch| ch == ' ' || ch == '\t'))
+                .count();
+            let unterminated = blank_lines > 0
+                && content_line + blank_lines == self.source_lines.len()
+                && !self.ends_with_break;
+            text = if keep {
+                "\n".repeat(blank_lines - usize::from(unterminated))
+            } else {
+                String::new()
+            };
+        }
+        text
     }
 
     /// Attach a new node to the open container (or make it the root) and return its id.
@@ -325,13 +402,32 @@ impl Builder {
     }
 }
 
-impl MarkedEventReceiver for Builder {
+impl MarkedEventReceiver for Builder<'_> {
     fn on_event(&mut self, ev: Event, at: Marker) {
         if self.error.is_some() {
             return;
         }
+        if self.reject_tags
+            && matches!(
+                &ev,
+                Event::Scalar(_, _, _, Some(_))
+                    | Event::SequenceStart(_, Some(_))
+                    | Event::MappingStart(_, Some(_))
+            )
+        {
+            return self.fail("unsupported", "YAML tags are not supported", at);
+        }
+        if self.graph.nodes.len() >= MAX_NODES
+            && matches!(
+                ev,
+                Event::Scalar(..) | Event::SequenceStart(..) | Event::MappingStart(..)
+            )
+        {
+            return self.fail("limit", &format!("graph exceeds {MAX_NODES} nodes"), at);
+        }
         match ev {
             Event::Scalar(text, style, _, _) => {
+                let text = self.block_scalar(text, style, at);
                 if self.awaiting_key() {
                     let id = self.stack.last().unwrap().0;
                     if matches!(self.graph.kind(id), Kind::Map(entries) if entries.iter().any(|(key, _)| key == &text))
@@ -351,6 +447,13 @@ impl MarkedEventReceiver for Builder {
                 self.add(Kind::Scalar { value, plain }, at);
             }
             Event::SequenceStart(..) | Event::MappingStart(..) => {
+                if self.stack.len() >= MAX_NESTING {
+                    return self.fail(
+                        "depth",
+                        &format!("syntax nested deeper than {MAX_NESTING} containers"),
+                        at,
+                    );
+                }
                 if self.awaiting_key() {
                     return self.fail("unsupported", "mapping keys must be scalars", at);
                 }
@@ -364,6 +467,9 @@ impl MarkedEventReceiver for Builder {
             }
             Event::SequenceEnd | Event::MappingEnd => {
                 self.stack.pop();
+            }
+            Event::DocumentStart if !self.graph.nodes.is_empty() => {
+                self.fail("parse", "expected exactly one YAML document", at)
             }
             Event::Alias(_) => self.fail("unsupported", "aliases are not supported", at),
             _ => {}
@@ -389,4 +495,63 @@ fn infer(text: &str) -> Yaml {
             }
         }
     }
+}
+
+/// Find the block header after its key/sequence prefix, including quoted keys and properties.
+fn block_keep(header: &str, indicator: char) -> bool {
+    let mut quote = None;
+    let (mut plain, mut property, mut previous_space) = (false, false, true);
+    let mut chars = header.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if let Some(delimiter) = quote {
+            if delimiter == '"' && ch == '\\' {
+                chars.next();
+            } else if ch == delimiter {
+                if delimiter == '\'' && chars.peek() == Some(&'\'') {
+                    chars.next();
+                } else {
+                    quote = None;
+                }
+            }
+            continue;
+        }
+        if ch == '#' && previous_space {
+            break;
+        }
+        if matches!(ch, ' ' | '\t') {
+            if property {
+                plain = false;
+                property = false;
+            }
+            previous_space = true;
+            continue;
+        }
+        previous_space = false;
+        if ch == ':' && chars.peek().is_none_or(|next| matches!(next, ' ' | '\t')) {
+            plain = false;
+            continue;
+        }
+        if !plain {
+            match ch {
+                '\'' | '"' => {
+                    quote = Some(ch);
+                    continue;
+                }
+                '-' | '?' if chars.peek().is_some_and(|next| matches!(next, ' ' | '\t')) => {
+                    continue;
+                }
+                '!' | '&' => {
+                    property = true;
+                }
+                _ if ch == indicator => {
+                    return chars
+                        .take_while(|ch| matches!(ch, '+' | '-' | '1'..='9'))
+                        .any(|ch| ch == '+');
+                }
+                _ => {}
+            }
+        }
+        plain = true;
+    }
+    false
 }

@@ -18,13 +18,13 @@ pub(super) fn handles(actor: &str) -> bool {
     matches!(
         actor,
         "list_of" | "map_of" | "record" | "optional" | "default" | "union" | "enum" | "literal" | "with_field" | "fields" | "is" | "violations" | "expect" | "subtype" | "secret"
-            | "class" | "extend" | "inherit" | "realize" | "parents" | "drift" | "converge"
+            | "class" | "extend" | "inherit" | "realize" | "parents" | "open_fields" | "constrain" | "drift" | "converge"
     )
 }
 
 pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault> {
     match actor {
-        "class" | "extend" | "inherit" | "realize" | "parents" => class::apply(actor, args, pred),
+        "class" | "extend" | "inherit" | "realize" | "parents" | "open_fields" | "constrain" => class::apply(actor, args, pred),
         "drift" | "converge" => machine::apply(actor, args),
         _ => construct::apply(actor, args, pred),
     }

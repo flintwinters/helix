@@ -19,6 +19,99 @@ root:
       ref: object7
     compare:
       ref: object8
+    combine:
+      ref: object9
+    fields_equal:
+      ref: object10
+    throws_matching:
+      ref: object11
+    is_failure:
+      ref: object12
+    failures:
+      ref: object13
+    tagged:
+      ref: object14
+    rerun:
+      ref: object15
+    sequences:
+      math:
+        number:
+          type: union
+          of:
+            - "integer"
+            - float
+        abs:
+          ref: object16
+        sign:
+          ref: object17
+        min:
+          ref: object18
+        max:
+          ref: object19
+        clamp:
+          ref: object20
+        square:
+          ref: object21
+      numbers:
+        type: list
+        of:
+          type: union
+          of:
+            - "integer"
+            - float
+      sum:
+        ref: object22
+      product:
+        ref: object23
+      reverse:
+        ref: object24
+      range:
+        ref: object25
+      unique:
+        ref: object26
+      sort_by:
+        ref: object27
+      first:
+        ref: object28
+      last:
+        ref: object29
+      take:
+        ref: object30
+      drop:
+        ref: object31
+      enumerate:
+        ref: object32
+      zip:
+        ref: object33
+      flatten:
+        ref: object34
+      flat_map:
+        ref: object35
+      find_index:
+        ref: object36
+      find:
+        ref: object37
+      any:
+        ref: object38
+      all:
+        ref: object39
+      count:
+        ref: object40
+      partition:
+        ref: object41
+      grouping:
+        by:
+          ref: object42
+      group_by:
+        ref: object43
+      frequencies:
+        ref: object44
+      sort:
+        ref: object45
+    product:
+      ref: object46
+    lists:
+      ref: object47
   l:
     math:
       number:
@@ -27,17 +120,17 @@ root:
           - "integer"
           - float
       abs:
-        ref: object9
+        ref: object16
       sign:
-        ref: object10
+        ref: object17
       min:
-        ref: object11
+        ref: object18
       max:
-        ref: object12
+        ref: object19
       clamp:
-        ref: object13
+        ref: object20
       square:
-        ref: object14
+        ref: object21
     numbers:
       type: list
       of:
@@ -46,60 +139,60 @@ root:
           - "integer"
           - float
     sum:
-      ref: object15
-    product:
-      ref: object16
-    reverse:
-      ref: object17
-    range:
-      ref: object18
-    unique:
-      ref: object19
-    sort_by:
-      ref: object20
-    first:
-      ref: object21
-    last:
       ref: object22
-    take:
+    product:
       ref: object23
-    drop:
+    reverse:
       ref: object24
-    enumerate:
+    range:
       ref: object25
-    zip:
+    unique:
       ref: object26
-    flatten:
+    sort_by:
       ref: object27
-    flat_map:
+    first:
       ref: object28
-    find_index:
+    last:
       ref: object29
-    find:
+    take:
       ref: object30
-    any:
+    drop:
       ref: object31
-    all:
+    enumerate:
       ref: object32
-    count:
+    zip:
       ref: object33
-    partition:
+    flatten:
       ref: object34
+    flat_map:
+      ref: object35
+    find_index:
+      ref: object36
+    find:
+      ref: object37
+    any:
+      ref: object38
+    all:
+      ref: object39
+    count:
+      ref: object40
+    partition:
+      ref: object41
     grouping:
       by:
-        ref: object35
+        ref: object42
     group_by:
-      ref: object36
+      ref: object43
     frequencies:
-      ref: object37
+      ref: object44
     sort:
-      ref: object38
+      ref: object45
   fixture:
-    ref: object39
+    ref: object48
   add_two:
-    ref: object40
+    ref: object49
   add_ten:
-    ref: object41
+    ref: object50
   basics:
     total: 6
     passed: 6
@@ -143,6 +236,8 @@ root:
               line: 8
               column: 51
               function: /basics/1/4/run/2/1
+              function_line: 14
+              function_column: 59
         name: cleanup_on_success
         input: ~
       - outcome: passed
@@ -167,6 +262,8 @@ root:
               line: 8
               column: 51
               function: /basics/1/5/run/2/1
+              function_line: 15
+              function_column: 59
         name: cleanup_on_failure
         input: ~
   self_test:
@@ -194,11 +291,16 @@ root:
               line: 19
               column: 38
               function: /equal
+              function_file: "std:test"
+              function_line: 12
+              function_column: 3
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /self_test/1/0/run
+              function_line: 19
+              function_column: 29
         name: mismatch
         input: ~
       - outcome: failed
@@ -238,16 +340,23 @@ root:
                   line: 8
                   column: 51
                   function: /self_test/1/1/run/2/1
+                  function_line: 20
+                  function_column: 52
           calls:
             - path: /self_test/1/1/run/2
               line: 20
               column: 41
               function: /throws
+              function_file: "std:test"
+              function_line: 20
+              function_column: 3
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /self_test/1/1/run
+              function_line: 20
+              function_column: 32
         name: wrong_error
         input: ~
       - outcome: failed
@@ -271,11 +380,16 @@ root:
               line: 21
               column: 43
               function: /throws
+              function_file: "std:test"
+              function_line: 20
+              function_column: 3
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /self_test/1/2/run
+              function_line: 21
+              function_column: 34
         name: missing_error
         input: ~
       - outcome: failed
@@ -298,6 +412,8 @@ root:
               line: 8
               column: 51
               function: /self_test/1/3/run
+              function_line: 22
+              function_column: 34
         name: bad_predicate
         input: ~
       - outcome: passed
@@ -1405,7 +1521,7 @@ root:
           - 0
           - 10
   positive:
-    ref: object42
+    ref: object51
   counterexamples:
     total: 11
     passed: 5
@@ -1430,11 +1546,17 @@ root:
               line: 59
               column: 109
               function: /property/2/2
+              function_file: "std:test"
+              function_line: 68
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /table/2/1/1/2/6
+              function_file: "std:test"
+              function_line: 59
+              function_column: 93
         name: all numbers are positive
         input: -5
       - outcome: failed
@@ -1456,11 +1578,17 @@ root:
               line: 59
               column: 109
               function: /property/2/2
+              function_file: "std:test"
+              function_line: 68
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /table/2/1/1/2/6
+              function_file: "std:test"
+              function_line: 59
+              function_column: 93
         name: all numbers are positive
         input: -4
       - outcome: failed
@@ -1482,11 +1610,17 @@ root:
               line: 59
               column: 109
               function: /property/2/2
+              function_file: "std:test"
+              function_line: 68
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /table/2/1/1/2/6
+              function_file: "std:test"
+              function_line: 59
+              function_column: 93
         name: all numbers are positive
         input: -3
       - outcome: failed
@@ -1508,11 +1642,17 @@ root:
               line: 59
               column: 109
               function: /property/2/2
+              function_file: "std:test"
+              function_line: 68
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /table/2/1/1/2/6
+              function_file: "std:test"
+              function_line: 59
+              function_column: 93
         name: all numbers are positive
         input: -2
       - outcome: failed
@@ -1534,11 +1674,17 @@ root:
               line: 59
               column: 109
               function: /property/2/2
+              function_file: "std:test"
+              function_line: 68
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /table/2/1/1/2/6
+              function_file: "std:test"
+              function_line: 59
+              function_column: 93
         name: all numbers are positive
         input: -1
       - outcome: failed
@@ -1560,11 +1706,17 @@ root:
               line: 59
               column: 109
               function: /property/2/2
+              function_file: "std:test"
+              function_line: 68
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /table/2/1/1/2/6
+              function_file: "std:test"
+              function_line: 59
+              function_column: 93
         name: all numbers are positive
         input: 0
       - outcome: passed
@@ -1615,11 +1767,17 @@ root:
                 line: 59
                 column: 109
                 function: /property/2/2
+                function_file: "std:test"
+                function_line: 68
+                function_column: 7
               - file: "std:test"
                 path: /capture/2/1/4/1
                 line: 8
                 column: 51
                 function: /table/2/1/1/2/6
+                function_file: "std:test"
+                function_line: 59
+                function_column: 93
           name: all numbers are positive
           input: 0
   nested:
@@ -1664,11 +1822,16 @@ root:
                       line: 19
                       column: 38
                       function: /equal
+                      function_file: "std:test"
+                      function_line: 12
+                      function_column: 3
                     - file: "std:test"
                       path: /capture/2/1/4/1
                       line: 8
                       column: 51
                       function: /self_test/1/0/run
+                      function_line: 19
+                      function_column: 29
                 name: mismatch
                 input: ~
               - outcome: failed
@@ -1708,16 +1871,23 @@ root:
                           line: 8
                           column: 51
                           function: /self_test/1/1/run/2/1
+                          function_line: 20
+                          function_column: 52
                   calls:
                     - path: /self_test/1/1/run/2
                       line: 20
                       column: 41
                       function: /throws
+                      function_file: "std:test"
+                      function_line: 20
+                      function_column: 3
                     - file: "std:test"
                       path: /capture/2/1/4/1
                       line: 8
                       column: 51
                       function: /self_test/1/1/run
+                      function_line: 20
+                      function_column: 32
                 name: wrong_error
                 input: ~
               - outcome: failed
@@ -1741,11 +1911,16 @@ root:
                       line: 21
                       column: 43
                       function: /throws
+                      function_file: "std:test"
+                      function_line: 20
+                      function_column: 3
                     - file: "std:test"
                       path: /capture/2/1/4/1
                       line: 8
                       column: 51
                       function: /self_test/1/2/run
+                      function_line: 21
+                      function_column: 34
                 name: missing_error
                 input: ~
               - outcome: failed
@@ -1768,6 +1943,8 @@ root:
                       line: 8
                       column: 51
                       function: /self_test/1/3/run
+                      function_line: 22
+                      function_column: 34
                 name: bad_predicate
                 input: ~
               - outcome: passed
@@ -1779,11 +1956,16 @@ root:
               line: 42
               column: 74
               function: /require_pass
+              function_file: "std:test"
+              function_line: 48
+              function_column: 3
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /nested/1/1/4
+              function_line: 42
+              function_column: 65
         name: child failure
         input: ~
       - outcome: passed
@@ -1834,11 +2016,16 @@ root:
               line: 19
               column: 38
               function: /equal
+              function_file: "std:test"
+              function_line: 12
+              function_column: 3
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /self_test/1/0/run
+              function_line: 19
+              function_column: 29
         name: mismatch
         input: ~
       - outcome: failed
@@ -1878,16 +2065,23 @@ root:
                   line: 8
                   column: 51
                   function: /self_test/1/1/run/2/1
+                  function_line: 20
+                  function_column: 52
           calls:
             - path: /self_test/1/1/run/2
               line: 20
               column: 41
               function: /throws
+              function_file: "std:test"
+              function_line: 20
+              function_column: 3
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /self_test/1/1/run
+              function_line: 20
+              function_column: 32
         name: wrong_error
         input: ~
       - outcome: failed
@@ -1911,11 +2105,16 @@ root:
               line: 21
               column: 43
               function: /throws
+              function_file: "std:test"
+              function_line: 20
+              function_column: 3
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /self_test/1/2/run
+              function_line: 21
+              function_column: 34
         name: missing_error
         input: ~
       - outcome: failed
@@ -1938,6 +2137,8 @@ root:
               line: 8
               column: 51
               function: /self_test/1/3/run
+              function_line: 22
+              function_column: 34
         name: bad_predicate
         input: ~
     passed:
@@ -1950,17 +2151,17 @@ root:
       tags:
         - "fast"
       run:
-        ref: object43
+        ref: object52
     - name: known_bug
       tags:
         - "slow"
       run:
-        ref: object44
+        ref: object53
     - name: fast_literal
       tags:
         - "fast"
       run:
-        ref: object45
+        ref: object54
   selected:
     total: 2
     passed: 2
@@ -2003,11 +2204,16 @@ root:
               line: 48
               column: 51
               function: /equal
+              function_file: "std:test"
+              function_line: 12
+              function_column: 3
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /selectable/1/run
+              function_line: 48
+              function_column: 42
         name: known_bug
         input: ~
       - outcome: passed
@@ -2041,11 +2247,16 @@ root:
               line: 48
               column: 51
               function: /equal
+              function_file: "std:test"
+              function_line: 12
+              function_column: 3
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /selectable/1/run
+              function_line: 48
+              function_column: 42
         name: known_bug
         input: ~
   state_rows:
@@ -2111,15 +2322,23 @@ root:
         line: 43
         column: 22
         function: /case
+        function_file: "std:test"
+        function_line: 35
+        function_column: 3
       - path: /invalid_spec/1/2
         line: 66
         column: 35
         function: /suite
+        function_file: "std:test"
+        function_line: 40
+        function_column: 3
       - file: "std:test"
         path: /capture/2/1/4/1
         line: 8
         column: 51
         function: /invalid_spec/1
+        function_line: 66
+        function_column: 26
   checks:
     - ~
     - ~
@@ -2148,7 +2367,7 @@ objects:
   object0:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: thunk
@@ -2177,7 +2396,7 @@ objects:
   object1:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - symbol: actual
@@ -2204,7 +2423,7 @@ objects:
   object2:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: thunk
@@ -2266,7 +2485,7 @@ objects:
   object3:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: spec
@@ -2301,7 +2520,7 @@ objects:
   object4:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: cases
@@ -2313,13 +2532,7 @@ objects:
             - symbol: cases
           failures:
             - symbol: filter
-            - - symbol: fn
-              - - symbol: result
-              - - symbol: eq
-                - - symbol: get
-                  - symbol: result
-                  - outcome
-                - failed
+            - symbol: is_failure
             - symbol: results
         - - symbol: dict
           - total
@@ -2348,10 +2561,15 @@ objects:
           source: "std:test"
           path:
             - "case"
+      is_failure:
+        code:
+          source: "std:test"
+          path:
+            - "is_failure"
   object5:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: report
@@ -2377,7 +2595,7 @@ objects:
   object6:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: rows
@@ -2421,7 +2639,7 @@ objects:
   object7:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: name
@@ -2462,7 +2680,7 @@ objects:
   object8:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: name
@@ -2512,7 +2730,267 @@ objects:
   object9:
     kind: function
     program:
-      ref: object46
+      ref: object55
+    code:
+      - symbol: fn
+      - - - symbol: reports
+          - symbol: list
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: acc
+            - symbol: child
+          - - symbol: dict
+            - total
+            - - symbol: add
+              - - symbol: get
+                - symbol: acc
+                - total
+              - - symbol: get
+                - symbol: child
+                - total
+            - passed
+            - - symbol: add
+              - - symbol: get
+                - symbol: acc
+                - passed
+              - - symbol: get
+                - symbol: child
+                - passed
+            - failed
+            - - symbol: add
+              - - symbol: get
+                - symbol: acc
+                - failed
+              - - symbol: get
+                - symbol: child
+                - failed
+            - results
+            - - symbol: concat
+              - - symbol: get
+                - symbol: acc
+                - results
+              - - symbol: get
+                - symbol: child
+                - results
+        - total: 0
+          passed: 0
+          failed: 0
+          results: []
+        - symbol: reports
+      - symbol: map
+    location:
+      source: "std:test"
+      path:
+        - "combine"
+    environment: []
+    bindings: {}
+  object10:
+    kind: function
+    program:
+      ref: object55
+    code:
+      - symbol: fn
+      - - - symbol: actual
+          - symbol: map
+        - - symbol: expected
+          - symbol: map
+      - - symbol: if
+        - - symbol: fold
+          - - symbol: fn
+            - - symbol: ok
+              - symbol: key
+            - - symbol: and
+              - symbol: ok
+              - - symbol: has
+                - symbol: actual
+                - symbol: key
+              - - symbol: eq
+                - - symbol: get
+                  - symbol: actual
+                  - symbol: key
+                - - symbol: get
+                  - symbol: expected
+                  - symbol: key
+          - true
+          - - symbol: keys
+            - symbol: expected
+        - ~
+        - - symbol: raise
+          - assertion
+          - map fields differ
+          - - symbol: dict
+            - expected
+            - symbol: expected
+            - actual
+            - symbol: actual
+    location:
+      source: "std:test"
+      path:
+        - "fields_equal"
+    environment: []
+    bindings: {}
+  object11:
+    kind: function
+    program:
+      ref: object55
+    code:
+      - symbol: fn
+      - - - symbol: thunk
+          - symbol: function
+        - - symbol: expected
+          - symbol: map
+      - - symbol: let
+        - error:
+            - symbol: throws
+            - symbol: thunk
+            - - symbol: get
+              - symbol: expected
+              - kind
+        - - symbol: finally
+          - symbol: error
+          - - symbol: fields_equal
+            - symbol: error
+            - symbol: expected
+      - symbol: map
+    location:
+      source: "std:test"
+      path:
+        - "throws_matching"
+    environment: []
+    bindings:
+      throws:
+        code:
+          source: "std:test"
+          path:
+            - "throws"
+      fields_equal:
+        code:
+          source: "std:test"
+          path:
+            - "fields_equal"
+  object12:
+    kind: function
+    program:
+      ref: object55
+    code:
+      - symbol: fn
+      - - - symbol: result
+          - symbol: map
+      - - symbol: eq
+        - - symbol: get
+          - symbol: result
+          - outcome
+        - failed
+      - symbol: boolean
+    location:
+      source: "std:test"
+      path:
+        - "is_failure"
+    environment: []
+    bindings: {}
+  object13:
+    kind: function
+    program:
+      ref: object55
+    code:
+      - symbol: fn
+      - - - symbol: report
+          - symbol: map
+      - - symbol: filter
+        - symbol: is_failure
+        - - symbol: get
+          - symbol: report
+          - results
+      - symbol: list
+    location:
+      source: "std:test"
+      path:
+        - "failures"
+    environment: []
+    bindings:
+      is_failure:
+        code:
+          source: "std:test"
+          path:
+            - "is_failure"
+  object14:
+    kind: function
+    program:
+      ref: object55
+    code:
+      - symbol: fn
+      - - - symbol: cases
+          - symbol: list
+        - - symbol: tag
+          - symbol: string
+      - - symbol: filter
+        - - symbol: fn
+          - - symbol: spec
+          - - symbol: has
+            - - symbol: get
+              - symbol: spec
+              - tags
+              - []
+            - symbol: tag
+        - symbol: cases
+      - symbol: list
+    location:
+      source: "std:test"
+      path:
+        - "tagged"
+    environment: []
+    bindings: {}
+  object15:
+    kind: function
+    program:
+      ref: object55
+    code:
+      - symbol: fn
+      - - - symbol: cases
+          - symbol: list
+        - - symbol: report
+          - symbol: map
+      - - symbol: let
+        - names:
+            - symbol: map
+            - - symbol: fn
+              - - symbol: result
+              - - symbol: get
+                - symbol: result
+                - name
+            - - symbol: failures
+              - symbol: report
+        - - symbol: suite
+          - - symbol: filter
+            - - symbol: fn
+              - - symbol: spec
+              - - symbol: has
+                - symbol: names
+                - - symbol: get
+                  - symbol: spec
+                  - name
+            - symbol: cases
+      - symbol: map
+    location:
+      source: "std:test"
+      path:
+        - "rerun"
+    environment: []
+    bindings:
+      failures:
+        code:
+          source: "std:test"
+          path:
+            - "failures"
+      suite:
+        code:
+          source: "std:test"
+          path:
+            - "suite"
+  object16:
+    kind: function
+    program:
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: "n"
@@ -2536,10 +3014,10 @@ objects:
           source: "std:math"
           path:
             - "number"
-  object10:
+  object17:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: "n"
@@ -2566,10 +3044,10 @@ objects:
           source: "std:math"
           path:
             - "number"
-  object11:
+  object18:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: a
@@ -2594,10 +3072,10 @@ objects:
           source: "std:math"
           path:
             - "number"
-  object12:
+  object19:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: a
@@ -2622,10 +3100,10 @@ objects:
           source: "std:math"
           path:
             - "number"
-  object13:
+  object20:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: "n"
@@ -2661,10 +3139,10 @@ objects:
           source: "std:math"
           path:
             - "min"
-  object14:
+  object21:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: "n"
@@ -2684,10 +3162,10 @@ objects:
           source: "std:math"
           path:
             - "number"
-  object15:
+  object22:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -2718,10 +3196,10 @@ objects:
           source: "std:list"
           path:
             - "numbers"
-  object16:
+  object23:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -2752,10 +3230,10 @@ objects:
           source: "std:list"
           path:
             - "numbers"
-  object17:
+  object24:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -2777,10 +3255,10 @@ objects:
         - "reverse"
     environment: []
     bindings: {}
-  object18:
+  object25:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: "n"
@@ -2812,10 +3290,10 @@ objects:
         - "range"
     environment: []
     bindings: {}
-  object19:
+  object26:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -2841,10 +3319,10 @@ objects:
         - "unique"
     environment: []
     bindings: {}
-  object20:
+  object27:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -2897,10 +3375,10 @@ objects:
         - "sort_by"
     environment: []
     bindings: {}
-  object21:
+  object28:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -2916,10 +3394,10 @@ objects:
         - "first"
     environment: []
     bindings: {}
-  object22:
+  object29:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -2943,10 +3421,10 @@ objects:
         - "last"
     environment: []
     bindings: {}
-  object23:
+  object30:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -2979,10 +3457,10 @@ objects:
           source: "std:math"
           path:
             - "min"
-  object24:
+  object31:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3016,10 +3494,10 @@ objects:
           source: "std:math"
           path:
             - "min"
-  object25:
+  object32:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3047,10 +3525,10 @@ objects:
           source: "std:list"
           path:
             - "range"
-  object26:
+  object33:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3090,10 +3568,10 @@ objects:
           source: "std:math"
           path:
             - "min"
-  object27:
+  object34:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xss
@@ -3115,10 +3593,10 @@ objects:
         - "flatten"
     environment: []
     bindings: {}
-  object28:
+  object35:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3141,10 +3619,10 @@ objects:
           source: "std:list"
           path:
             - "flatten"
-  object29:
+  object36:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3185,10 +3663,10 @@ objects:
         - "find_index"
     environment: []
     bindings: {}
-  object30:
+  object37:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3220,10 +3698,10 @@ objects:
           source: "std:list"
           path:
             - "find_index"
-  object31:
+  object38:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3247,10 +3725,10 @@ objects:
           source: "std:list"
           path:
             - "find_index"
-  object32:
+  object39:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3278,10 +3756,10 @@ objects:
           source: "std:list"
           path:
             - "find_index"
-  object33:
+  object40:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3299,10 +3777,10 @@ objects:
         - "count"
     environment: []
     bindings: {}
-  object34:
+  object41:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3338,10 +3816,10 @@ objects:
         - "partition"
     environment: []
     bindings: {}
-  object35:
+  object42:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3374,10 +3852,10 @@ objects:
         - "by"
     environment: []
     bindings: {}
-  object36:
+  object43:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3399,10 +3877,10 @@ objects:
           source: "std:group"
           path:
             - "by"
-  object37:
+  object44:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3430,10 +3908,10 @@ objects:
         - "frequencies"
     environment: []
     bindings: {}
-  object38:
+  object45:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - - symbol: xs
@@ -3458,10 +3936,102 @@ objects:
           source: "std:list"
           path:
             - "sort_by"
-  object39:
+  object46:
     kind: function
     program:
-      ref: object46
+      ref: object55
+    code:
+      - symbol: fn
+      - - - symbol: axes
+          - - symbol: list_of
+            - symbol: list
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: rows
+            - symbol: axis
+          - - symbol: sequences.flat_map
+            - symbol: rows
+            - - symbol: fn
+              - - symbol: row
+              - - symbol: map
+                - - symbol: fn
+                  - - symbol: value
+                  - - symbol: append
+                    - symbol: row
+                    - symbol: value
+                - symbol: axis
+        - - symbol: list
+          - []
+        - symbol: axes
+      - symbol: list
+    location:
+      source: "std:test"
+      path:
+        - "product"
+    environment: []
+    bindings:
+      sequences.flat_map:
+        code:
+          source: "std:list"
+          path:
+            - "flat_map"
+  object47:
+    kind: function
+    program:
+      ref: object55
+    code:
+      - symbol: fn
+      - - - symbol: alphabet
+          - symbol: list
+        - - symbol: max_length
+          - symbol: integer
+      - - symbol: if
+        - - symbol: lt
+          - symbol: max_length
+          - 0
+        - - symbol: raise
+          - range
+          - maximum sample length must be non-negative
+        - - symbol: sequences.flat_map
+          - - symbol: sequences.range
+            - - symbol: add
+              - symbol: max_length
+              - 1
+          - - symbol: fn
+            - - symbol: size
+            - - symbol: product
+              - - symbol: map
+                - - symbol: fn
+                  - - symbol: ignored
+                  - symbol: alphabet
+                - - symbol: sequences.range
+                  - symbol: size
+      - symbol: list
+    location:
+      source: "std:test"
+      path:
+        - "lists"
+    environment: []
+    bindings:
+      sequences.flat_map:
+        code:
+          source: "std:list"
+          path:
+            - "flat_map"
+      sequences.range:
+        code:
+          source: "std:list"
+          path:
+            - "range"
+      product:
+        code:
+          source: "std:test"
+          path:
+            - "product"
+  object48:
+    kind: function
+    program:
+      ref: object55
     code:
       - symbol: fn
       - - symbol: offset
@@ -3476,10 +4046,10 @@ objects:
         - "fixture"
     environment: []
     bindings: {}
-  object40:
+  object49:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - symbol: "n"
@@ -3500,10 +4070,10 @@ objects:
           - 2
     bindings:
       offset: 2
-  object41:
+  object50:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - symbol: "n"
@@ -3524,10 +4094,10 @@ objects:
           - 10
     bindings:
       offset: 10
-  object42:
+  object51:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - - symbol: "n"
@@ -3540,10 +4110,10 @@ objects:
         - "positive"
     environment: []
     bindings: {}
-  object43:
+  object52:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - []
@@ -3565,10 +4135,10 @@ objects:
           source: "std:test"
           path:
             - "equal"
-  object44:
+  object53:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - []
@@ -3588,10 +4158,10 @@ objects:
           source: "std:test"
           path:
             - "equal"
-  object45:
+  object54:
     kind: function
     program:
-      ref: object46
+      ref: object55
     code:
       - symbol: fn
       - []
@@ -3611,7 +4181,7 @@ objects:
           source: "std:test"
           path:
             - "equal"
-  object46:
+  object55:
     kind: program
     sources:
       - source: "<root>"
@@ -4311,13 +4881,7 @@ objects:
                   - symbol: cases
                 failures:
                   - symbol: filter
-                  - - symbol: fn
-                    - - symbol: result
-                    - - symbol: eq
-                      - - symbol: get
-                        - symbol: result
-                        - outcome
-                      - failed
+                  - symbol: is_failure
                   - symbol: results
               - - symbol: dict
                 - total
@@ -4436,6 +5000,226 @@ objects:
                     - symbol: right
                     - symbol: sample
             - symbol: map
+          combine:
+            - symbol: fn
+            - - - symbol: reports
+                - symbol: list
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: acc
+                  - symbol: child
+                - - symbol: dict
+                  - total
+                  - - symbol: add
+                    - - symbol: get
+                      - symbol: acc
+                      - total
+                    - - symbol: get
+                      - symbol: child
+                      - total
+                  - passed
+                  - - symbol: add
+                    - - symbol: get
+                      - symbol: acc
+                      - passed
+                    - - symbol: get
+                      - symbol: child
+                      - passed
+                  - failed
+                  - - symbol: add
+                    - - symbol: get
+                      - symbol: acc
+                      - failed
+                    - - symbol: get
+                      - symbol: child
+                      - failed
+                  - results
+                  - - symbol: concat
+                    - - symbol: get
+                      - symbol: acc
+                      - results
+                    - - symbol: get
+                      - symbol: child
+                      - results
+              - total: 0
+                passed: 0
+                failed: 0
+                results: []
+              - symbol: reports
+            - symbol: map
+          fields_equal:
+            - symbol: fn
+            - - - symbol: actual
+                - symbol: map
+              - - symbol: expected
+                - symbol: map
+            - - symbol: if
+              - - symbol: fold
+                - - symbol: fn
+                  - - symbol: ok
+                    - symbol: key
+                  - - symbol: and
+                    - symbol: ok
+                    - - symbol: has
+                      - symbol: actual
+                      - symbol: key
+                    - - symbol: eq
+                      - - symbol: get
+                        - symbol: actual
+                        - symbol: key
+                      - - symbol: get
+                        - symbol: expected
+                        - symbol: key
+                - true
+                - - symbol: keys
+                  - symbol: expected
+              - ~
+              - - symbol: raise
+                - assertion
+                - map fields differ
+                - - symbol: dict
+                  - expected
+                  - symbol: expected
+                  - actual
+                  - symbol: actual
+          throws_matching:
+            - symbol: fn
+            - - - symbol: thunk
+                - symbol: function
+              - - symbol: expected
+                - symbol: map
+            - - symbol: let
+              - error:
+                  - symbol: throws
+                  - symbol: thunk
+                  - - symbol: get
+                    - symbol: expected
+                    - kind
+              - - symbol: finally
+                - symbol: error
+                - - symbol: fields_equal
+                  - symbol: error
+                  - symbol: expected
+            - symbol: map
+          is_failure:
+            - symbol: fn
+            - - - symbol: result
+                - symbol: map
+            - - symbol: eq
+              - - symbol: get
+                - symbol: result
+                - outcome
+              - failed
+            - symbol: boolean
+          failures:
+            - symbol: fn
+            - - - symbol: report
+                - symbol: map
+            - - symbol: filter
+              - symbol: is_failure
+              - - symbol: get
+                - symbol: report
+                - results
+            - symbol: list
+          tagged:
+            - symbol: fn
+            - - - symbol: cases
+                - symbol: list
+              - - symbol: tag
+                - symbol: string
+            - - symbol: filter
+              - - symbol: fn
+                - - symbol: spec
+                - - symbol: has
+                  - - symbol: get
+                    - symbol: spec
+                    - tags
+                    - []
+                  - symbol: tag
+              - symbol: cases
+            - symbol: list
+          rerun:
+            - symbol: fn
+            - - - symbol: cases
+                - symbol: list
+              - - symbol: report
+                - symbol: map
+            - - symbol: let
+              - names:
+                  - symbol: map
+                  - - symbol: fn
+                    - - symbol: result
+                    - - symbol: get
+                      - symbol: result
+                      - name
+                  - - symbol: failures
+                    - symbol: report
+              - - symbol: suite
+                - - symbol: filter
+                  - - symbol: fn
+                    - - symbol: spec
+                    - - symbol: has
+                      - symbol: names
+                      - - symbol: get
+                        - symbol: spec
+                        - name
+                  - symbol: cases
+            - symbol: map
+          sequences:
+            - symbol: import
+            - symbol: "std:list"
+          product:
+            - symbol: fn
+            - - - symbol: axes
+                - - symbol: list_of
+                  - symbol: list
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: rows
+                  - symbol: axis
+                - - symbol: sequences.flat_map
+                  - symbol: rows
+                  - - symbol: fn
+                    - - symbol: row
+                    - - symbol: map
+                      - - symbol: fn
+                        - - symbol: value
+                        - - symbol: append
+                          - symbol: row
+                          - symbol: value
+                      - symbol: axis
+              - - symbol: list
+                - []
+              - symbol: axes
+            - symbol: list
+          lists:
+            - symbol: fn
+            - - - symbol: alphabet
+                - symbol: list
+              - - symbol: max_length
+                - symbol: integer
+            - - symbol: if
+              - - symbol: lt
+                - symbol: max_length
+                - 0
+              - - symbol: raise
+                - range
+                - maximum sample length must be non-negative
+              - - symbol: sequences.flat_map
+                - - symbol: sequences.range
+                  - - symbol: add
+                    - symbol: max_length
+                    - 1
+                - - symbol: fn
+                  - - symbol: size
+                  - - symbol: product
+                    - - symbol: map
+                      - - symbol: fn
+                        - - symbol: ignored
+                        - symbol: alphabet
+                      - - symbol: sequences.range
+                        - symbol: size
+            - symbol: list
       - source: "std:list"
         code:
           math:

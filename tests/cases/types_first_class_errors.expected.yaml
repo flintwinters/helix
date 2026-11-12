@@ -59,3 +59,5 @@ root:
         line: 6
         column: 26
         function: /wrong_type/1/1
+        function_line: 6
+        function_column: 26

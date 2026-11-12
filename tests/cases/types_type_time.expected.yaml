@@ -1,0 +1,384 @@
+status: finished
+root:
+  types:
+    from_fields:
+      ref: object0
+    without_field:
+      ref: object1
+    optional_field:
+      ref: object2
+    optional_fields:
+      ref: object3
+  shape:
+    type: record
+    fields:
+      name: string
+      count:
+        type: default
+        of: integer
+        default: 0
+  derived:
+    type: record
+    fields:
+      name:
+        type: optional
+        of: string
+      count:
+        type: default
+        of: integer
+        default: 0
+  iteration:
+    type: record
+    fields:
+      a: boolean
+      b: boolean
+  nested:
+    type: list
+    of: integer
+  caught_inside:
+    kind: type
+    message: "expected a type, got integer"
+    phase: type
+    path: /caught_inside/1/1/1
+    reference:
+      - "caught_inside"
+      - 1
+      - 1
+      - 1
+    line: 7
+    column: 44
+  caught_outside:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    phase: type
+    path: /caught_outside/1/1
+    reference:
+      - "caught_outside"
+      - 1
+      - 1
+    line: 8
+    column: 35
+  runtime_after:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    path: /runtime_after/1
+    reference:
+      - "runtime_after"
+      - 1
+    line: 9
+    column: 22
+  captured_error:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    path: /captured_error/1
+    reference:
+      - "captured_error"
+      - 1
+    line: 11
+    column: 23
+  rechecked:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    phase: type
+    path: /captured_error/1
+    reference:
+      - "captured_error"
+      - 1
+    line: 11
+    column: 23
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - - symbol: specs
+          - symbol: map
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: result
+            - symbol: name
+          - - symbol: with_field
+            - symbol: result
+            - symbol: name
+            - - symbol: get
+              - symbol: specs
+              - symbol: name
+        - - symbol: record
+        - - symbol: keys
+          - symbol: specs
+      - symbol: map
+    location:
+      source: "std:types"
+      path:
+        - "from_fields"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - symbol: t
+        - - symbol: name
+          - symbol: string
+      - - symbol: let
+        - specs:
+            - symbol: fields
+            - symbol: t
+        - - symbol: fold
+          - - symbol: fn
+            - - symbol: result
+              - symbol: field
+            - - symbol: if
+              - - symbol: eq
+                - symbol: field
+                - symbol: name
+              - symbol: result
+              - - symbol: with_field
+                - symbol: result
+                - symbol: field
+                - - symbol: get
+                  - symbol: specs
+                  - symbol: field
+          - - symbol: record
+          - - symbol: keys
+            - symbol: specs
+      - symbol: map
+    location:
+      source: "std:types"
+      path:
+        - "without_field"
+    environment: []
+    bindings: {}
+  object2:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - symbol: spec
+      - - symbol: if
+        - - symbol: and
+          - - symbol: eq
+            - - symbol: type
+              - symbol: spec
+            - map
+          - - symbol: has
+            - - "optional"
+              - default
+            - - symbol: get
+              - symbol: spec
+              - type
+              - ""
+        - symbol: spec
+        - - symbol: optional
+          - symbol: spec
+    location:
+      source: "std:types"
+      path:
+        - "optional_field"
+    environment: []
+    bindings: {}
+  object3:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - symbol: t
+      - - symbol: let
+        - specs:
+            - symbol: fields
+            - symbol: t
+        - - symbol: fold
+          - - symbol: fn
+            - - symbol: result
+              - symbol: name
+            - - symbol: with_field
+              - symbol: result
+              - symbol: name
+              - - symbol: optional_field
+                - - symbol: get
+                  - symbol: specs
+                  - symbol: name
+          - - symbol: record
+          - - symbol: keys
+            - symbol: specs
+      - symbol: map
+    location:
+      source: "std:types"
+      path:
+        - "optional_fields"
+    environment: []
+    bindings:
+      optional_field:
+        code:
+          source: "std:types"
+          path:
+            - "optional_field"
+  object4:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          types:
+            - symbol: import
+            - symbol: "std:types"
+          shape:
+            - symbol: record
+            - name
+            - symbol: string
+            - count
+            - - symbol: default
+              - symbol: integer
+              - 0
+          derived:
+            - symbol: type_time
+            - - symbol: types.optional_fields
+              - symbol: shape
+          iteration:
+            - symbol: type_time
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: t
+                  - symbol: name
+                - - symbol: with_field
+                  - symbol: t
+                  - symbol: name
+                  - symbol: boolean
+              - - symbol: record
+              - - "a"
+                - b
+          nested:
+            - symbol: type_time
+            - - symbol: type_time
+              - - symbol: list_of
+                - symbol: integer
+          caught_inside:
+            - symbol: type_time
+            - - symbol: try
+              - - symbol: list_of
+                - 42
+              - - symbol: fn
+                - - symbol: e
+                - symbol: e
+          caught_outside:
+            - symbol: try
+            - - symbol: type_time
+              - - symbol: div
+                - 1
+                - 0
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          runtime_after:
+            - symbol: try
+            - - symbol: div
+              - 1
+              - 0
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          captured_error:
+            - symbol: try
+            - - symbol: div
+              - 1
+              - 0
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          rechecked:
+            - symbol: type_time
+            - symbol: captured_error
+      - source: "std:types"
+        code:
+          from_fields:
+            - symbol: fn
+            - - - symbol: specs
+                - symbol: map
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: result
+                  - symbol: name
+                - - symbol: with_field
+                  - symbol: result
+                  - symbol: name
+                  - - symbol: get
+                    - symbol: specs
+                    - symbol: name
+              - - symbol: record
+              - - symbol: keys
+                - symbol: specs
+            - symbol: map
+          without_field:
+            - symbol: fn
+            - - symbol: t
+              - - symbol: name
+                - symbol: string
+            - - symbol: let
+              - specs:
+                  - symbol: fields
+                  - symbol: t
+              - - symbol: fold
+                - - symbol: fn
+                  - - symbol: result
+                    - symbol: field
+                  - - symbol: if
+                    - - symbol: eq
+                      - symbol: field
+                      - symbol: name
+                    - symbol: result
+                    - - symbol: with_field
+                      - symbol: result
+                      - symbol: field
+                      - - symbol: get
+                        - symbol: specs
+                        - symbol: field
+                - - symbol: record
+                - - symbol: keys
+                  - symbol: specs
+            - symbol: map
+          optional_field:
+            - symbol: fn
+            - - symbol: spec
+            - - symbol: if
+              - - symbol: and
+                - - symbol: eq
+                  - - symbol: type
+                    - symbol: spec
+                  - map
+                - - symbol: has
+                  - - "optional"
+                    - default
+                  - - symbol: get
+                    - symbol: spec
+                    - type
+                    - ""
+              - symbol: spec
+              - - symbol: optional
+                - symbol: spec
+          optional_fields:
+            - symbol: fn
+            - - symbol: t
+            - - symbol: let
+              - specs:
+                  - symbol: fields
+                  - symbol: t
+              - - symbol: fold
+                - - symbol: fn
+                  - - symbol: result
+                    - symbol: name
+                  - - symbol: with_field
+                    - symbol: result
+                    - symbol: name
+                    - - symbol: optional_field
+                      - - symbol: get
+                        - symbol: specs
+                        - symbol: name
+                - - symbol: record
+                - - symbol: keys
+                  - symbol: specs
+            - symbol: map

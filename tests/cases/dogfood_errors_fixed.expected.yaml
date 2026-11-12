@@ -1,0 +1,56 @@
+status: finished
+root:
+  count: 1
+  allocate:
+    ref: object0
+  result: 2
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: count
+      - - symbol: if
+        - - symbol: eq
+          - - symbol: assert
+            - - symbol: gt
+              - symbol: count
+              - 0
+            - "allocate count must be positive; pass at least 1"
+          - ~
+        - - symbol: mul
+          - symbol: count
+          - 2
+        - ~
+    location:
+      source: "<root>"
+      path:
+        - "allocate"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          count: 1
+          allocate:
+            - symbol: fn
+            - - symbol: count
+            - - symbol: if
+              - - symbol: eq
+                - - symbol: assert
+                  - - symbol: gt
+                    - symbol: count
+                    - 0
+                  - "allocate count must be positive; pass at least 1"
+                - ~
+              - - symbol: mul
+                - symbol: count
+                - 2
+              - ~
+          result:
+            - symbol: allocate
+            - symbol: count

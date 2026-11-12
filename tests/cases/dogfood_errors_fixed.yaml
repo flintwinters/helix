@@ -1,0 +1,4 @@
+# Only the caller input changes from dogfood_errors_regression.yaml.
+count: 1
+allocate: [fn, [count], [if, [eq, [assert, [gt, count, 0], "allocate count must be positive; pass at least 1"], null], [mul, count, 2], null]]
+result: [allocate, count]

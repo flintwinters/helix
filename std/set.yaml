@@ -1,0 +1,15 @@
+# Ordered sets are plain lists, using structural/numeric equality.
+# from removes duplicates; other operations accept lists and normalize their results.
+# Stable encounter order, bounded folds, and quadratic copying suit small inputs.
+l: [import, std:list]
+from: [fn, [[xs, list]], [l.unique, xs], list]
+contains: [fn, [[xs, list], value], [has, xs, value], boolean]
+insert: [fn, [[xs, list], value], [from, [append, xs, value]], list]
+remove: [fn, [[xs, list], value], [from, [filter, [fn, [x], [ne, x, value]], xs]], list]
+union: [fn, [[left, list], [right, list]], [from, [concat, left, right]], list]
+intersection: [fn, [[left, list], [right, list]], [from, [filter, [fn, [x], [has, right, x]], left]], list]
+difference: [fn, [[left, list], [right, list]], [from, [filter, [fn, [x], [not, [has, right, x]]], left]], list]
+is_subset: [fn, [[left, list], [right, list]], [l.all, left, [fn, [x], [has, right, x]]], boolean]
+is_disjoint: [fn, [[left, list], [right, list]], [not, [l.any, left, [fn, [x], [has, right, x]]]], boolean]
+equals: [fn, [[left, list], [right, list]], [and, [is_subset, left, right], [is_subset, right, left]], boolean]
+symmetric_difference: [fn, [[left, list], [right, list]], [concat, [difference, left, right], [difference, right, left]], list]

@@ -1,0 +1,28 @@
+t: [import, std:test]
+s: [import, std:set]
+k: [import, std:stack]
+q: [import, std:queue]
+l: [import, std:list]
+examples:
+  - t.suite
+  - - {name: normalize, run: [fn, [], [t.equal, [s.from, [list, 2, 1, 2.0, null, false, null, {a: 1}, {a: 1}]], [list, 2, 1, null, false, {a: 1}]]]}
+    - {name: union_order, run: [fn, [], [t.equal, [s.union, [list, 2, 1, 2], [list, 3, 1, 4]], [list, 2, 1, 3, 4]]]}
+    - {name: intersection_order, run: [fn, [], [t.equal, [s.intersection, [list, 3, 1, 3, 2], [list, 2, 3]], [list, 3, 2]]]}
+    - {name: difference_order, run: [fn, [], [t.equal, [s.difference, [list, 3, 1, 3, 2], [list, 2]], [list, 3, 1]]]}
+    - {name: insert_duplicate, run: [fn, [], [t.equal, [s.insert, [list, 2, 2, 1], 2.0], [list, 2, 1]]]}
+    - {name: remove_all, run: [fn, [], [t.equal, [s.remove, [list, null, false, null], null], [list, false]]]}
+    - {name: empty_subset, run: [fn, [], [t.equal, [s.is_subset, [], []], true]]}
+    - {name: missing_member, run: [fn, [], [t.equal, [s.is_subset, [list, 1, 2], [list, 1]], false]]}
+    - {name: contains_nested, run: [fn, [], [t.equal, [s.contains, [list, {a: [1, 2]}], {a: [1, 2]}], true]]}
+    - {name: empty_stack, run: [fn, [], [t.equal, [list, [k.pop, []], [k.peek, [], "missing"]], [list, [], "missing"]]]}
+    - {name: empty_queue, run: [fn, [], [t.equal, [list, [q.dequeue, []], [q.peek, [], "missing"]], [list, [], "missing"]]]}
+    - {name: lifo, run: [fn, [], [let, {xs: [k.push, [k.push, [], null], false]}, [t.equal, [list, [k.peek, xs, "missing"], [k.peek, [k.pop, xs], "missing"], [k.pop, [k.pop, xs]]], [list, false, null, []]]]]}
+    - {name: fifo, run: [fn, [], [let, {xs: [q.enqueue, [q.enqueue, [], null], false]}, [t.equal, [list, [q.peek, xs, "missing"], [q.peek, [q.dequeue, xs], "missing"], [q.dequeue, [q.dequeue, xs]]], [list, null, false, []]]]]}
+    - {name: set_contract, run: [fn, [], [t.throws, [fn, [], [s.union, [], 1]], "type"]]}
+    - {name: stack_contract, run: [fn, [], [t.throws, [fn, [], [k.pop, {}]], "type"]]}
+    - {name: queue_contract, run: [fn, [], [t.throws, [fn, [], [q.peek, null, false]], "type"]]}
+samples: [list, [], [list, null], [list, false, null, false], [list, 2, 1, 2.0], [list, {a: 1}, [list, 2]]]
+stack_law: [t.property, "push then pop restores the stack", samples, [fn, [xs], [eq, [k.pop, [k.push, xs, "new"]], xs]]]
+queue_law: [t.property, "enqueue then drain preserves FIFO order", samples, [fn, [xs], [let, {queued: [fold, [fn, [acc, x], [q.enqueue, acc, x]], [], xs], drained: [fold, [fn, [state, ignored], [list, [q.dequeue, [get, state, 0]], [append, [get, state, 1], [q.peek, [get, state, 0], "missing"]]]], [list, queued, []], xs]}, [eq, drained, [list, [], xs]]]]]
+set_law: [t.property, "normalization is idempotent and union with self preserves it", samples, [fn, [xs], [let, {normalized: [s.from, xs]}, [and, [eq, [s.from, normalized], normalized], [eq, [s.union, xs, xs], normalized], [s.is_subset, xs, normalized], [eq, [s.difference, xs, xs], []]]]]]
+report: [t.suite, [{name: examples, run: [fn, [], [t.require_pass, examples]]}, {name: stack, run: [fn, [], [t.require_pass, stack_law]]}, {name: queue, run: [fn, [], [t.require_pass, queue_law]]}, {name: set, run: [fn, [], [t.require_pass, set_law]]}]]

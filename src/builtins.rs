@@ -13,6 +13,7 @@ mod fault;
 mod number;
 mod typing;
 mod value;
+mod yaml;
 
 pub use fault::Fault;
 pub use typing::{is_primitive, refine, violations, Violation};
@@ -29,13 +30,14 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("map", 2, Some(2)), ("filter", 2, Some(2)), ("fold", 3, Some(3)), ("each", 2, Some(2)), ("until", 3, Some(3)),
     ("len", 1, Some(1)), ("concat", 2, None), ("slice", 3, Some(3)), ("get", 2, Some(3)), ("set", 3, Some(3)),
     ("append", 2, None), ("keys", 1, Some(1)), ("has", 2, Some(2)), ("values", 1, Some(1)), ("duplicates", 1, Some(1)),
+    ("yaml_parse", 1, Some(1)), ("yaml_dump", 1, Some(1)),
     ("str", 1, Some(1)), ("int", 1, Some(1)), ("float", 1, Some(1)), ("type", 1, Some(1)),
     ("list_of", 1, Some(1)), ("map_of", 1, Some(1)), ("record", 0, None), ("optional", 1, Some(1)), ("default", 2, Some(2)), ("union", 1, None),
     ("enum", 1, None), ("literal", 1, Some(1)), ("refine", 2, Some(2)), ("with_field", 3, Some(3)), ("list", 0, None), ("dict", 0, None), ("fields", 1, Some(1)), ("is", 2, Some(2)),
     ("violations", 2, Some(2)), ("expect", 2, Some(2)), ("subtype", 2, Some(2)), ("secret", 1, Some(1)),
-    ("class", 2, Some(3)), ("extend", 4, Some(4)), ("inherit", 3, Some(3)), ("realize", 1, Some(1)), ("parents", 1, Some(1)),
+    ("class", 2, Some(3)), ("extend", 4, Some(4)), ("inherit", 3, Some(3)), ("realize", 1, Some(1)), ("parents", 1, Some(1)), ("open_fields", 1, Some(1)), ("constrain", 2, Some(2)),
     ("drift", 2, Some(2)), ("converge", 2, Some(2)),
-    ("import", 1, Some(1)), ("assert", 1, Some(2)), ("raise", 1, Some(3)), ("try", 2, Some(2)), ("finally", 2, Some(2)),
+    ("type_time", 1, Some(1)), ("import", 1, Some(1)), ("assert", 1, Some(2)), ("raise", 1, Some(3)), ("try", 2, Some(2)), ("finally", 2, Some(2)),
 ];
 
 /// `(minimum, maximum)` argument counts; `None` overall means not a builtin.
@@ -45,7 +47,7 @@ pub fn arity(actor: &str) -> Option<(usize, Option<usize>)> {
 
 /// Forms decide which arguments to evaluate (or call user functions), so the evaluator drives them.
 pub fn is_form(actor: &str) -> bool {
-    matches!(actor, "vm" | "call" | "closure" | "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until" | "try" | "finally" | "refine" | "import")
+    matches!(actor, "vm" | "call" | "closure" | "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until" | "try" | "finally" | "refine" | "import" | "type_time")
 }
 
 /// Apply a strict (eagerly evaluated) builtin.
@@ -57,6 +59,7 @@ pub fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Faul
         "not" => boolean(&args[0], 0).map(|b| Value::Boolean(!b)),
         _ if typing::handles(actor) => typing::apply(actor, args, pred),
         "len" | "list" | "dict" | "concat" | "slice" | "get" | "set" | "append" | "keys" | "has" | "values" | "duplicates" => collection::apply(actor, args),
+        "yaml_parse" | "yaml_dump" => yaml::apply(actor, &args[0]),
         "str" => text(&args[0]),
         "type" => Ok(Value::String(type_name(&args[0]).to_string())),
         "assert" => assert(args),

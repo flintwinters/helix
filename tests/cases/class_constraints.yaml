@@ -1,0 +1,8 @@
+machine: [class, "machine", [record, "min", integer, "max", integer]]
+ordered: [fn, [v], [le, [get, v, "min"], [get, v, "max"]]]
+sane: [constrain, machine, ordered]
+open_before: [open_fields, sane]
+ok: [get, [inherit, "ok", [list, sane], {min: 1, max: 5}], "values"]
+violated: [try, [inherit, "bad", [list, sane], {min: 9, max: 5}], [fn, [e], [get, e, "data"]]]
+inherited_twice: [get, [inherit, "d", [list, sane, [extend, "x", [list, sane], [record], {}]], {min: 1, max: 2}], "constraints"]
+open_after_partial: [open_fields, [extend, "p", [list, sane], [record], {min: 1}]]

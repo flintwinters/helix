@@ -6,6 +6,30 @@ The central idea is that program source and machine state should share one reada
 
 ## Try it
 
+For shell pipelines, build with `./manage.py build` and put `target/debug` on your
+`PATH` (or install the executable with `cargo install --path .`). Then:
+
+```sh
+helix exec '"[add, 20, 22]"' | helix exec
+# 42
+helix exec '[add, 20, 22]'
+# 42
+```
+
+`helix exec [PROGRAM | -]` evaluates inline YAML, or reads a program from stdin
+when its program argument is omitted. It emits string results verbatim, without added quotes or a
+newline, and other values as YAML using the normal round-trip emitter. A string
+containing program source therefore becomes executable input to the next `helix exec`.
+Errors go to stderr as structured VM state, leave stdout empty, and exit 1;
+usage/read errors exit 2. Use `set -o pipefail` to detect failures anywhere in a
+shell pipeline. Imports resolve from the working directory. `helix run` continues
+to emit full VM state for inspection and recovery.
+
+`helix` is the single language executable: `exec`, `run`, `check`, `recover`,
+`resume`, `sandbox`, and `std` share the same dispatcher and VM. Run `helix --help`
+to discover them. During development, `./manage.py runtime exec PROGRAM` builds
+and invokes the same pipeline command; omitting `PROGRAM` reads stdin.
+
 You need Rust with Cargo (supporting the 2024 edition), Python 3.10 or newer, and [PyYAML](https://pypi.org/project/PyYAML/). Help, command discovery, builds, and runtime invocation work without PyYAML; tests and inventory use it.
 
 ```sh
@@ -32,7 +56,7 @@ root:
   z: 10
 ```
 
-The emitter quotes strings where needed to preserve their meaning when read again. An ordinary-data `root` can itself be run as a program; the test suite checks that those roots remain stable across this round trip. Function and machine values instead use finite named inspection graphs, which are not executable snapshots.
+The emitter quotes strings where needed to preserve their meaning when read again. Ordinary-data roots can themselves be run as programs; function and machine values instead use finite named inspection graphs beside the normal root/error projection. Inspection graphs are not executable snapshots.
 
 Use `./manage.py run -` to read a program from stdin. After building, the executable is also available as `target/debug/helix run FILE`.
 
@@ -47,7 +71,7 @@ double: [fn, [n], [mul, n, 2]]
 results: [map, double, [1, 2, 3]]
 ```
 
-Execution uses explicit immutable machine versions. Rust callers can retain a `Vm`, call `step()` and independently run either branch; Helix programs use `[vm, function]`, `[step, child]` and `[inspect, child]`. Calls, scopes, iterations, type predicates and cleanup have inspectable continuations. See [`vm_parent_child.yaml`](tests/cases/vm_parent_child.yaml) for a complete parent/child demonstration. Disk save/restore, the reversibility promise, effects and debugger UI remain separate work.
+Execution uses immutable machine versions and one iterative dispatcher. Rust callers can retain a `Vm`, call `step()` and independently run either branch; Helix programs use `[vm, function]`, `[step, child]` and `[inspect, child]`. Calls, scopes, iterations, type predicates, pure regions, resource budgets and cleanup are explicit state. See `tests/cases/vm_parent_child.yaml`. Disk snapshots, reversibility-promise syntax, effects and debugger UI remain separate work.
 
 The longer-term direction is declarative machine configuration through first-class types: describe and validate a machine before applying changes to it. See the [charter](CHARTER.md) for the roadmap and the [language reference](LANGUAGE.md) for documented syntax and semantics.
 
@@ -94,21 +118,29 @@ Common shortcuts:
 ./manage.py lint --format=text
 ```
 
+Golden and robustness failures identify the source path and contract stage, show a
+rerun command, and save complete output evidence under `runtime/test-failures/`.
+Golden mismatches include a bounded unified diff. Round-trip and damaged-input
+failures save their exact replay source; `check` replays retain check semantics.
+Evidence for the same case and stage is replaced on the next failure.
+
+
 Linting uses the [hyperlinter](https://github.com/flintwinters/hyperlinter) submodule and requires Git, Node.js, and npm. The lint command initializes the submodule and installs its dependencies when needed.
 
-The Rust crate exposes a library and a CLI. The source is organized around:
+The Rust crate exposes a library and one executable (`helix`). The source is organized around:
 
 | Path | Responsibility |
 | --- | --- |
 | `src/graph.rs` | YAML parsing, object graph, parent links, and source spans |
-| `src/model.rs` | Immutable syntax, runtime values and explicit execution-state definitions |
-| `src/eval.rs` | One iterative request/continuation dispatcher, lexical scope, calls and type predicates |
+| `src/model.rs` | Shared immutable syntax, runtime values and execution state |
+| `src/eval.rs` | Iterative requests/continuations, lexical environments, pure regions and bounded evaluation |
 | `src/builtins.rs`, `src/builtins/` | Builtin operations and shared value/error helpers |
-| `src/vm.rs` | Immutable stepping, lifecycle and iterative nested-machine scheduling |
-| `src/value.rs`, `src/inspect.rs` | Exact equality, shared values and named object-graph inspection |
+| `src/vm.rs` | Immutable stepping, lifecycle and iterative child-machine scheduling |
+| `src/value.rs`, `src/inspect.rs` | Exact equality, shared runtime values and named object inspection |
 | `src/link.rs`, `src/library.rs`, `std/` | File imports and embedded Helix libraries |
 | `src/emit.rs`, `src/error.rs` | Round-trippable YAML output and structured diagnostics |
-| `tests/` | Golden fixtures, host suites and Rust execution/VM contracts |
+| `src/main.rs` | Unified language CLI: execution, pipelines, checking, recovery and module discovery |
+| `tests/` | Golden states, Helix test modules, Python contracts, and Rust VM tests |
 
 Read [AGENTS.md](AGENTS.md) for architectural invariants and change discipline.
 
@@ -140,8 +172,6 @@ the program. Loading the whole envelope does not resume execution. Imports resol
 relative to the source file; stdin imports resolve relative to the working directory.
 For reproducible dependencies, commit library sources under `vendor/` and import
 their entry files by relative path; see [pinned dependencies](LANGUAGE.md#pinned-dependencies).
-For reproducible dependencies, commit library sources under `vendor/` and import
-their entry files by relative path; see [pinned dependencies](LANGUAGE.md#pinned-dependencies).
 
 ## Testing contracts and known gaps
 
@@ -154,38 +184,40 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 
 | Contract and exercised failure paths | Suite / authoritative fixtures | Known gaps |
 | --- | --- | --- |
-| Language results, structured errors, deterministic output, ordinary-data fixpoints and object inspection | `golden`; `tests/cases/`, `tests/check/` when present | Not every builtin/type/arity combination has a case |
+| Language results, structured errors, deterministic output, saved-root fixpoints | `golden`; `tests/cases/`, `tests/check/` | Not every builtin/type/arity combination has a case |
+| First-class type regions, phase-local errors, run/check parity, file-input exclusion and bounded evaluation | `type_time`; `tests/suites/type_time.py` plus type golden cases | File imports are conservatively excluded from programs using explicit type regions |
 | Truncations and deletions produce structured states, no crashes | `robustness`; every golden source | Finite mutations are not a proof of panic freedom |
-| Discovery pairs, invalid states, timeout/crash detection, wrong golden results, broken reload comparison | `harness`; synthetic fixtures and subprocess faults | Production mutation testing remains open |
-| Usage errors, inaccessible files, run/check files versus stdin, stream and exit contracts | `cli` | No successful `--help` or shell completion yet |
+| Discovery pairs, invalid states, timeout/crash detection, wrong golden results, broken reload comparison | `harness`; synthetic fixtures and subprocess faults | Compiled faults are checked by `mutants` |
+| Usage errors, inaccessible files, run/check files versus stdin, discovery, and recovery | `cli` | Language and project CLIs support successful help; no shell completion |
+| Inline/stdin programs, raw string output, YAML round trips, structured stderr and shell pipes | `pipeline`; `tests/suites/pipeline.py` | No shell completion or platform-wide shell matrix |
+| Function declaration locations, imported call chains, caught errors and re-raised causes | `errors`; `tests/suites/errors.py` | Pure recovery; no effect or suspended-call diagnostics |
 | Integer expression trees versus Python, list sums/reversal laws, Unicode/nested literal save cycles | `generated`; seed 714209 | Bounded integers and exact binary fractions; general float/callable generation remains open |
+| YAML toolkit scalar types, block/flow syntax, Unicode/controls, rejection cases, deterministic mutations, nested paths and parser bounds | `dogfood`; `tests/dogfood/yaml/` | Helix data subset; aliases, explicit tags and container keys rejected; no claim of full YAML conformance |
 | Helix assertions, bounded collection laws, nested reports, runner failures | `dogfood`; `tests/dogfood/` | Explicit finite samples; no automatic random generation or shrinking |
 | Shared import dependencies, cycles, missing/malformed files, isolation and imported blame | `imports`; generated file trees | Symlink/path-platform combinations not exhaustive |
 | Independent VMs, repeated run, terminal failures, successful and failing check | `library`; `tests/vm.rs` | Disk restoration is not implemented |
-| Stepping versus run, arbitrary pauses, retained versions, nested children, captures, recursion, iteration, predicates and cleanup | `execution`; `tests/execution.rs`, `tests/execution_memory.rs` | Allocation accounting covers representative bounded workloads, not all programs |
-| Quoted/block scalars, nested lookup, duplicate-key rejection, unsupported YAML constructs, precise source blame | `parser` | Direct internal parent-link/path coverage remains open |
+| Quoted/block scalars, nested lookup, duplicate-key rejection, unsupported YAML constructs, precise source blame | `parser` | Parent-link consequences checked through nested lexical lookup and precise paths/spans; no graph-internal API exposed |
 | Token mutations across parsing/linking/evaluation/emission, deletion minimization | `fuzz`; seed 901723 | Bounded 200 samples; not coverage-guided fuzzing |
-| 1,001 / 4,001 / 10,001-node flat arithmetic maps | `scale` | Flat-map timing; versioned-execution allocation accounting lives in `execution` |
+| 1,001 / 4,001 / 10,001-node flat arithmetic maps | `scale` | `memory` adds peak RSS and broad scaling thresholds; no historical statistical baseline |
+| Every registered actor: independent result witness, declared arity boundaries, applicable wrong types and error blame | `semantics`; `tests/suites/semantics.py`; `runtime/coverage/actors.json` | Finite scenarios; unrestricted operands have no wrong-type case; not every argument-position/type cross-product |
+| Captures, recursion, nested callbacks, lazy recovery and memoization composed together | `dogfood`; `tests/dogfood/interactions.yaml` | Pure recovery only; no suspended continuations |
+| Nested lists/maps/records/unions versus independent Python membership, invalid declarations, ordered violations, diamonds and provenance | `type_algebra`; `tests/suites/type_algebra.py` | Finite implemented fragment; section 8 still owns stronger algebra and proof obligations |
+| Retained states, arbitrary pauses, nested children, captures, predicates and cleanup | `execution`; `tests/execution.rs`, `tests/execution_memory.rs` | In-memory inspection is not a disk snapshot contract |
+| Accepted/rejected syntax, graph, recursion, iteration and computed-growth boundaries | `resources`; computed-growth golden cases; `library` | Budgets are not a byte-exact heap quota; source reads precede limits |
+| Embedded-only and confined file imports, traversal, symlinks, transitive and uncalled imports | `permissions`; `library` | Path authorization assumes no hostile concurrent directory replacement; future effects need their own adapters |
+| Actual compiled arithmetic, source-column and serialization faults rejected by existing suites | `mutants`; `runtime/mutants/` | Three targeted mutations, not a general mutation score |
+| Growing graphs and constant-state 999/99,999-step loops, interpreter peak RSS and environment | `memory`; `runtime/memory/` | Linux + GNU time; broad operational thresholds, not a universal memory bound |
 
 These are executable branch scenarios and failure-path contracts, not compiler
 branch-coverage percentages. No instrumented Rust branch report exists yet; do not
-infer exhaustive coverage from case counts. The largest scale workload measured
-0.38 seconds locally (Linux x86-64, debug binary, including Python YAML decoding).
-The suite requires the largest workload to finish within one second, in addition
+infer exhaustive coverage from case counts. The scale suite measures debug CLI execution including Python YAML decoding.
+It requires the largest workload to finish within one second, in addition
 to the subprocess timeout. The measurement is evidence for this
 workload, not a universal runtime guarantee.
 
-`./manage.py test --suite execution` records representative execution profiles in
-`runtime/execution-profile.log`. A local debug run of 2,000 iterations took about
-0.06 seconds uninterrupted and 0.29 seconds with repeated immutable steps. Live
-allocations stayed near 22 KiB when increasing from 200 to 2,000 iterations; retaining
-16 checkpoints used about 58 KiB. These are allocation-accounted workload measurements,
-not process RSS or a general performance guarantee. Tests bound retained-history growth
-and transient copying without freezing transition counts.
-
-CI runs fast suites, including execution contracts, on pushes and pull requests; a weekly schedule and manual runs
-include robustness, fuzz and scale checks. Failed runs upload `runtime/` artifacts.
-The workflow itself needs a first hosted run to establish its environment timings.
+CI runs selected suites on pushes and pull requests; a weekly schedule and manual runs
+execute all suites, including `type_time`, `errors`, robustness, fuzz, scale, memory, and mutants. Failed runs upload `runtime/` artifacts.
+Local timing evidence does not establish hosted CI timing guarantees.
 
 ## Dogfooded test modules
 
@@ -237,7 +269,7 @@ suite cover the shared shim and host bridge.
 
 Helix is experimental, before a stable language or persisted-state format release.
 The current behavioral contracts are readable YAML, structured errors with source
-blame, lexical scope, deterministic pure evaluation, immutable execution versions and ordinary-data root round trips. Function and machine output is inspection data, not a disk restoration contract.
+blame, lexical scope, deterministic pure evaluation, immutable execution versions and ordinary-data root round trips. Function/machine results are inspection data.
 Changes to these contracts require regression cases and documentation. Golden
 fixtures freeze the currently expected behavior for development; they do not
 promise cross-version resume compatibility.
@@ -246,13 +278,15 @@ Builtin names, type/class declarations, the Rust API and exact error prose may
 change before a stable release. Error kinds and field shapes are reviewed as public
 behavior. The saved-state envelope has no format version or migration support yet;
 keep source and the runtime revision together when reproducibility matters. No
-suspended execution format or effect permissions are promised by this release.
+suspended execution format is promised. Import permissions are available; other effects remain unimplemented.
 
 ## Changelog
 
 ### Unreleased
 
-- Replaced recursive evaluation with explicit immutable execution, first-class child machines, retained branches and named inspection graphs. Function values retain direct code and lexical environments; numeric comparisons are exact across integer/float boundaries.
+- Added `helix exec` for raw-result shell pipelines, discoverable project commands, pure recovery/retry, type-time regions, and YAML data helpers.
+- Added guarded runtime execution, import confinement, actor/arity census, nested-type oracles, composed feature tests, compiled mutation checks and Linux peak-RSS regressions.
+
 - Added selectable contract suites, subprocess timeouts, harness self-tests and
   direct public VM tests behind `./manage.py test`.
 - Added fixed-seed integer/library oracles, repeated literal serialization checks,
@@ -269,3 +303,29 @@ suspended execution format or effect permissions are promised by this release.
 
 Use `git log` for the complete implementation history; this changelog records
 user-visible checkpoints rather than claiming published releases.
+
+## Runtime trust boundaries
+
+Run `./manage.py runtime sandbox - program.yaml` to allow embedded modules only, or replace `-` with an allowed import directory. The main input is explicitly authorized; transitive file imports must stay within that directory, including through symlinks. Ordinary `run` remains trusted. See `LANGUAGE.md` for the library API, exact resource budgets and the limits of path-based confinement.
+
+`./manage.py test --suite resources --suite permissions --suite library` verifies accepted/rejected syntax and graph boundaries, call and iteration caps, growing values, dependency/import depth, source blame and permission escapes. The public VM tests also exercise guarded execution on Rust test threads, whose smaller stacks previously exposed a host stack overflow. These guards bound interpreter work and produced data; they do not promise constant memory for programs retaining growing state.
+
+`semantics` records successful scenario counts per actor and rejects missing witnesses when the builtin registry changes. `type_algebra` checks independent membership judgments over nested descriptions and mixed values, plus ordered violations and class diamonds. This is evidence for the implemented structural fragment; section 8 retains normalization, recursive types and formal proof obligations.
+
+`memory` requires Linux and GNU `/usr/bin/time`. It measures only interpreter peak RSS (KiB), records platform/Python/debug-profile metadata, and saves exact sources and states. Workloads use 1,001/4,001/10,001-node arithmetic maps (each under two seconds and 192 MiB), with a broad 12x-plus-16-MiB scaling allowance, and compare 999 versus 99,999 constant-state iterations (at most 8 MiB extra RSS). The existing `scale` suite retains its one-second 10k-node bound. These tolerances catch large regressions while allowing allocator and host noise; they are not a historical statistical baseline. Linux CI runs these measurements and compiled mutation checks in the weekly/manual full sweep and uploads the reports even on success.
+
+Speed benchmarks run through `./manage.py test --suite speed` and the default full
+suite. They measure the debug CLI (startup, loading, evaluation and emission),
+excluding compilation and Python YAML decoding. Each workload gets one warmup
+and five measured runs, checked against its expected result. Arithmetic maps,
+function loops, ASCII/Unicode slicing, and long-key map reads/replacements save
+raw samples, median/range, throughput, platform and binary hash to
+`runtime/speed/report.json`; unique run directories retain inputs and states.
+Reports flag `SLOWDOWN` when median time exceeds the earliest five compatible runs
+by more than 20% and three median absolute deviations of observed noise. Matching
+host/environment, sampling settings and workload source keep comparisons relevant;
+the fixed early baseline reveals cumulative drift. First runs establish history.
+Flags are observational and do not fail the suite. Normal interpreter timeouts
+still apply. The weekly/manual full CI sweep includes this suite.
+
+Immutable-execution allocation profiles are recorded in `runtime/execution-profile.log` by `./manage.py test --suite execution`. Workloads compare uninterrupted execution, repeated pure steps and bounded retained checkpoints; timing and memory bounds do not freeze transition counts.

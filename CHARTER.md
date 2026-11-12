@@ -8,7 +8,7 @@ How to use this file: tick a box only when the feature works end to end *and* ha
 
 **Where it is headed:** the niche Nix and Ansible occupy, declarative machine configuration, approached through types. A machine config is a type, fully resolved at type time and inheriting from abstract machine type classes; section 8 holds that road. Daily-driver scripting comes first because the config language has to be a language worth using.
 
-**Where we are:** a pure, total-ish expression language (values, operators, control flow, functions, iteration) that runs to completion; no suspend/resume, effects or types yet.
+**Where we are:** a pure, resource-bounded expression language with first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. File imports and pure error recovery work; full suspend/resume and effectful machine application remain ahead.
 
 ---
 
@@ -157,27 +157,29 @@ The difference between a language and a language I enjoy using.
 
 ### Testing depth and breadth
 
+Completed infrastructure is exercised by the `parser`, `resources` and `mutants` suites through `./manage.py test`; `.github/workflows/test.yml` schedules the full sweep and runs fast contracts on pushes and pull requests.
+
 Treat testing as a substantial engineering responsibility. The Rust/Python size ratio is a prompt to inspect gaps, not a coverage metric or a target to pad toward. Build on the existing golden, determinism, round-trip and damaged-input checks; every new suite must be reproducible through the root `./manage.py` entrypoint, with Python orchestration and fixtures kept inside the project. Testing goals below are complete when their automated checks run and demonstrate the claimed contract; golden cases remain required for language features.
 
 - [ ] Maintain a discoverable coverage map from language contracts and runtime invariants to suites, including known gaps; measure exercised branches and failure paths rather than counting test lines
 - [ ] Cover every builtin and form across valid inputs, wrong arity and types, empty collections, numeric boundaries, Unicode and nested values; include precise error blame
 - [ ] Exercise feature interactions systematically: lexical shadowing, closures, recursion, iteration, lazy branches, memoization and error recovery composed in the same programs
-- [ ] Test parser and graph contracts across YAML scalar styles, nesting, duplicate keys, unsupported constructs, parent links, lexical lookup and source spans
+- [x] Test parser and graph contracts across YAML scalar styles, nesting, duplicate keys, unsupported constructs, parent links, lexical lookup and source spans
 - [x] Generate values and programs to check serialization preserves meaning, literal/expression distinctions and stable output across repeated save/reload cycles
 - [x] Add property-based and metamorphic tests for semantic laws and equivalent program transformations, respecting overflow, float behavior and documented evaluation order
 - [x] Compare a bounded language subset against a small independent Python reference evaluator, and library algorithms against independent host-language oracles
 - [x] Extend damaged-input testing into reproducible fuzzing of parsing, linking, evaluation and emission; retain seeds, minimize failures and promote them into regression cases
-- [ ] Test the tests with deliberate implementation faults: establish that semantic regressions, incorrect error locations and broken serialization make the relevant suites fail
+- [x] Test the tests with deliberate implementation faults: establish that semantic regressions, incorrect error locations and broken serialization make the relevant suites fail
 - [x] Cover imports and module isolation with generated file trees: shared dependencies, cycles, missing or malformed files, path resolution and errors originating in imported source
 - [x] Exercise the CLI as a subprocess: files versus stdin, arguments, help, exit codes, stdout/stderr contracts and failed input access
 - [x] Test public library and VM contracts directly, including independent VM instances and repeated use, alongside CLI golden coverage; invoke these checks through `./manage.py`
-- [ ] Verify resource limits at their boundaries: deep syntax, recursion, long iteration and large graphs terminate or fail cleanly under enforced timeouts without host stack overflow
+- [x] Verify resource limits at their boundaries: deep syntax, recursion, long iteration and large graphs terminate or fail cleanly under enforced timeouts without host stack overflow
 - [ ] Maintain repeatable performance and memory workloads across growing input sizes; detect pathological scaling and regressions with documented environments and tolerances
 - [ ] Expand type and class tests across nested combinations, invalid declarations, collected violations, inheritance conflicts and deterministic provenance; connect these to section 8's algebra and proof obligations
 - [ ] When suspension lands, compare uninterrupted execution with save/resume at every supported boundary, including nested calls, live locals, hand-edited states and fresh-process restoration
 - [ ] When effects land, use controlled adapters to test failure, retry, cleanup, permissions and interruption; prove completed effects are not accidentally repeated after resume
 - [ ] Keep compatibility fixtures for persisted states and public errors; test supported upgrades and explicit rejection of unsupported versions as versioning lands
-- [ ] Run fast regression suites on every change and bounded generated, fuzz and scale suites on a regular automated schedule; report seeds, reproduction commands and artifacts on failure
+- [x] Run fast regression suites on every change and bounded generated, fuzz and scale suites on a regular automated schedule; report seeds, reproduction commands and artifacts on failure
 - [x] Keep the harness trustworthy: test discovery, golden comparison, timeout/crash detection and failure reporting; provide discoverable suite selection without creating competing entrypoints
 
 ---
@@ -204,23 +206,25 @@ web01:      [inherit, [server, has_ssh], {hostname: web01, packages: [nginx]}]
 
 ### Declarative types
 
+Audit evidence: `types_declarative`, `types_annotations`, `types_are_values`, `classes`, `class_conflicts`, `class_constraints` and `class_parametric` cover the completed declaration, annotation and class subitems below. The `golden` suite also checks emitted-root fixpoints. Broader parent boxes remain open where their diagnostic, provenance or serialization promises exceed these contracts.
+
 A type should read like the value it describes with the specifics left open: someone who has never seen Helix can look at a record type and say what a valid value looks like. Declarations are order-independent facts, not a checking procedure, so reordering fields or splitting a declaration across maps changes nothing. Types are opt-in descriptions layered on the existing untyped core, never a reason existing programs stop running.
 
 - [ ] A type is declared as plain YAML data in the object graph (fields, their types, defaults), not in a separate schema language
   - [ ] A declaration is an ordinary node: it has a path and span, and is found by the same lexical lookup as any value
   - [ ] Declarations are order-independent: reordering fields changes neither the type nor what it accepts
-  - [ ] A type may be named in a map or written inline where it is used, with the same meaning
+  - [x] A type may be named in a map or written inline where it is used, with the same meaning
   - [ ] A malformed declaration is a structured error blaming the declaration node, not the value later checked against it
-- [ ] Scalar, list, map and record types, plus optional fields, unions, enums and literal types
-  - [ ] Scalar types (`integer`, `float`, `string`, `boolean`, `null`) and a top type that accepts anything
-  - [ ] Homogeneous list and map types over an element type
-  - [ ] Record types: named fields, each with its own type
-    - [ ] Required fields: absence is a violation
-    - [ ] Optional fields: may be absent, checked when present
-    - [ ] Defaulted fields: the default is itself checked against the field's type
+- [x] Scalar, list, map and record types, plus optional fields, unions, enums and literal types
+  - [x] Scalar types (`integer`, `float`, `string`, `boolean`, `null`) and a top type that accepts anything
+  - [x] Homogeneous list and map types over an element type
+  - [x] Record types: named fields, each with its own type
+    - [x] Required fields: absence is a violation
+    - [x] Optional fields: may be absent, checked when present
+    - [x] Defaulted fields: the default is itself checked against the field's type
     - [ ] Decided and documented: are records open (extra fields allowed) or closed, and how is the other one spelled
-  - [ ] Unions of types
-  - [ ] Enums and single-value literal types
+  - [x] Unions of types
+  - [x] Enums and single-value literal types
   - [ ] Types nest to any depth (a list of records of unions)
 - [ ] Refinements: a type can carry a predicate (`port` is an int in 1..65535), written as an ordinary Helix expression
   - [ ] The predicate is a named or inline `fn` from the value to a boolean, run only after the base type passes
@@ -228,19 +232,19 @@ A type should read like the value it describes with the specifics left open: som
   - [ ] A rejected value's violation names the refinement, so the report says which rule failed and not only that one did
   - [ ] Refinements stack (a refinement of a refinement) and compose with every other type former
 - [ ] Annotate a value or a `fn` parameter/result with a type; a mismatch is a structured `type` error blaming the offending node with path and line
-  - [ ] Annotate a value in a map; the annotated value is still read by other expressions as the plain value
-  - [ ] Annotate `fn` parameters; a bad argument blames the argument at the call site
-  - [ ] Annotate a `fn` result; a bad result blames the body, with the call recorded
+  - [x] Annotate a value in a map; the annotated value is still read by other expressions as the plain value
+  - [x] Annotate `fn` parameters; a bad argument blames the argument at the call site
+  - [x] Annotate a `fn` result; a bad result blames the body, with the call recorded
   - [ ] Unannotated code runs exactly as before: every pre-types golden case is unchanged
   - [ ] The error carries expected type, actual value and the path *inside* the value where they diverge
 - [ ] Type checking collects every violation in one pass instead of stopping at the first
   - [ ] A violation is data: path into the value, expected, actual, and the rule that rejected it
-  - [ ] All violations of one value against one type are returned together, nested ones included
+  - [x] All violations of one value against one type are returned together, nested ones included
   - [ ] Violations come out in a stable, documented order so reports diff cleanly
   - [ ] All annotation failures of a whole program are reported in one run
 - [ ] Types survive in the saved state and round-trip: emitted `root` re-read yields the same types
   - [ ] A type emits as the declaration that was written, not an expanded or internal form
-  - [ ] Re-running an emitted `root` that contains types is a fixpoint (covered by the existing round-trip check)
+  - [x] Re-running an emitted `root` that contains types is a fixpoint (covered by the existing round-trip check)
   - [ ] Annotations survive too: the saved state shows which type governed which value
 - [ ] `helix check` type-checks a program without running it or performing effects
   - [ ] Checks every annotation whose value is computable at type time and reports the rest as unchecked, never as passed
@@ -317,15 +321,15 @@ The goal is justified guarantees, with the assumptions and limits visible. Execu
 
 ### Type classes and inheritance
 
-An abstract class is an incomplete description: some fields fixed, some defaulted, some demanded but left open. Inheriting is composing descriptions, and a concrete type is one with nothing left open. This is not object-oriented inheritance: no methods, no dispatch, no behaviour is inherited, only fields, defaults and constraints, so the result of inheriting is always a plain flattened type that could have been written out by hand. Classes are meant to be small and combined freely (`server` plus `has_ssh` plus `monitored`) rather than arranged in a deep tree. Because several parents will disagree, the merge rules are the heart of this group: they must be few, written down, deterministic, and they must refuse to guess. An ambiguity the author did not resolve is an error, never a precedence rule that picks a winner quietly.
+An abstract class is an incomplete description: some fields fixed, some defaulted, some demanded but left open. Inheriting is composing descriptions, and a concrete type is one with nothing left open. This class algebra composes fields, defaults and constraints into a plain flattened type that could have been written out by hand. Composition of behavior is a separate design goal below, built on ordinary values and functions. Classes are meant to be small and combined freely (`server` plus `has_ssh` plus `monitored`) rather than arranged in a deep tree. Because several parents will disagree, the merge rules are the heart of this group: they must be few, written down, deterministic, and they must refuse to guess. An ambiguity the author did not resolve is an error, never a precedence rule that picks a winner quietly.
 
 - [ ] Abstract type classes: declare required fields and constraints without a concrete value (`machine`, `server`, `has_ssh`)
-  - [ ] A class field is one of: fixed to a value, defaulted, or demanded and left open
-  - [ ] A class can carry constraints over several of its fields (a refinement on the whole record)
+  - [x] A class field is one of: fixed to a value, defaulted, or demanded and left open
+  - [x] A class can carry constraints over several of its fields (a refinement on the whole record)
   - [ ] A class is a type value: everything under "First-class types" applies to it
 - [ ] A type inherits from one or more classes; the result is the merge of their fields, defaults and constraints
-  - [ ] Single parent
-  - [ ] Several parents with disjoint fields
+  - [x] Single parent
+  - [x] Several parents with disjoint fields
   - [ ] Several parents sharing a field they agree on (including diamonds: one ancestor reached twice merges once)
   - [ ] Classes inheriting from classes, to any depth
   - [ ] The result is a plain flattened type: emitted, it reads as if written out by hand
@@ -351,16 +355,32 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
   - [ ] Provenance is queryable as data from Helix, not only visible in the output
   - [ ] Provenance round-trips and does not make the resolved type harder to read or diff
 - [ ] Parametric classes: a class takes arguments (`[web_server, {port: 8080}]`) and yields a class
-  - [ ] It is an ordinary `fn` returning a class: no separate generics mechanism
-  - [ ] Arguments are themselves type-checked
+  - [x] It is an ordinary `fn` returning a class: no separate generics mechanism
+  - [x] Arguments are themselves type-checked
   - [ ] Provenance records the arguments a class was instantiated with
+
+### Tools for composition over inheritance
+
+Take the Smalltalk intuition of sending a message to a value, with a mathematically small, pure core: an object is readable data with behavior, and a message application is a function of the receiver and arguments. Prefer composing small capabilities to growing class hierarchies. These are design goals; syntax and dispatch rules remain to be settled.
+
+- [ ] Compose objects from immutable records and existing first-class functions; methods reuse ordinary `fn` parameters, closures and result contracts
+- [ ] Define message application as explicit receiver/name/arguments lookup and function application, with one documented rule for binding the receiver (`self`)
+- [ ] Pure state transitions return a new value (and any result); the original receiver stays unchanged, and identical inputs give identical outputs
+- [ ] Assemble small capabilities with explicit record composition; disjoint members combine, shared members require agreement or an explicit resolution, and parent order never silently picks a winner
+- [ ] Delegate selected messages to a contained value; forwarding and receiver binding are explicit, with no hidden superclass chain
+- [ ] Adapt capabilities through explicit member selection, renaming and exclusion, reusing ordinary map/function tools wherever possible
+- [ ] Support polymorphism through a shared message contract; distinguish satisfying a capability from declaring an ancestor, and reuse the type algebra for compatibility
+- [ ] Keep behavior discoverable as data: inspect available messages, contracts, captured bindings and composition provenance; missing or conflicting messages produce structured errors with source locations
+- [ ] Serialize composed values, behavior and captured state through the existing YAML round trip; saving and reloading preserves message results without hidden host identity
+- [ ] Document composition laws and boundaries: identity, associativity for compatible components, conflict behavior and observational equivalence; demonstrate them with golden cases and reproducible laws through `./manage.py`
+- [ ] Demonstrate a small pure object built from independent capabilities, a delegated wrapper and an immutable update, without requiring inheritance or a parallel method evaluator
 
 ### Machine configs as type-time types
 
 The config is the type; the real machine is the value. "Is this machine configured correctly" becomes "does this machine inhabit its type", drift is a machine that no longer does, and applying a config is making the value fit the type. That framing splits the work into two phases with a hard wall between them. Type time resolves classes, overrides and cross-machine constraints into a complete description using nothing but the source: no SSH, no facts gathered from hosts, no network. Everything that can be wrong with the description is found there, and the resolved description is a reviewable artifact in `git diff`. Only then does realization touch a machine, as an explicit, separate, resumable run built on effects (section 3) and suspend/resume (section 2), with its plan and progress as readable state. From Nix this takes pure evaluation before any change and reproducibility; from Ansible it takes agentless, incremental application to machines that already exist. What it rejects is Ansible's failure halfway through a play from an error knowable in advance, and Nix's opaque evaluation whose result cannot simply be read.
 
 - [ ] A machine config is a concrete type inheriting from abstract machine classes; it is fully resolved at type time with no machine contact
-  - [ ] A small standard vocabulary of machine classes (packages, files, services, users), declared in Helix itself
+  - [x] A small standard vocabulary of machine classes (packages, files, services, users), declared in Helix itself (`std:machine`, `std_machine` golden case)
   - [ ] A config with an unfilled or conflicting field fails at type time with the class errors above
   - [ ] Resolution makes no contact with any machine or network, enforced by the type-time contract and not by convention
   - [ ] Facts that only a machine knows are declared as typed inputs to realization, never read during resolution
@@ -428,14 +448,20 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 - `dogfood_work_queue`: stable priority sorting and dispatch through `std:list.sort_by`, with negative priorities, equal-priority payloads, sorted/reversed/empty/singleton inputs, independent calls, idempotence and source-order preservation. The original 100+ line example now shares its sort implementation with the standard library. Friction: insertion sort repeatedly copies lists and is suitable only for small queues.
 
 ### Errors as a first-class feature (section 4)
-- [ ] Parse and validate a messy inline dataset where every row may be malformed; `try` turns each failure into a record, and the report lists all of them with path and line
-- [ ] A calculator or expression evaluator that raises its own `syntax`/`arity` errors and recovers per input line, never aborting the batch
-- [ ] A retry loop: attempt a failing step, inspect the error's `kind`, retry on transient kinds, give up on the rest, and keep the attempt history in the state
-- [ ] Wrap a low-level error in a domain error with `cause`, then read the full chain from the saved state without a debugger
-- [ ] A function whose `assert` preconditions document its contract; call it wrongly and fix the caller from the assertion message alone
-- [ ] Turn a failed run's saved error into a regression golden case in under a minute (error, expected state, fix)
-- [ ] Cleanup with `finally` around a multi-step job, proven by a golden case where a middle step fails
-- [ ] Diff two runs of one program, one passing and one failing, and explain the failure from the state diff alone
+- [x] Parse and validate a messy inline dataset where every row may be malformed; `try` turns each failure into a record, and the report lists all of them with path and line
+- [x] A calculator or expression evaluator that raises its own `syntax`/`arity` errors and recovers per input line, never aborting the batch
+- [x] A retry loop: attempt a failing step, inspect the error's `kind`, retry on transient kinds, give up on the rest, and keep the attempt history in the state
+- [x] Wrap a low-level error in a domain error with `cause`, then read the full chain from the saved state without a debugger
+- [x] A function whose `assert` preconditions document its contract; call it wrongly and fix the caller from the assertion message alone
+- [x] Turn a failed run's saved error into a regression golden case in under a minute (error, expected state, fix)
+- [x] Cleanup with `finally` around a multi-step job, proven by a golden case where a middle step fails
+- [x] Diff two runs of one program, one passing and one failing, and explain the failure from the state diff alone
+
+Evidence: `dogfood_errors` and the paired `dogfood_errors_regression` / `dogfood_errors_fixed` golden cases exercise these workflows without host effects. The batch retains each failed row's index, source and full error (path, line, column and calls); valid rows after failures still finish. Calculator inputs recover independently. Retry histories cover eventual success, immediate fatal failure and exhausted transient attempts. `wrapped.cause.cause` retains the original parser failure under the domain wrapper.
+
+The saved `wrong_call` assertion says to pass at least 1. The minimized regression keeps `count: 0`; its corrected companion changes only that input to `count: 1`. Comparing their expected states explains the failure directly: the assertion and caller spans in `error` become a finished `root` with `count: 1` and `result: 2`. To repeat the regression workflow, copy the minimized source, run `./manage.py test --suite golden --bless`, inspect its expected state, change the caller input and rerun `./manage.py test --suite golden`. No new harness is needed.
+
+Friction: `let` bindings are lazy, so an unused assertion does not enforce a contract; these examples put assertions in the result's dependency chain. Domain wrapping must retain the original map explicitly under `cause` before re-raising. Pure cleanup has no observable resource release, so a deliberately raised cleanup error witnesses execution on both outcomes; a successful cleanup separately proves preservation of the middle-step error. These are pure workflow exercises, not claims of external retries or resource management. Parser-document coordinates appear in the message; structured spans point to the parsing actor, so row index and source are retained alongside them.
 
 ### With suspend/resume (section 2)
 - [ ] A long computation stopped midway, its state read in `git diff`, resumed to the same result as an uninterrupted run
@@ -492,6 +518,7 @@ Implement Helix's own language services and development workflows in Helix. The 
   - [x] Stable grouping by a string-valued callback in `std:group.by`, covered by `std_group`; preserves first key occurrence and item order, with documented copying costs and iteration limits.
   - [x] Stable comparator sort (`sort_by`) extracted from the work-queue example, plus first-occurrence deduplication (`unique`), in `std:list`; covered by `std_list_algorithms` and `dogfood_work_queue`. Both use quadratic scans/copying and runtime iteration limits; intended for small inputs.
   - [x] `std:list` access/slicing, enumerate/zip, one-level flatten/flat-map, short-circuit searches, quantifiers, count/partition, grouping/frequencies and default sorting; contracts and boundary cases live in `std_list_helpers`.
+  - [x] Shallow right-biased merge and single-key removal in `std:map`, covered by `std_map`: stable key order, missing/null distinction, nested replacement, empty and Unicode keys, and checked arguments. Immutable copies can cost quadratic time/allocations; runtime iteration limits apply.
 - [ ] Configuration diff, dependency ordering and validation reports as reusable Helix modules, extracted from the existing dogfooding cases. Their policies and error recovery belong in Helix; primitive lookup, equality and structured error attribution remain runtime services.
 - [ ] Type descriptor construction and transformation: build list/map/record/union/optional/default descriptions and derive fields with Helix functions over plain maps and lists. Replace the corresponding policy in `src/builtins/typing/construct.rs` once type-value validation and call compatibility are preserved; checking defaults depends on the checker below.
 - [ ] Drift and convergence planning: replace the pure comparison and plan construction in `src/builtins/typing/machine.rs` with Helix modules, using desired and observed maps as inputs. Preserve missing versus null, stable step order, extra-field policy and empty plans for conforming inputs. Observation and application stay separate effects.
@@ -524,7 +551,7 @@ Decide these before the features that depend on them.
 - [x] How are user-defined actors declared in YAML so they stay readable? `name: [fn, [params], body]`; called as `[name, args...]`
 - [ ] What is the evaluation model for effects: pull, push, or explicit yield?
 - [ ] Does a suspended state embed the source, reference it, or both?
-- [ ] Types are coming (section 8), but how strict is ordinary scripting: must everything be annotated, or are types gradual and opt-in outside configs?
+- [x] Types are opt-in outside configs: unannotated code retains its behavior; `expect` and function parameter/result contracts enforce declared types (`types_annotations`; `LANGUAGE.md`).
 - [ ] Is inheritance nominal (declared parents) or structural (anything with the right fields satisfies a class), or both?
 - [ ] What separates type time from run time in a language whose source is its state: a distinct phase, a status, or a marked region of the graph?
 - [ ] How do parent classes merge: Nix-module-style priorities and merge functions, CUE-style unification, or linearized inheritance?

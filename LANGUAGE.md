@@ -119,6 +119,16 @@ Subtyping uses identity and `any` as the top type. Lists and maps are covariant 
 
 `eq` on types is structural equality of their declaration values: record field order is ignored, list order (including union members and enum alternatives) is significant, and defaults and captured predicates participate. This is declaration equality, not equality of the sets of accepted values. Types retain their readable declaration maps in saved state and round-trip through the same evaluator.
 
+### Type-time evaluation
+
+`[type_time, expression]` marks an explicit pure region in ordinary evaluation. It can compute a type or any intermediate value with the same lexical bindings, functions, iteration and errors as other code. Both `run` and `check` use this form identically; `check` additionally collects independent failures across the program. Uncalled bodies and unchosen branches are not checked.
+
+The region shares the caller's recursion, iteration, node-visit and produced-value budgets; nesting never resets them. It recomputes dependencies in a phase-local cache, so an earlier caught run-time error cannot masquerade as a type-time diagnostic. Errors raised inside carry `phase: type` alongside their usual kind, message, location, payload and call sites. `try` can catch them inside or outside the region. An uncaught failure also puts `phase: type` in the saved VM state and stops ordinary evaluation. Leaving the region, including after a caught error, restores the caller's phase.
+
+Only supplied YAML source and embedded `std:` modules are admitted. A program with any file import is conservatively rejected when it enters a type-time region, even if that import is unused or already evaluated. The catchable `effect` error names the file import and blames its node. Source loading/linking still happens before evaluation: missing files and other link errors remain load errors outside `try`. To compute a reproducible type, provide dependencies as source data or embedded modules; filesystem module contents are not accepted as pinned inputs. Current evaluation has no clock, randomness, environment, network or other host-effect operations. File loading is the sole host-input boundary and occurs outside the region; future effectful actors must be denied before executing in type time.
+
+`[parents, class]` returns immediate parent names in declaration order. `[open_fields, class]` returns a map of required field names to their declared specs that still need values. Fixed, defaulted and optional fields are omitted; a realized class has no open fields. This uses the same field interpretation as realization. Both forms, and `fields`, return ordinary data suitable for further type construction.
+
 ## Libraries and imports
 
 `[import, "helpers.yaml"]` loads a Helix document. Relative paths resolve from the importing file's directory; stdin resolves from the working directory. All imports are linked at load time, including imports inside functions and unchosen branches. The specifier is a literal string, quoted or plain, never an evaluated expression. Missing files, unknown standard modules and circular dependencies fail before execution, outside `try` handlers.
@@ -139,11 +149,22 @@ Standard libraries are Helix source embedded in the executable:
 
 | Import | Exports |
 |--------|---------|
+| `std:set` | `from(xs)`, `contains(xs, value)`, `insert(xs, value)`, `remove(xs, value)`, `union(left, right)`, `intersection(left, right)`, `difference(left, right)`, `is_subset(left, right)`, `is_disjoint(left, right)`, `equals(left, right)`, `symmetric_difference(left, right)` |
+| `std:stack` | `push(xs, value)`, `peek(xs, fallback)`, `pop(xs)`; top at the end |
+| `std:queue` | `enqueue(xs, value)`, `peek(xs, fallback)`, `dequeue(xs)`; front at index zero |
+| `std:map` | `merge(left, right)` (shallow, right wins), `remove(source, key)` (one string key; missing is harmless), `select(source, keys)`, `omit(source, keys)` |
+| `std:machine` | Abstract machine classes `host`, `packages`, `files`, `services`, `users`, their combination `machine`, the `port` refinement, and fleet checks `hostnames(fleet)` / `unique_hostnames(fleet)` over realized configs |
 | `std:types` | `from_fields(specs)`, `without_field(t,name)`, `optional_field(spec)`, `optional_fields(t)` |
 | `std:math` | `number` (numeric type), `abs(n)`, `sign(n)`, `min(a,b)`, `max(a,b)`, `clamp(n,lo,hi)`, `square(n)` |
 | `std:list` | `numbers` (numeric list type), `sum(xs)`, `product(xs)`, `reverse(xs)`, `range(n)` (integers from zero while less than `n`, bounded by the iteration limit), `unique(xs)` (first occurrence, structural/numeric equality), `sort_by(xs, before)` (stable; strict ordering predicate), plus [access, traversal and grouping helpers](#list-helpers) |
 
 Standard modules dogfood ordinary function annotations. `std:math` exports `number` (`integer | float`); all its helpers take and return numbers, with `sign` returning an integer. `std:list` reuses that type for its `numbers` list type and for `sum`/`product`, which validate every element before folding. `reverse`, `unique` and `sort_by` require lists and return lists; `sort_by` requires a function even for an empty input. Its comparator must return a boolean and define a strict ordering; the annotation checks that it is a function, not that ordering law. `range` takes an integer and returns a list of integers; negative inputs still return an empty list. Contract failures are structured type errors at the call site with argument names and nested violation paths.
+
+`std:map` preserves insertion order: merging retains existing left-key positions and appends new right keys in right-key order; removal preserves survivor order. Nested values are replaced whole, including null. `merge` and `remove` require map arguments; removal requires a string key even for an empty map. They use bounded folds and immutable map copies, which can cost quadratic time and total allocations; use small inputs.
+
+`std:map.select(source, keys)` retains requested keys; `omit(source, keys)` excludes them. Both preserve source key order, ignore missing and repeated requested keys, and preserve values including null and false. The source must be a map and keys must be a list of strings, even for empty inputs. Membership scans and immutable copies suit small inputs.
+
+`std:set.is_disjoint(left, right)` tests whether the inputs share no values. `equals(left, right)` compares set membership, ignoring order and duplicates. `symmetric_difference(left, right)` returns unique left-only values followed by unique right-only values, preserving encounter order within each side. These helpers use the same structural/numeric equality, list contracts and resource limits as the existing set operations.
 
 ### Pinned dependencies
 
@@ -194,13 +215,15 @@ Callbacks are checked as functions even for empty lists. Predicates must return 
 
 `./manage.py std` lists modules; `./manage.py std math` prints a module's source. The binary also accepts `helix std [module]`.
 
+`std:set`, `std:stack`, and `std:queue` use ordinary lists; `[]` is empty and `len` gives size (normalize sets first). Set operations use structural equality, including numeric equality, and remove duplicates while retaining first encounter order. Union visits left then right; intersection and difference retain left order. `contains` and `is_subset` accept duplicates. Stack and queue `peek` require an explicit fallback, returned only when empty; null and false remain ordinary stored values. Empty `pop` and `dequeue` return `[]`. Every operation is immutable and checks list arguments. List copies and repeated membership scans suit small inputs; set operations can take quadratic time and bounded folds retain the runtime iteration limit.
+
 `std:group` exports `by(xs, key)`: group a list into a map using a function returning a string key. Empty and Unicode keys are valid. Keys follow first occurrence order, and each group's items retain input order. The key function runs once per item; callback failures propagate. List and function arguments are checked even for empty input. Immutable map/list copying can take quadratic time and total allocations; use small inputs within the runtime iteration limit.
 
 `./manage.py check FILE` (or `helix check FILE`) evaluates the current pure language and collects independent errors across container entries in source order, deduplicating failures reached through multiple dependents. It uses the same annotations and evaluator as `run`; it is not static analysis of uncalled function bodies or unchosen branches. Output includes `phase: type`, with `root` on success or an `errors` list on failure; exit codes are 0 for success, 1 for program errors and 2 for usage or input-file failures. Successful ordinary-data roots retain the YAML round-trip contract; function/machine roots use the inspection contract.
 
 ## Error kinds
 
-`import` (module loading or circular dependency), `parse`, `unbound`, `type`, `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (call nesting), `limit` (iteration cap), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
+`effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (call nesting), `limit` (iteration cap), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
 
 ## Testing in Helix
 
@@ -221,15 +244,26 @@ checked: [t.require_pass, report]
 | `equal(actual, expected)` | Return null on structural/numeric equality; otherwise raise `assertion` with both values in `data`. |
 | `capture(thunk)` | Call a zero-argument function and return `{outcome: passed, value: ...}` or `{outcome: failed, error: ...}`. |
 | `throws(thunk, kind)` | Require an error of that kind and return the original error map. Normal return or a different kind raises `assertion`. |
+| `fields_equal(actual, expected)` | Assert a top-level subset of map fields. Extra actual fields are allowed; missing differs from null, and nested values compare exactly. |
+| `throws_matching(thunk, expected)` | Require an error matching the expected fields, including mandatory `kind`; return the original error with source details intact. |
 | `case(spec)` | Execute `{name, run}`; retain its name and optional `input` alongside the captured result. |
 | `suite(cases)` | Return `{total, passed, failed, results}` in source order. Empty suites pass. Normal return passes, including false or null; assert explicitly to test a condition. |
 | `require_pass(report)` | Return a clean report or raise `test_failure` with the entire report as `data`. |
 | `table(rows, verify)` | Each `{name, input}` row runs `verify(input)` independently; retain the input for reproduction. |
 | `property(name, samples, predicate)` | Check each supplied sample; false raises an assertion, and predicate errors remain failures. |
 | `compare(name, samples, left, right)` | Compare both algorithms on each sample with `equal`; callback errors are failures. |
+| `combine(reports)` | Sum child counts and concatenate leaf results in encounter order; empty input yields an empty passing report. |
+| `is_failure(result)` | Test whether a captured result has outcome `failed`; shared by suite counting and selection. |
+| `failures(report)` | Return failed result records with replay inputs and errors intact. |
+| `tagged(cases, tag)` | Select case records in source order; absent tags behave as an empty list. |
+| `rerun(cases, report)` | Run source cases whose names failed in the report, preserving source order. Duplicate names select every matching source case; prefer unique names. |
+| `product(axes)` | Enumerate a finite Cartesian product in axis order, retaining duplicates. No axes yields `[[]]`; an empty axis yields `[]`. |
+| `lists(alphabet, max_length)` | Enumerate every list of length zero through the nonnegative bound, in length then alphabet order. Negative bounds raise `range`. |
 
-Use `std:list.range`/`flat_map` to build bounded sample products, `filter` over case
-records for selection, and report results to choose failed names for reruns. Supply
+Use `[t.product, [list, xs, ys]]` for bounded pairs and `[t.lists, [-1, 0, 1], 3]`
+for exhaustive short lists. Use `[t.suite, [t.tagged, cases, "fast"]]` to run a tag,
+then `[t.rerun, cases, report]` to retry failed names. `combine` retains leaf failures
+without wrapping entire reports in captured callbacks. Supply
 fixture factories as functions so each case gets its own immutable environment.
 Expected states are ordinary table data compared with `equal`; this is semantic
 value comparison, not byte-for-byte YAML comparison. `tests/cases/dogfood_testing.yaml`
@@ -239,7 +273,7 @@ proves a report can produce the usual VM error and exit code 1.
 
 Only supplied samples are tested; these helpers do not prove a property. Work and
 immutable copying grow with the supplied cases and captured fixtures. Keep samples
-small and within runtime call/iteration limits. Pure tests cannot observe process
+small and within runtime call/iteration limits. Generated list domains grow exponentially; generators do not bypass VM resource bounds. Pure tests cannot observe process
 crashes, timeouts or side effects. Discovery, file golden comparison, serialization
 fixpoints and crash detection remain in `./manage.py test` until the required
 file/process/parsing services exist. The same golden runner tests this module;
@@ -250,7 +284,11 @@ there is no competing test entrypoint.
 
 Function failures carry an optional `calls` list, ordered from the innermost call outward.
 Each entry records the call-site `path`, `line`, `column`, optional imported `file`,
-and the function declaration's `function` path. This includes callback, parameter-contract,
+and the function declaration's `function` path, `function_line`, `function_column`,
+and optional `function_file`. Call-site and declaration files are independent: a call
+in the main program can invoke a function declared in an imported module. Missing
+file fields refer to the main program; coordinates are 1-indexed. Use these fields
+for navigation rather than parsing `message`. This includes callback, parameter-contract,
 and result-contract failures. Errors caught with `try` have the same diagnostic fields.
 Re-raising with `[raise, error]` records the complete supplied error map under `cause`;
 the new error blames the re-raise site and accumulates its own call chain. Repeating this
@@ -271,3 +309,34 @@ imports. Imported sources are reloaded and must still be available. Parse/link f
 have no executable checkpoint. Recovery uses the same result/error and object-inspection contracts as `run` and `check`.
 Recovery applies only to the current pure evaluator; effectful retry will require the
 complete continuation and effect-state contract in charter section 2.
+
+### YAML toolkit
+
+Import `std:yaml` for `parse(source)`, `dump(value)`, `valid(source)`,
+`get_in(value, path)` and `set_in(value, path, replacement)`. The strict builtin
+primitives are `yaml_parse` and `yaml_dump`. Parsing reads data only: symbols,
+expression-shaped lists and imports are never executed. It accepts exactly one
+nonempty document using Helix's scalar inference, string map keys, duplicate-key
+checks and syntax resource limits. An initial UTF-8 BOM is accepted. Literal
+non-printable source characters are rejected; escaped character values remain
+valid and serialize with escapes. Aliases, explicit tags and container keys
+are unsupported. Tags are rejected rather than silently discarding their semantics.
+Malformed input raises `parse`; its message includes the location within the
+input text, while the error span identifies the Helix call argument. `valid`
+returns false for rejected YAML; its source must still be a string.
+
+`dump` uses the VM's block YAML emitter, preserving insertion order and quoting
+ambiguous strings. Comments, original formatting and anchors are not retained.
+Ordinary data values round-trip through `parse(dump(value))`. Dedicated function and VM values are outside this data-only contract; use machine inspection for their named object views.
+Paths are lists of string map keys and integer list indices. An empty path
+selects or replaces the root. Updates copy containers along the path, require
+existing intermediate containers, and permit a new final map key. Missing paths
+and invalid indices use the ordinary `get`/`set` errors.
+
+## Resource bounds and confined loading
+
+Each VM shares budgets across calls, iterations and error recovery: 2,000,000 evaluated node visits and 128,000,000 produced value units. A unit is a scalar/container/key plus the UTF-8 bytes of string/real text; nested values and memoized copies count again. Budget exhaustion is `limit`, not rejection of a value by a declared type. A graph, including imported code, has at most 100,000 nodes. Syntax and produced values have at most 64 nested containers; import chains at most 64 modules; active evaluation at most 512 nodes. These guards return `depth` or `limit` with source blame. The existing 200-call and 100,000-iteration limits still apply. Execution is iterative in both CLI and library use; suspended calls are explicit continuations rather than host call frames.
+
+`helix sandbox ROOT FILE` (also `./manage.py runtime sandbox ROOT FILE`) loads the main file explicitly supplied by the caller and restricts all file imports to canonical paths below ROOT. ROOT `-` permits only embedded `std:` modules. Path traversal, sibling-prefix and symlink escapes are rejected as `permission` errors at the import argument, including transitive and uncalled imports. Ordinary `run` retains trusted loading. Library callers use `Vm::load_sandboxed(source, optional_file, roots)`; empty roots deny file imports. These permissions are host configuration and are never granted by program/state data.
+
+This is an import capability boundary, not operating-system isolation: a host concurrently replacing directory ancestors can race path authorization. Arbitrarily large source files are read before evaluation limits apply, and these budgets are not a byte-exact heap quota. File writes, network and process effects do not exist yet; they must acquire explicit capabilities before being added. Recovery output is source data and conveys no permission grant.

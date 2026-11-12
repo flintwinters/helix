@@ -1,0 +1,443 @@
+status: finished
+root:
+  m:
+    merge:
+      ref: object0
+    remove:
+      ref: object1
+    select:
+      ref: object2
+    omit:
+      ref: object3
+  left:
+    z: 1
+    shared:
+      old: true
+    absent: ~
+  right:
+    shared:
+      new: true
+    a: false
+  merged:
+    z: 1
+    shared:
+      new: true
+    absent: ~
+    a: false
+  merge_order: ~
+  shallow: ~
+  unchanged: ~
+  empty_merge: {}
+  left_identity: ~
+  right_identity: ~
+  removed:
+    z: 1
+    absent: ~
+    a: false
+  remove_order: ~
+  missing: ~
+  empty_remove: {}
+  only_key: {}
+  unicode:
+    "é":
+      - ~
+      - false
+    "🙂": 3
+  remove_null: ~
+  idempotent: ~
+  wrong_left: type
+  wrong_right: type
+  wrong_source: type
+  wrong_key: type
+  wrong_arity: arity
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - - symbol: left
+          - symbol: map
+        - - symbol: right
+          - symbol: map
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: result
+            - symbol: key
+          - - symbol: set
+            - symbol: result
+            - symbol: key
+            - - symbol: get
+              - symbol: right
+              - symbol: key
+        - symbol: left
+        - - symbol: keys
+          - symbol: right
+      - symbol: map
+    location:
+      source: "std:map"
+      path:
+        - "merge"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - - symbol: source
+          - symbol: map
+        - - symbol: key
+          - symbol: string
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: result
+            - symbol: name
+          - - symbol: if
+            - - symbol: eq
+              - symbol: name
+              - symbol: key
+            - symbol: result
+            - - symbol: set
+              - symbol: result
+              - symbol: name
+              - - symbol: get
+                - symbol: source
+                - symbol: name
+        - {}
+        - - symbol: keys
+          - symbol: source
+      - symbol: map
+    location:
+      source: "std:map"
+      path:
+        - "remove"
+    environment: []
+    bindings: {}
+  object2:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - - symbol: source
+          - symbol: map
+        - - symbol: requested
+          - - symbol: list_of
+            - symbol: string
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: result
+            - symbol: name
+          - - symbol: if
+            - - symbol: has
+              - symbol: requested
+              - symbol: name
+            - - symbol: set
+              - symbol: result
+              - symbol: name
+              - - symbol: get
+                - symbol: source
+                - symbol: name
+            - symbol: result
+        - {}
+        - - symbol: keys
+          - symbol: source
+      - symbol: map
+    location:
+      source: "std:map"
+      path:
+        - "select"
+    environment: []
+    bindings: {}
+  object3:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - - symbol: source
+          - symbol: map
+        - - symbol: requested
+          - - symbol: list_of
+            - symbol: string
+      - - symbol: select
+        - symbol: source
+        - - symbol: filter
+          - - symbol: fn
+            - - symbol: name
+            - - symbol: not
+              - - symbol: has
+                - symbol: requested
+                - symbol: name
+          - - symbol: keys
+            - symbol: source
+      - symbol: map
+    location:
+      source: "std:map"
+      path:
+        - "omit"
+    environment: []
+    bindings:
+      select:
+        code:
+          source: "std:map"
+          path:
+            - "select"
+  object4:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          m:
+            - symbol: import
+            - symbol: "std:map"
+          left:
+            z: 1
+            shared:
+              old: true
+            absent: ~
+          right:
+            shared:
+              new: true
+            a: false
+          merged:
+            - symbol: m.merge
+            - symbol: left
+            - symbol: right
+          merge_order:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: keys
+                - symbol: merged
+              - - "z"
+                - shared
+                - absent
+                - a
+          shallow:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: get
+                - symbol: merged
+                - shared
+              - new: true
+          unchanged:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: get
+                - symbol: left
+                - shared
+              - old: true
+          empty_merge:
+            - symbol: m.merge
+            - {}
+            - {}
+          left_identity:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: m.merge
+                - {}
+                - symbol: left
+              - symbol: left
+          right_identity:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: m.merge
+                - symbol: left
+                - {}
+              - symbol: left
+          removed:
+            - symbol: m.remove
+            - symbol: merged
+            - shared
+          remove_order:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: keys
+                - symbol: removed
+              - - "z"
+                - absent
+                - a
+          missing:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: m.remove
+                - symbol: left
+                - missing
+              - symbol: left
+          empty_remove:
+            - symbol: m.remove
+            - {}
+            - x
+          only_key:
+            - symbol: m.remove
+            - x: 1
+            - x
+          unicode:
+            - symbol: m.remove
+            - - symbol: m.merge
+              - "": 1
+                "é": 2
+              - "é":
+                  - ~
+                  - false
+                "🙂": 3
+            - ""
+          remove_null:
+            - symbol: assert
+            - - symbol: not
+              - - symbol: has
+                - - symbol: m.remove
+                  - symbol: left
+                  - absent
+                - absent
+          idempotent:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: m.remove
+                - symbol: removed
+                - shared
+              - symbol: removed
+          wrong_left:
+            - symbol: try
+            - - symbol: m.merge
+              - []
+              - {}
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_right:
+            - symbol: try
+            - - symbol: m.merge
+              - {}
+              - ~
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_source:
+            - symbol: try
+            - - symbol: m.remove
+              - []
+              - x
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_key:
+            - symbol: try
+            - - symbol: m.remove
+              - {}
+              - 1
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_arity:
+            - symbol: try
+            - - symbol: m.merge
+              - {}
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+      - source: "std:map"
+        code:
+          merge:
+            - symbol: fn
+            - - - symbol: left
+                - symbol: map
+              - - symbol: right
+                - symbol: map
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: result
+                  - symbol: key
+                - - symbol: set
+                  - symbol: result
+                  - symbol: key
+                  - - symbol: get
+                    - symbol: right
+                    - symbol: key
+              - symbol: left
+              - - symbol: keys
+                - symbol: right
+            - symbol: map
+          remove:
+            - symbol: fn
+            - - - symbol: source
+                - symbol: map
+              - - symbol: key
+                - symbol: string
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: result
+                  - symbol: name
+                - - symbol: if
+                  - - symbol: eq
+                    - symbol: name
+                    - symbol: key
+                  - symbol: result
+                  - - symbol: set
+                    - symbol: result
+                    - symbol: name
+                    - - symbol: get
+                      - symbol: source
+                      - symbol: name
+              - {}
+              - - symbol: keys
+                - symbol: source
+            - symbol: map
+          select:
+            - symbol: fn
+            - - - symbol: source
+                - symbol: map
+              - - symbol: requested
+                - - symbol: list_of
+                  - symbol: string
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: result
+                  - symbol: name
+                - - symbol: if
+                  - - symbol: has
+                    - symbol: requested
+                    - symbol: name
+                  - - symbol: set
+                    - symbol: result
+                    - symbol: name
+                    - - symbol: get
+                      - symbol: source
+                      - symbol: name
+                  - symbol: result
+              - {}
+              - - symbol: keys
+                - symbol: source
+            - symbol: map
+          omit:
+            - symbol: fn
+            - - - symbol: source
+                - symbol: map
+              - - symbol: requested
+                - - symbol: list_of
+                  - symbol: string
+            - - symbol: select
+              - symbol: source
+              - - symbol: filter
+                - - symbol: fn
+                  - - symbol: name
+                  - - symbol: not
+                    - - symbol: has
+                      - symbol: requested
+                      - symbol: name
+                - - symbol: keys
+                  - symbol: source
+            - symbol: map

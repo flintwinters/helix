@@ -41,6 +41,8 @@ root:
         line: 6
         column: 17
         function: /url
+        function_line: 4
+        function_column: 6
   ident:
     ref: object2
   wrong_result: "1 type violation in the result: expected string, got integer"

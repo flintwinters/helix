@@ -18,10 +18,14 @@ root:
         line: 2
         column: 18
         function: /leaf
+        function_line: 1
+        function_column: 7
       - path: /caught/1
         line: 3
         column: 15
         function: /middle
+        function_line: 2
+        function_column: 9
   reraised:
     kind: divide_by_zero
     message: "`div` by zero"
@@ -38,6 +42,8 @@ root:
         line: 4
         column: 33
         function: /reraised/1/2
+        function_line: 4
+        function_column: 33
     cause:
       kind: divide_by_zero
       message: "`div` by zero"
@@ -52,10 +58,14 @@ root:
           line: 2
           column: 18
           function: /leaf
+          function_line: 1
+          function_column: 7
         - path: /reraised/1/1
           line: 4
           column: 23
           function: /middle
+          function_line: 2
+          function_column: 9
   nested:
     kind: original
     message: failure
@@ -74,6 +84,8 @@ root:
         line: 5
         column: 94
         function: /nested/1/2
+        function_line: 5
+        function_column: 94
     cause:
       kind: original
       message: failure
@@ -93,6 +105,8 @@ root:
           line: 5
           column: 70
           function: /nested/1/1/2
+          function_line: 5
+          function_column: 70
       cause:
         kind: original
         message: failure

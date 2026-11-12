@@ -1,0 +1,10 @@
+status: error
+phase: type
+errors:
+  - kind: limit
+    message: "`until` did not finish within 100000 steps"
+    path: /spin
+    reference:
+      - "spin"
+    line: 1
+    column: 7

@@ -1,0 +1,2849 @@
+status: finished
+root:
+  yaml:
+    parse:
+      ref: object0
+    dump:
+      ref: object1
+    valid:
+      ref: object2
+    get_in:
+      ref: object3
+    set_in:
+      ref: object4
+  l:
+    math:
+      number:
+        type: union
+        of:
+          - "integer"
+          - float
+      abs:
+        ref: object5
+      sign:
+        ref: object6
+      min:
+        ref: object7
+      max:
+        ref: object8
+      clamp:
+        ref: object9
+      square:
+        ref: object10
+    numbers:
+      type: list
+      of:
+        type: union
+        of:
+          - "integer"
+          - float
+    sum:
+      ref: object11
+    product:
+      ref: object12
+    reverse:
+      ref: object13
+    range:
+      ref: object14
+    unique:
+      ref: object15
+    sort_by:
+      ref: object16
+    first:
+      ref: object17
+    last:
+      ref: object18
+    take:
+      ref: object19
+    drop:
+      ref: object20
+    enumerate:
+      ref: object21
+    zip:
+      ref: object22
+    flatten:
+      ref: object23
+    flat_map:
+      ref: object24
+    find_index:
+      ref: object25
+    find:
+      ref: object26
+    any:
+      ref: object27
+    all:
+      ref: object28
+    count:
+      ref: object29
+    partition:
+      ref: object30
+    grouping:
+      by:
+        ref: object31
+    group_by:
+      ref: object32
+    frequencies:
+      ref: object33
+    sort:
+      ref: object34
+  rows:
+    - "{name: core, stock: 3}"
+    - "{name: broken"
+    - "{name: debt, stock: -2}"
+    - "{stock: 1}"
+    - "{name: cli, stock: 2}"
+  validate:
+    ref: object35
+  batch:
+    - "core"
+    - row: 1
+      source: "{name: broken"
+      error:
+        kind: parse
+        message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
+        file: "std:yaml"
+        path: /parse/2/1
+        reference:
+          - "parse"
+          - 2
+          - 1
+        line: 2
+        column: 46
+        calls:
+          - path: /batch/1/2/2/1/1
+            line: 6
+            column: 81
+            function: /parse
+            function_file: "std:yaml"
+            function_line: 2
+            function_column: 8
+    - row: 2
+      source: "{name: debt, stock: -2}"
+      error:
+        kind: assertion
+        message: stock must be nonnegative
+        path: /validate/2/2/1/1
+        reference:
+          - "validate"
+          - 2
+          - 2
+          - 1
+          - 1
+        line: 5
+        column: 95
+        calls:
+          - path: /batch/1/2/2/1
+            line: 6
+            column: 70
+            function: /validate
+            function_line: 5
+            function_column: 11
+    - row: 3
+      source: "{stock: 1}"
+      error:
+        kind: missing
+        message: "no key `name`"
+        path: /validate/2/1/name/2
+        reference:
+          - "validate"
+          - 2
+          - 1
+          - name
+          - 2
+        line: 5
+        column: 47
+        calls:
+          - path: /batch/1/2/2/1
+            line: 6
+            column: 70
+            function: /validate
+            function_line: 5
+            function_column: 11
+    - cli
+  calculate:
+    ref: object36
+  calculations:
+    - 8
+    - kind: arity
+      message: calculator needs exactly two operands
+      path: /calculate/2/2/3/2
+      reference:
+        - "calculate"
+        - 2
+        - 2
+        - 3
+        - 2
+      line: 12
+      column: 36
+      data:
+        - "+"
+        - 1
+      calls:
+        - path: /calculations/1/2/1
+          line: 15
+          column: 42
+          function: /calculate
+          function_line: 9
+          function_column: 3
+    - kind: syntax
+      message: unknown calculator operator
+      path: /calculate/2/2/3/3/2/5
+      reference:
+        - "calculate"
+        - 2
+        - 2
+        - 3
+        - 3
+        - 2
+        - 5
+      line: 14
+      column: 90
+      data: wat
+      calls:
+        - path: /calculations/1/2/1
+          line: 15
+          column: 42
+          function: /calculate
+          function_line: 9
+          function_column: 3
+    - kind: syntax
+      message: "expected [operator, left, right]"
+      path: /calculate/2/2/2
+      reference:
+        - "calculate"
+        - 2
+        - 2
+        - 2
+      line: 11
+      column: 40
+      data: 42
+      calls:
+        - path: /calculations/1/2/1
+          line: 15
+          column: 42
+          function: /calculate
+          function_line: 9
+          function_column: 3
+    - kind: divide_by_zero
+      message: "`div` by zero"
+      path: /calculate/2/2/3/3/2/4
+      reference:
+        - "calculate"
+        - 2
+        - 2
+        - 3
+        - 3
+        - 2
+        - 4
+      line: 14
+      column: 70
+      calls:
+        - path: /calculations/1/2/1
+          line: 15
+          column: 42
+          function: /calculate
+          function_line: 9
+          function_column: 3
+    - 9
+  attempt:
+    ref: object37
+  retry:
+    ref: object38
+  retried:
+    outcome:
+      value: 42
+    history:
+      - error:
+          kind: transient
+          message: step failed
+          path: /attempt/2/2/3
+          reference:
+            - "attempt"
+            - 2
+            - 2
+            - 3
+          line: 17
+          column: 93
+          data: 0
+          calls:
+            - path: /retry/2/1/outcome/1/3
+              line: 20
+              column: 46
+              function: /attempt
+              function_line: 17
+              function_column: 10
+      - error:
+          kind: transient
+          message: step failed
+          path: /attempt/2/2/3
+          reference:
+            - "attempt"
+            - 2
+            - 2
+            - 3
+          line: 17
+          column: 93
+          data: 1
+          calls:
+            - path: /retry/2/1/outcome/1/3
+              line: 20
+              column: 46
+              function: /attempt
+              function_line: 17
+              function_column: 10
+      - value: 42
+  fatal:
+    outcome:
+      error:
+        kind: fatal
+        message: step failed
+        path: /attempt/2/2/3
+        reference:
+          - "attempt"
+          - 2
+          - 2
+          - 3
+        line: 17
+        column: 93
+        data: 0
+        calls:
+          - path: /retry/2/1/outcome/1/3
+            line: 20
+            column: 46
+            function: /attempt
+            function_line: 17
+            function_column: 10
+    history:
+      - error:
+          kind: fatal
+          message: step failed
+          path: /attempt/2/2/3
+          reference:
+            - "attempt"
+            - 2
+            - 2
+            - 3
+          line: 17
+          column: 93
+          data: 0
+          calls:
+            - path: /retry/2/1/outcome/1/3
+              line: 20
+              column: 46
+              function: /attempt
+              function_line: 17
+              function_column: 10
+  exhausted:
+    outcome:
+      error:
+        kind: transient
+        message: step failed
+        path: /attempt/2/2/3
+        reference:
+          - "attempt"
+          - 2
+          - 2
+          - 3
+        line: 17
+        column: 93
+        data: 1
+        calls:
+          - path: /retry/2/1/outcome/1/3
+            line: 20
+            column: 46
+            function: /attempt
+            function_line: 17
+            function_column: 10
+    history:
+      - error:
+          kind: transient
+          message: step failed
+          path: /attempt/2/2/3
+          reference:
+            - "attempt"
+            - 2
+            - 2
+            - 3
+          line: 17
+          column: 93
+          data: 0
+          calls:
+            - path: /retry/2/1/outcome/1/3
+              line: 20
+              column: 46
+              function: /attempt
+              function_line: 17
+              function_column: 10
+      - error:
+          kind: transient
+          message: step failed
+          path: /attempt/2/2/3
+          reference:
+            - "attempt"
+            - 2
+            - 2
+            - 3
+          line: 17
+          column: 93
+          data: 1
+          calls:
+            - path: /retry/2/1/outcome/1/3
+              line: 20
+              column: 46
+              function: /attempt
+              function_line: 17
+              function_column: 10
+  load_config:
+    ref: object39
+  wrapped:
+    kind: configuration
+    message: cannot load deployment configuration
+    path: /load_config/2/2/2
+    reference:
+      - "load_config"
+      - 2
+      - 2
+      - 2
+    line: 29
+    column: 68
+    calls:
+      - path: /load_config/2/2
+        line: 29
+        column: 54
+        function: /load_config/2/2
+        function_line: 29
+        function_column: 54
+      - path: /wrapped/1
+        line: 30
+        column: 16
+        function: /load_config
+        function_line: 29
+        function_column: 14
+    cause:
+      kind: configuration
+      message: cannot load deployment configuration
+      cause:
+        kind: parse
+        message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 7 line 2 column 1 (YAML line 2, column 1)"
+        file: "std:yaml"
+        path: /parse/2/1
+        reference:
+          - "parse"
+          - 2
+          - 1
+        line: 2
+        column: 46
+        calls:
+          - path: /load_config/2/1
+            line: 29
+            column: 29
+            function: /parse
+            function_file: "std:yaml"
+            function_line: 2
+            function_column: 8
+  allocate:
+    ref: object40
+  wrong_call:
+    kind: assertion
+    message: "allocate count must be positive; pass at least 1"
+    path: /allocate/2/1/1
+    reference:
+      - "allocate"
+      - 2
+      - 1
+      - 1
+    line: 32
+    column: 35
+    calls:
+      - path: /wrong_call/1
+        line: 33
+        column: 19
+        function: /allocate
+        function_line: 32
+        function_column: 11
+  fixed_call: 2
+  job:
+    ref: object41
+  cleanup_after_middle_failure:
+    kind: cleanup
+    message: release job lease
+    path: /job/2/2/2
+    reference:
+      - "job"
+      - 2
+      - 2
+      - 2
+    line: 36
+    column: 124
+    calls:
+      - path: /cleanup_after_middle_failure/1
+        line: 37
+        column: 37
+        function: /job
+        function_line: 36
+        function_column: 6
+  cleanup_after_success:
+    kind: cleanup
+    message: release job lease
+    path: /job/2/2/2
+    reference:
+      - "job"
+      - 2
+      - 2
+      - 2
+    line: 36
+    column: 124
+    calls:
+      - path: /cleanup_after_success/1
+        line: 38
+        column: 30
+        function: /job
+        function_line: 36
+        function_column: 6
+  preserved:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    path: /preserved/1/1
+    reference:
+      - "preserved"
+      - 1
+      - 1
+    line: 40
+    column: 28
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: source
+          - symbol: string
+      - - symbol: yaml_parse
+        - symbol: source
+    location:
+      source: "std:yaml"
+      path:
+        - "parse"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - symbol: value
+      - - symbol: yaml_dump
+        - symbol: value
+      - symbol: string
+    location:
+      source: "std:yaml"
+      path:
+        - "dump"
+    environment: []
+    bindings: {}
+  object2:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: source
+          - symbol: string
+      - - symbol: try
+        - - symbol: let
+          - value:
+              - symbol: yaml_parse
+              - symbol: source
+          - - symbol: eq
+            - symbol: value
+            - symbol: value
+        - - symbol: fn
+          - - symbol: error
+          - false
+      - symbol: boolean
+    location:
+      source: "std:yaml"
+      path:
+        - "valid"
+    environment: []
+    bindings: {}
+  object3:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - symbol: value
+        - - symbol: path
+          - symbol: list
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: current
+            - symbol: key
+          - - symbol: get
+            - symbol: current
+            - symbol: key
+        - symbol: value
+        - symbol: path
+    location:
+      source: "std:yaml"
+      path:
+        - "get_in"
+    environment: []
+    bindings: {}
+  object4:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - symbol: value
+        - - symbol: path
+          - symbol: list
+        - symbol: replacement
+      - - symbol: if
+        - - symbol: eq
+          - - symbol: len
+            - symbol: path
+          - 0
+        - symbol: replacement
+        - - symbol: let
+          - key:
+              - symbol: get
+              - symbol: path
+              - 0
+            tail:
+              - symbol: slice
+              - symbol: path
+              - 1
+              - - symbol: len
+                - symbol: path
+          - - symbol: set
+            - symbol: value
+            - symbol: key
+            - - symbol: if
+              - - symbol: eq
+                - - symbol: len
+                  - symbol: tail
+                - 0
+              - symbol: replacement
+              - - symbol: set_in
+                - - symbol: get
+                  - symbol: value
+                  - symbol: key
+                - symbol: tail
+                - symbol: replacement
+    location:
+      source: "std:yaml"
+      path:
+        - "set_in"
+    environment: []
+    bindings:
+      set_in:
+        code:
+          source: "std:yaml"
+          path:
+            - "set_in"
+  object5:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+      - - symbol: if
+        - - symbol: lt
+          - symbol: "n"
+          - 0
+        - - symbol: neg
+          - symbol: "n"
+        - symbol: "n"
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "abs"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object6:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+      - - symbol: cond
+        - - symbol: lt
+          - symbol: "n"
+          - 0
+        - -1
+        - - symbol: gt
+          - symbol: "n"
+          - 0
+        - 1
+        - 0
+      - symbol: integer
+    location:
+      source: "std:math"
+      path:
+        - "sign"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object7:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: a
+          - symbol: number
+        - - symbol: b
+          - symbol: number
+      - - symbol: if
+        - - symbol: lt
+          - symbol: a
+          - symbol: b
+        - symbol: a
+        - symbol: b
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "min"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object8:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: a
+          - symbol: number
+        - - symbol: b
+          - symbol: number
+      - - symbol: if
+        - - symbol: gt
+          - symbol: a
+          - symbol: b
+        - symbol: a
+        - symbol: b
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "max"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object9:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+        - - symbol: lo
+          - symbol: number
+        - - symbol: hi
+          - symbol: number
+      - - symbol: max
+        - symbol: lo
+        - - symbol: min
+          - symbol: "n"
+          - symbol: hi
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "clamp"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+      max:
+        code:
+          source: "std:math"
+          path:
+            - "max"
+      min:
+        code:
+          source: "std:math"
+          path:
+            - "min"
+  object10:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+      - - symbol: mul
+        - symbol: "n"
+        - symbol: "n"
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "square"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object11:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: numbers
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: acc
+            - symbol: x
+          - - symbol: add
+            - symbol: acc
+            - symbol: x
+        - 0
+        - symbol: xs
+      - symbol: math.number
+    location:
+      source: "std:list"
+      path:
+        - "sum"
+    environment: []
+    bindings:
+      math.number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+      numbers:
+        code:
+          source: "std:list"
+          path:
+            - "numbers"
+  object12:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: numbers
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: acc
+            - symbol: x
+          - - symbol: mul
+            - symbol: acc
+            - symbol: x
+        - 1
+        - symbol: xs
+      - symbol: math.number
+    location:
+      source: "std:list"
+      path:
+        - "product"
+    environment: []
+    bindings:
+      math.number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+      numbers:
+        code:
+          source: "std:list"
+          path:
+            - "numbers"
+  object13:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: acc
+            - symbol: x
+          - - symbol: concat
+            - - symbol: list
+              - symbol: x
+            - symbol: acc
+        - - symbol: list
+        - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "reverse"
+    environment: []
+    bindings: {}
+  object14:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: integer
+      - - symbol: let
+        - done:
+            - symbol: fn
+            - - symbol: xs
+            - - symbol: ge
+              - - symbol: len
+                - symbol: xs
+              - symbol: "n"
+          step:
+            - symbol: fn
+            - - symbol: xs
+            - - symbol: append
+              - symbol: xs
+              - - symbol: len
+                - symbol: xs
+        - - symbol: until
+          - symbol: done
+          - symbol: step
+          - - symbol: list
+      - - symbol: list_of
+        - symbol: integer
+    location:
+      source: "std:list"
+      path:
+        - "range"
+    environment: []
+    bindings: {}
+  object15:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: seen
+            - symbol: item
+          - - symbol: if
+            - - symbol: has
+              - symbol: seen
+              - symbol: item
+            - symbol: seen
+            - - symbol: append
+              - symbol: seen
+              - symbol: item
+        - []
+        - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "unique"
+    environment: []
+    bindings: {}
+  object16:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: before
+          - symbol: function
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: ordered
+            - symbol: item
+          - - symbol: let
+            - position:
+                - symbol: until
+                - - symbol: fn
+                  - - symbol: index
+                  - - symbol: or
+                    - - symbol: ge
+                      - symbol: index
+                      - - symbol: len
+                        - symbol: ordered
+                    - - symbol: before
+                      - symbol: item
+                      - - symbol: get
+                        - symbol: ordered
+                        - symbol: index
+                - - symbol: fn
+                  - - symbol: index
+                  - - symbol: add
+                    - symbol: index
+                    - 1
+                - 0
+            - - symbol: concat
+              - - symbol: slice
+                - symbol: ordered
+                - 0
+                - symbol: position
+              - - symbol: list
+                - symbol: item
+              - - symbol: slice
+                - symbol: ordered
+                - symbol: position
+                - - symbol: len
+                  - symbol: ordered
+        - []
+        - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "sort_by"
+    environment: []
+    bindings: {}
+  object17:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - symbol: fallback
+      - - symbol: get
+        - symbol: xs
+        - 0
+        - symbol: fallback
+    location:
+      source: "std:list"
+      path:
+        - "first"
+    environment: []
+    bindings: {}
+  object18:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - symbol: fallback
+      - - symbol: if
+        - - symbol: eq
+          - - symbol: len
+            - symbol: xs
+          - 0
+        - symbol: fallback
+        - - symbol: get
+          - symbol: xs
+          - - symbol: sub
+            - - symbol: len
+              - symbol: xs
+            - 1
+    location:
+      source: "std:list"
+      path:
+        - "last"
+    environment: []
+    bindings: {}
+  object19:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: "n"
+          - symbol: integer
+      - - symbol: if
+        - - symbol: lt
+          - symbol: "n"
+          - 0
+        - - symbol: raise
+          - range
+          - take count must be non-negative
+        - - symbol: slice
+          - symbol: xs
+          - 0
+          - - symbol: math.min
+            - symbol: "n"
+            - - symbol: len
+              - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "take"
+    environment: []
+    bindings:
+      math.min:
+        code:
+          source: "std:math"
+          path:
+            - "min"
+  object20:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: "n"
+          - symbol: integer
+      - - symbol: if
+        - - symbol: lt
+          - symbol: "n"
+          - 0
+        - - symbol: raise
+          - range
+          - drop count must be non-negative
+        - - symbol: slice
+          - symbol: xs
+          - - symbol: math.min
+            - symbol: "n"
+            - - symbol: len
+              - symbol: xs
+          - - symbol: len
+            - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "drop"
+    environment: []
+    bindings:
+      math.min:
+        code:
+          source: "std:math"
+          path:
+            - "min"
+  object21:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+      - - symbol: map
+        - - symbol: fn
+          - - symbol: i
+          - - symbol: list
+            - symbol: i
+            - - symbol: get
+              - symbol: xs
+              - symbol: i
+        - - symbol: range
+          - - symbol: len
+            - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "enumerate"
+    environment: []
+    bindings:
+      range:
+        code:
+          source: "std:list"
+          path:
+            - "range"
+  object22:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: ys
+          - symbol: list
+      - - symbol: map
+        - - symbol: fn
+          - - symbol: i
+          - - symbol: list
+            - - symbol: get
+              - symbol: xs
+              - symbol: i
+            - - symbol: get
+              - symbol: ys
+              - symbol: i
+        - - symbol: range
+          - - symbol: math.min
+            - - symbol: len
+              - symbol: xs
+            - - symbol: len
+              - symbol: ys
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "zip"
+    environment: []
+    bindings:
+      range:
+        code:
+          source: "std:list"
+          path:
+            - "range"
+      math.min:
+        code:
+          source: "std:math"
+          path:
+            - "min"
+  object23:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xss
+          - - symbol: list_of
+            - symbol: list
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: acc
+            - symbol: xs
+          - - symbol: concat
+            - symbol: acc
+            - symbol: xs
+        - []
+        - symbol: xss
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "flatten"
+    environment: []
+    bindings: {}
+  object24:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: transform
+          - symbol: function
+      - - symbol: flatten
+        - - symbol: map
+          - symbol: transform
+          - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "flat_map"
+    environment: []
+    bindings:
+      flatten:
+        code:
+          source: "std:list"
+          path:
+            - "flatten"
+  object25:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+      - - symbol: let
+        - position:
+            - symbol: until
+            - - symbol: fn
+              - - symbol: i
+              - - symbol: or
+                - - symbol: ge
+                  - symbol: i
+                  - - symbol: len
+                    - symbol: xs
+                - - symbol: predicate
+                  - - symbol: get
+                    - symbol: xs
+                    - symbol: i
+            - - symbol: fn
+              - - symbol: i
+              - - symbol: add
+                - symbol: i
+                - 1
+            - 0
+        - - symbol: if
+          - - symbol: lt
+            - symbol: position
+            - - symbol: len
+              - symbol: xs
+          - symbol: position
+          - -1
+      - symbol: integer
+    location:
+      source: "std:list"
+      path:
+        - "find_index"
+    environment: []
+    bindings: {}
+  object26:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+        - symbol: fallback
+      - - symbol: let
+        - i:
+            - symbol: find_index
+            - symbol: xs
+            - symbol: predicate
+        - - symbol: if
+          - - symbol: lt
+            - symbol: i
+            - 0
+          - symbol: fallback
+          - - symbol: get
+            - symbol: xs
+            - symbol: i
+    location:
+      source: "std:list"
+      path:
+        - "find"
+    environment: []
+    bindings:
+      find_index:
+        code:
+          source: "std:list"
+          path:
+            - "find_index"
+  object27:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+      - - symbol: ge
+        - - symbol: find_index
+          - symbol: xs
+          - symbol: predicate
+        - 0
+      - symbol: boolean
+    location:
+      source: "std:list"
+      path:
+        - "any"
+    environment: []
+    bindings:
+      find_index:
+        code:
+          source: "std:list"
+          path:
+            - "find_index"
+  object28:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+      - - symbol: lt
+        - - symbol: find_index
+          - symbol: xs
+          - - symbol: fn
+            - - symbol: x
+            - - symbol: not
+              - - symbol: predicate
+                - symbol: x
+        - 0
+      - symbol: boolean
+    location:
+      source: "std:list"
+      path:
+        - "all"
+    environment: []
+    bindings:
+      find_index:
+        code:
+          source: "std:list"
+          path:
+            - "find_index"
+  object29:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+      - - symbol: len
+        - - symbol: filter
+          - symbol: predicate
+          - symbol: xs
+      - symbol: integer
+    location:
+      source: "std:list"
+      path:
+        - "count"
+    environment: []
+    bindings: {}
+  object30:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: parts
+            - symbol: x
+          - - symbol: let
+            - side:
+                - symbol: if
+                - - symbol: predicate
+                  - symbol: x
+                - 0
+                - 1
+            - - symbol: set
+              - symbol: parts
+              - symbol: side
+              - - symbol: append
+                - - symbol: get
+                  - symbol: parts
+                  - symbol: side
+                - symbol: x
+        - - []
+          - []
+        - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "partition"
+    environment: []
+    bindings: {}
+  object31:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: key
+          - symbol: function
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: groups
+            - symbol: item
+          - - symbol: let
+            - name:
+                - symbol: key
+                - symbol: item
+            - - symbol: set
+              - symbol: groups
+              - symbol: name
+              - - symbol: append
+                - - symbol: get
+                  - symbol: groups
+                  - symbol: name
+                  - []
+                - symbol: item
+        - {}
+        - symbol: xs
+      - symbol: map
+    location:
+      source: "std:group"
+      path:
+        - "by"
+    environment: []
+    bindings: {}
+  object32:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: key_for
+          - symbol: function
+      - - symbol: grouping.by
+        - symbol: xs
+        - symbol: key_for
+      - symbol: map
+    location:
+      source: "std:list"
+      path:
+        - "group_by"
+    environment: []
+    bindings:
+      grouping.by:
+        code:
+          source: "std:group"
+          path:
+            - "by"
+  object33:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - - symbol: list_of
+            - symbol: string
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: counts
+            - symbol: x
+          - - symbol: set
+            - symbol: counts
+            - symbol: x
+            - - symbol: add
+              - - symbol: get
+                - symbol: counts
+                - symbol: x
+                - 0
+              - 1
+        - {}
+        - symbol: xs
+      - symbol: map
+    location:
+      source: "std:list"
+      path:
+        - "frequencies"
+    environment: []
+    bindings: {}
+  object34:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+      - - symbol: sort_by
+        - symbol: xs
+        - - symbol: fn
+          - - symbol: a
+            - symbol: b
+          - - symbol: lt
+            - symbol: a
+            - symbol: b
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "sort"
+    environment: []
+    bindings:
+      sort_by:
+        code:
+          source: "std:list"
+          path:
+            - "sort_by"
+  object35:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - symbol: row
+      - - symbol: let
+        - name:
+            - symbol: get
+            - symbol: row
+            - name
+          stock:
+            - symbol: get
+            - symbol: row
+            - stock
+        - - symbol: if
+          - - symbol: eq
+            - - symbol: assert
+              - - symbol: ge
+                - symbol: stock
+                - 0
+              - stock must be nonnegative
+            - ~
+          - symbol: name
+          - ~
+    location:
+      source: "<root>"
+      path:
+        - "validate"
+    environment: []
+    bindings: {}
+  object36:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - symbol: source
+      - - symbol: let
+        - form:
+            - symbol: yaml.parse
+            - symbol: source
+        - - symbol: if
+          - - symbol: ne
+            - - symbol: type
+              - symbol: form
+            - list
+          - - symbol: raise
+            - syntax
+            - "expected [operator, left, right]"
+            - symbol: form
+          - - symbol: if
+            - - symbol: ne
+              - - symbol: len
+                - symbol: form
+              - 3
+            - - symbol: raise
+              - arity
+              - calculator needs exactly two operands
+              - symbol: form
+            - - symbol: let
+              - op:
+                  - symbol: get
+                  - symbol: form
+                  - 0
+                left:
+                  - symbol: get
+                  - symbol: form
+                  - 1
+                right:
+                  - symbol: get
+                  - symbol: form
+                  - 2
+              - - symbol: cond
+                - - symbol: eq
+                  - symbol: op
+                  - "+"
+                - - symbol: add
+                  - symbol: left
+                  - symbol: right
+                - - symbol: eq
+                  - symbol: op
+                  - /
+                - - symbol: div
+                  - symbol: left
+                  - symbol: right
+                - - symbol: raise
+                  - syntax
+                  - unknown calculator operator
+                  - symbol: op
+    location:
+      source: "<root>"
+      path:
+        - "calculate"
+    environment: []
+    bindings:
+      yaml.parse:
+        code:
+          source: "std:yaml"
+          path:
+            - "parse"
+  object37:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - symbol: kinds
+        - symbol: index
+      - - symbol: let
+        - kind:
+            - symbol: get
+            - symbol: kinds
+            - symbol: index
+        - - symbol: if
+          - - symbol: eq
+            - symbol: kind
+            - ok
+          - 42
+          - - symbol: raise
+            - symbol: kind
+            - step failed
+            - symbol: index
+    location:
+      source: "<root>"
+      path:
+        - "attempt"
+    environment: []
+    bindings: {}
+  object38:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - symbol: kinds
+        - symbol: index
+        - symbol: history
+      - - symbol: let
+        - outcome:
+            - symbol: try
+            - - symbol: set
+              - {}
+              - value
+              - - symbol: attempt
+                - symbol: kinds
+                - symbol: index
+            - - symbol: fn
+              - - symbol: error
+              - - symbol: set
+                - {}
+                - error
+                - symbol: error
+        - - symbol: let
+          - next:
+              - symbol: concat
+              - symbol: history
+              - - symbol: list
+                - symbol: outcome
+          - - symbol: if
+            - - symbol: and
+              - - symbol: has
+                - symbol: outcome
+                - error
+              - - symbol: eq
+                - - symbol: get
+                  - - symbol: get
+                    - symbol: outcome
+                    - error
+                  - kind
+                - transient
+              - - symbol: lt
+                - - symbol: add
+                  - symbol: index
+                  - 1
+                - - symbol: len
+                  - symbol: kinds
+            - - symbol: retry
+              - symbol: kinds
+              - - symbol: add
+                - symbol: index
+                - 1
+              - symbol: next
+            - - symbol: set
+              - - symbol: set
+                - {}
+                - outcome
+                - symbol: outcome
+              - history
+              - symbol: next
+    location:
+      source: "<root>"
+      path:
+        - "retry"
+    environment: []
+    bindings:
+      attempt:
+        code:
+          source: "<root>"
+          path:
+            - "attempt"
+      retry:
+        code:
+          source: "<root>"
+          path:
+            - "retry"
+  object39:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - []
+      - - symbol: try
+        - - symbol: yaml.parse
+          - "{broken"
+        - - symbol: fn
+          - - symbol: error
+          - - symbol: raise
+            - - symbol: dict
+              - kind
+              - configuration
+              - message
+              - cannot load deployment configuration
+              - cause
+              - symbol: error
+    location:
+      source: "<root>"
+      path:
+        - "load_config"
+    environment: []
+    bindings:
+      yaml.parse:
+        code:
+          source: "std:yaml"
+          path:
+            - "parse"
+  object40:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - symbol: count
+      - - symbol: if
+        - - symbol: eq
+          - - symbol: assert
+            - - symbol: gt
+              - symbol: count
+              - 0
+            - "allocate count must be positive; pass at least 1"
+          - ~
+        - - symbol: mul
+          - symbol: count
+          - 2
+        - ~
+    location:
+      source: "<root>"
+      path:
+        - "allocate"
+    environment: []
+    bindings: {}
+  object41:
+    kind: function
+    program:
+      ref: object42
+    code:
+      - symbol: fn
+      - - symbol: divisor
+      - - symbol: let
+        - prepared:
+            - symbol: add
+            - 1
+            - 1
+        - - symbol: finally
+          - - symbol: let
+            - middle:
+                - symbol: div
+                - symbol: prepared
+                - symbol: divisor
+            - - symbol: add
+              - symbol: middle
+              - 1
+          - - symbol: raise
+            - cleanup
+            - release job lease
+    location:
+      source: "<root>"
+      path:
+        - "job"
+    environment: []
+    bindings: {}
+  object42:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          yaml:
+            - symbol: import
+            - "std:yaml"
+          l:
+            - symbol: import
+            - "std:list"
+          rows:
+            - "{name: core, stock: 3}"
+            - "{name: broken"
+            - "{name: debt, stock: -2}"
+            - "{stock: 1}"
+            - "{name: cli, stock: 2}"
+          validate:
+            - symbol: fn
+            - - symbol: row
+            - - symbol: let
+              - name:
+                  - symbol: get
+                  - symbol: row
+                  - name
+                stock:
+                  - symbol: get
+                  - symbol: row
+                  - stock
+              - - symbol: if
+                - - symbol: eq
+                  - - symbol: assert
+                    - - symbol: ge
+                      - symbol: stock
+                      - 0
+                    - stock must be nonnegative
+                  - ~
+                - symbol: name
+                - ~
+          batch:
+            - symbol: map
+            - - symbol: fn
+              - - symbol: index
+              - - symbol: let
+                - source:
+                    - symbol: get
+                    - symbol: rows
+                    - symbol: index
+                - - symbol: try
+                  - - symbol: validate
+                    - - symbol: yaml.parse
+                      - symbol: source
+                  - - symbol: fn
+                    - - symbol: error
+                    - - symbol: set
+                      - - symbol: set
+                        - - symbol: set
+                          - {}
+                          - row
+                          - symbol: index
+                        - source
+                        - symbol: source
+                      - error
+                      - symbol: error
+            - - symbol: l.range
+              - - symbol: len
+                - symbol: rows
+          calculate:
+            - symbol: fn
+            - - symbol: source
+            - - symbol: let
+              - form:
+                  - symbol: yaml.parse
+                  - symbol: source
+              - - symbol: if
+                - - symbol: ne
+                  - - symbol: type
+                    - symbol: form
+                  - list
+                - - symbol: raise
+                  - syntax
+                  - "expected [operator, left, right]"
+                  - symbol: form
+                - - symbol: if
+                  - - symbol: ne
+                    - - symbol: len
+                      - symbol: form
+                    - 3
+                  - - symbol: raise
+                    - arity
+                    - calculator needs exactly two operands
+                    - symbol: form
+                  - - symbol: let
+                    - op:
+                        - symbol: get
+                        - symbol: form
+                        - 0
+                      left:
+                        - symbol: get
+                        - symbol: form
+                        - 1
+                      right:
+                        - symbol: get
+                        - symbol: form
+                        - 2
+                    - - symbol: cond
+                      - - symbol: eq
+                        - symbol: op
+                        - "+"
+                      - - symbol: add
+                        - symbol: left
+                        - symbol: right
+                      - - symbol: eq
+                        - symbol: op
+                        - /
+                      - - symbol: div
+                        - symbol: left
+                        - symbol: right
+                      - - symbol: raise
+                        - syntax
+                        - unknown calculator operator
+                        - symbol: op
+          calculations:
+            - symbol: map
+            - - symbol: fn
+              - - symbol: source
+              - - symbol: try
+                - - symbol: calculate
+                  - symbol: source
+                - - symbol: fn
+                  - - symbol: error
+                  - symbol: error
+            - - "[+, 6, 2]"
+              - "[+, 1]"
+              - "[wat, 1, 2]"
+              - "42"
+              - "[/, 1, 0]"
+              - "[+, 8, 1]"
+          attempt:
+            - symbol: fn
+            - - symbol: kinds
+              - symbol: index
+            - - symbol: let
+              - kind:
+                  - symbol: get
+                  - symbol: kinds
+                  - symbol: index
+              - - symbol: if
+                - - symbol: eq
+                  - symbol: kind
+                  - ok
+                - 42
+                - - symbol: raise
+                  - symbol: kind
+                  - step failed
+                  - symbol: index
+          retry:
+            - symbol: fn
+            - - symbol: kinds
+              - symbol: index
+              - symbol: history
+            - - symbol: let
+              - outcome:
+                  - symbol: try
+                  - - symbol: set
+                    - {}
+                    - value
+                    - - symbol: attempt
+                      - symbol: kinds
+                      - symbol: index
+                  - - symbol: fn
+                    - - symbol: error
+                    - - symbol: set
+                      - {}
+                      - error
+                      - symbol: error
+              - - symbol: let
+                - next:
+                    - symbol: concat
+                    - symbol: history
+                    - - symbol: list
+                      - symbol: outcome
+                - - symbol: if
+                  - - symbol: and
+                    - - symbol: has
+                      - symbol: outcome
+                      - error
+                    - - symbol: eq
+                      - - symbol: get
+                        - - symbol: get
+                          - symbol: outcome
+                          - error
+                        - kind
+                      - transient
+                    - - symbol: lt
+                      - - symbol: add
+                        - symbol: index
+                        - 1
+                      - - symbol: len
+                        - symbol: kinds
+                  - - symbol: retry
+                    - symbol: kinds
+                    - - symbol: add
+                      - symbol: index
+                      - 1
+                    - symbol: next
+                  - - symbol: set
+                    - - symbol: set
+                      - {}
+                      - outcome
+                      - symbol: outcome
+                    - history
+                    - symbol: next
+          retried:
+            - symbol: retry
+            - - "transient"
+              - transient
+              - ok
+            - 0
+            - []
+          fatal:
+            - symbol: retry
+            - - "fatal"
+              - ok
+            - 0
+            - []
+          exhausted:
+            - symbol: retry
+            - - "transient"
+              - transient
+            - 0
+            - []
+          load_config:
+            - symbol: fn
+            - []
+            - - symbol: try
+              - - symbol: yaml.parse
+                - "{broken"
+              - - symbol: fn
+                - - symbol: error
+                - - symbol: raise
+                  - - symbol: dict
+                    - kind
+                    - configuration
+                    - message
+                    - cannot load deployment configuration
+                    - cause
+                    - symbol: error
+          wrapped:
+            - symbol: try
+            - - symbol: load_config
+            - - symbol: fn
+              - - symbol: error
+              - symbol: error
+          allocate:
+            - symbol: fn
+            - - symbol: count
+            - - symbol: if
+              - - symbol: eq
+                - - symbol: assert
+                  - - symbol: gt
+                    - symbol: count
+                    - 0
+                  - "allocate count must be positive; pass at least 1"
+                - ~
+              - - symbol: mul
+                - symbol: count
+                - 2
+              - ~
+          wrong_call:
+            - symbol: try
+            - - symbol: allocate
+              - 0
+            - - symbol: fn
+              - - symbol: error
+              - symbol: error
+          fixed_call:
+            - symbol: allocate
+            - 1
+          job:
+            - symbol: fn
+            - - symbol: divisor
+            - - symbol: let
+              - prepared:
+                  - symbol: add
+                  - 1
+                  - 1
+              - - symbol: finally
+                - - symbol: let
+                  - middle:
+                      - symbol: div
+                      - symbol: prepared
+                      - symbol: divisor
+                  - - symbol: add
+                    - symbol: middle
+                    - 1
+                - - symbol: raise
+                  - cleanup
+                  - release job lease
+          cleanup_after_middle_failure:
+            - symbol: try
+            - - symbol: job
+              - 0
+            - - symbol: fn
+              - - symbol: error
+              - symbol: error
+          cleanup_after_success:
+            - symbol: try
+            - - symbol: job
+              - 1
+            - - symbol: fn
+              - - symbol: error
+              - symbol: error
+          preserved:
+            - symbol: try
+            - - symbol: finally
+              - - symbol: div
+                - 2
+                - 0
+              - - symbol: assert
+                - true
+            - - symbol: fn
+              - - symbol: error
+              - symbol: error
+      - source: "std:yaml"
+        code:
+          parse:
+            - symbol: fn
+            - - - symbol: source
+                - symbol: string
+            - - symbol: yaml_parse
+              - symbol: source
+          dump:
+            - symbol: fn
+            - - symbol: value
+            - - symbol: yaml_dump
+              - symbol: value
+            - symbol: string
+          valid:
+            - symbol: fn
+            - - - symbol: source
+                - symbol: string
+            - - symbol: try
+              - - symbol: let
+                - value:
+                    - symbol: yaml_parse
+                    - symbol: source
+                - - symbol: eq
+                  - symbol: value
+                  - symbol: value
+              - - symbol: fn
+                - - symbol: error
+                - false
+            - symbol: boolean
+          get_in:
+            - symbol: fn
+            - - symbol: value
+              - - symbol: path
+                - symbol: list
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: current
+                  - symbol: key
+                - - symbol: get
+                  - symbol: current
+                  - symbol: key
+              - symbol: value
+              - symbol: path
+          set_in:
+            - symbol: fn
+            - - symbol: value
+              - - symbol: path
+                - symbol: list
+              - symbol: replacement
+            - - symbol: if
+              - - symbol: eq
+                - - symbol: len
+                  - symbol: path
+                - 0
+              - symbol: replacement
+              - - symbol: let
+                - key:
+                    - symbol: get
+                    - symbol: path
+                    - 0
+                  tail:
+                    - symbol: slice
+                    - symbol: path
+                    - 1
+                    - - symbol: len
+                      - symbol: path
+                - - symbol: set
+                  - symbol: value
+                  - symbol: key
+                  - - symbol: if
+                    - - symbol: eq
+                      - - symbol: len
+                        - symbol: tail
+                      - 0
+                    - symbol: replacement
+                    - - symbol: set_in
+                      - - symbol: get
+                        - symbol: value
+                        - symbol: key
+                      - symbol: tail
+                      - symbol: replacement
+      - source: "std:list"
+        code:
+          math:
+            - symbol: import
+            - symbol: "std:math"
+          numbers:
+            - symbol: list_of
+            - symbol: math.number
+          sum:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: numbers
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: acc
+                  - symbol: x
+                - - symbol: add
+                  - symbol: acc
+                  - symbol: x
+              - 0
+              - symbol: xs
+            - symbol: math.number
+          product:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: numbers
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: acc
+                  - symbol: x
+                - - symbol: mul
+                  - symbol: acc
+                  - symbol: x
+              - 1
+              - symbol: xs
+            - symbol: math.number
+          reverse:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: acc
+                  - symbol: x
+                - - symbol: concat
+                  - - symbol: list
+                    - symbol: x
+                  - symbol: acc
+              - - symbol: list
+              - symbol: xs
+            - symbol: list
+          range:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: integer
+            - - symbol: let
+              - done:
+                  - symbol: fn
+                  - - symbol: xs
+                  - - symbol: ge
+                    - - symbol: len
+                      - symbol: xs
+                    - symbol: "n"
+                step:
+                  - symbol: fn
+                  - - symbol: xs
+                  - - symbol: append
+                    - symbol: xs
+                    - - symbol: len
+                      - symbol: xs
+              - - symbol: until
+                - symbol: done
+                - symbol: step
+                - - symbol: list
+            - - symbol: list_of
+              - symbol: integer
+          unique:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: seen
+                  - symbol: item
+                - - symbol: if
+                  - - symbol: has
+                    - symbol: seen
+                    - symbol: item
+                  - symbol: seen
+                  - - symbol: append
+                    - symbol: seen
+                    - symbol: item
+              - []
+              - symbol: xs
+            - symbol: list
+          sort_by:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: before
+                - symbol: function
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: ordered
+                  - symbol: item
+                - - symbol: let
+                  - position:
+                      - symbol: until
+                      - - symbol: fn
+                        - - symbol: index
+                        - - symbol: or
+                          - - symbol: ge
+                            - symbol: index
+                            - - symbol: len
+                              - symbol: ordered
+                          - - symbol: before
+                            - symbol: item
+                            - - symbol: get
+                              - symbol: ordered
+                              - symbol: index
+                      - - symbol: fn
+                        - - symbol: index
+                        - - symbol: add
+                          - symbol: index
+                          - 1
+                      - 0
+                  - - symbol: concat
+                    - - symbol: slice
+                      - symbol: ordered
+                      - 0
+                      - symbol: position
+                    - - symbol: list
+                      - symbol: item
+                    - - symbol: slice
+                      - symbol: ordered
+                      - symbol: position
+                      - - symbol: len
+                        - symbol: ordered
+              - []
+              - symbol: xs
+            - symbol: list
+          first:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - symbol: fallback
+            - - symbol: get
+              - symbol: xs
+              - 0
+              - symbol: fallback
+          last:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - symbol: fallback
+            - - symbol: if
+              - - symbol: eq
+                - - symbol: len
+                  - symbol: xs
+                - 0
+              - symbol: fallback
+              - - symbol: get
+                - symbol: xs
+                - - symbol: sub
+                  - - symbol: len
+                    - symbol: xs
+                  - 1
+          take:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: "n"
+                - symbol: integer
+            - - symbol: if
+              - - symbol: lt
+                - symbol: "n"
+                - 0
+              - - symbol: raise
+                - range
+                - take count must be non-negative
+              - - symbol: slice
+                - symbol: xs
+                - 0
+                - - symbol: math.min
+                  - symbol: "n"
+                  - - symbol: len
+                    - symbol: xs
+            - symbol: list
+          drop:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: "n"
+                - symbol: integer
+            - - symbol: if
+              - - symbol: lt
+                - symbol: "n"
+                - 0
+              - - symbol: raise
+                - range
+                - drop count must be non-negative
+              - - symbol: slice
+                - symbol: xs
+                - - symbol: math.min
+                  - symbol: "n"
+                  - - symbol: len
+                    - symbol: xs
+                - - symbol: len
+                  - symbol: xs
+            - symbol: list
+          enumerate:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+            - - symbol: map
+              - - symbol: fn
+                - - symbol: i
+                - - symbol: list
+                  - symbol: i
+                  - - symbol: get
+                    - symbol: xs
+                    - symbol: i
+              - - symbol: range
+                - - symbol: len
+                  - symbol: xs
+            - symbol: list
+          zip:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: ys
+                - symbol: list
+            - - symbol: map
+              - - symbol: fn
+                - - symbol: i
+                - - symbol: list
+                  - - symbol: get
+                    - symbol: xs
+                    - symbol: i
+                  - - symbol: get
+                    - symbol: ys
+                    - symbol: i
+              - - symbol: range
+                - - symbol: math.min
+                  - - symbol: len
+                    - symbol: xs
+                  - - symbol: len
+                    - symbol: ys
+            - symbol: list
+          flatten:
+            - symbol: fn
+            - - - symbol: xss
+                - - symbol: list_of
+                  - symbol: list
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: acc
+                  - symbol: xs
+                - - symbol: concat
+                  - symbol: acc
+                  - symbol: xs
+              - []
+              - symbol: xss
+            - symbol: list
+          flat_map:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: transform
+                - symbol: function
+            - - symbol: flatten
+              - - symbol: map
+                - symbol: transform
+                - symbol: xs
+            - symbol: list
+          find_index:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+            - - symbol: let
+              - position:
+                  - symbol: until
+                  - - symbol: fn
+                    - - symbol: i
+                    - - symbol: or
+                      - - symbol: ge
+                        - symbol: i
+                        - - symbol: len
+                          - symbol: xs
+                      - - symbol: predicate
+                        - - symbol: get
+                          - symbol: xs
+                          - symbol: i
+                  - - symbol: fn
+                    - - symbol: i
+                    - - symbol: add
+                      - symbol: i
+                      - 1
+                  - 0
+              - - symbol: if
+                - - symbol: lt
+                  - symbol: position
+                  - - symbol: len
+                    - symbol: xs
+                - symbol: position
+                - -1
+            - symbol: integer
+          find:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+              - symbol: fallback
+            - - symbol: let
+              - i:
+                  - symbol: find_index
+                  - symbol: xs
+                  - symbol: predicate
+              - - symbol: if
+                - - symbol: lt
+                  - symbol: i
+                  - 0
+                - symbol: fallback
+                - - symbol: get
+                  - symbol: xs
+                  - symbol: i
+          any:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+            - - symbol: ge
+              - - symbol: find_index
+                - symbol: xs
+                - symbol: predicate
+              - 0
+            - symbol: boolean
+          all:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+            - - symbol: lt
+              - - symbol: find_index
+                - symbol: xs
+                - - symbol: fn
+                  - - symbol: x
+                  - - symbol: not
+                    - - symbol: predicate
+                      - symbol: x
+              - 0
+            - symbol: boolean
+          count:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+            - - symbol: len
+              - - symbol: filter
+                - symbol: predicate
+                - symbol: xs
+            - symbol: integer
+          partition:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: parts
+                  - symbol: x
+                - - symbol: let
+                  - side:
+                      - symbol: if
+                      - - symbol: predicate
+                        - symbol: x
+                      - 0
+                      - 1
+                  - - symbol: set
+                    - symbol: parts
+                    - symbol: side
+                    - - symbol: append
+                      - - symbol: get
+                        - symbol: parts
+                        - symbol: side
+                      - symbol: x
+              - - []
+                - []
+              - symbol: xs
+            - symbol: list
+          grouping:
+            - symbol: import
+            - symbol: "std:group"
+          group_by:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: key_for
+                - symbol: function
+            - - symbol: grouping.by
+              - symbol: xs
+              - symbol: key_for
+            - symbol: map
+          frequencies:
+            - symbol: fn
+            - - - symbol: xs
+                - - symbol: list_of
+                  - symbol: string
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: counts
+                  - symbol: x
+                - - symbol: set
+                  - symbol: counts
+                  - symbol: x
+                  - - symbol: add
+                    - - symbol: get
+                      - symbol: counts
+                      - symbol: x
+                      - 0
+                    - 1
+              - {}
+              - symbol: xs
+            - symbol: map
+          sort:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+            - - symbol: sort_by
+              - symbol: xs
+              - - symbol: fn
+                - - symbol: a
+                  - symbol: b
+                - - symbol: lt
+                  - symbol: a
+                  - symbol: b
+            - symbol: list
+      - source: "std:math"
+        code:
+          number:
+            - symbol: union
+            - symbol: integer
+            - symbol: float
+          abs:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+            - - symbol: if
+              - - symbol: lt
+                - symbol: "n"
+                - 0
+              - - symbol: neg
+                - symbol: "n"
+              - symbol: "n"
+            - symbol: number
+          sign:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+            - - symbol: cond
+              - - symbol: lt
+                - symbol: "n"
+                - 0
+              - -1
+              - - symbol: gt
+                - symbol: "n"
+                - 0
+              - 1
+              - 0
+            - symbol: integer
+          min:
+            - symbol: fn
+            - - - symbol: a
+                - symbol: number
+              - - symbol: b
+                - symbol: number
+            - - symbol: if
+              - - symbol: lt
+                - symbol: a
+                - symbol: b
+              - symbol: a
+              - symbol: b
+            - symbol: number
+          max:
+            - symbol: fn
+            - - - symbol: a
+                - symbol: number
+              - - symbol: b
+                - symbol: number
+            - - symbol: if
+              - - symbol: gt
+                - symbol: a
+                - symbol: b
+              - symbol: a
+              - symbol: b
+            - symbol: number
+          clamp:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+              - - symbol: lo
+                - symbol: number
+              - - symbol: hi
+                - symbol: number
+            - - symbol: max
+              - symbol: lo
+              - - symbol: min
+                - symbol: "n"
+                - symbol: hi
+            - symbol: number
+          square:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+            - - symbol: mul
+              - symbol: "n"
+              - symbol: "n"
+            - symbol: number
+      - source: "std:group"
+        code:
+          by:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: key
+                - symbol: function
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: groups
+                  - symbol: item
+                - - symbol: let
+                  - name:
+                      - symbol: key
+                      - symbol: item
+                  - - symbol: set
+                    - symbol: groups
+                    - symbol: name
+                    - - symbol: append
+                      - - symbol: get
+                        - symbol: groups
+                        - symbol: name
+                        - []
+                      - symbol: item
+              - {}
+              - symbol: xs
+            - symbol: map

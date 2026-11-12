@@ -1,0 +1,17 @@
+# Character boundaries include empty, ASCII, multibyte and combining characters.
+t: [import, std:test]
+l: [import, std:list]
+report:
+  - t.property
+  - "every string split rejoins at character boundaries"
+  - [list, "", "abcdef", "é雪🙂", "é雪🙂"]
+  - - fn
+    - [text]
+    - - l.all
+      - [l.range, [add, [len, text], 1]]
+      - - fn
+        - [at]
+        - - and
+          - [eq, [concat, [slice, text, 0, at], [slice, text, at, [len, text]]], text]
+          - [eq, [len, [slice, text, 0, at]], at]
+          - [eq, [slice, text, at, at], ""]

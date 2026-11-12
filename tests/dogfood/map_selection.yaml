@@ -1,0 +1,20 @@
+t: [import, std:test]
+m: [import, std:map]
+source: {z: null, a: false, "": {nested: [1, 2]}, "é": 3, "🙂": 4}
+examples:
+  - t.suite
+  - - {name: select_order_and_values, run: [fn, [], [t.equal, [m.select, source, [list, "🙂", "a", "z", "z", "missing"]], {z: null, a: false, "🙂": 4}]]}
+    - {name: select_key_order, run: [fn, [], [t.equal, [keys, [m.select, source, [list, "🙂", "a", "z"]]], [list, "z", "a", "🙂"]]]}
+    - {name: omit_key_order, run: [fn, [], [t.equal, [keys, [m.omit, source, [list, "a", "é", "a", "missing"]]], [list, "z", "", "🙂"]]]}
+    - {name: nested_value, run: [fn, [], [t.equal, [m.select, source, [list, ""]], {"": {nested: [1, 2]}}]]}
+    - {name: select_empty, run: [fn, [], [t.equal, [m.select, source, []], {}]]}
+    - {name: empty_source, run: [fn, [], [t.equal, [list, [m.select, {}, [list, "x"]], [m.omit, {}, [list, "x"]]], [list, {}, {}]]]}
+    - {name: bad_select_source, run: [fn, [], [t.throws, [fn, [], [m.select, [], []]], "type"]]}
+    - {name: bad_omit_source, run: [fn, [], [t.throws, [fn, [], [m.omit, null, []]], "type"]]}
+    - {name: bad_select_keys, run: [fn, [], [t.throws, [fn, [], [m.select, source, {}]], "type"]]}
+    - {name: bad_omit_keys, run: [fn, [], [t.throws, [fn, [], [m.omit, source, "z"]], "type"]]}
+    - {name: bad_select_member, run: [fn, [], [t.throws, [fn, [], [m.select, source, [list, "z", false]]], "type"]]}
+    - {name: bad_omit_member, run: [fn, [], [t.throws, [fn, [], [m.omit, source, [list, null]]], "type"]]}
+requests: [list, [], [list, "missing"], [list, "🙂", "z", "z"], [keys, source]]
+laws: [t.property, "selection partitions source and is idempotent", requests, [fn, [requested], [let, {selected: [m.select, source, requested], omitted: [m.omit, source, requested]}, [and, [eq, [m.select, selected, requested], selected], [eq, [m.omit, omitted, requested], omitted], [eq, [m.merge, selected, omitted], source], [eq, [m.select, omitted, requested], {}]]]]]
+report: [t.combine, [list, examples, laws]]

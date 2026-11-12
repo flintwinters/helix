@@ -8,7 +8,7 @@ use super::value::equal;
 
 pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
     match actor {
-        "list" => Ok(Value::Array((args.to_vec()).into())),
+        "list" => Ok(Value::Array(args.to_vec().into())),
         "dict" => dict(args),
         "len" => len(&args[0]),
         "concat" => concat(args),
@@ -32,9 +32,9 @@ fn index(args: &[Value], at: usize) -> Result<usize, Fault> {
     }
 }
 
-fn key(args: &[Value], at: usize) -> Result<Value, Fault> {
+fn key(args: &[Value], at: usize) -> Result<&Value, Fault> {
     match &args[at] {
-        key @ Value::String(_) => Ok(key.clone()),
+        key @ Value::String(_) => Ok(key),
         other => Err(Fault::expected(at, "string key", other)),
     }
 }
@@ -88,13 +88,12 @@ fn slice(args: &[Value]) -> Result<Value, Fault> {
     };
     match &args[0] {
         Value::String(s) => {
-            let chars: Vec<char> = s.chars().collect();
-            let (start, end) = bounds(chars.len())?;
-            Ok(Value::String(chars[start..end].iter().collect()))
+            let (start, end) = bounds(s.chars().count())?;
+            Ok(Value::String(s.chars().skip(start).take(end - start).collect()))
         }
         Value::Array(v) => {
             let (start, end) = bounds(v.len())?;
-            Ok(Value::Array((v[start..end].to_vec()).into()))
+            Ok(Value::Array(v[start..end].to_vec().into()))
         }
         other => Err(Fault::expected(0, "string or list", other)),
     }
@@ -104,7 +103,7 @@ fn slice(args: &[Value]) -> Result<Value, Fault> {
 fn get(args: &[Value]) -> Result<Value, Fault> {
     let found = match &args[0] {
         Value::Array(v) => v.get(index(args, 1)?),
-        Value::Hash(h) => h.get(&key(args, 1)?),
+        Value::Hash(h) => h.get(key(args, 1)?),
         other => return Err(Fault::expected(0, "list or map", other)),
     };
     match (found, args.get(2)) {
@@ -131,9 +130,9 @@ fn set(args: &[Value]) -> Result<Value, Fault> {
             // Replacing an existing key keeps its position; `insert` alone would move it to the end.
             let mut out = h.clone();
             let k = key(args, 1)?;
-            match out.get_mut(&k) {
+            match out.get_mut(k) {
                 Some(slot) => *slot = args[2].clone(),
-                None => drop(out.insert(k, args[2].clone())),
+                None => drop(out.insert(k.clone(), args[2].clone())),
             }
             Ok(Value::Hash(out))
         }
@@ -195,7 +194,7 @@ fn dict(args: &[Value]) -> Result<Value, Fault> {
     let mut out = crate::value::Hash::new();
     for (i, pair) in args.chunks_exact(2).enumerate() {
         let key = key(args, 2 * i)?;
-        out.insert(key, pair[1].clone());
+        out.insert(key.clone(), pair[1].clone());
     }
     Ok(Value::Hash(out))
 }

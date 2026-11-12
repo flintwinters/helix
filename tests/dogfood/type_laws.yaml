@@ -29,4 +29,4 @@ captures:
   - "escaping callbacks retain independent captures"
   - [-1, 0, 4]
   - [fn, [x], [eq, [map, [fn, [f], [call, f, x]], closures], [map, [fn, [offset], [add, offset, x]], offsets]]]
-report: [t.table, [list, [dict, "name", "validation", "input", validation], [dict, "name", "unions", "input", unions], [dict, "name", "derivation", "input", derivation], [dict, "name", "captures", "input", captures]], [fn, [child], [t.require_pass, child]]]
+report: [t.combine, [list, validation, unions, derivation, captures]]

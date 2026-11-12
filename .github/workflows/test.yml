@@ -21,7 +21,7 @@ jobs:
       - run: mkdir -p runtime
       - name: Fast regression contracts
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
-        run: ./manage.py test --suite golden --suite harness --suite cli --suite generated --suite dogfood --suite imports --suite library --suite execution --suite parser 2>&1 | tee runtime/test.log
+        run: ./manage.py test --suite golden --suite harness --suite cli --suite generated --suite dogfood --suite imports --suite library --suite execution --suite parser --suite startup --suite type_time --suite pipeline --suite errors --suite semantics --suite type_algebra --suite permissions --suite resources 2>&1 | tee runtime/test.log
       - name: Full bounded sweep
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: ./manage.py test 2>&1 | tee runtime/test.log
@@ -30,4 +30,21 @@ jobs:
         with:
           name: runtime-failures
           path: runtime/
+          if-no-files-found: ignore
+      - name: Retain trust measurements
+        uses: actions/upload-artifact@v4
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        with:
+          name: trust-measurements
+          path: |
+            runtime/memory/report.json
+            runtime/coverage/actors.json
+            runtime/mutants/report.json
+          if-no-files-found: ignore
+      - name: Retain speed benchmark reports
+        uses: actions/upload-artifact@v4
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        with:
+          name: speed-benchmarks
+          path: runtime/speed/
           if-no-files-found: ignore

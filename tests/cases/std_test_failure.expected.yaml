@@ -39,11 +39,16 @@ error:
               line: 6
               column: 51
               function: /equal
+              function_file: "std:test"
+              function_line: 12
+              function_column: 3
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /result/1/1/0/run
+              function_line: 6
+              function_column: 42
         name: deliberate_mismatch
         input: ~
       - outcome: passed
@@ -55,3 +60,6 @@ error:
       line: 4
       column: 3
       function: /require_pass
+      function_file: "std:test"
+      function_line: 48
+      function_column: 3

@@ -1,0 +1,144 @@
+status: finished
+root:
+  machine:
+    type: class
+    name: machine
+    parents: []
+    fields:
+      min: integer
+      max: integer
+    values: {}
+    provenance:
+      min:
+        type: machine
+      max:
+        type: machine
+    concrete: false
+  ordered:
+    ref: object0
+  sane:
+    type: class
+    name: machine
+    parents: []
+    fields:
+      min: integer
+      max: integer
+    values: {}
+    constraints:
+      - ref: object0
+    provenance:
+      min:
+        type: machine
+      max:
+        type: machine
+    concrete: false
+  open_before:
+    min: integer
+    max: integer
+  ok:
+    min: 1
+    max: 5
+  violated:
+    violations:
+      - at: /
+        message: "constraint 0 of `bad` does not hold"
+  inherited_twice:
+    - ref: object0
+  open_after_partial:
+    max: integer
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: v
+      - - symbol: le
+        - - symbol: get
+          - symbol: v
+          - min
+        - - symbol: get
+          - symbol: v
+          - max
+    location:
+      source: "<root>"
+      path:
+        - "ordered"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          machine:
+            - symbol: class
+            - machine
+            - - symbol: record
+              - min
+              - symbol: integer
+              - max
+              - symbol: integer
+          ordered:
+            - symbol: fn
+            - - symbol: v
+            - - symbol: le
+              - - symbol: get
+                - symbol: v
+                - min
+              - - symbol: get
+                - symbol: v
+                - max
+          sane:
+            - symbol: constrain
+            - symbol: machine
+            - symbol: ordered
+          open_before:
+            - symbol: open_fields
+            - symbol: sane
+          ok:
+            - symbol: get
+            - - symbol: inherit
+              - ok
+              - - symbol: list
+                - symbol: sane
+              - min: 1
+                max: 5
+            - values
+          violated:
+            - symbol: try
+            - - symbol: inherit
+              - bad
+              - - symbol: list
+                - symbol: sane
+              - min: 9
+                max: 5
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - data
+          inherited_twice:
+            - symbol: get
+            - - symbol: inherit
+              - d
+              - - symbol: list
+                - symbol: sane
+                - - symbol: extend
+                  - x
+                  - - symbol: list
+                    - symbol: sane
+                  - - symbol: record
+                  - {}
+              - min: 1
+                max: 2
+            - constraints
+          open_after_partial:
+            - symbol: open_fields
+            - - symbol: extend
+              - p
+              - - symbol: list
+                - symbol: sane
+              - - symbol: record
+              - min: 1

@@ -1,0 +1,28 @@
+# Deterministic Cartesian domains, generated in Helix. Keep inputs small enough for VM budgets.
+t: [import, std:test]
+y: [import, std:yaml]
+l: [import, std:list]
+texts: [list, '', 'null', 'NULL', '~', 'true', 'FALSE', 'yes', 'ON', '0', '-0.0', '+42', '1e3', '012', '.inf', '.nan', '0xFF', 'a: b', 'a#b', '# comment', '[a]', '{a: b}', '---', '...', '&anchor', '*alias', '!tag', '|', '>', '%YAML 1.2', '@name', '`name', '-', '?', ':', ',', ' leading', 'trailing ', 'two  spaces', 'quote"', "apostrophe'", 'back\slash', "line\nbreak", "\t\r", "\0\a\b\v\f\e", '雪🙂', "\u0085", "\u2028", "\u2029"]
+text_rows: [map, [fn, [text], [dict, "name", "text as scalar key and list element", "input", text]], texts]
+text_report:
+  - t.table
+  - text_rows
+  - - fn
+    - [text]
+    - - let
+      - value: [dict, text, [list, text, [dict, text, text]], "nested", [list, [], {}]]
+        dumped: [y.dump, value]
+        parsed: [y.parse, dumped]
+      - [finally, [t.equal, parsed, value], [t.equal, [y.dump, parsed], dumped]]
+# All ordered pairs from mixed scalars: nested lists/maps, first-item quoting, null vs false.
+atoms: [list, null, false, true, 0, -1, 1.25, '', 'add', 'true']
+pairs: [l.flat_map, atoms, [fn, [a], [map, [fn, [b], [list, a, b]], atoms]]]
+containers: [map, [fn, [pair], [dict, "left", pair, "right", [list, pair, [], {}]]], pairs]
+container_report: [t.property, "nested data round trip", containers, [fn, [value], [eq, [y.parse, [y.dump, value]], value]]]
+# Separately assert order because structural map equality deliberately ignores it.
+key_report:
+  - t.table
+  - - {name: forward_keys, input: [list, 'z', '', '1', 'true', 'a/b', '雪']}
+    - {name: reverse_keys, input: [list, '雪', 'a/b', 'true', '1', '', 'z']}
+  - [fn, [names], [let, {value: [fold, [fn, [acc, name], [set, acc, name, false]], {}, names]}, [t.equal, [keys, [y.parse, [y.dump, value]]], names]]]
+report: [t.combine, [list, text_report, container_report, key_report]]

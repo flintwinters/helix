@@ -14,3 +14,5 @@ error:
       line: 2
       column: 4
       function: /f
+      function_line: 1
+      function_column: 4

@@ -3,7 +3,7 @@ use crate::error::HelixError;
 use crate::eval::{Evaluator, Function};
 use crate::graph::{Graph, Kind, ROOT};
 use crate::{emit, value::Value};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use yaml_rust2::Yaml;
 
@@ -21,12 +21,15 @@ impl Status {
 }
 impl Vm {
     pub fn load(src: &str) -> Self {
-        Self::load_from(src, None)
+        Self::load_from(src, None, None)
     }
     pub fn load_file(src: &str, file: &Path) -> Self {
-        Self::load_from(src, Some(file))
+        Self::load_from(src, Some(file), None)
     }
-    fn load_from(src: &str, file: Option<&Path>) -> Self {
+    pub fn load_sandboxed(src: &str, file: Option<&Path>, roots: &[PathBuf]) -> Self {
+        Self::load_from(src, file, Some(roots))
+    }
+    fn load_from(src: &str, file: Option<&Path>, roots: Option<&[PathBuf]>) -> Self {
         let mut vm = Self {
             evaluator: None,
             source_file: file.map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf())),
@@ -36,7 +39,7 @@ impl Vm {
             checking: false,
             errors: Vec::new(),
         };
-        match Graph::parse(src).and_then(|graph| Evaluator::new(graph, file)) {
+        match Graph::parse(src).and_then(|graph| Evaluator::new(graph, file, roots)) {
             Ok(e) => vm.evaluator = Some(Arc::new(e)),
             Err(e) => vm.fail(e),
         }
@@ -118,7 +121,7 @@ impl Vm {
             return;
         }
         self.checking = true;
-        let evaluator = self.evaluator.as_ref().unwrap().clone();
+        let mut evaluator = self.evaluator.as_ref().unwrap().clone();
         for node in evaluator.check_nodes() {
             let mut machine = Self {
                 evaluator: Some(Arc::new(evaluator.for_node(node))),
@@ -130,6 +133,12 @@ impl Vm {
                 errors: Vec::new(),
             };
             machine.run();
+            if let Some(runner) = &machine.evaluator {
+                let state = Arc::make_mut(&mut evaluator);
+                state.remaining_work = runner.remaining_work;
+                state.remaining_values = runner.remaining_values;
+                state.memo.extend(runner.memo.clone());
+            }
             if let Some(error) = machine.error {
                 if !self.errors.iter().any(|e| {
                     e.path == error.path && e.kind == error.kind && e.message == error.message
@@ -138,6 +147,7 @@ impl Vm {
                 }
             }
         }
+        self.evaluator = Some(evaluator);
         if self.errors.is_empty() {
             self.run()
         } else {
@@ -166,6 +176,9 @@ impl Vm {
                 );
             }
         } else if let Some(error) = &self.error {
+            if let Some(phase) = error.phase {
+                fields.insert(s("phase"), s(phase));
+            }
             fields.insert(s("error"), error.to_value());
         }
         crate::inspect::state(&Value::Hash(fields))
@@ -245,7 +258,11 @@ impl Vm {
                 };
                 if field("status") == Some("error") {
                     if let Some(source) = field("recovery") {
-                        return Self::load_from(source, field("recovery_file").map(Path::new));
+                        return Self::load_from(
+                            source,
+                            field("recovery_file").map(Path::new),
+                            None,
+                        );
                     }
                 }
             }

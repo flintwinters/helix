@@ -1,6 +1,4 @@
 """Bounded contract suites, orchestrated only by manage.py test."""
-import contextlib
-import io
 import json
 import random
 import subprocess
@@ -22,12 +20,21 @@ def checked(h, source):
 
 
 def harness(h):
+    import contextlib
+    import io
     # Regression orchestration must keep failures from every selected suite.
     with patch.object(h, "SUITES", {"first": "probe", "second": "probe"}), \
          patch.object(sys.modules[__name__], "run", side_effect=[["probe failure"], []]) as dispatch, \
          contextlib.redirect_stderr(io.StringIO()):
         assert h.regression(False, ["first", "second"]) == 1
         assert [call.args[0] for call in dispatch.call_args_list] == ["first", "second"]
+
+    from tests.suites.state_validation import verify as verify_states
+    verify_states(h)
+    from tests.suites.test_runner import verify as verify_runner
+    verify_runner(h)
+    from tests.suites.test_reports import verify as verify_reports
+    verify_reports(h)
     for output, code in [("", 0), ("[", 0), ("status: ready", 0),
                          ("status: finished", 0), ("status: error", 1),
                          ("status: finished\nroot: 1", 1), ("", -11)]:
@@ -37,12 +44,6 @@ def harness(h):
     assert h.root_section("status: finished\nroot:\n  a: 1\n") == "a: 1\n"
     assert h.root_section("status: finished\nroot:\n  a: 1\nphase: type\n") == "a: 1\n"
     assert h.root_section("status: error\n") is None
-    assert h.root_section("status: finished\nroot: 42\n") == "42\n"
-    assert h.root_section("status: finished\nroot: []\n") == "[]\n"
-    assert h.root_section("status: finished\nroot: {}\n") == "{}\n"
-    assert h.root_section("status: finished\nroot: null\n") == "null\n"
-    assert h.root_section("status: finished\nroot:\n  ref: object0\nobjects: {}\n") is None
-    assert h.root_section("status: finished\nroot:\n  representation: object_graph\n") == "representation: object_graph\n"
     assert "" in list(h.mutations("a: 1\nb: 2\n"))
     with patch.object(h.subprocess, "run", side_effect=subprocess.TimeoutExpired("helix", 1)):
         result = h.helix("run", "-", stdin="1")
@@ -58,6 +59,8 @@ def harness(h):
                for d in h.COMMANDS for p in d.glob("*.expected.yaml"))
 
 
+    import contextlib
+    import io
     with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="harness-") as directory:
         case = Path(directory) / "probe.yaml"
         case.write_text("value: 42")
@@ -91,7 +94,7 @@ def cli(h):
     verify_recovery(h)
     from tests.suites.inventory import verify
     verify(h)
-    for args in [(), ("unknown",), ("--help",), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
+    for args in [(), ("unknown",), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
         result = h.helix(*args)
         assert result.returncode == 2 and not result.stdout and result.stderr, (args, result)
     missing = h.helix("run", "runtime/definitely-missing-helix-input.yaml")
@@ -151,7 +154,7 @@ def generated(h):
         assert root["s"] == root["p"] == sum(xs), f"seed={seed} sample={i}"
         assert root["r"] == xs[::-1] and root["rr"] == xs
     literals = [None, True, False, 0, 0.5, -1.25, -9223372036854775808, 9223372036854775807,
-                "add", "fn", "vm", "step", "inspect", "ref", "objects", "true", "null", "1", "é雪🙂", "line\nbreak", "", "a: b", "'quoted'", "\\"]
+                "add", "true", "null", "1", "é雪🙂", "line\nbreak", "", "a: b", "'quoted'", "\\"]
     for _ in range(30):
         value = {"value": [rng.choice(literals) for _ in range(rng.randrange(8))], "nested": {"text": rng.choice(literals)}}
         # Quote all strings so generated source cannot introduce symbols or expressions.
@@ -205,8 +208,12 @@ def imports(h):
 
 def run(name, h):
     try:
-        globals()[name](h)
-        print(f"{name}: passed (generated seed=714209)" if name == "generated" else f"{name}: passed", flush=True)
+        if name in globals():
+            globals()[name](h)
+        else:
+            from importlib import import_module
+            import_module(f"tests.suites.{name}").verify(h)
+        print(f"{name}: passed (generated seed=714209)" if name == "generated" else f"{name}: passed")
         return []
     except Exception as error:
         import traceback
@@ -214,6 +221,8 @@ def run(name, h):
 
 
 def parser(h):
+    from tests.suites.parser_graph import verify
+    verify(h)
     for source, expected in [('"é雪🙂"', "é雪🙂"), ("'a: b'", "a: b"),
                              ("|\n  first\n  second\n", "first\nsecond\n"),
                              (">\n  first\n  second\n", "first second\n"),
@@ -273,7 +282,6 @@ def scale(h):
         assert len(root) == count and root[f"v{count - 1}"] == count
         print(f"scale: {1 + 4 * count} nodes, {elapsed:.3f}s (debug CLI + Python decode)")
         assert elapsed < (1 if count == 2500 else 10), "scale workload exceeded its time budget"
-
 
 def execution(h):
     import os

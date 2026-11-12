@@ -65,28 +65,35 @@ impl Encoded {
     fn nested(&self, indent: usize, out: &mut String) {
         if self.container() {
             out.push('\n');
-            self.block(indent, out)
+            self.block(indent, out, false)
         } else {
             out.push_str(&format!(" {}\n", self.inline()));
         }
     }
-    fn block(&self, indent: usize, out: &mut String) {
+    fn block(&self, indent: usize, out: &mut String, inline: bool) {
         let pad = " ".repeat(indent);
         match self {
             Self::Map(entries) => {
-                for (key, value) in entries {
-                    out.push_str(&format!("{pad}{key}:"));
+                for (position, (key, value)) in entries.iter().enumerate() {
+                    if !inline || position != 0 {
+                        out.push_str(&pad);
+                    }
+                    out.push_str(key);
+                    out.push(':');
                     value.nested(indent + 2, out);
                 }
             }
             Self::List(items) => {
-                for item in items {
+                for (position, item) in items.iter().enumerate() {
+                    if !inline || position != 0 {
+                        out.push_str(&pad);
+                    }
+                    out.push_str("- ");
                     if item.container() {
-                        let mut child = String::new();
-                        item.block(indent + 2, &mut child);
-                        out.push_str(&format!("{pad}- {}", &child[indent + 2..]));
+                        item.block(indent + 2, out, true);
                     } else {
-                        out.push_str(&format!("{pad}- {}\n", item.inline()));
+                        out.push_str(item.inline());
+                        out.push('\n');
                     }
                 }
             }
@@ -96,7 +103,7 @@ impl Encoded {
     fn document(&self) -> String {
         let mut out = String::new();
         if self.container() {
-            self.block(0, &mut out)
+            self.block(0, &mut out, false)
         } else {
             out.push_str(self.inline());
             out.push('\n');
@@ -159,7 +166,10 @@ fn string(text: &str, head: bool) -> String {
     let plain_rest = text
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || " _./@()+=-".contains(c));
-    let reserved = head || KEYWORDS.contains(&text.to_ascii_lowercase().as_str());
+    let reserved = head
+        || KEYWORDS
+            .iter()
+            .any(|keyword| text.eq_ignore_ascii_case(keyword));
     if plain_start && plain_rest && !text.ends_with(' ') && !reserved {
         return text.to_string();
     }
@@ -176,10 +186,18 @@ pub(crate) fn quoted(text: &str) -> String {
             '\n' => quoted.push_str("\\n"),
             '\t' => quoted.push_str("\\t"),
             '\r' => quoted.push_str("\\r"),
-            c if c.is_control() => quoted.push_str(&format!("\\u{:04x}", c as u32)),
+            c if c.is_control() || !is_printable(c) => {
+                quoted.push_str(&format!("\\u{:04x}", c as u32))
+            }
             c => quoted.push(c),
         }
     }
     quoted.push('"');
     quoted
+}
+
+/// YAML 1.2 printable source characters; other scalar values need escapes.
+/// https://yaml.org/spec/1.2.2/#51-character-set
+pub(crate) fn is_printable(ch: char) -> bool {
+    matches!(ch, '\t' | '\n' | '\r' | ' '..='~' | '\u{85}' | '\u{a0}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}')
 }

@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """Single entrypoint for Helix; use --help or --help-json to discover commands."""
-import subprocess
 import sys
 import os
-import shutil
-import tempfile
 from pathlib import Path
 
-from tooling.cli import SUITES, parse
+from tooling.cli import DEFAULT_TEST_JOBS, SUITES, parse
+from tooling.test_reports import failure as test_failure
 
 ROOT = Path(__file__).resolve().parent
 CASES = ROOT / "tests" / "cases"
@@ -30,7 +28,7 @@ def lint(extra: list[str]) -> int:
     return subprocess.call([str(tsx), str(HYPERLINTER / "src" / "cli.ts"), *extra], cwd=ROOT)
 
 
-def helix(*args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
+def helix(*args: str, stdin: str | None = None) -> "subprocess.CompletedProcess":
     try:
         return subprocess.run([str(BIN), *args], input=stdin, capture_output=True, text=True, cwd=ROOT,
                               timeout=float(os.environ.get("HELIX_TEST_TIMEOUT", "10")))
@@ -72,7 +70,7 @@ def malformed_state(out: str, returncode: int) -> str | None:
     if returncode not in (0, 1):
         return f"exit code {returncode} (panic?)"
     try:
-        state = yaml.safe_load(out)
+        state = yaml.load(out, Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader))
     except yaml.YAMLError as e:
         return f"state is not valid YAML: {e}"
     if not isinstance(state, dict) or "status" not in state:
@@ -100,22 +98,31 @@ def mutations(src: str):
         yield src[:n]
 
 
-def robustness(cases: list[Path]) -> list[str]:
-    failures = []
-    for index, case in enumerate(cases, 1):
-        src = case.read_text()
-        command = COMMANDS[case.parent]
-        for variant in [src, *mutations(src)]:
-            run = helix(command, "-", stdin=variant)
-            if (why := malformed_state(run.stdout, run.returncode)) is not None:
-                failures.append(f"{case.name}: {why}\n--- program\n{variant}--- stderr\n{run.stderr}")
-                break
-        if index % 10 == 0 or index == len(cases):
-            print(f"robustness: {index}/{len(cases)} inputs checked", flush=True)
-    return failures
+def robustness_case(case: Path) -> list[str]:
+    from itertools import chain
+
+    src = case.read_text()
+    command = COMMANDS[case.parent]
+    for variant in chain((src,), mutations(src)):
+        run = helix(command, "-", stdin=variant)
+        if (why := malformed_state(run.stdout, run.returncode)) is not None:
+            return [test_failure(ROOT, case, "robustness", why, command, run, source=variant)]
+    return []
 
 
-def test(bless: bool, suites: list[str] | None = None) -> int:
+def robustness(cases: list[Path], jobs: int = DEFAULT_TEST_JOBS) -> list[str]:
+    from tooling.test_runner import collect_cases
+
+    return collect_cases(robustness_case, cases, jobs)
+
+
+def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS) -> int:
+    if suites and set(suites) == {"startup"}:
+        return regression(bless, suites, jobs)
+
+    import shutil
+    import tempfile
+
     global BIN
     if (code := build()) != 0:
         return code
@@ -127,12 +134,39 @@ def test(bless: bool, suites: list[str] | None = None) -> int:
         shutil.copy2(original, snapshot)
         BIN = snapshot
         try:
-            return regression(bless, suites)
+            return regression(bless, suites, jobs)
         finally:
             BIN = original
 
 
-def regression(bless: bool, suites: list[str] | None) -> int:
+def golden_case(case: Path, bless: bool) -> list[str]:
+    failures = []
+    expected_path = case.with_suffix(".expected.yaml")
+    command = COMMANDS[case.parent]
+    run = helix(command, str(case.relative_to(ROOT)))
+    out = run.stdout
+    if (why := malformed_state(out, run.returncode)) is not None:
+        failures.append(test_failure(ROOT, case, "state", why, command, run))
+        return failures
+    repeated = helix(command, str(case.relative_to(ROOT)))
+    if (repeated.returncode, repeated.stdout, repeated.stderr) != (run.returncode, out, run.stderr):
+        failures.append(test_failure(ROOT, case, "determinism", "two runs differ", command, repeated, expected=out))
+        return failures
+    if bless:
+        expected_path.write_text(out)
+    elif not expected_path.exists() or expected_path.read_text() != out:
+        failures.append(test_failure(ROOT, case, "golden", f"state differs from {expected_path.relative_to(ROOT)}",
+                                     command, run, expected=expected_path.read_text() if expected_path.exists() else ""))
+        return failures
+    if (program := root_section(out)) is not None:
+        reloaded = helix("run", "-", stdin=program)
+        if root_section(reloaded.stdout) != program or reloaded.returncode != 0:
+            failures.append(test_failure(ROOT, case, "roundtrip", "emitted root is not stable",
+                                         "run", reloaded, source=program, expected=out))
+    return failures
+
+
+def regression(bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_JOBS) -> int:
     selected = set(suites or SUITES)
     failures = []
     for name in (name for name in SUITES if name in selected - {"golden", "robustness"}):
@@ -159,28 +193,13 @@ def regression(bless: bool, suites: list[str] | None) -> int:
             failures.append(f"{source.name}: standard library source differs")
     if helix("std", "unknown").returncode != 2:
         failures.append("unknown standard library must exit with usage error")
-    for case in cases if "golden" in selected else []:
-        expected_path = case.with_suffix(".expected.yaml")
-        command = COMMANDS[case.parent]
-        run = helix(command, str(case.relative_to(ROOT)))
-        out = run.stdout
-        if (why := malformed_state(out, run.returncode)) is not None:
-            failures.append(f"{case.name}: {why}\n{run.stderr}")
-            continue
-        if helix(command, str(case.relative_to(ROOT))).stdout != out:
-            failures.append(f"{case.name}: two runs of the same program differ (nondeterminism)")
-            continue
-        if bless:
-            expected_path.write_text(out)
-        elif not expected_path.exists() or expected_path.read_text() != out:
-            failures.append(f"{case.name}: state differs from {expected_path.name}\n--- got\n{out}")
-            continue
-        if (program := root_section(out)) is not None:
-            again = helix("run", "-", stdin=program).stdout
-            if root_section(again) != program:
-                failures.append(f"{case.name}: round trip is not stable\n--- first\n{program}--- second\n{again}")
+    if "golden" in selected:
+        from functools import partial
+        from tooling.test_runner import collect_cases
+
+        failures.extend(collect_cases(partial(golden_case, bless=bless), cases, jobs))
     if not bless and "robustness" in selected:
-        failures += robustness(cases)
+        failures += robustness(cases, jobs)
     for f in failures:
         print("FAIL", f, file=sys.stderr)
     print(f"{len(cases)} golden inputs; {len(failures)} failures")
@@ -192,6 +211,14 @@ def main() -> int:
     if args is None:
         return 0
     command = args.command
+    if command == "test" and (args.list or args.describe):
+        for name, description in SUITES.items():
+            print(f"{name}: {description}" if args.describe else name)
+        return 0
+    # Discovery must respond before loading process execution and test machinery.
+    global subprocess
+    import subprocess
+
     if command == "lint":
         return lint(args.extra)
     if command == "cli":
@@ -201,6 +228,8 @@ def main() -> int:
             return code
         return subprocess.run([str(BIN), "check" if args.check else "run", "-"],
                               input=args.source, text=True, cwd=ROOT).returncode
+    if command == "exec":
+        return build() or subprocess.call([str(BIN), "exec", "--", args.source], cwd=ROOT)
     if command == "inventory":
         from tooling.inventory import inventory
         return build() or inventory(helix, ROOT)
@@ -208,13 +237,11 @@ def main() -> int:
         return build()
     if command in ("run", "recover", "resume", "check"):
         return build() or subprocess.call([str(BIN), command, args.file], cwd=ROOT)
+    if command == "sandbox":
+        return build() or subprocess.call([str(BIN), "sandbox", args.root, args.file], cwd=ROOT)
     if command == "std":
         return build() or subprocess.call([str(BIN), "std", *([args.module] if args.module else [])], cwd=ROOT)
-    if args.list or args.describe:
-        for name, description in SUITES.items():
-            print(f"{name}: {description}" if args.describe else name)
-        return 0
-    return test(args.bless, args.suite)
+    return test(args.bless, args.suite, args.jobs)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,4 @@
+# Even unused/cached file dependencies cannot smuggle host inputs into type time.
+module: [import, modules/geometry.yaml]
+blocked: [try, [type_time, [record]], [fn, [e], e]]
+runtime_after: [add, 20, 22]

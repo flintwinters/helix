@@ -40,6 +40,8 @@ struct Class {
     name: String,
     parents: Vec<String>,
     slots: Vec<Slot>,
+    /// Raw predicates over the whole record of values, checked when the class is realized.
+    constraints: Vec<Value>,
     concrete: bool,
 }
 
@@ -56,6 +58,12 @@ pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Valu
         }
         "realize" => Ok(realize(Class::from_value(&args[0], 0)?, Some(0), pred)?.to_value()),
         "parents" => reflect_parents(&args[0]),
+        "open_fields" => open_fields(&args[0]),
+        "constrain" => {
+            let mut class = Class::from_value(&args[0], 0)?;
+            class.constraints.push(args[1].clone());
+            Ok(class.to_value())
+        }
         _ => unreachable!("`{actor}` is not a class builtin"),
     }
 }
@@ -63,6 +71,19 @@ pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Valu
 /// `[parents, class]`: the names of the classes it was built from.
 fn reflect_parents(class: &Value) -> Result<Value, Fault> {
     reflect(class, "parents")
+}
+
+/// Required fields still needing a value; defaults and optional fields need no override.
+fn open_fields(value: &Value) -> Result<Value, Fault> {
+    let class = Class::from_value(value, 0)?;
+    let mut fields = Hash::new();
+    for slot in class.slots {
+        let field = Field::parse(&slot.spec).map_err(|why| Fault::at(0, "type", why))?;
+        if slot.value.is_none() && field.required && field.default.is_none() {
+            fields.insert(s(&slot.name), slot.spec);
+        }
+    }
+    Ok(Value::Hash(fields))
 }
 
 fn name_arg(args: &[Value], at: usize) -> Result<&str, Fault> {
@@ -117,6 +138,10 @@ impl Class {
             },
             _ => Err(bad()),
         };
+        let constraints = match get("constraints") {
+            Some(Value::Array(items)) => items.to_vec(),
+            _ => Vec::new(),
+        };
         let slots = fields
             .iter()
             .map(|(field, spec)| {
@@ -126,7 +151,7 @@ impl Class {
             })
             .collect::<Result<_, _>>()?;
         let parents = parents.iter().map(|p| if let Value::String(p) = p { Ok(p.clone()) } else { Err(bad()) }).collect::<Result<_, _>>()?;
-        Ok(Class { name: name.clone(), parents, slots, concrete: *concrete })
+        Ok(Class { name: name.clone(), parents, slots, constraints, concrete: *concrete })
     }
 
     fn to_value(&self) -> Value {
@@ -143,9 +168,13 @@ impl Class {
         }
         let mut class = descriptor("class", [("name", s(&self.name)), ("parents", Value::Array(self.parents.iter().map(|p| s(p)).collect()))]);
         if let Value::Hash(map) = &mut class {
-            for (k, v) in [("fields", fields), ("values", values), ("provenance", provenance)] {
+            for (k, v) in [("fields", fields), ("values", values)] {
                 map.insert(s(k), Value::Hash(v));
             }
+            if !self.constraints.is_empty() {
+                map.insert(s("constraints"), Value::Array(self.constraints.clone().into()));
+            }
+            map.insert(s("provenance"), Value::Hash(provenance));
             map.insert(s("concrete"), Value::Boolean(self.concrete));
         }
         class
@@ -198,7 +227,13 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where
         let Value::String(stray) = stray else { unreachable!("value names are strings") };
         return Err(Fault::at(at.values, "type", format!("`{name}` sets `{stray}`, which no parent or field declares")));
     }
-    let class = Class { name: name.to_string(), parents: parents.iter().map(|p| p.name.clone()).collect(), slots, concrete: false };
+    let mut constraints: Vec<Value> = Vec::new();
+    for constraint in parents.iter().flat_map(|p| &p.constraints) {
+        if !constraints.contains(constraint) {
+            constraints.push(constraint.clone());
+        }
+    }
+    let class = Class { name: name.to_string(), parents: parents.iter().map(|p| p.name.clone()).collect(), slots, constraints, concrete: false };
     validate(&class, pred)?;
     Ok(class)
 }
@@ -242,6 +277,25 @@ fn check_slot(field: &str, value: &Value, ty: &Ty, pred: &mut Pred) -> Vec<(Valu
         .collect()
 }
 
+/// Whole-record constraints run on the realized values; each failure is reported.
+fn constrained(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
+    let values = Value::Hash(class.slots.iter().filter_map(|slot| slot.value.as_ref().map(|(v, _)| (s(&slot.name), v.clone()))).collect());
+    let mut found = Vec::new();
+    for (i, check) in class.constraints.iter().enumerate() {
+        let why = match pred(check, &values) {
+            Ok(true) => continue,
+            Ok(false) => format!("constraint {i} of `{}` does not hold", class.name),
+            Err(why) => format!("constraint {i} of `{}` failed to run: {why}", class.name),
+        };
+        found.push(why);
+    }
+    if found.is_empty() {
+        return Ok(());
+    }
+    let entries:Vec<_> = found.iter().map(|why| mapping([("at", s("/")), ("message", s(why))])).collect();
+    Err(Fault { cause: None, kind: "type".into(), message: found[0].clone(), arg: None, data: Some(mapping([("violations", Value::Array(entries.into()))])) })
+}
+
 /// Fill defaults and mark the class concrete, or fail listing every required field still open.
 fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Class, Fault> {
     let mut missing = Vec::new();
@@ -258,11 +312,12 @@ fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Clas
     }
     if !missing.is_empty() {
         let list = missing.iter().map(|m| format!("`{}` (required by {})", m.name, m.declared_by)).collect::<Vec<_>>().join(", ");
-        let entries = missing.iter().map(|m| mapping([("field", s(&m.name)), ("required_by", s(&m.declared_by))])).collect();
+        let entries:Vec<_> = missing.iter().map(|m| mapping([("field", s(&m.name)), ("required_by", s(&m.declared_by))])).collect();
         let message = format!("class `{}` is abstract: missing {list}", class.name);
-        return Err(Fault { cause: None, kind: "abstract".into(), message, arg, data: Some(mapping([("missing", Value::Array(entries))])) });
+        return Err(Fault { cause: None, kind: "abstract".into(), message, arg, data: Some(mapping([("missing", Value::Array(entries.into()))])) });
     }
     validate(&class, pred)?;
+    constrained(&class, pred)?;
     class.concrete = true;
     Ok(class)
 }
