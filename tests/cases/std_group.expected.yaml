@@ -1,0 +1,78 @@
+status: finished
+root:
+  g:
+    by:
+      - fn
+      - - - xs
+          - list
+        - - key
+          - function
+      - - fold
+        - - fn
+          - - groups
+            - item
+          - - let
+            - name:
+                - key
+                - item
+            - - set
+              - groups
+              - name
+              - - append
+                - - get
+                  - groups
+                  - name
+                  - []
+                - item
+        - {}
+        - xs
+      - map
+  items:
+    - team: b
+      "n": 1
+    - team: a
+      "n": 2
+    - team: b
+      "n": 3
+  groups:
+    b:
+      - team: b
+        "n": 1
+      - team: b
+        "n": 3
+    a:
+      - team: a
+        "n": 2
+  order_ok: ~
+  items_ok: ~
+  empty: {}
+  keys:
+    "":
+      - ""
+      - ""
+    "é":
+      - "é"
+      - "é"
+    "🙂":
+      - "🙂"
+  constant:
+    all:
+      - ~
+      - false
+      - - 1
+        - 2
+      - x: 1
+  closure:
+    "team:b":
+      - team: b
+        "n": 1
+      - team: b
+        "n": 3
+    "team:a":
+      - team: a
+        "n": 2
+  wrong_list: type
+  wrong_callback: type
+  wrong_key: type
+  callback_error: group_key
+  wrong_arity: arity

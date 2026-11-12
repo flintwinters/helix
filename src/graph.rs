@@ -194,6 +194,10 @@ impl MarkedEventReceiver for Builder {
         match ev {
             Event::Scalar(text, style, _, _) => {
                 if self.awaiting_key() {
+                    let id = self.stack.last().unwrap().0;
+                    if matches!(self.graph.kind(id), Kind::Map(entries) if entries.iter().any(|(key, _)| key == &text)) {
+                        return self.fail("parse", "duplicate mapping key", at);
+                    }
                     self.stack.last_mut().unwrap().1 = Some(text);
                     return;
                 }

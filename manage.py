@@ -108,7 +108,7 @@ def test(bless: bool, suites: list[str] | None = None) -> int:
         return code
     cases = [c for c in sorted(CASES.glob("*.yaml")) if not c.name.endswith(".expected.yaml")]
     modules = helix("std")
-    if modules.returncode != 0 or modules.stdout.splitlines() != ["std:math", "std:list"]:
+    if modules.returncode != 0 or modules.stdout.splitlines() != ["std:math", "std:list", "std:group"]:
         failures.append("standard library discovery failed")
     for source in sorted((ROOT / "std").glob("*.yaml")):
         shown = helix("std", source.stem)

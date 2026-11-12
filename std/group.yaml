@@ -1,0 +1,17 @@
+# Stable grouping over small lists. Import with `g: [import, std:group]`.
+# by(xs, key) calls key once per item; keys must be strings (empty is valid).
+# Groups follow first key occurrence; items in each group retain input order.
+# Immutable map/list copies can cost quadratic time/space in total allocations.
+# Uses fold, so the runtime iteration limit applies; no input-sized recursion.
+by:
+  - fn
+  - [[xs, list], [key, function]]
+  - - fold
+    - - fn
+      - [groups, item]
+      - - let
+        - name: [key, item]
+        - [set, groups, name, [append, [get, groups, name, []], item]]
+    - {}
+    - xs
+  - map

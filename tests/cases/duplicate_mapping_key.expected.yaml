@@ -1,0 +1,6 @@
+status: error
+error:
+  kind: parse
+  message: duplicate mapping key
+  line: 2
+  column: 1

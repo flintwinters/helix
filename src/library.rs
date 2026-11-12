@@ -1,7 +1,7 @@
 //! The standard library: modules written in Helix, embedded in the binary and imported as `std:NAME`.
 
 /// `(name, source)` of every standard module.
-const MODULES: &[(&str, &str)] = &[("math", include_str!("../std/math.yaml")), ("list", include_str!("../std/list.yaml"))];
+const MODULES: &[(&str, &str)] = &[("math", include_str!("../std/math.yaml")), ("list", include_str!("../std/list.yaml")), ("group", include_str!("../std/group.yaml"))];
 
 /// The source of the standard module `name`.
 pub fn source(name: &str) -> Option<&'static str> {
