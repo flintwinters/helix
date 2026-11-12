@@ -33,6 +33,8 @@ pub struct Graph {
 }
 
 pub const ROOT: NodeId = 0;
+const MAX_NODES: usize = 100_000;
+pub(crate) const MAX_NESTING: usize = 64;
 
 impl Graph {
     pub fn parse(src: &str) -> Result<Graph, HelixError> {
@@ -44,10 +46,10 @@ impl Graph {
         Self::parse_document(src, true)
     }
 
-    fn parse_document(src: &str, entire_stream: bool) -> Result<Graph, HelixError> {
-        let mut builder = Builder::default();
-        Parser::new_from_str(src)
-            .load(&mut builder, entire_stream)
+    fn parse_document(src: &str, data_only: bool) -> Result<Graph, HelixError> {
+        let mut builder = Builder { reject_tags: data_only, ..Builder::default() };
+        let parsed = Parser::new_from_str(src)
+            .load(&mut builder, data_only)
             .map_err(|e| HelixError {
                 kind: "parse".into(),
                 message: e.to_string(),
@@ -55,10 +57,11 @@ impl Graph {
                 path: None,
                 span: span(e.marker()),
                 phase: None, data: None, calls: Vec::new(), cause: None,
-            })?;
+            });
         if let Some(err) = builder.error {
             return Err(err);
         }
+        parsed?;
         if builder.graph.nodes.is_empty() {
             return Err(HelixError {
                 kind: "parse".into(),
@@ -99,7 +102,10 @@ impl Graph {
 
     /// Append another graph as a detached subtree (its root has no parent) and return its root id.
     /// Used for code that arrives as data, such as a refinement's predicate.
-    pub fn graft(&mut self, other: Graph) -> NodeId {
+    pub fn graft(&mut self, other: Graph) -> Result<NodeId, HelixError> {
+        if self.nodes.len() + other.nodes.len() > MAX_NODES {
+            return Err(self.error(ROOT, "limit", format!("graph exceeds {MAX_NODES} nodes")));
+        }
         let offset = self.nodes.len();
         let shift = |ids: &[NodeId]| ids.iter().map(|id| id + offset).collect::<Vec<_>>();
         for node in other.nodes {
@@ -110,7 +116,7 @@ impl Graph {
             };
             self.nodes.push(Node { kind, parent: node.parent.map(|p| p + offset), span: node.span });
         }
-        offset
+        Ok(offset)
     }
 
     /// Record that the subtree grafted at `root` is the file `name`; its errors report it.
@@ -160,6 +166,8 @@ fn span(m: &Marker) -> Span {
 #[derive(Default)]
 struct Builder {
     graph: Graph,
+    /// Data conversion cannot preserve or interpret explicit YAML tags.
+    reject_tags: bool,
     /// Open containers; for maps, `key` holds the pending key awaiting its value.
     stack: Vec<(NodeId, Option<String>)>,
     error: Option<HelixError>,
@@ -200,6 +208,12 @@ impl MarkedEventReceiver for Builder {
         if self.error.is_some() {
             return;
         }
+        if self.reject_tags && matches!(&ev, Event::Scalar(_, _, _, Some(_)) | Event::SequenceStart(_, Some(_)) | Event::MappingStart(_, Some(_))) {
+            return self.fail("unsupported", "YAML tags are not supported", at);
+        }
+        if self.graph.nodes.len() >= MAX_NODES && matches!(ev, Event::Scalar(..) | Event::SequenceStart(..) | Event::MappingStart(..)) {
+            return self.fail("limit", &format!("graph exceeds {MAX_NODES} nodes"), at);
+        }
         match ev {
             Event::Scalar(text, style, _, _) => {
                 if self.awaiting_key() {
@@ -216,6 +230,9 @@ impl MarkedEventReceiver for Builder {
                 self.add(Kind::Scalar { value, plain }, at);
             }
             Event::SequenceStart(..) | Event::MappingStart(..) => {
+                if self.stack.len() >= MAX_NESTING {
+                    return self.fail("depth", &format!("syntax nested deeper than {MAX_NESTING} containers"), at);
+                }
                 if self.awaiting_key() {
                     return self.fail("unsupported", "mapping keys must be scalars", at);
                 }

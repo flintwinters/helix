@@ -6,7 +6,7 @@
 //! bounded by `MAX_DEPTH`.
 
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
@@ -21,6 +21,10 @@ use crate::link::{self, Modules};
 const MAX_DEPTH: usize = 200;
 /// Iterations `until` allows before failing with a `limit` error.
 const MAX_STEPS: usize = 100_000;
+const MAX_WORK: usize = 2_000_000;
+const MAX_VALUES: usize = 128_000_000;
+const MAX_VALUE_SIZE: usize = 1_000_000;
+const MAX_EVAL_DEPTH: usize = 512;
 
 /// What a symbol resolves to: a node to evaluate, or an argument value of an active call.
 enum Binding {
@@ -53,13 +57,27 @@ pub struct Evaluator {
     modules: Modules,
     closing: HashSet<NodeId>,
     type_time: bool,
+    remaining_work: usize,
+    remaining_values: usize,
 }
 
 impl Evaluator {
+    /// Give CLI and library callers the same bounded stack, independent of the host thread.
+    pub(crate) fn on_stack<T: Send>(&mut self, operation: impl FnOnce(&mut Self) -> Result<T, HelixError> + Send) -> Result<T, HelixError> {
+        let result = std::thread::scope(|scope| {
+            match std::thread::Builder::new().name("helix-evaluator".into()).stack_size(32 * 1024 * 1024)
+                .spawn_scoped(scope, || operation(self)) {
+                Ok(worker) => worker.join().map_err(|_| "evaluation worker panicked".to_string()),
+                Err(error) => Err(format!("cannot start evaluation worker: {error}")),
+            }
+        });
+        result.map_err(|message| self.err(ROOT, "limit", message))?
+    }
+
     /// Take a parsed program and link its imports; `main` is the program's file, when it has one.
-    pub fn new(mut graph: Graph, main: Option<&Path>) -> Result<Evaluator, HelixError> {
-        let modules = link::link(&mut graph, main)?;
-        Ok(Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: HashMap::new(), modules, closing: HashSet::new(), type_time: false })
+    pub fn new(mut graph: Graph, main: Option<&Path>, roots: Option<&[PathBuf]>) -> Result<Evaluator, HelixError> {
+        let modules = link::link(&mut graph, main, roots)?;
+        Ok(Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: HashMap::new(), modules, closing: HashSet::new(), type_time: false, remaining_work: MAX_WORK, remaining_values: MAX_VALUES })
     }
 
     fn err(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
@@ -73,21 +91,57 @@ impl Evaluator {
 
     /// Evaluate a node to plain YAML data. A node that needs its own value within one call is a `cycle`.
     pub fn eval(&mut self, id: NodeId) -> Result<Yaml, HelixError> {
+        if self.remaining_work == 0 {
+            return Err(self.err(id, "limit", format!("evaluation exceeds {MAX_WORK} node visits")));
+        }
+        self.remaining_work -= 1;
+        if self.active.len() >= MAX_EVAL_DEPTH {
+            return Err(self.err(id, "depth", format!("evaluation nested deeper than {MAX_EVAL_DEPTH} nodes")));
+        }
         let local = self.in_function(id);
         if let Some(v) = self.memo.get(&id) {
-            return Ok(v.clone());
+            let value = v.clone();
+            self.charge_value(id, &value)?;
+            return Ok(value);
         }
         let key = (id, if local { self.frames.len() } else { 0 });
         if !self.active.insert(key) {
             return Err(self.err(id, "cycle", "value depends on itself".into()));
         }
-        let result = self.eval_uncached(id);
+        let result = self.eval_uncached(id).and_then(|value| {
+            self.charge_value(id, &value)?;
+            Ok(value)
+        });
         let result = result.map_err(|error| self.in_phase(error));
         self.active.remove(&key);
         if let (false, Ok(v)) = (local, &result) {
             self.memo.insert(id, v.clone());
         }
         result
+    }
+
+    /// Bound cumulative produced data, including strings and nested collection copies.
+    fn charge_value(&mut self, id: NodeId, value: &Yaml) -> Result<(), HelixError> {
+        let mut pending = vec![(value, 0)];
+        let mut produced = 0;
+        while let Some((value, depth)) = pending.pop() {
+            if depth > crate::graph::MAX_NESTING {
+                return Err(self.err(id, "depth", format!("value nested deeper than {} containers", crate::graph::MAX_NESTING)));
+            }
+            let size = match value { Yaml::String(s) | Yaml::Real(s) => 1 + s.len(), _ => 1 };
+            produced += size;
+            if produced > MAX_VALUE_SIZE {
+                return Err(self.err(id, "limit", format!("value exceeds {MAX_VALUE_SIZE} units")));
+            }
+            self.remaining_values = self.remaining_values.checked_sub(size)
+                .ok_or_else(|| self.err(id, "limit", format!("evaluation exceeds {MAX_VALUES} produced value units")))?;
+            match value {
+                Yaml::Array(items) => pending.extend(items.iter().map(|v| (v, depth + 1))),
+                Yaml::Hash(entries) => pending.extend(entries.iter().flat_map(|(k, v)| [(k, depth + 1), (v, depth + 1)])),
+                _ => {}
+            }
+        }
+        Ok(())
     }
 
     /// Completed root fields become literal values; unfinished fields retain their source.
@@ -207,7 +261,7 @@ impl Evaluator {
             Some(&root) => root,
             None => {
                 let parsed = Graph::parse(&source).map_err(|error| self.err(blame, "type", error.message))?;
-                let root = self.graph.graft(parsed);
+                let root = self.graph.graft(parsed)?;
                 self.grafts.insert(source, root);
                 root
             }
@@ -422,7 +476,7 @@ impl Evaluator {
         let id = match self.grafts.get(&source) {
             Some(&id) => id,
             None => {
-                let id = self.graph.graft(Graph::parse(&source).map_err(|e| e.message)?);
+                let id = self.graph.graft(Graph::parse(&source).map_err(|e| e.message)?).map_err(|e| e.message)?;
                 self.grafts.insert(source, id);
                 id
             }
@@ -660,7 +714,10 @@ impl Evaluator {
         let target = match self.graph.symbol(id) {
             Some(name) => match self.resolve(id, name) {
                 Some(Binding::Node(target)) => target,
-                Some(Binding::Value(value)) => return Ok(value),
+                Some(Binding::Value(value)) => {
+                    self.charge_value(id, &value)?;
+                    return Ok(value);
+                }
                 None if builtins::is_primitive(name) => return Ok(Yaml::String(name.to_string())),
                 None => return Err(self.err(id, "unbound", format!("unbound symbol `{name}`"))),
             },

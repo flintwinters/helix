@@ -45,17 +45,23 @@ pub struct Vm {
 impl Vm {
     /// Load a program that has no file (stdin); relative imports resolve from the working directory.
     pub fn load(src: &str) -> Vm {
-        Vm::load_from(src, None)
+        Vm::load_from(src, None, None)
     }
 
     /// Load the program in `file`, whose imports resolve relative to it.
     pub fn load_file(src: &str, file: &Path) -> Vm {
-        Vm::load_from(src, Some(file))
+        Vm::load_from(src, Some(file), None)
     }
 
-    fn load_from(src: &str, file: Option<&Path>) -> Vm {
+    /// Load with file imports confined to canonical roots. Empty roots allow only std modules.
+    /// The caller supplies the main source; permission applies to all transitive imports.
+    pub fn load_sandboxed(src: &str, file: Option<&Path>, roots: &[PathBuf]) -> Vm {
+        Vm::load_from(src, file, Some(roots))
+    }
+
+    fn load_from(src: &str, file: Option<&Path>, roots: Option<&[PathBuf]>) -> Vm {
         let mut vm = Vm { evaluator: None, source_file: file.map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf())), status: Status::Ready, result: None, error: None, checking: false, errors: Vec::new() };
-        match Graph::parse(src).and_then(|graph| Evaluator::new(graph, file)) {
+        match Graph::parse(src).and_then(|graph| Evaluator::new(graph, file, roots)) {
             Ok(evaluator) => vm.evaluator = Some(evaluator),
             Err(e) => vm.fail(e),
         }
@@ -72,7 +78,7 @@ impl Vm {
         }
         self.status = Status::Running;
         let evaluator = self.evaluator.as_mut().expect("a ready VM has a graph");
-        match evaluator.eval(ROOT) {
+        match evaluator.on_stack(|evaluator| evaluator.eval(ROOT)) {
             Ok(v) => {
                 self.result = Some(v);
                 self.status = Status::Finished;
@@ -92,11 +98,14 @@ impl Vm {
         self.checking = true;
         self.status = Status::Running;
         let evaluator = self.evaluator.as_mut().expect("a ready VM has a graph");
-        self.errors = evaluator.collect_errors();
+        self.errors = match evaluator.on_stack(|evaluator| Ok(evaluator.collect_errors())) {
+            Ok(errors) => errors,
+            Err(error) => { self.fail(error); return; }
+        };
         if !self.errors.is_empty() {
             self.status = Status::Error;
         } else {
-            match evaluator.eval(ROOT) {
+            match evaluator.on_stack(|evaluator| evaluator.eval(ROOT)) {
                 Ok(v) => {
                     self.result = Some(v);
                     self.status = Status::Finished;
@@ -153,7 +162,7 @@ impl Vm {
                 });
                 if text("status") == Some("error") {
                     if let Some(source) = text("recovery") {
-                        return Vm::load_from(source, text("recovery_file").map(Path::new));
+                        return Vm::load_from(source, text("recovery_file").map(Path::new), None);
                     }
                 }
             }
