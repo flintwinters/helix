@@ -1,0 +1,51 @@
+# Repository test orchestration over host observations. No filesystem or process authority.
+sequences: {$call: [import, 'std:list']}
+plan:
+  $call:
+  - fn
+  - [catalog, requested, bless]
+  - $call:
+    - let
+    - selected: {$call: [if, {$call: [eq, {$ref: requested}, []]}, {$ref: catalog}, {$ref: requested}]}
+      ordinary:
+        $call: [filter, {$call: [fn, [name], {$call: [and, {$call: [has, {$ref: selected}, {$ref: name}]}, {$call: [not, {$call: [has, [golden, robustness], {$ref: name}]}]}]}]}, {$ref: catalog}]
+      fixtures: {$call: [filter, {$call: [fn, [name], {$call: [has, {$ref: selected}, {$ref: name}]}]}, [golden, robustness]]}
+      ordered: {$call: [concat, {$ref: ordinary}, {$call: [if, {$call: [eq, {$ref: fixtures}, []]}, [], [standard_library]]}, {$ref: fixtures}]}
+    - $call:
+      - map
+      - $call:
+        - fn
+        - [name]
+        - $call:
+          - if
+          - {$call: [and, {$ref: bless}, {$call: [eq, {$ref: name}, robustness]}]}
+          - {suite: {$ref: name}, action: skip, reason: disabled while blessing expectations}
+          - {suite: {$ref: name}, action: run}
+      - {$ref: ordered}
+result:
+  $call:
+  - fn
+  - [observation]
+  - $call:
+    - set
+    - {$ref: observation}
+    - status
+    - $call:
+      - if
+      - {$call: [has, {$ref: observation}, reason]}
+      - skipped
+      - {$call: [if, {$call: [eq, {$call: [get, {$ref: observation}, failures]}, []]}, passed, failed]}
+report:
+  $call:
+  - fn
+  - [observations]
+  - $call:
+    - let
+    - processed_results: {$call: [map, {$ref: result}, {$ref: observations}]}
+      failures: {$call: [sequences.flat_map, {$ref: processed_results}, {$call: [fn, [row], {$call: [get, {$ref: row}, failures]}]}]}
+      passed: {$call: [eq, {$ref: failures}, []]}
+    - command: test
+      status: {$call: [if, {$ref: passed}, passed, failed]}
+      exit_code: {$call: [if, {$ref: passed}, 0, 1]}
+      failure_count: {$call: [len, {$ref: failures}]}
+      results: {$ref: processed_results}

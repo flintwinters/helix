@@ -16,7 +16,14 @@ pub use ty::{is_primitive, violations, Pred, Violation};
 pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault> {
     match actor {
         "class" | "extend" | "inherit" | "realize" | "parents" | "open_fields" | "constrain" => class::apply(actor, args, pred),
-        "drift" | "converge" => machine::apply(actor, args),
+        "drift" | "converge" => unreachable!("machine policy is scheduled by the evaluator"),
         _ => construct::apply(actor, args, pred),
+    }
+}
+
+pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Option<crate::model::PolicyCall>, Fault> {
+    match actor {
+        "drift" | "converge" => machine::prepare(actor, args).map(Some),
+        _ => construct::prepare(actor, args, pred),
     }
 }

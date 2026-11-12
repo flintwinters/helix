@@ -1,0 +1,74 @@
+root:
+  collections:
+    enum:
+      type: enum
+      values:
+        - red
+        - blue
+        - red
+    list:
+      of: integer
+      type: list
+    literal:
+      type: literal
+      value:
+        nested:
+          - 1
+          - ~
+    map:
+      of: string
+      type: map
+    secret:
+      ref: credentials/test
+      type: secret
+    union:
+      of:
+        - integer
+        - "null"
+      type: union
+  fields:
+    add:
+      fields:
+        a:
+          default: 2
+          of: integer
+          type: default
+        b: boolean
+        z: string
+      type: record
+    default:
+      default: 3
+      of: integer
+      type: default
+    empty:
+      fields: {}
+      type: record
+    optional:
+      of: boolean
+      type: optional
+    record:
+      fields:
+        a:
+          default: 2
+          of: integer
+          type: default
+        z: string
+      type: record
+    replace:
+      fields:
+        a:
+          default: 2
+          of: integer
+          type: default
+        z:
+          of: string
+          type: optional
+      type: record
+  pure:
+    fields:
+      value:
+        of: integer
+        type: list
+    type: record
+  refined_default: true
+status: finished

@@ -258,7 +258,9 @@ pub(crate) struct HelixError {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct Modules {
     pub(crate) linked: HashMap<NodeId, NodeId>,
+    pub(crate) policies: HashMap<String, NodeId>,
     pub(crate) roots: HashSet<NodeId>,
+    pub(crate) visible_roots: HashSet<NodeId>,
     pub(crate) first_file_import: Option<NodeId>,
 }
 
@@ -305,4 +307,10 @@ impl Default for Limits {
             max_eval_depth: 512,
         }
     }
+}
+
+/// An ordinary embedded Helix function implementing a builtin's pure policy.
+pub(crate) struct PolicyCall {
+    pub function: &'static str,
+    pub args: Vec<Value>,
 }

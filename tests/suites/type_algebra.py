@@ -33,6 +33,10 @@ def accepts(value, spec):
 
 
 def verify(h):
+    from tests.suites.descriptor_policy import verify as verify_descriptors
+    verify_descriptors(h)
+    from tests.suites.convergence_policy import verify as verify_convergence
+    verify_convergence(h)
     primitives = ["any", "never", "null", "boolean", "integer", "float", "string", "list", "map"]
     specs = primitives + [
         {"type": "list", "of": "integer"}, {"type": "map", "of": "string"},

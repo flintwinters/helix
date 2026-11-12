@@ -1,0 +1,60 @@
+root:
+  blessing:
+    - action: run
+      suite: standard_library
+    - action: run
+      suite: golden
+    - action: skip
+      reason: disabled while blessing expectations
+      suite: robustness
+  default:
+    - action: run
+      suite: first
+    - action: run
+      suite: second
+    - action: run
+      suite: standard_library
+    - action: run
+      suite: golden
+    - action: run
+      suite: robustness
+  empty: []
+  failed:
+    command: test
+    exit_code: 1
+    failure_count: 2
+    results:
+      - failures:
+          - one
+          - two
+        status: failed
+        suite: first
+      - failures: []
+        status: passed
+        suite: second
+    status: failed
+  ordinary:
+    - action: run
+      suite: first
+    - action: run
+      suite: second
+  passed:
+    command: test
+    exit_code: 0
+    failure_count: 0
+    results:
+      - failures: []
+        status: passed
+        suite: first
+    status: passed
+  skipped:
+    command: test
+    exit_code: 0
+    failure_count: 0
+    results:
+      - failures: []
+        reason: disabled while blessing expectations
+        status: skipped
+        suite: robustness
+    status: passed
+status: finished

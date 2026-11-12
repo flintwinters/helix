@@ -7,6 +7,7 @@
 //! Conversions between types are explicit: `str`, `int`, `float`.
 
 use crate::value::Value;
+use crate::model::PolicyCall;
 
 mod collection;
 mod data;
@@ -19,6 +20,18 @@ pub use fault::Fault;
 pub use typing::{is_primitive, refine, violations, Violation};
 use typing::Pred;
 use value::{equal, type_name};
+
+/// Authoritative dependency mapping shared by linking and execution.
+pub(crate) fn policy_module(actor: &str) -> Option<&'static str> {
+    match descriptor(actor)?.evaluation {
+        Evaluation::Policy(module) => Some(module),
+        _ => None,
+    }
+}
+
+pub(crate) fn prepare_policy(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Option<PolicyCall>, Fault> {
+    if policy_module(actor).is_some() { typing::prepare(actor, args, pred) } else { Ok(None) }
+}
 
 /// Evaluator-owned forms. Exhaustive dispatch keeps registration and evaluation policy aligned.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -34,6 +47,8 @@ pub(crate) enum Evaluation {
     Form(Form),
     /// Eager arguments followed by a machine operation handled by the request dispatcher.
     Engine,
+    /// Validated strict arguments followed by an ordinary embedded Helix function.
+    Policy(&'static str),
 }
 
 /// The single registration authority for builtin identity, arity and evaluation policy.
@@ -98,16 +113,16 @@ const ACTORS: &[Descriptor] = &[
     actor("int", 1, Some(1), Evaluation::Number),
     actor("float", 1, Some(1), Evaluation::Number),
     actor("type", 1, Some(1), Evaluation::Type),
-    actor("list_of", 1, Some(1), Evaluation::Typing),
-    actor("map_of", 1, Some(1), Evaluation::Typing),
-    actor("record", 0, None, Evaluation::Typing),
-    actor("optional", 1, Some(1), Evaluation::Typing),
-    actor("default", 2, Some(2), Evaluation::Typing),
-    actor("union", 1, None, Evaluation::Typing),
-    actor("enum", 1, None, Evaluation::Typing),
-    actor("literal", 1, Some(1), Evaluation::Typing),
+    actor("list_of", 1, Some(1), Evaluation::Policy("type_descriptor")),
+    actor("map_of", 1, Some(1), Evaluation::Policy("type_descriptor")),
+    actor("record", 0, None, Evaluation::Policy("type_descriptor")),
+    actor("optional", 1, Some(1), Evaluation::Policy("type_descriptor")),
+    actor("default", 2, Some(2), Evaluation::Policy("type_descriptor")),
+    actor("union", 1, None, Evaluation::Policy("type_descriptor")),
+    actor("enum", 1, None, Evaluation::Policy("type_descriptor")),
+    actor("literal", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("refine", 2, Some(2), Evaluation::Form(Form::Refine)),
-    actor("with_field", 3, Some(3), Evaluation::Typing),
+    actor("with_field", 3, Some(3), Evaluation::Policy("type_descriptor")),
     actor("list", 0, None, Evaluation::Collection),
     actor("dict", 0, None, Evaluation::Collection),
     actor("fields", 1, Some(1), Evaluation::Typing),
@@ -115,7 +130,7 @@ const ACTORS: &[Descriptor] = &[
     actor("violations", 2, Some(2), Evaluation::Typing),
     actor("expect", 2, Some(2), Evaluation::Typing),
     actor("subtype", 2, Some(2), Evaluation::Typing),
-    actor("secret", 1, Some(1), Evaluation::Typing),
+    actor("secret", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("class", 2, Some(3), Evaluation::Typing),
     actor("extend", 4, Some(4), Evaluation::Typing),
     actor("inherit", 3, Some(3), Evaluation::Typing),
@@ -123,8 +138,8 @@ const ACTORS: &[Descriptor] = &[
     actor("parents", 1, Some(1), Evaluation::Typing),
     actor("open_fields", 1, Some(1), Evaluation::Typing),
     actor("constrain", 2, Some(2), Evaluation::Typing),
-    actor("drift", 2, Some(2), Evaluation::Typing),
-    actor("converge", 2, Some(2), Evaluation::Typing),
+    actor("drift", 2, Some(2), Evaluation::Policy("convergence")),
+    actor("converge", 2, Some(2), Evaluation::Policy("convergence")),
     actor("type_time", 1, Some(1), Evaluation::Form(Form::TypeTime)),
     actor("import", 1, Some(1), Evaluation::Form(Form::Import)),
     actor("assert", 1, Some(2), Evaluation::Assert),
@@ -157,7 +172,7 @@ pub fn apply(name: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault
         Evaluation::Type => Ok(Value::String(type_name(&args[0]).to_string())),
         Evaluation::Assert => assert(args),
         Evaluation::Raise => Err(raise(args)),
-        Evaluation::Form(_) | Evaluation::Engine => unreachable!("engine operations are dispatched by the evaluator"),
+        Evaluation::Form(_) | Evaluation::Engine | Evaluation::Policy(_) => unreachable!("engine operations are dispatched by the evaluator"),
     }
 }
 

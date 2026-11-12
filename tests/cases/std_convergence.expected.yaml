@@ -1,0 +1,37 @@
+root:
+  empty: ~
+  expected_report: ~
+  expected_steps: ~
+  no_change: ~
+  plan_agrees: ~
+  policy_agrees: ~
+  pure: []
+  report:
+    changed:
+      nested:
+        have:
+          x: 1
+        want:
+          x: 2
+      z:
+        have: ~
+        want: false
+    extra:
+      extra: keep
+    missing:
+      a: ~
+  steps:
+    - field: a
+      op: set
+      to: ~
+    - field: nested
+      from:
+        x: 1
+      op: set
+      to:
+        x: 2
+    - field: z
+      from: ~
+      op: set
+      to: false
+status: finished
