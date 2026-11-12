@@ -75,20 +75,28 @@ def test_context():
 
 
 @contextmanager
-def frozen_test_context(context, output_format=DEFAULT_FORMAT):
-    """Build and freeze atomically relative to other manage.py builds."""
-    from dataclasses import replace
+def frozen_binary(binary, output_format=DEFAULT_FORMAT):
+    """Build and snapshot atomically; keep execution independent of later builds."""
     import shutil
     import tempfile
 
     (ROOT / "runtime").mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=ROOT / "runtime", prefix="test-binary-") as directory:
+    with tempfile.TemporaryDirectory(dir=ROOT / "runtime", prefix="execution-binary-") as directory:
         snapshot = Path(directory) / "helix"
         with build_lock():
             code = _build_unlocked(output_format=output_format)
             if code == 0:
-                shutil.copy2(context.binary, snapshot)
-        yield (replace(context, binary=snapshot) if code == 0 else None), code
+                shutil.copy2(binary, snapshot)
+        yield (snapshot if code == 0 else None), code
+
+
+@contextmanager
+def frozen_test_context(context, output_format=DEFAULT_FORMAT):
+    """Retain test configuration while sharing the runtime executable lifecycle."""
+    from dataclasses import replace
+
+    with frozen_binary(context.binary, output_format) as (binary, code):
+        yield (replace(context, binary=binary) if code == 0 else None), code
 
 
 def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS,
@@ -133,8 +141,7 @@ def main() -> int:
             for result in results:
                 print(f"{result['status']}: {result['path']}" + (f": {result['reason']}" if "reason" in result else ""))
         return 2 if any(result["status"] == "error" for result in results) else 0
-    # Discovery must respond before loading process execution and test machinery.
-    import subprocess
+    # Discovery and bootstrap commands stay independent of Helix execution.
 
     if command == "migration-audit":
         from tooling.syntax_migration import audit_golden
@@ -142,22 +149,32 @@ def main() -> int:
             return code or audit_golden(frozen, args.baseline, args.format)
     if command == "lint":
         return lint(args.extra)
-    if command == "cli":
-        return build() or subprocess.call([str(BIN), *args.extra], cwd=ROOT)
-    if command == "eval":
-        if (code := build()) != 0:
-            return code
-        return subprocess.run([str(BIN), *(["check", "--evaluate"] if args.check else ["run"]), "-"],
-                              input=args.source, text=True, cwd=ROOT).returncode
-    if command == "exec":
-        return build() or subprocess.call([str(BIN), "exec", *([args.output_format] if args.output_format else []), "--", args.source], cwd=ROOT)
-    if command == "inventory":
-        from tooling.inventory import inventory
-        return build() or inventory(test_context().helix, ROOT)
     if command == "build":
         return build(report=True, output_format=args.format)
+    if command == "test":
+        return test(args.bless, args.suite, args.jobs, args.case, args.format)
+    with frozen_binary(BIN) as (binary, code):
+        return code or runtime(args, binary)
+
+
+def runtime(args, binary) -> int:
+    """Forward runtime contracts through the invocation's immutable executable."""
+    import subprocess
+
+    command = args.command
+    if command == "cli":
+        return subprocess.call([str(binary), *args.extra], cwd=ROOT)
+    if command == "eval":
+        return subprocess.run([str(binary), *(["check", "--evaluate"] if args.check else ["run"]), "-"],
+                              input=args.source, text=True, cwd=ROOT).returncode
+    if command == "exec":
+        return subprocess.call([str(binary), "exec", *([args.output_format] if args.output_format else []), "--", args.source], cwd=ROOT)
+    if command == "inventory":
+        from dataclasses import replace
+        from tooling.inventory import inventory
+        return inventory(replace(test_context(), binary=binary).helix, ROOT)
     if command in ("run", "recover", "resume", "check"):
-        return build() or subprocess.call([str(BIN), command, *(["--evaluate"] if command == "check" and args.evaluate else []), args.file], cwd=ROOT)
+        return subprocess.call([str(binary), command, *(["--evaluate"] if command == "check" and args.evaluate else []), args.file], cwd=ROOT)
     if command in ("fmt", "step", "trace", "watch", "state", "repl", "schema", "lsp", "completion"):
         extra = [args.file] if hasattr(args, "file") else []
         for name in ("steps", "limit", "interval_ms", "iterations"):
@@ -166,19 +183,17 @@ def main() -> int:
                 extra.extend(["--" + name.replace("_", "-"), str(value)])
         if command == "completion":
             extra.append(args.shell)
-        return build() or subprocess.call([str(BIN), "inspect" if command == "state" else command, *extra], cwd=ROOT)
+        return subprocess.call([str(binary), "inspect" if command == "state" else command, *extra], cwd=ROOT)
     if command == "sandbox":
-        return build() or subprocess.call([str(BIN), "sandbox", args.root, args.file], cwd=ROOT)
+        return subprocess.call([str(binary), "sandbox", args.root, args.file], cwd=ROOT)
     if command == "std":
         if args.module is None and args.format == "json":
-            if (code := build()) != 0:
-                return code
-            result = subprocess.run([str(BIN), "std"], cwd=ROOT, capture_output=True, text=True)
+            result = subprocess.run([str(binary), "std"], cwd=ROOT, capture_output=True, text=True)
             emit({"command": "std", "status": "failed" if result.returncode else "ok",
                   "exit_code": result.returncode, "modules": result.stdout.splitlines(), "stderr": result.stderr})
             return result.returncode
-        return build() or subprocess.call([str(BIN), "std", *([args.module] if args.module else [])], cwd=ROOT)
-    return test(args.bless, args.suite, args.jobs, args.case, args.format)
+        return subprocess.call([str(binary), "std", *([args.module] if args.module else [])], cwd=ROOT)
+    raise AssertionError(f"unhandled runtime command: {command}")
 
 
 if __name__ == "__main__":
