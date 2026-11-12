@@ -81,6 +81,8 @@ def verify_contexts(h):
 
 def verify(h):
     verify_contexts(h)
+    from tests.suites.golden_policy import verify as verify_golden_policy
+    verify_golden_policy(h)
     caller = threading.get_ident()
     seen = []
 

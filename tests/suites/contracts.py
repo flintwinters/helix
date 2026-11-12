@@ -90,7 +90,8 @@ def harness(h):
         expected = "status: finished\nroot:\n  value: 42\n"
         case.with_suffix(".expected.yaml").write_text(expected)
         def fake(args, **kwargs):
-            if args[1] == "std":
+            if args[1] == "std" or (kwargs.get("input") is not None
+                                    and not kwargs["input"].startswith("$literal:\n")):
                 return h.process_runner(args, **kwargs)
             return subprocess.CompletedProcess(args, 0, expected, "")
         fixture = replace(h, commands={case.parent: "run"}, process_runner=fake)
@@ -101,7 +102,7 @@ def harness(h):
             case.with_suffix(".expected.yaml").write_text(expected)
             def broken_reload(args, **kwargs):
                 result = fake(args, **kwargs)
-                if kwargs.get("input") is not None:
+                if (kwargs.get("input") or "").startswith("$literal:\n"):
                     result.stdout = expected.replace("42", "43")
                 return result
             broken = replace(fixture, process_runner=broken_reload)
