@@ -22,6 +22,9 @@ def verify(h):
     sources.extend("a" + separator + "b" + separator for separator in
                    ("\n", "\r", "\r\n", "\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"))
     sources.append("".join(f"field_{index}: {index}\n" for index in range(100)))
+    sources.extend(("a" * 255 + "\r\n" + "b" * 257,
+                    "🙂" * 255 + "\u2028" + "é" * 257,
+                    "a" * 256 + "\r\n" + "b" * 256))
     from tooling.test_runner import discover_cases
     largest = max(discover_cases(h.commands, h.root), key=lambda case: case.stat().st_size)
     sources.append(largest.read_text())

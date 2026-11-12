@@ -20,7 +20,7 @@ def verify(h):
             rerun = h.helix("run", "-", stdin=root_source)
             assert h.root_section(rerun.stdout) == root_source, case
     for actor in ("type_time", "open_fields"):
-        for source in (f"[{actor}]", f"[{actor}, null, null]"):
+        for source in (f'{{"$call": ["{actor}"]}}', f'{{"$call": ["{actor}", null, null]}}'):
             assert state(h, "run", source)["error"]["kind"] == "arity"
     failures = h.robustness(cases)
     assert not failures, failures[:3]
@@ -36,13 +36,13 @@ def verify(h):
     assert "phase" not in root["runtime_after"] and "phase" not in root["captured_error"]
     assert root["derived"]["fields"]["name"] == {"type": "optional", "of": "string"}
     # An inner phase cannot clear an outer phase, including after a caught failure.
-    nested = state(h, "run", '[type_time, [finally, [type_time, integer], [div, 1, 0]]]')
+    nested = state(h, "run", '{"$call": ["type_time", {"$call": ["finally", {"$call": ["type_time", {"$ref": "integer"}]}, {"$call": ["div", 1, 0]}]}]}')
     assert nested["phase"] == nested["error"]["phase"] == "type"
     # Limits are those of the ordinary evaluator, for both CLI entrypoints.
     for command in ("run", "check"):
         for source, kind in [
-            ('[type_time, [until, [fn, [n], false], [fn, [n], n], 0]]', "limit"),
-            ('f: [fn, [n], [f, n]]\nr: [type_time, [f, 0]]', "depth"),
+            ('{"$call": ["type_time", {"$call": ["until", {"$call": ["fn", ["n"], false]}, {"$call": ["fn", ["n"], {"$ref": "n"}]}, 0]}]}', "limit"),
+            ('{"f": {"$call": ["fn", ["n"], {"$call": ["f", {"$ref": "n"}]}]}, "r": {"$call": ["type_time", {"$call": ["f", 0]}]}}', "depth"),
         ]:
             result = state(h, command, source)
             errors = result.get("errors", [result.get("error")])
@@ -60,17 +60,14 @@ def verify(h):
 
 def verify_check_mode(h):
     # Collection mode admits file inputs and leaves uncalled bodies/unchosen branches alone.
-    source = ('module: [import, tests/cases/modules/geometry.yaml]\n'
-              'answer: [module.area, 2]\n'
-              'unused: [fn, [], [div, 1, 0]]\n'
-              'chosen: [if, true, 42, [div, 1, 0]]')
+    source = ('{"module": {"$call": ["import", "tests/cases/modules/geometry.yaml"]}, "answer": {"$call": ["module.area", 2]}, "unused": {"$call": ["fn", [], {"$call": ["div", 1, 0]}]}, "chosen": {"$call": ["if", true, 42, {"$call": ["div", 1, 0]}]}}')
     run = state(h, "run", source)
     checked = state(h, "check", source)
     assert checked["root"] == run["root"] and checked["root"]["answer"] == 12
     assert checked["mode"] == "check" and "phase" not in checked
     assert "mode" not in run and "phase" not in run
     # Loading failures are not type-time failures either.
-    for source in ('[', '[import, std:no_such_module]'):
+    for source in ('[', '{"$call": ["import", "std:no_such_module"]}'):
         checked = state(h, "check", source)
         assert checked["mode"] == "check" and "phase" not in checked
         assert "phase" not in checked["errors"][0]

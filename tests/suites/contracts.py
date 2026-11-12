@@ -30,6 +30,12 @@ def harness(h):
          contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
         assert h.regression(False, ["first", "second"]) == 1
         assert [call.args[0] for call in dispatch.call_args_list] == ["first", "second"]
+    with patch.object(test_runner, "SUITES", {"first": "probe", "second": "probe"}), \
+         patch.object(sys.modules[__name__], "run", side_effect=[SystemExit(2), []]) as dispatch, \
+         contextlib.redirect_stderr(io.StringIO()) as output, contextlib.redirect_stdout(io.StringIO()):
+        assert h.regression(False, ["first", "second"]) == 1
+        assert [call.args[0] for call in dispatch.call_args_list] == ["first", "second"]
+        assert "SystemExit" in output.getvalue()
 
     from tests.suites.state_validation import verify as verify_states
     verify_states(h)
