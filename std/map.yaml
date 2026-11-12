@@ -1,0 +1,14 @@
+# Immutable map algorithms for small inputs; fold's runtime iteration limit applies.
+# Copies of growing maps can take quadratic time and total allocations.
+# Shallow merge: right wins, existing left keys keep their position, new keys append.
+merge:
+  - fn
+  - [[left, map], [right, map]]
+  - [fold, [fn, [result, key], [set, result, key, [get, right, key]]], left, [keys, right]]
+  - map
+# Remove one string key. Missing keys are harmless; survivor order is unchanged.
+remove:
+  - fn
+  - [[source, map], [key, string]]
+  - [fold, [fn, [result, name], [if, [eq, name, key], result, [set, result, name, [get, source, name]]]], {}, [keys, source]]
+  - map

@@ -1,0 +1,89 @@
+status: finished
+root:
+  m:
+    merge:
+      - fn
+      - - - left
+          - map
+        - - right
+          - map
+      - - fold
+        - - fn
+          - - result
+            - key
+          - - set
+            - result
+            - key
+            - - get
+              - right
+              - key
+        - left
+        - - keys
+          - right
+      - map
+    remove:
+      - fn
+      - - - source
+          - map
+        - - key
+          - string
+      - - fold
+        - - fn
+          - - result
+            - name
+          - - if
+            - - eq
+              - name
+              - key
+            - result
+            - - set
+              - result
+              - name
+              - - get
+                - source
+                - name
+        - {}
+        - - keys
+          - source
+      - map
+  left:
+    z: 1
+    shared:
+      old: true
+    absent: ~
+  right:
+    shared:
+      new: true
+    a: false
+  merged:
+    z: 1
+    shared:
+      new: true
+    absent: ~
+    a: false
+  merge_order: ~
+  shallow: ~
+  unchanged: ~
+  empty_merge: {}
+  left_identity: ~
+  right_identity: ~
+  removed:
+    z: 1
+    absent: ~
+    a: false
+  remove_order: ~
+  missing: ~
+  empty_remove: {}
+  only_key: {}
+  unicode:
+    "é":
+      - ~
+      - false
+    "🙂": 3
+  remove_null: ~
+  idempotent: ~
+  wrong_left: type
+  wrong_right: type
+  wrong_source: type
+  wrong_key: type
+  wrong_arity: arity
