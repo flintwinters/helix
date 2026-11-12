@@ -1,6 +1,5 @@
 //! Explicit execution requests and continuations. No transition invokes another interpreter.
 use crate::builtins;
-use yaml_rust2::Yaml;
 use crate::error::{HelixError, s};
 use crate::graph::{Graph, Kind, NodeId, ROOT};
 use crate::link;
@@ -13,6 +12,7 @@ mod lexical;
 mod forms;
 mod iteration;
 mod atomic;
+mod effects;
 
 use crate::model::Limits;
 use crate::model::{Outcome, Vm};
@@ -187,25 +187,8 @@ impl Evaluator {
                 self.collect_next(site, actor, nodes, keys, values, argument);
             }
             Request::Apply(site, actor, nodes, values) => match actor {
-                Actor::Builtin(name) if name == "effect" => {
-                    if self.type_time || self.inherited_type_time {
-                        return Err(self.err(site, "purity", "effects are forbidden during type time"));
-                    }
-                    if !self.effects_allowed {
-                        return Err(self.err(site, "effect", "checking cannot execute effects"));
-                    }
-                    let Value::String(operation) = &values[0] else {
-                        return Err(self.err(nodes[0], "type", "expected string effect operation"));
-                    };
-                    let payload = values[1].plain_yaml().ok_or_else(|| self.err(nodes[1], "type", "effect payload must be ordinary data"))?;
-                    let request = crate::model::EffectRequest {
-                        id: self.effects.len() as u64 + 1,
-                        operation: operation.clone(), payload,
-                    };
-                    self.charge_value(site, &self.effect_view(site, &request))?;
-                    self.pending_effect = Some((site, request));
-                    self.answer = None;
-                }
+                Actor::Builtin(name) if name == "effect" => self.request_effect(site, &nodes, &values)?,
+
 
                 Actor::Function(function) => self.push(Request::Call(site, function, values)),
                 Actor::Builtin(name) if name == "step" => {
@@ -560,41 +543,6 @@ impl Evaluator {
     }
     fn truth(&self, value: &Value, blame: NodeId) -> Result<bool, HelixError> {
         builtins::boolean(value, 0).map_err(|f| self.err(blame, &f.kind, f.message))
-    }
-    pub fn resolve_effect(&mut self, result: Result<Yaml, (String, String)>) {
-        let Some((site, request)) = self.pending_effect.take() else { return; };
-        let mut outcome = match result {
-            Ok(data) => crate::value::from_host_yaml(&data)
-                .map_err(|why| self.err(site, "type", why))
-                .and_then(|value| { self.charge_value(site, &value)?; Ok(value) }),
-            Err((kind, message)) if kind.len() + message.len() > self.limits.max_value_size =>
-                Err(self.err(site, "limit", "effect error exceeds runtime limits")),
-            Err((kind, message)) => Err(self.err(site, &kind, message)),
-        };
-        let mut record = self.effect_view(site, &request);
-        if let Value::Hash(fields) = &mut record {
-            fields.insert(s("outcome"), match &outcome {
-                Ok(value) => value.clone(), Err(error) => error.to_value(),
-            });
-            fields.insert(s("status"), s(if outcome.is_ok() { "finished" } else { "error" }));
-        }
-        if let Err(error) = self.charge_value(site, &record) {
-            if let Value::Hash(fields) = &mut record {
-                fields.insert(s("outcome"), error.to_value());
-                fields.insert(s("status"), s("error"));
-            }
-            outcome = Err(error);
-        }
-        self.effects.push(record);
-        self.answer = Some(outcome);
-    }
-    pub fn effect_view(&self, site: NodeId, request: &crate::model::EffectRequest) -> Value {
-        Value::Hash([
-            (s("id"), Value::Integer(request.id as i64)),
-            (s("operation"), s(&request.operation)),
-            (s("payload"), Value::from_yaml(&request.payload)),
-            (s("location"), self.graph().reference(site)),
-        ].into_iter().collect())
     }
     fn charge_value(&mut self, id: NodeId, value: &Value) -> Result<(), HelixError> {
         let mut pending = vec![(value, 0, true)];
