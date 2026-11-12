@@ -1,0 +1,2 @@
+# A caught error is plain data: it stays readable in `root` and re-reads as a fixpoint.
+caught: [try, [get, [1, 2], 9], [fn, [e], e]]

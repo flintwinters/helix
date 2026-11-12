@@ -52,8 +52,8 @@ impl Evaluator {
         Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new() }
     }
 
-    fn err(&self, id: NodeId, kind: &'static str, message: String) -> HelixError {
-        HelixError { kind, message, path: Some(self.graph.path(id)), span: self.graph.span(id) }
+    fn err(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
+        HelixError { kind: kind.into(), message, path: Some(self.graph.path(id)), span: self.graph.span(id), data: None }
     }
 
     /// Evaluate a node to plain YAML data. A node that needs its own value within one call is a `cycle`.
@@ -201,7 +201,7 @@ impl Evaluator {
         let values = args.iter().map(|&arg| self.value_arg(arg)).collect::<Result<Vec<_>, _>>()?;
         match actor {
             Actor::Function(function) => self.call(id, function, values),
-            Actor::Builtin(name) => builtins::apply(&name, &values).map_err(|fault| self.err(fault.arg.map_or(id, |i| args[i]), fault.kind, fault.message)),
+            Actor::Builtin(name) => builtins::apply(&name, &values).map_err(|fault| HelixError { data: fault.data, ..self.err(fault.arg.map_or(id, |i| args[i]), fault.kind, fault.message) }),
         }
     }
 

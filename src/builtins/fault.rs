@@ -6,18 +6,20 @@ use super::value::type_name;
 
 /// A builtin failure; `arg` is the index of the offending argument, or `None` for the whole expression.
 pub struct Fault {
-    pub kind: &'static str,
+    pub kind: String,
     pub message: String,
     pub arg: Option<usize>,
+    /// Payload of a user `raise`; builtins never set it.
+    pub data: Option<Yaml>,
 }
 
 impl Fault {
     pub(super) fn at(arg: usize, kind: &'static str, message: String) -> Fault {
-        Fault { kind, message, arg: Some(arg) }
+        Fault { kind: kind.into(), message, arg: Some(arg), data: None }
     }
 
     pub(super) fn whole(kind: &'static str, message: String) -> Fault {
-        Fault { kind, message, arg: None }
+        Fault { kind: kind.into(), message, arg: None, data: None }
     }
 
     pub(super) fn expected(arg: usize, wanted: &str, got: &Yaml) -> Fault {

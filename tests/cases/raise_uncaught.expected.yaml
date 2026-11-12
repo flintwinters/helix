@@ -1,0 +1,9 @@
+status: error
+error:
+  kind: invalid_order
+  message: quantity must be positive
+  path: /check
+  line: 1
+  column: 8
+  data:
+    quantity: -2

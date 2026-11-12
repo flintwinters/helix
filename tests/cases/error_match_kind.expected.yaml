@@ -1,0 +1,23 @@
+status: finished
+root:
+  handle:
+    - fn
+    - - e
+    - - cond
+      - - eq
+        - - get
+          - e
+          - "kind"
+        - "transient"
+      - "retry"
+      - - eq
+        - - get
+          - e
+          - "kind"
+        - "divide_by_zero"
+      - "zero"
+      - - raise
+        - e
+  transient: retry
+  builtin: zero
+  reraised: fatal

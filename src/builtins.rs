@@ -26,7 +26,7 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("len", 1, Some(1)), ("concat", 2, None), ("slice", 3, Some(3)), ("get", 2, Some(3)), ("set", 3, Some(3)),
     ("append", 2, None), ("keys", 1, Some(1)), ("has", 2, Some(2)),
     ("str", 1, Some(1)), ("int", 1, Some(1)), ("float", 1, Some(1)), ("type", 1, Some(1)),
-    ("assert", 1, Some(2)), ("try", 2, Some(2)),
+    ("assert", 1, Some(2)), ("raise", 1, Some(3)), ("try", 2, Some(2)),
 ];
 
 /// `(minimum, maximum)` argument counts; `None` overall means not a builtin.
@@ -50,6 +50,7 @@ pub fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
         "str" => text(&args[0]),
         "type" => Ok(Yaml::String(type_name(&args[0]).to_string())),
         "assert" => assert(args),
+        "raise" => Err(raise(args)),
         _ => unreachable!("`{actor}` is not a strict builtin"),
     }
 }
@@ -92,5 +93,31 @@ fn assert(args: &[Yaml]) -> Result<Yaml, Fault> {
         None => Err(Fault::whole("assertion", "assertion failed".into())),
         Some(Yaml::String(message)) => Err(Fault::whole("assertion", message.clone())),
         Some(other) => Err(Fault::expected(1, "string message", other)),
+    }
+}
+
+/// `raise`: always a fault. `[raise, kind, message]` / `[raise, kind, message, data]` choose their
+/// own `kind`; `[raise, error_map]` re-raises a caught error (its `kind`, `message`, optional `data`).
+fn raise(args: &[Yaml]) -> Fault {
+    let text = |value: &Yaml, arg: usize, what: &str| match value {
+        Yaml::String(s) => Ok(s.clone()),
+        other => Err(Fault::expected(arg, what, other)),
+    };
+    let built = match args {
+        [Yaml::Hash(error)] => {
+            let field = |name: &str| error.get(&Yaml::String(name.into()));
+            match (field("kind"), field("message")) {
+                (Some(kind), Some(message)) => text(kind, 0, "string `kind`").and_then(|k| Ok((k, text(message, 0, "string `message`")?, field("data").cloned()))),
+                _ => Err(Fault::at(0, "type", "an error map needs `kind` and `message`".into())),
+            }
+        }
+        [other] => Err(Fault::expected(0, "an error map, or a kind and a message", other)),
+        [kind, message, rest @ ..] => text(kind, 0, "string kind").and_then(|k| Ok((k, text(message, 1, "string message")?, rest.first().cloned()))),
+        [] => unreachable!("`raise` takes at least 1 argument"),
+    };
+    match built {
+        Ok((kind, _, _)) if kind.is_empty() => Fault::at(0, "type", "an error `kind` must not be empty".into()),
+        Ok((kind, message, data)) => Fault { kind, message, arg: None, data },
+        Err(fault) => fault,
     }
 }

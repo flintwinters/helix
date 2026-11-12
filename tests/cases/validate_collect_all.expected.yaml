@@ -1,0 +1,47 @@
+status: finished
+root:
+  check:
+    - fn
+    - - row
+    - - try
+      - - let
+        - ok:
+            - assert
+            - - gt
+              - - get
+                - row
+                - "qty"
+              - 0
+            - "qty must be positive"
+        - - if
+          - - eq
+            - - get
+              - row
+              - "name"
+            - ""
+          - - raise
+            - "invalid"
+            - "name is empty"
+          - ok
+      - - fn
+        - - e
+        - - get
+          - e
+          - "message"
+  rows:
+    - name: a
+      qty: 1
+    - name: ""
+      qty: 2
+    - name: c
+      qty: 0
+    - name: d
+      qty: 4
+  results:
+    - ~
+    - name is empty
+    - qty must be positive
+    - ~
+  problems:
+    - "name is empty"
+    - qty must be positive

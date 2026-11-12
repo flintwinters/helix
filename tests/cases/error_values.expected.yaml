@@ -1,0 +1,8 @@
+status: finished
+root:
+  caught:
+    kind: missing
+    message: no index 9
+    path: /caught/1/2
+    line: 2
+    column: 29

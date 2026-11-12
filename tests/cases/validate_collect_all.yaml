@@ -1,0 +1,5 @@
+# Validation reports every bad record, not just the first.
+check: [fn, [row], [try, [let, {ok: [assert, [gt, [get, row, "qty"], 0], "qty must be positive"]}, [if, [eq, [get, row, "name"], ""], [raise, "invalid", "name is empty"], ok]], [fn, [e], [get, e, "message"]]]]
+rows: [{name: a, qty: 1}, {name: "", qty: 2}, {name: c, qty: 0}, {name: d, qty: 4}]
+results: [map, check, rows]
+problems: [filter, [fn, [r], [ne, r, null]], results]

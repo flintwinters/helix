@@ -36,20 +36,22 @@ impl Graph {
         Parser::new_from_str(src)
             .load(&mut builder, false)
             .map_err(|e| HelixError {
-                kind: "parse",
+                kind: "parse".into(),
                 message: e.to_string(),
                 path: None,
                 span: span(e.marker()),
+                data: None,
             })?;
         if let Some(err) = builder.error {
             return Err(err);
         }
         if builder.graph.nodes.is_empty() {
             return Err(HelixError {
-                kind: "parse",
+                kind: "parse".into(),
                 message: "empty document".into(),
                 path: None,
                 span: Span { line: 1, col: 1 },
+                data: None,
             });
         }
         Ok(builder.graph)
@@ -102,7 +104,7 @@ struct Builder {
 impl Builder {
     /// Record the first error; `on_event` ignores everything after it.
     fn fail(&mut self, kind: &'static str, message: &str, at: Marker) {
-        self.error = Some(HelixError { kind, message: message.into(), path: None, span: span(&at) });
+        self.error = Some(HelixError { kind: kind.into(), message: message.into(), path: None, span: span(&at), data: None });
     }
 
     /// Attach a new node to the open container (or make it the root) and return its id.

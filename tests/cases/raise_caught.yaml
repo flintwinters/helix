@@ -1,0 +1,4 @@
+# User-raised errors have the builtin error shape; `data` rides along.
+custom: [try, [raise, "out_of_stock", "no widgets left", {item: widget, wanted: 3}], [fn, [e], e]]
+kind: [try, [raise, "custom", "boom"], [fn, [e], [get, e, "kind"]]]
+payload: [try, [raise, "custom", "boom", [1, 2]], [fn, [e], [get, e, "data"]]]
