@@ -27,6 +27,7 @@ def harness(h):
     assert h.malformed_state("status: finished\nroot: null", 0) is None
     assert h.malformed_state("status: error\nerror: {kind: type, message: bad, line: 1, column: 2}", 1) is None
     assert h.root_section("status: finished\nroot:\n  a: 1\n") == "a: 1\n"
+    assert h.root_section("status: finished\nroot:\n  a: 1\nphase: type\n") == "a: 1\n"
     assert h.root_section("status: error\n") is None
     assert "" in list(h.mutations("a: 1\nb: 2\n"))
     with patch.object(h.subprocess, "run", side_effect=subprocess.TimeoutExpired("helix", 1)):

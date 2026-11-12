@@ -3,6 +3,7 @@
 
     ./manage.py build               cargo build
     ./manage.py run FILE            run a program, print its serialized VM state
+    ./manage.py check FILE          type phase: print the state with every error found (`phase: type`, `errors:`)
     ./manage.py std [MODULE]        list standard modules or print module source
     ./manage.py lint [ARGS...]      structural lint via the hyperlinter submodule (JSON; pass --format=text for people)
     ./manage.py test [--suite NAME] [--bless]   regression suites (--list discovers names)
@@ -25,7 +26,8 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 CASES = ROOT / "tests" / "cases"
-COMMANDS = {CASES: "run"}
+CHECK_CASES = ROOT / "tests" / "check"
+COMMANDS = {CASES: "run", CHECK_CASES: "check"}  # case directory -> helix subcommand
 BIN = ROOT / os.environ.get("CARGO_TARGET_DIR", "target") / "debug" / "helix"
 HYPERLINTER = ROOT / "hyperlinter"
 
@@ -56,8 +58,12 @@ def root_section(state: str) -> str | None:
     lines = state.splitlines()
     if not lines or lines[0] != "status: finished":
         return None
-    body = lines[lines.index("root:") + 1 :]
-    return "\n".join(l[2:] for l in body) + "\n"
+    body = []
+    for line in lines[lines.index("root:") + 1 :]:
+        if not line.startswith("  "):
+            break
+        body.append(line[2:])
+    return "\n".join(body) + "\n"
 
 
 ERROR_FIELDS = {"kind", "message", "line", "column"}  # `path` is omitted for errors outside the graph (parse)
@@ -192,6 +198,7 @@ def main() -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("build")
     sub.add_parser("run").add_argument("file")
+    sub.add_parser("check").add_argument("file")
     testing = sub.add_parser("test")
     testing.add_argument("--bless", action="store_true")
     testing.add_argument("--suite", action="append", choices=SUITES, help="repeat to select suites; default: all")
@@ -203,6 +210,8 @@ def main() -> int:
         return build()
     if args.cmd == "run":
         return build() or subprocess.call([str(BIN), "run", args.file], cwd=ROOT)
+    if args.cmd == "check":
+        return build() or subprocess.call([str(BIN), "check", args.file], cwd=ROOT)
     if args.cmd == "std":
         return build() or subprocess.call([str(BIN), "std", *([args.module] if args.module else [])], cwd=ROOT)
     if args.list:

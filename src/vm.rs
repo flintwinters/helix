@@ -36,7 +36,9 @@ pub struct Vm {
     status: Status,
     result: Option<Yaml>,
     error: Option<HelixError>,
-
+    /// Set by `check`: the state then records the `type` phase and lists every error found.
+    checking: bool,
+    errors: Vec<HelixError>,
 }
 
 impl Vm {
@@ -51,7 +53,7 @@ impl Vm {
     }
 
     fn load_from(src: &str, file: Option<&Path>) -> Vm {
-        let mut vm = Vm { evaluator: None, status: Status::Ready, result: None, error: None };
+        let mut vm = Vm { evaluator: None, status: Status::Ready, result: None, error: None, checking: false, errors: Vec::new() };
         match Graph::parse(src).and_then(|graph| Evaluator::new(graph, file)) {
             Ok(evaluator) => vm.evaluator = Some(evaluator),
             Err(e) => vm.fail(e),
@@ -78,14 +80,46 @@ impl Vm {
         }
     }
 
-    /// The serialized VM state: `status` plus `root` (finished) or `error` (error).
+    /// Type phase: evaluate the program (pure, bounded, no effects) collecting every error instead
+    /// of stopping at the first. A clean program ends `finished` with its resolved `root`.
+    pub fn check(&mut self) {
+        if self.status != Status::Ready {
+            // Load failures still need check-mode error output; completed execution is immutable.
+            if self.evaluator.is_none() { self.checking = true; }
+            return;
+        }
+        self.checking = true;
+        self.status = Status::Running;
+        let evaluator = self.evaluator.as_mut().expect("a ready VM has a graph");
+        self.errors = evaluator.collect_errors();
+        if !self.errors.is_empty() {
+            self.status = Status::Error;
+        } else {
+            match evaluator.eval(ROOT) {
+                Ok(v) => {
+                    self.result = Some(v);
+                    self.status = Status::Finished;
+                }
+                Err(e) => self.fail(e),
+            }
+        }
+    }
+
+    /// The serialized VM state: `status`, `phase: type` after a `check`, then `root` (finished) or
+    /// `error` / `errors` (error).
     pub fn state(&self) -> Yaml {
         let mut h = Hash::new();
         h.insert(s("status"), s(self.status.as_str()));
         if let Some(r) = &self.result {
             h.insert(s("root"), r.clone());
         }
-        if let Some(e) = &self.error {
+        if self.checking {
+            h.insert(s("phase"), s("type"));
+            let all = if self.errors.is_empty() { self.error.iter().collect::<Vec<_>>() } else { self.errors.iter().collect() };
+            if !all.is_empty() {
+                h.insert(s("errors"), Yaml::Array(all.into_iter().map(HelixError::to_yaml).collect()));
+            }
+        } else if let Some(e) = &self.error {
             h.insert(s("error"), e.to_yaml());
         }
         Yaml::Hash(h)

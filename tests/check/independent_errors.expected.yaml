@@ -1,0 +1,13 @@
+status: error
+phase: type
+errors:
+  - kind: divide_by_zero
+    message: "`div` by zero"
+    path: /first
+    line: 1
+    column: 8
+  - kind: unbound
+    message: "unbound symbol `missing`"
+    path: /second/1
+    line: 2
+    column: 15

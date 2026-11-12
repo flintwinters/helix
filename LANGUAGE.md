@@ -146,6 +146,8 @@ Callbacks are checked as functions even for empty lists. Predicates must return 
 
 `std:group` exports `by(xs, key)`: group a list into a map using a function returning a string key. Empty and Unicode keys are valid. Keys follow first occurrence order, and each group's items retain input order. The key function runs once per item; callback failures propagate. List and function arguments are checked even for empty input. Immutable map/list copying can take quadratic time and total allocations; use small inputs within the runtime iteration limit.
 
+`./manage.py check FILE` (or `helix check FILE`) evaluates the current pure language and collects independent errors across container entries in source order, deduplicating failures reached through multiple dependents. It uses the same annotations and evaluator as `run`; it is not static analysis of uncalled function bodies or unchosen branches. Output includes `phase: type`, with `root` on success or an `errors` list on failure; exit codes are 0 for success, 1 for program errors and 2 for usage or input-file failures. Successful roots retain the usual YAML round-trip contract.
+
 ## Error kinds
 
 `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (call nesting), `limit` (iteration cap), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.

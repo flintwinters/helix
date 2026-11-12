@@ -83,6 +83,36 @@ impl Evaluator {
         result
     }
 
+    /// Every error in the program, not just the first: containers and non-expression lists are
+    /// walked so each entry fails or succeeds on its own, and an expression is evaluated whole.
+    /// Duplicates (one failure reached through several dependents) are reported once.
+    pub(crate) fn collect_errors(&mut self) -> Vec<HelixError> {
+        let mut errors: Vec<HelixError> = Vec::new();
+        self.collect(ROOT, &mut errors);
+        let mut seen = HashSet::new();
+        errors.retain(|e| seen.insert((e.path.clone(), e.kind.clone(), e.message.clone())));
+        errors
+    }
+
+    fn collect(&mut self, id: NodeId, errors: &mut Vec<HelixError>) {
+        let children = match self.graph.kind(id) {
+            Kind::Map(entries) if !self.in_function(id) => Some(entries.iter().map(|(_, child)| *child).collect::<Vec<_>>()),
+            Kind::Seq(items) if !self.in_function(id) => Some(items.clone()),
+            _ => None,
+        };
+        let children = if matches!(self.graph.kind(id), Kind::Seq(_)) {
+            let items = children.clone().unwrap_or_default();
+            match self.actor(&items) {
+                Ok(None) => children,
+                _ => None,
+            }
+        } else { children };
+        match children {
+            Some(children) => children.into_iter().for_each(|child| self.collect(child, errors)),
+            None => errors.extend(self.eval(id).err()),
+        }
+    }
+
     fn eval_uncached(&mut self, id: NodeId) -> Result<Yaml, HelixError> {
         enum Shape {
             Scalar(Yaml),

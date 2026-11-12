@@ -45,3 +45,23 @@ fn check_collects_errors_and_preserves_success() {
     assert_eq!(clean.status(), Status::Finished);
     assert_eq!(clean.state()["root"]["answer"].as_i64(), Some(3));
 }
+
+#[test]
+fn terminal_execution_survives_check_and_repeated_checks() {
+    for source in ["answer: 42", "answer: [div, 1, 0]"] {
+        let mut vm = Vm::load(source);
+        vm.run();
+        let saved = vm.state_string();
+        vm.check();
+        assert_eq!(vm.state_string(), saved);
+    }
+    for source in ["answer: 42", "answer: [div, 1, 0]", "["] {
+        let mut vm = Vm::load(source);
+        vm.check();
+        let saved = vm.state_string();
+        assert_eq!(vm.state()["phase"].as_str(), Some("type"));
+        vm.check();
+        vm.run();
+        assert_eq!(vm.state_string(), saved);
+    }
+}
