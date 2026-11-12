@@ -36,13 +36,13 @@ def verify(h):
     try:
         peaks = []
         for count in (250, 1000, 2500):
-            rss, elapsed = measure(f"map-{count}", "".join(f"v{i}: [add, {i}, 1]\n" for i in range(count)))
+            rss, elapsed = measure(f"map-{count}", json.dumps({f"v{i}": {"$call": ["add", i, 1]} for i in range(count)}))
             assert elapsed < 2, (count, elapsed)
             peaks.append(rss)
         assert peaks[-1] <= peaks[0] * 12 + 16 * 1024, peaks
         # Identical live state, 100x more work: detect accidental per-iteration retention.
-        short, _ = measure("loop-999", '[until, [fn, [n], [eq, n, 999]], [fn, [n], [add, n, 1]], 0]')
-        long, _ = measure("loop-99999", '[until, [fn, [n], [eq, n, 99999]], [fn, [n], [add, n, 1]], 0]')
+        short, _ = measure("loop-999", '{"$call": ["until", {"$call": ["fn", ["n"], {"$call": ["eq", {"$ref": "n"}, 999]}]}, {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, 1]}]}, 0]}')
+        long, _ = measure("loop-99999", '{"$call": ["until", {"$call": ["fn", ["n"], {"$call": ["eq", {"$ref": "n"}, 99999]}]}, {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, 1]}]}, 0]}')
         assert long <= short + 8 * 1024, (short, long, "constant-state loop retained memory proportional to steps")
     finally:
         report = {"environment": {"platform": platform.platform(), "python": platform.python_version(),

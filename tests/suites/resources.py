@@ -29,30 +29,30 @@ def verify(h):
         if code:
             assert yaml.safe_load(result.stdout)["error"]["kind"] == "limit"
     for n, code in ((198, 0), (200, 1)):
-        source = f"f: [fn, [n], [if, [eq, n, 0], 0, [f, [sub, n, 1]]]]\nr: [f, {n}]"
+        source = f'{{"f": {{"$call": ["fn", ["n"], {{"$call": ["if", {{"$call": ["eq", {{"$ref": "n"}}, 0]}}, 0, {{"$call": ["f", {{"$call": ["sub", {{"$ref": "n"}}, 1]}}]}}]}}]}}, "r": {{"$call": ["f", {n}]}}}}'
         result = h.helix("run", "-", stdin=source)
         assert result.returncode == code, result
         if code:
             assert yaml.safe_load(result.stdout)["error"]["kind"] == "depth"
     for stop, code in ((99_999, 0), (100_000, 1)):
-        source = f"[until, [fn, [n], [eq, n, {stop}]], [fn, [n], [add, n, 1]], 0]"
+        source = f'{{"$call": ["until", {{"$call": ["fn", ["n"], {{"$call": ["eq", {{"$ref": "n"}}, {stop}]}}]}}, {{"$call": ["fn", ["n"], {{"$call": ["add", {{"$ref": "n"}}, 1]}}]}}, 0]}}'
         result = h.helix("run", "-", stdin=source)
         assert result.returncode == code, result
         if code:
             assert yaml.safe_load(result.stdout)["error"]["kind"] == "limit"
     # Computed growth must fail before exhausting the host, even with shallow source.
-    failure(h, '[until, [fn, [s], false], [fn, [s], [concat, s, s]], "x"]', "limit")
-    failure(h, '[until, [fn, [s], false], [fn, [s], [list, s]], 0]', "depth")
+    failure(h, '{"$call": ["until", {"$call": ["fn", ["s"], false]}, {"$call": ["fn", ["s"], {"$call": ["concat", {"$ref": "s"}, {"$ref": "s"}]}]}, "x"]}', "limit")
+    failure(h, '{"$call": ["until", {"$call": ["fn", ["s"], false]}, {"$call": ["fn", ["s"], {"$call": ["list", {"$ref": "s"}]}]}, 0]}', "depth")
     # Computed output must stay within the parser's graph budget to remain re-readable.
-    failure(h, '[until, [fn, [xs], [ge, [len, xs], 131072]], [fn, [xs], [concat, xs, xs]], [list, 0]]', "limit")
-    grown = h.helix("run", "-", stdin='[until, [fn, [xs], [ge, [len, xs], 65536]], [fn, [xs], [concat, xs, xs]], [list, 0]]')
+    failure(h, '{"$call": ["until", {"$call": ["fn", ["xs"], {"$call": ["ge", {"$call": ["len", {"$ref": "xs"}]}, 131072]}]}, {"$call": ["fn", ["xs"], {"$call": ["concat", {"$ref": "xs"}, {"$ref": "xs"}]}]}, {"$call": ["list", 0]}]}', "limit")
+    grown = h.helix("run", "-", stdin='{"$call": ["until", {"$call": ["fn", ["xs"], {"$call": ["ge", {"$call": ["len", {"$ref": "xs"}]}, 65536]}]}, {"$call": ["fn", ["xs"], {"$call": ["concat", {"$ref": "xs"}, {"$ref": "xs"}]}]}, {"$call": ["list", 0]}]}')
     assert grown.returncode == 0, grown
     program = h.root_section(grown.stdout)
     reloaded = h.helix("run", "-", stdin=program)
     assert reloaded.returncode == 0 and h.root_section(reloaded.stdout) == program
     # Function and machine environments can retain growing graphs despite shallow source.
-    for name, wrapper in [("function", "[fn, [], state]"), ("machine", "[vm, [fn, [], state]]")]:
-        source = f'[until, [fn, [state], false], [fn, [state], {wrapper}], 0]'
+    for name, wrapper in [("function", '{"$call": ["fn", [], {"$ref": "state"}]}'), ("machine", '{"$call": ["vm", {"$call": ["fn", [], {"$ref": "state"}]}]}')]:
+        source = f'{{"$call": ["until", {{"$call": ["fn", ["state"], false]}}, {{"$call": ["fn", ["state"], {wrapper}]}}, 0]}}'
         artifact = h.root / "runtime" / f"resource-{name}-capture.yaml"
         artifact.write_text(source + "\n")
         result = h.helix("run", str(artifact))
@@ -61,13 +61,13 @@ def verify(h):
         state = yaml.safe_load(result.stdout)
         assert result.returncode == 1 and state["error"]["kind"] in ("depth", "limit"), state
     # A long dependency chain has shallow syntax but a deep evaluator stack.
-    source = "".join(f"v{i}: [add, v{i + 1}, 0]\n" for i in range(2000)) + "v2000: 0\n"
+    source = "".join(f'v{i}: {{$call: [add, {{$ref: v{i + 1}}}, 0]}}\n' for i in range(2000)) + "v2000: 0\n"
     failure(h, source, "depth")
     # Deep imports must stop during linking, including in an uncalled function.
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="limits-") as directory:
         base = Path(directory)
         for i in range(70):
-            (base / f"m{i}.yaml").write_text(f"next: [import, m{i + 1}.yaml]\n")
+            (base / f"m{i}.yaml").write_text(f'{{"next": {{"$call": ["import", "m{i + 1}.yaml"]}}}}')
         (base / "m70.yaml").write_text("0\n")
         result = h.helix("run", str(base / "m0.yaml"))
         assert h.malformed_state(result.stdout, result.returncode) is None, result

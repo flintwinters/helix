@@ -36,72 +36,72 @@ def verify(h):
             result, state = run(source, *flags)
             assert result.returncode == 1 and state['error']['kind'] == 'capability', state
 
-        denied("[effect, 'time', null]")
-        denied("[effect, 'random', null]")
-        denied("[effect, 'env', 'PATH']")
-        denied("[effect, 'stdout', 'secret']")
-        denied("[effect, 'stdin', null]")
-        denied("[effect, 'command', {program: '/bin/echo', args: []}]")
-        denied("[effect, 'http', 'http://127.0.0.1/']")
+        denied('{"$call": ["effect", "time", null]}')
+        denied('{"$call": ["effect", "random", null]}')
+        denied('{"$call": ["effect", "env", "PATH"]}')
+        denied('{"$call": ["effect", "stdout", "secret"]}')
+        denied('{"$call": ["effect", "stdin", null]}')
+        denied('{"$call": ["effect", "command", {"program": "/bin/echo", "args": []}]}')
+        denied('{"$call": ["effect", "http", "http://127.0.0.1/"]}')
         before = time.time_ns() // 1_000_000
-        result, state = run("[effect, 'time', null]", '--allow-time')
+        result, state = run('{"$call": ["effect", "time", null]}', '--allow-time')
         after = time.time_ns() // 1_000_000
         assert result.returncode == 0 and before <= state['root'] <= after, state
-        result, state = run("[effect, 'random', null]", '--allow-random')
+        result, state = run('{"$call": ["effect", "random", null]}', '--allow-random')
         assert result.returncode == 0 and type(state['root']) is int and 0 <= state['root'] < 2 ** 63, state
         missing_name = 'HELIX_EFFECT_MISSING_' + base.name.replace('-', '_')
         assert missing_name not in os.environ
-        result, state = run(f"[effect, 'env', '{missing_name}']", '--allow-env', missing_name)
+        result, state = run(f'{{"$call": ["effect", "env", "{missing_name}"]}}', '--allow-env', missing_name)
         assert result.returncode == 0 and state['root'] is None, state
         for source, kind, flags in [
-            ("[effect, 'unknown_operation', null]", 'effect', []),
-            ("[effect, 'exit', 256]", 'type', []),
-            ("[effect, 'env', 1]", 'type', []),
-            ("[effect, 'stdout', 1]", 'type', ['--allow-stdout']),
-            ("[effect, 'command', {program: '/bin/echo', args: 1}]", 'type', ['--allow-command', '/bin/echo']),
+            ('{"$call": ["effect", "unknown_operation", null]}', 'effect', []),
+            ('{"$call": ["effect", "exit", 256]}', 'type', []),
+            ('{"$call": ["effect", "env", 1]}', 'type', []),
+            ('{"$call": ["effect", "stdout", 1]}', 'type', ['--allow-stdout']),
+            ('{"$call": ["effect", "command", {"program": "/bin/echo", "args": 1}]}', 'type', ['--allow-command', '/bin/echo']),
         ]:
             result, state = run(source, *flags)
             assert result.returncode == 1 and state['error']['kind'] == kind, state
-        result, state = run("[effect, 'command', {program: '/bin/sh', args: [list, '-c', 'printf problem >&2; exit 3']}]", '--allow-command', '/bin/sh')
+        result, state = run('{"$call": ["effect", "command", {"program": "/bin/sh", "args": {"$call": ["list", "-c", "printf problem >&2; exit 3"]}}]}', '--allow-command', '/bin/sh')
         assert result.returncode == 0 and state['root'] == {'code': 3, 'stdout': '', 'stderr': 'problem'}, state
         captured = 'é雪' * 16384
         script = 'printf "%s" "$1"; printf "%s" "$1" >&2'
         result, state = run(
-            f"[effect, 'command', {{program: '/bin/sh', args: [list, '-c', {json.dumps(script)}, 'capture', {json.dumps(captured, ensure_ascii=False)}]}}]",
+            f'{{"$call": ["effect", "command", {{"program": "/bin/sh", "args": {{"$call": ["list", "-c", {json.dumps(script)}, "capture", {json.dumps(captured, ensure_ascii=False)}]}}}}]}}',
             '--allow-command', '/bin/sh')
         assert result.returncode == 0 and state['root'] == {'code': 0, 'stdout': captured, 'stderr': captured}, state
         for script in ['printf "\\377"', 'printf "\\377" >&2']:
             result, state = run(
-                f"[effect, 'command', {{program: '/bin/sh', args: [list, '-c', {json.dumps(script)}]}}]",
+                f'{{"$call": ["effect", "command", {{"program": "/bin/sh", "args": {{"$call": ["list", "-c", {json.dumps(script)}]}}}}]}}',
                 '--allow-command', '/bin/sh')
             assert result.returncode == 1 and state['error']['kind'] == 'io', state
         target = base / 'value.txt'
         target.write_text('original')
         module = base / 'module.yaml'
         module.write_text('value: 42')
-        result, state = run("[import, 'module.yaml']")
+        result, state = run('{"$call": ["import", "module.yaml"]}')
         assert result.returncode == 1, state
-        result, state = run("[import, 'module.yaml']", '--allow-read', str(base))
+        result, state = run('{"$call": ["import", "module.yaml"]}', '--allow-read', str(base))
         assert result.returncode == 0 and state['root'] == {'value': 42}, state
-        denied(f"[effect, 'file_read', {json.dumps(str(target))}]")
-        denied(f"[effect, 'file_write', {{path: {json.dumps(str(target))}, text: 'changed'}}]")
+        denied(f'{{"$call": ["effect", "file_read", {json.dumps(str(target))}]}}')
+        denied(f'{{"$call": ["effect", "file_write", {{"path": {json.dumps(str(target))}, "text": "changed"}}]}}')
         assert target.read_text() == 'original'
         allowed = base / 'allowed'
         allowed.mkdir()
         (allowed / 'escape').symlink_to(target)
-        denied(f"[effect, 'file_read', {json.dumps(str(allowed / 'escape'))}]", '--allow-read', str(allowed))
-        denied(f"[effect, 'file_write', {{path: {json.dumps(str(allowed / 'escape'))}, text: 'changed'}}]", '--allow-write', str(allowed))
+        denied(f"""{{"$call": ["effect", "file_read", {json.dumps(str(allowed / 'escape'))}]}}""", '--allow-read', str(allowed))
+        denied(f"""{{"$call": ["effect", "file_write", {{"path": {json.dumps(str(allowed / 'escape'))}, "text": "changed"}}]}}""", '--allow-write', str(allowed))
         missing = base / 'must-not-exist'
         (allowed / 'dangling').symlink_to(missing)
-        result, state = run(f"[effect, 'file_write', {{path: {json.dumps(str(allowed / 'dangling'))}, text: 'changed'}}]", '--allow-write', str(allowed))
+        result, state = run(f"""{{"$call": ["effect", "file_write", {{"path": {json.dumps(str(allowed / 'dangling'))}, "text": "changed"}}]}}""", '--allow-write', str(allowed))
         assert result.returncode == 1 and not missing.exists(), state
-        result, state = run("[try, [effect, 'time', null], [fn, [error], [get, error, 'kind']]]")
+        result, state = run('{"$call": ["try", {"$call": ["effect", "time", null]}, {"$call": ["fn", ["error"], {"$call": ["get", {"$ref": "error"}, "kind"]}]}]}')
         assert result.returncode == 0 and state['root'] == 'capability', state
-        result, state = run("[type_time, [effect, 'stdout', 'must not print']]", '--allow-stdout')
+        result, state = run('{"$call": ["type_time", {"$call": ["effect", "stdout", "must not print"]}]}', '--allow-stdout')
         assert result.returncode == 1 and result.stdout == '' and state['error']['phase'] == 'type', state
         huge = base / 'huge'
         huge.write_bytes(b'x' * (1024 * 1024 + 1))
-        result, state = run(f"[effect, 'file_read', {json.dumps(str(huge))}]", '--allow-read', str(base))
+        result, state = run(f'{{"$call": ["effect", "file_read", {json.dumps(str(huge))}]}}', '--allow-read', str(base))
         assert result.returncode == 1 and state['error']['kind'] == 'resource', state
 
         server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
@@ -109,9 +109,9 @@ def verify(h):
         thread.start()
         try:
             origin = f'http://127.0.0.1:{server.server_port}'
-            result, state = run(f"[effect, 'http', '{origin}/redirect']", '--allow-http', origin)
+            result, state = run(f'{{"$call": ["effect", "http", "{origin}/redirect"]}}', '--allow-http', origin)
             assert result.returncode == 0 and state['root']['status'] == 302, state
-            denied("[effect, 'http', 'http://127.0.0.1:1/private']", '--allow-http', origin)
+            denied('{"$call": ["effect", "http", "http://127.0.0.1:1/private"]}', '--allow-http', origin)
             flags = ['--allow-read', str(base), '--allow-write', str(base), '--allow-env', 'HELIX_EFFECT_TEST',
                      '--allow-stdin', '--allow-stdout', '--allow-command', '/bin/echo', '--allow-http', origin,
                      '--allow-time', '--allow-random', '--fixed-time', '123456', '--seed', '42']

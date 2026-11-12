@@ -20,22 +20,21 @@ BASELINE_EPOCHS = {"slice-ascii": 3, "slice-unicode": 3}
 
 def repeated(expression, expected, count, bindings):
     # A wrong result jumps past the target, so correctness fails without an infinite loop.
-    return (f"[let, {json.dumps(bindings, ensure_ascii=False)}, [until, [fn, [n], [ge, n, {count}]], "
-            f"[fn, [n], [add, n, [if, [eq, {expression}, {expected}], 1, {count + 1}]]], 0]]")
+    return (f'{{"$call": ["let", {json.dumps(bindings, ensure_ascii=False)}, {{"$call": ["until", {{"$call": ["fn", ["n"], {{"$call": ["ge", {{"$ref": "n"}}, {count}]}}]}}, {{"$call": ["fn", ["n"], {{"$call": ["add", {{"$ref": "n"}}, {{"$call": ["if", {{"$call": ["eq", {expression}, {expected}]}}, 1, {count + 1}]}}]}}]}}, 0]}}]}}')
 
 
 def workloads():
-    yield "arithmetic-map", "".join(f"v{i}: [add, {i}, 1]\n" for i in range(1000)), {f"v{i}": i + 1 for i in range(1000)}, 1000
-    yield "function-loop", repeated("[sub, [add, n, 1], n]", "1", 2000, {}), 2000, 2000
+    yield "arithmetic-map", json.dumps({f"v{i}": {"$call": ["add", i, 1]} for i in range(1000)}), {f"v{i}": i + 1 for i in range(1000)}, 1000
+    yield "function-loop", repeated('{"$call": ["sub", {"$call": ["add", {"$ref": "n"}, 1]}, {"$ref": "n"}]}', "1", 2000, {}), 2000, 2000
     values = {f"value{i}": i for i in range(100)}
     emitted = "".join(f"value{i}: {i}\n" for i in range(100))
-    yield "yaml-dump-map", repeated("[len, [yaml_dump, value]]", str(len(emitted)), 200,
+    yield "yaml-dump-map", repeated('{"$call": ["len", {"$call": ["yaml_dump", {"$ref": "value"}]}]}', str(len(emitted)), 200,
                                      {"value": values}), 200, 200
     for name, text in (("slice-ascii", "abcdefgh" * 1000), ("slice-unicode", "é雪🙂a" * 2000)):
-        yield name, repeated("[slice, text, 3999, 4003]", json.dumps(text[3999:4003], ensure_ascii=False), 200, {"text": text}), 200, 200
+        yield name, repeated('{"$call": ["slice", {"$ref": "text"}, 3999, 4003]}', json.dumps(text[3999:4003], ensure_ascii=False), 200, {"text": text}), 200, 200
     key = "lookup-key-" * 400
-    yield "map-get-long-key", repeated("[get, mapping, key]", "42", 1000, {"mapping": {key: 42}, "key": key}), 1000, 1000
-    yield "map-set-existing-key", repeated("[get, [set, mapping, key, 43], key]", "43", 1000,
+    yield "map-get-long-key", repeated('{"$call": ["get", {"$ref": "mapping"}, {"$ref": "key"}]}', "42", 1000, {"mapping": {key: 42}, "key": key}), 1000, 1000
+    yield "map-set-existing-key", repeated('{"$call": ["get", {"$call": ["set", {"$ref": "mapping"}, {"$ref": "key"}, 43]}, {"$ref": "key"}]}', "43", 1000,
                                            {"mapping": {key: 42}, "key": key}), 1000, 1000
 
 
