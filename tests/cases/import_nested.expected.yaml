@@ -3,9 +3,15 @@ root:
   helpers:
     geometry:
       m:
+        number:
+          type: union
+          of:
+            - "integer"
+            - float
         abs:
           - fn
-          - - n
+          - - - n
+              - number
           - - if
             - - lt
               - n
@@ -13,9 +19,11 @@ root:
             - - neg
               - n
             - n
+          - number
         sign:
           - fn
-          - - n
+          - - - n
+              - number
           - - cond
             - - lt
               - n
@@ -26,42 +34,55 @@ root:
               - 0
             - 1
             - 0
+          - integer
         min:
           - fn
-          - - a
-            - b
+          - - - a
+              - number
+            - - b
+              - number
           - - if
             - - lt
               - a
               - b
             - a
             - b
+          - number
         max:
           - fn
-          - - a
-            - b
+          - - - a
+              - number
+            - - b
+              - number
           - - if
             - - gt
               - a
               - b
             - a
             - b
+          - number
         clamp:
           - fn
-          - - n
-            - lo
-            - hi
+          - - - n
+              - number
+            - - lo
+              - number
+            - - hi
+              - number
           - - max
             - lo
             - - min
               - n
               - hi
+          - number
         square:
           - fn
-          - - n
+          - - - n
+              - number
           - - mul
             - n
             - n
+          - number
       pi: 3
       area:
         - fn

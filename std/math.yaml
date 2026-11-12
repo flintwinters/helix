@@ -1,7 +1,9 @@
-# Small numeric helpers. Import with `m: [import, std:math]`, call as `[m.max, 3, 9]`.
-abs: [fn, [n], [if, [lt, n, 0], [neg, n], n]]
-sign: [fn, [n], [cond, [lt, n, 0], -1, [gt, n, 0], 1, 0]]
-min: [fn, [a, b], [if, [lt, a, b], a, b]]
-max: [fn, [a, b], [if, [gt, a, b], a, b]]
-clamp: [fn, [n, lo, hi], [max, lo, [min, n, hi]]]
-square: [fn, [n], [mul, n, n]]
+# Numeric contracts are ordinary Helix types, shared with std:list.
+# Import with `m: [import, std:math]`, call as `[m.max, 3, 9]`.
+number: [union, integer, float]
+abs: [fn, [[n, number]], [if, [lt, n, 0], [neg, n], n], number]
+sign: [fn, [[n, number]], [cond, [lt, n, 0], -1, [gt, n, 0], 1, 0], integer]
+min: [fn, [[a, number], [b, number]], [if, [lt, a, b], a, b], number]
+max: [fn, [[a, number], [b, number]], [if, [gt, a, b], a, b], number]
+clamp: [fn, [[n, number], [lo, number], [hi, number]], [max, lo, [min, n, hi]], number]
+square: [fn, [[n, number]], [mul, n, n], number]
