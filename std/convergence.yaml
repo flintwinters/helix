@@ -1,0 +1,41 @@
+# Pure comparison of configured values with observations; never removes extra state.
+# Public drift/converge builtins validate realized classes before calling this module.
+# Missing and null remain distinct. Collection traversal shares VM resource budgets.
+# Computed comparisons are eager function arguments so callbacks reuse them.
+diff: {$call: [import, 'std:diff']}
+project:
+  $call: [fn, [source, names], {$call: [fold, {$call: [fn, [result, name], {$call: [set, {$ref: result}, {$ref: name}, {$call: [get, {$ref: source}, {$ref: name}]}]}]}, {}, {$ref: names}]}]
+report:
+  $call:
+  - fn
+  - [wanted, observed, difference]
+  - missing: {$call: [project, {$ref: wanted}, {$ref: difference.added}]}
+    extra: {$call: [project, {$ref: observed}, {$ref: difference.removed}]}
+    changed:
+      $call:
+      - fold
+      - {$call: [fn, [result, change], {$call: [set, {$ref: result}, {$ref: change.key}, {want: {$ref: change.after}, have: {$ref: change.before}}]}]}
+      - {}
+      - {$ref: difference.changed}
+compare:
+  $call: [fn, [wanted, observed], {$call: [report, {$ref: wanted}, {$ref: observed}, {$call: [diff.compare, {$ref: observed}, {$ref: wanted}]}]}]
+steps:
+  $call:
+  - fn
+  - [wanted, observed, difference]
+  - $call:
+    - map
+    - $call:
+      - fn
+      - [field]
+      - $call:
+        - if
+        - {$call: [has, {$ref: difference.missing}, {$ref: field}]}
+        - {$call: [dict, op, set, field, {$ref: field}, to, {$call: [get, {$ref: wanted}, {$ref: field}]}]}
+        - {$call: [dict, op, set, field, {$ref: field}, from, {$call: [get, {$ref: observed}, {$ref: field}]}, to, {$call: [get, {$ref: wanted}, {$ref: field}]}]}
+    - $call:
+      - filter
+      - {$call: [fn, [field], {$call: [or, {$call: [has, {$ref: difference.missing}, {$ref: field}]}, {$call: [has, {$ref: difference.changed}, {$ref: field}]}]}]}
+      - {$call: [keys, {$ref: wanted}]}
+plan:
+  $call: [fn, [wanted, observed], {$call: [steps, {$ref: wanted}, {$ref: observed}, {$call: [compare, {$ref: wanted}, {$ref: observed}]}]}]

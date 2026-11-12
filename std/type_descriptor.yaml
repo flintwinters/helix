@@ -1,0 +1,67 @@
+# Descriptor assembly for the checked public type constructors.
+# The runtime validates arguments with the authoritative type checker before build.
+# This module uses only primitive values/collections: constructor calls here would
+# recursively request this same policy. Record construction copies growing maps.
+descriptor:
+  $call: [fn, [kind, entries], {$call: [set, {$ref: entries}, type, {$ref: kind}]}]
+record_fields:
+  $call:
+  - fn
+  - [args]
+  - $call:
+    - get
+    - $call:
+      - until
+      - {$call: [fn, [state], {$call: [ge, {$call: [get, {$ref: state}, 0]}, {$call: [len, {$ref: args}]}]}]}
+      - $call:
+        - fn
+        - [state]
+        - $call:
+          - let
+          - index: {$call: [get, {$ref: state}, 0]}
+            fields: {$call: [get, {$ref: state}, 1]}
+          - $call:
+            - list
+            - {$call: [add, {$ref: index}, 2]}
+            - $call:
+              - set
+              - {$ref: fields}
+              - {$call: [get, {$ref: args}, {$ref: index}]}
+              - {$call: [get, {$ref: args}, {$call: [add, {$ref: index}, 1]}]}
+      - [0, {}]
+    - 1
+build:
+  $call:
+  - fn
+  - [actor, args]
+  - $call:
+    - cond
+    - {$call: [eq, {$ref: actor}, list_of]}
+    - {$call: [descriptor, list, {of: {$call: [get, {$ref: args}, 0]}}]}
+    - {$call: [eq, {$ref: actor}, map_of]}
+    - {$call: [descriptor, map, {of: {$call: [get, {$ref: args}, 0]}}]}
+    - {$call: [eq, {$ref: actor}, optional]}
+    - {$call: [descriptor, optional, {of: {$call: [get, {$ref: args}, 0]}}]}
+    - {$call: [eq, {$ref: actor}, default]}
+    - {$call: [descriptor, default, {of: {$call: [get, {$ref: args}, 0]}, default: {$call: [get, {$ref: args}, 1]}}]}
+    - {$call: [eq, {$ref: actor}, union]}
+    - {$call: [descriptor, union, {of: {$ref: args}}]}
+    - {$call: [eq, {$ref: actor}, enum]}
+    - {$call: [descriptor, enum, {values: {$ref: args}}]}
+    - {$call: [eq, {$ref: actor}, literal]}
+    - {$call: [descriptor, literal, {value: {$call: [get, {$ref: args}, 0]}}]}
+    - {$call: [eq, {$ref: actor}, secret]}
+    - {$call: [descriptor, secret, {ref: {$call: [get, {$ref: args}, 0]}}]}
+    - {$call: [eq, {$ref: actor}, record]}
+    - {$call: [descriptor, record, {fields: {$call: [record_fields, {$ref: args}]}}]}
+    - {$call: [eq, {$ref: actor}, with_field]}
+    - $call:
+      - descriptor
+      - record
+      - fields:
+          $call:
+          - set
+          - {$call: [get, {$call: [get, {$ref: args}, 0]}, fields]}
+          - {$call: [get, {$ref: args}, 1]}
+          - {$call: [get, {$ref: args}, 2]}
+    - {$call: [raise, type, unknown descriptor constructor]}

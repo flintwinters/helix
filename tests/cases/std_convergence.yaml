@@ -1,0 +1,19 @@
+# Production builtin and direct module contracts without exporting helper functions.
+$call:
+  - let
+  -
+    c: {$call: [import, 'std:convergence']}
+    t: {$call: [import, 'std:test']}
+    wanted: {a: null, nested: {x: 2}, z: false}
+    observed: {nested: {x: 1}, z: null, extra: keep}
+    configured: {$call: [realize, {$call: [class, managed, {$call: [record, a, {$ref: any}, nested, {$ref: map}, z, {$ref: boolean}]}, {$ref: wanted}]}]}
+    report: {$call: [drift, {$ref: configured}, {$ref: observed}]}
+    steps: {$call: [converge, {$ref: configured}, {$ref: observed}]}
+    policy_agrees: {$call: [t.equal, {$ref: report}, {$call: [c.compare, {$ref: wanted}, {$ref: observed}]}]}
+    plan_agrees: {$call: [t.equal, {$ref: steps}, {$call: [c.plan, {$ref: wanted}, {$ref: observed}]}]}
+    expected_report: {$call: [t.equal, {$ref: report}, {missing: {a: null}, changed: {nested: {want: {x: 2}, have: {x: 1}}, z: {want: false, have: null}}, extra: {extra: keep}}]}
+    expected_steps: {$call: [t.equal, {$ref: steps}, [{op: set, field: a, to: null}, {op: set, field: nested, from: {x: 1}, to: {x: 2}}, {op: set, field: z, from: null, to: false}]]}
+    no_change: {$call: [t.equal, {$call: [converge, {$ref: configured}, {a: null, nested: {x: 2}, z: false, extra: keep}]}, []]}
+    pure: {$call: [type_time, {$call: [c.plan, {n: 1}, {n: 1.0, extra: true}]}]}
+    empty: {$call: [t.equal, {$call: [c.plan, {}, {extra: keep}]}, []]}
+  - {$call: [dict, report, {$ref: report}, steps, {$ref: steps}, policy_agrees, {$ref: policy_agrees}, plan_agrees, {$ref: plan_agrees}, expected_report, {$ref: expected_report}, expected_steps, {$ref: expected_steps}, no_change, {$ref: no_change}, pure, {$ref: pure}, empty, {$ref: empty}]}

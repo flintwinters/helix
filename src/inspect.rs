@@ -18,7 +18,7 @@ pub(crate) fn machine(machine: &Vm) -> Value {
 #[derive(Clone)]
 enum Pending {
     Runtime(Value),
-    Program(Arc<Program>),
+    Program(Arc<Program>, bool),
 }
 #[derive(Default)]
 struct View {
@@ -33,17 +33,18 @@ impl View {
                 .collect(),
         )
     }
-    fn program(&mut self, program: Arc<Program>) -> Value {
+    fn program(&mut self, program: Arc<Program>, policies: bool) -> Value {
         let index = self
             .pending
             .iter()
             .position(
-                |p| matches!(p,Pending::Program(p) if Arc::ptr_eq(p,&program) || **p==*program),
+                |p| matches!(p,Pending::Program(p, _) if Arc::ptr_eq(p,&program) || **p==*program),
             )
             .unwrap_or_else(|| {
-                self.pending.push(Pending::Program(program));
+                self.pending.push(Pending::Program(program, policies));
                 self.pending.len() - 1
             });
+        if let Pending::Program(_, expose) = &mut self.pending[index] { *expose |= policies; }
         Self::reference(index)
     }
     fn function_body(&mut self, function: &Function) -> Value {
@@ -84,7 +85,7 @@ impl View {
         Value::Hash(
             [
                 (s("kind"), s("function")),
-                (s("program"), self.program(function.program.clone())),
+                (s("program"), self.program(function.program.clone(), function.program.modules.roots.difference(&function.program.modules.visible_roots).any(|root| graph.source(*root) == graph.source(function.node)))),
                 (s("code"), function.program.code[function.node].clone()),
                 (s("location"), graph.reference(function.node)),
                 (s("environment"), self.value(&environment)),
@@ -97,7 +98,17 @@ impl View {
     fn machine_body(&mut self, machine: &Vm) -> Value {
         let mut body = self.value(&machine.inspection());
         if let (Some(evaluator), Value::Hash(fields)) = (&machine.evaluator, &mut body) {
-            fields.insert(s("program"), self.program(evaluator.program.clone()));
+            let hidden_sources = evaluator.program.modules.roots.difference(&evaluator.program.modules.visible_roots)
+                .filter_map(|root| evaluator.program.graph.source(*root)).collect::<Vec<_>>();
+            let policy_error = machine.error.iter().chain(&machine.errors).any(|error| {
+                error.file.as_deref().is_some_and(|source| hidden_sources.contains(&source))
+                    || error.calls.iter().any(|call| {
+                        let Value::Hash(fields) = call else { return false; };
+                        ["file", "function_file"].iter().any(|key| fields.get(&s(key)).and_then(Value::as_str)
+                            .is_some_and(|source| hidden_sources.contains(&source)))
+                    })
+            });
+            fields.insert(s("program"), self.program(evaluator.program.clone(), !evaluator.requests.is_empty() || policy_error));
         }
         body
     }
@@ -107,10 +118,20 @@ impl View {
             let body = match self.pending[index].clone() {
                 Pending::Runtime(Value::Function(function)) => self.function_body(&function),
                 Pending::Runtime(Value::Machine(machine)) => self.machine_body(&machine),
-                Pending::Program(program) => {
+                Pending::Program(..) => { index += 1; continue; }
+                _ => unreachable!("only functions, machines and programs are named objects"),
+            };
+            self.objects.insert(s(&format!("object{index}")), body);
+            index += 1;
+        }
+        // Runtime traversal can discover a policy closure after its program was
+        // named. Render programs last so source exposure includes every reference.
+        for (index, pending) in self.pending.iter().enumerate() {
+            let body = match pending.clone() {
+                Pending::Program(program, policies) => {
                     let graph = &program.graph;
                     let mut roots = vec![crate::model::ROOT];
-                    roots.extend(program.modules.roots.iter().copied());
+                    roots.extend(if policies { &program.modules.roots } else { &program.modules.visible_roots }.iter().copied());
                     roots.sort_unstable();
                     roots.dedup();
                     Value::Hash(
@@ -142,10 +163,9 @@ impl View {
                         .collect(),
                     )
                 }
-                _ => unreachable!("only functions, machines and programs are named objects"),
+                _ => continue,
             };
             self.objects.insert(s(&format!("object{index}")), body);
-            index += 1;
         }
         if self.objects.len() == 0 {
             return root;
@@ -179,5 +199,26 @@ impl View {
             }
             other => other.clone(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exhausted_policy_keeps_its_error_source_without_a_live_continuation() {
+        let mut vm = Vm::load(r#"{$call: [list_of, {$ref: integer}]}"#);
+        let evaluator = Arc::make_mut(vm.evaluator.as_mut().unwrap());
+        evaluator.remaining_work = 2;
+        evaluator.limits.max_work = 2;
+        vm.run();
+        assert_eq!(vm.status(), crate::model::Status::Error);
+        assert_eq!(vm.error.as_ref().unwrap().file.as_deref(), Some("std:type_descriptor"));
+        assert!(vm.evaluator.as_ref().unwrap().requests.is_empty());
+        let inspection = vm.inspect();
+        assert!(inspection["objects"].as_hash().unwrap().values()
+            .filter_map(|object| object["sources"].as_vec()).flatten()
+            .any(|source| source["source"].as_str() == Some("std:type_descriptor")));
     }
 }

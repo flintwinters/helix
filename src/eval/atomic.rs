@@ -185,8 +185,17 @@ impl Evaluator {
             }
             Err("pending predicate".into())
         };
+        let mut policy = None;
         let result = match &operation.operation {
-            Operation::Builtin(name, args) => builtins::apply(name, args, &mut pred)
+            Operation::Builtin(name, args) => builtins::prepare_policy(name, args, &mut pred)
+                .and_then(|prepared| {
+                    if let Some(call) = prepared {
+                        policy = Some((builtins::policy_module(name).expect("registered policy"), call));
+                        Ok(Value::Null)
+                    } else {
+                        builtins::apply(name, args, &mut pred)
+                    }
+                })
                 .map_err(|f| self.from_fault(operation.site, &operation.nodes, f)),
             Operation::Violations(value, ty) => builtins::violations(value, ty, &mut pred)
                 .map(|found| {
@@ -215,6 +224,12 @@ impl Evaluator {
                     "a refinement check must be `{$call: [fn, [value], body]}`",
                 )),
             }
+        } else if let Some((module, call)) = policy {
+            let root = self.program.modules.policies[module];
+            let crate::graph::Syntax::Mapping(fields) = self.graph().syntax(root) else { unreachable!() };
+            let node = fields.iter().find(|(name, _)| name == call.function).expect("registered policy function").1;
+            let function = Arc::new(Function { program: self.program.clone(), node, environment: Vec::new() });
+            self.push(Request::Call(operation.site, function, call.args));
         } else {
             self.answer = Some(result);
         }

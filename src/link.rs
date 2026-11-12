@@ -104,6 +104,14 @@ fn link_observed(
         }
     }
     linker.scan(ROOT, &Origin::Dir(dir))?;
+    // Presentation follows explicit imports, not implicit builtin implementation edges.
+    let mut pending = vec![ROOT];
+    while let Some(root) = pending.pop() {
+        for import in linker.dependencies(root).0 {
+            let imported = linker.modules.linked[&import];
+            if linker.modules.visible_roots.insert(imported) { pending.push(imported); }
+        }
+    }
     Ok(linker.modules)
 }
 
@@ -129,7 +137,11 @@ impl Linker<'_> {
                 "imports nested deeper than 64 modules".into(),
             ));
         }
-        for import in self.imports(tree) {
+        let (imports, policies) = self.dependencies(tree);
+        for module in policies {
+            self.policy(module)?;
+        }
+        for import in imports {
             let root = self.load(import, origin)?;
             self.modules.linked.insert(import, root);
         }
@@ -137,12 +149,16 @@ impl Linker<'_> {
     }
 
     /// Every `{$call: [import, ...]}` form in the subtree at `tree`, in document order.
-    fn imports(&self, tree: NodeId) -> Vec<NodeId> {
+    fn dependencies(&self, tree: NodeId) -> (Vec<NodeId>, Vec<&'static str>) {
         let mut found = Vec::new();
+        let mut policies = Vec::new();
         let mut pending = vec![tree];
         while let Some(id) = pending.pop() {
             match self.graph.syntax(id) {
                 crate::graph::Syntax::Call(items) => {
+                    if let Some(module) = self.graph.form(id).and_then(crate::builtins::policy_module) {
+                        if !policies.contains(&module) { policies.push(module); }
+                    }
                     if self.graph.form(id) == Some("import") && items.len() == 2 {
                         found.push(id);
                     }
@@ -155,7 +171,30 @@ impl Linker<'_> {
                 _ => {}
             }
         }
-        found
+        (found, policies)
+    }
+
+    /// Builtin policy is linked into the caller's graph, preserving one node identity
+    /// space for memoization, cycle guards and retained continuation inspection.
+    fn policy(&mut self, module: &'static str) -> Result<(), HelixError> {
+        if self.modules.policies.contains_key(module) { return Ok(()); }
+        let key = format!("std:{module}");
+        let root = if let Some(&root) = self.loaded.get(&key) {
+            root
+        } else {
+            let source = library::source(module).expect("registered builtin policy module");
+            let parsed = Graph::parse(source)?;
+            let root = self.graph.graft(parsed)?;
+            self.graph.set_source(root, key.clone());
+            self.modules.roots.insert(root);
+            // Register before scanning: policy modules can use other policy builtins.
+            self.loaded.insert(key, root);
+            self.modules.policies.insert(module.to_owned(), root);
+            self.scan(root, &Origin::Std)?;
+            root
+        };
+        self.modules.policies.insert(module.to_owned(), root);
+        Ok(())
     }
 
     /// The root of the module imported by the `{$call: [import, SPEC]}` node `import`, loading it if new.

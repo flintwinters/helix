@@ -431,3 +431,43 @@ fn host_respects_interruptions_and_never_repeats_completed_effects() {
     assert_eq!(invalid.status(), Status::Error);
     assert_eq!(host.random_seed, seed_after);
 }
+
+#[test]
+fn builtin_policies_retain_ordinary_continuations() {
+    let vm = equivalent(include_str!("cases/std_convergence.yaml"));
+    assert_eq!(vm.status(), Status::Finished);
+    let vm = equivalent(r#"{$call: [type_time, {$call: [record, x, {$call: [default, {$ref: integer}, 3]}, y, {$call: [optional, {$call: [list_of, {$ref: string}]}]}]}]}"#);
+    assert_eq!(vm.status(), Status::Finished);
+}
+
+#[test]
+fn builtin_policy_sources_are_visible_when_execution_enters_them() {
+    let mut vm = Vm::load(r#"{$call: [converge, {$call: [realize, {$call: [class, c, {$call: [record, x, {$ref: integer}]}, {x: 1}]}]}, {}]}"#);
+    let mut found = false;
+    for _ in 0..20_000 {
+        if !active(&vm) { break; }
+        let inspection = vm.inspect();
+        if inspection["location"]["source"].as_str() == Some("std:convergence") {
+            let sources = inspection["objects"].as_hash().unwrap().values().filter_map(|object| object["sources"].as_vec());
+            assert!(sources.flatten().any(|source| source["source"].as_str() == Some("std:convergence")));
+            let retained = vm.clone();
+            vm.run();
+            assert_eq!(retained.inspect(), inspection);
+            assert_eq!(vm.status(), Status::Finished);
+            found = true;
+            break;
+        }
+        vm = vm.step();
+    }
+    assert!(found, "builtin execution never exposed its Helix continuation");
+    let mut explicit = Vm::load(r#"{$call: [import, 'std:convergence']}"#);
+    explicit.run();
+    assert_eq!(explicit.status(), Status::Finished);
+    let state = explicit.state();
+    for name in ["std:convergence", "std:diff"] {
+        assert!(state["objects"].as_hash().unwrap().values()
+            .filter_map(|object| object["sources"].as_vec()).flatten()
+            .any(|source| source["source"].as_str() == Some(name)));
+    }
+
+}
