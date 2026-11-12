@@ -1,0 +1,40 @@
+# Type derivation stays ordinary Helix: reflection, folds and the checked constructors.
+# These helpers preserve field order and leave the input declaration unchanged.
+from_fields:
+  - fn
+  - [[specs, map]]
+  - - fold
+    - [fn, [result, name], [with_field, result, name, [get, specs, name]]]
+    - [record]
+    - [keys, specs]
+  - map
+# Removing an absent field is an identity operation. Class fields may be projected to a record;
+# class parents, fixed values and provenance are deliberately not inherited by that projection.
+without_field:
+  - fn
+  - [t, [name, string]]
+  - - let
+    - specs: [fields, t]
+    - - fold
+      - [fn, [result, field], [if, [eq, field, name], result, [with_field, result, field, [get, specs, field]]]]
+      - [record]
+      - [keys, specs]
+  - map
+# Preserve already-optional fields and defaults instead of nesting field wrappers.
+optional_field:
+  - fn
+  - [spec]
+  - - if
+    - [and, [eq, [type, spec], "map"], [has, ["optional", "default"], [get, spec, "type", ""]]]
+    - spec
+    - [optional, spec]
+optional_fields:
+  - fn
+  - [t]
+  - - let
+    - specs: [fields, t]
+    - - fold
+      - [fn, [result, name], [with_field, result, name, [optional_field, [get, specs, name]]]]
+      - [record]
+      - [keys, specs]
+  - map

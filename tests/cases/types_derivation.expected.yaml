@@ -1,0 +1,196 @@
+status: finished
+root:
+  t:
+    from_fields:
+      - fn
+      - - - specs
+          - map
+      - - fold
+        - - fn
+          - - result
+            - name
+          - - with_field
+            - result
+            - name
+            - - get
+              - specs
+              - name
+        - - record
+        - - keys
+          - specs
+      - map
+    without_field:
+      - fn
+      - - t
+        - - name
+          - string
+      - - let
+        - specs:
+            - fields
+            - t
+        - - fold
+          - - fn
+            - - result
+              - field
+            - - if
+              - - eq
+                - field
+                - name
+              - result
+              - - with_field
+                - result
+                - field
+                - - get
+                  - specs
+                  - field
+          - - record
+          - - keys
+            - specs
+      - map
+    optional_field:
+      - fn
+      - - spec
+      - - if
+        - - and
+          - - eq
+            - - type
+              - spec
+            - "map"
+          - - has
+            - - "optional"
+              - "default"
+            - - get
+              - spec
+              - "type"
+              - ""
+        - spec
+        - - optional
+          - spec
+    optional_fields:
+      - fn
+      - - t
+      - - let
+        - specs:
+            - fields
+            - t
+        - - fold
+          - - fn
+            - - result
+              - name
+            - - with_field
+              - result
+              - name
+              - - optional_field
+                - - get
+                  - specs
+                  - name
+          - - record
+          - - keys
+            - specs
+      - map
+  original:
+    type: record
+    fields:
+      name: string
+      count: integer
+      note:
+        type: optional
+        of: string
+      enabled:
+        type: default
+        of: boolean
+        default: true
+  rebuilt:
+    type: record
+    fields:
+      name: string
+      count: integer
+      note:
+        type: optional
+        of: string
+      enabled:
+        type: default
+        of: boolean
+        default: true
+  round_trip: true
+  dropped:
+    type: record
+    fields:
+      name: string
+      note:
+        type: optional
+        of: string
+      enabled:
+        type: default
+        of: boolean
+        default: true
+  drop_missing: true
+  retyped:
+    type: record
+    fields:
+      name: string
+      count: string
+      note:
+        type: optional
+        of: string
+      enabled:
+        type: default
+        of: boolean
+        default: true
+  added:
+    type: record
+    fields:
+      name: string
+      count: integer
+      note:
+        type: optional
+        of: string
+      enabled:
+        type: default
+        of: boolean
+        default: true
+      extra: boolean
+  all_optional:
+    type: record
+    fields:
+      name:
+        type: optional
+        of: string
+      count:
+        type: optional
+        of: integer
+      note:
+        type: optional
+        of: string
+      enabled:
+        type: default
+        of: boolean
+        default: true
+  idempotent: true
+  default_preserved: true
+  checks:
+    - true
+    - true
+    - false
+    - true
+    - true
+  empty:
+    type: record
+    fields: {}
+  empty_optional: true
+  constructed:
+    type: record
+    fields:
+      x: integer
+      "y": integer
+  via_function:
+    type: record
+    fields:
+      x:
+        type: optional
+        of: integer
+      "y":
+        type: optional
+        of: integer
+  invalid_spec: type
+  invalid_type: type

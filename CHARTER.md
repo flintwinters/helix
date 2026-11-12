@@ -256,10 +256,10 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Declared types (records, unions, refinements and the rest)
   - [x] Equality on types is defined and documented (`eq` of two types)
   - [x] Functions are first-class values, so a refinement predicate or a type constructor can be stored and passed like a type
-- [ ] Type constructors are ordinary functions from types (and values) to types (`[list_of, t]`, `[with_field, t, name, u]`)
+- [x] Type constructors are ordinary functions from types (and values) to types (`[list_of, t]`, `[with_field, t, name, u]`)
   - [x] Built-in formers accept computed types as arguments, not only literal names
   - [x] A user `fn` that returns a type is usable anywhere a type is expected
-  - [ ] Derive a type from another: add, drop or retype a field; make every field optional
+  - [x] Derive a type from another: add, drop or retype a field; make every field optional
   - [x] Build a type by iteration (`map`/`fold` over a list of field names)
   - [x] A constructor given a non-type argument fails with a `type` error blaming that argument
 - [ ] Reflection: read a type's fields, defaults and parents as data; ask `[is, value, t]` and `[subtype, a, b]`

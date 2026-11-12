@@ -88,7 +88,7 @@ positive: [at_least, 1]
 valid: [is, 5, positive]
 ```
 
-The pure type constructors are `list_of`, `map_of`, `record` (alternating field names and specs), `optional`, `default`, `union`, `enum`, `literal` and `refine`. Records are closed. `fields` returns a record or class's field specs as a map, including optional/default wrappers; `with_field` adds or replaces a record field. `[subtype, a, b]` checks the existing structural type algebra conservatively: arbitrary predicates are not proved equivalent. `[violations, value, t]` returns every nested violation; `[expect, value, t]` returns the value or raises a structured type error containing those violations.
+The pure type constructors are `list_of`, `map_of`, `record` (alternating field names and specs), `optional`, `default`, `union`, `enum`, `literal` and `refine`. Records are closed. `fields` returns a record or class's field specs as a map, including optional/default wrappers; `with_field` adds or replaces a record field. The `std:types` module derives records using ordinary functions: `from_fields(specs)` reconstructs a record from reflection, `without_field(t, name)` drops a field (an absent name is unchanged), and `optional_fields(t)` makes required fields optional while retaining existing optional fields and defaults. These functions preserve field order and return fresh records; projecting a class's fields does not copy its parents, fixed values or provenance. They fold over the existing checked constructors, with no separate type evaluator. `[subtype, a, b]` checks the existing structural type algebra conservatively: arbitrary predicates are not proved equivalent. `[violations, value, t]` returns every nested violation; `[expect, value, t]` returns the value or raises a structured type error containing those violations.
 
 Subtyping uses identity and `any` as the top type. Lists and maps are covariant in their element type. A union is below a type when every alternative is below it; a type is below a union when one alternative covers it. An enum or literal is below a type when every listed value inhabits it. A refinement is below its base; proving a value belongs to a refinement still runs its predicate. Closed records admit no fields outside the target record, each source field must have a subtype of the corresponding target field, and every required target field must be required in the source. Defaults do not change membership. Unproved relationships return `false`; no theorem prover runs for arbitrary predicates.
 
@@ -114,6 +114,7 @@ Standard libraries are Helix source embedded in the executable:
 
 | Import | Exports |
 |--------|---------|
+| `std:types` | `from_fields(specs)`, `without_field(t,name)`, `optional_field(spec)`, `optional_fields(t)` |
 | `std:math` | `number` (numeric type), `abs(n)`, `sign(n)`, `min(a,b)`, `max(a,b)`, `clamp(n,lo,hi)`, `square(n)` |
 | `std:list` | `numbers` (numeric list type), `sum(xs)`, `product(xs)`, `reverse(xs)`, `range(n)` (integers from zero while less than `n`, bounded by the iteration limit), `unique(xs)` (first occurrence, structural/numeric equality), `sort_by(xs, before)` (stable; strict ordering predicate), plus [access, traversal and grouping helpers](#list-helpers) |
 
