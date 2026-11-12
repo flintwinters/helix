@@ -196,6 +196,8 @@ def main() -> int:
         return build()
     if command in ("run", "recover", "resume", "check"):
         return build() or subprocess.call([str(BIN), command, args.file], cwd=ROOT)
+    if command == "sandbox":
+        return build() or subprocess.call([str(BIN), "sandbox", args.root, args.file], cwd=ROOT)
     if command == "std":
         return build() or subprocess.call([str(BIN), "std", *([args.module] if args.module else [])], cwd=ROOT)
     if args.list or args.describe:

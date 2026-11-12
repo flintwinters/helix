@@ -14,6 +14,8 @@ SUITES = {
     "library": "Rust public VM API contracts via cargo test",
     "parser": "YAML syntax, unsupported constructs, paths, and source locations",
     "fuzz": "Bounded fixed-seed token mutations and failure minimization",
+    "permissions": "Embedded-only and confined imports, transitive denial, path and symlink escapes",
+    "resources": "Syntax, graph, recursion, iteration, import and computed-growth boundaries",
     "scale": "Large arithmetic maps with execution-time bounds",
 }
 
@@ -65,6 +67,10 @@ def parser():
     }.items():
         leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} - < program.yaml")
         leaf.add_argument("file", metavar="FILE", help="YAML file, or - for stdin; relative to repository root")
+    sandbox = command(runtime, "sandbox", "Evaluate with file imports confined to ROOT (- denies file imports)",
+                      ["runtime", "sandbox"], "runtime sandbox - program.yaml")
+    sandbox.add_argument("root", metavar="ROOT", help="allowed import directory, or - for embedded modules only")
+    sandbox.add_argument("file", metavar="FILE", help="YAML file, or - for stdin")
     inline = command(runtime, "eval", "Evaluate inline YAML and emit VM state",
                      ["runtime", "eval"], "runtime eval '[add, 20, 22]'")
     inline.add_argument("source", metavar="SOURCE", help="YAML program quoted as one shell argument; use -- before a leading dash")

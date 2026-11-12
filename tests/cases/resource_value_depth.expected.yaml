@@ -1,0 +1,12 @@
+status: error
+error:
+  kind: depth
+  message: value nested deeper than 64 containers
+  path: /2/2
+  line: 1
+  column: 37
+  calls:
+    - path: /2
+      line: 1
+      column: 27
+      function: /2

@@ -1,0 +1,1 @@
+[until, [fn, [s], false], [fn, [s], [concat, s, s]], "x"]

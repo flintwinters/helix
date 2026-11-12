@@ -33,11 +33,13 @@ pub struct Graph {
 }
 
 pub const ROOT: NodeId = 0;
+const MAX_NODES: usize = 100_000;
+pub(crate) const MAX_NESTING: usize = 64;
 
 impl Graph {
     pub fn parse(src: &str) -> Result<Graph, HelixError> {
         let mut builder = Builder::default();
-        Parser::new_from_str(src)
+        let parsed = Parser::new_from_str(src)
             .load(&mut builder, false)
             .map_err(|e| HelixError {
                 kind: "parse".into(),
@@ -46,10 +48,11 @@ impl Graph {
                 path: None,
                 span: span(e.marker()),
                 data: None, calls: Vec::new(), cause: None,
-            })?;
+            });
         if let Some(err) = builder.error {
             return Err(err);
         }
+        parsed?;
         if builder.graph.nodes.is_empty() {
             return Err(HelixError {
                 kind: "parse".into(),
@@ -90,7 +93,10 @@ impl Graph {
 
     /// Append another graph as a detached subtree (its root has no parent) and return its root id.
     /// Used for code that arrives as data, such as a refinement's predicate.
-    pub fn graft(&mut self, other: Graph) -> NodeId {
+    pub fn graft(&mut self, other: Graph) -> Result<NodeId, HelixError> {
+        if self.nodes.len() + other.nodes.len() > MAX_NODES {
+            return Err(self.error(ROOT, "limit", format!("graph exceeds {MAX_NODES} nodes")));
+        }
         let offset = self.nodes.len();
         let shift = |ids: &[NodeId]| ids.iter().map(|id| id + offset).collect::<Vec<_>>();
         for node in other.nodes {
@@ -101,7 +107,7 @@ impl Graph {
             };
             self.nodes.push(Node { kind, parent: node.parent.map(|p| p + offset), span: node.span });
         }
-        offset
+        Ok(offset)
     }
 
     /// Record that the subtree grafted at `root` is the file `name`; its errors report it.
@@ -191,6 +197,9 @@ impl MarkedEventReceiver for Builder {
         if self.error.is_some() {
             return;
         }
+        if self.graph.nodes.len() >= MAX_NODES && matches!(ev, Event::Scalar(..) | Event::SequenceStart(..) | Event::MappingStart(..)) {
+            return self.fail("limit", &format!("graph exceeds {MAX_NODES} nodes"), at);
+        }
         match ev {
             Event::Scalar(text, style, _, _) => {
                 if self.awaiting_key() {
@@ -207,6 +216,9 @@ impl MarkedEventReceiver for Builder {
                 self.add(Kind::Scalar { value, plain }, at);
             }
             Event::SequenceStart(..) | Event::MappingStart(..) => {
+                if self.stack.len() >= MAX_NESTING {
+                    return self.fail("depth", &format!("syntax nested deeper than {MAX_NESTING} containers"), at);
+                }
                 if self.awaiting_key() {
                     return self.fail("unsupported", "mapping keys must be scalars", at);
                 }

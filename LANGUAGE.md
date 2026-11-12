@@ -250,3 +250,11 @@ imports. Imported sources are reloaded and must still be available. Parse/link f
 have no executable checkpoint. Ordinary `run` and `check` output is unchanged.
 Recovery applies only to the current pure evaluator; effectful retry will require the
 complete continuation and effect-state contract in charter section 2.
+
+## Resource bounds and confined loading
+
+Each VM shares budgets across calls, iterations and error recovery: 2,000,000 evaluated node visits and 8,000,000 produced value units. A unit is a scalar/container/key plus the UTF-8 bytes of string/real text; nested values and memoized copies count again. Budget exhaustion is `limit`, not rejection of a value by a declared type. A graph, including imported and reconstructed functions, has at most 100,000 nodes. Syntax and produced values have at most 64 nested containers; import chains at most 64 modules; active evaluation at most 512 nodes. These guards return `depth` or `limit` with source blame. The existing 200-call and 100,000-iteration limits still apply. CLI and library evaluation use a 32 MiB worker stack so the checks do not depend on the caller's thread stack.
+
+`helix sandbox ROOT FILE` (also `./manage.py runtime sandbox ROOT FILE`) loads the main file explicitly supplied by the caller and restricts all file imports to canonical paths below ROOT. ROOT `-` permits only embedded `std:` modules. Path traversal, sibling-prefix and symlink escapes are rejected as `permission` errors at the import argument, including transitive and uncalled imports. Ordinary `run` retains trusted loading. Library callers use `Vm::load_sandboxed(source, optional_file, roots)`; empty roots deny file imports. These permissions are host configuration and are never granted by program/state data.
+
+This is an import capability boundary, not operating-system isolation: a host concurrently replacing directory ancestors can race path authorization. Arbitrarily large source files are read before evaluation limits apply, and these budgets are not a byte-exact heap quota. File writes, network and process effects do not exist yet; they must acquire explicit capabilities before being added. Recovery output is source data and conveys no permission grant.
