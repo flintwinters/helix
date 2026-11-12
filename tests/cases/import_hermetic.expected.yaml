@@ -1,0 +1,8 @@
+status: error
+error:
+  kind: type
+  message: "expected number, got string"
+  file: tests/cases/modules/hermetic.yaml
+  path: /leak/1
+  line: 2
+  column: 13

@@ -1,5 +1,7 @@
 //! The VM: lifecycle status around an evaluator, and the serialized state document.
 
+use std::path::Path;
+
 use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
 
@@ -34,13 +36,24 @@ pub struct Vm {
     status: Status,
     result: Option<Yaml>,
     error: Option<HelixError>,
+
 }
 
 impl Vm {
+    /// Load a program that has no file (stdin); relative imports resolve from the working directory.
     pub fn load(src: &str) -> Vm {
+        Vm::load_from(src, None)
+    }
+
+    /// Load the program in `file`, whose imports resolve relative to it.
+    pub fn load_file(src: &str, file: &Path) -> Vm {
+        Vm::load_from(src, Some(file))
+    }
+
+    fn load_from(src: &str, file: Option<&Path>) -> Vm {
         let mut vm = Vm { evaluator: None, status: Status::Ready, result: None, error: None };
-        match Graph::parse(src) {
-            Ok(graph) => vm.evaluator = Some(Evaluator::new(graph)),
+        match Graph::parse(src).and_then(|graph| Evaluator::new(graph, file)) {
+            Ok(evaluator) => vm.evaluator = Some(evaluator),
             Err(e) => vm.fail(e),
         }
         vm

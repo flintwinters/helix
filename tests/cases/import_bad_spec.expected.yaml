@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: type
+  message: "an import names its module with a literal string such as `lib/x.yaml` or `std:math`"
+  path: /a/1
+  line: 1
+  column: 13

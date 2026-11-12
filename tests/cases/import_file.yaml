@@ -1,0 +1,7 @@
+geo: [import, "modules/geometry.yaml"]
+again: [import, "modules/geometry.yaml"]
+disc: [geo.area, 2]
+constant: geo.pi
+nested: [geo.m.max, 1, 2]
+scoped:
+  [let, {g: [import, "modules/geometry.yaml"]}, [g.area, 3]]

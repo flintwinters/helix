@@ -1,0 +1,2 @@
+# A module sees only its own names, never its importer's.
+leak: [add, secret, 1]

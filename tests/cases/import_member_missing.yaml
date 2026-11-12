@@ -1,0 +1,2 @@
+m: [import, std:math]
+x: [m.nope, 1]

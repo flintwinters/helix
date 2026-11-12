@@ -1,0 +1,5 @@
+# List helpers over plain data. Import with `l: [import, std:list]`, call as `[l.sum, xs]`.
+sum: [fn, [xs], [fold, [fn, [acc, x], [add, acc, x]], 0, xs]]
+product: [fn, [xs], [fold, [fn, [acc, x], [mul, acc, x]], 1, xs]]
+reverse: [fn, [xs], [fold, [fn, [acc, x], [concat, [list, x], acc]], [list], xs]]
+range: [fn, [n], [let, {done: [fn, [xs], [ge, [len, xs], n]], step: [fn, [xs], [append, xs, [len, xs]]]}, [until, done, step, [list]]]]

@@ -1,0 +1,143 @@
+status: finished
+root:
+  math:
+    abs:
+      - fn
+      - - n
+      - - if
+        - - lt
+          - n
+          - 0
+        - - neg
+          - n
+        - n
+    sign:
+      - fn
+      - - n
+      - - cond
+        - - lt
+          - n
+          - 0
+        - -1
+        - - gt
+          - n
+          - 0
+        - 1
+        - 0
+    min:
+      - fn
+      - - a
+        - b
+      - - if
+        - - lt
+          - a
+          - b
+        - a
+        - b
+    max:
+      - fn
+      - - a
+        - b
+      - - if
+        - - gt
+          - a
+          - b
+        - a
+        - b
+    clamp:
+      - fn
+      - - n
+        - lo
+        - hi
+      - - max
+        - lo
+        - - min
+          - n
+          - hi
+    square:
+      - fn
+      - - n
+      - - mul
+        - n
+        - n
+  lists:
+    sum:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - add
+            - acc
+            - x
+        - 0
+        - xs
+    product:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - mul
+            - acc
+            - x
+        - 1
+        - xs
+    reverse:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - concat
+            - - list
+              - x
+            - acc
+        - - list
+        - xs
+    range:
+      - fn
+      - - n
+      - - let
+        - done:
+            - fn
+            - - xs
+            - - ge
+              - - len
+                - xs
+              - n
+          step:
+            - fn
+            - - xs
+            - - append
+              - xs
+              - - len
+                - xs
+        - - until
+          - done
+          - step
+          - - list
+  biggest: 9
+  clipped: 10
+  absolute: 4
+  total: 10
+  product: 24
+  reversed:
+    - 3
+    - 2
+    - 1
+  first_five:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+  squares:
+    - 1
+    - 4
+    - 9
+  negative_sign: -1
+  minimum: 2

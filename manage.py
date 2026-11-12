@@ -3,6 +3,7 @@
 
     ./manage.py build               cargo build
     ./manage.py run FILE            run a program, print its serialized VM state
+    ./manage.py std [MODULE]        list standard modules or print module source
     ./manage.py lint [ARGS...]      structural lint via the hyperlinter submodule (JSON; pass --format=text for people)
     ./manage.py test [--bless]      golden-test every tests/cases/*.yaml (--bless rewrites expectations)
 
@@ -95,6 +96,15 @@ def test(bless: bool) -> int:
         return code
     cases = [c for c in sorted(CASES.glob("*.yaml")) if not c.name.endswith(".expected.yaml")]
     failures = []
+    modules = helix("std")
+    if modules.returncode != 0 or modules.stdout.splitlines() != ["std:math", "std:list"]:
+        failures.append("standard library discovery failed")
+    for source in sorted((ROOT / "std").glob("*.yaml")):
+        shown = helix("std", source.stem)
+        if shown.returncode != 0 or shown.stdout != source.read_text():
+            failures.append(f"{source.name}: standard library source differs")
+    if helix("std", "unknown").returncode != 2:
+        failures.append("unknown standard library must exit with usage error")
     for case in cases:
         expected_path = case.with_suffix(".expected.yaml")
         out = helix("run", str(case.relative_to(ROOT))).stdout
@@ -123,12 +133,15 @@ def main() -> int:
     sub.add_parser("build")
     sub.add_parser("run").add_argument("file")
     sub.add_parser("test").add_argument("--bless", action="store_true")
+    sub.add_parser("std").add_argument("module", nargs="?")
     sub.add_parser("lint", help="forwards all remaining args to hyperlinter")
     args = ap.parse_args()
     if args.cmd == "build":
         return build()
     if args.cmd == "run":
         return build() or subprocess.call([str(BIN), "run", args.file], cwd=ROOT)
+    if args.cmd == "std":
+        return build() or subprocess.call([str(BIN), "std", *([args.module] if args.module else [])], cwd=ROOT)
     return test(args.bless)
 
 

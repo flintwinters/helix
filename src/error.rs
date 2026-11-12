@@ -9,6 +9,9 @@ pub struct HelixError {
     /// Stable machine-readable category; the full list is in `LANGUAGE.md`.
     pub kind: String,
     pub message: String,
+    /// The imported file the error lies in; absent for the program itself. `path`, `line` and
+    /// `column` are relative to that file.
+    pub file: Option<String>,
     /// Root-relative object path of the offending node; absent for parse errors.
     pub path: Option<String>,
     pub span: Span,
@@ -21,6 +24,9 @@ impl HelixError {
         let mut h = Hash::new();
         h.insert(s("kind"), s(&self.kind));
         h.insert(s("message"), s(&self.message));
+        if let Some(file) = &self.file {
+            h.insert(s("file"), s(file));
+        }
         if let Some(path) = &self.path {
             h.insert(s("path"), s(path));
         }

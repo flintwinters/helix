@@ -1,0 +1,2 @@
+secret: 41
+h: [import, "modules/hermetic.yaml"]

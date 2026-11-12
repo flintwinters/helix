@@ -1,0 +1,8 @@
+status: error
+error:
+  kind: import
+  message: "circular import: tests/cases/modules/cycle_a.yaml -> tests/cases/modules/cycle_b.yaml -> tests/cases/modules/cycle_a.yaml"
+  file: tests/cases/modules/cycle_b.yaml
+  path: /a/1
+  line: 1
+  column: 13

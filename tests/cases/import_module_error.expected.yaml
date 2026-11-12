@@ -1,0 +1,8 @@
+status: error
+error:
+  kind: divide_by_zero
+  message: "`div` by zero"
+  file: tests/cases/modules/fails.yaml
+  path: /boom
+  line: 1
+  column: 7

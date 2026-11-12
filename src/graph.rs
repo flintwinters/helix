@@ -1,6 +1,8 @@
 //! The object graph: YAML parsed into an arena of nodes with parent links and source spans.
 //! Parent links define lexical/object resolution; paths are always root-relative.
 
+use std::collections::HashMap;
+
 use yaml_rust2::parser::{Event, MarkedEventReceiver, Parser};
 use yaml_rust2::scanner::{Marker, TScalarStyle};
 use yaml_rust2::Yaml;
@@ -26,6 +28,8 @@ struct Node {
 #[derive(Default)]
 pub struct Graph {
     nodes: Vec<Node>,
+    /// Imported files by the root of the subtree they were grafted as.
+    sources: HashMap<NodeId, String>,
 }
 
 pub const ROOT: NodeId = 0;
@@ -38,6 +42,7 @@ impl Graph {
             .map_err(|e| HelixError {
                 kind: "parse".into(),
                 message: e.to_string(),
+                file: None,
                 path: None,
                 span: span(e.marker()),
                 data: None,
@@ -49,6 +54,7 @@ impl Graph {
             return Err(HelixError {
                 kind: "parse".into(),
                 message: "empty document".into(),
+                file: None,
                 path: None,
                 span: Span { line: 1, col: 1 },
                 data: None,
@@ -98,6 +104,39 @@ impl Graph {
         offset
     }
 
+    /// Record that the subtree grafted at `root` is the file `name`; its errors report it.
+    pub fn set_source(&mut self, root: NodeId, name: String) {
+        self.sources.insert(root, name);
+    }
+
+    /// The imported file `id` belongs to, if it is not part of the main program.
+    pub fn source(&self, id: NodeId) -> Option<&str> {
+        let mut top = id;
+        while let Some(parent) = self.nodes[top].parent {
+            top = parent;
+        }
+        self.sources.get(&top).map(String::as_str)
+    }
+
+    /// An error of `kind` blamed on node `id`, with its path, span and file.
+    pub fn error(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
+        HelixError { kind: kind.into(), message, file: self.source(id).map(str::to_string), path: Some(self.path(id)), span: self.span(id), data: None }
+    }
+
+    /// A plain (unquoted) string, which is a symbol in expression position.
+    pub fn symbol(&self, id: NodeId) -> Option<&str> {
+        match self.kind(id) {
+            Kind::Scalar { value: Yaml::String(name), plain: true } => Some(name),
+            _ => None,
+        }
+    }
+
+    /// The symbol heading a sequence (quoted heads are data).
+    pub fn form(&self, id: NodeId) -> Option<&str> {
+        let Kind::Seq(items) = self.kind(id) else { return None };
+        self.symbol(*items.first()?)
+    }
+
     /// The enclosing container; parent links are what lexical resolution walks.
     pub fn parent(&self, id: NodeId) -> Option<NodeId> {
         self.nodes[id].parent
@@ -120,7 +159,7 @@ struct Builder {
 impl Builder {
     /// Record the first error; `on_event` ignores everything after it.
     fn fail(&mut self, kind: &'static str, message: &str, at: Marker) {
-        self.error = Some(HelixError { kind: kind.into(), message: message.into(), path: None, span: span(&at), data: None });
+        self.error = Some(HelixError { kind: kind.into(), message: message.into(), file: None, path: None, span: span(&at), data: None });
     }
 
     /// Attach a new node to the open container (or make it the root) and return its id.

@@ -115,11 +115,11 @@ A daily driver has to do things.
 
 ## 5. Reuse: programs bigger than one file
 
-- [ ] Import another Helix file
-- [ ] Namespacing and visibility rules
-- [ ] A standard library with a documented, small, stable core
+- [x] Import another Helix file
+- [x] Namespacing and visibility rules
+- [x] A standard library with a documented, small, stable core
 - [ ] Package or dependency story (even a minimal one: pinned path or git refs)
-- [ ] Circular import detection with a useful error
+- [x] Circular import detection with a useful error
 
 ---
 

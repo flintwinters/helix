@@ -1,0 +1,4 @@
+# A user module: a constant, helpers, and an import of its own.
+m: [import, "std:math"]
+pi: 3
+area: [fn, [r], [mul, pi, [m.square, r]]]

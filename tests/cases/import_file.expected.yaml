@@ -1,0 +1,144 @@
+status: finished
+root:
+  geo:
+    m:
+      abs:
+        - fn
+        - - n
+        - - if
+          - - lt
+            - n
+            - 0
+          - - neg
+            - n
+          - n
+      sign:
+        - fn
+        - - n
+        - - cond
+          - - lt
+            - n
+            - 0
+          - -1
+          - - gt
+            - n
+            - 0
+          - 1
+          - 0
+      min:
+        - fn
+        - - a
+          - b
+        - - if
+          - - lt
+            - a
+            - b
+          - a
+          - b
+      max:
+        - fn
+        - - a
+          - b
+        - - if
+          - - gt
+            - a
+            - b
+          - a
+          - b
+      clamp:
+        - fn
+        - - n
+          - lo
+          - hi
+        - - max
+          - lo
+          - - min
+            - n
+            - hi
+      square:
+        - fn
+        - - n
+        - - mul
+          - n
+          - n
+    pi: 3
+    area:
+      - fn
+      - - r
+      - - mul
+        - pi
+        - - m.square
+          - r
+  again:
+    m:
+      abs:
+        - fn
+        - - n
+        - - if
+          - - lt
+            - n
+            - 0
+          - - neg
+            - n
+          - n
+      sign:
+        - fn
+        - - n
+        - - cond
+          - - lt
+            - n
+            - 0
+          - -1
+          - - gt
+            - n
+            - 0
+          - 1
+          - 0
+      min:
+        - fn
+        - - a
+          - b
+        - - if
+          - - lt
+            - a
+            - b
+          - a
+          - b
+      max:
+        - fn
+        - - a
+          - b
+        - - if
+          - - gt
+            - a
+            - b
+          - a
+          - b
+      clamp:
+        - fn
+        - - n
+          - lo
+          - hi
+        - - max
+          - lo
+          - - min
+            - n
+            - hi
+      square:
+        - fn
+        - - n
+        - - mul
+          - n
+          - n
+    pi: 3
+    area:
+      - fn
+      - - r
+      - - mul
+        - pi
+        - - m.square
+          - r
+  disc: 12
+  constant: geo.pi
+  nested: 2
+  scoped: 27

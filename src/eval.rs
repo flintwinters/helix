@@ -6,6 +6,7 @@
 //! bounded by `MAX_DEPTH`.
 
 use std::collections::{HashMap, HashSet};
+use std::path::Path;
 
 use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
@@ -14,6 +15,7 @@ use crate::builtins::{self, Fault};
 use crate::emit;
 use crate::error::{s, HelixError};
 use crate::graph::{Graph, Kind, NodeId, ROOT};
+use crate::link::{self, Modules};
 
 /// Nested user-function calls allowed before failing with a `depth` error.
 const MAX_DEPTH: usize = 200;
@@ -47,15 +49,19 @@ pub struct Evaluator {
     frames: Vec<Frame>,
     /// Predicate sources (refinement checks) grafted into the graph, by their emitted text.
     grafts: HashMap<String, NodeId>,
+    /// The modules the program imports.
+    modules: Modules,
 }
 
 impl Evaluator {
-    pub fn new(graph: Graph) -> Evaluator {
-        Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: HashMap::new() }
+    /// Take a parsed program and link its imports; `main` is the program's file, when it has one.
+    pub fn new(mut graph: Graph, main: Option<&Path>) -> Result<Evaluator, HelixError> {
+        let modules = link::link(&mut graph, main)?;
+        Ok(Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: HashMap::new(), modules })
     }
 
     fn err(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
-        HelixError { kind: kind.into(), message, path: Some(self.graph.path(id)), span: self.graph.span(id), data: None }
+        self.graph.error(id, kind, message)
     }
 
     /// Evaluate a node to plain YAML data. A node that needs its own value within one call is a `cycle`.
@@ -101,24 +107,10 @@ impl Evaluator {
         }
     }
 
-    /// A plain (unquoted) string, which is a symbol in expression position.
-    fn symbol(&self, id: NodeId) -> Option<&str> {
-        match self.graph.kind(id) {
-            Kind::Scalar { value: Yaml::String(name), plain: true } => Some(name),
-            _ => None,
-        }
-    }
-
-    /// The symbol heading a sequence (quoted heads are data).
-    fn form(&self, id: NodeId) -> Option<&str> {
-        let Kind::Seq(items) = self.graph.kind(id) else { return None };
-        self.symbol(*items.first()?)
-    }
-
     /// A sequence is an expression iff its head names a builtin or a user function.
     fn actor(&self, items: &[NodeId]) -> Option<Actor> {
         let head = *items.first()?;
-        let name = self.symbol(head)?;
+        let name = self.graph.symbol(head)?;
         if builtins::arity(name).is_some() {
             return Some(Actor::Builtin(name.to_string()));
         }
@@ -127,7 +119,7 @@ impl Evaluator {
 
     /// The well-formed `[fn, params, body]` that `id` designates: itself, or the one a symbol names.
     fn function(&self, id: NodeId) -> Option<NodeId> {
-        let target = match self.symbol(id) {
+        let target = match self.graph.symbol(id) {
             Some(name) => match self.resolve(id, name)? {
                 Binding::Node(target) => target,
                 Binding::Value(_) => return None,
@@ -135,14 +127,14 @@ impl Evaluator {
             None => id,
         };
         let Kind::Seq(items) = self.graph.kind(target) else { return None };
-        (matches!(items.len(), 3 | 4) && self.form(target) == Some("fn")).then_some(target)
+        (matches!(items.len(), 3 | 4) && self.graph.form(target) == Some("fn")).then_some(target)
     }
 
     /// Whether `id` sits inside some `fn` form, so its value depends on a call.
     fn in_function(&self, id: NodeId) -> bool {
         let mut cur = self.graph.parent(id);
         while let Some(parent) = cur {
-            if self.form(parent) == Some("fn") {
+            if self.graph.form(parent) == Some("fn") {
                 return true;
             }
             cur = self.graph.parent(parent);
@@ -159,22 +151,44 @@ impl Evaluator {
         params
             .iter()
             .map(|&p| match self.graph.kind(p) {
-                Kind::Seq(pair) if pair.len() == 2 => Ok((self.symbol(pair[0]).ok_or_else(malformed)?, Some(pair[1]))),
-                _ => Ok((self.symbol(p).ok_or_else(malformed)?, None)),
+                Kind::Seq(pair) if pair.len() == 2 => Ok((self.graph.symbol(pair[0]).ok_or_else(malformed)?, Some(pair[1]))),
+                _ => Ok((self.graph.symbol(p).ok_or_else(malformed)?, None)),
             })
             .collect()
     }
 
+    /// Resolve `name` from `from`. A dotted name that is not itself bound is a path: its first part
+    /// resolves lexically and each further part selects a map entry, entering an imported module
+    /// where the path reaches an `[import, ...]` form (`math.square`, `config.port`).
+    fn resolve(&self, from: NodeId, name: &str) -> Option<Binding> {
+        if let Some(found) = self.resolve_name(from, name) {
+            return Some(found);
+        }
+        let (head, rest) = name.split_once('.')?;
+        let Some(Binding::Node(mut node)) = self.resolve_name(from, head) else { return None };
+        for part in rest.split('.') {
+            node = self.member(node, part)?;
+        }
+        Some(Binding::Node(node))
+    }
+
+    /// The entry `key` of the map at `id`, or of the module an import form at `id` loads.
+    fn member(&self, id: NodeId, key: &str) -> Option<NodeId> {
+        let id = self.modules.root_of(id).unwrap_or(id);
+        let Kind::Map(entries) = self.graph.kind(id) else { return None };
+        entries.iter().find(|(k, _)| k == key).map(|(_, target)| *target)
+    }
+
     /// Lexical resolution from `from`: the nearest enclosing map entry, parameter of an enclosing
     /// `fn` (read from its innermost active call), or binding of an enclosing `let` named `name`.
-    fn resolve(&self, from: NodeId, name: &str) -> Option<Binding> {
+    fn resolve_name(&self, from: NodeId, name: &str) -> Option<Binding> {
         let entry = |entries: &[(String, NodeId)]| entries.iter().find(|(k, _)| k == name).map(|(_, target)| Binding::Node(*target));
         let mut child = from;
         while let Some(id) = self.graph.parent(child) {
             let found = match self.graph.kind(id) {
                 Kind::Map(entries) => entry(entries),
                 // Parameters and `let` bindings are in scope only in the body, the third item.
-                Kind::Seq(items) if items.get(2) == Some(&child) => match (self.form(id), self.graph.kind(items[1])) {
+                Kind::Seq(items) if items.get(2) == Some(&child) => match (self.graph.form(id), self.graph.kind(items[1])) {
                     (Some("fn"), _) => self.parameters(id).ok().and_then(|params| params.iter().position(|(p, _)| *p == name)).and_then(|i| {
                         let frame = self.frames.iter().rev().find(|f| f.function == id)?;
                         Some(Binding::Value(frame.args[i].clone()))
@@ -190,8 +204,9 @@ impl Evaluator {
             child = id;
         }
         // Code grafted in as data (a refinement's predicate) is detached; it sees the document root.
+        // A module is detached too, but its names are its own.
         match self.graph.kind(ROOT) {
-            Kind::Map(entries) if child != ROOT => entry(entries),
+            Kind::Map(entries) if child != ROOT && !self.modules.is_root(child) => entry(entries),
             _ => None,
         }
     }
@@ -386,6 +401,10 @@ impl Evaluator {
                 }
                 builtins::refine(base, self.raw(function)).map_err(|fault| self.from_fault(id, args, fault))
             }
+            "import" => match self.modules.root_of(id) {
+                Some(root) => self.eval(root),
+                None => Err(self.err(id, "import", "an import must be a literal `[import, SPEC]` in the program or a module it imports".into())),
+            },
             "try" => match self.value_arg(args[0]) {
                 Ok(value) => Ok(value),
                 Err(error) => self.call_arg(args[1], vec![error.to_yaml()]),
@@ -423,7 +442,7 @@ impl Evaluator {
     /// Evaluate an expression argument: plain strings are symbols. Functions are not values; they
     /// may only head a call or be passed where a form expects one.
     fn value_arg(&mut self, id: NodeId) -> Result<Yaml, HelixError> {
-        let target = match self.symbol(id) {
+        let target = match self.graph.symbol(id) {
             Some(name) => match self.resolve(id, name) {
                 Some(Binding::Node(target)) => target,
                 Some(Binding::Value(value)) => return Ok(value),
@@ -432,7 +451,7 @@ impl Evaluator {
             },
             None => id,
         };
-        if self.form(target) == Some("fn") {
+        if self.graph.form(target) == Some("fn") {
             return Err(self.err(id, "type", "a function is not a value; call it or pass it to a form that takes one".into()));
         }
         self.eval(target)
