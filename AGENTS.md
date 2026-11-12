@@ -17,7 +17,7 @@ The ultimate niche is declarative machine configuration (where Nix and Ansible s
 
 ## Architecture
 
-Rust crate `helix` exposes a public VM library, the state-oriented `helix` CLI, and the pipeline executable `hx`. `./manage.py` is the single project-tooling entrypoint; its discoverable command tree is authoritative.
+Rust crate `helix` exposes a public VM library and the unified `helix` language CLI (including raw-result `exec` pipelines). `./manage.py` is the single project-tooling entrypoint; its discoverable command tree is authoritative.
 
 - `src/graph.rs`: YAML (via `yaml-rust2` events) into an arena of nodes with parent links and 1-indexed line/column spans; root-relative paths (`/inner/y/1`); parent links support lexical resolution through enclosing maps.
 - `src/vm.rs`: `Vm` with the five statuses and `state()` serialization (`status` plus `root` or `error`), around an `Evaluator`. `Vm::check` / `helix check` collect independent errors with the same pure evaluator, emitting `phase: type` and `errors`; `tests/check/` holds check-command golden cases. This is evaluation, not static checking of uncalled bodies.
@@ -60,7 +60,7 @@ The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items 
 
 ## CLI Quick Reference
 
-- `hx [PROGRAM | -]` is the pipeline executable: inline source or stdin, raw string results (no added newline), other results through the shared YAML emitter. Evaluation failures emit VM state only on stderr and exit 1; usage/read failures exit 2. `helix run` retains its state envelope. Verify with `./manage.py test --suite pipeline`.
+- `helix exec [PROGRAM | -]` is the pipeline command: inline source or stdin, raw string results (no added newline), other results through the shared YAML emitter. Evaluation failures emit VM state only on stderr and exit 1; usage/read failures exit 2. `helix run` retains its state envelope. All language behavior belongs in the `helix` dispatcher; `manage.py runtime exec` builds and forwards pipeline execution. Verify with `./manage.py test --suite pipeline`.
 
 - `./manage.py` shows the command tree: `build`, `runtime` (execution/recovery), `inspect` (modules/inventory), `quality` (test/lint). Append `--help` at any level; flat commands remain equivalent shortcuts.
 - `./manage.py test --suite startup` checks discovery import boundaries without compiling or running Helix.

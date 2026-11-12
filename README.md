@@ -7,23 +7,28 @@ The central idea is that program source and machine state should share one reada
 ## Try it
 
 For shell pipelines, build with `./manage.py build` and put `target/debug` on your
-`PATH` (or install both executables with `cargo install --path .`). Then:
+`PATH` (or install the executable with `cargo install --path .`). Then:
 
 ```sh
-hx '"[add, 20, 22]"' | hx
+helix exec '"[add, 20, 22]"' | helix exec
 # 42
-hx '[add, 20, 22]'
+helix exec '[add, 20, 22]'
 # 42
 ```
 
-`hx [PROGRAM | -]` evaluates inline YAML, or reads a program from stdin when no
-argument is given. It emits string results verbatim, without added quotes or a
+`helix exec [PROGRAM | -]` evaluates inline YAML, or reads a program from stdin
+when its program argument is omitted. It emits string results verbatim, without added quotes or a
 newline, and other values as YAML using the normal round-trip emitter. A string
-containing program source therefore becomes executable input to the next `hx`.
+containing program source therefore becomes executable input to the next `helix exec`.
 Errors go to stderr as structured VM state, leave stdout empty, and exit 1;
 usage/read errors exit 2. Use `set -o pipefail` to detect failures anywhere in a
 shell pipeline. Imports resolve from the working directory. `helix run` continues
 to emit full VM state for inspection and recovery.
+
+`helix` is the single language executable: `exec`, `run`, `check`, `recover`,
+`resume`, `sandbox`, and `std` share the same dispatcher and VM. Run `helix --help`
+to discover them. During development, `./manage.py runtime exec PROGRAM` builds
+and invokes the same pipeline command; omitting `PROGRAM` reads stdin.
 
 You need Rust with Cargo (supporting the 2024 edition), Python 3.10 or newer, and [PyYAML](https://pypi.org/project/PyYAML/). Help, command discovery, builds, and runtime invocation work without PyYAML; tests and inventory use it.
 
@@ -122,7 +127,7 @@ Evidence for the same case and stage is replaced on the next failure.
 
 Linting uses the [hyperlinter](https://github.com/flintwinters/hyperlinter) submodule and requires Git, Node.js, and npm. The lint command initializes the submodule and installs its dependencies when needed.
 
-The Rust crate exposes a library and two executables (`helix` and `hx`). The source is organized around:
+The Rust crate exposes a library and one executable (`helix`). The source is organized around:
 
 | Path | Responsibility |
 | --- | --- |
@@ -132,7 +137,7 @@ The Rust crate exposes a library and two executables (`helix` and `hx`). The sou
 | `src/vm.rs` | VM lifecycle and serialized state |
 | `src/link.rs`, `src/library.rs`, `std/` | File imports and embedded Helix libraries |
 | `src/emit.rs`, `src/error.rs` | Round-trippable YAML output and structured diagnostics |
-| `src/main.rs`, `src/bin/hx.rs` | State-oriented CLI and raw-result pipeline CLI |
+| `src/main.rs` | Unified language CLI: execution, pipelines, checking, recovery and module discovery |
 | `tests/` | Golden states, Helix test modules, Python contracts, and Rust VM tests |
 
 Read [AGENTS.md](AGENTS.md) for architectural invariants and change discipline.
@@ -181,7 +186,7 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | First-class type regions, phase-local errors, run/check parity, file-input exclusion and bounded evaluation | `type_time`; `tests/suites/type_time.py` plus type golden cases | File imports are conservatively excluded from programs using explicit type regions |
 | Truncations and deletions produce structured states, no crashes | `robustness`; every golden source | Finite mutations are not a proof of panic freedom |
 | Discovery pairs, invalid states, timeout/crash detection, wrong golden results, broken reload comparison | `harness`; synthetic fixtures and subprocess faults | Compiled faults are checked by `mutants` |
-| Usage errors, inaccessible files, run/check files versus stdin, discovery, and recovery | `cli` | `hx` and project tooling support successful help; the `helix` CLI has usage-only help; no shell completion |
+| Usage errors, inaccessible files, run/check files versus stdin, discovery, and recovery | `cli` | Language and project CLIs support successful help; no shell completion |
 | Inline/stdin programs, raw string output, YAML round trips, structured stderr and shell pipes | `pipeline`; `tests/suites/pipeline.py` | No shell completion or platform-wide shell matrix |
 | Function declaration locations, imported call chains, caught errors and re-raised causes | `errors`; `tests/suites/errors.py` | Pure recovery; no effect or suspended-call diagnostics |
 | Integer expression trees versus Python, list sums/reversal laws, Unicode/nested literal save cycles | `generated`; seed 714209 | Bounded integers and exact binary fractions; general float/callable generation remains open |
@@ -276,7 +281,7 @@ suspended execution format is promised. Import permissions are available; other 
 
 ### Unreleased
 
-- Added `hx` for raw-result shell pipelines, discoverable project commands, pure recovery/retry, type-time regions, and YAML data helpers.
+- Added `helix exec` for raw-result shell pipelines, discoverable project commands, pure recovery/retry, type-time regions, and YAML data helpers.
 - Added guarded runtime execution, import confinement, actor/arity census, nested-type oracles, composed feature tests, compiled mutation checks and Linux peak-RSS regressions.
 
 - Added selectable contract suites, subprocess timeouts, harness self-tests and

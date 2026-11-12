@@ -81,7 +81,7 @@ def cli(h):
     verify_recovery(h)
     from tests.suites.inventory import verify
     verify(h)
-    for args in [(), ("unknown",), ("--help",), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
+    for args in [(), ("unknown",), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
         result = h.helix(*args)
         assert result.returncode == 2 and not result.stdout and result.stderr, (args, result)
     missing = h.helix("run", "runtime/definitely-missing-helix-input.yaml")

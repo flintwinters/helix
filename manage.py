@@ -117,7 +117,6 @@ def test(bless: bool, suites: list[str] | None = None) -> int:
         original = BIN
         snapshot = Path(directory) / "helix"
         shutil.copy2(original, snapshot)
-        shutil.copy2(original.with_name("hx"), snapshot.with_name("hx"))
         BIN = snapshot
         try:
             return regression(bless, suites)
@@ -205,6 +204,8 @@ def main() -> int:
             return code
         return subprocess.run([str(BIN), "check" if args.check else "run", "-"],
                               input=args.source, text=True, cwd=ROOT).returncode
+    if command == "exec":
+        return build() or subprocess.call([str(BIN), "exec", "--", args.source], cwd=ROOT)
     if command == "inventory":
         from tooling.inventory import inventory
         return build() or inventory(helix, ROOT)

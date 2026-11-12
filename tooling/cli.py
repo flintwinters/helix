@@ -10,7 +10,7 @@ SUITES = {
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",
     "cli": "Runtime and project CLI contracts, imports, inventory, and recovery",
-    "pipeline": "hx inline/stdin execution, raw strings, YAML results, errors and shell pipes",
+    "pipeline": "helix exec inline/stdin execution, raw strings, YAML results, errors and shell pipes",
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
     "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",
     "errors": "Navigable function definitions, imported call chains, caught errors and causes",
@@ -69,6 +69,9 @@ def parser():
     }.items():
         leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} - < program.yaml")
         leaf.add_argument("file", metavar="FILE", help="YAML file, or - for stdin; relative to repository root")
+    pipeline = command(runtime, "exec", "Evaluate inline YAML or stdin; emit raw strings or YAML values",
+                       ["runtime", "exec"], "runtime exec '\"[add, 20, 22]\"' | ./manage.py runtime exec")
+    pipeline.add_argument("source", nargs="?", default="-", metavar="PROGRAM", help="inline YAML, or - for stdin (default)")
     inline = command(runtime, "eval", "Evaluate inline YAML and emit VM state",
                      ["runtime", "eval"], "runtime eval '[add, 20, 22]'")
     inline.add_argument("source", metavar="SOURCE", help="YAML program quoted as one shell argument; use -- before a leading dash")
