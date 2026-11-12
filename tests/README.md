@@ -54,6 +54,7 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 
 | Contract and exercised failure paths | Suite / authoritative fixtures | Known gaps |
 | --- | --- | --- |
+| Explicit call/reference/literal forms, style-independent scalar meaning, canonical map order, standard tags and acyclic aliases | `yaml_model`; `tests/suites/yaml_model.py` | Cyclic aliases, custom tags and non-string keys are deliberately unsupported |
 | Language results, structured errors, deterministic output, saved-root fixpoints | `golden`; `tests/cases/`, `tests/check/` | Not every builtin/type/arity combination has a case |
 | First-class type regions, phase-local errors, run/check parity, file-input exclusion and bounded evaluation | `type_time`; `tests/suites/type_time.py` plus type golden cases | File imports are conservatively excluded from programs using explicit type regions |
 | Truncations and deletions produce structured states, no crashes | `robustness`; every golden source | Finite mutations are not a proof of panic freedom |
@@ -62,7 +63,7 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | Inline/stdin programs, raw string output, YAML round trips, structured stderr and shell pipes | `pipeline`; `tests/suites/pipeline.py` | No shell completion or platform-wide shell matrix |
 | Function declaration locations, imported call chains, caught errors and re-raised causes | `errors`; `tests/suites/errors.py` | Pure recovery; no effect or suspended-call diagnostics |
 | Integer expression trees versus Python, list sums/reversal laws, Unicode/nested literal save cycles | `generated`; seed 714209 | Bounded integers and exact binary fractions; general float/callable generation remains open |
-| YAML toolkit scalar types, block/flow syntax, Unicode/controls, rejection cases, deterministic mutations, nested paths and parser bounds | `dogfood`; `tests/dogfood/yaml/` | Helix data subset; aliases, explicit tags and container keys rejected; no claim of full YAML conformance |
+| YAML toolkit scalar types, block/flow syntax, Unicode/controls, rejection cases, deterministic mutations, nested paths and parser bounds | `dogfood`; `tests/dogfood/yaml/` | Helix data subset supports bounded acyclic aliases and standard tags; cyclic aliases, custom tags and non-string keys are rejected |
 | Helix assertions, bounded collection laws, nested reports, runner failures | `dogfood`; `tests/dogfood/` | Explicit finite samples; no automatic random generation or shrinking |
 | Shared import dependencies, cycles, missing/malformed files, isolation and imported blame | `imports`; generated file trees | Symlink/path-platform combinations not exhaustive |
 | Independent VMs, repeated run, terminal failures, successful and failing check | `library`; `tests/vm.rs` | Disk restoration is not implemented |

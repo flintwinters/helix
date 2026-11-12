@@ -44,14 +44,13 @@ def collect_cases(check, cases, jobs):
 
 
 def root_section(state: str) -> str | None:
-    """Re-executable ordinary-data root; named object graphs are inspection only."""
+    """Extract ordinary root YAML for literal replay; object graphs are inspection only."""
     import yaml
 
     # Unicode line separators inside quoted scalars are not YAML physical lines.
     lines = state.split("\n")
-    if not lines or lines[0] != "status: finished":
-        return None
-    if "objects" in yaml.safe_load(state):
+    value = yaml.safe_load(state)
+    if not isinstance(value, dict) or value.get("status") != "finished" or "objects" in value:
         return None
     index = next((i for i, line in enumerate(lines)
                   if line == "root:" or line.startswith("root: ")), None)
@@ -130,9 +129,9 @@ class TestContext:
         """Generate damaged inputs in Helix, keeping generator failures host-visible."""
         import yaml
 
-        # YAML escapes preserve astral characters and Unicode line separators.
-        literal = yaml.safe_dump(source, default_style='"', allow_unicode=False).strip()
-        program = '[let, {fuzz: [import, "std:fuzz"]}, [fuzz.plan, ' + literal + ']]'
+        program = yaml.safe_dump({"$call": ["let", {
+            "fuzz": {"$call": ["import", "std:fuzz"]},
+        }, {"$call": ["fuzz.plan", source]}]}, allow_unicode=False)
         result = self.helix("run", "-", stdin=program)
         problem = self.malformed_state(result.stdout, result.returncode)
         if problem is None and (result.returncode != 0 or result.stderr):
@@ -199,10 +198,13 @@ class TestContext:
                                          command, run, expected=expected_path.read_text() if expected_path.exists() else ""))
             return failures
         if (program := self.root_section(out)) is not None:
-            reloaded = self.helix("run", "-", stdin=program)
+            from textwrap import indent
+
+            replay = "$literal:\n" + indent(program, "  ")
+            reloaded = self.helix("run", "-", stdin=replay)
             if self.root_section(reloaded.stdout) != program or reloaded.returncode != 0:
                 failures.append(test_failure(self.root, case, "roundtrip", "emitted root is not stable",
-                                             "run", reloaded, source=program, expected=out))
+                                             "run", reloaded, source=replay, expected=out))
         return failures
 
     def regression(self, bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_JOBS,
@@ -219,7 +221,7 @@ class TestContext:
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 try:
                     failures = check()
-                except Exception:
+                except (Exception, SystemExit):
                     import traceback
                     failures = [traceback.format_exc()]
             results.append({"suite": name, "status": "failed" if failures else "passed",

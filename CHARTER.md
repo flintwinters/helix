@@ -41,7 +41,7 @@ Reversibility is a promise type. A machine that mixes in this promise must expos
 - [ ] Source locations preserved on evaluated values, not only on errors
 - [ ] State diffs read well in `git diff` (stable key order, minimal churn)
 - [ ] Versioned state format with a clear migration story
-- [ ] Anchors, aliases and non-scalar keys: decided and supported (or deliberately rejected)
+- [x] YAML representation boundaries decided: bounded acyclic aliases and standard tags are supported; cyclic aliases, custom tags and non-string keys are rejected (`yaml_model` golden and conformance suite).
 
 ---
 
