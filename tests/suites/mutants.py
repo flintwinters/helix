@@ -5,6 +5,8 @@ import json
 import os
 import shutil
 import subprocess
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 from tests.suites import contracts
@@ -19,22 +21,21 @@ MUTATIONS = [
 
 def verify(h):
     base = h.ROOT / "runtime" / "mutants"
-    workspace = base / "workspace"
     base.mkdir(exist_ok=True)
-    if workspace.exists():
-        shutil.rmtree(workspace)
+    run_directory = Path(tempfile.mkdtemp(dir=base, prefix="run-"))
+    workspace = run_directory / "workspace"
     workspace.mkdir()
     for name in ("src", "std"):
         shutil.copytree(h.ROOT / name, workspace / name)
     for name in ("Cargo.toml", "Cargo.lock"):
         shutil.copy2(h.ROOT / name, workspace / name)
-    target = base / "target"
+    target = run_directory / "target"
     env = {**os.environ, "CARGO_TARGET_DIR": str(target)}
     reports = []
     def build(label):
         result = subprocess.run(["cargo", "build", "--offline", "--quiet"], cwd=workspace,
                                 env=env, text=True, capture_output=True, timeout=120)
-        (base / f"{label}.build.log").write_text(result.stdout + result.stderr)
+        (run_directory / f"{label}.build.log").write_text(result.stdout + result.stderr)
         assert result.returncode == 0, f"{label}: build failed, not a killed mutation; see runtime/mutants/"
     def run(suite):
         output = io.StringIO()
@@ -51,7 +52,7 @@ def verify(h):
         build("control")
         for suite in {mutation[-1] for mutation in MUTATIONS}:
             failed, log = run(suite)
-            (base / f"control-{suite}.log").write_text(log)
+            (run_directory / f"control-{suite}.log").write_text(log)
             assert not failed, f"unmodified {suite} fails; cannot assess mutation sensitivity"
         for label, filename, before, after, suite in MUTATIONS:
             path = workspace / filename
@@ -61,7 +62,7 @@ def verify(h):
                 path.write_text(original.replace(before, after))
                 build(label)
                 failed, log = run(suite)
-                (base / f"{label}.{suite}.log").write_text(log)
+                (run_directory / f"{label}.{suite}.log").write_text(log)
                 reports.append({"mutation": label, "file": filename, "suite": suite, "killed": failed})
                 assert failed, f"{label} survived {suite}; see runtime/mutants/"
                 print(f"mutants: {suite} rejected compiled {label} fault")
@@ -70,4 +71,6 @@ def verify(h):
                 # Rebuild the control between mutations so faults cannot accidentally combine.
                 build("restored")
     finally:
-        (base / "report.json").write_text(json.dumps(reports, indent=2) + "\n")
+        (base / "report.json").write_text(json.dumps({"run_directory": str(run_directory), "mutations": reports}, indent=2) + "\n")
+        if len(reports) == len(MUTATIONS) and all(row["killed"] for row in reports):
+            shutil.rmtree(target)
