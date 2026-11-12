@@ -454,6 +454,38 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 
 ---
 
+## 10. Super dogfood
+
+Implement Helix's own language services and development workflows in Helix. The goal is to replace host implementations with ordinary, inspectable Helix modules, beyond merely writing example programs. Start with pure policy over data; keep a small Rust bootstrap for parsing, primitive values and operations, evaluation, source attribution, and effect execution until a replacement can preserve their contracts.
+
+### Already within reach of the pure core
+
+- [x] Standard-library arithmetic and list helpers are Helix source: `std/math.yaml` and `std/list.yaml` already implement min/max/clamp, sum/product/reverse/range, exercised by the standard-library golden cases. Extend these modules rather than adding equivalent Rust builtins.
+- [ ] Collection and text algorithms: sorting, grouping, deduplication, map merge/removal, splitting and joining as imported Helix functions over the existing collection primitives. Reuse the algorithms in the dogfooding cases; document copying costs and iteration limits before treating them as general-purpose library functions.
+- [ ] Configuration diff, dependency ordering and validation reports as reusable Helix modules, extracted from the existing dogfooding cases. Their policies and error recovery belong in Helix; primitive lookup, equality and structured error attribution remain runtime services.
+- [ ] Type descriptor construction and transformation: build list/map/record/union/optional/default descriptions and derive fields with Helix functions over plain maps and lists. Replace the corresponding policy in `src/builtins/typing/construct.rs` once type-value validation and call compatibility are preserved; checking defaults depends on the checker below.
+- [ ] Drift and convergence planning: replace the pure comparison and plan construction in `src/builtins/typing/machine.rs` with Helix modules, using desired and observed maps as inputs. Preserve missing versus null, stable step order, extra-field policy and empty plans for conforming inputs. Observation and application stay separate effects.
+
+### Next: types and callable values make the larger pieces practical
+
+The working tree contains Rust type, class and callable-value work beyond the established pure core. These are migration candidates, not claims that the complete section 8 contract already works.
+
+- [ ] Type validation and checking: move descriptor traversal, nested violation collection, unions, records and refinement orchestration from `src/builtins/typing/ty.rs` into Helix. Needs dependable primitive type inspection and first-class predicate calls; preserve declaration errors versus rejected values versus failed predicates, bounded traversal, deterministic diagnostics and source blame. Keep one authoritative checker used by both annotations and explicit checks.
+- [ ] Class composition and realization: implement inheritance conflict detection, defaults, required-field checks, flattening and provenance from `src/builtins/typing/class.rs` in Helix, building on the shared checker and the supported subtype rules. Requires callable predicates and sufficient provenance reflection; preserve explicit conflict resolution and parent-order independence. Future algebra and subtyping policy should live beside this code rather than grow another Rust policy engine.
+- [ ] Machine vocabulary and planning policy: declare packages/files/services/users, fleet constraints, dependency ordering and plan validation in Helix (section 8). Given typed observations, compute the complete plan as data; host adapters expose narrowly defined effects. Resume and retry policy can follow once pending effects and continuations serialize (section 2).
+
+### With a few explicit runtime services
+
+- [ ] Canonical formatting and state inspection: implement layout, state summaries and eventually migrations in Helix. Replacing `src/emit.rs` needs lossless scalar/source reflection, scalar-to-text and escaping support, plus a bootstrap output path that does not recursively invoke the formatter. Preserve quoted literals, expression heads, source spans and the existing round-trip fixpoint.
+- [ ] Static checks as Helix graph passes: dependency/cycle diagnostics, annotation discovery and type reports for `helix check`. Requires access to the unevaluated graph, parent links, paths and spans without triggering effects; reuse the authoritative checker. Runtime cycle guards and resource limits remain enforced by the bootstrap.
+- [ ] Test and task orchestration: express case discovery, golden comparison, round-trip checks, mutation generation and build/lint invocation in Helix once file, process, argument and parsing effects exist (section 3). Keep `./manage.py` as the obvious root entrypoint and bootstrap launcher; replace its orchestration behind that interface rather than create a competing workflow. Host-level crash checks must still detect a broken interpreter.
+
+### Migration bar
+
+Move one complete responsibility at a time: a Helix module becomes the authoritative implementation, production callers use it, and the replaced Rust policy is removed. A forwarding wrapper around the same Rust implementation does not count. Preserve public syntax, structured errors, locations and state round trips; prove parity through `./manage.py test` golden cases, malformed-input coverage where applicable, and realistic size checks. A temporary comparison against the old implementation can establish parity, but must not leave two policy engines to maintain. Defer a self-interpreter or YAML parser rewrite until lossless graph reflection, explicit continuations and bootstrap recovery make it a concrete improvement.
+
+---
+
 ## Open questions
 
 Decide these before the features that depend on them.
