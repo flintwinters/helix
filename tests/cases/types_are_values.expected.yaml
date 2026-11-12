@@ -1,0 +1,25 @@
+status: finished
+root:
+  kinds:
+    - "integer"
+    - string
+    - list
+  by_map:
+    port: integer
+    name: string
+  check:
+    - fn
+    - - v
+      - t
+    - - is
+      - v
+      - t
+  bound: true
+  via_fn: true
+  mismatch: false
+  from_type: true
+  anything: true
+  stored:
+    - true
+    - false
+    - false

@@ -1,0 +1,7 @@
+status: error
+error:
+  kind: type
+  message: "unknown type `port`"
+  path: /unknown/2
+  line: 1
+  column: 18

@@ -68,7 +68,7 @@ No implicit conversion, with one exception: **numeric promotion**. `int` op `int
 | `[keys, map]` | list of keys |
 | `[has, x, y]` | map: key present; list: element present (by `eq`); string: substring present |
 
-**Conversion and inspection**: `[str, scalar]`, `[int, x]` (floats truncate toward zero; strings must parse), `[float, x]`, `[type, x]` (`integer`, `float`, `string`, `boolean`, `null`, `list`, `map`).
+**Conversion and inspection**: `[str, scalar]`, `[int, x]` (floats truncate toward zero; strings must parse), `[float, x]`, `[type, x]` (`integer`, `float`, `string`, `boolean`, `null`, `list`, `map`). A type is a value: the string `type` returns. `[is, x, t]` tests `x` against type name `t` (or `any`); an unknown name is a `type` error.
 
 ## Error kinds
 

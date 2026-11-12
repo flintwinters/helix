@@ -189,7 +189,7 @@ A type should read like the value it describes with the specifics left open: som
 
 "First-class" means there is no type-level language: whatever can be done with a number or a map can be done with a type, using the functions, `let`, iteration and errors that already exist. Abstraction over types is therefore just a function that returns a type, which is how Helix avoids the templating (Jinja in Ansible) and the bespoke module machinery other tools grow. Type time is not a different interpreter; it is ordinary evaluation run under a stricter contract (pure, no effects, bounded), and that contract is what makes a type trustworthy to compute before a machine is involved. Functions themselves are not yet first-class values (see `AGENTS.md`), so that gap has to close on the way here.
 
-- [ ] Types are values: bind them with `let`, pass them to and return them from functions, store them in lists and maps
+- [x] Types are values: bind them with `let`, pass them to and return them from functions, store them in lists and maps (scalar/collection type names only so far)
 - [ ] Type constructors are ordinary functions from types (and values) to types (`[list_of, t]`, `[with_field, t, name, u]`)
 - [ ] Reflection: read a type's fields, defaults and parents as data; ask `[is, value, t]` and `[subtype, a, b]`
 - [ ] Type-time evaluation: a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly

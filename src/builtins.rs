@@ -25,7 +25,7 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("map", 2, Some(2)), ("filter", 2, Some(2)), ("fold", 3, Some(3)), ("each", 2, Some(2)), ("until", 3, Some(3)),
     ("len", 1, Some(1)), ("concat", 2, None), ("slice", 3, Some(3)), ("get", 2, Some(3)), ("set", 3, Some(3)),
     ("append", 2, None), ("keys", 1, Some(1)), ("has", 2, Some(2)),
-    ("str", 1, Some(1)), ("int", 1, Some(1)), ("float", 1, Some(1)), ("type", 1, Some(1)),
+    ("str", 1, Some(1)), ("int", 1, Some(1)), ("float", 1, Some(1)), ("type", 1, Some(1)), ("is", 2, Some(2)),
     ("assert", 1, Some(2)), ("raise", 1, Some(3)), ("try", 2, Some(2)),
 ];
 
@@ -49,6 +49,7 @@ pub fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
         "len" | "concat" | "slice" | "get" | "set" | "append" | "keys" | "has" => collection::apply(actor, args),
         "str" => text(&args[0]),
         "type" => Ok(Yaml::String(type_name(&args[0]).to_string())),
+        "is" => is(args),
         "assert" => assert(args),
         "raise" => Err(raise(args)),
         _ => unreachable!("`{actor}` is not a strict builtin"),
@@ -82,6 +83,16 @@ fn text(value: &Yaml) -> Result<Yaml, Fault> {
         other => return Err(Fault::expected(0, "a scalar", other)),
     };
     Ok(Yaml::String(rendered))
+}
+
+/// `is`: whether a value has the type named by a type value, i.e. a string `type` can return, or `any`.
+fn is(args: &[Yaml]) -> Result<Yaml, Fault> {
+    match &args[1] {
+        Yaml::String(t) if t == "any" => Ok(Yaml::Boolean(true)),
+        Yaml::String(t) if matches!(t.as_str(), "integer" | "float" | "string" | "boolean" | "null" | "list" | "map") => Ok(Yaml::Boolean(type_name(&args[0]) == t)),
+        Yaml::String(t) => Err(Fault::at(1, "type", format!("unknown type `{t}`"))),
+        other => Err(Fault::expected(1, "a type name", other)),
+    }
 }
 
 /// `assert`: `null` when the condition holds, else an `assertion` fault carrying the message.
