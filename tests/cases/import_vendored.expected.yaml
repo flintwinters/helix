@@ -1,0 +1,22 @@
+status: finished
+root:
+  old:
+    constants:
+      offset: 1
+    apply:
+      - fn
+      - - x
+      - - add
+        - x
+        - constants.offset
+  new:
+    constants:
+      offset: 2
+    apply:
+      - fn
+      - - x
+      - - add
+        - x
+        - constants.offset
+  old_result: 41
+  new_result: 42

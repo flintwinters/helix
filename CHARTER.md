@@ -122,7 +122,7 @@ A daily driver has to do things.
 - [x] Import another Helix file
 - [x] Namespacing and visibility rules
 - [x] A standard library with a documented, small, stable core
-- [ ] Package or dependency story (even a minimal one: pinned path or git refs)
+- [x] Package or dependency story: repository-pinned vendored paths, with provenance/update guidance in `LANGUAGE.md`; `import_vendored` golden case and `imports` relocation/version-isolation contracts.
 - [x] Circular import detection with a useful error
 
 ---

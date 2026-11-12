@@ -120,6 +120,31 @@ Standard libraries are Helix source embedded in the executable:
 
 Standard modules dogfood ordinary function annotations. `std:math` exports `number` (`integer | float`); all its helpers take and return numbers, with `sign` returning an integer. `std:list` reuses that type for its `numbers` list type and for `sum`/`product`, which validate every element before folding. `reverse`, `unique` and `sort_by` require lists and return lists; `sort_by` requires a function even for an empty input. Its comparator must return a boolean and define a strict ordering; the annotation checks that it is a function, not that ordering law. `range` takes an integer and returns a list of integers; negative inputs still return an empty list. Contract failures are structured type errors at the call site with argument names and nested violation paths.
 
+### Pinned dependencies
+
+The minimal package model is **vendored paths pinned by the consuming repository**.
+Copy a dependency's Helix sources into `vendor/NAME/` and commit them with the
+program. Import its entry file directly, for example
+`helpers: [import, "vendor/helpers/main.yaml"]`. Internal imports remain relative
+to that entry file, so preserve the dependency's directory layout and vendor its
+transitive dependencies too. Two dependencies may keep different versions in
+separate directories; canonical file paths determine module identity.
+
+Keep an `UPSTREAM.md` beside each dependency recording its source URL, exact commit
+(or release plus a content checksum), license, entry file, and any local patches.
+This file is human-maintained provenance, not a runtime manifest. The committed
+source bytes are the pin; recording a revision alone does not fetch or verify them.
+To update, replace those sources from the chosen upstream revision, review the
+source diff and license, update provenance, run the consuming program's tests,
+and commit the changes together. Avoid mutable branches and absolute import paths.
+No dependency download, registry lookup, or Git executable is needed to run a
+vendored program. Copying the whole program directory preserves its dependencies;
+copying just the main file or emitted state need not.
+
+`tests/cases/import_vendored.yaml` is a runnable example; the `imports` suite also
+checks relocation, independent versions, and failure when a dependency is absent.
+The embedded `std:` library is pinned separately by the Helix executable version.
+
 ### List helpers
 
 Import `l: [import, std:list]`. Helpers take the list first; predicates and transforms are ordinary functions. All helpers are pure and preserve input order unless sorting explicitly changes it.

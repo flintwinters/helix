@@ -138,6 +138,8 @@ the program. Loading the whole envelope does not resume execution. Imports resol
 relative to the source file; stdin imports resolve relative to the working directory.
 For reproducible dependencies, commit library sources under `vendor/` and import
 their entry files by relative path; see [pinned dependencies](LANGUAGE.md#pinned-dependencies).
+For reproducible dependencies, commit library sources under `vendor/` and import
+their entry files by relative path; see [pinned dependencies](LANGUAGE.md#pinned-dependencies).
 
 ## Testing contracts and known gaps
 

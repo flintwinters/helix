@@ -1,0 +1,4 @@
+old: [import, modules/vendor/offset-v1/main.yaml]
+new: [import, modules/vendor/offset-v2/main.yaml]
+old_result: [old.apply, 40]
+new_result: [new.apply, 40]

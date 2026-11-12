@@ -160,6 +160,8 @@ def dogfood(h):
 
 
 def imports(h):
+    from tests.suites.dependencies import verify
+    verify(h)
     with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="imports-") as directory:
         base = Path(directory)
         (base / "shared.yaml").write_text("value: 21\n")
