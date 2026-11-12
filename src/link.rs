@@ -142,14 +142,14 @@ impl Linker<'_> {
         let mut pending = vec![tree];
         while let Some(id) = pending.pop() {
             match self.graph.syntax(id) {
-                crate::syntax::Syntax::Call(items) => {
+                crate::graph::Syntax::Call(items) => {
                     if self.graph.form(id) == Some("import") && items.len() == 2 {
                         found.push(id);
                     }
                     pending.extend(items.iter().rev());
                 }
-                crate::syntax::Syntax::Sequence(items) => pending.extend(items.iter().rev()),
-                crate::syntax::Syntax::Mapping(entries) => {
+                crate::graph::Syntax::Sequence(items) => pending.extend(items.iter().rev()),
+                crate::graph::Syntax::Mapping(entries) => {
                     pending.extend(entries.iter().rev().map(|(_, child)| *child));
                 }
                 _ => {}

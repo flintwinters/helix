@@ -25,7 +25,7 @@ pub(super) fn diagnostics(source: &str) -> Vec<Yaml> {
     let mut pending = vec![ROOT];
     while let Some(id) = pending.pop() {
         match graph.syntax(id) {
-            crate::syntax::Syntax::Call(items) => {
+            crate::graph::Syntax::Call(items) => {
                 let actor = graph.form(id);
                 if let Some((name, (min, max))) =
                     actor.and_then(|name| crate::builtins::arity(name).map(|arity| (name, arity)))
@@ -69,11 +69,11 @@ pub(super) fn diagnostics(source: &str) -> Vec<Yaml> {
                     pending.extend(items.iter().rev().copied());
                 }
             }
-            crate::syntax::Syntax::Mapping(entries) => {
+            crate::graph::Syntax::Mapping(entries) => {
                 pending.extend(entries.iter().rev().map(|(_, id)| *id))
             }
-            crate::syntax::Syntax::Sequence(items) => pending.extend(items.iter().rev()),
-            crate::syntax::Syntax::Invalid(message) => errors.push(
+            crate::graph::Syntax::Sequence(items) => pending.extend(items.iter().rev()),
+            crate::graph::Syntax::Invalid(message) => errors.push(
                 graph
                     .error(id, "syntax", message.into())
                     .to_value()

@@ -1,5 +1,5 @@
 //! Strings, lists and maps. All operations are pure: they return a new value.
-//! Strings index by character; maps have string keys and keep insertion order.
+//! Strings index by character; maps have string keys and canonical key order.
 
 use crate::value::Value;
 

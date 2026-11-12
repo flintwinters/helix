@@ -153,7 +153,7 @@ pub(crate) fn recovery(
             .unwrap_or_else(|| Encoded::source(graph, id))
     };
     match graph.syntax(crate::model::ROOT) {
-        crate::syntax::Syntax::Mapping(entries) => Encoded::Map(
+        crate::graph::Syntax::Mapping(entries) => Encoded::Map(
             entries
                 .iter()
                 .map(|(name, id)| (string(name, false), encode(*id)))

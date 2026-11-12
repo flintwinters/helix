@@ -2,7 +2,7 @@
 use super::arguments;
 use crate::builtins;
 use crate::model::{Actor, Binding, Evaluator, HelixError, NodeId, Request, Value, string as s};
-use crate::syntax::Syntax;
+use crate::graph::Syntax;
 
 impl Evaluator {
     pub(super) fn evaluate(&mut self, id: NodeId) -> Result<(), HelixError> {

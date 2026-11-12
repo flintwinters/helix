@@ -3,7 +3,7 @@ use crate::graph::ROOT;
 use crate::model::{
     Binding, Evaluator, Function, HelixError, Kind, NodeId, Request, Scope, Value, string as s,
 };
-use crate::syntax::Syntax;
+use crate::graph::Syntax;
 use std::collections::HashSet;
 
 impl Function {
