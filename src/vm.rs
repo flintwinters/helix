@@ -6,7 +6,7 @@ use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
 
 use crate::emit;
-use crate::error::{s, HelixError};
+use crate::error::HelixError;
 use crate::eval::Evaluator;
 use crate::graph::{Graph, Kind, ROOT};
 
@@ -119,19 +119,19 @@ impl Vm {
     /// `error` / `errors` (error).
     pub fn state(&self) -> Yaml {
         let mut h = Hash::new();
-        h.insert(s("status"), s(self.status.as_str()));
+        h.insert(Yaml::String("status".to_string()), Yaml::String(self.status.as_str().to_string()));
         if let Some(r) = &self.result {
-            h.insert(s("root"), r.clone());
+            h.insert(Yaml::String("root".to_string()), r.clone());
         }
         if self.checking {
-            h.insert(s("phase"), s("type"));
+            h.insert(Yaml::String("phase".to_string()), Yaml::String("type".to_string()));
             let all = if self.errors.is_empty() { self.error.iter().collect::<Vec<_>>() } else { self.errors.iter().collect() };
             if !all.is_empty() {
-                h.insert(s("errors"), Yaml::Array(all.into_iter().map(HelixError::to_yaml).collect()));
+                h.insert(Yaml::String("errors".to_string()), Yaml::Array(all.into_iter().map(HelixError::to_yaml).collect()));
             }
         } else if let Some(e) = &self.error {
-            if let Some(phase) = e.phase { h.insert(s("phase"), s(phase)); }
-            h.insert(s("error"), e.to_yaml());
+            if let Some(phase) = e.phase { h.insert(Yaml::String("phase".to_string()), Yaml::String(phase.to_string())); }
+            h.insert(Yaml::String("error".to_string()), e.to_yaml());
         }
         Yaml::Hash(h)
     }
@@ -141,9 +141,9 @@ impl Vm {
         let mut state = self.state();
         if self.status == Status::Error {
             if let (Some(evaluator), Yaml::Hash(fields)) = (&self.evaluator, &mut state) {
-                fields.insert(s("recovery"), s(&evaluator.recovery_source()));
+                fields.insert(Yaml::String("recovery".to_string()), Yaml::String(evaluator.recovery_source()));
                 if let Some(file) = &self.source_file {
-                    fields.insert(s("recovery_file"), s(&file.to_string_lossy()));
+                    fields.insert(Yaml::String("recovery_file".to_string()), Yaml::String(file.to_string_lossy().to_string()));
                 }
             }
         }

@@ -17,8 +17,7 @@ use yaml_rust2::Yaml;
 use super::construct::{descriptor, reflect};
 use super::ty::{check_ty, mapping, subtype, Field, Pred, Ty};
 use crate::builtins::fault::Fault;
-use crate::builtins::value::equal;
-use crate::error::s;
+use crate::value::equal;
 
 /// One field of a class: its declaration, who declared it, and its value with who supplied it.
 #[derive(Clone)]
@@ -80,7 +79,7 @@ fn open_fields(value: &Yaml) -> Result<Yaml, Fault> {
     for slot in class.slots {
         let field = Field::parse(&slot.spec).map_err(|why| Fault::at(0, "type", why))?;
         if slot.value.is_none() && field.required && field.default.is_none() {
-            fields.insert(s(&slot.name), slot.spec);
+            fields.insert(Yaml::String(slot.name.to_string()), slot.spec);
         }
     }
     Ok(Yaml::Hash(fields))
@@ -103,7 +102,7 @@ fn hash_arg(args: &[Yaml], at: usize) -> Result<&Hash, Fault> {
 /// The declared fields of the record type at `at`.
 fn fields_arg(args: &[Yaml], at: usize) -> Result<&Hash, Fault> {
     match &args[at] {
-        Yaml::Hash(map) if map.get(&s("type")) == Some(&s("record")) => match map.get(&s("fields")) {
+        Yaml::Hash(map) if map.get(&Yaml::String("type".to_string())) == Some(&Yaml::String("record".to_string())) => match map.get(&Yaml::String("fields".to_string())) {
             Some(Yaml::Hash(fields)) => Ok(fields),
             _ => Err(Fault::at(at, "type", "malformed record type".into())),
         },
@@ -122,17 +121,17 @@ impl Class {
     fn from_yaml(class: &Yaml, arg: usize) -> Result<Class, Fault> {
         let bad = || Fault::at(arg, "type", "expected a class".into());
         let Yaml::Hash(map) = class else { return Err(bad()) };
-        let get = |k: &str| map.get(&s(k));
+        let get = |k: &str| map.get(&Yaml::String(k.to_string()));
         let (Some(Yaml::String(name)), Some(Yaml::Hash(fields)), Some(Yaml::Hash(values)), Some(Yaml::Hash(prov)), Some(Yaml::Array(parents)), Some(Yaml::Boolean(concrete))) =
             (get("name"), get("fields"), get("values"), get("provenance"), get("parents"), get("concrete"))
         else {
             return Err(bad());
         };
-        if get("type") != Some(&s("class")) {
+        if get("type") != Some(&Yaml::String("class".to_string())) {
             return Err(bad());
         }
-        let source = |field: &str, which: &str| match prov.get(&s(field)) {
-            Some(Yaml::Hash(entry)) => match entry.get(&s(which)) {
+        let source = |field: &str, which: &str| match prov.get(&Yaml::String(field.to_string())) {
+            Some(Yaml::Hash(entry)) => match entry.get(&Yaml::String(which.to_string())) {
                 Some(Yaml::String(by)) => Ok(by.clone()),
                 _ => Err(bad()),
             },
@@ -146,7 +145,7 @@ impl Class {
             .iter()
             .map(|(field, spec)| {
                 let Yaml::String(field) = field else { return Err(bad()) };
-                let value = values.get(&s(field)).map(|v| Ok((v.clone(), source(field, "value")?))).transpose()?;
+                let value = values.get(&Yaml::String(field.to_string())).map(|v| Ok((v.clone(), source(field, "value")?))).transpose()?;
                 Ok(Slot { name: field.clone(), spec: spec.clone(), declared_by: source(field, "type")?, value })
             })
             .collect::<Result<_, _>>()?;
@@ -157,25 +156,25 @@ impl Class {
     fn to_yaml(&self) -> Yaml {
         let (mut fields, mut values, mut provenance) = (Hash::new(), Hash::new(), Hash::new());
         for slot in &self.slots {
-            fields.insert(s(&slot.name), slot.spec.clone());
+            fields.insert(Yaml::String(slot.name.to_string()), slot.spec.clone());
             let mut origin = Hash::new();
-            origin.insert(s("type"), s(&slot.declared_by));
+            origin.insert(Yaml::String("type".to_string()), Yaml::String(slot.declared_by.to_string()));
             if let Some((value, by)) = &slot.value {
-                values.insert(s(&slot.name), value.clone());
-                origin.insert(s("value"), s(by));
+                values.insert(Yaml::String(slot.name.to_string()), value.clone());
+                origin.insert(Yaml::String("value".to_string()), Yaml::String(by.to_string()));
             }
-            provenance.insert(s(&slot.name), Yaml::Hash(origin));
+            provenance.insert(Yaml::String(slot.name.to_string()), Yaml::Hash(origin));
         }
-        let mut class = descriptor("class", [("name", s(&self.name)), ("parents", Yaml::Array(self.parents.iter().map(|p| s(p)).collect()))]);
+        let mut class = descriptor("class", [("name", Yaml::String(self.name.to_string())), ("parents", Yaml::Array(self.parents.iter().map(|p| Yaml::String(p.to_string())).collect()))]);
         if let Yaml::Hash(map) = &mut class {
             for (k, v) in [("fields", fields), ("values", values)] {
-                map.insert(s(k), Yaml::Hash(v));
+                map.insert(Yaml::String(k.to_string()), Yaml::Hash(v));
             }
             if !self.constraints.is_empty() {
-                map.insert(s("constraints"), Yaml::Array(self.constraints.clone()));
+                map.insert(Yaml::String("constraints".to_string()), Yaml::Array(self.constraints.clone()));
             }
-            map.insert(s("provenance"), Yaml::Hash(provenance));
-            map.insert(s("concrete"), Yaml::Boolean(self.concrete));
+            map.insert(Yaml::String("provenance".to_string()), Yaml::Hash(provenance));
+            map.insert(Yaml::String("concrete".to_string()), Yaml::Boolean(self.concrete));
         }
         class
     }
@@ -183,7 +182,7 @@ impl Class {
 
 fn conflict(field: &str, first: &str, second: &str, what: &str, resolver: &str) -> Fault {
     let message = format!("field `{field}` has {what} from both `{first}` and `{second}`; resolve it in `{resolver}`");
-    let data = mapping([("field", s(field)), ("sources", Yaml::Array(vec![s(first), s(second)]))]);
+    let data = mapping([("field", Yaml::String(field.to_string())), ("sources", Yaml::Array(vec![Yaml::String(first.to_string()), Yaml::String(second.to_string())]))]);
     Fault { cause: None, kind: "conflict".into(), message, arg: Some(1), data: Some(data) }
 }
 
@@ -199,8 +198,8 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where
     let mut slots = Vec::new();
     for field in order.iter().map(|f| f.to_string()).chain(own_order.into_iter().filter(|f| !parents.iter().any(|p| p.slots.iter().any(|s| s.name == *f)))) {
         let inherited: Vec<&Slot> = parents.iter().filter_map(|p| p.slots.iter().find(|s| s.name == field)).collect();
-        let own_spec = fields.get(&s(&field));
-        let own_value = values.get(&s(&field));
+        let own_spec = fields.get(&Yaml::String(field.to_string()));
+        let own_value = values.get(&Yaml::String(field.to_string()));
         let (spec, declared_by) = match own_spec {
             Some(spec) => {
                 narrow(&field, spec, &inherited, name, at.fields, pred)?;
@@ -223,7 +222,7 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where
         };
         slots.push(Slot { name: field, spec, declared_by, value });
     }
-    if let Some(stray) = values.keys().find(|k| !slots.iter().any(|slot| s(&slot.name) == **k)) {
+    if let Some(stray) = values.keys().find(|k| !slots.iter().any(|slot| Yaml::String(slot.name.to_string()) == **k)) {
         let Yaml::String(stray) = stray else { unreachable!("value names are strings") };
         return Err(Fault::at(at.values, "type", format!("`{name}` sets `{stray}`, which no parent or field declares")));
     }
@@ -245,7 +244,7 @@ fn narrow(field: &str, spec: &Yaml, inherited: &[&Slot], name: &str, arg: usize,
         let theirs = Field::parse(&slot.spec).map_err(|why| Fault::at(1, "type", why))?;
         if !subtype(&own.ty, &theirs.ty, pred) || (!own.required && theirs.required) {
             let message = format!("`{name}` redeclares field `{field}` in a way that does not fit the declaration from `{}`", slot.declared_by);
-            let data = mapping([("field", s(field)), ("sources", Yaml::Array(vec![s(&slot.declared_by), s(name)]))]);
+            let data = mapping([("field", Yaml::String(field.to_string())), ("sources", Yaml::Array(vec![Yaml::String(slot.declared_by.to_string()), Yaml::String(name.to_string())]))]);
             return Err(Fault { cause: None, kind: "conflict".into(), message, arg: Some(arg), data: Some(data) });
         }
     }
@@ -272,14 +271,14 @@ fn check_slot(field: &str, value: &Yaml, ty: &Ty, pred: &mut Pred) -> Vec<(Yaml,
         .into_iter()
         .map(|v| {
             let at = format!("/{field}{}", if v.at() == "/" { String::new() } else { v.at().to_string() });
-            (mapping([("at", s(&at)), ("message", s(v.message()))]), format!("{at}: {}", v.message()))
+            (mapping([("at", Yaml::String(at.to_string())), ("message", Yaml::String(v.message().to_string()))]), format!("{at}: {}", v.message()))
         })
         .collect()
 }
 
 /// Whole-record constraints run on the realized values; each failure is reported.
 fn constrained(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
-    let values = Yaml::Hash(class.slots.iter().filter_map(|slot| slot.value.as_ref().map(|(v, _)| (s(&slot.name), v.clone()))).collect());
+    let values = Yaml::Hash(class.slots.iter().filter_map(|slot| slot.value.as_ref().map(|(v, _)| (Yaml::String(slot.name.to_string()), v.clone()))).collect());
     let mut found = Vec::new();
     for (i, check) in class.constraints.iter().enumerate() {
         let why = match pred(check, &values) {
@@ -292,7 +291,7 @@ fn constrained(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
     if found.is_empty() {
         return Ok(());
     }
-    let entries = found.iter().map(|why| mapping([("at", s("/")), ("message", s(why))])).collect();
+    let entries = found.iter().map(|why| mapping([("at", Yaml::String("/".to_string())), ("message", Yaml::String(why.to_string()))])).collect();
     Err(Fault { cause: None, kind: "type".into(), message: found[0].clone(), arg: None, data: Some(mapping([("violations", Yaml::Array(entries))])) })
 }
 
@@ -312,7 +311,7 @@ fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Clas
     }
     if !missing.is_empty() {
         let list = missing.iter().map(|m| format!("`{}` (required by {})", m.name, m.declared_by)).collect::<Vec<_>>().join(", ");
-        let entries = missing.iter().map(|m| mapping([("field", s(&m.name)), ("required_by", s(&m.declared_by))])).collect();
+        let entries = missing.iter().map(|m| mapping([("field", Yaml::String(m.name.to_string())), ("required_by", Yaml::String(m.declared_by.to_string()))])).collect();
         let message = format!("class `{}` is abstract: missing {list}", class.name);
         return Err(Fault { cause: None, kind: "abstract".into(), message, arg, data: Some(mapping([("missing", Yaml::Array(entries))])) });
     }
@@ -328,5 +327,5 @@ pub(super) fn concrete_values(class: &Yaml, arg: usize) -> Result<Hash, Fault> {
     if !parsed.concrete {
         return Err(Fault::at(arg, "abstract", format!("class `{}` is abstract; realize it first", parsed.name)));
     }
-    Ok(parsed.slots.into_iter().filter_map(|slot| slot.value.map(|(v, _)| (s(&slot.name), v))).collect())
+    Ok(parsed.slots.into_iter().filter_map(|slot| slot.value.map(|(v, _)| (Yaml::String(slot.name.to_string()), v))).collect())
 }

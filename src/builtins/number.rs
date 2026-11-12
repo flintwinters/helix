@@ -5,7 +5,7 @@ use std::cmp::Ordering;
 use yaml_rust2::Yaml;
 
 use super::fault::Fault;
-use super::value::as_f64;
+use crate::value::as_f64;
 
 #[derive(Clone, Copy)]
 enum Num {

@@ -4,7 +4,7 @@
 use yaml_rust2::Yaml;
 
 use super::fault::Fault;
-use super::value::equal;
+use crate::value::equal;
 
 pub(super) fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
     match actor {

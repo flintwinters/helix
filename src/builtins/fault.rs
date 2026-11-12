@@ -2,7 +2,7 @@
 
 use yaml_rust2::Yaml;
 
-use super::value::type_name;
+use crate::value::type_name;
 
 /// A builtin failure; `arg` is the index of the offending argument, or `None` for the whole expression.
 pub struct Fault {

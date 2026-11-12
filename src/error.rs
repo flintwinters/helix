@@ -28,28 +28,24 @@ pub struct HelixError {
 impl HelixError {
     pub fn to_yaml(&self) -> Yaml {
         let mut h = Hash::new();
-        h.insert(s("kind"), s(&self.kind));
-        h.insert(s("message"), s(&self.message));
-        if let Some(phase) = self.phase { h.insert(s("phase"), s(phase)); }
+        h.insert(Yaml::String("kind".to_string()), Yaml::String(self.kind.to_string()));
+        h.insert(Yaml::String("message".to_string()), Yaml::String(self.message.to_string()));
+        if let Some(phase) = self.phase { h.insert(Yaml::String("phase".to_string()), Yaml::String(phase.to_string())); }
         if let Some(file) = &self.file {
-            h.insert(s("file"), s(file));
+            h.insert(Yaml::String("file".to_string()), Yaml::String(file.to_string()));
         }
         if let Some(path) = &self.path {
-            h.insert(s("path"), s(path));
+            h.insert(Yaml::String("path".to_string()), Yaml::String(path.to_string()));
         }
-        h.insert(s("line"), Yaml::Integer(self.span.line as i64));
-        h.insert(s("column"), Yaml::Integer(self.span.col as i64));
+        h.insert(Yaml::String("line".to_string()), Yaml::Integer(self.span.line as i64));
+        h.insert(Yaml::String("column".to_string()), Yaml::Integer(self.span.col as i64));
         if let Some(data) = &self.data {
-            h.insert(s("data"), data.clone());
+            h.insert(Yaml::String("data".to_string()), data.clone());
         }
         if !self.calls.is_empty() {
-            h.insert(s("calls"), Yaml::Array(self.calls.clone()));
+            h.insert(Yaml::String("calls".to_string()), Yaml::Array(self.calls.clone()));
         }
-        if let Some(cause) = &self.cause { h.insert(s("cause"), cause.clone()); }
+        if let Some(cause) = &self.cause { h.insert(Yaml::String("cause".to_string()), cause.clone()); }
         Yaml::Hash(h)
     }
-}
-
-pub(crate) fn s(text: &str) -> Yaml {
-    Yaml::String(text.to_string())
 }

@@ -5,8 +5,7 @@
 use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
 
-use crate::builtins::value::{equal, is_function, type_name};
-use crate::error::s;
+use crate::value::{equal, is_function, type_name};
 
 /// Runs a refinement's `[fn, [value], body]` source on a value. `Err` is a failure inside the
 /// predicate, reported as a violation rather than aborting the check.
@@ -54,7 +53,7 @@ pub struct Violation {
 }
 
 pub(super) fn mapping<const N: usize>(entries: [(&str, Yaml); N]) -> Yaml {
-    Yaml::Hash(entries.into_iter().map(|(k, v)| (s(k), v)).collect())
+    Yaml::Hash(entries.into_iter().map(|(k, v)| (Yaml::String(k.to_string()), v)).collect())
 }
 
 impl Violation {
@@ -67,20 +66,20 @@ impl Violation {
     }
 
     pub fn to_yaml(&self) -> Yaml {
-        mapping([("at", s(&self.at)), ("message", s(&self.message))])
+        mapping([("at", Yaml::String(self.at.to_string())), ("message", Yaml::String(self.message.to_string()))])
     }
 }
 
 
 pub(super) fn text<'a>(map: &'a Hash, key: &str) -> Option<&'a str> {
-    match map.get(&s(key)) {
+    match map.get(&Yaml::String(key.to_string())) {
         Some(Yaml::String(t)) => Some(t),
         _ => None,
     }
 }
 
 fn member<'a>(map: &'a Hash, key: &str) -> Result<&'a Yaml, String> {
-    map.get(&s(key)).ok_or_else(|| format!("a `{}` type needs `{key}`", text(map, "type").unwrap_or("?")))
+    map.get(&Yaml::String(key.to_string())).ok_or_else(|| format!("a `{}` type needs `{key}`", text(map, "type").unwrap_or("?")))
 }
 
 impl Ty {
@@ -197,13 +196,13 @@ fn check(value: &Yaml, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violati
         (Ty::Map(of), Yaml::Hash(h)) => h.iter().for_each(|(k, v)| check(v, of, &inside(at, &show(k)), pred, out)),
         (Ty::Record(fields), Yaml::Hash(h)) => {
             for (name, field) in fields {
-                match h.get(&s(name)) {
+                match h.get(&Yaml::String(name.to_string())) {
                     Some(v) => check(v, &field.ty, &inside(at, name), pred, out),
                     None if field.required => out.push(Violation { at: inside(at, name), message: format!("missing field `{name}`") }),
                     None => {}
                 }
             }
-            for k in h.keys().filter(|k| !fields.iter().any(|(name, _)| s(name) == **k)) {
+            for k in h.keys().filter(|k| !fields.iter().any(|(name, _)| Yaml::String(name.to_string()) == **k)) {
                 out.push(Violation { at: inside(at, &show(k)), message: format!("unexpected field `{}`", show(k)) });
             }
         }

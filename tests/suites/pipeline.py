@@ -10,6 +10,7 @@ import yaml
 
 def verify(h):
     verify_formats(h)
+    verify_source_values(h)
     verify_consumers(h)
     for args, source in [(("[add, 20, 22]",), None), ((), "[add, 20, 22]"),
                          (("-",), "[add, 20, 22]")]:
@@ -92,6 +93,30 @@ def verify_formats(h):
     from tooling.cli import parse
     assert parse(["exec", "--json"]).output_format == "--json"
     assert parse(["exec", "--yaml"]).output_format == "--yaml"
+
+
+def verify_source_values(h):
+    """Persist executable functions and literal lookalikes through the same YAML boundary."""
+    source = '''literal_fn: [list, "fn", [], 9]
+literal_closure: [list, "closure", {}, [list, "fn", [], 9]]
+make: [fn, [captured], [fn, [], [list, captured, "captured", "true", "42", ["fn", [], 9]]]]
+closed: [make, ["add", 1, 2]]
+'''
+    saved = h.helix("exec", "--yaml", stdin=source)
+    assert saved.returncode == 0 and not saved.stderr, saved
+    for _ in range(2):
+        replay = h.helix("exec", "--yaml", stdin=saved.stdout)
+        assert (replay.returncode, replay.stdout, replay.stderr) == (0, saved.stdout, ""), replay
+        saved = replay
+    inspected = h.helix("exec", "--yaml", stdin=saved.stdout + '''observed: [closed]
+categories: [list, [type, literal_fn], [type, literal_closure], [type, closed]]
+''')
+    assert inspected.returncode == 0 and not inspected.stderr, inspected
+    root = yaml.safe_load(inspected.stdout)
+    assert root["literal_fn"] == ["fn", [], 9], root
+    assert root["literal_closure"] == ["closure", {}, ["fn", [], 9]], root
+    assert root["categories"] == ["list", "list", "function"], root
+    assert root["observed"] == [["add", 1, 2], "captured", "true", "42", ["fn", [], 9]], root
 
 
 def verify_consumers(h):

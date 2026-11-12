@@ -12,10 +12,11 @@ use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
 
 use crate::builtins::{self, Fault};
-use crate::emit;
-use crate::error::{s, HelixError};
+use crate::error::HelixError;
 use crate::graph::{Graph, Kind, NodeId, ROOT};
 use crate::link::{self, Modules};
+use crate::source;
+use crate::value;
 
 /// Nested user-function calls allowed before failing with a `depth` error.
 const MAX_DEPTH: usize = 200;
@@ -34,7 +35,7 @@ enum Binding {
 
 /// What the head of a vector form names.
 enum Actor {
-    Builtin(String),
+    Builtin(&'static builtins::Descriptor),
     Function(NodeId),
 }
 
@@ -51,8 +52,8 @@ pub struct Evaluator {
     memo: HashMap<NodeId, Yaml>,
     active: HashSet<(NodeId, usize)>,
     frames: Vec<Frame>,
-    /// Predicate sources (refinement checks) grafted into the graph, by their emitted text.
-    grafts: HashMap<String, NodeId>,
+    /// Callable and predicate sources reconstituted in this evaluator's graph.
+    grafts: source::Grafts,
     /// The modules the program imports.
     modules: Modules,
     closing: HashSet<NodeId>,
@@ -77,7 +78,7 @@ impl Evaluator {
     /// Take a parsed program and link its imports; `main` is the program's file, when it has one.
     pub fn new(mut graph: Graph, main: Option<&Path>, roots: Option<&[PathBuf]>) -> Result<Evaluator, HelixError> {
         let modules = link::link(&mut graph, main, roots)?;
-        Ok(Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: HashMap::new(), modules, closing: HashSet::new(), type_time: false, remaining_work: MAX_WORK, remaining_values: MAX_VALUES })
+        Ok(Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: source::Grafts::default(), modules, closing: HashSet::new(), type_time: false, remaining_work: MAX_WORK, remaining_values: MAX_VALUES })
     }
 
     fn err(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
@@ -152,13 +153,7 @@ impl Evaluator {
     /// Completed root fields become literal values; unfinished fields retain their source.
     /// Do not splice cached subexpressions into calls: argument positions interpret strings as symbols.
     pub(crate) fn recovery_source(&self) -> String {
-        let value = match self.graph.kind(ROOT) {
-            Kind::Map(entries) => Yaml::Hash(entries.iter().map(|(name, id)| {
-                (s(name), self.memo.get(id).cloned().unwrap_or_else(|| self.raw(*id)))
-            }).collect()),
-            _ => self.memo.get(&ROOT).cloned().unwrap_or_else(|| self.raw(ROOT)),
-        };
-        emit::document(&value)
+        source::recovery(&self.graph, &self.memo)
     }
 
     /// Every error in the program, not just the first: containers and non-expression lists are
@@ -227,8 +222,8 @@ impl Evaluator {
     fn actor(&mut self, items: &[NodeId]) -> Result<Option<Actor>, HelixError> {
         let Some(&head) = items.first() else { return Ok(None) };
         let Some(name) = self.graph.symbol(head) else { return Ok(None) };
-        if builtins::arity(name).is_some() {
-            return Ok(Some(Actor::Builtin(name.to_string())));
+        if let Some(actor) = builtins::descriptor(name) {
+            return Ok(Some(Actor::Builtin(actor)));
         }
         self.function(head).map(|function| function.map(Actor::Function))
     }
@@ -258,19 +253,13 @@ impl Evaluator {
 
     /// Reconstitute persisted function source with its captured lexical bindings.
     fn function_value(&mut self, value: &Yaml, blame: NodeId) -> Result<Option<NodeId>, HelixError> {
-        if !builtins::is_function(value) {
+        if !value::is_function(value) {
             return Ok(None);
         }
-        let source = emit::document(value);
-        let root = match self.grafts.get(&source) {
-            Some(&root) => root,
-            None => {
-                let parsed = Graph::parse(&source).map_err(|error| self.err(blame, "type", error.message))?;
-                let root = self.graph.graft(parsed)?;
-                self.grafts.insert(source, root);
-                root
-            }
-        };
+        let root = self.grafts.load(&mut self.graph, value).map_err(|error| match error {
+            source::LoadError::Parse(error) => self.err(blame, "type", error.message),
+            source::LoadError::Graft(error) => error,
+        })?;
         if self.graph.form(root) == Some("closure") {
             let Kind::Seq(parts) = self.graph.kind(root) else { unreachable!() };
             if parts.len() != 3 || !matches!(self.graph.kind(parts[1]), Kind::Map(_)) || self.graph.form(parts[2]) != Some("fn") {
@@ -313,7 +302,7 @@ impl Evaluator {
                 }
                 Kind::Seq(items) => {
                     let head = items.first().and_then(|&head| self.graph.symbol(head));
-                    let builtin = head.is_some_and(|name| builtins::arity(name).is_some());
+                    let builtin = head.is_some_and(|name| builtins::descriptor(name).is_some());
                     let expression = builtin || head.is_some_and(|name| locals.contains(name) || self.resolve(node, name).is_some());
                     pending.extend(items[usize::from(builtin)..].iter().rev().map(|&child| (child, locals.clone(), expression)));
                 }
@@ -321,7 +310,7 @@ impl Evaluator {
                 Kind::Scalar { .. } => {
                     if !symbolic { continue; }
                     let Some(name) = self.graph.symbol(node).map(str::to_string) else { continue };
-                    if locals.contains(&name) || bindings.contains_key(&s(&name)) { continue; }
+                    if locals.contains(&name) || bindings.contains_key(&Yaml::String(name.to_string())) { continue; }
                     let Some(binding) = self.resolve(node, &name) else { continue };
                     let value = match binding {
                         Binding::Value(value) => value,
@@ -335,13 +324,12 @@ impl Evaluator {
                             } else { self.eval(target)? }
                         }
                     };
-                    bindings.insert(s(&name), value);
+                    bindings.insert(Yaml::String(name.to_string()), value);
                 }
             }
         }
-        let source = self.raw(function);
-        if bindings.is_empty() { return Ok(source); }
-        Ok(Yaml::Array(vec![Yaml::Real("closure".into()), Yaml::Hash(bindings), source]))
+        let source = source::subtree(&self.graph, function);
+        Ok(source::closure(source, bindings))
     }
 
     /// Whether `id` sits inside some `fn` form, so its value depends on a call.
@@ -386,7 +374,7 @@ impl Evaluator {
         for part in rest.split('.') {
             binding = match binding {
                 Binding::Node(node) => Binding::Node(self.member(node, part)?),
-                Binding::Value(Yaml::Hash(map)) => Binding::Value(map.get(&s(part))?.clone()),
+                Binding::Value(Yaml::Hash(map)) => Binding::Value(map.get(&Yaml::String(part.to_string()))?.clone()),
                 _ => return None,
             };
         }
@@ -427,14 +415,15 @@ impl Evaluator {
         // Code grafted in as data (a refinement's predicate) is detached; it sees the document root.
         // A module is detached too, but its names are its own.
         match self.graph.kind(ROOT) {
-            Kind::Map(entries) if child != ROOT && !self.modules.is_root(child) && !self.grafts.values().any(|&root| root == child) => entry(entries),
+            Kind::Map(entries) if child != ROOT && !self.modules.is_root(child) && !self.grafts.is_root(child) => entry(entries),
             _ => None,
         }
     }
 
     fn apply(&mut self, id: NodeId, actor: Actor, args: &[NodeId]) -> Result<Yaml, HelixError> {
-        if let Actor::Builtin(name) = &actor {
-            let (min, max) = builtins::arity(name).expect("actor is a builtin");
+        if let Actor::Builtin(descriptor) = &actor {
+            let name = descriptor.name;
+            let (min, max) = descriptor.arity;
             if args.len() < min || max.is_some_and(|m| args.len() > m) {
                 let expected = match max {
                     Some(m) if m == min => arguments(m),
@@ -443,14 +432,16 @@ impl Evaluator {
                 };
                 return Err(self.err(id, "arity", format!("`{name}` takes {expected}, got {}", args.len())));
             }
-            if builtins::is_form(name) {
-                return self.apply_form(id, name, args);
+            if let builtins::Evaluation::Form(form) = descriptor.evaluation {
+                return self.apply_form(id, form, args);
             }
         }
         let values = args.iter().map(|&arg| self.value_arg(arg)).collect::<Result<Vec<_>, _>>()?;
         match actor {
             Actor::Function(function) => self.call(id, function, values),
-            Actor::Builtin(name) => builtins::apply(&name, &values, &mut |check, value| self.predicate(check, value)).map_err(|fault| self.from_fault(id, args, fault)),
+            Actor::Builtin(descriptor) => {
+                builtins::apply(descriptor, &values, &mut |check, value| self.predicate(check, value)).map_err(|fault| self.from_fault(id, args, fault))
+            }
         }
     }
 
@@ -477,22 +468,14 @@ impl Evaluator {
     /// Run a refinement's predicate source on `value`. The source arrives as data, so it is grafted
     /// into the graph (once per distinct source) and called like any function.
     fn predicate(&mut self, check: &Yaml, value: &Yaml) -> Result<bool, String> {
-        let source = emit::document(check);
-        let id = match self.grafts.get(&source) {
-            Some(&id) => id,
-            None => {
-                let id = self.graph.graft(Graph::parse(&source).map_err(|e| e.message)?).map_err(|e| e.message)?;
-                self.grafts.insert(source, id);
-                id
-            }
-        };
+        let id = self.grafts.load(&mut self.graph, check).map_err(|error| error.error().message)?;
         let function = self.function(id).map_err(|error| error.message)?.ok_or("a refinement check must be `[fn, [value], body]`")?;
         if self.parameters(function).map_err(|e| e.message)?.len() != 1 {
             return Err("a refinement check takes exactly 1 parameter".into());
         }
         match self.call(id, function, vec![value.clone()]) {
             Ok(Yaml::Boolean(verdict)) => Ok(verdict),
-            Ok(other) => Err(format!("returned {}, expected boolean", builtins::type_of(&other))),
+            Ok(other) => Err(format!("returned {}, expected boolean", value::type_name(&other))),
             Err(e) => Err(format!("{}: {}", e.kind, e.message)),
         }
     }
@@ -504,11 +487,11 @@ impl Evaluator {
 
     /// The `type` error for violations found in `what`, carrying every one as `data`.
     fn violation_error(&self, blame: NodeId, what: &str, found: Vec<Yaml>) -> HelixError {
-        let first = found.iter().find_map(|v| if let Yaml::Hash(h) = v { h.get(&s("message")).and_then(|m| m.as_str().map(str::to_string)) } else { None }).unwrap_or_default();
+        let first = found.iter().find_map(|v| if let Yaml::Hash(h) = v { h.get(&Yaml::String("message".to_string())).and_then(|m| m.as_str().map(str::to_string)) } else { None }).unwrap_or_default();
         let plural = if found.len() == 1 { "" } else { "s" };
         let mut error = self.err(blame, "type", format!("{} type violation{plural} in {what}: {first}", found.len()));
         let mut data = Hash::new();
-        data.insert(s("violations"), Yaml::Array(found));
+        data.insert(Yaml::String("violations".to_string()), Yaml::Array(found));
         error.data = Some(Yaml::Hash(data));
         error
     }
@@ -518,16 +501,16 @@ impl Evaluator {
     fn call(&mut self, site: NodeId, function: NodeId, args: Vec<Yaml>) -> Result<Yaml, HelixError> {
         self.call_body(site, function, args).map_err(|mut error| {
             let mut location = Hash::new();
-            if let Some(file) = self.graph.source(site) { location.insert(s("file"), s(file)); }
-            location.insert(s("path"), s(&self.graph.path(site)));
+            if let Some(file) = self.graph.source(site) { location.insert(Yaml::String("file".to_string()), Yaml::String(file.to_string())); }
+            location.insert(Yaml::String("path".to_string()), Yaml::String(self.graph.path(site).to_string()));
             let span = self.graph.span(site);
-            location.insert(s("line"), Yaml::Integer(span.line as i64));
-            location.insert(s("column"), Yaml::Integer(span.col as i64));
-            location.insert(s("function"), s(&self.graph.path(function)));
-            if let Some(file) = self.graph.source(function) { location.insert(s("function_file"), s(file)); }
+            location.insert(Yaml::String("line".to_string()), Yaml::Integer(span.line as i64));
+            location.insert(Yaml::String("column".to_string()), Yaml::Integer(span.col as i64));
+            location.insert(Yaml::String("function".to_string()), Yaml::String(self.graph.path(function).to_string()));
+            if let Some(file) = self.graph.source(function) { location.insert(Yaml::String("function_file".to_string()), Yaml::String(file.to_string())); }
             let definition = self.graph.span(function);
-            location.insert(s("function_line"), Yaml::Integer(definition.line as i64));
-            location.insert(s("function_column"), Yaml::Integer(definition.col as i64));
+            location.insert(Yaml::String("function_line".to_string()), Yaml::Integer(definition.line as i64));
+            location.insert(Yaml::String("function_column".to_string()), Yaml::Integer(definition.col as i64));
             error.calls.push(Yaml::Hash(location));
             error
         })
@@ -579,13 +562,14 @@ impl Evaluator {
     /// Forms with their own evaluation order: `if`, `cond`, `and`, `or` evaluate only what they
     /// need; `try` hands an error from its first argument to its handler as a map; `fn` yields its own source; `let` evaluates its body with the bindings in scope; the
     /// iteration forms call the function designated by their first argument.
-    fn apply_form(&mut self, id: NodeId, actor: &str, args: &[NodeId]) -> Result<Yaml, HelixError> {
+    fn apply_form(&mut self, id: NodeId, actor: builtins::Form, args: &[NodeId]) -> Result<Yaml, HelixError> {
+        use builtins::Form::{And, Call, Closure, Cond, Each, Filter, Finally, Fn, Fold, If, Import, Let, Map, Or, Refine, Try, TypeTime, Until};
         match actor {
-            "if" => {
+            If => {
                 let condition = self.condition(args[0])?;
                 self.value_arg(args[if condition { 1 } else { 2 }])
             }
-            "cond" => {
+            Cond => {
                 if args.len().is_multiple_of(2) {
                     return Err(self.err(id, "arity", "`cond` takes condition/value pairs followed by a default".into()));
                 }
@@ -596,8 +580,8 @@ impl Evaluator {
                 }
                 self.value_arg(args[args.len() - 1])
             }
-            "and" | "or" => {
-                let stop_on = actor == "or";
+            And | Or => {
+                let stop_on = actor == Or;
                 for &arg in args {
                     if self.condition(arg)? == stop_on {
                         return Ok(Yaml::Boolean(stop_on));
@@ -605,33 +589,33 @@ impl Evaluator {
                 }
                 Ok(Yaml::Boolean(!stop_on))
             }
-            "call" => {
+            Call => {
                 let values = args[1..].iter().map(|&arg| self.value_arg(arg)).collect::<Result<_, _>>()?;
                 self.call_arg(args[0], values)
             }
-            "closure" => {
+            Closure => {
                 if !matches!(self.graph.kind(args[0]), Kind::Map(_)) || self.graph.form(args[1]) != Some("fn") {
                     return Err(self.err(id, "type", "a closure needs bindings and a function".into()));
                 }
-                Ok(self.raw(id))
+                Ok(source::subtree(&self.graph, id))
             }
-            "fn" => {
+            Fn => {
                 self.parameters(id)?;
                 let mut parent = self.graph.parent(id);
                 while let Some(node) = parent {
                     if matches!(self.graph.form(node), Some("fn" | "let")) { return self.close(id); }
                     parent = self.graph.parent(node);
                 }
-                Ok(self.raw(id))
+                Ok(source::subtree(&self.graph, id))
             }
-            "let" => {
+            Let => {
                 if !matches!(self.graph.kind(args[0]), Kind::Map(_)) {
                     return Err(self.err(args[0], "type", "`let` bindings must be a map".into()));
                 }
                 self.value_arg(args[1])
             }
-            "map" => self.list_arg(args[1])?.into_iter().map(|item| self.call_arg(args[0], vec![item])).collect::<Result<_, _>>().map(Yaml::Array),
-            "filter" => {
+            Map => self.list_arg(args[1])?.into_iter().map(|item| self.call_arg(args[0], vec![item])).collect::<Result<_, _>>().map(Yaml::Array),
+            Filter => {
                 let mut kept = Vec::new();
                 for item in self.list_arg(args[1])? {
                     let keep = self.call_arg(args[0], vec![item.clone()])?;
@@ -641,17 +625,17 @@ impl Evaluator {
                 }
                 Ok(Yaml::Array(kept))
             }
-            "fold" => {
+            Fold => {
                 let init = self.value_arg(args[1])?;
                 self.list_arg(args[2])?.into_iter().try_fold(init, |acc, item| self.call_arg(args[0], vec![acc, item]))
             }
-            "each" => {
+            Each => {
                 for item in self.list_arg(args[1])? {
                     self.call_arg(args[0], vec![item])?;
                 }
                 Ok(Yaml::Null)
             }
-            "until" => {
+            Until => {
                 let mut state = self.value_arg(args[2])?;
                 for _ in 0..MAX_STEPS {
                     let done = self.call_arg(args[0], vec![state.clone()])?;
@@ -662,7 +646,7 @@ impl Evaluator {
                 }
                 Err(self.err(id, "limit", format!("`until` did not finish within {MAX_STEPS} steps")))
             }
-            "refine" => {
+            Refine => {
                 let base = self.value_arg(args[0])?;
                 let function = self.function(args[1])?.ok_or_else(|| self.err(args[1], "type", "expected a function (`[fn, [value], body]` or its name)".into()))?;
                 if self.parameters(function)?.len() != 1 {
@@ -670,32 +654,20 @@ impl Evaluator {
                 }
                 builtins::refine(base, self.value_arg(args[1])?).map_err(|fault| self.from_fault(id, args, fault))
             }
-            "type_time" => self.at_type_time(args[0]),
-            "import" => match self.modules.root_of(id) {
+            TypeTime => self.at_type_time(args[0]),
+            Import => match self.modules.root_of(id) {
                 Some(root) => self.eval(root),
                 None => Err(self.err(id, "import", "an import must be a literal `[import, SPEC]` in the program or a module it imports".into())),
             },
-            "finally" => {
+            Finally => {
                 let result = self.value_arg(args[0]);
                 self.value_arg(args[1])?;
                 result
             }
-            "try" => match self.value_arg(args[0]) {
+            Try => match self.value_arg(args[0]) {
                 Ok(value) => Ok(value),
                 Err(error) => self.call_arg(args[1], vec![error.to_yaml()]),
             },
-            _ => unreachable!("`{actor}` is not a form"),
-        }
-    }
-
-    /// A subtree as data that re-reads as the same code: plain scalars are emitted verbatim and
-    /// quoted ones stay quoted (via `Yaml::Real`, which the emitter prints as-is).
-    fn raw(&self, id: NodeId) -> Yaml {
-        match self.graph.kind(id) {
-            Kind::Scalar { value: Yaml::String(text), plain } => Yaml::Real(if *plain { text.clone() } else { emit::quoted(text) }),
-            Kind::Scalar { value, .. } => value.clone(),
-            Kind::Seq(items) => Yaml::Array(items.iter().map(|&c| self.raw(c)).collect()),
-            Kind::Map(entries) => Yaml::Hash(entries.iter().map(|(k, c)| (Yaml::String(k.clone()), self.raw(*c))).collect()),
         }
     }
 
@@ -742,7 +714,7 @@ impl Evaluator {
                 let entries = entries.clone();
                 let mut values = Hash::new();
                 for (name, child) in entries {
-                    values.insert(s(&name), self.argument_value(child)?);
+                    values.insert(Yaml::String(name.to_string()), self.argument_value(child)?);
                 }
                 Ok(Yaml::Hash(values))
             }
@@ -767,7 +739,7 @@ fn arguments(n: usize) -> String {
 /// A violation map led by the name of what it was found in: `{argument: n, at: ..., message: ...}`.
 fn tagged(label: &str, name: &str, violation: Yaml) -> Yaml {
     let mut tagged = Hash::new();
-    tagged.insert(s(label), s(name));
+    tagged.insert(Yaml::String(label.to_string()), Yaml::String(name.to_string()));
     if let Yaml::Hash(fields) = violation {
         tagged.extend(fields);
     }

@@ -7,8 +7,7 @@ use yaml_rust2::Yaml;
 use super::class::concrete_values;
 use super::ty::mapping;
 use crate::builtins::fault::Fault;
-use crate::builtins::value::equal;
-use crate::error::s;
+use crate::value::equal;
 
 pub(super) fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
     let wanted = concrete_values(&args[0], 0)?;
@@ -58,8 +57,8 @@ impl Drift {
             self.unmet
                 .iter()
                 .map(|(field, want, have)| match have {
-                    None => mapping([("op", s("set")), ("field", field.clone()), ("to", want.clone())]),
-                    Some(have) => mapping([("op", s("set")), ("field", field.clone()), ("from", have.clone()), ("to", want.clone())]),
+                    None => mapping([("op", Yaml::String("set".to_string())), ("field", field.clone()), ("to", want.clone())]),
+                    Some(have) => mapping([("op", Yaml::String("set".to_string())), ("field", field.clone()), ("from", have.clone()), ("to", want.clone())]),
                 })
                 .collect(),
         )

@@ -1,9 +1,13 @@
-//! Value inspection shared by every builtin family: type names, numeric views and equality.
+//! Runtime value representation shared by errors, evaluation and builtin families.
+//!
+//! Literal strings are `Yaml::String`; executable scalar tokens use `Yaml::Real` as a
+//! verbatim emission carrier. Only the source conversion boundary constructs those tokens.
+//! Numeric reals remain `Yaml::Real`; inspection distinguishes callable heads explicitly.
 
 use yaml_rust2::Yaml;
 
 /// Structural equality; numbers compare by value across `int` and `float`.
-pub(super) fn equal(a: &Yaml, b: &Yaml) -> bool {
+pub(crate) fn equal(a: &Yaml, b: &Yaml) -> bool {
     match (a, b) {
         (Yaml::Integer(x), Yaml::Integer(y)) => x == y,
         (Yaml::Array(x), Yaml::Array(y)) => x.len() == y.len() && x.iter().zip(y).all(|(p, q)| equal(p, q)),
@@ -15,7 +19,7 @@ pub(super) fn equal(a: &Yaml, b: &Yaml) -> bool {
     }
 }
 
-pub(super) fn as_f64(value: &Yaml) -> Option<f64> {
+pub(crate) fn as_f64(value: &Yaml) -> Option<f64> {
     match value {
         Yaml::Integer(i) => Some(*i as f64),
         Yaml::Real(text) => text.parse().ok(),
@@ -23,7 +27,7 @@ pub(super) fn as_f64(value: &Yaml) -> Option<f64> {
     }
 }
 
-pub(super) fn type_name(v: &Yaml) -> &'static str {
+pub(crate) fn type_name(v: &Yaml) -> &'static str {
     if is_function(v) { return "function"; }
     match v {
         Yaml::Integer(_) => "integer",
@@ -38,6 +42,7 @@ pub(super) fn type_name(v: &Yaml) -> &'static str {
 }
 
 /// Executable source carries a verbatim head, unlike a data list with a quoted string head.
-pub fn is_function(value: &Yaml) -> bool {
+pub(crate) fn is_function(value: &Yaml) -> bool {
     matches!(value, Yaml::Array(items) if matches!(items.first(), Some(Yaml::Real(head)) if matches!(head.as_str(), "fn" | "closure")))
 }
+

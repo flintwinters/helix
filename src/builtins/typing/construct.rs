@@ -6,14 +6,13 @@ use yaml_rust2::Yaml;
 
 use super::ty::{holds, mapping, subtype, text, violations, Field, Pred, Ty, Violation};
 use crate::builtins::fault::Fault;
-use crate::error::s;
 
 /// `{type: kind, ..entries}`.
 pub(super) fn descriptor<const N: usize>(kind: &str, entries: [(&str, Yaml); N]) -> Yaml {
     let mut map = Hash::new();
-    map.insert(s("type"), s(kind));
+    map.insert(Yaml::String("type".to_string()), Yaml::String(kind.to_string()));
     for (k, v) in entries {
-        map.insert(s(k), v);
+        map.insert(Yaml::String(k.to_string()), v);
     }
     Yaml::Hash(map)
 }
@@ -81,7 +80,7 @@ fn violations_arg(args: &[Yaml], pred: &mut Pred) -> Result<Vec<Violation>, Faul
 /// `fields` / `parents` of a record or class type, as the data it was declared with.
 pub(super) fn reflect(ty: &Yaml, member_name: &str) -> Result<Yaml, Fault> {
     match ty {
-        Yaml::Hash(map) if matches!(text(map, "type"), Some("record" | "class")) => map.get(&s(member_name)).cloned().ok_or_else(|| Fault::at(0, "type", format!("this type has no `{member_name}`"))),
+        Yaml::Hash(map) if matches!(text(map, "type"), Some("record" | "class")) => map.get(&Yaml::String(member_name.to_string())).cloned().ok_or_else(|| Fault::at(0, "type", format!("this type has no `{member_name}`"))),
         other => Err(Fault::expected(0, "a record or class type", other)),
     }
 }
@@ -94,11 +93,11 @@ fn with_field(args: &[Yaml]) -> Result<Yaml, Fault> {
     }
     let Yaml::String(name) = &args[1] else { return Err(Fault::expected(1, "string field name", &args[1])) };
     spec_arg(args, 2)?;
-    let Some(Yaml::Hash(fields)) = record.get(&s("fields")) else { return Err(Fault::at(0, "type", "malformed record type".into())) };
+    let Some(Yaml::Hash(fields)) = record.get(&Yaml::String("fields".to_string())) else { return Err(Fault::at(0, "type", "malformed record type".into())) };
     let mut fields = fields.clone();
-    match fields.get_mut(&s(name)) {
+    match fields.get_mut(&Yaml::String(name.to_string())) {
         Some(slot) => *slot = args[2].clone(),
-        None => drop(fields.insert(s(name), args[2].clone())),
+        None => drop(fields.insert(Yaml::String(name.to_string()), args[2].clone())),
     }
     Ok(descriptor("record", [("fields", Yaml::Hash(fields))]))
 }
@@ -118,7 +117,7 @@ fn record(args: &[Yaml]) -> Result<Yaml, Fault> {
     for (i, pair) in args.chunks_exact(2).enumerate() {
         let Yaml::String(name) = &pair[0] else { return Err(Fault::expected(2 * i, "string field name", &pair[0])) };
         spec_arg(args, 2 * i + 1)?;
-        if fields.insert(s(name), pair[1].clone()).is_some() {
+        if fields.insert(Yaml::String(name.to_string()), pair[1].clone()).is_some() {
             return Err(Fault::at(2 * i, "type", format!("duplicate field `{name}`")));
         }
     }

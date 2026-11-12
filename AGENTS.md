@@ -11,9 +11,9 @@ Keep bootstrapping single-step: Helix must never be a prerequisite for building 
 ## Architecture
 
 - `src/graph.rs` parses YAML into an arena with source spans and parent links; those links define lexical scope. `src/link.rs` links literal imports before evaluation and isolates module scope.
-- `src/eval.rs` owns evaluation order, memoization, calls, closures, and resource accounting. `src/builtins.rs` dispatches pure operations; `src/builtins/typing/` implements types, class composition, and machine-state comparison using the same evaluator for predicates.
+- `src/eval.rs` owns evaluation order, memoization, calls, closures, and resource accounting. `src/builtins.rs` registers actor identity, arity, and evaluation policy in shared descriptors and dispatches pure operations; `src/builtins/typing/` implements types, class composition, and machine-state comparison using the same evaluator for predicates.
 - `src/vm.rs` exposes lifecycle, run/check, and recovery through the public API in `src/lib.rs`. Check collects evaluation failures, not static errors in uncalled code. Recovery preserves completed root fields and retries unfinished work; it does not restore active continuations.
-- `src/emit.rs` preserves the distinction between executable source and literal data when emitting YAML. `src/error.rs` owns structured diagnostics and source blame.
+- `src/value.rs` owns shared value inspection; `src/source.rs` owns persisted-source conversion, callable reloading, and recovery serialization. `src/emit.rs` preserves source versus literal data when emitting YAML. `src/error.rs` owns structured diagnostics and source blame.
 - `std/` contains embedded Helix libraries. Build derived operations from existing primitives; pure testing policy belongs in `std:test`, while Python owns process and filesystem checks.
 - `src/main.rs` owns language CLI behavior. `manage.py` is the single project-tooling entrypoint; `tooling/cli.py` owns its discoverable command tree. `hyperlinter/` is the upstream lint submodule.
 

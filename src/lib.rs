@@ -7,7 +7,9 @@ mod eval;
 mod graph;
 mod library;
 mod link;
+mod source;
 mod span;
+mod value;
 mod vm;
 
 pub use library::names as std_modules;
