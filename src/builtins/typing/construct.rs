@@ -63,7 +63,7 @@ pub(super) fn apply(actor: &str, args: &[Yaml], pred: &mut Pred) -> Result<Yaml,
             let plural = if found.len() == 1 { "" } else { "s" };
             let message = format!("{} type violation{plural}: {}", found.len(), found[0].message());
             let data = mapping([("violations", Yaml::Array(found.iter().map(Violation::to_yaml).collect()))]);
-            Err(Fault { kind: "type".into(), message, arg: Some(0), data: Some(data) })
+            Err(Fault { cause: None, kind: "type".into(), message, arg: Some(0), data: Some(data) })
         }
         "subtype" => Ok(Yaml::Boolean(subtype(&type_arg(args, 0)?, &type_arg(args, 1)?, pred))),
         "secret" => match &args[0] {

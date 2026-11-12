@@ -5,3 +5,8 @@ error:
   path: /r/1
   line: 1
   column: 10
+  calls:
+    - path: /r/1
+      line: 1
+      column: 10
+      function: /r/1

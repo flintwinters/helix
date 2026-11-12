@@ -83,6 +83,18 @@ impl Evaluator {
         result
     }
 
+    /// Completed root fields become literal values; unfinished fields retain their source.
+    /// Do not splice cached subexpressions into calls: argument positions interpret strings as symbols.
+    pub(crate) fn recovery_source(&self) -> String {
+        let value = match self.graph.kind(ROOT) {
+            Kind::Map(entries) => Yaml::Hash(entries.iter().map(|(name, id)| {
+                (s(name), self.memo.get(id).cloned().unwrap_or_else(|| self.raw(*id)))
+            }).collect()),
+            _ => self.memo.get(&ROOT).cloned().unwrap_or_else(|| self.raw(ROOT)),
+        };
+        emit::document(&value)
+    }
+
     /// Every error in the program, not just the first: containers and non-expression lists are
     /// walked so each entry fails or succeeds on its own, and an expression is evaluated whole.
     /// Duplicates (one failure reached through several dependents) are reported once.
@@ -378,7 +390,7 @@ impl Evaluator {
 
     /// A builtin `Fault` as an error blamed on the offending argument node, or the whole call.
     fn from_fault(&self, site: NodeId, args: &[NodeId], fault: Fault) -> HelixError {
-        HelixError { data: fault.data, ..self.err(fault.arg.and_then(|i| args.get(i).copied()).unwrap_or(site), fault.kind, fault.message) }
+        HelixError { cause: fault.cause, data: fault.data, ..self.err(fault.arg.and_then(|i| args.get(i).copied()).unwrap_or(site), fault.kind, fault.message) }
     }
 
     /// Run a refinement's predicate source on `value`. The source arrives as data, so it is grafted
@@ -423,6 +435,20 @@ impl Evaluator {
     /// Run a function body with `args` bound to its parameters; `site` is blamed for a wrong
     /// argument count or a call nested deeper than `MAX_DEPTH`.
     fn call(&mut self, site: NodeId, function: NodeId, args: Vec<Yaml>) -> Result<Yaml, HelixError> {
+        self.call_body(site, function, args).map_err(|mut error| {
+            let mut location = Hash::new();
+            if let Some(file) = self.graph.source(site) { location.insert(s("file"), s(file)); }
+            location.insert(s("path"), s(&self.graph.path(site)));
+            let span = self.graph.span(site);
+            location.insert(s("line"), Yaml::Integer(span.line as i64));
+            location.insert(s("column"), Yaml::Integer(span.col as i64));
+            location.insert(s("function"), s(&self.graph.path(function)));
+            error.calls.push(Yaml::Hash(location));
+            error
+        })
+    }
+
+    fn call_body(&mut self, site: NodeId, function: NodeId, args: Vec<Yaml>) -> Result<Yaml, HelixError> {
         let params: Vec<(String, Option<NodeId>)> = self.parameters(function)?.into_iter().map(|(name, ty)| (name.to_string(), ty)).collect();
         let n = params.len();
         if n != args.len() {

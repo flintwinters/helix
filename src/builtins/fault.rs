@@ -11,15 +11,17 @@ pub struct Fault {
     pub arg: Option<usize>,
     /// Payload of a user `raise`; builtins never set it.
     pub data: Option<Yaml>,
+    /// The original error map when user code re-raises it.
+    pub cause: Option<Yaml>,
 }
 
 impl Fault {
     pub(super) fn at(arg: usize, kind: &'static str, message: String) -> Fault {
-        Fault { kind: kind.into(), message, arg: Some(arg), data: None }
+        Fault { kind: kind.into(), message, arg: Some(arg), data: None, cause: None }
     }
 
     pub(super) fn whole(kind: &'static str, message: String) -> Fault {
-        Fault { kind: kind.into(), message, arg: None, data: None }
+        Fault { kind: kind.into(), message, arg: None, data: None, cause: None }
     }
 
     pub(super) fn expected(arg: usize, wanted: &str, got: &Yaml) -> Fault {

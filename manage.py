@@ -210,6 +210,8 @@ def main() -> int:
     inline.add_argument("--check", action="store_true", help="collect independent evaluation errors")
     sub.add_parser("inventory", help="Helix-powered source inventory by directory")
     sub.add_parser("run").add_argument("file")
+    sub.add_parser("recover").add_argument("file")
+    sub.add_parser("resume").add_argument("file")
     sub.add_parser("check").add_argument("file")
     testing = sub.add_parser("test")
     testing.add_argument("--bless", action="store_true")
@@ -228,8 +230,8 @@ def main() -> int:
         return build() or inventory(helix, ROOT)
     if args.cmd == "build":
         return build()
-    if args.cmd == "run":
-        return build() or subprocess.call([str(BIN), "run", args.file], cwd=ROOT)
+    if args.cmd in ("run", "recover", "resume"):
+        return build() or subprocess.call([str(BIN), args.cmd, args.file], cwd=ROOT)
     if args.cmd == "check":
         return build() or subprocess.call([str(BIN), "check", args.file], cwd=ROOT)
     if args.cmd == "std":

@@ -17,6 +17,10 @@ pub struct HelixError {
     pub span: Span,
     /// Plain-value payload attached by user code via `raise`.
     pub data: Option<Yaml>,
+    /// Call sites ordered from the innermost invocation outward.
+    pub(crate) calls: Vec<Yaml>,
+    /// Complete original error supplied to a map-form re-raise.
+    pub(crate) cause: Option<Yaml>,
 }
 
 impl HelixError {
@@ -35,6 +39,10 @@ impl HelixError {
         if let Some(data) = &self.data {
             h.insert(s("data"), data.clone());
         }
+        if !self.calls.is_empty() {
+            h.insert(s("calls"), Yaml::Array(self.calls.clone()));
+        }
+        if let Some(cause) = &self.cause { h.insert(s("cause"), cause.clone()); }
         Yaml::Hash(h)
     }
 }

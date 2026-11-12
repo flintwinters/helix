@@ -25,9 +25,24 @@ error:
             actual:
               - 1
               - 2
+          calls:
+            - path: /2/2
+              line: 21
+              column: 5
+              function: /1/t.equal
+            - file: "std:test"
+              path: /capture/2/1/4/1
+              line: 8
+              column: 51
+              function: /2
         name: deliberate_mismatch
         input: ~
       - outcome: passed
         value: ~
         name: still_runs
         input: ~
+  calls:
+    - path: /result
+      line: 4
+      column: 3
+      function: /require_pass

@@ -1,0 +1,5 @@
+leaf: [fn, [], [div, 1, 0]]
+middle: [fn, [], [leaf]]
+caught: [try, [middle], [fn, [e], e]]
+reraised: [try, [try, [middle], [fn, [e], [raise, e]]], [fn, [e], e]]
+nested: [try, [try, [try, [raise, "original", "failure", {step: 3}], [fn, [e], [raise, e]]], [fn, [e], [raise, e]]], [fn, [e], e]]

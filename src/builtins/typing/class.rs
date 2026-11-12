@@ -155,7 +155,7 @@ impl Class {
 fn conflict(field: &str, first: &str, second: &str, what: &str, resolver: &str) -> Fault {
     let message = format!("field `{field}` has {what} from both `{first}` and `{second}`; resolve it in `{resolver}`");
     let data = mapping([("field", s(field)), ("sources", Yaml::Array(vec![s(first), s(second)]))]);
-    Fault { kind: "conflict".into(), message, arg: Some(1), data: Some(data) }
+    Fault { cause: None, kind: "conflict".into(), message, arg: Some(1), data: Some(data) }
 }
 
 /// Merge `parents` with this class's own `fields` and `values` (arguments 2 and 3 of `extend`).
@@ -211,7 +211,7 @@ fn narrow(field: &str, spec: &Yaml, inherited: &[&Slot], name: &str, arg: usize,
         if !subtype(&own.ty, &theirs.ty, pred) || (!own.required && theirs.required) {
             let message = format!("`{name}` redeclares field `{field}` in a way that does not fit the declaration from `{}`", slot.declared_by);
             let data = mapping([("field", s(field)), ("sources", Yaml::Array(vec![s(&slot.declared_by), s(name)]))]);
-            return Err(Fault { kind: "conflict".into(), message, arg: Some(arg), data: Some(data) });
+            return Err(Fault { cause: None, kind: "conflict".into(), message, arg: Some(arg), data: Some(data) });
         }
     }
     Ok(())
@@ -229,7 +229,7 @@ fn validate(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
         return Ok(());
     }
     let message = format!("{} misfit{} in the values of `{}`: {}", found.len(), if found.len() == 1 { "" } else { "s" }, class.name, found[0].1);
-    Err(Fault { kind: "type".into(), message, arg: None, data: Some(mapping([("violations", Yaml::Array(found.into_iter().map(|f| f.0).collect()))])) })
+    Err(Fault { cause: None, kind: "type".into(), message, arg: None, data: Some(mapping([("violations", Yaml::Array(found.into_iter().map(|f| f.0).collect()))])) })
 }
 
 fn check_slot(field: &str, value: &Yaml, ty: &Ty, pred: &mut Pred) -> Vec<(Yaml, String)> {
@@ -260,7 +260,7 @@ fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Clas
         let list = missing.iter().map(|m| format!("`{}` (required by {})", m.name, m.declared_by)).collect::<Vec<_>>().join(", ");
         let entries = missing.iter().map(|m| mapping([("field", s(&m.name)), ("required_by", s(&m.declared_by))])).collect();
         let message = format!("class `{}` is abstract: missing {list}", class.name);
-        return Err(Fault { kind: "abstract".into(), message, arg, data: Some(mapping([("missing", Yaml::Array(entries))])) });
+        return Err(Fault { cause: None, kind: "abstract".into(), message, arg, data: Some(mapping([("missing", Yaml::Array(entries))])) });
     }
     validate(&class, pred)?;
     class.concrete = true;

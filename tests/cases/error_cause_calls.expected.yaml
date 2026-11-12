@@ -1,0 +1,87 @@
+status: finished
+root:
+  leaf:
+    - fn
+    - []
+    - - div
+      - 1
+      - 0
+  middle:
+    - fn
+    - []
+    - - leaf
+  caught:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    path: /leaf/2
+    line: 1
+    column: 16
+    calls:
+      - path: /middle/2
+        line: 2
+        column: 18
+        function: /leaf
+      - path: /caught/1
+        line: 3
+        column: 15
+        function: /middle
+  reraised:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    path: /reraised/1/2/2
+    line: 4
+    column: 43
+    calls:
+      - path: /reraised/1/2
+        line: 4
+        column: 33
+        function: /reraised/1/2
+    cause:
+      kind: divide_by_zero
+      message: "`div` by zero"
+      path: /leaf/2
+      line: 1
+      column: 16
+      calls:
+        - path: /middle/2
+          line: 2
+          column: 18
+          function: /leaf
+        - path: /reraised/1/1
+          line: 4
+          column: 23
+          function: /middle
+  nested:
+    kind: original
+    message: failure
+    path: /nested/1/2/2
+    line: 5
+    column: 104
+    data:
+      step: 3
+    calls:
+      - path: /nested/1/2
+        line: 5
+        column: 94
+        function: /nested/1/2
+    cause:
+      kind: original
+      message: failure
+      path: /nested/1/1/2/2
+      line: 5
+      column: 80
+      data:
+        step: 3
+      calls:
+        - path: /nested/1/1/2
+          line: 5
+          column: 70
+          function: /nested/1/1/2
+      cause:
+        kind: original
+        message: failure
+        path: /nested/1/1/1
+        line: 5
+        column: 27
+        data:
+          step: 3

@@ -672,6 +672,11 @@ root:
         - argument: "n"
           at: /
           message: "expected integer | float, got string"
+    calls:
+      - path: /bad_abs/1
+        line: 13
+        column: 16
+        function: /abs
   bad_min:
     violations:
       - argument: a

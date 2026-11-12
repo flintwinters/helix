@@ -75,6 +75,8 @@ def harness(h):
 def cli(h):
     from tests.suites.tooling_cli import verify as verify_tooling_cli
     verify_tooling_cli(h)
+    from tests.suites.recovery import verify as verify_recovery
+    verify_recovery(h)
     from tests.suites.inventory import verify
     verify(h)
     for args in [(), ("unknown",), ("--help",), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:

@@ -5,3 +5,808 @@ error:
   path: /spin/2
   line: 1
   column: 17
+  calls:
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /spin/2
+      line: 1
+      column: 17
+      function: /spin
+    - path: /never
+      line: 2
+      column: 8
+      function: /spin

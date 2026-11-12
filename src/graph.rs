@@ -45,7 +45,7 @@ impl Graph {
                 file: None,
                 path: None,
                 span: span(e.marker()),
-                data: None,
+                data: None, calls: Vec::new(), cause: None,
             })?;
         if let Some(err) = builder.error {
             return Err(err);
@@ -57,7 +57,7 @@ impl Graph {
                 file: None,
                 path: None,
                 span: Span { line: 1, col: 1 },
-                data: None,
+                data: None, calls: Vec::new(), cause: None,
             });
         }
         Ok(builder.graph)
@@ -120,7 +120,7 @@ impl Graph {
 
     /// An error of `kind` blamed on node `id`, with its path, span and file.
     pub fn error(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
-        HelixError { kind: kind.into(), message, file: self.source(id).map(str::to_string), path: Some(self.path(id)), span: self.span(id), data: None }
+        HelixError { kind: kind.into(), message, file: self.source(id).map(str::to_string), path: Some(self.path(id)), span: self.span(id), data: None, calls: Vec::new(), cause: None }
     }
 
     /// A plain (unquoted) string, which is a symbol in expression position.
@@ -159,7 +159,7 @@ struct Builder {
 impl Builder {
     /// Record the first error; `on_event` ignores everything after it.
     fn fail(&mut self, kind: &'static str, message: &str, at: Marker) {
-        self.error = Some(HelixError { kind: kind.into(), message: message.into(), file: None, path: None, span: span(&at), data: None });
+        self.error = Some(HelixError { kind: kind.into(), message: message.into(), file: None, path: None, span: span(&at), data: None, calls: Vec::new(), cause: None });
     }
 
     /// Attach a new node to the open container (or make it the root) and return its id.

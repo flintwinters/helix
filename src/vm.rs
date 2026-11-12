@@ -1,6 +1,6 @@
 //! The VM: lifecycle status around an evaluator, and the serialized state document.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
@@ -8,7 +8,7 @@ use yaml_rust2::Yaml;
 use crate::emit;
 use crate::error::{s, HelixError};
 use crate::eval::Evaluator;
-use crate::graph::{Graph, ROOT};
+use crate::graph::{Graph, Kind, ROOT};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
@@ -33,6 +33,7 @@ impl Status {
 
 pub struct Vm {
     evaluator: Option<Evaluator>,
+    source_file: Option<PathBuf>,
     status: Status,
     result: Option<Yaml>,
     error: Option<HelixError>,
@@ -53,7 +54,7 @@ impl Vm {
     }
 
     fn load_from(src: &str, file: Option<&Path>) -> Vm {
-        let mut vm = Vm { evaluator: None, status: Status::Ready, result: None, error: None, checking: false, errors: Vec::new() };
+        let mut vm = Vm { evaluator: None, source_file: file.map(|p| p.canonicalize().unwrap_or_else(|_| p.to_path_buf())), status: Status::Ready, result: None, error: None, checking: false, errors: Vec::new() };
         match Graph::parse(src).and_then(|graph| Evaluator::new(graph, file)) {
             Ok(evaluator) => vm.evaluator = Some(evaluator),
             Err(e) => vm.fail(e),
@@ -123,6 +124,45 @@ impl Vm {
             h.insert(s("error"), e.to_yaml());
         }
         Yaml::Hash(h)
+    }
+
+    /// Opt-in pure recovery checkpoint. Successful root fields are frozen; active calls restart.
+    pub fn recovery_state_string(&self) -> String {
+        let mut state = self.state();
+        if self.status == Status::Error {
+            if let (Some(evaluator), Yaml::Hash(fields)) = (&self.evaluator, &mut state) {
+                fields.insert(s("recovery"), s(&evaluator.recovery_source()));
+                if let Some(file) = &self.source_file {
+                    fields.insert(s("recovery_file"), s(&file.to_string_lossy()));
+                }
+            }
+        }
+        emit::document(&state)
+    }
+
+    /// Restore an opt-in failed-run checkpoint after editing its recovery source.
+    pub fn resume(src: &str) -> Vm {
+        if let Ok(graph) = Graph::parse(src) {
+            if let Kind::Map(entries) = graph.kind(ROOT) {
+                let text = |name: &str| entries.iter().find(|(key, _)| key == name).and_then(|(_, id)| {
+                    match graph.kind(*id) {
+                        Kind::Scalar { value: Yaml::String(value), .. } => Some(value.as_str()),
+                        _ => None,
+                    }
+                });
+                if text("status") == Some("error") {
+                    if let Some(source) = text("recovery") {
+                        return Vm::load_from(source, text("recovery_file").map(Path::new));
+                    }
+                }
+            }
+        }
+        // Use the normal parser/error representation even for an invalid checkpoint.
+        let mut vm = Vm::load("null");
+        let graph = Graph::parse("null").unwrap_or_else(|_| unreachable!("literal null parses"));
+        vm.fail(graph.error(ROOT, "recovery", "expected an error state with string recovery source".into()));
+        vm.evaluator = None;
+        vm
     }
 
     pub fn state_string(&self) -> String {

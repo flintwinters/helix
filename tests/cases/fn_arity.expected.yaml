@@ -5,3 +5,8 @@ error:
   path: /bad
   line: 2
   column: 6
+  calls:
+    - path: /bad
+      line: 2
+      column: 6
+      function: /double

@@ -5,3 +5,14 @@ error:
   path: /guard/2/3
   line: 2
   column: 71
+  calls:
+    - path: /unexpected/2
+      line: 3
+      column: 50
+      function: /guard
+  cause:
+    kind: fatal
+    message: disk gone
+    path: /unexpected/1
+    line: 3
+    column: 19

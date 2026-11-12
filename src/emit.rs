@@ -6,7 +6,12 @@ use yaml_rust2::Yaml;
 
 pub fn document(value: &Yaml) -> String {
     let mut out = String::new();
-    block(value, 0, &mut out);
+    if is_container(value) {
+        block(value, 0, &mut out);
+    } else {
+        out.push_str(&scalar(value));
+        out.push('\n');
+    }
     out
 }
 

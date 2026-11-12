@@ -1,0 +1,78 @@
+"""Pure failed-run recovery contracts, invoked by the CLI suite."""
+import yaml
+
+
+def verify(h):
+    source = (h.CASES / "error_recovery.yaml").read_text()
+    failed = h.helix("recover", "-", stdin=source)
+    assert failed.returncode == 1 and not failed.stderr
+    for command, original in [("recover", source), ("resume", failed.stdout)]:
+        for damaged in h.mutations(original):
+            result = h.helix(command, "-", stdin=damaged)
+            assert h.malformed_state(result.stdout, result.returncode) is None, (command, damaged, result)
+    state = yaml.safe_load(failed.stdout)
+    assert state["error"]["kind"] == "divide_by_zero"
+    recovery = state["recovery"]
+    assert "done: 42" in recovery and "div" in recovery and "add" not in recovery
+    # Edit through YAML rather than assuming a particular scalar layout.
+    program = yaml.safe_load(recovery)
+    program["broken"][-1] = 2
+    state["recovery"] = yaml.safe_dump(program, sort_keys=False)
+    resumed = h.helix("resume", "-", stdin=yaml.safe_dump(state))
+    assert resumed.returncode == 0, resumed.stdout
+    assert yaml.safe_load(resumed.stdout)["root"] == {"done": 42, "broken": 3}
+    # Repeated failure retains the successfully computed field and remains retryable.
+    retry = h.helix("resume", "-", stdin=failed.stdout)
+    assert retry.returncode == 1
+    assert yaml.safe_load(retry.stdout)["recovery"] == recovery
+    for invalid in ["[", "null", "status: finished\nrecovery: '42'", "status: error\nrecovery: 42"]:
+        result = h.helix("resume", "-", stdin=invalid)
+        assert result.returncode == 1 and yaml.safe_load(result.stdout)["error"]["kind"] == "recovery", (invalid, result)
+    # Source literals and functions keep their meaning after a fresh process reload.
+    source = 'text: "add"\nitems: ["add", "x"]\nf: [fn, [x], [add, x, 1]]\nbad: [div, 1, 0]\n'
+    state = yaml.safe_load(h.helix("recover", "-", stdin=source).stdout)
+    state["recovery"] = state["recovery"].replace("bad:", "unused:") + '\nanswer: [f, 41]\n'
+    # Repair only the unfinished expression, preserving the emitted scalar styles.
+    state["recovery"] = state["recovery"].replace("- 0", "- 1")
+    result = h.helix("resume", "-", stdin=yaml.safe_dump(state))
+    assert result.returncode == 0, result.stdout
+    root = yaml.safe_load(result.stdout)["root"]
+    assert root["text"] == "add" and root["items"] == ["add", "x"] and root["answer"] == 42
+
+    for source in ['[div, 1, 0]', '42', 'null', '[]', '{}']:
+        result = h.helix("recover", "-", stdin=source)
+        assert result.returncode in (0, 1) and not result.stderr, result
+    # File-relative imports survive multiple failed attempts from a different state directory.
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="recovery-") as directory:
+        base = Path(directory)
+        (base / "helper.yaml").write_text("value: 42")
+        program = base / "program.yaml"
+        program.write_text('m: [import, "helper.yaml"]\ndone: [add, m.value, 0]\nbroken: [div, 1, 0]\n')
+        state = yaml.safe_load(h.helix("recover", str(program)).stdout)
+        checkpoint = base / "nested" / "state.yaml"
+        checkpoint.parent.mkdir()
+        checkpoint.write_text(yaml.safe_dump(state))
+        failed = h.helix("resume", str(checkpoint))
+        again = yaml.safe_load(failed.stdout)
+        assert failed.returncode == 1 and again["recovery_file"] == str(program)
+        again["recovery"] = again["recovery"].replace("- 0", "- 1")
+        checkpoint.write_text(yaml.safe_dump(again))
+        result = h.helix("resume", str(checkpoint))
+        assert result.returncode == 0, result
+        assert yaml.safe_load(result.stdout)["root"]["done"] == 42
+
+        (base / "helper.yaml").write_text("leaf: [fn, [], [div, 1, 0]]\nmiddle: [fn, [], [leaf]]\n")
+        program.write_text('m: [import, "helper.yaml"]\nvalue: [m.middle]\n')
+        result = h.helix("run", str(program))
+        error = yaml.safe_load(result.stdout)["error"]
+        assert result.returncode == 1 and error["file"].endswith("helper.yaml")
+        inner, outer = error["calls"]
+        assert inner["file"].endswith("helper.yaml") and inner["path"] == "/middle/2"
+        assert (inner["line"], inner["column"], inner["function"]) == (2, 18, "/leaf")
+        assert "file" not in outer and outer["path"] == "/value"
+        # The checkpoint parser rejects duplicate keys and never evaluates checkpoint fields.
+        for invalid in ["status: error\nstatus: error\nrecovery: '42'", "status: [raise, evil]"]:
+            result = h.helix("resume", "-", stdin=invalid)
+            assert result.returncode == 1 and yaml.safe_load(result.stdout)["error"]["kind"] == "recovery"
