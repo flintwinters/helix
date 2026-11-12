@@ -317,7 +317,7 @@ The goal is justified guarantees, with the assumptions and limits visible. Execu
 
 ### Type classes and inheritance
 
-An abstract class is an incomplete description: some fields fixed, some defaulted, some demanded but left open. Inheriting is composing descriptions, and a concrete type is one with nothing left open. This is not object-oriented inheritance: no methods, no dispatch, no behaviour is inherited, only fields, defaults and constraints, so the result of inheriting is always a plain flattened type that could have been written out by hand. Classes are meant to be small and combined freely (`server` plus `has_ssh` plus `monitored`) rather than arranged in a deep tree. Because several parents will disagree, the merge rules are the heart of this group: they must be few, written down, deterministic, and they must refuse to guess. An ambiguity the author did not resolve is an error, never a precedence rule that picks a winner quietly.
+An abstract class is an incomplete description: some fields fixed, some defaulted, some demanded but left open. Inheriting is composing descriptions, and a concrete type is one with nothing left open. This class algebra composes fields, defaults and constraints into a plain flattened type that could have been written out by hand. Composition of behavior is a separate design goal below, built on ordinary values and functions. Classes are meant to be small and combined freely (`server` plus `has_ssh` plus `monitored`) rather than arranged in a deep tree. Because several parents will disagree, the merge rules are the heart of this group: they must be few, written down, deterministic, and they must refuse to guess. An ambiguity the author did not resolve is an error, never a precedence rule that picks a winner quietly.
 
 - [ ] Abstract type classes: declare required fields and constraints without a concrete value (`machine`, `server`, `has_ssh`)
   - [ ] A class field is one of: fixed to a value, defaulted, or demanded and left open
@@ -354,6 +354,22 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
   - [ ] It is an ordinary `fn` returning a class: no separate generics mechanism
   - [ ] Arguments are themselves type-checked
   - [ ] Provenance records the arguments a class was instantiated with
+
+### Tools for composition over inheritance
+
+Take the Smalltalk intuition of sending a message to a value, with a mathematically small, pure core: an object is readable data with behavior, and a message application is a function of the receiver and arguments. Prefer composing small capabilities to growing class hierarchies. These are design goals; syntax and dispatch rules remain to be settled.
+
+- [ ] Compose objects from immutable records and existing first-class functions; methods reuse ordinary `fn` parameters, closures and result contracts
+- [ ] Define message application as explicit receiver/name/arguments lookup and function application, with one documented rule for binding the receiver (`self`)
+- [ ] Pure state transitions return a new value (and any result); the original receiver stays unchanged, and identical inputs give identical outputs
+- [ ] Assemble small capabilities with explicit record composition; disjoint members combine, shared members require agreement or an explicit resolution, and parent order never silently picks a winner
+- [ ] Delegate selected messages to a contained value; forwarding and receiver binding are explicit, with no hidden superclass chain
+- [ ] Adapt capabilities through explicit member selection, renaming and exclusion, reusing ordinary map/function tools wherever possible
+- [ ] Support polymorphism through a shared message contract; distinguish satisfying a capability from declaring an ancestor, and reuse the type algebra for compatibility
+- [ ] Keep behavior discoverable as data: inspect available messages, contracts, captured bindings and composition provenance; missing or conflicting messages produce structured errors with source locations
+- [ ] Serialize composed values, behavior and captured state through the existing YAML round trip; saving and reloading preserves message results without hidden host identity
+- [ ] Document composition laws and boundaries: identity, associativity for compatible components, conflict behavior and observational equivalence; demonstrate them with golden cases and reproducible laws through `./manage.py`
+- [ ] Demonstrate a small pure object built from independent capabilities, a delegated wrapper and an immutable update, without requiring inheritance or a parallel method evaluator
 
 ### Machine configs as type-time types
 
