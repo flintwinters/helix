@@ -6,6 +6,25 @@ The central idea is that program source and machine state should share one reada
 
 ## Try it
 
+For shell pipelines, build with `./manage.py build` and put `target/debug` on your
+`PATH` (or install both executables with `cargo install --path .`). Then:
+
+```sh
+hx '"[add, 20, 22]"' | hx
+# 42
+hx '[add, 20, 22]'
+# 42
+```
+
+`hx [PROGRAM | -]` evaluates inline YAML, or reads a program from stdin when no
+argument is given. It emits string results verbatim, without added quotes or a
+newline, and other values as YAML using the normal round-trip emitter. A string
+containing program source therefore becomes executable input to the next `hx`.
+Errors go to stderr as structured VM state, leave stdout empty, and exit 1;
+usage/read errors exit 2. Use `set -o pipefail` to detect failures anywhere in a
+shell pipeline. Imports resolve from the working directory. `helix run` continues
+to emit full VM state for inspection and recovery.
+
 You need Rust with Cargo (supporting the 2024 edition), Python 3.10 or newer, and [PyYAML](https://pypi.org/project/PyYAML/). Help, command discovery, builds, and runtime invocation work without PyYAML; tests and inventory use it.
 
 ```sh

@@ -9,6 +9,7 @@ SUITES = {
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",
     "cli": "Runtime and project CLI contracts, imports, inventory, and recovery",
+    "pipeline": "hx inline/stdin execution, raw strings, YAML results, errors and shell pipes",
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
     "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",
     "errors": "Navigable function definitions, imported call chains, caught errors and causes",

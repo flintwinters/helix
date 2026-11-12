@@ -114,6 +114,7 @@ def test(bless: bool, suites: list[str] | None = None) -> int:
         original = BIN
         snapshot = Path(directory) / "helix"
         shutil.copy2(original, snapshot)
+        shutil.copy2(original.with_name("hx"), snapshot.with_name("hx"))
         BIN = snapshot
         try:
             return regression(bless, suites)
