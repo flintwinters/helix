@@ -47,7 +47,8 @@ def root_section(state: str) -> str | None:
     """Re-executable ordinary-data root; named object graphs are inspection only."""
     import yaml
 
-    lines = state.splitlines()
+    # Unicode line separators inside quoted scalars are not YAML physical lines.
+    lines = state.split("\n")
     if not lines or lines[0] != "status: finished":
         return None
     if "objects" in yaml.safe_load(state):
@@ -98,16 +99,6 @@ def malformed_state(out: str, returncode: int) -> str | None:
     return None
 
 
-def mutations(src: str):
-    """Damaged variants of a program: every line prefix, every single-line deletion, and strided character prefixes."""
-    lines = src.splitlines(keepends=True)
-    for n in range(len(lines)):
-        yield "".join(lines[:n])
-        yield "".join(lines[:n] + lines[n + 1 :])
-    for n in range(0, len(src), 5):
-        yield src[:n]
-
-
 @dataclass(frozen=True)
 class TestContext:
     """One test run's execution configuration; derive isolated overrides with replace()."""
@@ -126,7 +117,6 @@ class TestContext:
 
     root_section = staticmethod(root_section)
     malformed_state = staticmethod(malformed_state)
-    mutations = staticmethod(mutations)
 
     def helix(self, *args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
         command = [str(self.binary), *args]
@@ -135,6 +125,35 @@ class TestContext:
                                        cwd=self.root, timeout=self.timeout)
         except subprocess.TimeoutExpired as error:
             return subprocess.CompletedProcess(command, 124, "", f"timed out: {error}")
+
+    def mutations(self, source: str):
+        """Generate damaged inputs in Helix, keeping generator failures host-visible."""
+        import yaml
+
+        # YAML escapes preserve astral characters and Unicode line separators.
+        literal = yaml.safe_dump(source, default_style='"', allow_unicode=False).strip()
+        program = '[let, {fuzz: [import, "std:fuzz"]}, [fuzz.plan, ' + literal + ']]'
+        result = self.helix("run", "-", stdin=program)
+        problem = self.malformed_state(result.stdout, result.returncode)
+        if problem is None and (result.returncode != 0 or result.stderr):
+            problem = "generator did not finish cleanly"
+        if problem is None:
+            state = yaml.safe_load(result.stdout)
+            variants = state.get("root")
+            if not isinstance(variants, list) or not all(
+                isinstance(variant, list) and all(
+                    isinstance(span, list) and len(span) == 2
+                    and all(type(bound) is int for bound in span)
+                    and 0 <= span[0] <= span[1] <= len(source)
+                    for span in variant)
+                for variant in variants
+            ):
+                problem = "generator root must contain variants of bounded source spans"
+        if problem is not None:
+            raise RuntimeError(f"std:fuzz.plan failed: {problem}\n"
+                               f"exit: {result.returncode}\n{result.stdout}\n{result.stderr}")
+        for variant in variants:
+            yield "".join(source[start:end] for start, end in variant)
 
     def test(self, bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS,
              patterns: list[str] | None = None) -> int:
