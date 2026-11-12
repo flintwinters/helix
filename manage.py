@@ -60,7 +60,7 @@ def malformed_state(out: str, returncode: int) -> str | None:
     if returncode not in (0, 1):
         return f"exit code {returncode} (panic?)"
     try:
-        state = yaml.safe_load(out)
+        state = yaml.load(out, Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader))
     except yaml.YAMLError as e:
         return f"state is not valid YAML: {e}"
     if not isinstance(state, dict) or "status" not in state:
