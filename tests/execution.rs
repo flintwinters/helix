@@ -306,6 +306,22 @@ fn effects_yield_preserve_continuations_and_do_not_repeat_on_resume() {
 }
 
 #[test]
+fn type_time_after_effects_names_the_outcomes_that_could_reach_it() {
+    let mut vm = Vm::load(r##"{"early": {"$call": ["type_time", {"$call": ["add", 1, 1]}]}, "f": {"$call": ["fn", ["x"], {"$call": ["type_time", {"$call": ["add", {"$ref": "x"}, 1]}]}]}, "answer": {"$call": ["f", {"$call": ["effect", "time", null]}]}}"##);
+    vm.run();
+    assert_eq!(vm.status(), Status::Signaled);
+    assert!(vm.state()["type_time_inputs"].is_badvalue(), "no outcome precedes a preflighted region");
+    let mut resolved = vm.resolve_effect(Ok(Yaml::Integer(40)));
+    resolved.run();
+    assert_eq!(resolved.state()["root"]["answer"].as_i64(), Some(41));
+    let inputs = resolved.state()["type_time_inputs"].clone();
+    let inputs = inputs.as_vec().unwrap();
+    assert_eq!(inputs.len(), 1, "only the region after the effect is recorded");
+    assert_eq!(inputs[0]["effects"][0].as_i64(), Some(1));
+    assert_eq!(inputs[0]["location"]["path"][0].as_str(), Some("f"));
+}
+
+#[test]
 fn external_signal_preserves_pending_effect_and_requires_explicit_resume() {
     let mut vm = Vm::load(r##"{"$call": ["effect", "time", null]}"##);
     vm.run();

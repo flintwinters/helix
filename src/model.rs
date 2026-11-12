@@ -204,6 +204,8 @@ pub(crate) struct Evaluator {
     pub(crate) inherited_type_time: bool,
     pub(crate) pending_effect: Option<(NodeId, EffectRequest)>,
     pub(crate) effects: List,
+    /// Outermost type-time entries that followed completed effects, with the outcomes that preceded them.
+    pub(crate) type_inputs: List,
     pub(crate) effects_allowed: bool,
     pub(crate) signal: Option<Value>,
     pub(crate) remaining_work: usize,

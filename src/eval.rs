@@ -54,6 +54,7 @@ impl Evaluator {
             inherited_type_time: false,
             pending_effect: None,
             effects: Vec::new().into(),
+            type_inputs: Vec::new().into(),
             effects_allowed: true,
             signal: None,
             remaining_work: limits.max_work,

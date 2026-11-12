@@ -235,16 +235,16 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Read a class's parents and its still-open fields
   - [x] `{$call: [subtype, {$ref: a}, {$ref: b}]}`, with documented rules per type former
   - [x] A value built by reflection re-reads as the same type: `from_fields` for records; `std:types.redeclare(class, parents)` recovers a class from provenance, fixed values and constraints beyond its parents' (`types_reflection_inverse`; predicate functions are values within a run, but their emitted YAML is a non-restorable inspection graph)
-- [ ] Type-time evaluation (`types_type_time`, `types_type_time_effect`; `type_time` suite): a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
+- [x] Type-time evaluation (`types_type_time`, `types_type_time_effect`, `types_type_time_preflight`; `type_time` suite): a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
   - [x] Decided and documented: what marks type time (see Open questions)
   - [x] An effect attempted at type time is a structured error naming the effect and the node
   - [x] Bounded: the existing `depth` and `limit` caps apply, so type time ends or fails cleanly
-  - [ ] Deterministic: no time, randomness, environment or file contents reach type time unpinned — effect requests and file imports are blocked, but already supplied function arguments have no input-pinning/provenance enforcement
+  - [x] Deterministic: no time, randomness, environment or file contents reach type time unpinned — effects and file imports are blocked inside the phase; preflighted regions run before any outcome exists; a region entered after completed effects is listed in the state's `type_time_inputs` with the outcome ids that preceded it, an over-approximation of what could reach it (`tests/execution.rs`). Value-level taint tracking is not attempted
   - [x] The same type-time result whether reached by `helix check --evaluate` or by a full run (`type_time` suite); plain `check` does not evaluate type-time regions
-- [ ] Type-time errors (`types_type_time_error` golden case) are the same structured errors as run-time ones, with the phase recorded in the state
+- [x] Type-time errors (`types_type_time_error` golden case) are the same structured errors as run-time ones, with the phase recorded in the state
   - [x] Same shape and kinds (`kind`, `message`, `path`, `line`, `column`), catchable with `try` like any other
   - [x] The saved state records which phase failed
-  - [ ] A type-time failure stops before any run-time effect is attempted — regions are evaluated in ordinary execution order, not in a whole-program preflight; earlier effects and effects after a caught failure remain possible
+  - [x] A type-time failure stops before any run-time effect is attempted when its region is unconditional (mapping entries, sequence items, arguments of non-form calls): such regions are evaluated before the first run-time step (`types_type_time_preflight`). Regions under `try`, `if`, `fn`, `let` and iteration keep ordinary order so caught failures and unchosen branches behave as documented (`types_type_time_preflight_caught`)
 
 ### Expanding the type algebra
 

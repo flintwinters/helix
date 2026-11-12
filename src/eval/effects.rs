@@ -31,6 +31,25 @@ impl Evaluator {
         self.answer = None;
         Ok(())
     }
+    /// Type time is pure, so only recorded effect outcomes can make its result differ between runs.
+    /// An entry that follows completed effects names them; none is recorded for a region that no
+    /// outcome precedes, such as every preflighted region.
+    pub(super) fn record_type_inputs(&mut self, site: NodeId) {
+        if self.effects.is_empty() {
+            return;
+        }
+        let entry = Value::Hash(
+            [
+                (s("location"), self.graph().reference(site)),
+                (s("effects"), Value::Array((1..=self.effects.len() as i64).map(Value::Integer).collect::<Vec<_>>().into())),
+            ]
+            .into_iter()
+            .collect(),
+        );
+        if self.type_inputs.last() != Some(&entry) {
+            self.type_inputs.push(entry);
+        }
+    }
     pub fn resolve_effect(&mut self, result: Result<Yaml, (String, String)>) {
         let Some((site, request)) = self.pending_effect.take() else {
             return;

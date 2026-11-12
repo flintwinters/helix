@@ -265,6 +265,9 @@ impl Vm {
             if !evaluator.effects.is_empty() {
                 fields.insert(s("effects"), Value::Array(evaluator.effects.clone().into()));
             }
+            if !evaluator.type_inputs.is_empty() {
+                fields.insert(s("type_time_inputs"), Value::Array(evaluator.type_inputs.clone().into()));
+            }
             if let Some(event) = &evaluator.signal {
                 fields.insert(s("signal"), event.clone());
             }
