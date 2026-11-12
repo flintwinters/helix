@@ -1,0 +1,36 @@
+"""Failure evidence contracts, invoked by the harness suite."""
+import shlex
+import subprocess
+import tempfile
+from pathlib import Path
+
+from tooling.test_reports import failure
+
+
+def verify(h):
+    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="reports-") as temporary:
+        root = Path(temporary)
+        case = root / "tests" / "check" / "with spaces.yaml"
+        case.parent.mkdir(parents=True)
+        case.write_text("original")
+        result = subprocess.CompletedProcess([], 124, "actual", "timeout detail")
+        report = failure(root, case, "robustness", "timeout", "check", result,
+                         source="damaged", expected="expected\n")
+        assert "[robustness] tests/check/with spaces.yaml" in report
+        assert "exit: 124" in report and "timeout detail" in report
+        assert "-expected" in report and "+actual" in report
+        assert "No newline at end of file" in report
+        replay_line = next(line for line in report.splitlines() if line.startswith("reproduce:"))
+        args = shlex.split(replay_line.removeprefix("reproduce: "))
+        assert args[:2] == ["./manage.py", "check"]
+        assert (root / args[2]).read_text() == "damaged"
+        evidence = root / next(line.removeprefix("evidence: ") for line in report.splitlines()
+                               if line.startswith("evidence:"))
+        assert (evidence / "actual.yaml").read_text() == "actual"
+        assert (evidence / "expected.yaml").read_text() == "expected\n"
+        assert (evidence / "stderr.txt").read_text() == "timeout detail"
+        report = failure(root, case, "golden", "differs", "check", result,
+                         expected="\n".join(str(i) for i in range(300)))
+        assert "diff truncated" in report
+        assert len(report.splitlines()) < 150
+        assert case.read_text() == "original"

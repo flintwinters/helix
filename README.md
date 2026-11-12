@@ -94,6 +94,13 @@ Common shortcuts:
 ./manage.py lint --format=text
 ```
 
+Golden and robustness failures identify the source path and contract stage, show a
+rerun command, and save complete output evidence under `runtime/test-failures/`.
+Golden mismatches include a bounded unified diff. Round-trip and damaged-input
+failures save their exact replay source; `check` replays retain check semantics.
+Evidence for the same case and stage is replaced on the next failure.
+
+
 Linting uses the [hyperlinter](https://github.com/flintwinters/hyperlinter) submodule and requires Git, Node.js, and npm. The lint command initializes the submodule and installs its dependencies when needed.
 
 The Rust crate exposes a library and a CLI. The source is organized around:

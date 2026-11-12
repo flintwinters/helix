@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 
 from tooling.cli import SUITES, parse
+from tooling.test_reports import failure as test_failure
 
 ROOT = Path(__file__).resolve().parent
 CASES = ROOT / "tests" / "cases"
@@ -98,7 +99,7 @@ def robustness(cases: list[Path]) -> list[str]:
         for variant in [src, *mutations(src)]:
             run = helix(command, "-", stdin=variant)
             if (why := malformed_state(run.stdout, run.returncode)) is not None:
-                failures.append(f"{case.name}: {why}\n--- program\n{variant}--- stderr\n{run.stderr}")
+                failures.append(test_failure(ROOT, case, "robustness", why, command, run, source=variant))
                 break
     return failures
 
@@ -153,20 +154,23 @@ def regression(bless: bool, suites: list[str] | None) -> int:
         run = helix(command, str(case.relative_to(ROOT)))
         out = run.stdout
         if (why := malformed_state(out, run.returncode)) is not None:
-            failures.append(f"{case.name}: {why}\n{run.stderr}")
+            failures.append(test_failure(ROOT, case, "state", why, command, run))
             continue
-        if helix(command, str(case.relative_to(ROOT))).stdout != out:
-            failures.append(f"{case.name}: two runs of the same program differ (nondeterminism)")
+        repeated = helix(command, str(case.relative_to(ROOT)))
+        if (repeated.returncode, repeated.stdout, repeated.stderr) != (run.returncode, out, run.stderr):
+            failures.append(test_failure(ROOT, case, "determinism", "two runs differ", command, repeated, expected=out))
             continue
         if bless:
             expected_path.write_text(out)
         elif not expected_path.exists() or expected_path.read_text() != out:
-            failures.append(f"{case.name}: state differs from {expected_path.name}\n--- got\n{out}")
+            failures.append(test_failure(ROOT, case, "golden", f"state differs from {expected_path.relative_to(ROOT)}",
+                                         command, run, expected=expected_path.read_text() if expected_path.exists() else ""))
             continue
         if (program := root_section(out)) is not None:
-            again = helix("run", "-", stdin=program).stdout
-            if root_section(again) != program:
-                failures.append(f"{case.name}: round trip is not stable\n--- first\n{program}--- second\n{again}")
+            reloaded = helix("run", "-", stdin=program)
+            if root_section(reloaded.stdout) != program or reloaded.returncode != 0:
+                failures.append(test_failure(ROOT, case, "roundtrip", "emitted root is not stable",
+                                             "run", reloaded, source=program, expected=out))
     if not bless and "robustness" in selected:
         failures += robustness(cases)
     for f in failures:
