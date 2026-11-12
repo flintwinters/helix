@@ -51,6 +51,12 @@ The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items 
 - VM statuses are `ready`, `running`, `finished`, `error`, or `signaled`.
 - Parent links define lexical/object resolution.
 
+## CLI Quick Reference
+
+- `./manage.py --help` discovers tooling; `./manage.py test --list` discovers regression suites.
+- `./manage.py eval '[add, 20, 22]'` builds and evaluates inline YAML; `eval --check SOURCE` collects independent errors. Both emit ordinary VM state and preserve exit codes.
+- `./manage.py cli ARGS...` builds and forwards arguments verbatim to the Rust CLI; file/stdin commands remain available directly through `manage.py`. Commands resolve files/imports from the repository root.
+
 ## Change Discipline
 
 - Inspect declarations before naming or changing anything; never guess symbols.

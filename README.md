@@ -56,6 +56,9 @@ The longer-term direction is declarative machine configuration through first-cla
 `./manage.py` is the single entrypoint for project tooling:
 
 ```sh
+./manage.py eval '[add, 20, 22]'  # evaluate inline YAML; emits state, exits 0/1
+./manage.py eval --check 'x: [add, missing, 1]'
+./manage.py cli std math      # build and forward CLI arguments verbatim
 ./manage.py build             # compile the Rust crate
 ./manage.py run FILE          # evaluate and emit YAML state
 ./manage.py std               # list embedded standard modules

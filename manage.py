@@ -2,7 +2,11 @@
 """Single entrypoint for building, running, and testing Helix.
 
     ./manage.py build               cargo build
+    ./manage.py eval SOURCE         evaluate inline YAML (use --check to collect errors)
+    ./manage.py cli [ARGS...]       build and forward arguments directly to Helix
     ./manage.py run FILE            run a program, print its serialized VM state
+    ./manage.py recover FILE        run with an editable pure recovery checkpoint on failure
+    ./manage.py resume STATE        retry edited recovery source, keeping completed root fields
     ./manage.py check FILE          type phase: print the state with every error found (`phase: type`, `errors:`)
     ./manage.py std [MODULE]        list standard modules or print module source
     ./manage.py inventory           group source files by directory through a Helix shim
@@ -193,11 +197,17 @@ SUITES = ("golden", "robustness", "harness", "cli", "generated", "imports", "lib
 
 
 def main() -> int:
+    if sys.argv[1:2] == ["cli"]:
+        return build() or subprocess.call([str(BIN), *sys.argv[2:]], cwd=ROOT)
     if sys.argv[1:2] == ["lint"]:  # forward everything verbatim, including flags argparse would reject
         return lint(sys.argv[2:])
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("build")
+    sub.add_parser("cli", help="build and forward all remaining arguments to Helix")
+    inline = sub.add_parser("eval", help="evaluate inline YAML and emit VM state")
+    inline.add_argument("source", help="YAML program; quote it as one shell argument")
+    inline.add_argument("--check", action="store_true", help="collect independent evaluation errors")
     sub.add_parser("inventory", help="Helix-powered source inventory by directory")
     sub.add_parser("run").add_argument("file")
     sub.add_parser("check").add_argument("file")
@@ -208,6 +218,11 @@ def main() -> int:
     sub.add_parser("std").add_argument("module", nargs="?")
     sub.add_parser("lint", help="forwards all remaining args to hyperlinter")
     args = ap.parse_args()
+    if args.cmd == "eval":
+        if (code := build()) != 0:
+            return code
+        return subprocess.run([str(BIN), "check" if args.check else "run", "-"],
+                              input=args.source, text=True, cwd=ROOT).returncode
     if args.cmd == "inventory":
         from tooling.inventory import inventory
         return build() or inventory(helix, ROOT)
