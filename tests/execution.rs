@@ -342,3 +342,161 @@ fn retained_capture_graphs_drop_on_small_stacks_and_thread_teardown() {
             .unwrap();
     }
 }
+
+#[test]
+fn effects_yield_preserve_continuations_and_do_not_repeat_on_resume() {
+    let mut vm = Vm::load("f: [fn, [x], [add, x, [effect, \"time\", null]]]\nanswer: [f, 2]");
+    vm.run();
+    assert_eq!(vm.status(), Status::Signaled);
+    let request: &helix::EffectRequest = vm.pending_effect().unwrap();
+    assert_eq!(request.operation, "time");
+    let retained = vm.state();
+    assert_eq!(vm.step().state(), retained);
+    let mut resolved = vm.resolve_effect(Ok(Yaml::Integer(40)));
+    resolved.run();
+    assert_eq!(resolved.state()["root"]["answer"].as_i64(), Some(42));
+    assert_eq!(resolved.state()["effects"].as_vec().unwrap().len(), 1);
+    resolved.run();
+    assert!(resolved.pending_effect().is_none());
+    assert_eq!(vm.state(), retained);
+}
+
+#[test]
+fn external_signal_preserves_pending_effect_and_requires_explicit_resume() {
+    let mut vm = Vm::load("[effect, \"time\", null]");
+    vm.run();
+    let interrupted = vm.signal(Yaml::String("interrupt".into()));
+    assert_eq!(interrupted.resume_signal().status(), Status::Signaled);
+    let mut resolved = interrupted.resolve_effect(Ok(Yaml::Integer(7)));
+    resolved.run();
+    assert_eq!(resolved.status(), Status::Signaled);
+    assert_eq!(resolved.state()["signal"].as_str(), Some("interrupt"));
+    let mut resumed = resolved.resume_signal();
+    resumed.run();
+    assert_eq!(resumed.state()["root"].as_i64(), Some(7));
+    let ready = Vm::load("[add, 2, 3]");
+    let mut interrupted = ready.signal(Yaml::String("pause".into()));
+    interrupted.run();
+    assert_eq!(interrupted.status(), Status::Signaled);
+    let mut continued = interrupted.resume_signal();
+    continued.run();
+    assert_eq!(continued.state()["root"].as_i64(), Some(5));
+}
+
+#[test]
+fn effect_failure_unwinds_cleanup_and_disables_unsafe_recovery() {
+    let mut vm = Vm::load("[finally, [effect, \"file_read\", \"missing\"], [effect, \"stdout\", \"cleanup\"]]");
+    vm.run();
+    let mut failed = vm.resolve_effect(Err(("io".into(), "missing file".into())));
+    failed.run();
+    assert_eq!(failed.pending_effect().unwrap().operation, "stdout");
+    assert_eq!(failed.pending_effect().unwrap().id, 2);
+    let mut done = failed.resolve_effect(Ok(Yaml::Null));
+    done.run();
+    assert_eq!(done.state()["error"]["kind"].as_str(), Some("io"));
+    assert_eq!(done.state()["effects"].as_vec().unwrap().len(), 2);
+    assert!(!done.recovery_state_string().contains("recovery:"));
+}
+
+#[test]
+fn effects_are_rejected_during_type_time_and_checking() {
+    let mut vm = Vm::load("[type_time, [effect, \"time\", null]]");
+    vm.run();
+    assert_eq!(vm.state()["error"]["kind"].as_str(), Some("purity"));
+    assert_eq!(vm.state()["phase"].as_str(), Some("type"));
+    assert!(vm.pending_effect().is_none());
+    let mut checked = Vm::load("a: [effect, \"time\", null]\nb: [effect, \"random\", null]");
+    checked.check();
+    assert_eq!(checked.status(), Status::Error);
+    assert_eq!(checked.state()["errors"].as_vec().unwrap().len(), 2);
+}
+
+#[test]
+fn invalid_host_data_is_a_structured_failure() {
+    for value in [Yaml::BadValue, Yaml::Real("NaN".into()), Yaml::Alias(1)] {
+        let mut vm = Vm::load("[effect, \"time\", null]");
+        vm.run();
+        let mut resolved = vm.resolve_effect(Ok(value));
+        resolved.run();
+        assert_eq!(resolved.status(), Status::Error);
+        assert_eq!(resolved.state()["error"]["kind"].as_str(), Some("type"));
+    }
+    let mut pending = Vm::load("[effect, \"time\", null]");
+    pending.run();
+    let failed = pending.signal(Yaml::BadValue);
+    assert_eq!(failed.status(), Status::Error);
+    assert_eq!(failed.resolve_effect(Ok(Yaml::Integer(1))).state(), failed.state());
+}
+
+#[test]
+fn nested_machine_steps_inherit_effect_phase_restrictions() {
+    let source = r#"
+- type_time
+- - let
+  - original: [vm, [fn, [], [effect, "time", null]]]
+    stopped: [fn, [m], [eq, [get, [inspect, m], "status"], "error"]]
+    advance: [fn, [m], [step, m]]
+  - [get, [inspect, [until, stopped, advance, original]], "outcome"]
+"#;
+    let mut vm = Vm::load(source);
+    vm.run();
+    assert_eq!(vm.state()["root"]["kind"].as_str(), Some("purity"));
+    assert_eq!(vm.state()["root"]["phase"].as_str(), Some("type"));
+}
+
+#[test]
+fn child_type_time_persists_across_separate_parent_steps() {
+    let source = r#"
+- let
+- original: [vm, [fn, [], [type_time, [effect, "time", null]]]]
+  stopped: [fn, [m], [eq, [get, [inspect, m], "status"], "error"]]
+  advance: [fn, [m], [step, m]]
+- [get, [inspect, [until, stopped, advance, original]], "outcome"]
+"#;
+    let mut vm = Vm::load(source);
+    vm.run();
+    assert_eq!(vm.state()["root"]["kind"].as_str(), Some("purity"));
+    assert_eq!(vm.state()["root"]["phase"].as_str(), Some("type"));
+}
+
+#[test]
+fn signal_data_obeys_graph_node_limits_without_counting_map_keys() {
+    let ready = Vm::load("null");
+    let at_limit = ready.signal(Yaml::Array(vec![Yaml::Null; 99_999]));
+    assert_eq!(at_limit.status(), Status::Signaled);
+    let oversized = ready.signal(Yaml::Array(vec![Yaml::Null; 100_000]));
+    assert_eq!(oversized.status(), Status::Error);
+    assert_eq!(oversized.state()["error"]["kind"].as_str(), Some("type"));
+    assert_eq!(oversized.state()["error"]["message"].as_str(), Some("effect data exceeds runtime limits"));
+    let fields = (0..50_000).map(|index| (Yaml::String(index.to_string()), Yaml::Null)).collect();
+    assert_eq!(ready.signal(Yaml::Hash(fields)).status(), Status::Signaled);
+}
+
+#[test]
+fn host_respects_interruptions_and_never_repeats_completed_effects() {
+    use helix::EffectHost;
+    let mut host = EffectHost { allow_random: true, random_seed: Some(7), ..Default::default() };
+    let mut vm = Vm::load("[effect, \"random\", null]");
+    vm.run();
+    vm = vm.signal(Yaml::String("pause".into()));
+    let interrupted = vm.state();
+    host.run(&mut vm);
+    assert_eq!(host.random_seed, Some(7));
+    assert_eq!(vm.state(), interrupted);
+    assert!(vm.pending_effect().is_some());
+    vm = vm.resume_signal();
+    host.run(&mut vm);
+    assert_eq!(vm.status(), Status::Finished);
+    let seed_after = host.random_seed;
+    assert_ne!(seed_after, Some(7));
+    let completed = vm.state();
+    host.run(&mut vm);
+    assert_eq!(host.random_seed, seed_after);
+    assert_eq!(vm.state(), completed);
+    let mut invalid = Vm::load("[effect, \"random\", null]");
+    invalid.run();
+    invalid = invalid.signal(Yaml::BadValue);
+    host.run(&mut invalid);
+    assert_eq!(invalid.status(), Status::Error);
+    assert_eq!(host.random_seed, seed_after);
+}

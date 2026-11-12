@@ -109,7 +109,7 @@ def verify_completions(ctx):
     for shell in ('bash', 'zsh', 'fish'):
         result = ctx.helix('completion', shell)
         assert result.returncode == 0 and not result.stderr and '@COMMANDS@' not in result.stdout, result
-        assert all(command in result.stdout for command in ('repl', 'watch', 'inspect', 'lsp', 'completion')), result
+        assert all(command in result.stdout for command in ('repl', 'watch', 'inspect', 'lsp', 'completion', 'perform')), result
         if shutil.which(shell):
             syntax = subprocess.run([shell, '-n'], input=result.stdout, text=True, capture_output=True,
                                     cwd=ctx.root, timeout=ctx.timeout)

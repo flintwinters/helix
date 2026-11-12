@@ -12,12 +12,12 @@ use std::path::{Path, PathBuf};
 
 use yaml_rust2::Yaml;
 
-use crate::error::HelixError;
+use crate::model::HelixError;
 use crate::graph::{Graph, Kind, NodeId, ROOT};
 use crate::library;
 
 /// The modules a program imports: each import form's module root, and which nodes are such roots.
-pub(crate) use crate::model::Modules;
+use crate::model::Modules;
 impl Modules {
     pub(crate) fn file_import(&self) -> Option<NodeId> {
         self.first_file_import

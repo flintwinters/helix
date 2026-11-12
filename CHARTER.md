@@ -8,7 +8,7 @@ How to use this file: tick a box only when the feature works end to end *and* ha
 
 **Where it is headed:** the niche Nix and Ansible occupy, declarative machine configuration, approached through types. A machine config is a type, fully resolved at type time and inheriting from abstract machine type classes; section 8 holds that road. Daily-driver scripting comes first because the config language has to be a language worth using.
 
-**Where we are:** a pure, resource-bounded expression language with first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. File imports and pure error recovery work; full suspend/resume and effectful machine application remain ahead.
+**Where we are:** a resource-bounded expression language with a pure core, first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. Caller-authorized host effects, in-memory interruption, file imports and pure error recovery work; disk suspend/resume and declarative machine application remain ahead.
 
 ---
 
@@ -87,16 +87,33 @@ Reversibility is a promise type. A machine that mixes in this promise must expos
 
 A daily driver has to do things.
 
-- [ ] Read and write files
-- [ ] Command-line arguments and exit codes
-- [ ] Environment variables
-- [ ] Stdin and stdout
-- [ ] Run external commands and capture output
-- [ ] HTTP requests
-- [ ] Time and randomness, with a deterministic mode for tests and replay
-- [ ] JSON, YAML and CSV parsing and emitting as library functions
-- [ ] Effects are explicit in the state: a suspended run shows *which* effect it is waiting on
-- [ ] Signals: external events can interrupt or resume a run (`signaled` status)
+- [x] Read and write files
+- [x] Command-line arguments and exit codes
+- [x] Environment variables
+- [x] Stdin and stdout
+- [x] Run external commands and capture output
+- [x] HTTP requests
+- [x] Time and randomness, with a deterministic mode for tests and replay
+- [x] JSON, YAML and CSV parsing and emitting as library functions
+- [x] Effects are explicit in the state: a suspended run shows *which* effect it is waiting on
+- [x] Signals: external events can interrupt or resume a run (`signaled` status)
+
+Evidence: `effects_world` is a golden pending-request case and an end-to-end
+`effects` suite program that writes/reads a file, consumes arguments/environment/
+stdin, emits stdout, captures a command, calls a local HTTP server and chooses an
+exit code. The suite checks capability denial, import confinement, symlink
+escapes, HTTP redirects, host failures and exact seeded randomness. `std_codecs`
+and the existing YAML golden cases cover data interchange; `semantics` compares
+JSON/CSV with independent Python libraries. `effects_pending` preserves the
+request and original machine while proving type-time rejection. `execution`
+tests interrupt/resume, pending requests, cleanup and no repeat after completion.
+
+Scope: file/stream adapters use UTF-8 text; HTTP currently means GET through
+installed `curl`. Signals are explicit host event APIs, not OS signal handlers.
+Suspension and interruption preserve live continuations in memory; emitted
+inspection state is not a restorable disk snapshot. Retained branches require
+explicit host handling and do not share a global effect deduplication service.
+These limits leave section 2's restoration and replay obligations open.
 
 ---
 
@@ -166,7 +183,7 @@ leave section 2's complete suspend/resume promise unchanged.
 - [x] Performance: a 10k-node program runs in well under a second
 - [x] Memory stays bounded on long runs: shared work/data budgets and value/graph/depth caps; `memory` checks constant-state iteration and scaling
 - [x] Fuzzing of the parser and evaluator
-- [x] Sandbox/permission model for current effects: caller-authorized import roots, embedded-only mode, transitive and symlink-escape checks; future effects must acquire capabilities
+- [x] Sandbox/permission model for current effects: caller-authorized import/file roots, environment names, executables and HTTP origins, plus stream/clock/random grants; transitive and symlink-escape checks. These are capability boundaries, not OS isolation.
 - [x] Stability promise: documented what may change and what is frozen
 - [x] Language reference (started: `LANGUAGE.md`) and a tutorial that a stranger could follow
 - [x] A changelog
@@ -600,7 +617,7 @@ Move one complete responsibility at a time: a Helix module becomes the authorita
 Decide these before the features that depend on them.
 
 - [x] How are user-defined actors declared in YAML so they stay readable? `name: [fn, [params], body]`; called as `[name, args...]`
-- [ ] What is the evaluation model for effects: pull, push, or explicit yield?
+- [x] What is the evaluation model for effects: pull, push, or explicit yield? Explicit yield: `[effect, operation, payload]` suspends until a caller-authorized host resolves the request.
 - [ ] Does a suspended state embed the source, reference it, or both?
 - [x] Types are opt-in outside configs: unannotated code retains its behavior; `expect` and function parameter/result contracts enforce declared types (`types_annotations`; `LANGUAGE.md`).
 - [ ] Is inheritance nominal (declared parents) or structural (anything with the right fields satisfies a class), or both?

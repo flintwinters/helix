@@ -18,7 +18,7 @@ use super::construct::{descriptor, reflect};
 use super::ty::{check_ty, mapping, subtype, Field, Pred, Ty};
 use crate::builtins::fault::Fault;
 use crate::builtins::value::equal;
-use crate::error::s;
+use crate::model::string as s;
 
 /// One field of a class: its declaration, who declared it, and its value with who supplied it.
 #[derive(Clone)]

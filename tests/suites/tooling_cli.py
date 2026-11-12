@@ -107,7 +107,9 @@ def verify(h):
     for command in ("run", "check", "recover", "resume"):
         result = invoke("runtime", command, "-")
         direct = h.helix(command, "-", stdin="")
-        assert (result.returncode, result.stdout) == (direct.returncode, direct.stdout)
+        assert (result.returncode, result.stdout) == (direct.returncode, direct.stdout), (
+            command, result, direct
+        )
 
     # All shortcuts and canonical paths share parsed arguments, including opaque flags.
     from tooling.cli import parse

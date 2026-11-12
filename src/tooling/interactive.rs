@@ -5,13 +5,14 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::time::Duration;
 
-use crate::{Status, Vm};
+use crate::model::{Status, Vm};
 
 /// Shared CLI command inventory, also used by command validation and shell completions.
 pub const COMMANDS: &[&str] = &[
     "exec",
     "run",
     "sandbox",
+    "perform",
     "recover",
     "resume",
     "check",
@@ -180,9 +181,9 @@ pub fn watch(path: &str, interval_ms: u64, iterations: Option<usize>) -> ExitCod
 /// Emit shell-native completion scripts; shells remain responsible for filesystem completion.
 pub fn completion(shell: &str) -> ExitCode {
     let script = match shell {
-        "bash" => include_str!("../completions/helix.bash"),
-        "zsh" => include_str!("../completions/_helix"),
-        "fish" => include_str!("../completions/helix.fish"),
+        "bash" => include_str!("../../completions/helix.bash"),
+        "zsh" => include_str!("../../completions/_helix"),
+        "fish" => include_str!("../../completions/helix.fish"),
         _ => {
             eprintln!("completion requires bash, zsh, or fish");
             return ExitCode::from(2);

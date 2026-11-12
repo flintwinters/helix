@@ -1,17 +1,13 @@
 //! Non-executing source tools. These passes never link files or construct an evaluator.
-mod lsp;
-
 use crate::graph::{Graph, Kind, ROOT};
 use yaml_rust2::Yaml;
 
-pub use lsp::serve as lsp;
-
 /// The schema covers YAML's data shape; expression semantics belong to the checker.
 pub fn schema() -> &'static str {
-    include_str!("../editor/helix.schema.json")
+    include_str!("../../../editor/helix.schema.json")
 }
 
-pub(super) fn object(entries: impl IntoIterator<Item = (&'static str, Yaml)>) -> Yaml {
+fn object(entries: impl IntoIterator<Item = (&'static str, Yaml)>) -> Yaml {
     Yaml::Hash(
         entries
             .into_iter()

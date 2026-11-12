@@ -85,7 +85,7 @@ fn position(source: &str, line: usize, column: usize) -> Value {
 }
 
 fn publish(output: &mut impl Write, uri: &str, version: i64, source: &str) -> io::Result<()> {
-    let diagnostics: Vec<_> = super::diagnostics(source)
+    let diagnostics: Vec<_> = super::source::diagnostics(source)
         .into_iter()
         .map(|diagnostic| {
             let line = diagnostic["line"].as_i64().unwrap_or(1).saturating_sub(1) as usize;
@@ -218,7 +218,7 @@ fn session(input: &mut impl BufRead, output: &mut impl Write) -> io::Result<()> 
             "textDocument/formatting" => {
                 if let Some(id) = id {
                     if let Some((_, source)) = documents.get(uri) {
-                        match super::format(source) {
+                        match super::source::format(source) {
                             Ok(text) => {
                                 let line = source.bytes().filter(|byte| *byte == b'\n').count();
                                 let column = source

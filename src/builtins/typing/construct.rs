@@ -6,7 +6,7 @@ use crate::value::Value;
 
 use super::ty::{holds, mapping, subtype, text, violations, Field, Pred, Ty, Violation};
 use crate::builtins::fault::Fault;
-use crate::error::s;
+use crate::model::string as s;
 
 /// `{type: kind, ..entries}`.
 pub(super) fn descriptor<const N: usize>(kind: &str, entries: [(&str, Value); N]) -> Value {

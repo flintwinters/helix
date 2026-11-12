@@ -20,11 +20,11 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install PyYAML yq
-      - run: sudo apt-get update && sudo apt-get install -y jq
+      - run: sudo apt-get update && sudo apt-get install -y jq curl
       - run: mkdir -p runtime
       - name: Fast regression contracts
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
-        run: ./manage.py test --suite golden --suite harness --suite cli --suite generated --suite dogfood --suite imports --suite library --suite execution --suite parser --suite startup --suite type_time --suite pipeline --suite errors --suite semantics --suite type_algebra --suite permissions --suite resources 2>&1 | tee runtime/test.log
+        run: ./manage.py test --suite golden --suite harness --suite cli --suite effects --suite generated --suite dogfood --suite imports --suite library --suite execution --suite parser --suite startup --suite type_time --suite pipeline --suite errors --suite semantics --suite type_algebra --suite permissions --suite resources 2>&1 | tee runtime/test.log
       - name: Full bounded sweep
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: ./manage.py test 2>&1 | tee runtime/test.log

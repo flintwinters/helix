@@ -453,3 +453,30 @@ impl PartialEq for crate::model::Program {
         std::ptr::eq(self, other) || (self.graph == other.graph && self.modules == other.modules)
     }
 }
+
+/// Validate host data before conversion: YAML aliases, non-string keys and invalid floats
+/// are not runtime values. Bound traversal before the recursive conversion.
+pub(crate) fn from_host_yaml(data: &yaml_rust2::Yaml) -> Result<Value, String> {
+    use yaml_rust2::Yaml;
+    let mut pending = vec![(data, 0, true)];
+    let mut units = 0;
+    let mut nodes = 0;
+    while let Some((value, depth, graph_node)) = pending.pop() {
+        nodes += usize::from(graph_node);
+        units += match value { Yaml::String(s) => 1 + s.len(), _ => 1 };
+        if depth > crate::model::MAX_NESTING || units > crate::model::MAX_VALUE_SIZE || nodes > crate::model::MAX_NODES {
+            return Err("effect data exceeds runtime limits".into());
+        }
+        match value {
+            Yaml::Array(values) => pending.extend(values.iter().map(|v| (v, depth + 1, true))),
+            Yaml::Hash(fields) => for (key, value) in fields {
+                if !matches!(key, Yaml::String(_)) { return Err("effect data requires string map keys".into()); }
+                pending.push((key, depth + 1, false)); pending.push((value, depth + 1, true));
+            },
+            Yaml::Real(value) if value.parse::<f64>().is_ok_and(f64::is_finite) => {},
+            Yaml::Null | Yaml::Boolean(_) | Yaml::Integer(_) | Yaml::String(_) => {},
+            _ => return Err("effect data must contain only finite ordinary values".into()),
+        }
+    }
+    Ok(Value::from_yaml(data))
+}

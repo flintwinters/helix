@@ -1,0 +1,3 @@
+# Data-only JSON conversion.
+parse: [fn, [[source, string]], [json_parse, source]]
+dump: [fn, [value], [json_dump, value], string]

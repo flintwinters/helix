@@ -2,6 +2,9 @@
 use crate::model::{Binding, Function, Hash, Program, Value, Vm, string as s};
 use std::sync::Arc;
 
+mod evaluation;
+mod error;
+
 pub(crate) fn state(value: &Value) -> Value {
     let mut view = View::default();
     let root = view.value(value);

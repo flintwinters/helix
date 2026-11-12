@@ -36,6 +36,25 @@ def check(ctx):
         assert summary["pending_effect"] is None
         if status == "running":
             assert summary["location"] == active["location"] and summary["continuations"] > 0
+    # Effect requests stop traversal without execution and remain visible in saved views.
+    effect_source = '[effect, "file_read", "must-not-be-read"]'
+    effect_trace = ctx.helix("trace", "-", stdin=effect_source)
+    assert effect_trace.returncode == 0 and not effect_trace.stderr, effect_trace
+    effect_versions = list(yaml.safe_load_all(effect_trace.stdout))
+    effect = effect_versions[-1]
+    assert effect["status"] == "signaled" and effect["restorable"] is False
+    request = effect["pending_effect"]
+    assert request["operation"] == "file_read" and request["payload"] == "must-not-be-read"
+    assert request == effect["state"]["pending_effect"]
+    assert all(view["pending_effect"] is None for view in effect_versions[:-1])
+    effect_step = ctx.helix("step", "-", "--steps", "10000", stdin=effect_source)
+    assert effect_step.returncode == 0 and not effect_step.stderr, effect_step
+    assert yaml.safe_load(effect_step.stdout) == effect
+    for saved in (effect_step.stdout, yaml.safe_dump(effect["state"])):
+        inspected_effect = ctx.helix("inspect", "-", stdin=saved)
+        assert inspected_effect.returncode == 0 and not inspected_effect.stderr, inspected_effect
+        summary = yaml.safe_load(inspected_effect.stdout)
+        assert summary["status"] == "signaled" and summary["pending_effect"] == request
     # Saved lists resembling expressions and missing imports must remain inert data.
     inert = 'status: finished\nroot: [import, "does-not-exist.yaml"]\n'
     result = ctx.helix("inspect", "-", stdin=inert)

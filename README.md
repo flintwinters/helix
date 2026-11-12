@@ -7,6 +7,14 @@ state.
 
 Today machines can run, pause between explicit transitions, and branch immutably in memory. Disk save/restore and the reversibility promise are not implemented.
 
+External operations use explicit effect requests. A host authorizes and resolves
+each request; pending requests and completed outcomes remain visible in VM state.
+The `perform` command supplies file, process, environment, stream, HTTP, clock and
+randomness adapters with caller-selected grants. See `helix perform --help` for
+the capability flags. Ordinary `run` yields at an effect without executing it.
+Host events can interrupt and resume in-memory machines through the public VM API.
+These APIs do not restore continuations from emitted YAML.
+
 ## Try it
 
 You need Rust with Cargo (2024 edition support) and Python 3.10+.

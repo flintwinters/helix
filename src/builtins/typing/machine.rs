@@ -8,7 +8,7 @@ use super::class::concrete_values;
 use super::ty::mapping;
 use crate::builtins::fault::Fault;
 use crate::builtins::value::equal;
-use crate::error::s;
+use crate::model::string as s;
 
 pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
     let wanted = concrete_values(&args[0], 0)?;

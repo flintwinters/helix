@@ -1,9 +1,6 @@
 //! Structured errors: the YAML shape of an error is part of the public contract.
 
-use crate::value::Hash;
-use crate::value::Value;
-
-pub(crate) use crate::model::HelixError;
+use crate::model::{Hash, HelixError, Segment, Value, string as s};
 impl HelixError {
     pub fn to_value(&self) -> Value {
         let mut h = Hash::new();
@@ -25,8 +22,8 @@ impl HelixError {
                     reference
                         .iter()
                         .map(|part| match part {
-                            crate::model::Segment::Key(key) => s(key),
-                            crate::model::Segment::Index(index) => Value::Integer(*index as i64),
+                            Segment::Key(key) => s(key),
+                            Segment::Index(index) => Value::Integer(*index as i64),
                         })
                         .collect(),
                 ),
@@ -45,8 +42,4 @@ impl HelixError {
         }
         Value::Hash(h)
     }
-}
-
-pub(crate) fn s(text: &str) -> Value {
-    Value::String(text.to_string())
 }

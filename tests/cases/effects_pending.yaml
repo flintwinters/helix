@@ -1,0 +1,14 @@
+# Stepping exposes an effect without executing a host adapter.
+- let
+- original: [vm, [fn, [], [effect, "time", null]]]
+  ready_to_stop: [fn, [machine], [eq, [get, [inspect, machine], "status"], "signaled"]]
+  advance: [fn, [machine], [step, machine]]
+  pending: [until, ready_to_stop, advance, original]
+  view: [inspect, pending]
+- [dict,
+   "status", [get, view, "status"],
+   "request", [get, view, "pending_effect"],
+   "step_preserves_pending", [eq, pending, [step, pending]],
+   "original_status", [get, [inspect, original], "status"],
+   "type_time", [try, [type_time, [effect, "time", null]], [fn, [e], e]],
+   "invalid_operation", [try, [effect, 1, null], [fn, [e], [get, e, "kind"]]]]

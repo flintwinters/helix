@@ -6,7 +6,7 @@ use crate::value::Hash;
 use crate::value::Value;
 
 use crate::builtins::value::{equal, is_function, type_name};
-use crate::error::s;
+use crate::model::string as s;
 
 /// Runs a refinement's `[fn, [value], body]` source on a value. `Err` is a failure inside the
 /// predicate, reported as a violation rather than aborting the check.

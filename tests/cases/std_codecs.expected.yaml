@@ -1,0 +1,57 @@
+status: finished
+root:
+  json:
+    z:
+      - "add"
+      - true
+      - ~
+    a: "雪🙂"
+    "n": -9223372036854775808
+    float: 1.25
+  json_order:
+    - "z"
+    - a
+  json_duplicate:
+    x: 2
+  json_dump: "{\"z\":[1,false],\"a\":\"雪\"}\n"
+  json_roundtrip:
+    x:
+      - 1
+      - ~
+      - "hello\nworld"
+  csv:
+    - - "name"
+      - note
+    - - "雪"
+      - "a,b"
+    - - ""
+      - "line1\nline2"
+    - - "quote\"here"
+      - last
+  csv_empty: []
+  csv_blank:
+    - - ""
+  csv_trailing:
+    - - "a"
+      - ""
+  csv_dump: "name,note\r\n雪,\"a,b\"\r\n\"\",\"a\"\"b\"\r\n"
+  csv_roundtrip:
+    - - ""
+      - "a\nb"
+      - "雪"
+    - - "ragged"
+  invalid_json: parse
+  trailing_json: parse
+  large_integer: parse
+  huge_integer: parse
+  huge_float: parse
+  open_quote: parse
+  bare_quote: parse
+  after_quote: parse
+  typed_csv: type
+  empty_row: type
+  function_json: type
+  pure:
+    - 1
+    - 2
+    - 3

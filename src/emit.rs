@@ -206,7 +206,7 @@ fn string(text: &str, head: bool) -> String {
 }
 
 /// Double-quoted text that re-reads as a literal string.
-pub(crate) fn quoted(text: &str) -> String {
+fn quoted(text: &str) -> String {
     let mut quoted = String::from("\"");
     for c in text.chars() {
         match c {

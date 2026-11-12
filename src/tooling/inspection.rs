@@ -4,9 +4,9 @@ use std::path::Path;
 use std::process::ExitCode;
 
 use crate::{
-    Status, Vm,
+    model::{Status, Vm},
     graph::{Graph, ROOT},
-    yaml_document,
+    emit::document,
 };
 use yaml_rust2::Yaml;
 
@@ -48,13 +48,13 @@ fn load(path: &str) -> Result<Vm, ExitCode> {
             ExitCode::from(2)
         })
 }
-fn write(document: &Yaml, stream: bool) -> io::Result<()> {
+fn write(value: &Yaml, stream: bool) -> io::Result<()> {
     let stdout = io::stdout();
     let mut output = stdout.lock();
     if stream {
         writeln!(output, "---")?;
     }
-    output.write_all(yaml_document(document).as_bytes())?;
+    output.write_all(document(value).as_bytes())?;
     output.flush()
 }
 fn output_error(error: io::Error) -> ExitCode {
@@ -73,15 +73,16 @@ fn result(vm: &Vm) -> ExitCode {
 }
 fn snapshot(vm: &Vm, transition: usize) -> Yaml {
     let machine = vm.inspect();
+    let state = vm.state();
     map([
         ("format", text("helix.inspection.v1")),
         ("transition", Yaml::Integer(transition as i64)),
         ("status", text(vm.status().as_str())),
         ("location", field(&machine, "location")),
-        ("pending_effect", field(&machine, "pending_effect")),
+        ("pending_effect", field(&state, "pending_effect")),
         ("restorable", Yaml::Boolean(false)),
         ("machine", machine),
-        ("state", vm.state()),
+        ("state", state),
     ])
 }
 
@@ -199,7 +200,14 @@ pub fn inspect(path: &str) -> ExitCode {
         ("format", text("helix.state-summary.v1")),
         ("status", text(status)),
         ("location", location),
-        ("pending_effect", field(machine, "pending_effect")),
+        (
+            "pending_effect",
+            if state["pending_effect"] != Yaml::BadValue {
+                field(state, "pending_effect")
+            } else {
+                field(machine, "pending_effect")
+            },
+        ),
         ("root", value_summary(&state["root"])),
         ("error", field(state, "error")),
         ("errors", field(state, "errors")),

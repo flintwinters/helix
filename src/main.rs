@@ -1,17 +1,18 @@
-mod cli_tools;
-
 use std::path::Path;
 use std::process::ExitCode;
 
 use helix::{Status, Vm, json_document, yaml_document};
 use yaml_rust2::Yaml;
 
-const USAGE: &str = "usage: helix exec [--json | --yaml] [PROGRAM | -]    inline source or stdin; default raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check [--evaluate] <file.yaml | ->    static checks; --evaluate collects runtime errors\n       helix fmt <file.yaml | ->    canonical source on stdout\n       helix repl    evaluate one YAML document per line\n       helix watch FILE [--interval-ms N] [--iterations N]    re-run on dependency changes\n       helix step FILE [--steps N]    inspect after N transitions\n       helix trace FILE [--limit N]    stream transition inspections\n       helix inspect <state.yaml | ->    summarize saved state without execution\n       helix schema    print program JSON Schema\n       helix lsp    serve Language Server Protocol on stdin/stdout\n       helix completion <bash | zsh | fish>    print shell completion script\n       helix std [module]    list the standard modules, or print one's source\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
+const USAGE: &str = "usage: helix exec [--json | --yaml] [PROGRAM | -]    inline source or stdin; default raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check [--evaluate] <file.yaml | ->    static checks; --evaluate collects runtime errors\n       helix fmt <file.yaml | ->    canonical source on stdout\n       helix repl    evaluate one YAML document per line\n       helix watch FILE [--interval-ms N] [--iterations N]    re-run on dependency changes\n       helix step FILE [--steps N]    inspect after N transitions\n       helix trace FILE [--limit N]    stream transition inspections\n       helix inspect <state.yaml | ->    summarize saved state without execution\n       helix schema    print program JSON Schema\n       helix lsp    serve Language Server Protocol on stdin/stdout\n       helix completion <bash | zsh | fish>    print shell completion script\n       helix std [module]    list the standard modules, or print one's source\n       helix perform [grants] <file> [-- args...]    explicit host effects; state to stderr\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    if let Some(code) = cli_tools::dispatch(&args) {
+    if let Some(code) = helix::tooling::cli::dispatch(&args) {
         return code;
+    }
+    if args.first().is_some_and(|arg| arg == "perform") {
+        return perform(&args[1..]);
     }
     match args
         .iter()
@@ -23,7 +24,7 @@ fn main() -> ExitCode {
             println!("{USAGE}");
             ExitCode::SUCCESS
         }
-        [cmd, "--help" | "-h"] if helix::tooling_interactive::COMMANDS.contains(cmd) => {
+        [cmd, "--help" | "-h"] if helix::tooling::interactive::COMMANDS.contains(cmd) => {
             println!("{USAGE}");
             ExitCode::SUCCESS
         }
@@ -63,7 +64,7 @@ fn main() -> ExitCode {
                 ExitCode::from(2)
             }
         },
-        [cmd, ..] if !helix::tooling_interactive::COMMANDS.contains(cmd) =>
+        [cmd, ..] if !helix::tooling::interactive::COMMANDS.contains(cmd) =>
         {
             eprintln!("unknown command `{cmd}`; {USAGE}");
             ExitCode::from(2)
@@ -160,4 +161,55 @@ fn execute(path: &str, mode: &str, allowed_root: Option<&str>, format: &str) -> 
     } else {
         ExitCode::FAILURE
     }
+}
+
+fn perform(args: &[String]) -> ExitCode {
+    use helix::EffectHost;
+    let mut host = EffectHost::default();
+    let mut index = 0;
+    while let Some(option) = args.get(index).filter(|arg| arg.starts_with("--")) {
+        let takes_value = matches!(option.as_str(), "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--fixed-time" | "--seed");
+        let value = if takes_value {
+            index += 1;
+            let Some(value) = args.get(index) else { eprintln!("missing value for {option}"); return ExitCode::from(2); };
+            value.as_str()
+        } else { "" };
+        match option.as_str() {
+            "--allow-read" => host.read_roots.push(value.into()),
+            "--allow-write" => host.write_roots.push(value.into()),
+            "--allow-env" => { host.env_names.insert(value.into()); }
+            "--allow-command" => { host.commands.insert(value.into()); }
+            "--allow-http" => { host.http_origins.insert(value.into()); }
+            "--allow-stdin" => host.allow_stdin = true,
+            "--allow-stdout" => host.allow_stdout = true,
+            "--allow-time" => host.allow_time = true,
+            "--allow-random" => host.allow_random = true,
+            "--fixed-time" => match value.parse() {
+                Ok(value) => host.fixed_time = Some(value),
+                Err(_) => { eprintln!("fixed time must be integer milliseconds"); return ExitCode::from(2); }
+            },
+            "--seed" => match value.parse() {
+                Ok(value) => host.random_seed = Some(value),
+                Err(_) => { eprintln!("seed must be an unsigned integer"); return ExitCode::from(2); }
+            },
+            "--help" => {
+                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-stdin, --allow-stdout, --allow-time, --allow-random\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
+                return ExitCode::SUCCESS;
+            }
+            _ => { eprintln!("unknown perform option {option}"); return ExitCode::from(2); }
+        }
+        index += 1;
+    }
+    let Some(path) = args.get(index) else { eprintln!("perform requires a source file"); return ExitCode::from(2); };
+    index += 1;
+    if args.get(index).is_some_and(|arg| arg == "--") { index += 1; }
+    host.args = args[index..].to_vec();
+    let source = match std::fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) => { eprintln!("cannot read {path}: {error}"); return ExitCode::from(2); }
+    };
+    let mut vm = Vm::load_sandboxed(&source, Some(Path::new(path)), &host.read_roots);
+    host.run(&mut vm);
+    eprint!("{}", vm.state_string());
+    if vm.status() == Status::Finished { ExitCode::from(host.exit_code) } else { ExitCode::FAILURE }
 }

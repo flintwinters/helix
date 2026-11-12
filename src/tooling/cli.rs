@@ -1,9 +1,6 @@
 use std::process::ExitCode;
 
-use helix::{
-    tooling_inspection as inspection, tooling_interactive as interactive,
-    tooling_static as analysis,
-};
+use crate::tooling::{analysis, inspection, interactive};
 
 pub fn dispatch(args: &[String]) -> Option<ExitCode> {
     if args

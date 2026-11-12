@@ -1,11 +1,16 @@
 //! Shared immutable syntax and execution state. Algorithms live in sibling modules.
-use crate::span::Span;
+mod span;
+pub(crate) use span::Span;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
 use yaml_rust2::Yaml;
 pub(crate) type NodeId = usize;
 pub(crate) const ROOT: NodeId = 0;
+// Source, computed values and host data share these structural bounds.
+pub(crate) const MAX_NODES: usize = 100_000;
+pub(crate) const MAX_NESTING: usize = 64;
+pub(crate) const MAX_VALUE_SIZE: usize = 1_000_000;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Segment {
     Key(String),
@@ -133,22 +138,10 @@ pub(crate) enum Request {
     Try(NodeId),
     Finally(NodeId),
     Cleanup(Outcome),
-    Iterate {
-        site: NodeId,
-        name: String,
-        args: Vec<NodeId>,
-        values: Vec<Value>,
-        index: usize,
-        output: Vec<Value>,
-        state: Value,
-        count: usize,
-    },
-    Iterated {
-        iteration: Box<Request>,
-        item: Value,
-    },
-    UntilTest(Box<Request>),
-    UntilNext(Box<Request>),
+    Iterate(Iteration),
+    Iterated { iteration: Iteration, item: Value },
+    UntilTest(Iteration),
+    UntilNext(Iteration),
     FormValue {
         site: NodeId,
         name: String,
@@ -161,6 +154,19 @@ pub(crate) enum Request {
     Atomic(Atomic),
     PredicateEnd(Atomic),
     AdvanceChild,
+}
+
+/// Owned iteration progress; continuations cannot contain an unrelated request.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Iteration {
+    pub(crate) site: NodeId,
+    pub(crate) name: String,
+    pub(crate) args: Vec<NodeId>,
+    pub(crate) values: Vec<Value>,
+    pub(crate) index: usize,
+    pub(crate) output: Vec<Value>,
+    pub(crate) state: Value,
+    pub(crate) count: usize,
 }
 
 /// A pure host operation can request a predicate. Completed answers are part of its continuation.
@@ -199,6 +205,11 @@ pub(crate) struct Evaluator {
     pub(crate) depth: usize,
     pub(crate) limits: Limits,
     pub(crate) type_time: bool,
+    pub(crate) inherited_type_time: bool,
+    pub(crate) pending_effect: Option<(NodeId, EffectRequest)>,
+    pub(crate) effects: List,
+    pub(crate) effects_allowed: bool,
+    pub(crate) signal: Option<Value>,
     pub(crate) remaining_work: usize,
     pub(crate) remaining_values: usize,
 }
@@ -278,4 +289,25 @@ pub struct Vm {
 
 pub(crate) fn string(text: &str) -> Value {
     Value::String(text.into())
+}
+
+/// An explicit host request. IDs are local to an immutable machine branch, not global deduplication keys.
+#[derive(Clone, Debug, PartialEq)]
+pub struct EffectRequest {
+    pub id: u64,
+    pub operation: String,
+    pub payload: Yaml,
+}
+
+impl Default for Limits {
+    fn default() -> Self {
+        Self {
+            max_depth: 200,
+            max_iterations: 100_000,
+            max_work: 2_000_000,
+            max_values: 128_000_000,
+            max_value_size: crate::model::MAX_VALUE_SIZE,
+            max_eval_depth: 512,
+        }
+    }
 }
