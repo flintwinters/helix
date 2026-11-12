@@ -1,6 +1,9 @@
 # Testing Helix
 
 Run commands from the repository root. Tests require Python 3.10+, PyYAML, and Rust with Cargo.
+The `effects` suite also requires `curl`, `/bin/echo`, `/bin/sh`, and permission
+to bind a local loopback HTTP listener. Its files and process fixtures stay under
+the project's `runtime/` directory.
 
 ```sh
 ./manage.py test --describe                  # discover suites and their contracts
