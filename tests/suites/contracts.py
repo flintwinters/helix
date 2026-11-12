@@ -20,6 +20,8 @@ def checked(h, source):
 
 
 def harness(h):
+    from tests.suites.test_runner import verify as verify_runner
+    verify_runner(h)
     from tests.suites.test_reports import verify as verify_reports
     verify_reports(h)
     for output, code in [("", 0), ("[", 0), ("status: ready", 0),

@@ -3,6 +3,8 @@ import argparse
 import json
 import textwrap
 
+DEFAULT_TEST_JOBS = 4
+
 SUITES = {
     "startup": "Build-free discovery stays independent of execution and test-only imports",
     "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
@@ -90,6 +92,8 @@ def parser():
                       ["quality", "test"], "quality test --suite golden --suite cli")
     testing.add_argument("--bless", action="store_true", help="rewrite golden expectations; requires only golden or default suite selection")
     testing.add_argument("--suite", action="append", choices=SUITES, help="repeat to select suites; default: all")
+    testing.add_argument("--jobs", type=int, default=DEFAULT_TEST_JOBS, metavar="N",
+                         help="golden/robustness case workers (default: %(default)s; 1 runs serially)")
     testing.add_argument("--list", action="store_true", help="list suite names without building")
     testing.add_argument("--describe", action="store_true", help="list suites and their contracts without building")
     lint = command(quality, "lint", "Run hyperlinter (JSON by default); forward remaining arguments",
@@ -146,6 +150,8 @@ def parse(argv):
     if args.command is None:
         args.help_parser.print_help()
         return None
+    if args.command == "test" and args.jobs < 1:
+        args.help_parser.error("--jobs must be positive")
     if args.command == "test" and args.bless and args.suite and set(args.suite) != {"golden"}:
         args.help_parser.error("--bless requires --suite golden (or no suite selection)")
     return args

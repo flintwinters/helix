@@ -4,7 +4,7 @@ import sys
 import os
 from pathlib import Path
 
-from tooling.cli import SUITES, parse
+from tooling.cli import DEFAULT_TEST_JOBS, SUITES, parse
 from tooling.test_reports import failure as test_failure
 
 ROOT = Path(__file__).resolve().parent
@@ -88,22 +88,27 @@ def mutations(src: str):
         yield src[:n]
 
 
-def robustness(cases: list[Path]) -> list[str]:
-    failures = []
-    for case in cases:
-        src = case.read_text()
-        command = COMMANDS[case.parent]
-        for variant in [src, *mutations(src)]:
-            run = helix(command, "-", stdin=variant)
-            if (why := malformed_state(run.stdout, run.returncode)) is not None:
-                failures.append(test_failure(ROOT, case, "robustness", why, command, run, source=variant))
-                break
-    return failures
+def robustness_case(case: Path) -> list[str]:
+    from itertools import chain
+
+    src = case.read_text()
+    command = COMMANDS[case.parent]
+    for variant in chain((src,), mutations(src)):
+        run = helix(command, "-", stdin=variant)
+        if (why := malformed_state(run.stdout, run.returncode)) is not None:
+            return [test_failure(ROOT, case, "robustness", why, command, run, source=variant)]
+    return []
 
 
-def test(bless: bool, suites: list[str] | None = None) -> int:
+def robustness(cases: list[Path], jobs: int = DEFAULT_TEST_JOBS) -> list[str]:
+    from tooling.test_runner import collect_cases
+
+    return collect_cases(robustness_case, cases, jobs)
+
+
+def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS) -> int:
     if suites and set(suites) == {"startup"}:
-        return regression(bless, suites)
+        return regression(bless, suites, jobs)
 
     import shutil
     import tempfile
@@ -119,12 +124,39 @@ def test(bless: bool, suites: list[str] | None = None) -> int:
         shutil.copy2(original, snapshot)
         BIN = snapshot
         try:
-            return regression(bless, suites)
+            return regression(bless, suites, jobs)
         finally:
             BIN = original
 
 
-def regression(bless: bool, suites: list[str] | None) -> int:
+def golden_case(case: Path, bless: bool) -> list[str]:
+    failures = []
+    expected_path = case.with_suffix(".expected.yaml")
+    command = COMMANDS[case.parent]
+    run = helix(command, str(case.relative_to(ROOT)))
+    out = run.stdout
+    if (why := malformed_state(out, run.returncode)) is not None:
+        failures.append(test_failure(ROOT, case, "state", why, command, run))
+        return failures
+    repeated = helix(command, str(case.relative_to(ROOT)))
+    if (repeated.returncode, repeated.stdout, repeated.stderr) != (run.returncode, out, run.stderr):
+        failures.append(test_failure(ROOT, case, "determinism", "two runs differ", command, repeated, expected=out))
+        return failures
+    if bless:
+        expected_path.write_text(out)
+    elif not expected_path.exists() or expected_path.read_text() != out:
+        failures.append(test_failure(ROOT, case, "golden", f"state differs from {expected_path.relative_to(ROOT)}",
+                                     command, run, expected=expected_path.read_text() if expected_path.exists() else ""))
+        return failures
+    if (program := root_section(out)) is not None:
+        reloaded = helix("run", "-", stdin=program)
+        if root_section(reloaded.stdout) != program or reloaded.returncode != 0:
+            failures.append(test_failure(ROOT, case, "roundtrip", "emitted root is not stable",
+                                         "run", reloaded, source=program, expected=out))
+    return failures
+
+
+def regression(bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_JOBS) -> int:
     selected = set(suites or SUITES)
     failures = []
     for name in (name for name in SUITES if name in selected - {"golden", "robustness"}):
@@ -151,31 +183,13 @@ def regression(bless: bool, suites: list[str] | None) -> int:
             failures.append(f"{source.name}: standard library source differs")
     if helix("std", "unknown").returncode != 2:
         failures.append("unknown standard library must exit with usage error")
-    for case in cases if "golden" in selected else []:
-        expected_path = case.with_suffix(".expected.yaml")
-        command = COMMANDS[case.parent]
-        run = helix(command, str(case.relative_to(ROOT)))
-        out = run.stdout
-        if (why := malformed_state(out, run.returncode)) is not None:
-            failures.append(test_failure(ROOT, case, "state", why, command, run))
-            continue
-        repeated = helix(command, str(case.relative_to(ROOT)))
-        if (repeated.returncode, repeated.stdout, repeated.stderr) != (run.returncode, out, run.stderr):
-            failures.append(test_failure(ROOT, case, "determinism", "two runs differ", command, repeated, expected=out))
-            continue
-        if bless:
-            expected_path.write_text(out)
-        elif not expected_path.exists() or expected_path.read_text() != out:
-            failures.append(test_failure(ROOT, case, "golden", f"state differs from {expected_path.relative_to(ROOT)}",
-                                         command, run, expected=expected_path.read_text() if expected_path.exists() else ""))
-            continue
-        if (program := root_section(out)) is not None:
-            reloaded = helix("run", "-", stdin=program)
-            if root_section(reloaded.stdout) != program or reloaded.returncode != 0:
-                failures.append(test_failure(ROOT, case, "roundtrip", "emitted root is not stable",
-                                             "run", reloaded, source=program, expected=out))
+    if "golden" in selected:
+        from functools import partial
+        from tooling.test_runner import collect_cases
+
+        failures.extend(collect_cases(partial(golden_case, bless=bless), cases, jobs))
     if not bless and "robustness" in selected:
-        failures += robustness(cases)
+        failures += robustness(cases, jobs)
     for f in failures:
         print("FAIL", f, file=sys.stderr)
     print(f"{len(cases)} golden inputs; {len(failures)} failures")
@@ -215,7 +229,7 @@ def main() -> int:
         return build() or subprocess.call([str(BIN), command, args.file], cwd=ROOT)
     if command == "std":
         return build() or subprocess.call([str(BIN), "std", *([args.module] if args.module else [])], cwd=ROOT)
-    return test(args.bless, args.suite)
+    return test(args.bless, args.suite, args.jobs)
 
 
 if __name__ == "__main__":
