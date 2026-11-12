@@ -20,6 +20,11 @@ def checked(h, source):
 
 
 def harness(h):
+    # Regression orchestration must keep failures from every selected suite.
+    with patch.object(h, "SUITES", {"first": "probe", "second": "probe"}), \
+         patch.object(sys.modules[__name__], "run", side_effect=[["probe failure"], []]) as dispatch:
+        assert h.regression(False, ["first", "second"]) == 1
+        assert [call.args[0] for call in dispatch.call_args_list] == ["first", "second"]
     for output, code in [("", 0), ("[", 0), ("status: ready", 0),
                          ("status: finished", 0), ("status: error", 1),
                          ("status: finished\nroot: 1", 1), ("", -11)]:
