@@ -11,13 +11,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      HELIX_REQUIRE_PIPELINE_TOOLS: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install PyYAML
+      - run: python -m pip install PyYAML yq
+      - run: sudo apt-get update && sudo apt-get install -y jq
       - run: mkdir -p runtime
       - name: Fast regression contracts
         if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'

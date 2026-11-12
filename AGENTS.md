@@ -60,7 +60,7 @@ The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items 
 
 ## CLI Quick Reference
 
-- `helix exec [PROGRAM | -]` is the pipeline command: inline source or stdin, raw string results (no added newline), other results through the shared YAML emitter. Evaluation failures emit VM state only on stderr and exit 1; usage/read failures exit 2. `helix run` retains its state envelope. All language behavior belongs in the `helix` dispatcher; `manage.py runtime exec` builds and forwards pipeline execution. Verify with `./manage.py test --suite pipeline`.
+- `helix exec [--json | --yaml] [PROGRAM | -]` is the pipeline command: inline source or stdin, raw string results (no added newline), other results through the shared YAML emitter. Explicit output flags encode all results, including strings, for jq/yq; JSON normalizes YAML numeric spellings. The pipeline suite checks real consumers when installed; CI requires them via `HELIX_REQUIRE_PIPELINE_TOOLS=1`. Evaluation failures emit VM state only on stderr and exit 1; usage/read failures exit 2. `helix run` retains its state envelope. All language behavior belongs in the `helix` dispatcher; `manage.py runtime exec` builds and forwards pipeline execution. Verify with `./manage.py test --suite pipeline`.
 
 - `./manage.py` shows the command tree: `build`, `runtime` (execution/recovery), `inspect` (modules/inventory), `quality` (test/lint). Append `--help` at any level; flat commands remain equivalent shortcuts.
 - Golden and robustness cases use four bounded workers by default; `test --jobs N` controls case concurrency (`--jobs 1` is serial). Reports retain discovery order; other suites stay serial because some patch shared harness state. Robustness mutations stream one at a time per case.

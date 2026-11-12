@@ -12,7 +12,7 @@ SUITES = {
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",
     "cli": "Runtime and project CLI contracts, imports, inventory, and recovery",
-    "pipeline": "helix exec inline/stdin execution, raw strings, YAML results, errors and shell pipes",
+    "pipeline": "helix exec inline/stdin execution, raw strings, YAML/JSON results, errors and jq/yq shell pipes",
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
     "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",
     "errors": "Navigable function definitions, imported call chains, caught errors and causes",
@@ -84,6 +84,9 @@ def parser():
     sandbox.add_argument("file", metavar="FILE", help="YAML file, or - for stdin")
     pipeline = command(runtime, "exec", "Evaluate inline YAML or stdin; emit raw strings or YAML values",
                        ["runtime", "exec"], "runtime exec '\"[add, 20, 22]\"' | ./manage.py runtime exec")
+    formats = pipeline.add_mutually_exclusive_group()
+    formats.add_argument("--json", dest="output_format", action="store_const", const="--json", help="emit JSON, including quoted string results, for jq/yq")
+    formats.add_argument("--yaml", dest="output_format", action="store_const", const="--yaml", help="emit YAML, including quoted string results, for yq")
     pipeline.add_argument("source", nargs="?", default="-", metavar="PROGRAM", help="inline YAML, or - for stdin (default)")
     inline = command(runtime, "eval", "Evaluate inline YAML and emit VM state",
                      ["runtime", "eval"], "runtime eval '[add, 20, 22]'")

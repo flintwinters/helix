@@ -1,4 +1,7 @@
 """helix exec pipeline contracts, invoked by manage.py test --suite pipeline."""
+import json
+import os
+import shutil
 import subprocess
 import sys
 
@@ -6,6 +9,8 @@ import yaml
 
 
 def verify(h):
+    verify_formats(h)
+    verify_consumers(h)
     for args, source in [(("[add, 20, 22]",), None), ((), "[add, 20, 22]"),
                          (("-",), "[add, 20, 22]")]:
         result = h.helix("exec", *args, stdin=source)
@@ -55,3 +60,53 @@ def verify(h):
     assert parse(["runtime", "exec", "--", "-42"]).source == "-42"
     catalog = describe(parser()[0])
     assert "exec" in catalog["commands"]["runtime"]["commands"]
+
+
+def verify_formats(h):
+    cases = [('"null"', "null"), ('""', ""), ('"true"', "true"),
+             ('"a: b"', "a: b"), ('"a\\nb\\t\\u0000雪😀"', "a\nb\t\x00雪😀"),
+             ("null", None), ("false", False), ("[]", []), ("{}", {}),
+             ("+.5", 0.5), ("1.", 1.0), ("1e+3", 1000.0), ("1e20", 1e20), ("1e-20", 1e-20),
+             ("9223372036854775807", 9223372036854775807),
+             ('{answer: [add, 20, 22], nested: [list, "null", false, null]}',
+              {"answer": 42, "nested": ["null", False, None]})]
+    for flag, decode in [("--json", json.loads), ("--yaml", yaml.safe_load)]:
+        for source, expected in cases:
+            result = h.helix("exec", flag, stdin=source)
+            assert result.returncode == 0 and not result.stderr, result
+            assert decode(result.stdout) == expected, result
+        for source in ("[", "[div, 1, 0]"):
+            result = h.helix("exec", flag, source)
+            assert result.returncode == 1 and not result.stdout, result
+            assert h.malformed_state(result.stderr, 1) is None, result
+        assert decode(h.helix("exec", flag, "--", "--literal").stdout) == "--literal"
+        result = subprocess.run(
+            [sys.executable, str(h.ROOT / "manage.py"), "runtime", "exec", flag],
+            input='"null"', capture_output=True, text=True, cwd=h.ROOT, timeout=120,
+        )
+        assert result.returncode == 0 and not result.stderr and decode(result.stdout) == "null", result
+    for args in [("--json", "--yaml"), ("--yaml", "--json"), ("--unknown",),
+                 ("--json", "1", "2")]:
+        result = h.helix("exec", *args)
+        assert result.returncode == 2 and not result.stdout, result
+    from tooling.cli import parse
+    assert parse(["exec", "--json"]).output_format == "--json"
+    assert parse(["exec", "--yaml"]).output_format == "--yaml"
+
+
+def verify_consumers(h):
+    for consumer, formats in [("jq", ["--json"]), ("yq", ["--json", "--yaml"])]:
+        executable = shutil.which(consumer)
+        if not executable:
+            assert not os.environ.get("HELIX_REQUIRE_PIPELINE_TOOLS"), f"missing {consumer}"
+            print(f"  SKIP external {consumer} pipes: executable unavailable")
+            continue
+        for flag in formats:
+            # Round trip through a real downstream filter and back into Helix stdin.
+            result = subprocess.run(
+                ["bash", "-o", "pipefail", "-c",
+                 "\"$1\" exec \"$2\" '{answer: [add, 20, 22]}' | \"$3\" '.answer' | \"$1\" exec --json",
+                 "helix-consumer", str(h.BIN), flag, executable],
+                capture_output=True, text=True, cwd=h.ROOT, timeout=10,
+            )
+            assert (result.returncode, result.stdout, result.stderr) == (0, "42\n", ""), result

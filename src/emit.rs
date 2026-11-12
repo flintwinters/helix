@@ -68,7 +68,7 @@ fn is_container(value: &Yaml) -> bool {
 fn scalar(value: &Yaml) -> String {
     match value {
         Yaml::Integer(i) => i.to_string(),
-        Yaml::Real(text) => text.clone(),
+        Yaml::Real(text) => canonical_real(text).unwrap_or_else(|| text.clone()),
         Yaml::Boolean(b) => b.to_string(),
         Yaml::String(s) => string(s, false),
         Yaml::Array(_) => "[]".to_string(),
@@ -113,4 +113,58 @@ pub(crate) fn quoted(text: &str) -> String {
 /// https://yaml.org/spec/1.2.2/#51-character-set
 pub(crate) fn is_printable(ch: char) -> bool {
     matches!(ch, '\t' | '\n' | '\r' | ' '..='~' | '\u{85}' | '\u{a0}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}')
+}
+
+/// A JSON document for external data pipelines. Reject values JSON cannot represent.
+pub fn json_document(value: &Yaml) -> Result<String, &'static str> {
+    let mut out = String::new();
+    json_value(value, &mut out)?;
+    out.push('\n');
+    Ok(out)
+}
+
+fn json_value(value: &Yaml, out: &mut String) -> Result<(), &'static str> {
+    match value {
+        Yaml::Null => out.push_str("null"),
+        Yaml::Boolean(b) => out.push_str(&b.to_string()),
+        Yaml::Integer(i) => out.push_str(&i.to_string()),
+        Yaml::Real(text) => {
+            out.push_str(&canonical_real(text).ok_or("JSON requires finite numbers")?);
+        }
+        Yaml::String(text) => out.push_str(&quoted(text)),
+        Yaml::Array(items) => {
+            out.push('[');
+            for (index, item) in items.iter().enumerate() {
+                if index > 0 { out.push(','); }
+                json_value(item, out)?;
+            }
+            out.push(']');
+        }
+        Yaml::Hash(entries) => {
+            out.push('{');
+            for (index, (key, item)) in entries.iter().enumerate() {
+                let Yaml::String(key) = key else { return Err("JSON object keys must be strings"); };
+                if index > 0 { out.push(','); }
+                out.push_str(&quoted(key));
+                out.push(':');
+                json_value(item, out)?;
+            }
+            out.push('}');
+        }
+        _ => return Err("unsupported JSON value"),
+    }
+    Ok(())
+}
+
+/// Decimal mantissas and signed exponents work in both YAML 1.1 consumers and JSON.
+fn canonical_real(text: &str) -> Option<String> {
+    let number = text.parse::<f64>().ok().filter(|n| n.is_finite())?;
+    let rendered = format!("{number:?}");
+    if let Some((mantissa, exponent)) = rendered.split_once('e') {
+        let decimal = if mantissa.contains('.') { "" } else { ".0" };
+        let sign = if exponent.starts_with('-') || exponent.starts_with('+') { "" } else { "+" };
+        Some(format!("{mantissa}{decimal}e{sign}{exponent}"))
+    } else {
+        Some(rendered)
+    }
 }
