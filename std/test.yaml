@@ -41,7 +41,7 @@ suite:
   - [[cases, list]]
   - - let
     - results: [map, case, cases]
-      failures: [filter, [fn, [result], [eq, [get, result, "outcome"], "failed"]], results]
+      failures: [filter, is_failure, results]
     - [dict, "total", [len, results], "passed", [sub, [len, results], [len, failures]], "failed", [len, failures], "results", results]
   - map
 require_pass:
@@ -87,3 +87,51 @@ combine:
     - {total: 0, passed: 0, failed: 0, results: []}
     - reports
   - map
+# Assert a top-level subset of map fields; absent differs from present null.
+# Nested values use exact equality. Extra actual fields (e.g. source blame) survive.
+fields_equal:
+  - fn
+  - [[actual, map], [expected, map]]
+  - - if
+    - [fold, [fn, [ok, key], [and, ok, [has, actual, key], [eq, [get, actual, key], [get, expected, key]]]], true, [keys, expected]]
+    - null
+    - [raise, "assertion", "map fields differ", [dict, "expected", expected, "actual", actual]]
+# Expected must include kind. Check additional fields without discarding the error.
+throws_matching:
+  - fn
+  - [[thunk, function], [expected, map]]
+  - - let
+    - error: [throws, thunk, [get, expected, "kind"]]
+    - [finally, error, [fields_equal, error, expected]]
+  - map
+# One classification predicate is shared by suite counts and failure selection.
+is_failure: [fn, [[result, map]], [eq, [get, result, "outcome"], "failed"], boolean]
+# Filtering retains original result records, including replay input and error details.
+failures: [fn, [[report, map]], [filter, is_failure, [get, report, "results"]], list]
+# Missing tags are empty; selected cases keep their source order and callbacks.
+tagged: [fn, [[cases, list], [tag, string]], [filter, [fn, [spec], [has, [get, spec, "tags", []], tag]], cases], list]
+# Names identify reruns: every source case with a failed name runs, in source order.
+# Duplicate names intentionally select all matching cases; prefer unique case names.
+rerun:
+  - fn
+  - [[cases, list], [report, map]]
+  - [let, {names: [map, [fn, [result], [get, result, "name"]], [failures, report]]}, [suite, [filter, [fn, [spec], [has, names, [get, spec, "name"]]], cases]]]
+  - map
+# Finite deterministic generators. Order and duplicates are intentional.
+# product([]) = [[]]; an empty axis produces no rows. Runtime limits still apply.
+sequences: [import, std:list]
+product:
+  - fn
+  - [[axes, [list_of, list]]]
+  - [fold, [fn, [rows, axis], [sequences.flat_map, rows, [fn, [row], [map, [fn, [value], [append, row, value]], axis]]]], [list, []], axes]
+  - list
+# Enumerate lengths 0..max_length, then alphabet order within each length.
+# This is exhaustive and grows exponentially; callers choose small bounds.
+lists:
+  - fn
+  - [[alphabet, list], [max_length, integer]]
+  - - if
+    - [lt, max_length, 0]
+    - [raise, "range", "maximum sample length must be non-negative"]
+    - [sequences.flat_map, [sequences.range, [add, max_length, 1]], [fn, [size], [product, [map, [fn, [ignored], alphabet], [sequences.range, size]]]]]
+  - list

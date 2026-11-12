@@ -215,15 +215,26 @@ checked: [t.require_pass, report]
 | `equal(actual, expected)` | Return null on structural/numeric equality; otherwise raise `assertion` with both values in `data`. |
 | `capture(thunk)` | Call a zero-argument function and return `{outcome: passed, value: ...}` or `{outcome: failed, error: ...}`. |
 | `throws(thunk, kind)` | Require an error of that kind and return the original error map. Normal return or a different kind raises `assertion`. |
+| `fields_equal(actual, expected)` | Assert a top-level subset of map fields. Extra actual fields are allowed; missing differs from null, and nested values compare exactly. |
+| `throws_matching(thunk, expected)` | Require an error matching the expected fields, including mandatory `kind`; return the original error with source details intact. |
 | `case(spec)` | Execute `{name, run}`; retain its name and optional `input` alongside the captured result. |
 | `suite(cases)` | Return `{total, passed, failed, results}` in source order. Empty suites pass. Normal return passes, including false or null; assert explicitly to test a condition. |
 | `require_pass(report)` | Return a clean report or raise `test_failure` with the entire report as `data`. |
 | `table(rows, verify)` | Each `{name, input}` row runs `verify(input)` independently; retain the input for reproduction. |
 | `property(name, samples, predicate)` | Check each supplied sample; false raises an assertion, and predicate errors remain failures. |
 | `compare(name, samples, left, right)` | Compare both algorithms on each sample with `equal`; callback errors are failures. |
+| `combine(reports)` | Sum child counts and concatenate leaf results in encounter order; empty input yields an empty passing report. |
+| `is_failure(result)` | Test whether a captured result has outcome `failed`; shared by suite counting and selection. |
+| `failures(report)` | Return failed result records with replay inputs and errors intact. |
+| `tagged(cases, tag)` | Select case records in source order; absent tags behave as an empty list. |
+| `rerun(cases, report)` | Run source cases whose names failed in the report, preserving source order. Duplicate names select every matching source case; prefer unique names. |
+| `product(axes)` | Enumerate a finite Cartesian product in axis order, retaining duplicates. No axes yields `[[]]`; an empty axis yields `[]`. |
+| `lists(alphabet, max_length)` | Enumerate every list of length zero through the nonnegative bound, in length then alphabet order. Negative bounds raise `range`. |
 
-Use `std:list.range`/`flat_map` to build bounded sample products, `filter` over case
-records for selection, and report results to choose failed names for reruns. Supply
+Use `[t.product, [list, xs, ys]]` for bounded pairs and `[t.lists, [-1, 0, 1], 3]`
+for exhaustive short lists. Use `[t.suite, [t.tagged, cases, "fast"]]` to run a tag,
+then `[t.rerun, cases, report]` to retry failed names. `combine` retains leaf failures
+without wrapping entire reports in captured callbacks. Supply
 fixture factories as functions so each case gets its own immutable environment.
 Expected states are ordinary table data compared with `equal`; this is semantic
 value comparison, not byte-for-byte YAML comparison. `tests/cases/dogfood_testing.yaml`
@@ -233,7 +244,7 @@ proves a report can produce the usual VM error and exit code 1.
 
 Only supplied samples are tested; these helpers do not prove a property. Work and
 immutable copying grow with the supplied cases and captured fixtures. Keep samples
-small and within runtime call/iteration limits. Pure tests cannot observe process
+small and within runtime call/iteration limits. Generated list domains grow exponentially; generators do not bypass VM resource bounds. Pure tests cannot observe process
 crashes, timeouts or side effects. Discovery, file golden comparison, serialization
 fixpoints and crash detection remain in `./manage.py test` until the required
 file/process/parsing services exist. The same golden runner tests this module;

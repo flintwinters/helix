@@ -1,0 +1,56 @@
+# Self-test the testing API with literal witnesses and deliberately rejected inputs.
+t: [import, std:test]
+cases:
+  - {name: same, tags: [fast], run: [fn, [], 42]}
+  - {name: bad, tags: [slow, fast], run: [fn, [], [raise, "probe", "broken", {x: false}]]}
+  - {name: same, run: [fn, [], null]}
+  - {name: last, tags: [], run: [fn, [], false]}
+first: [t.suite, cases]
+report:
+  - t.suite
+  - - name: fields_subset
+      run: [fn, [], [t.equal, [t.fields_equal, {x: null, extra: false}, {x: null}], null]]
+    - name: fields_empty
+      run: [fn, [], [t.equal, [t.fields_equal, {x: 1}, {}], null]]
+    - name: fields_missing_is_not_null
+      run: [fn, [], [t.throws_matching, [fn, [], [t.fields_equal, {}, {x: null}]], {kind: assertion, data: {expected: {x: null}, actual: {}}}]]
+    - name: fields_nested_are_exact
+      run: [fn, [], [t.throws, [fn, [], [t.fields_equal, {x: {a: 1, b: 2}}, {x: {a: 1}}]], "assertion"]]
+    - name: matching_error_retains_details
+      run: [fn, [], [let, {e: [t.throws_matching, [fn, [], [raise, "probe", "broken", {x: false}]], {kind: probe, message: broken, data: {x: false}}]}, [assert, [and, [has, e, "line"], [has, e, "column"], [has, e, "path"]]]]]
+    - name: matching_error_wrong_field
+      run: [fn, [], [t.throws, [fn, [], [t.throws_matching, [fn, [], [raise, "probe", "actual"]], {kind: probe, message: expected}]], "assertion"]]
+    - name: matching_error_wrong_kind
+      run: [fn, [], [t.throws, [fn, [], [t.throws_matching, [fn, [], [raise, "other", "actual"]], {kind: probe}]], "assertion"]]
+    - name: matching_error_missing
+      run: [fn, [], [t.throws, [fn, [], [t.throws_matching, [fn, [], false], {kind: probe}]], "assertion"]]
+    - name: matching_requires_kind
+      run: [fn, [], [t.throws, [fn, [], [t.throws_matching, [fn, [], null], {}]], "missing"]]
+    - name: failure_records_preserved
+      run: [fn, [], [t.equal, [t.failures, first], [list, [get, [get, first, "results"], 1]]]]
+    - name: tagged_source_order
+      run: [fn, [], [t.equal, [map, [fn, [spec], [get, spec, "name"]], [t.tagged, cases, "fast"]], [list, "same", "bad"]]]
+    - name: tagged_empty
+      run: [fn, [], [t.equal, [t.tagged, cases, "absent"], []]]
+    - name: rerun_only_failures
+      run: [fn, [], [let, {r: [t.rerun, cases, first]}, [t.equal, [list, [get, r, "total"], [get, r, "failed"], [map, [fn, [result], [get, result, "name"]], [get, r, "results"]]], [list, 1, 1, [list, "bad"]]]]]
+    - name: rerun_empty
+      run: [fn, [], [t.equal, [t.rerun, cases, [t.suite, []]], {total: 0, passed: 0, failed: 0, results: []}]]
+    - name: rerun_duplicate_names
+      run: [fn, [], [let, {r: [t.rerun, cases, {results: [{name: same, outcome: failed}]}]}, [t.equal, [list, [get, r, "total"], [get, r, "passed"]], [list, 2, 2]]]]
+    - name: product_order_and_duplicates
+      run: [fn, [], [t.equal, [t.product, [list, [list, false, null, false], [list, "x", "y"]]], [list, [list, false, "x"], [list, false, "y"], [list, null, "x"], [list, null, "y"], [list, false, "x"], [list, false, "y"]]]]
+    - name: product_no_axes
+      run: [fn, [], [t.equal, [t.product, []], [list, []]]]
+    - name: product_empty_axis
+      run: [fn, [], [t.equal, [t.product, [list, [list, 1], [], [list, 2]]], []]]
+    - name: product_contract
+      run: [fn, [], [t.throws, [fn, [], [t.product, [list, 1]]], "type"]]
+    - name: lists_literal_order
+      run: [fn, [], [t.equal, [t.lists, [list, -1, 1], 2], [list, [], [list, -1], [list, 1], [list, -1, -1], [list, -1, 1], [list, 1, -1], [list, 1, 1]]]]
+    - name: lists_zero_bound
+      run: [fn, [], [t.equal, [t.lists, [list, 1, 2], 0], [list, []]]]
+    - name: lists_empty_alphabet
+      run: [fn, [], [t.equal, [t.lists, [], 3], [list, []]]]
+    - name: lists_negative_bound
+      run: [fn, [], [t.throws, [fn, [], [t.lists, [list, 1], -1]], "range"]]
