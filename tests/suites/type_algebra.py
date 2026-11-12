@@ -66,6 +66,17 @@ def verify(h):
         result = h.helix('run', '-', stdin=source)
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, result
         assert yaml.safe_load(result.stdout)['error']['kind'] == 'type'
+    # Type declaration validation must not depend on reaching a predicate at
+    # runtime: subtyping to any and empty containers still reject malformed types.
+    for predicate in (None, 1, "not a function", {}, []):
+        malformed = {"type": "refine", "of": "integer", "check": predicate}
+        for expression in (["subtype", malformed, "any"],
+                           ["is", [], {"type": "list", "of": malformed}],
+                           ["violations", "outside base type", malformed]):
+            result = h.helix('run', '-', stdin=json.dumps({"$call": expression}))
+            assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, result
+            error = yaml.safe_load(result.stdout)['error']
+            assert error['kind'] == 'type' and 'function `check`' in error['message'], error
     rejected = checked(h, '{"$call": ["violations", 1, {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["x"], false]}]}]}')
     broken = checked(h, '{"$call": ["violations", 1, {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["x"], 1]}]}]}')
     assert rejected[0]['message'] == 'failed its refinement check'

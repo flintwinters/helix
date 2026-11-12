@@ -116,7 +116,14 @@ impl Ty {
                         _ => Err("an `enum` needs a non-empty list of `values`".into()),
                     },
                     "literal" => Ok(Ty::Enum(vec![member(map, "value")?.clone()])),
-                    "refine" => Ok(Ty::Refine(Box::new(Ty::parse(member(map, "of")?)?), member(map, "check")?.clone())),
+                    "refine" => {
+                        let base = Ty::parse(member(map, "of")?)?;
+                        let predicate = member(map, "check")?;
+                        if !is_function(predicate) {
+                            return Err("a `refine` type needs a function `check`".into());
+                        }
+                        Ok(Ty::Refine(Box::new(base), predicate.clone()))
+                    }
                     "record" | "class" => match member(map, "fields")? {
                         Value::Hash(fields) => fields.iter().map(|(name, spec)| Ok((key(name)?, Field::parse(spec)?))).collect::<Result<_, String>>().map(Ty::Record),
                         _ => Err(format!("a `{kind}` needs a map of `fields`")),
