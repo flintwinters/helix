@@ -105,7 +105,7 @@ def verify(h):
         error = yaml.safe_load(result.stdout)["error"]
         assert error["kind"] == "type", (name, error)
         report[name]["wrong_type"] += 1
-    assert INVALID.keys() | UNRESTRICTED <= WITNESSES.keys()
+    assert INVALID.keys() | UNRESTRICTED == WITNESSES.keys(), "every actor needs a wrong-type witness or an explicit unrestricted-operand exemption"
     for name, minimum, maximum in arities:
         counts = ([int(minimum) - 1] if int(minimum) else [])
         if maximum != "None":

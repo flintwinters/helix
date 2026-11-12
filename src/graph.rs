@@ -33,7 +33,7 @@ pub struct Graph {
 }
 
 pub const ROOT: NodeId = 0;
-const MAX_NODES: usize = 100_000;
+pub(crate) const MAX_NODES: usize = 100_000;
 pub(crate) const MAX_NESTING: usize = 64;
 
 impl Graph {
