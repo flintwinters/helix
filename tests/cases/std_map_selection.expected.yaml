@@ -1,0 +1,133 @@
+status: finished
+root:
+  m:
+    merge:
+      - fn
+      - - - left
+          - map
+        - - right
+          - map
+      - - fold
+        - - fn
+          - - result
+            - key
+          - - set
+            - result
+            - key
+            - - get
+              - right
+              - key
+        - left
+        - - keys
+          - right
+      - map
+    remove:
+      - fn
+      - - - source
+          - map
+        - - key
+          - string
+      - - fold
+        - - fn
+          - - result
+            - name
+          - - if
+            - - eq
+              - name
+              - key
+            - result
+            - - set
+              - result
+              - name
+              - - get
+                - source
+                - name
+        - {}
+        - - keys
+          - source
+      - map
+    select:
+      - fn
+      - - - source
+          - map
+        - - requested
+          - - list_of
+            - string
+      - - fold
+        - - fn
+          - - result
+            - name
+          - - if
+            - - has
+              - requested
+              - name
+            - - set
+              - result
+              - name
+              - - get
+                - source
+                - name
+            - result
+        - {}
+        - - keys
+          - source
+      - map
+    omit:
+      - fn
+      - - - source
+          - map
+        - - requested
+          - - list_of
+            - string
+      - - select
+        - source
+        - - filter
+          - - fn
+            - - name
+            - - not
+              - - has
+                - requested
+                - name
+          - - keys
+            - source
+      - map
+  source:
+    z: ~
+    a: false
+    "":
+      nested:
+        - 1
+        - 2
+    "é": 3
+    "🙂": 4
+  selected:
+    z: ~
+    a: false
+    "🙂": 4
+  selected_order: ~
+  omitted:
+    z: ~
+    "":
+      nested:
+        - 1
+        - 2
+    "🙂": 4
+  omitted_order: ~
+  nested:
+    "":
+      nested:
+        - 1
+        - 2
+  empty_select: {}
+  empty_omit: ~
+  empty_sources:
+    - {}
+    - {}
+  wrong_select_source: type
+  wrong_omit_source: type
+  wrong_select_keys: type
+  wrong_omit_keys: type
+  wrong_select_member: type
+  wrong_omit_member: type
+  wrong_select_arity: arity
+  wrong_omit_arity: arity

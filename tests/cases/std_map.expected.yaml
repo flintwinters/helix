@@ -46,6 +46,51 @@ root:
         - - keys
           - source
       - map
+    select:
+      - fn
+      - - - source
+          - map
+        - - requested
+          - - list_of
+            - string
+      - - fold
+        - - fn
+          - - result
+            - name
+          - - if
+            - - has
+              - requested
+              - name
+            - - set
+              - result
+              - name
+              - - get
+                - source
+                - name
+            - result
+        - {}
+        - - keys
+          - source
+      - map
+    omit:
+      - fn
+      - - - source
+          - map
+        - - requested
+          - - list_of
+            - string
+      - - select
+        - source
+        - - filter
+          - - fn
+            - - name
+            - - not
+              - - has
+                - requested
+                - name
+          - - keys
+            - source
+      - map
   left:
     z: 1
     shared:
