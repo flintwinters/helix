@@ -5,10 +5,7 @@ l: [import, std:list]
 report:
   - let
   - alphabet: [-1, 0, 1]
-    append_choices: [fn, [xss], [l.flat_map, xss, [fn, [xs], [map, [fn, [x], [append, xs, x]], alphabet]]]]
-    one: [append_choices, [list, []]]
-    two: [append_choices, one]
-    samples: [concat, [list, []], one, two, [append_choices, two]]
+    samples: [t.lists, alphabet, 3]
     positive: [fn, [x], [gt, x, 0]]
     # A counting oracle does not use a comparator or the sorting implementation.
     sort_oracle: [fn, [xs], [l.flat_map, alphabet, [fn, [x], [map, [fn, [i], x], [l.range, [l.count, xs, [fn, [y], [eq, x, y]]]]]]]]

@@ -6,7 +6,7 @@ choices: [list, null, false]
 singles: [l.flat_map, [list, "a", "b"], [fn, [key], [map, [fn, [value], [dict, key, value]], choices]]]
 pairs: [l.flat_map, choices, [fn, [a], [l.flat_map, choices, [fn, [b], [list, [dict, "a", a, "b", b], [dict, "b", b, "a", a]]]]]]
 samples: [concat, [list, {}], singles, pairs]
-merges: [l.flat_map, samples, [fn, [left], [map, [fn, [right], [list, left, right]], samples]]]
+merges: [t.product, [list, samples, samples]]
 # Build expected keys separately from values: map equality alone ignores order.
 # merge keeps left positions and takes right values including null and false
 merge_law:

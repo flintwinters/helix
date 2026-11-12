@@ -1,0 +1,1 @@
+[until, [fn, [xs], [ge, [len, xs], 131072]], [fn, [xs], [concat, xs, xs]], [list, 0]]

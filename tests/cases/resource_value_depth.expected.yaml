@@ -10,3 +10,5 @@ error:
       line: 1
       column: 27
       function: /2
+      function_line: 1
+      function_column: 27

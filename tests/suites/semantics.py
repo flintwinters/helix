@@ -54,6 +54,11 @@ WITNESSES = {
     "extend": ('[get, [extend, "c", [], [record], {}], "name"]', 'c'),
     "inherit": ('[get, [inherit, "c", [], {}], "values"]', {}),
     "realize": ('[get, [realize, [class, "c", [record], {}]], "values"]', {}),
+    "type_time": ('[type_time, [list_of, integer]]', {"type": "list", "of": "integer"}),
+    "open_fields": ('[open_fields, [class, "c", [record, "x", integer], {}]]', {"x": "integer"}),
+    "yaml_parse": ('[yaml_parse, "x: [add, 1, 2]"]', {"x": ["add", 1, 2]}),
+    "yaml_dump": ('[yaml_dump, {x: 1}]', "x: 1\n"),
+    "constrain": ('[get, [realize, [constrain, [class, "c", [record], {}], [fn, [c], true]]], "values"]', {}),
     "parents": ('[parents, [class, "c", [record], {}]]', []),
     "drift": ('[drift, [realize, [class, "c", [record], {}]], {}]', {'missing': {}, 'changed': {}, 'extra': {}}), "converge": ('[converge, [realize, [class, "c", [record], {}]], {}]', []),
     "import": ('m: [import, std:math]\nr: [m.square, 3]', None),
@@ -65,7 +70,7 @@ WITNESSES = {
 
 
 # Operations accepting every YAML value cannot have a wrong-type first operand.
-UNRESTRICTED = {"eq", "ne", "type", "literal", "list", "enum", "finally"}
+UNRESTRICTED = {"eq", "ne", "type", "literal", "list", "enum", "finally", "yaml_dump", "type_time"}
 INVALID = {
     "add": "null, 1", "mul": "null, 1", "sub": "null, 1", "div": "null, 1", "mod": "null, 1",
     "neg": "null", "lt": "null, 1", "le": "null, 1", "gt": "null, 1", "ge": "null, 1",
@@ -84,6 +89,7 @@ INVALID = {
     "inherit": "null, [], {}", "realize": "null", "parents": "null", "drift": "null, {}",
     "converge": "null, {}", "import": "null", "assert": "null", "raise": "null",
     "try": "[div, 1, 0], null",
+    "yaml_parse": "null", "open_fields": "null", "constrain": "null, [fn, [c], true]",
 }
 
 
@@ -105,7 +111,7 @@ def verify(h):
         error = yaml.safe_load(result.stdout)["error"]
         assert error["kind"] == "type", (name, error)
         report[name]["wrong_type"] += 1
-    assert INVALID.keys() | UNRESTRICTED <= WITNESSES.keys()
+    assert INVALID.keys() | UNRESTRICTED == WITNESSES.keys(), "every actor needs a wrong-type witness or an explicit unrestricted-operand exemption"
     for name, minimum, maximum in arities:
         counts = ([int(minimum) - 1] if int(minimum) else [])
         if maximum != "None":

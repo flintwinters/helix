@@ -3,7 +3,7 @@ t: [import, std:test]
 l: [import, std:list]
 m: [import, std:math]
 values: [-4, -1, -0.5, 0, 0.5, 1, 4]
-pairs: [l.flat_map, values, [fn, [a], [map, [fn, [b], [list, a, b]], values]]]
+pairs: [t.product, [list, values, values]]
 # Literal expected columns decouple abs/sign/square; correlated bugs cannot agree.
 unary_rows:
   - {name: negative_integer, input: [-4, 4, -1, 16]}

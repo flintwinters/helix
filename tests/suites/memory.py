@@ -4,6 +4,7 @@ import os
 import platform
 import subprocess
 import time
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -12,8 +13,9 @@ import yaml
 def verify(h):
     if platform.system() != "Linux" or not Path("/usr/bin/time").exists():
         raise AssertionError("memory suite requires Linux and GNU /usr/bin/time; select other suites on other hosts")
-    artifact = h.ROOT / "runtime" / "memory"
-    artifact.mkdir(exist_ok=True)
+    base = h.ROOT / "runtime" / "memory"
+    base.mkdir(exist_ok=True)
+    artifact = Path(tempfile.mkdtemp(dir=base, prefix="run-"))
     measurements = []
     def measure(name, source):
         program = artifact / f"{name}.yaml"
@@ -47,7 +49,9 @@ def verify(h):
         report = {"environment": {"platform": platform.platform(), "python": platform.python_version(),
                                    "binary": str(h.BIN), "profile": "debug", "rss": "GNU time max RSS, KiB"},
                   "measurements": measurements}
+        report["run_directory"] = str(artifact)
         (artifact / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+        (base / "report.json").write_text(json.dumps(report, indent=2) + "\n")
         for measurement in measurements:
             print(f"memory: {measurement}")
         print("memory: replay inputs, states and environment in runtime/memory/")

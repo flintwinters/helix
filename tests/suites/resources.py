@@ -43,6 +43,13 @@ def verify(h):
     # Computed growth must fail before exhausting the host, even with shallow source.
     failure(h, '[until, [fn, [s], false], [fn, [s], [concat, s, s]], "x"]', "limit")
     failure(h, '[until, [fn, [s], false], [fn, [s], [list, s]], 0]', "depth")
+    # Computed output must stay within the parser's graph budget to remain re-readable.
+    failure(h, '[until, [fn, [xs], [ge, [len, xs], 131072]], [fn, [xs], [concat, xs, xs]], [list, 0]]', "limit")
+    grown = h.helix("run", "-", stdin='[until, [fn, [xs], [ge, [len, xs], 65536]], [fn, [xs], [concat, xs, xs]], [list, 0]]')
+    assert grown.returncode == 0, grown
+    program = h.root_section(grown.stdout)
+    reloaded = h.helix("run", "-", stdin=program)
+    assert reloaded.returncode == 0 and h.root_section(reloaded.stdout) == program
     # A long dependency chain has shallow syntax but a deep evaluator stack.
     source = "".join(f"v{i}: [add, v{i + 1}, 0]\n" for i in range(2000)) + "v2000: 0\n"
     failure(h, source, "depth")

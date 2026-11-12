@@ -194,7 +194,7 @@ Callbacks are checked as functions even for empty lists. Predicates must return 
 
 ## Error kinds
 
-`effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (call nesting), `limit` (iteration cap), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
+`permission` (a denied file import), `effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (syntax/value, call, dependency or import nesting), `limit` (work/data/graph or iteration budgets), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
 
 ## Testing in Helix
 
@@ -215,15 +215,26 @@ checked: [t.require_pass, report]
 | `equal(actual, expected)` | Return null on structural/numeric equality; otherwise raise `assertion` with both values in `data`. |
 | `capture(thunk)` | Call a zero-argument function and return `{outcome: passed, value: ...}` or `{outcome: failed, error: ...}`. |
 | `throws(thunk, kind)` | Require an error of that kind and return the original error map. Normal return or a different kind raises `assertion`. |
+| `fields_equal(actual, expected)` | Assert a top-level subset of map fields. Extra actual fields are allowed; missing differs from null, and nested values compare exactly. |
+| `throws_matching(thunk, expected)` | Require an error matching the expected fields, including mandatory `kind`; return the original error with source details intact. |
 | `case(spec)` | Execute `{name, run}`; retain its name and optional `input` alongside the captured result. |
 | `suite(cases)` | Return `{total, passed, failed, results}` in source order. Empty suites pass. Normal return passes, including false or null; assert explicitly to test a condition. |
 | `require_pass(report)` | Return a clean report or raise `test_failure` with the entire report as `data`. |
 | `table(rows, verify)` | Each `{name, input}` row runs `verify(input)` independently; retain the input for reproduction. |
 | `property(name, samples, predicate)` | Check each supplied sample; false raises an assertion, and predicate errors remain failures. |
 | `compare(name, samples, left, right)` | Compare both algorithms on each sample with `equal`; callback errors are failures. |
+| `combine(reports)` | Sum child counts and concatenate leaf results in encounter order; empty input yields an empty passing report. |
+| `is_failure(result)` | Test whether a captured result has outcome `failed`; shared by suite counting and selection. |
+| `failures(report)` | Return failed result records with replay inputs and errors intact. |
+| `tagged(cases, tag)` | Select case records in source order; absent tags behave as an empty list. |
+| `rerun(cases, report)` | Run source cases whose names failed in the report, preserving source order. Duplicate names select every matching source case; prefer unique names. |
+| `product(axes)` | Enumerate a finite Cartesian product in axis order, retaining duplicates. No axes yields `[[]]`; an empty axis yields `[]`. |
+| `lists(alphabet, max_length)` | Enumerate every list of length zero through the nonnegative bound, in length then alphabet order. Negative bounds raise `range`. |
 
-Use `std:list.range`/`flat_map` to build bounded sample products, `filter` over case
-records for selection, and report results to choose failed names for reruns. Supply
+Use `[t.product, [list, xs, ys]]` for bounded pairs and `[t.lists, [-1, 0, 1], 3]`
+for exhaustive short lists. Use `[t.suite, [t.tagged, cases, "fast"]]` to run a tag,
+then `[t.rerun, cases, report]` to retry failed names. `combine` retains leaf failures
+without wrapping entire reports in captured callbacks. Supply
 fixture factories as functions so each case gets its own immutable environment.
 Expected states are ordinary table data compared with `equal`; this is semantic
 value comparison, not byte-for-byte YAML comparison. `tests/cases/dogfood_testing.yaml`
@@ -233,7 +244,7 @@ proves a report can produce the usual VM error and exit code 1.
 
 Only supplied samples are tested; these helpers do not prove a property. Work and
 immutable copying grow with the supplied cases and captured fixtures. Keep samples
-small and within runtime call/iteration limits. Pure tests cannot observe process
+small and within runtime call/iteration limits. Generated list domains grow exponentially; generators do not bypass VM resource bounds. Pure tests cannot observe process
 crashes, timeouts or side effects. Discovery, file golden comparison, serialization
 fixpoints and crash detection remain in `./manage.py test` until the required
 file/process/parsing services exist. The same golden runner tests this module;
@@ -294,7 +305,7 @@ and invalid indices use the ordinary `get`/`set` errors.
 
 ## Resource bounds and confined loading
 
-Each VM shares budgets across calls, iterations and error recovery: 2,000,000 evaluated node visits and 128,000,000 produced value units, with at most 1,000,000 units in any one value. A unit is a scalar/container/key plus the UTF-8 bytes of string/real text; nested values and memoized copies count again. Budget exhaustion is `limit`, not rejection of a value by a declared type. A graph, including imported and reconstructed functions, has at most 100,000 nodes. Syntax and produced values have at most 64 nested containers; import chains at most 64 modules; active evaluation at most 512 nodes. These guards return `depth` or `limit` with source blame. The existing 200-call and 100,000-iteration limits still apply. CLI and library evaluation use a 32 MiB worker stack so the checks do not depend on the caller's thread stack.
+Each VM shares budgets across calls, iterations and error recovery: 2,000,000 evaluated node visits and 128,000,000 produced value units, with at most 1,000,000 units in any one value. A unit is a scalar/container/key plus the UTF-8 bytes of string/real text; nested values and memoized copies count again. Budget exhaustion is `limit`, not rejection of a value by a declared type. A graph, including imported and reconstructed functions, has at most 100,000 nodes. Computed values obey the same node cap (map keys contribute text units, not graph nodes), keeping large collection results re-readable. Syntax and produced values have at most 64 nested containers; import chains at most 64 modules; active evaluation at most 512 nodes. These guards return `depth` or `limit` with source blame. The existing 200-call and 100,000-iteration limits still apply. CLI and library evaluation use a 32 MiB worker stack so the checks do not depend on the caller's thread stack.
 
 `helix sandbox ROOT FILE` (also `./manage.py runtime sandbox ROOT FILE`) loads the main file explicitly supplied by the caller and restricts all file imports to canonical paths below ROOT. ROOT `-` permits only embedded `std:` modules. Path traversal, sibling-prefix and symlink escapes are rejected as `permission` errors at the import argument, including transitive and uncalled imports. Ordinary `run` retains trusted loading. Library callers use `Vm::load_sandboxed(source, optional_file, roots)`; empty roots deny file imports. These permissions are host configuration and are never granted by program/state data.
 

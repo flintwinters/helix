@@ -115,13 +115,7 @@ root:
             - cases
           failures:
             - filter
-            - - fn
-              - - result
-              - - eq
-                - - get
-                  - result
-                  - "outcome"
-                - "failed"
+            - is_failure
             - results
         - - dict
           - "total"
@@ -240,6 +234,772 @@ root:
               - right
               - sample
       - map
+    combine:
+      - fn
+      - - - reports
+          - list
+      - - fold
+        - - fn
+          - - acc
+            - child
+          - - dict
+            - "total"
+            - - add
+              - - get
+                - acc
+                - "total"
+              - - get
+                - child
+                - "total"
+            - "passed"
+            - - add
+              - - get
+                - acc
+                - "passed"
+              - - get
+                - child
+                - "passed"
+            - "failed"
+            - - add
+              - - get
+                - acc
+                - "failed"
+              - - get
+                - child
+                - "failed"
+            - "results"
+            - - concat
+              - - get
+                - acc
+                - "results"
+              - - get
+                - child
+                - "results"
+        - total: 0
+          passed: 0
+          failed: 0
+          results: []
+        - reports
+      - map
+    fields_equal:
+      - fn
+      - - - actual
+          - map
+        - - expected
+          - map
+      - - if
+        - - fold
+          - - fn
+            - - ok
+              - key
+            - - and
+              - ok
+              - - has
+                - actual
+                - key
+              - - eq
+                - - get
+                  - actual
+                  - key
+                - - get
+                  - expected
+                  - key
+          - true
+          - - keys
+            - expected
+        - ~
+        - - raise
+          - "assertion"
+          - "map fields differ"
+          - - dict
+            - "expected"
+            - expected
+            - "actual"
+            - actual
+    throws_matching:
+      - fn
+      - - - thunk
+          - function
+        - - expected
+          - map
+      - - let
+        - error:
+            - throws
+            - thunk
+            - - get
+              - expected
+              - "kind"
+        - - finally
+          - error
+          - - fields_equal
+            - error
+            - expected
+      - map
+    is_failure:
+      - fn
+      - - - result
+          - map
+      - - eq
+        - - get
+          - result
+          - "outcome"
+        - "failed"
+      - boolean
+    failures:
+      - fn
+      - - - report
+          - map
+      - - filter
+        - is_failure
+        - - get
+          - report
+          - "results"
+      - list
+    tagged:
+      - fn
+      - - - cases
+          - list
+        - - tag
+          - string
+      - - filter
+        - - fn
+          - - spec
+          - - has
+            - - get
+              - spec
+              - "tags"
+              - []
+            - tag
+        - cases
+      - list
+    rerun:
+      - fn
+      - - - cases
+          - list
+        - - report
+          - map
+      - - let
+        - names:
+            - map
+            - - fn
+              - - result
+              - - get
+                - result
+                - "name"
+            - - failures
+              - report
+        - - suite
+          - - filter
+            - - fn
+              - - spec
+              - - has
+                - names
+                - - get
+                  - spec
+                  - "name"
+            - cases
+      - map
+    sequences:
+      math:
+        number:
+          type: union
+          of:
+            - "integer"
+            - float
+        abs:
+          - fn
+          - - - n
+              - number
+          - - if
+            - - lt
+              - n
+              - 0
+            - - neg
+              - n
+            - n
+          - number
+        sign:
+          - fn
+          - - - n
+              - number
+          - - cond
+            - - lt
+              - n
+              - 0
+            - -1
+            - - gt
+              - n
+              - 0
+            - 1
+            - 0
+          - integer
+        min:
+          - fn
+          - - - a
+              - number
+            - - b
+              - number
+          - - if
+            - - lt
+              - a
+              - b
+            - a
+            - b
+          - number
+        max:
+          - fn
+          - - - a
+              - number
+            - - b
+              - number
+          - - if
+            - - gt
+              - a
+              - b
+            - a
+            - b
+          - number
+        clamp:
+          - fn
+          - - - n
+              - number
+            - - lo
+              - number
+            - - hi
+              - number
+          - - max
+            - lo
+            - - min
+              - n
+              - hi
+          - number
+        square:
+          - fn
+          - - - n
+              - number
+          - - mul
+            - n
+            - n
+          - number
+      numbers:
+        type: list
+        of:
+          type: union
+          of:
+            - "integer"
+            - float
+      sum:
+        - fn
+        - - - xs
+            - numbers
+        - - fold
+          - - fn
+            - - acc
+              - x
+            - - add
+              - acc
+              - x
+          - 0
+          - xs
+        - math.number
+      product:
+        - fn
+        - - - xs
+            - numbers
+        - - fold
+          - - fn
+            - - acc
+              - x
+            - - mul
+              - acc
+              - x
+          - 1
+          - xs
+        - math.number
+      reverse:
+        - fn
+        - - - xs
+            - list
+        - - fold
+          - - fn
+            - - acc
+              - x
+            - - concat
+              - - list
+                - x
+              - acc
+          - - list
+          - xs
+        - list
+      range:
+        - fn
+        - - - n
+            - integer
+        - - let
+          - done:
+              - fn
+              - - xs
+              - - ge
+                - - len
+                  - xs
+                - n
+            step:
+              - fn
+              - - xs
+              - - append
+                - xs
+                - - len
+                  - xs
+          - - until
+            - done
+            - step
+            - - list
+        - - list_of
+          - integer
+      unique:
+        - fn
+        - - - xs
+            - list
+        - - fold
+          - - fn
+            - - seen
+              - item
+            - - if
+              - - has
+                - seen
+                - item
+              - seen
+              - - append
+                - seen
+                - item
+          - []
+          - xs
+        - list
+      sort_by:
+        - fn
+        - - - xs
+            - list
+          - - before
+            - function
+        - - fold
+          - - fn
+            - - ordered
+              - item
+            - - let
+              - position:
+                  - until
+                  - - fn
+                    - - index
+                    - - or
+                      - - ge
+                        - index
+                        - - len
+                          - ordered
+                      - - before
+                        - item
+                        - - get
+                          - ordered
+                          - index
+                  - - fn
+                    - - index
+                    - - add
+                      - index
+                      - 1
+                  - 0
+              - - concat
+                - - slice
+                  - ordered
+                  - 0
+                  - position
+                - - list
+                  - item
+                - - slice
+                  - ordered
+                  - position
+                  - - len
+                    - ordered
+          - []
+          - xs
+        - list
+      first:
+        - fn
+        - - - xs
+            - list
+          - fallback
+        - - get
+          - xs
+          - 0
+          - fallback
+      last:
+        - fn
+        - - - xs
+            - list
+          - fallback
+        - - if
+          - - eq
+            - - len
+              - xs
+            - 0
+          - fallback
+          - - get
+            - xs
+            - - sub
+              - - len
+                - xs
+              - 1
+      take:
+        - fn
+        - - - xs
+            - list
+          - - n
+            - integer
+        - - if
+          - - lt
+            - n
+            - 0
+          - - raise
+            - "range"
+            - "take count must be non-negative"
+          - - slice
+            - xs
+            - 0
+            - - math.min
+              - n
+              - - len
+                - xs
+        - list
+      drop:
+        - fn
+        - - - xs
+            - list
+          - - n
+            - integer
+        - - if
+          - - lt
+            - n
+            - 0
+          - - raise
+            - "range"
+            - "drop count must be non-negative"
+          - - slice
+            - xs
+            - - math.min
+              - n
+              - - len
+                - xs
+            - - len
+              - xs
+        - list
+      enumerate:
+        - fn
+        - - - xs
+            - list
+        - - map
+          - - fn
+            - - i
+            - - list
+              - i
+              - - get
+                - xs
+                - i
+          - - range
+            - - len
+              - xs
+        - list
+      zip:
+        - fn
+        - - - xs
+            - list
+          - - ys
+            - list
+        - - map
+          - - fn
+            - - i
+            - - list
+              - - get
+                - xs
+                - i
+              - - get
+                - ys
+                - i
+          - - range
+            - - math.min
+              - - len
+                - xs
+              - - len
+                - ys
+        - list
+      flatten:
+        - fn
+        - - - xss
+            - - list_of
+              - list
+        - - fold
+          - - fn
+            - - acc
+              - xs
+            - - concat
+              - acc
+              - xs
+          - []
+          - xss
+        - list
+      flat_map:
+        - fn
+        - - - xs
+            - list
+          - - transform
+            - function
+        - - flatten
+          - - map
+            - transform
+            - xs
+        - list
+      find_index:
+        - fn
+        - - - xs
+            - list
+          - - predicate
+            - function
+        - - let
+          - position:
+              - until
+              - - fn
+                - - i
+                - - or
+                  - - ge
+                    - i
+                    - - len
+                      - xs
+                  - - predicate
+                    - - get
+                      - xs
+                      - i
+              - - fn
+                - - i
+                - - add
+                  - i
+                  - 1
+              - 0
+          - - if
+            - - lt
+              - position
+              - - len
+                - xs
+            - position
+            - -1
+        - integer
+      find:
+        - fn
+        - - - xs
+            - list
+          - - predicate
+            - function
+          - fallback
+        - - let
+          - i:
+              - find_index
+              - xs
+              - predicate
+          - - if
+            - - lt
+              - i
+              - 0
+            - fallback
+            - - get
+              - xs
+              - i
+      any:
+        - fn
+        - - - xs
+            - list
+          - - predicate
+            - function
+        - - ge
+          - - find_index
+            - xs
+            - predicate
+          - 0
+        - boolean
+      all:
+        - fn
+        - - - xs
+            - list
+          - - predicate
+            - function
+        - - lt
+          - - find_index
+            - xs
+            - - fn
+              - - x
+              - - not
+                - - predicate
+                  - x
+          - 0
+        - boolean
+      count:
+        - fn
+        - - - xs
+            - list
+          - - predicate
+            - function
+        - - len
+          - - filter
+            - predicate
+            - xs
+        - integer
+      partition:
+        - fn
+        - - - xs
+            - list
+          - - predicate
+            - function
+        - - fold
+          - - fn
+            - - parts
+              - x
+            - - let
+              - side:
+                  - if
+                  - - predicate
+                    - x
+                  - 0
+                  - 1
+              - - set
+                - parts
+                - side
+                - - append
+                  - - get
+                    - parts
+                    - side
+                  - x
+          - - []
+            - []
+          - xs
+        - list
+      grouping:
+        by:
+          - fn
+          - - - xs
+              - list
+            - - key
+              - function
+          - - fold
+            - - fn
+              - - groups
+                - item
+              - - let
+                - name:
+                    - key
+                    - item
+                - - set
+                  - groups
+                  - name
+                  - - append
+                    - - get
+                      - groups
+                      - name
+                      - []
+                    - item
+            - {}
+            - xs
+          - map
+      group_by:
+        - fn
+        - - - xs
+            - list
+          - - key_for
+            - function
+        - - grouping.by
+          - xs
+          - key_for
+        - map
+      frequencies:
+        - fn
+        - - - xs
+            - - list_of
+              - string
+        - - fold
+          - - fn
+            - - counts
+              - x
+            - - set
+              - counts
+              - x
+              - - add
+                - - get
+                  - counts
+                  - x
+                  - 0
+                - 1
+          - {}
+          - xs
+        - map
+      sort:
+        - fn
+        - - - xs
+            - list
+        - - sort_by
+          - xs
+          - - fn
+            - - a
+              - b
+            - - lt
+              - a
+              - b
+        - list
+    product:
+      - fn
+      - - - axes
+          - - list_of
+            - list
+      - - fold
+        - - fn
+          - - rows
+            - axis
+          - - sequences.flat_map
+            - rows
+            - - fn
+              - - row
+              - - map
+                - - fn
+                  - - value
+                  - - append
+                    - row
+                    - value
+                - axis
+        - - list
+          - []
+        - axes
+      - list
+    lists:
+      - fn
+      - - - alphabet
+          - list
+        - - max_length
+          - integer
+      - - if
+        - - lt
+          - max_length
+          - 0
+        - - raise
+          - "range"
+          - "maximum sample length must be non-negative"
+        - - sequences.flat_map
+          - - sequences.range
+            - - add
+              - max_length
+              - 1
+          - - fn
+            - - size
+            - - product
+              - - map
+                - - fn
+                  - - ignored
+                  - alphabet
+                - - sequences.range
+                  - size
+      - list
   l:
     math:
       number:
@@ -2413,7 +3173,7 @@ root:
                 input: ~
           calls:
             - path: /2/2
-              line: 120
+              line: 136
               column: 5
               function: /1/t.require_pass
               function_line: 3
@@ -2733,23 +3493,23 @@ root:
     column: 21
     calls:
       - path: /1/t.suite/2/2/1/results/1
-        line: 50
+        line: 60
         column: 15
         function: /1/t.suite/1/case/2
         function_line: 25
         function_column: 11
       - path: /2/2
-        line: 80
+        line: 84
         column: 5
         function: /1/t.suite/2
-        function_line: 44
+        function_line: 54
         function_column: 7
       - file: "std:test"
         path: /capture/2/1/4/1
         line: 8
         column: 51
         function: /2
-        function_line: 78
+        function_line: 82
         function_column: 3
   checks:
     - ~
