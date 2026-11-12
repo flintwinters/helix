@@ -10,10 +10,10 @@ use std::collections::{HashMap, HashSet};
 use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
 
-use crate::builtins;
+use crate::builtins::{self, Fault};
 use crate::emit;
-use crate::error::HelixError;
-use crate::graph::{Graph, Kind, NodeId};
+use crate::error::{s, HelixError};
+use crate::graph::{Graph, Kind, NodeId, ROOT};
 
 /// Nested user-function calls allowed before failing with a `depth` error.
 const MAX_DEPTH: usize = 200;
@@ -45,11 +45,13 @@ pub struct Evaluator {
     memo: HashMap<NodeId, Yaml>,
     active: HashSet<(NodeId, usize)>,
     frames: Vec<Frame>,
+    /// Predicate sources (refinement checks) grafted into the graph, by their emitted text.
+    grafts: HashMap<String, NodeId>,
 }
 
 impl Evaluator {
     pub fn new(graph: Graph) -> Evaluator {
-        Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new() }
+        Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: HashMap::new() }
     }
 
     fn err(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
@@ -133,7 +135,7 @@ impl Evaluator {
             None => id,
         };
         let Kind::Seq(items) = self.graph.kind(target) else { return None };
-        (items.len() == 3 && self.form(target) == Some("fn")).then_some(target)
+        (matches!(items.len(), 3 | 4) && self.form(target) == Some("fn")).then_some(target)
     }
 
     /// Whether `id` sits inside some `fn` form, so its value depends on a call.
@@ -148,12 +150,19 @@ impl Evaluator {
         false
     }
 
-    /// The parameter names of a `fn` form.
-    fn parameters(&self, function: NodeId) -> Result<Vec<&str>, HelixError> {
+    /// The parameters of a `fn` form: each a name, or a `[name, type]` pair whose type node is
+    /// checked against the argument on every call.
+    fn parameters(&self, function: NodeId) -> Result<Vec<(&str, Option<NodeId>)>, HelixError> {
         let Kind::Seq(items) = self.graph.kind(function) else { unreachable!("a function is a sequence") };
-        let malformed = || self.err(items[1], "type", "parameters must be a list of names".into());
+        let malformed = || self.err(items[1], "type", "parameters must be a list of names or `[name, type]` pairs".into());
         let Kind::Seq(params) = self.graph.kind(items[1]) else { return Err(malformed()) };
-        params.iter().map(|&p| self.symbol(p).ok_or_else(malformed)).collect()
+        params
+            .iter()
+            .map(|&p| match self.graph.kind(p) {
+                Kind::Seq(pair) if pair.len() == 2 => Ok((self.symbol(pair[0]).ok_or_else(malformed)?, Some(pair[1]))),
+                _ => Ok((self.symbol(p).ok_or_else(malformed)?, None)),
+            })
+            .collect()
     }
 
     /// Lexical resolution from `from`: the nearest enclosing map entry, parameter of an enclosing
@@ -166,7 +175,7 @@ impl Evaluator {
                 Kind::Map(entries) => entry(entries),
                 // Parameters and `let` bindings are in scope only in the body, the third item.
                 Kind::Seq(items) if items.get(2) == Some(&child) => match (self.form(id), self.graph.kind(items[1])) {
-                    (Some("fn"), _) => self.parameters(id).ok().and_then(|params| params.iter().position(|p| *p == name)).and_then(|i| {
+                    (Some("fn"), _) => self.parameters(id).ok().and_then(|params| params.iter().position(|(p, _)| *p == name)).and_then(|i| {
                         let frame = self.frames.iter().rev().find(|f| f.function == id)?;
                         Some(Binding::Value(frame.args[i].clone()))
                     }),
@@ -180,7 +189,11 @@ impl Evaluator {
             }
             child = id;
         }
-        None
+        // Code grafted in as data (a refinement's predicate) is detached; it sees the document root.
+        match self.graph.kind(ROOT) {
+            Kind::Map(entries) if child != ROOT => entry(entries),
+            _ => None,
+        }
     }
 
     fn apply(&mut self, id: NodeId, actor: Actor, args: &[NodeId]) -> Result<Yaml, HelixError> {
@@ -201,14 +214,59 @@ impl Evaluator {
         let values = args.iter().map(|&arg| self.value_arg(arg)).collect::<Result<Vec<_>, _>>()?;
         match actor {
             Actor::Function(function) => self.call(id, function, values),
-            Actor::Builtin(name) => builtins::apply(&name, &values).map_err(|fault| HelixError { data: fault.data, ..self.err(fault.arg.map_or(id, |i| args[i]), fault.kind, fault.message) }),
+            Actor::Builtin(name) => builtins::apply(&name, &values, &mut |check, value| self.predicate(check, value)).map_err(|fault| self.from_fault(id, args, fault)),
         }
+    }
+
+    /// A builtin `Fault` as an error blamed on the offending argument node, or the whole call.
+    fn from_fault(&self, site: NodeId, args: &[NodeId], fault: Fault) -> HelixError {
+        HelixError { data: fault.data, ..self.err(fault.arg.map_or(site, |i| args[i]), fault.kind, fault.message) }
+    }
+
+    /// Run a refinement's predicate source on `value`. The source arrives as data, so it is grafted
+    /// into the graph (once per distinct source) and called like any function.
+    fn predicate(&mut self, check: &Yaml, value: &Yaml) -> Result<bool, String> {
+        let source = emit::document(check);
+        let id = match self.grafts.get(&source) {
+            Some(&id) => id,
+            None => {
+                let id = self.graph.graft(Graph::parse(&source).map_err(|e| e.message)?);
+                self.grafts.insert(source, id);
+                id
+            }
+        };
+        let function = self.function(id).ok_or("a refinement check must be `[fn, [value], body]`")?;
+        if self.parameters(function).map_err(|e| e.message)?.len() != 1 {
+            return Err("a refinement check takes exactly 1 parameter".into());
+        }
+        match self.call(id, function, vec![value.clone()]) {
+            Ok(Yaml::Boolean(verdict)) => Ok(verdict),
+            Ok(other) => Err(format!("returned {}, expected boolean", builtins::type_of(&other))),
+            Err(e) => Err(format!("{}: {}", e.kind, e.message)),
+        }
+    }
+
+    /// Where `value` does not fit `ty`; `blame` is the node a malformed `ty` is attributed to.
+    fn misfits(&mut self, value: &Yaml, ty: &Yaml, blame: NodeId) -> Result<Vec<builtins::Violation>, HelixError> {
+        builtins::violations(value, ty, &mut |check, v| self.predicate(check, v)).map_err(|why| self.err(blame, "type", why))
+    }
+
+    /// The `type` error for violations found in `what`, carrying every one as `data`.
+    fn violation_error(&self, blame: NodeId, what: &str, found: Vec<Yaml>) -> HelixError {
+        let first = found.iter().find_map(|v| if let Yaml::Hash(h) = v { h.get(&s("message")).and_then(|m| m.as_str().map(str::to_string)) } else { None }).unwrap_or_default();
+        let plural = if found.len() == 1 { "" } else { "s" };
+        let mut error = self.err(blame, "type", format!("{} type violation{plural} in {what}: {first}", found.len()));
+        let mut data = Hash::new();
+        data.insert(s("violations"), Yaml::Array(found));
+        error.data = Some(Yaml::Hash(data));
+        error
     }
 
     /// Run a function body with `args` bound to its parameters; `site` is blamed for a wrong
     /// argument count or a call nested deeper than `MAX_DEPTH`.
     fn call(&mut self, site: NodeId, function: NodeId, args: Vec<Yaml>) -> Result<Yaml, HelixError> {
-        let n = self.parameters(function)?.len();
+        let params: Vec<(String, Option<NodeId>)> = self.parameters(function)?.into_iter().map(|(name, ty)| (name.to_string(), ty)).collect();
+        let n = params.len();
         if n != args.len() {
             let message = format!("function `{}` takes {}, got {}", self.graph.path(function), arguments(n), args.len());
             return Err(self.err(site, "arity", message));
@@ -217,11 +275,30 @@ impl Evaluator {
             return Err(self.err(site, "depth", format!("calls nested deeper than {MAX_DEPTH}")));
         }
         let Kind::Seq(items) = self.graph.kind(function) else { unreachable!("a function is a sequence") };
-        let body = items[2];
+        let (body, result_type) = (items[2], items.get(3).copied());
+        let mut found = Vec::new();
+        for ((name, ty), value) in params.iter().zip(&args) {
+            let Some(ty) = *ty else { continue };
+            let declared = self.value_arg(ty)?;
+            for violation in self.misfits(value, &declared, ty)? {
+                found.push(tagged("argument", name, violation.to_yaml()));
+            }
+        }
+        if !found.is_empty() {
+            return Err(self.violation_error(site, &format!("the arguments of `{}`", self.graph.path(function)), found));
+        }
         self.frames.push(Frame { function, args });
         let result = self.value_arg(body);
         self.frames.pop();
-        result
+        let result = result?;
+        if let Some(ty) = result_type {
+            let declared = self.value_arg(ty)?;
+            let found: Vec<Yaml> = self.misfits(&result, &declared, ty)?.iter().map(builtins::Violation::to_yaml).collect();
+            if !found.is_empty() {
+                return Err(self.violation_error(body, "the result", found));
+            }
+        }
+        Ok(result)
     }
 
     /// Call the function designated by `designator` (an inline `fn` or a name) with `values`.
@@ -301,6 +378,14 @@ impl Evaluator {
                 }
                 Err(self.err(id, "limit", format!("`until` did not finish within {MAX_STEPS} steps")))
             }
+            "refine" => {
+                let base = self.value_arg(args[0])?;
+                let function = self.function(args[1]).ok_or_else(|| self.err(args[1], "type", "expected a function (`[fn, [value], body]` or its name)".into()))?;
+                if self.parameters(function)?.len() != 1 {
+                    return Err(self.err(args[1], "arity", "a refinement check takes exactly 1 parameter".into()));
+                }
+                builtins::refine(base, self.raw(function)).map_err(|fault| self.from_fault(id, args, fault))
+            }
             "try" => match self.value_arg(args[0]) {
                 Ok(value) => Ok(value),
                 Err(error) => self.call_arg(args[1], vec![error.to_yaml()]),
@@ -342,6 +427,7 @@ impl Evaluator {
             Some(name) => match self.resolve(id, name) {
                 Some(Binding::Node(target)) => target,
                 Some(Binding::Value(value)) => return Ok(value),
+                None if builtins::is_primitive(name) => return Ok(Yaml::String(name.to_string())),
                 None => return Err(self.err(id, "unbound", format!("unbound symbol `{name}`"))),
             },
             None => id,
@@ -356,4 +442,14 @@ impl Evaluator {
 /// `1 argument`, `2 arguments`.
 fn arguments(n: usize) -> String {
     if n == 1 { "1 argument".into() } else { format!("{n} arguments") }
+}
+
+/// A violation map led by the name of what it was found in: `{argument: n, at: ..., message: ...}`.
+fn tagged(label: &str, name: &str, violation: Yaml) -> Yaml {
+    let mut tagged = Hash::new();
+    tagged.insert(s(label), s(name));
+    if let Yaml::Hash(fields) = violation {
+        tagged.extend(fields);
+    }
+    Yaml::Hash(tagged)
 }

@@ -1,0 +1,109 @@
+status: finished
+root:
+  in_port:
+    - fn
+    - - n
+    - - and
+      - - ge
+        - n
+        - 1
+      - - le
+        - n
+        - 65535
+  port:
+    type: refine
+    of: integer
+    check:
+      - fn
+      - - n
+      - - and
+        - - ge
+          - n
+          - 1
+        - - le
+          - n
+          - 65535
+  level:
+    type: enum
+    values:
+      - "debug"
+      - info
+      - warn
+  endpoint:
+    type: record
+    fields:
+      host: string
+      port:
+        type: refine
+        of: integer
+        check:
+          - fn
+          - - n
+          - - and
+            - - ge
+              - n
+              - 1
+            - - le
+              - n
+              - 65535
+      tls:
+        type: default
+        of: boolean
+        default: true
+      note:
+        type: optional
+        of: string
+  ports:
+    type: list
+    of:
+      type: refine
+      of: integer
+      check:
+        - fn
+        - - n
+        - - and
+          - - ge
+            - n
+            - 1
+          - - le
+            - n
+            - 65535
+  tags:
+    type: map
+    of: string
+  id:
+    type: union
+    of:
+      - "integer"
+      - string
+  fits:
+    scalar: true
+    float_is_not_integer: false
+    enum_member: true
+    enum_other: false
+    literal: true
+    union_string: true
+    union_null: false
+    top: true
+    port_ok: true
+    port_bad: false
+    endpoint_minimal: true
+    endpoint_full: true
+    endpoint_open_field: false
+    list_ok: true
+    list_bad: false
+    map_ok: true
+    map_bad: false
+  all_at_once:
+    - at: /host
+      message: "expected string, got integer"
+    - at: /port
+      message: failed its refinement check
+    - at: /extra
+      message: "unexpected field `extra`"
+  nested:
+    - at: /0/1
+      message: "expected integer, got string"
+    - at: /1/0
+      message: "expected integer, got string"
+  no_type: "unknown type `nonsense`"

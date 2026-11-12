@@ -8,6 +8,7 @@ use super::value::equal;
 
 pub(super) fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
     match actor {
+        "list" => Ok(Yaml::Array(args.to_vec())),
         "len" => len(&args[0]),
         "concat" => concat(args),
         "slice" => slice(args),
@@ -15,6 +16,8 @@ pub(super) fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
         "set" => set(args),
         "append" => append(args),
         "keys" => keys(&args[0]),
+        "values" => values(&args[0]),
+        "duplicates" => duplicates(&args[0]),
         "has" => has(args),
         _ => unreachable!("`{actor}` is not a collection builtin"),
     }
@@ -162,4 +165,23 @@ fn has(args: &[Yaml]) -> Result<Yaml, Fault> {
         (other, _) => return Err(Fault::expected(0, "string, list or map", other)),
     };
     Ok(Yaml::Boolean(found))
+}
+
+fn values(value: &Yaml) -> Result<Yaml, Fault> {
+    match value {
+        Yaml::Hash(h) => Ok(Yaml::Array(h.values().cloned().collect())),
+        other => Err(Fault::expected(0, "map", other)),
+    }
+}
+
+/// Each element that occurs more than once (by `eq`), listed once, in order of first repetition.
+fn duplicates(value: &Yaml) -> Result<Yaml, Fault> {
+    let Yaml::Array(items) = value else { return Err(Fault::expected(0, "list", value)) };
+    let mut repeated: Vec<Yaml> = Vec::new();
+    for (i, item) in items.iter().enumerate() {
+        if items[..i].iter().any(|earlier| equal(earlier, item)) && !repeated.iter().any(|seen| equal(seen, item)) {
+            repeated.push(item.clone());
+        }
+    }
+    Ok(Yaml::Array(repeated))
 }

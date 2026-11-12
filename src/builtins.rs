@@ -11,9 +11,12 @@ use yaml_rust2::Yaml;
 mod collection;
 mod fault;
 mod number;
+mod typing;
 mod value;
 
-use fault::Fault;
+pub use fault::Fault;
+pub use typing::{is_primitive, refine, violations, Violation};
+use typing::Pred;
 use value::{equal, type_name};
 
 /// `(name, minimum, maximum)` argument counts; a `None` maximum is unbounded.
@@ -21,11 +24,16 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("add", 2, None), ("mul", 2, None), ("sub", 2, Some(2)), ("div", 2, Some(2)), ("mod", 2, Some(2)), ("neg", 1, Some(1)),
     ("eq", 2, Some(2)), ("ne", 2, Some(2)), ("lt", 2, Some(2)), ("le", 2, Some(2)), ("gt", 2, Some(2)), ("ge", 2, Some(2)),
     ("not", 1, Some(1)), ("and", 2, None), ("or", 2, None), ("if", 3, Some(3)),
-    ("cond", 3, None), ("let", 2, Some(2)), ("fn", 2, Some(2)),
+    ("cond", 3, None), ("let", 2, Some(2)), ("fn", 2, Some(3)),
     ("map", 2, Some(2)), ("filter", 2, Some(2)), ("fold", 3, Some(3)), ("each", 2, Some(2)), ("until", 3, Some(3)),
     ("len", 1, Some(1)), ("concat", 2, None), ("slice", 3, Some(3)), ("get", 2, Some(3)), ("set", 3, Some(3)),
-    ("append", 2, None), ("keys", 1, Some(1)), ("has", 2, Some(2)),
-    ("str", 1, Some(1)), ("int", 1, Some(1)), ("float", 1, Some(1)), ("type", 1, Some(1)), ("is", 2, Some(2)),
+    ("append", 2, None), ("keys", 1, Some(1)), ("has", 2, Some(2)), ("values", 1, Some(1)), ("duplicates", 1, Some(1)),
+    ("str", 1, Some(1)), ("int", 1, Some(1)), ("float", 1, Some(1)), ("type", 1, Some(1)),
+    ("list_of", 1, Some(1)), ("map_of", 1, Some(1)), ("record", 0, None), ("optional", 1, Some(1)), ("default", 2, Some(2)), ("union", 1, None),
+    ("enum", 1, None), ("literal", 1, Some(1)), ("refine", 2, Some(2)), ("with_field", 3, Some(3)), ("list", 0, None), ("fields", 1, Some(1)), ("is", 2, Some(2)),
+    ("violations", 2, Some(2)), ("expect", 2, Some(2)), ("subtype", 2, Some(2)), ("secret", 1, Some(1)),
+    ("class", 2, Some(3)), ("extend", 4, Some(4)), ("inherit", 3, Some(3)), ("realize", 1, Some(1)), ("parents", 1, Some(1)),
+    ("drift", 2, Some(2)), ("converge", 2, Some(2)),
     ("assert", 1, Some(2)), ("raise", 1, Some(3)), ("try", 2, Some(2)),
 ];
 
@@ -36,24 +44,29 @@ pub fn arity(actor: &str) -> Option<(usize, Option<usize>)> {
 
 /// Forms decide which arguments to evaluate (or call user functions), so the evaluator drives them.
 pub fn is_form(actor: &str) -> bool {
-    matches!(actor, "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until" | "try")
+    matches!(actor, "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until" | "try" | "refine")
 }
 
 /// Apply a strict (eagerly evaluated) builtin.
-pub fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
+pub fn apply(actor: &str, args: &[Yaml], pred: &mut Pred) -> Result<Yaml, Fault> {
     match actor {
         "add" | "sub" | "mul" | "div" | "mod" | "neg" | "lt" | "le" | "gt" | "ge" | "int" | "float" => number::apply(actor, args),
         "eq" => Ok(Yaml::Boolean(equal(&args[0], &args[1]))),
         "ne" => Ok(Yaml::Boolean(!equal(&args[0], &args[1]))),
         "not" => boolean(&args[0], 0).map(|b| Yaml::Boolean(!b)),
-        "len" | "concat" | "slice" | "get" | "set" | "append" | "keys" | "has" => collection::apply(actor, args),
+        _ if typing::handles(actor) => typing::apply(actor, args, pred),
+        "len" | "list" | "concat" | "slice" | "get" | "set" | "append" | "keys" | "has" | "values" | "duplicates" => collection::apply(actor, args),
         "str" => text(&args[0]),
         "type" => Ok(Yaml::String(type_name(&args[0]).to_string())),
-        "is" => is(args),
         "assert" => assert(args),
         "raise" => Err(raise(args)),
         _ => unreachable!("`{actor}` is not a strict builtin"),
     }
+}
+
+/// The name `type` reports for a value.
+pub fn type_of(value: &Yaml) -> &'static str {
+    type_name(value)
 }
 
 /// A boolean operand at argument `arg`: `not`, and every condition the evaluator's forms test.
@@ -83,16 +96,6 @@ fn text(value: &Yaml) -> Result<Yaml, Fault> {
         other => return Err(Fault::expected(0, "a scalar", other)),
     };
     Ok(Yaml::String(rendered))
-}
-
-/// `is`: whether a value has the type named by a type value, i.e. a string `type` can return, or `any`.
-fn is(args: &[Yaml]) -> Result<Yaml, Fault> {
-    match &args[1] {
-        Yaml::String(t) if t == "any" => Ok(Yaml::Boolean(true)),
-        Yaml::String(t) if matches!(t.as_str(), "integer" | "float" | "string" | "boolean" | "null" | "list" | "map") => Ok(Yaml::Boolean(type_name(&args[0]) == t)),
-        Yaml::String(t) => Err(Fault::at(1, "type", format!("unknown type `{t}`"))),
-        other => Err(Fault::expected(1, "a type name", other)),
-    }
 }
 
 /// `assert`: `null` when the condition holds, else an `assertion` fault carrying the message.

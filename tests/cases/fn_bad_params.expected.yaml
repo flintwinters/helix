@@ -1,7 +1,7 @@
 status: error
 error:
   kind: type
-  message: parameters must be a list of names
+  message: "parameters must be a list of names or `[name, type]` pairs"
   path: /broken/1
   line: 1
   column: 14

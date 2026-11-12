@@ -82,6 +82,22 @@ impl Graph {
         format!("/{}", parts.join("/"))
     }
 
+    /// Append another graph as a detached subtree (its root has no parent) and return its root id.
+    /// Used for code that arrives as data, such as a refinement's predicate.
+    pub fn graft(&mut self, other: Graph) -> NodeId {
+        let offset = self.nodes.len();
+        let shift = |ids: &[NodeId]| ids.iter().map(|id| id + offset).collect::<Vec<_>>();
+        for node in other.nodes {
+            let kind = match node.kind {
+                Kind::Seq(items) => Kind::Seq(shift(&items)),
+                Kind::Map(entries) => Kind::Map(entries.into_iter().map(|(k, id)| (k, id + offset)).collect()),
+                scalar => scalar,
+            };
+            self.nodes.push(Node { kind, parent: node.parent.map(|p| p + offset), span: node.span });
+        }
+        offset
+    }
+
     /// The enclosing container; parent links are what lexical resolution walks.
     pub fn parent(&self, id: NodeId) -> Option<NodeId> {
         self.nodes[id].parent
