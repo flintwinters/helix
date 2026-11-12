@@ -164,3 +164,5 @@ and `inspection` (bounded stepping, trace parity and observational saved-state
 validation). Their source witnesses live in `tests/cases/`; subprocess artifacts
 stay in `runtime/`. Evaluation golden fixtures under `tests/check/` explicitly
 use `check --evaluate`; plain `check` never evaluates a program.
+
+Resource regressions grow function and machine capture graphs from shallow source until an enforced limit. They must emit structured errors and exit cleanly when releasing the retained graph. Public execution tests also release captured graphs on a small-stack thread and through thread-local teardown, preserving retained machine versions.

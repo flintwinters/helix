@@ -141,7 +141,7 @@ impl Vm {
                 state.remaining_values = runner.remaining_values;
                 state.memo.extend(runner.memo.clone());
             }
-            if let Some(error) = machine.error {
+            if let Some(error) = machine.error.take() {
                 if !self.errors.iter().any(|e| {
                     e.path == error.path
                         && e.kind == error.kind
