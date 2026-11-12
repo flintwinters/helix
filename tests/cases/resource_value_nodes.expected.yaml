@@ -1,0 +1,14 @@
+status: error
+error:
+  kind: limit
+  message: value exceeds 100000 nodes
+  path: /2/2
+  line: 1
+  column: 57
+  calls:
+    - path: /2
+      line: 1
+      column: 46
+      function: /2
+      function_line: 1
+      function_column: 46

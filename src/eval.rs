@@ -122,11 +122,16 @@ impl Evaluator {
 
     /// Bound cumulative produced data, including strings and nested collection copies.
     fn charge_value(&mut self, id: NodeId, value: &Yaml) -> Result<(), HelixError> {
-        let mut pending = vec![(value, 0)];
+        let mut pending = vec![(value, 0, true)];
         let mut produced = 0;
-        while let Some((value, depth)) = pending.pop() {
+        let mut nodes = 0;
+        while let Some((value, depth, graph_node)) = pending.pop() {
             if depth > crate::graph::MAX_NESTING {
                 return Err(self.err(id, "depth", format!("value nested deeper than {} containers", crate::graph::MAX_NESTING)));
+            }
+            nodes += usize::from(graph_node);
+            if nodes > crate::graph::MAX_NODES {
+                return Err(self.err(id, "limit", format!("value exceeds {} nodes", crate::graph::MAX_NODES)));
             }
             let size = match value { Yaml::String(s) | Yaml::Real(s) => 1 + s.len(), _ => 1 };
             produced += size;
@@ -136,8 +141,8 @@ impl Evaluator {
             self.remaining_values = self.remaining_values.checked_sub(size)
                 .ok_or_else(|| self.err(id, "limit", format!("evaluation exceeds {MAX_VALUES} produced value units")))?;
             match value {
-                Yaml::Array(items) => pending.extend(items.iter().map(|v| (v, depth + 1))),
-                Yaml::Hash(entries) => pending.extend(entries.iter().flat_map(|(k, v)| [(k, depth + 1), (v, depth + 1)])),
+                Yaml::Array(items) => pending.extend(items.iter().map(|v| (v, depth + 1, true))),
+                Yaml::Hash(entries) => pending.extend(entries.iter().flat_map(|(k, v)| [(k, depth + 1, false), (v, depth + 1, true)])),
                 _ => {}
             }
         }
