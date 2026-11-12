@@ -137,7 +137,8 @@ impl Evaluator {
         args: Vec<NodeId>,
     ) -> Result<(), HelixError> {
         if let Actor::Builtin(name) = &actor {
-            let (min, max) = builtins::arity(name).unwrap();
+            let descriptor = builtins::descriptor(name).unwrap();
+            let (min, max) = descriptor.arity;
             if args.len() < min || max.is_some_and(|max| args.len() > max) {
                 let expected = match max {
                     Some(m) if m == min => arguments(m),
@@ -150,8 +151,8 @@ impl Evaluator {
                     format!("`{name}` takes {expected}, got {}", args.len()),
                 ));
             }
-            if builtins::is_form(name) {
-                return self.form(id, name, args);
+            if matches!(descriptor.evaluation, builtins::Evaluation::Form(_)) {
+                return self.form(id, descriptor, args);
             }
         }
         self.collect(id, Some(actor), args, None, true);

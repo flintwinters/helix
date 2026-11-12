@@ -107,7 +107,8 @@ INVALID = {
 
 def verify(h):
     declarations = (h.root / "src/builtins.rs").read_text()
-    arities = re.findall(r'\("([a-z_]+)", (\d+), (None|Some\(\d+\))\)', declarations)
+    arities = re.findall(r'actor\("([a-z_]+)", (\d+), (None|Some\(\d+\)), Evaluation::[A-Za-z]+', declarations)
+    assert len(arities) == len({name for name, _, _ in arities}), "actor registrations must be unique"
     assert {name for name, _, _ in arities} == WITNESSES.keys(), "update actor witnesses when adding/removing builtins"
     report = {name: {"result": 0, "wrong_type": 0, "wrong_arity": 0} for name in WITNESSES}
     for name, (source, expected) in WITNESSES.items():

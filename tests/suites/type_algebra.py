@@ -69,7 +69,13 @@ def verify(h):
     rejected = checked(h, '[violations, 1, [refine, integer, [fn, [x], false]]]')
     broken = checked(h, '[violations, 1, [refine, integer, [fn, [x], 1]]]')
     assert rejected[0]['message'] == 'failed its refinement check'
-    assert 'failed to run' in broken[0]['message'] and 'expected boolean' in broken[0]['message']
+    assert broken == [{'at': '/', 'message': 'refinement check failed to run: returned integer, expected boolean'}]
+    constraint = checked(h, '''[try,
+  [realize, [constrain, [class, "checked", [record], {}], [fn, [x], 1]]],
+  [fn, [e], e]]''')
+    message = 'constraint 0 of `checked` failed to run: returned integer, expected boolean'
+    assert constraint['kind'] == 'type' and constraint['message'] == message, constraint
+    assert constraint['data']['violations'] == [{'at': '/', 'message': message}], constraint
     print(f'types: {len(specs)} descriptions x {len(values)} values = {len(expected)} independent membership judgments')
     source = '''base: [class, "base", [record, "x", integer], {x: 1}]
 a: [extend, "a", [list, base], [record, "y", string], {y: "v"}]

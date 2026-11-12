@@ -1,5 +1,5 @@
 //! Special forms choose argument order and schedule work on the shared request engine.
-use crate::builtins;
+use crate::builtins::{self, Descriptor, Evaluation, Form};
 use crate::model::{Evaluator, Function, HelixError, Iteration, Kind, NodeId, Request, Value, Vm};
 use std::sync::Arc;
 
@@ -11,11 +11,15 @@ impl Evaluator {
     pub(super) fn form(
         &mut self,
         id: NodeId,
-        name: &str,
+        actor: &Descriptor,
         args: Vec<NodeId>,
     ) -> Result<(), HelixError> {
-        match name {
-            "type_time" => {
+        let name = actor.name;
+        let Evaluation::Form(form) = actor.evaluation else {
+            unreachable!("form initiation requires a registered form")
+        };
+        match form {
+            Form::TypeTime => {
                 let previous = self.type_time;
                 self.type_time = true;
                 let memo = if previous {
@@ -29,7 +33,7 @@ impl Evaluator {
                 }
                 self.eval(args[0], true);
             }
-            "fn" => {
+            Form::Fn => {
                 let function = Arc::new(Function {
                     program: self.program.clone(),
                     node: id,
@@ -38,7 +42,7 @@ impl Evaluator {
                 self.parameters(&function)?;
                 self.finish(Value::Function(function));
             }
-            "closure" => {
+            Form::Closure => {
                 if !matches!(self.graph().kind(args[0]), Kind::Map(_))
                     || self.graph().form(args[1]) != Some("fn")
                 {
@@ -46,17 +50,17 @@ impl Evaluator {
                 }
                 self.eval(args[1], false);
             }
-            "let" => {
+            Form::Let => {
                 if !matches!(self.graph().kind(args[0]), Kind::Map(_)) {
                     return Err(self.err(args[0], "type", "`let` bindings must be a map"));
                 }
                 self.eval(args[1], true);
             }
-            "import" => {
+            Form::Import => {
                 let root=self.program.modules.root_of(id).ok_or_else(||self.err(id,"import","an import must be a literal `[import, SPEC]` in the program or a module it imports"))?;
                 self.eval(root, false);
             }
-            "if" | "cond" | "and" | "or" => {
+            Form::If | Form::Cond | Form::And | Form::Or => {
                 if name == "cond" && args.len().is_multiple_of(2) {
                     return Err(self.err(
                         id,
@@ -71,25 +75,24 @@ impl Evaluator {
                 });
                 self.eval(args[0], true);
             }
-            "try" => {
+            Form::Try => {
                 self.push(Request::Try(args[1]));
                 self.eval(args[0], true);
             }
-            "finally" => {
+            Form::Finally => {
                 self.push(Request::Finally(args[1]));
                 self.eval(args[0], true);
             }
-            "refine" => {
+            Form::Refine => {
                 self.push(Request::Refined(id, args.clone(), Value::Null));
                 self.eval(args[0], true);
             }
-            "vm" => {
+            Form::Vm => {
                 self.form_values(id, name.into(), args, Vec::new(), 0)?;
             }
-            "call" | "map" | "filter" | "each" | "fold" | "until" => {
+            Form::Call | Form::Map | Form::Filter | Form::Each | Form::Fold | Form::Until => {
                 self.form_values(id, name.into(), args, Vec::new(), 0)?
             }
-            _ => unreachable!("unknown form {name}"),
         }
         Ok(())
     }
