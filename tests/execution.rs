@@ -67,42 +67,42 @@ fn equivalent(source: &str) -> Vm {
 #[test]
 fn execution_paths_pause_and_resume() {
     for source in [
-        "[add, 20, 22]",
-        "[if, true, [add, 40, 2], [div, 1, 0]]",
-        "[cond, false, 0, true, 42, [div, 1, 0]]",
-        "[and, true, false, [div, 1, 0]]",
-        "[call, [call, [fn, [x], [fn, [y], [add, x, y]]], 20], 22]",
-        "f: [fn, [n], [if, [eq, n, 0], 1, [mul, n, [f, [sub, n, 1]]]]]\nanswer: [f, 6]",
-        "[map, [fn, [n], [mul, n, n]], [list, 1, 2, 3]]",
-        "[filter, [fn, [n], [gt, n, 1]], [list, 1, 2, 3]]",
-        "[fold, [fn, [a, b], [add, a, b]], 0, [list, 1, 2, 3]]",
-        "[each, [fn, [n], n], [list, 1, 2]]",
-        "[until, [fn, [n], [ge, n, 4]], [fn, [n], [add, n, 1]], 0]",
-        "positive: [refine, integer, [fn, [n], [gt, n, 0]]]\nf: [fn, [[n, positive]], [add, n, 1], positive]\nanswer: [f, 41]",
-        "t: [refine, integer, [fn, [n], [gt, n, 0]]]\nanswer: [violations, [list, 1, -1, 2], [list_of, t]]",
-        "[try, [finally, [div, 1, 0], [raise, \"cleanup\", \"replacement\"]], [fn, [e], [get, e, \"kind\"]]]",
-        "[finally, [div, 1, 0], 42]",
-        "make: [fn, [t], [fn, [[n, t]], n, t]]\nf: [make, integer]\nanswer: [f, 42]",
-        "t: [refine, integer, [fn, [n], [gt, n, 0]]]\nbase: [class, \"base\", [record, \"n\", [default, t, 1]]]\nchild: [inherit, \"child\", [list, base], {n: 2}]",
-        "t: [refine, integer, [fn, [n], [gt, n, 0]]]\nanswer: [subtype, [enum, 1, 2], t]",
-        "[call, [fn, [], 42]]",
-        "[type_time, [finally, [type_time, [add, 20, 22]], null]]",
-        "[try, [type_time, [div, 1, 0]], [fn, [e], [get, e, \"phase\"]]]",
-        "c: [constrain, [class, \"c\", [record, \"x\", [default, integer, 42]]], [fn, [record], [gt, [get, record, \"x\"], 0]]]\nr: [type_time, [realize, c]]",
-        "[raise, \"payload\", \"function\", [fn, [], 42]]",
-        "[try, [raise, \"payload\", \"function\", [fn, [], 42]], [fn, [e], [call, [get, e, \"data\"]]]]",
-        "[try, [raise, \"payload\", \"machine\", [vm, [fn, [], 42]]], [fn, [e], [get, [inspect, [get, e, \"data\"]], \"status\"]]]",
-        "[[fn, [n], [add, n, 2]], 40]",
-        "[try, [div, 1, 0], [fn, [e], 42]]",
-        "[try, [finally, 1, [div, 1, 0]], [fn, [e], 42]]",
-        "[let, {x: [add, x, 1]}, [try, x, [fn, [e], [get, e, \"kind\"]]]]",
+        r##"{"$call": ["add", 20, 22]}"##,
+        r##"{"$call": ["if", true, {"$call": ["add", 40, 2]}, {"$call": ["div", 1, 0]}]}"##,
+        r##"{"$call": ["cond", false, 0, true, 42, {"$call": ["div", 1, 0]}]}"##,
+        r##"{"$call": ["and", true, false, {"$call": ["div", 1, 0]}]}"##,
+        r##"{"$call": ["call", {"$call": ["call", {"$call": ["fn", ["x"], {"$call": ["fn", ["y"], {"$call": ["add", {"$ref": "x"}, {"$ref": "y"}]}]}]}, 20]}, 22]}"##,
+        r##"{"f": {"$call": ["fn", ["n"], {"$call": ["if", {"$call": ["eq", {"$ref": "n"}, 0]}, 1, {"$call": ["mul", {"$ref": "n"}, {"$call": ["f", {"$call": ["sub", {"$ref": "n"}, 1]}]}]}]}]}, "answer": {"$call": ["f", 6]}}"##,
+        r##"{"$call": ["map", {"$call": ["fn", ["n"], {"$call": ["mul", {"$ref": "n"}, {"$ref": "n"}]}]}, {"$call": ["list", 1, 2, 3]}]}"##,
+        r##"{"$call": ["filter", {"$call": ["fn", ["n"], {"$call": ["gt", {"$ref": "n"}, 1]}]}, {"$call": ["list", 1, 2, 3]}]}"##,
+        r##"{"$call": ["fold", {"$call": ["fn", ["a", "b"], {"$call": ["add", {"$ref": "a"}, {"$ref": "b"}]}]}, 0, {"$call": ["list", 1, 2, 3]}]}"##,
+        r##"{"$call": ["each", {"$call": ["fn", ["n"], {"$ref": "n"}]}, {"$call": ["list", 1, 2]}]}"##,
+        r##"{"$call": ["until", {"$call": ["fn", ["n"], {"$call": ["ge", {"$ref": "n"}, 4]}]}, {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, 1]}]}, 0]}"##,
+        r##"{"positive": {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["n"], {"$call": ["gt", {"$ref": "n"}, 0]}]}]}, "f": {"$call": ["fn", [["n", {"$ref": "positive"}]], {"$call": ["add", {"$ref": "n"}, 1]}, {"$ref": "positive"}]}, "answer": {"$call": ["f", 41]}}"##,
+        r##"{"t": {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["n"], {"$call": ["gt", {"$ref": "n"}, 0]}]}]}, "answer": {"$call": ["violations", {"$call": ["list", 1, -1, 2]}, {"$call": ["list_of", {"$ref": "t"}]}]}}"##,
+        r##"{"$call": ["try", {"$call": ["finally", {"$call": ["div", 1, 0]}, {"$call": ["raise", "cleanup", "replacement"]}]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}]}"##,
+        r##"{"$call": ["finally", {"$call": ["div", 1, 0]}, 42]}"##,
+        r##"{"make": {"$call": ["fn", ["t"], {"$call": ["fn", [["n", {"$ref": "t"}]], {"$ref": "n"}, {"$ref": "t"}]}]}, "f": {"$call": ["make", {"$ref": "integer"}]}, "answer": {"$call": ["f", 42]}}"##,
+        r##"{"t": {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["n"], {"$call": ["gt", {"$ref": "n"}, 0]}]}]}, "base": {"$call": ["class", "base", {"$call": ["record", "n", {"$call": ["default", {"$ref": "t"}, 1]}]}]}, "child": {"$call": ["inherit", "child", {"$call": ["list", {"$ref": "base"}]}, {"n": 2}]}}"##,
+        r##"{"t": {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["n"], {"$call": ["gt", {"$ref": "n"}, 0]}]}]}, "answer": {"$call": ["subtype", {"$call": ["enum", 1, 2]}, {"$ref": "t"}]}}"##,
+        r##"{"$call": ["call", {"$call": ["fn", [], 42]}]}"##,
+        r##"{"$call": ["type_time", {"$call": ["finally", {"$call": ["type_time", {"$call": ["add", 20, 22]}]}, null]}]}"##,
+        r##"{"$call": ["try", {"$call": ["type_time", {"$call": ["div", 1, 0]}]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "phase"]}]}]}"##,
+        r##"{"c": {"$call": ["constrain", {"$call": ["class", "c", {"$call": ["record", "x", {"$call": ["default", {"$ref": "integer"}, 42]}]}]}, {"$call": ["fn", ["record"], {"$call": ["gt", {"$call": ["get", {"$ref": "record"}, "x"]}, 0]}]}]}, "r": {"$call": ["type_time", {"$call": ["realize", {"$ref": "c"}]}]}}"##,
+        r##"{"$call": ["raise", "payload", "function", {"$call": ["fn", [], 42]}]}"##,
+        r##"{"$call": ["try", {"$call": ["raise", "payload", "function", {"$call": ["fn", [], 42]}]}, {"$call": ["fn", ["e"], {"$call": ["call", {"$call": ["get", {"$ref": "e"}, "data"]}]}]}]}"##,
+        r##"{"$call": ["try", {"$call": ["raise", "payload", "machine", {"$call": ["vm", {"$call": ["fn", [], 42]}]}]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$call": ["inspect", {"$call": ["get", {"$ref": "e"}, "data"]}]}, "status"]}]}]}"##,
+        r##"{"$call": [{"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, 2]}]}, 40]}"##,
+        r##"{"$call": ["try", {"$call": ["div", 1, 0]}, {"$call": ["fn", ["e"], 42]}]}"##,
+        r##"{"$call": ["try", {"$call": ["finally", 1, {"$call": ["div", 1, 0]}]}, {"$call": ["fn", ["e"], 42]}]}"##,
+        r##"{"$call": ["let", {"x": {"$call": ["add", {"$ref": "x"}, 1]}}, {"$call": ["try", {"$ref": "x"}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}]}]}"##,
     ] {
         equivalent(source);
     }
 }
 #[test]
 fn intermediate_calls_iterations_predicates_and_unwinding_are_visible() {
-    let source = "t: [refine, integer, [fn, [n], [gt, n, 0]]]\nf: [fn, [[n, t]], [finally, [expect, n, t], null]]\na: [map, f, [list, 1, 2]]";
+    let source = r##"{"t": {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["n"], {"$call": ["gt", {"$ref": "n"}, 0]}]}]}, "f": {"$call": ["fn", [["n", {"$ref": "t"}]], {"$call": ["finally", {"$call": ["expect", {"$ref": "n"}, {"$ref": "t"}]}, null]}]}, "a": {"$call": ["map", {"$ref": "f"}, {"$call": ["list", 1, 2]}]}}"##;
     let mut vm = Vm::load(source);
     let mut observed = std::collections::HashSet::new();
     while active(&vm) {
@@ -126,21 +126,7 @@ fn intermediate_calls_iterations_predicates_and_unwinding_are_visible() {
 }
 #[test]
 fn child_creation_is_lazy_and_versions_branch_independently() {
-    let source = r#"
-seed: 40
-child: [vm, [fn, [], [add, seed, 2]]]
-advanced: [step, child]
-old: [inspect, child]
-new: [inspect, advanced]
-done: [fn, [m], [eq, [get, [inspect, m], "status"], "finished"]]
-advance: [fn, [m], [step, m]]
-left: [until, done, advance, child]
-right: [until, done, advance, advanced]
-left_view: [inspect, left]
-right_view: [inspect, right]
-same: [eq, left, right]
-unchanged: [eq, child, [vm, [fn, [], [add, seed, 2]]]]
-"#;
+    let source = r##"{"seed": 40, "child": {"$call": ["vm", {"$call": ["fn", [], {"$call": ["add", {"$ref": "seed"}, 2]}]}]}, "advanced": {"$call": ["step", {"$ref": "child"}]}, "old": {"$call": ["inspect", {"$ref": "child"}]}, "new": {"$call": ["inspect", {"$ref": "advanced"}]}, "done": {"$call": ["fn", ["m"], {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "m"}]}, "status"]}, "finished"]}]}, "advance": {"$call": ["fn", ["m"], {"$call": ["step", {"$ref": "m"}]}]}, "left": {"$call": ["until", {"$ref": "done"}, {"$ref": "advance"}, {"$ref": "child"}]}, "right": {"$call": ["until", {"$ref": "done"}, {"$ref": "advance"}, {"$ref": "advanced"}]}, "left_view": {"$call": ["inspect", {"$ref": "left"}]}, "right_view": {"$call": ["inspect", {"$ref": "right"}]}, "same": {"$call": ["eq", {"$ref": "left"}, {"$ref": "right"}]}, "unchanged": {"$call": ["eq", {"$ref": "child"}, {"$call": ["vm", {"$call": ["fn", [], {"$call": ["add", {"$ref": "seed"}, 2]}]}]}]}}"##;
     let vm = equivalent(source);
     assert_eq!(vm.status(), Status::Finished, "{}", vm.state_string());
     let r = root(&vm);
@@ -149,17 +135,12 @@ unchanged: [eq, child, [vm, [fn, [], [add, seed, 2]]]]
     assert_eq!(r["left_view"]["outcome"].as_i64(), Some(42));
     assert_eq!(r["right_view"]["outcome"].as_i64(), Some(42));
     assert_eq!(r["same"].as_bool(), Some(true));
-    let error = finish_by_steps(Vm::load("[inspect, [vm, [fn, [], [div, 1, 0]]]]"));
+    let error = finish_by_steps(Vm::load(r##"{"$call": ["inspect", {"$call": ["vm", {"$call": ["fn", [], {"$call": ["div", 1, 0]}]}]}]}"##));
     assert_eq!(root(&error)["status"].as_str(), Some("ready"));
 }
 #[test]
 fn nested_child_dispatch_and_lexical_capture() {
-    let source = r#"
-finish: [fn, [m], [until, [fn, [v], [or, [eq, [get, [inspect, v], "status"], "finished"], [eq, [get, [inspect, v], "status"], "error"]]], [fn, [v], [step, v]], m]]
-make: [fn, [n], [vm, [fn, [], [add, n, 2]]]]
-outer: [vm, [fn, [], [get, [inspect, [finish, [make, 40]]], "outcome"]]]
-answer: [get, [inspect, [finish, outer]], "outcome"]
-"#;
+    let source = r##"{"finish": {"$call": ["fn", ["m"], {"$call": ["until", {"$call": ["fn", ["v"], {"$call": ["or", {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "v"}]}, "status"]}, "finished"]}, {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "v"}]}, "status"]}, "error"]}]}]}, {"$call": ["fn", ["v"], {"$call": ["step", {"$ref": "v"}]}]}, {"$ref": "m"}]}]}, "make": {"$call": ["fn", ["n"], {"$call": ["vm", {"$call": ["fn", [], {"$call": ["add", {"$ref": "n"}, 2]}]}]}]}, "outer": {"$call": ["vm", {"$call": ["fn", [], {"$call": ["get", {"$call": ["inspect", {"$call": ["finish", {"$call": ["make", 40]}]}]}, "outcome"]}]}]}, "answer": {"$call": ["get", {"$call": ["inspect", {"$call": ["finish", {"$ref": "outer"}]}]}, "outcome"]}}"##;
     let vm = equivalent(source);
     assert_eq!(vm.status(), Status::Finished, "{}", vm.state_string());
     assert_eq!(root(&vm)["answer"].as_i64(), Some(42));
@@ -167,18 +148,7 @@ answer: [get, [inspect, [finish, outer]], "outcome"]
 #[test]
 fn exact_numeric_comparison_and_function_data_separation() {
     let vm = equivalent(
-        r#"
-a: [eq, 9007199254740993, 9007199254740992.0]
-b: [gt, 9007199254740993, 9007199254740992.0]
-c: [lt, 9223372036854775807, 9223372036854775808.0]
-d: [eq, -9223372036854775808, -9223372036854775808.0]
-e: [lt, -1, -0.5]
-f: [gt, 0, -0.5]
-g: [eq, [list, "fn", [list], 42], [fn, [], 42]]
-h: [type, [fn, [], 42]]
-i: [type, [list, "fn", [list], 42]]
-j: [eq, [fn, [n], [add, n, 1]], [fn, [n], [add, n, 1]]]
-"#,
+        r##"{"a": {"$call": ["eq", 9007199254740993, 9007199254740992.0]}, "b": {"$call": ["gt", 9007199254740993, 9007199254740992.0]}, "c": {"$call": ["lt", 9223372036854775807, 9.223372036854776e+18]}, "d": {"$call": ["eq", -9223372036854775808, -9.223372036854776e+18]}, "e": {"$call": ["lt", -1, -0.5]}, "f": {"$call": ["gt", 0, -0.5]}, "g": {"$call": ["eq", {"$call": ["list", "fn", {"$call": ["list"]}, 42]}, {"$call": ["fn", [], 42]}]}, "h": {"$call": ["type", {"$call": ["fn", [], 42]}]}, "i": {"$call": ["type", {"$call": ["list", "fn", {"$call": ["list"]}, 42]}]}, "j": {"$call": ["eq", {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, 1]}]}, {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, 1]}]}]}}"##,
     );
     let r = root(&vm);
     for (key, expected) in [
@@ -198,7 +168,7 @@ j: [eq, [fn, [n], [add, n, 1]], [fn, [n], [add, n, 1]]]
 }
 #[test]
 fn typed_paths_preserve_unusual_keys() {
-    let mut vm = Vm::load("\"\": {\"a/b\": [add, 20, 22]}\n\"0\": [list, 42]");
+    let mut vm = Vm::load(r##"{"": {"a/b": {"$call": ["add", 20, 22]}}, "0": {"$call": ["list", 42]}}"##);
     let mut locations = Vec::new();
     while active(&vm) {
         let view = vm.inspect();
@@ -218,39 +188,13 @@ fn typed_paths_preserve_unusual_keys() {
     assert!(
         locations
             .iter()
-            .any(|p| p == &vec![Yaml::String("0".into()), Yaml::Integer(1)])
+            .any(|p| p == &vec![Yaml::String("0".into()), Yaml::String("$call".into()), Yaml::Integer(1)])
     );
 }
 
 #[test]
 fn recursive_binding_equality_and_function_environments() {
-    let source = r#"
-a:
-  offset: 1
-  f: [fn, [n], [if, [eq, n, 0], offset, [g, [sub, n, 1]]]]
-  g: [fn, [n], [f, n]]
-b:
-  offset: 1
-  f: [fn, [n], [if, [eq, n, 0], offset, [g, [sub, n, 1]]]]
-  g: [fn, [n], [f, n]]
-c:
-  offset: 2
-  f: [fn, [n], [if, [eq, n, 0], offset, [g, [sub, n, 1]]]]
-  g: [fn, [n], [f, n]]
-same: [eq, a.f, b.f]
-different: [ne, a.f, c.f]
-make: [fn, [n], [fn, [], n]]
-captures_same: [eq, [make, 1], [make, 1]]
-captures_different: [ne, [make, 1], [make, 2]]
-factory: [fn, [], 42]
-child: [vm, factory]
-child_type: [is, child, vm]
-child_equal: [eq, child, [vm, factory]]
-advanced_equal: [eq, [step, child], [step, [vm, factory]]]
-code_scalar_kinds: [ne, [fn, [], 1], [fn, [], 1.0]]
-code_symbol_is_not_map: [ne, [fn, [], integer], [fn, [], {symbol: "integer"}]]
-code_map_order: [ne, [fn, [], {a: 1, b: 2}], [fn, [], {b: 2, a: 1}]]
-"#;
+    let source = r##"{"a": {"offset": 1, "f": {"$call": ["fn", ["n"], {"$call": ["if", {"$call": ["eq", {"$ref": "n"}, 0]}, {"$ref": "offset"}, {"$call": ["g", {"$call": ["sub", {"$ref": "n"}, 1]}]}]}]}, "g": {"$call": ["fn", ["n"], {"$call": ["f", {"$ref": "n"}]}]}}, "b": {"offset": 1, "f": {"$call": ["fn", ["n"], {"$call": ["if", {"$call": ["eq", {"$ref": "n"}, 0]}, {"$ref": "offset"}, {"$call": ["g", {"$call": ["sub", {"$ref": "n"}, 1]}]}]}]}, "g": {"$call": ["fn", ["n"], {"$call": ["f", {"$ref": "n"}]}]}}, "c": {"offset": 2, "f": {"$call": ["fn", ["n"], {"$call": ["if", {"$call": ["eq", {"$ref": "n"}, 0]}, {"$ref": "offset"}, {"$call": ["g", {"$call": ["sub", {"$ref": "n"}, 1]}]}]}]}, "g": {"$call": ["fn", ["n"], {"$call": ["f", {"$ref": "n"}]}]}}, "same": {"$call": ["eq", {"$ref": "a.f"}, {"$ref": "b.f"}]}, "different": {"$call": ["ne", {"$ref": "a.f"}, {"$ref": "c.f"}]}, "make": {"$call": ["fn", ["n"], {"$call": ["fn", [], {"$ref": "n"}]}]}, "captures_same": {"$call": ["eq", {"$call": ["make", 1]}, {"$call": ["make", 1]}]}, "captures_different": {"$call": ["ne", {"$call": ["make", 1]}, {"$call": ["make", 2]}]}, "factory": {"$call": ["fn", [], 42]}, "child": {"$call": ["vm", {"$ref": "factory"}]}, "child_type": {"$call": ["is", {"$ref": "child"}, {"$ref": "vm"}]}, "child_equal": {"$call": ["eq", {"$ref": "child"}, {"$call": ["vm", {"$ref": "factory"}]}]}, "advanced_equal": {"$call": ["eq", {"$call": ["step", {"$ref": "child"}]}, {"$call": ["step", {"$call": ["vm", {"$ref": "factory"}]}]}]}, "code_scalar_kinds": {"$call": ["ne", {"$call": ["fn", [], 1]}, {"$call": ["fn", [], 1.0]}]}, "code_symbol_is_not_map": {"$call": ["ne", {"$call": ["fn", [], {"$ref": "integer"}]}, {"$call": ["fn", [], {"symbol": "integer"}]}]}, "code_map_order": {"$call": ["eq", {"$call": ["fn", [], {"a": 1, "b": 2}]}, {"$call": ["fn", [], {"b": 2, "a": 1}]}]}}"##;
     let vm = equivalent(source);
     assert_eq!(vm.status(), Status::Finished, "{}", vm.state_string());
     let value = root(&vm);
@@ -278,7 +222,7 @@ code_map_order: [ne, [fn, [], {a: 1, b: 2}], [fn, [], {b: 2, a: 1}]]
 #[test]
 fn inspection_keeps_distinct_source_locations_for_equal_functions() {
     let mut vm = Vm::load(
-        "first: [fn, [], [div, 1, 0]]\nsecond: [fn, [], [div, 1, 0]]\nequal: [eq, first, second]",
+        r##"{"first": {"$call": ["fn", [], {"$call": ["div", 1, 0]}]}, "second": {"$call": ["fn", [], {"$call": ["div", 1, 0]}]}, "equal": {"$call": ["eq", {"$ref": "first"}, {"$ref": "second"}]}}"##,
     );
     vm.run();
     let state = vm.state();
@@ -298,7 +242,7 @@ fn inspection_keeps_distinct_source_locations_for_equal_functions() {
 
 #[test]
 fn check_mode_keeps_independent_runtime_and_type_time_failures() {
-    let mut vm = Vm::load("bad: [div, 1, 0]\ntyped: [type_time, bad]\nother: [add, missing, 1]");
+    let mut vm = Vm::load(r##"{"bad": {"$call": ["div", 1, 0]}, "typed": {"$call": ["type_time", {"$ref": "bad"}]}, "other": {"$call": ["add", {"$ref": "missing"}, 1]}}"##);
     vm.check();
     let state = vm.state();
     assert_eq!(state["mode"].as_str(), Some("check"));
@@ -316,9 +260,9 @@ fn check_mode_keeps_independent_runtime_and_type_time_failures() {
 
 #[test]
 fn retained_capture_graphs_drop_on_small_stacks_and_thread_teardown() {
-    for body in ["[fn, [], [get, row, 1]]", "[vm, [fn, [], [get, row, 1]]]"] {
+    for body in [r##"{"$call": ["fn", [], {"$call": ["get", {"$ref": "row"}, 1]}]}"##, r##"{"$call": ["vm", {"$call": ["fn", [], {"$call": ["get", {"$ref": "row"}, 1]}]}]}"##] {
         let source = format!(
-            "[until, [fn, [row], [eq, [get, row, 0], 3000]], [fn, [row], [list, [add, [get, row, 0], 1], {body}]], [list, 0, null]]"
+            "{{$call: [until, {{$call: [fn, [row], {{$call: [eq, {{$call: [get, {{$ref: row}}, 0]}}, 3000]}}]}}, {{$call: [fn, [row], {{$call: [list, {{$call: [add, {{$call: [get, {{$ref: row}}, 0]}}, 1]}}, {body}]}}]}}, [0, null]]}}"
         );
         std::thread::Builder::new()
             .stack_size(512 * 1024)
@@ -345,7 +289,7 @@ fn retained_capture_graphs_drop_on_small_stacks_and_thread_teardown() {
 
 #[test]
 fn effects_yield_preserve_continuations_and_do_not_repeat_on_resume() {
-    let mut vm = Vm::load("f: [fn, [x], [add, x, [effect, \"time\", null]]]\nanswer: [f, 2]");
+    let mut vm = Vm::load(r##"{"f": {"$call": ["fn", ["x"], {"$call": ["add", {"$ref": "x"}, {"$call": ["effect", "time", null]}]}]}, "answer": {"$call": ["f", 2]}}"##);
     vm.run();
     assert_eq!(vm.status(), Status::Signaled);
     let request: &helix::EffectRequest = vm.pending_effect().unwrap();
@@ -363,7 +307,7 @@ fn effects_yield_preserve_continuations_and_do_not_repeat_on_resume() {
 
 #[test]
 fn external_signal_preserves_pending_effect_and_requires_explicit_resume() {
-    let mut vm = Vm::load("[effect, \"time\", null]");
+    let mut vm = Vm::load(r##"{"$call": ["effect", "time", null]}"##);
     vm.run();
     let interrupted = vm.signal(Yaml::String("interrupt".into()));
     assert_eq!(interrupted.resume_signal().status(), Status::Signaled);
@@ -374,7 +318,7 @@ fn external_signal_preserves_pending_effect_and_requires_explicit_resume() {
     let mut resumed = resolved.resume_signal();
     resumed.run();
     assert_eq!(resumed.state()["root"].as_i64(), Some(7));
-    let ready = Vm::load("[add, 2, 3]");
+    let ready = Vm::load(r##"{"$call": ["add", 2, 3]}"##);
     let mut interrupted = ready.signal(Yaml::String("pause".into()));
     interrupted.run();
     assert_eq!(interrupted.status(), Status::Signaled);
@@ -385,7 +329,7 @@ fn external_signal_preserves_pending_effect_and_requires_explicit_resume() {
 
 #[test]
 fn effect_failure_unwinds_cleanup_and_disables_unsafe_recovery() {
-    let mut vm = Vm::load("[finally, [effect, \"file_read\", \"missing\"], [effect, \"stdout\", \"cleanup\"]]");
+    let mut vm = Vm::load(r##"{"$call": ["finally", {"$call": ["effect", "file_read", "missing"]}, {"$call": ["effect", "stdout", "cleanup"]}]}"##);
     vm.run();
     let mut failed = vm.resolve_effect(Err(("io".into(), "missing file".into())));
     failed.run();
@@ -400,12 +344,12 @@ fn effect_failure_unwinds_cleanup_and_disables_unsafe_recovery() {
 
 #[test]
 fn effects_are_rejected_during_type_time_and_checking() {
-    let mut vm = Vm::load("[type_time, [effect, \"time\", null]]");
+    let mut vm = Vm::load(r##"{"$call": ["type_time", {"$call": ["effect", "time", null]}]}"##);
     vm.run();
     assert_eq!(vm.state()["error"]["kind"].as_str(), Some("purity"));
     assert_eq!(vm.state()["phase"].as_str(), Some("type"));
     assert!(vm.pending_effect().is_none());
-    let mut checked = Vm::load("a: [effect, \"time\", null]\nb: [effect, \"random\", null]");
+    let mut checked = Vm::load(r##"{"a": {"$call": ["effect", "time", null]}, "b": {"$call": ["effect", "random", null]}}"##);
     checked.check();
     assert_eq!(checked.status(), Status::Error);
     assert_eq!(checked.state()["errors"].as_vec().unwrap().len(), 2);
@@ -414,14 +358,14 @@ fn effects_are_rejected_during_type_time_and_checking() {
 #[test]
 fn invalid_host_data_is_a_structured_failure() {
     for value in [Yaml::BadValue, Yaml::Real("NaN".into()), Yaml::Alias(1)] {
-        let mut vm = Vm::load("[effect, \"time\", null]");
+        let mut vm = Vm::load(r##"{"$call": ["effect", "time", null]}"##);
         vm.run();
         let mut resolved = vm.resolve_effect(Ok(value));
         resolved.run();
         assert_eq!(resolved.status(), Status::Error);
         assert_eq!(resolved.state()["error"]["kind"].as_str(), Some("type"));
     }
-    let mut pending = Vm::load("[effect, \"time\", null]");
+    let mut pending = Vm::load(r##"{"$call": ["effect", "time", null]}"##);
     pending.run();
     let failed = pending.signal(Yaml::BadValue);
     assert_eq!(failed.status(), Status::Error);
@@ -430,14 +374,7 @@ fn invalid_host_data_is_a_structured_failure() {
 
 #[test]
 fn nested_machine_steps_inherit_effect_phase_restrictions() {
-    let source = r#"
-- type_time
-- - let
-  - original: [vm, [fn, [], [effect, "time", null]]]
-    stopped: [fn, [m], [eq, [get, [inspect, m], "status"], "error"]]
-    advance: [fn, [m], [step, m]]
-  - [get, [inspect, [until, stopped, advance, original]], "outcome"]
-"#;
+    let source = r##"{"$call": ["type_time", {"$call": ["let", {"original": {"$call": ["vm", {"$call": ["fn", [], {"$call": ["effect", "time", null]}]}]}, "stopped": {"$call": ["fn", ["m"], {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "m"}]}, "status"]}, "error"]}]}, "advance": {"$call": ["fn", ["m"], {"$call": ["step", {"$ref": "m"}]}]}}, {"$call": ["get", {"$call": ["inspect", {"$call": ["until", {"$ref": "stopped"}, {"$ref": "advance"}, {"$ref": "original"}]}]}, "outcome"]}]}]}"##;
     let mut vm = Vm::load(source);
     vm.run();
     assert_eq!(vm.state()["root"]["kind"].as_str(), Some("purity"));
@@ -446,13 +383,7 @@ fn nested_machine_steps_inherit_effect_phase_restrictions() {
 
 #[test]
 fn child_type_time_persists_across_separate_parent_steps() {
-    let source = r#"
-- let
-- original: [vm, [fn, [], [type_time, [effect, "time", null]]]]
-  stopped: [fn, [m], [eq, [get, [inspect, m], "status"], "error"]]
-  advance: [fn, [m], [step, m]]
-- [get, [inspect, [until, stopped, advance, original]], "outcome"]
-"#;
+    let source = r##"{"$call": ["let", {"original": {"$call": ["vm", {"$call": ["fn", [], {"$call": ["type_time", {"$call": ["effect", "time", null]}]}]}]}, "stopped": {"$call": ["fn", ["m"], {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "m"}]}, "status"]}, "error"]}]}, "advance": {"$call": ["fn", ["m"], {"$call": ["step", {"$ref": "m"}]}]}}, {"$call": ["get", {"$call": ["inspect", {"$call": ["until", {"$ref": "stopped"}, {"$ref": "advance"}, {"$ref": "original"}]}]}, "outcome"]}]}"##;
     let mut vm = Vm::load(source);
     vm.run();
     assert_eq!(vm.state()["root"]["kind"].as_str(), Some("purity"));
@@ -476,7 +407,7 @@ fn signal_data_obeys_graph_node_limits_without_counting_map_keys() {
 fn host_respects_interruptions_and_never_repeats_completed_effects() {
     use helix::EffectHost;
     let mut host = EffectHost { allow_random: true, random_seed: Some(7), ..Default::default() };
-    let mut vm = Vm::load("[effect, \"random\", null]");
+    let mut vm = Vm::load(r##"{"$call": ["effect", "random", null]}"##);
     vm.run();
     vm = vm.signal(Yaml::String("pause".into()));
     let interrupted = vm.state();
@@ -493,7 +424,7 @@ fn host_respects_interruptions_and_never_repeats_completed_effects() {
     host.run(&mut vm);
     assert_eq!(host.random_seed, seed_after);
     assert_eq!(vm.state(), completed);
-    let mut invalid = Vm::load("[effect, \"random\", null]");
+    let mut invalid = Vm::load(r##"{"$call": ["effect", "random", null]}"##);
     invalid.run();
     invalid = invalid.signal(Yaml::BadValue);
     host.run(&mut invalid);

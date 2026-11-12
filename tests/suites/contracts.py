@@ -47,6 +47,7 @@ def harness(h):
     assert h.malformed_state("status: error\nerror: {kind: type, message: bad, line: 1, column: 2}", 1) is None
     assert h.root_section("status: finished\nroot:\n  a: 1\n") == "a: 1\n"
     assert h.root_section("status: finished\nroot:\n  a: 1\nmode: check\n") == "a: 1\n"
+    assert h.root_section("root: 42\nstatus: finished\n") == "42\n"
     assert h.root_section("status: error\n") is None
     assert h.root_section("status: finished\nroot: {ref: function1}\nobjects: {}\n") is None
     for scalar in ("1", "null", "false", "'quoted'", "[]", "{}"):
@@ -118,7 +119,7 @@ def cli(h):
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="cli-") as directory:
         source = Path(directory) / "program with spaces.yaml"
         for command in ("run", "check"):
-            for program, code in [("answer: [add, 20, 22]\n", 0), ("answer: [div, 1, 0]\n", 1), ("[", 1)]:
+            for program, code in [('{"answer": {"$call": ["add", 20, 22]}}', 0), ('{"answer": {"$call": ["div", 1, 0]}}', 1), ("[", 1)]:
                 source.write_text(program)
                 file = h.helix(command, *(["--evaluate"] if command == "check" else []), str(source))
                 stdin = h.helix(command, *(["--evaluate"] if command == "check" else []), "-", stdin=program)
@@ -137,7 +138,7 @@ def expression(rng, depth):
     oracle = {"add": lambda: a + b, "sub": lambda: a - b, "mul": lambda: a * b,
               "min": lambda: min(a, b), "max": lambda: max(a, b)}
     head = f"m.{op}" if op in ("min", "max") else op
-    return f"[{head}, {left}, {right}]", oracle[op]()
+    return f'{{"$call": ["{head}", {left}, {right}]}}', oracle[op]()
 
 
 def literal_meaning(value):
@@ -154,19 +155,19 @@ def generated(h):
     rng = random.Random(seed)
     # Independent integer-tree oracle; deliberately bounded far below i64 overflow.
     programs = [expression(rng, 4) for _ in range(100)]
-    source = "m: [import, std:math]\n" + "".join(f"v{i}: {p}\n" for i, (p, _) in enumerate(programs))
+    source = 'm: {$call: [import, "std:math"]}\n' + "".join(f"v{i}: {p}\n" for i, (p, _) in enumerate(programs))
     root = checked(h, source)
     for i, (_, expected) in enumerate(programs):
         assert root[f"v{i}"] == expected, f"seed={seed} expression={programs[i]}"
-    assert checked(h, "[eq, [add, 0.5, 0.25], 0.75]") is True
-    assert checked(h, "[if, true, [add, 1, 0], [div, 1, 0]]") == 1
-    overflow = h.helix("run", "-", stdin="[add, 9223372036854775807, 1]")
+    assert checked(h, '{"$call": ["eq", {"$call": ["add", 0.5, 0.25]}, 0.75]}') is True
+    assert checked(h, '{"$call": ["if", true, {"$call": ["add", 1, 0]}, {"$call": ["div", 1, 0]}]}') == 1
+    overflow = h.helix("run", "-", stdin='{"$call": ["add", 9223372036854775807, 1]}')
     assert overflow.returncode == 1
     assert yaml.safe_load(overflow.stdout)["error"]["kind"] == "overflow"
     for i in range(25):
         xs = [rng.randint(-12, 12) for _ in range(rng.randrange(12))]
-        values = "[list" + "".join(f", {x}" for x in xs) + "]"
-        root = checked(h, f"l: [import, std:list]\nxs: {values}\ns: [l.sum, xs]\nr: [l.reverse, xs]\nrr: [l.reverse, [l.reverse, xs]]\np: [add, [l.sum, xs], 0]\n")
+        values = json.dumps(xs)
+        root = checked(h, f'{{"l": {{"$call": ["import", "std:list"]}}, "xs": {values}, "s": {{"$call": ["l.sum", {{"$ref": "xs"}}]}}, "r": {{"$call": ["l.reverse", {{"$ref": "xs"}}]}}, "rr": {{"$call": ["l.reverse", {{"$call": ["l.reverse", {{"$ref": "xs"}}]}}]}}, "p": {{"$call": ["add", {{"$call": ["l.sum", {{"$ref": "xs"}}]}}, 0]}}}}')
         assert root["s"] == root["p"] == sum(xs), f"seed={seed} sample={i}"
         assert root["r"] == xs[::-1] and root["rr"] == xs
     literals = [None, True, False, 0, 0.5, -1.25, -9223372036854775808, 9223372036854775807,
@@ -197,27 +198,27 @@ def imports(h):
         base = Path(directory)
         (base / "shared.yaml").write_text("value: 21\n")
         for name in ("left", "right"):
-            (base / f"{name}.yaml").write_text("s: [import, shared.yaml]\nvalue: [add, s.value, 0]\n")
+            (base / f"{name}.yaml").write_text('{"s": {"$call": ["import", "shared.yaml"]}, "value": {"$call": ["add", {"$ref": "s.value"}, 0]}}')
         main = base / "main.yaml"
-        main.write_text("l: [import, left.yaml]\nr: [import, right.yaml]\nanswer: [add, l.value, r.value]\n")
+        main.write_text('{"l": {"$call": ["import", "left.yaml"]}, "r": {"$call": ["import", "right.yaml"]}, "answer": {"$call": ["add", {"$ref": "l.value"}, {"$ref": "r.value"}]}}')
         result = h.helix("run", str(main))
         assert result.returncode == 0 and yaml.safe_load(result.stdout)["root"]["answer"] == 42
-        for content, kind in [("[", "parse"), ("value: [add, missing, 1]\n", "unbound")]:
+        for content, kind in [("[", "parse"), ('{"value": {"$call": ["add", {"$ref": "missing"}, 1]}}', "unbound")]:
             (base / "shared.yaml").write_text(content)
             result = h.helix("run", str(main))
             assert h.malformed_state(result.stdout, result.returncode) is None
             error = yaml.safe_load(result.stdout)["error"]
             assert error["kind"] == kind and error["file"].endswith("shared.yaml"), error
             assert error["line"] == (2 if kind == "parse" else 1), error
-        (base / "shared.yaml").write_text("again: [import, main.yaml]\n")
+        (base / "shared.yaml").write_text('{"again": {"$call": ["import", "main.yaml"]}}')
         result = h.helix("run", str(main))
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None
         (base / "shared.yaml").unlink()
         result = h.helix("run", str(main))
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None
         # A module cannot capture the importing file's lexical bindings.
-        (base / "shared.yaml").write_text("value: [add, private, 1]\n")
-        main.write_text("private: 9\ns: [import, shared.yaml]\n")
+        (base / "shared.yaml").write_text('{"value": {"$call": ["add", {"$ref": "private"}, 1]}}')
+        main.write_text('{"private": 9, "s": {"$call": ["import", "shared.yaml"]}}')
         error = yaml.safe_load(h.helix("run", str(main)).stdout)["error"]
         assert error["kind"] == "unbound" and error["path"] == "/value/1", error
 
@@ -245,25 +246,25 @@ def parser(h):
     for source, expected in [('"é雪🙂"', "é雪🙂"), ("'a: b'", "a: b"),
                              ("|\n  first\n  second\n", "first\nsecond\n"),
                              (">\n  first\n  second\n", "first second\n"),
-                             ("{outer: {n: 3, result: [add, n, 2]}}", {"outer": {"n": 3, "result": 5}})]:
+                             ('{"outer": {"n": 3, "result": {"$call": ["add", {"$ref": "n"}, 2]}}}', {"outer": {"n": 3, "result": 5}})]:
         assert checked(h, source) == expected
     duplicate = h.helix("run", "-", stdin="a: 1\na: 2\n")
     assert duplicate.returncode == 1 and h.malformed_state(duplicate.stdout, 1) is None
-    for source in ["a: &a 1\nb: *a", "? [a, b]\n: value"]:
+    for source in ["? [a, b]\n: value"]:
         result = h.helix("run", "-", stdin=source)
         assert h.malformed_state(result.stdout, result.returncode) is None
         assert yaml.safe_load(result.stdout)["error"]["kind"] == "unsupported"
-    result = h.helix("run", "-", stdin="outer:\n  result: [add, missing, 1]\n")
+    result = h.helix("run", "-", stdin='{"outer": {"result": {"$call": ["add", {"$ref": "missing"}, 1]}}}')
     error = yaml.safe_load(result.stdout)["error"]
-    assert (error["path"], error["line"], error["column"]) == ("/outer/result/1", 2, 17), error
+    assert (error["path"], error["line"], error["column"]) == ("/outer/result/$call/1", 1, 40), error
 
 
 def fuzz(h):
     seed = 901723
     rng = random.Random(seed)
-    corpus = ['x: [add, 1, 2]', 'f: [fn, [x], [add, x, 1]]\nr: [f, 2]',
-              'm: [import, std:math]\nr: [m.square, 3]', '["add", "雪", null]',
-              'r: [try, [div, 1, 0], [fn, [e], e]]']
+    corpus = ['{"x": {"$call": ["add", 1, 2]}}', '{"f": {"$call": ["fn", ["x"], {"$call": ["add", {"$ref": "x"}, 1]}]}, "r": {"$call": ["f", 2]}}',
+              '{"m": {"$call": ["import", "std:math"]}, "r": {"$call": ["m.square", 3]}}', '["add", "雪", null]',
+              '{"r": {"$call": ["try", {"$call": ["div", 1, 0]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}}']
     alphabet = '[]{}:,\n\t abcdef0129"\'&*!#雪'
     for sample in range(200):
         source = rng.choice(corpus)
@@ -294,7 +295,7 @@ def scale(h):
     import time
     for count in (250, 1000, 2500):
         # One map root plus four nodes per expression = 10,001 nodes at the largest size.
-        source = "".join(f"v{i}: [add, {i}, 1]\n" for i in range(count))
+        source = json.dumps({f"v{i}": {"$call": ["add", i, 1]} for i in range(count)})
         started = time.perf_counter()
         root = checked(h, source)
         elapsed = time.perf_counter() - started

@@ -26,19 +26,19 @@ def verify(h):
                 assert error["kind"] == "permission", error
                 assert error["path"].endswith("/1") and error["line"] >= 1, error
             return state
-        run("m: [import, std:math]\nr: [m.square, 3]", "-", 0)
-        run("m: [import, local.yaml]", "-", 1)
-        assert run("m: [import, local.yaml]", allowed, 0)["root"]["m"]["value"] == 42
-        run("m: [import, ../allowed-sibling/secret.yaml]", allowed, 1)
-        run(f'm: [import, "{sibling / "secret.yaml"}"]', allowed, 1)
+        run('{"m": {"$call": ["import", "std:math"]}, "r": {"$call": ["m.square", 3]}}', "-", 0)
+        run('{"m": {"$call": ["import", "local.yaml"]}}', "-", 1)
+        assert run('{"m": {"$call": ["import", "local.yaml"]}}', allowed, 0)["root"]["m"]["value"] == 42
+        run('{"m": {"$call": ["import", "../allowed-sibling/secret.yaml"]}}', allowed, 1)
+        run(f'''{{"m": {{"$call": ["import", "{sibling / 'secret.yaml'}"]}}}}''', allowed, 1)
         (allowed / "escape.yaml").symlink_to(sibling / "secret.yaml")
-        run("m: [import, escape.yaml]", allowed, 1)
-        (allowed / "local.yaml").write_text("m: [import, ../allowed-sibling/secret.yaml]")
-        error = run("m: [import, local.yaml]", allowed, 1)["error"]
+        run('{"m": {"$call": ["import", "escape.yaml"]}}', allowed, 1)
+        (allowed / "local.yaml").write_text('{"m": {"$call": ["import", "../allowed-sibling/secret.yaml"]}}')
+        error = run('{"m": {"$call": ["import", "local.yaml"]}}', allowed, 1)["error"]
         assert error["file"].endswith("local.yaml"), error
         # Literal imports are linked even in branches/functions that are never called.
-        run("f: [fn, [], [import, ../allowed-sibling/secret.yaml]]", allowed, 1)
+        run('{"f": {"$call": ["fn", [], {"$call": ["import", "../allowed-sibling/secret.yaml"]}]}}', allowed, 1)
         # Each launch has its own policy; a prior allowed launch cannot grant later access.
         (allowed / "local.yaml").write_text("42")
-        run("m: [import, local.yaml]", allowed, 0)
-        run("m: [import, local.yaml]", "-", 1)
+        run('{"m": {"$call": ["import", "local.yaml"]}}', allowed, 0)
+        run('{"m": {"$call": ["import", "local.yaml"]}}', "-", 1)

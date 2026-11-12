@@ -40,7 +40,7 @@ static ALLOCATOR: Accounting = Accounting;
 fn workload(iterations: usize, stepped: bool, retain: bool) -> (usize, usize) {
     let baseline = LIVE.load(Ordering::Relaxed);
     PEAK.store(baseline, Ordering::Relaxed);
-    let source = format!("[until, [fn, [n], [ge, n, {iterations}]], [fn, [n], [add, n, 1]], 0]");
+    let source = format!("{{$call: [until, {{$call: [fn, [n], {{$call: [ge, {{$ref: n}}, {iterations}]}}]}}, {{$call: [fn, [n], {{$call: [add, {{$ref: n}}, 1]}}]}}, 0]}}");
     let ready = Vm::load(&source);
     let saved = ready.inspect();
     let mut vm = ready.clone();
@@ -89,7 +89,7 @@ fn host_request_allocations(bytes: usize) -> usize {
     // Yield before measuring so source parsing and request construction do not
     // obscure the host boundary's payload-copy cost. A rejected exit has no
     // external action but still records its payload and structured failure.
-    let mut vm = Vm::load(&format!("[effect, 'exit', '{}']", "x".repeat(bytes)));
+    let mut vm = Vm::load(&format!("{{$call: [effect, 'exit', '{}']}}", "x".repeat(bytes)));
     vm.run();
     assert_eq!(vm.status(), Status::Signaled);
     let baseline = TOTAL.load(Ordering::Relaxed);
@@ -108,7 +108,7 @@ fn call_argument_allocations(count: usize) -> usize {
     let arguments = std::iter::repeat_n("0", count)
         .collect::<Vec<_>>()
         .join(", ");
-    let mut vm = Vm::load(&format!("[call, [fn, [{parameters}], 7], {arguments}]"));
+    let mut vm = Vm::load(&format!("{{$call: [call, {{$call: [fn, [{parameters}], 7]}}, {arguments}]}}"));
     assert_eq!(vm.status(), Status::Ready);
     let baseline = TOTAL.load(Ordering::Relaxed);
     vm.run();

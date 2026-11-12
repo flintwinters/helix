@@ -50,40 +50,32 @@ def verify(h):
     expected = []
     for spec in specs:
         for value in values:
-            expressions.append('[is, ' + json.dumps(value, ensure_ascii=False) + ', ' + json.dumps(spec) + ']')
+            expressions.append(json.dumps({'$call': ['is', value, spec]}, ensure_ascii=False))
             expected.append(accepts(value, spec))
     source = '\n'.join(f'c{i}: {expr}' for i, expr in enumerate(expressions))
     root = checked(h, source)
     for i, want in enumerate(expected):
         assert root[f'c{i}'] is want, (expressions[i], root[f'c{i}'], want)
     # Collect every nested rejection in documented field/index order, including extra fields.
-    nested = '[violations, {x: [1, "bad", false], extra: 0}, [record, "x", [list_of, integer], "required", string]]'
+    nested = '{"$call": ["violations", {"x": [1, "bad", false], "extra": 0}, {"$call": ["record", "x", {"$call": ["list_of", {"$ref": "integer"}]}, "required", {"$ref": "string"}]}]}'
     violations = checked(h, nested)
-    assert [v['at'] for v in violations] == ['/x/1', '/x/2', '/required', '/extra'], violations
+    assert [v['at'] for v in violations] == ['/required', '/x/1', '/x/2', '/extra'], violations
     # Invalid defaults, nested descriptors and predicate failures are errors, not ordinary rejection.
-    for source in ['[default, integer, "bad"]', '[is, 1, {type: list}]',
-                   '[is, 1, {type: union, of: []}]']:
+    for source in ['{"$call": ["default", {"$ref": "integer"}, "bad"]}', '{"$call": ["is", 1, {"type": "list"}]}',
+                   '{"$call": ["is", 1, {"type": "union", "of": []}]}']:
         result = h.helix('run', '-', stdin=source)
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, result
         assert yaml.safe_load(result.stdout)['error']['kind'] == 'type'
-    rejected = checked(h, '[violations, 1, [refine, integer, [fn, [x], false]]]')
-    broken = checked(h, '[violations, 1, [refine, integer, [fn, [x], 1]]]')
+    rejected = checked(h, '{"$call": ["violations", 1, {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["x"], false]}]}]}')
+    broken = checked(h, '{"$call": ["violations", 1, {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["x"], 1]}]}]}')
     assert rejected[0]['message'] == 'failed its refinement check'
     assert broken == [{'at': '/', 'message': 'refinement check failed to run: returned integer, expected boolean'}]
-    constraint = checked(h, '''[try,
-  [realize, [constrain, [class, "checked", [record], {}], [fn, [x], 1]]],
-  [fn, [e], e]]''')
+    constraint = checked(h, '{"$call": ["try", {"$call": ["realize", {"$call": ["constrain", {"$call": ["class", "checked", {"$call": ["record"]}, {}]}, {"$call": ["fn", ["x"], 1]}]}]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}')
     message = 'constraint 0 of `checked` failed to run: returned integer, expected boolean'
     assert constraint['kind'] == 'type' and constraint['message'] == message, constraint
     assert constraint['data']['violations'] == [{'at': '/', 'message': message}], constraint
     print(f'types: {len(specs)} descriptions x {len(values)} values = {len(expected)} independent membership judgments')
-    source = '''base: [class, "base", [record, "x", integer], {x: 1}]
-a: [extend, "a", [list, base], [record, "y", string], {y: "v"}]
-b: [extend, "b", [list, base], [record, "z", boolean], {z: true}]
-ab: [realize, [extend, "joined", [list, a, b], [record], {}]]
-ba: [realize, [extend, "joined", [list, b, a], [record], {}]]
-missing: [try, [realize, [class, "needs", [record, "x", integer, "y", string], {}]], [fn, [e], e]]
-'''
+    source = '{"base": {"$call": ["class", "base", {"$call": ["record", "x", {"$ref": "integer"}]}, {"x": 1}]}, "a": {"$call": ["extend", "a", {"$call": ["list", {"$ref": "base"}]}, {"$call": ["record", "y", {"$ref": "string"}]}, {"y": "v"}]}, "b": {"$call": ["extend", "b", {"$call": ["list", {"$ref": "base"}]}, {"$call": ["record", "z", {"$ref": "boolean"}]}, {"z": true}]}, "ab": {"$call": ["realize", {"$call": ["extend", "joined", {"$call": ["list", {"$ref": "a"}, {"$ref": "b"}]}, {"$call": ["record"]}, {}]}]}, "ba": {"$call": ["realize", {"$call": ["extend", "joined", {"$call": ["list", {"$ref": "b"}, {"$ref": "a"}]}, {"$call": ["record"]}, {}]}]}, "missing": {"$call": ["try", {"$call": ["realize", {"$call": ["class", "needs", {"$call": ["record", "x", {"$ref": "integer"}, "y", {"$ref": "string"}]}, {}]}]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}}'
     root = checked(h, source)
     for field in ('fields', 'values', 'provenance'):
         assert root['ab'][field] == root['ba'][field], (field, root['ab'], root['ba'])

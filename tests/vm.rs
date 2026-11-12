@@ -3,8 +3,8 @@ use helix::{Status, Vm};
 
 #[test]
 fn independent_instances_and_repeated_runs() {
-    let mut first = Vm::load("answer: [add, 20, 22]");
-    let mut second = Vm::load("answer: [mul, 6, 7]");
+    let mut first = Vm::load(r##"{"answer": {"$call": ["add", 20, 22]}}"##);
+    let mut second = Vm::load(r##"{"answer": {"$call": ["mul", 6, 7]}}"##);
     assert_eq!(first.status(), Status::Ready);
     assert_eq!(first.state()["status"].as_str(), Some("ready"));
     second.run();
@@ -19,7 +19,7 @@ fn independent_instances_and_repeated_runs() {
 
 #[test]
 fn errors_are_terminal_and_independent() {
-    for source in ["[", "answer: [div, 1, 0]"] {
+    for source in ["[", r##"{"answer": {"$call": ["div", 1, 0]}}"##] {
         let mut broken = Vm::load(source);
         broken.run();
         assert_eq!(broken.status(), Status::Error);
@@ -35,13 +35,13 @@ fn errors_are_terminal_and_independent() {
 
 #[test]
 fn check_collects_errors_and_preserves_success() {
-    let mut checked = Vm::load("a: [div, 1, 0]\nb: [add, missing, 1]");
+    let mut checked = Vm::load(r##"{"a": {"$call": ["div", 1, 0]}, "b": {"$call": ["add", {"$ref": "missing"}, 1]}}"##);
     checked.check();
     assert_eq!(checked.status(), Status::Error);
     assert_eq!(checked.state()["mode"].as_str(), Some("check"));
     assert!(checked.state()["phase"].is_badvalue());
     assert_eq!(checked.state()["errors"].as_vec().unwrap().len(), 2);
-    let mut clean = Vm::load("answer: [add, 1, 2]");
+    let mut clean = Vm::load(r##"{"answer": {"$call": ["add", 1, 2]}}"##);
     clean.check();
     assert_eq!(clean.status(), Status::Finished);
     assert_eq!(clean.state()["root"]["answer"].as_i64(), Some(3));
@@ -51,14 +51,14 @@ fn check_collects_errors_and_preserves_success() {
 
 #[test]
 fn terminal_execution_survives_check_and_repeated_checks() {
-    for source in ["answer: 42", "answer: [div, 1, 0]"] {
+    for source in ["answer: 42", r##"{"answer": {"$call": ["div", 1, 0]}}"##] {
         let mut vm = Vm::load(source);
         vm.run();
         let saved = vm.state_string();
         vm.check();
         assert_eq!(vm.state_string(), saved);
     }
-    for source in ["answer: 42", "answer: [div, 1, 0]", "["] {
+    for source in ["answer: 42", r##"{"answer": {"$call": ["div", 1, 0]}}"##, "["] {
         let mut vm = Vm::load(source);
         vm.check();
         let saved = vm.state_string();
@@ -75,7 +75,7 @@ fn resource_guards_apply_to_library_callers() {
     for (source, kind) in [
         ("[".repeat(65) + "0" + &"]".repeat(65), "depth"),
         (
-            "[until, [fn, [s], false], [fn, [s], [concat, s, s]], \"x\"]".into(),
+            r##"{"$call": ["until", {"$call": ["fn", ["s"], false]}, {"$call": ["fn", ["s"], {"$call": ["concat", {"$ref": "s"}, {"$ref": "s"}]}]}, "x"]}"##.into(),
             "limit",
         ),
     ] {
@@ -85,7 +85,7 @@ fn resource_guards_apply_to_library_callers() {
         assert_eq!(vm.state()["error"]["kind"].as_str(), Some(kind));
     }
     let mut recursion =
-        Vm::load("f: [fn, [n], [if, [eq, n, 0], 0, [f, [sub, n, 1]]]]\nr: [f, 200]");
+        Vm::load(r##"{"f": {"$call": ["fn", ["n"], {"$call": ["if", {"$call": ["eq", {"$ref": "n"}, 0]}, 0, {"$call": ["f", {"$call": ["sub", {"$ref": "n"}, 1]}]}]}]}, "r": {"$call": ["f", 200]}}"##);
     recursion.run();
     assert_eq!(recursion.status(), Status::Error);
     assert_eq!(recursion.state()["error"]["kind"].as_str(), Some("depth"));
@@ -93,10 +93,10 @@ fn resource_guards_apply_to_library_callers() {
 
 #[test]
 fn embedded_only_loading_does_not_grant_file_access() {
-    let mut denied = Vm::load_sandboxed("m: [import, Cargo.toml]", None, &[]);
+    let mut denied = Vm::load_sandboxed(r##"{"m": {"$call": ["import", "Cargo.toml"]}}"##, None, &[]);
     assert_eq!(denied.status(), Status::Error);
     assert_eq!(denied.state()["error"]["kind"].as_str(), Some("permission"));
-    let mut allowed = Vm::load_sandboxed("m: [import, std:math]\nr: [m.square, 3]", None, &[]);
+    let mut allowed = Vm::load_sandboxed(r##"{"m": {"$call": ["import", "std:math"]}, "r": {"$call": ["m.square", 3]}}"##, None, &[]);
     allowed.run();
     assert_eq!(allowed.state()["root"]["r"].as_i64(), Some(9));
     denied.run();
