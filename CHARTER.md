@@ -6,6 +6,13 @@ The test for "daily driver" is simple: I start a task in Helix instead of Python
 
 How to use this file: tick a box only when the feature works end to end *and* has a golden case in `tests/cases/` (run `./manage.py test`). A feature that only works in a demo stays unticked. Edit freely; this file is for humans, while `AGENTS.md` holds the agent-facing architecture and invariants.
 
+Audit (2026-11-12): a parent stays open while any of its stated obligations remain
+open. Implementation evidence is retained even where acceptance is incomplete.
+In particular, section 11's inventory, provider, composition and command-lifecycle
+implementations have dedicated automated suites, but lack golden cases for those
+contracts in `tests/cases/`; their boxes remain open under the rule above. A
+`tests/programs/` example or a generated suite fixture is not a golden case.
+
 **Where it is headed:** the niche Nix and Ansible occupy, declarative machine configuration, approached through types. A machine config is a type, fully resolved at type time and inheriting from abstract machine type classes; section 8 holds that road. Daily-driver scripting comes first because the config language has to be a language worth using.
 
 **Where we are:** a resource-bounded expression language with a pure core, first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. Caller-authorized host effects, in-memory interruption, file imports and pure error recovery work; disk suspend/resume and declarative machine application remain ahead.
@@ -109,11 +116,11 @@ leave section 2's complete suspend/resume promise unchanged.
 - [x] Sandbox/permission model for current effects: caller-authorized import/file roots, environment names, executables and HTTP origins, plus stream/clock/random grants; transitive and symlink-escape checks. These are capability boundaries, not OS isolation.
 - [x] Stability promise: documented what may change and what is frozen
 - [x] Language reference (started: `LANGUAGE.md`) and a tutorial that a stranger could follow
-- [x] A changelog
+- [ ] A changelog — no project changelog is present; Git history alone does not fulfill this item
 
 ### Testing depth and breadth
 
-The current-runtime trust milestone is implemented. The coverage map and limits are in `tests/README.md`; suites and their contracts are discoverable with `./manage.py test --describe`. Actor scenarios are measured in `runtime/coverage/actors.json`, peak RSS and timing in `runtime/memory/report.json`, and compiled mutation sensitivity in `runtime/mutants/report.json`. Scenario counts are not compiler branch-coverage percentages or proofs of exhaustive correctness.
+The current-runtime testing infrastructure is implemented; this does not complete every trust/documentation obligation above. The coverage map and limits are in `tests/README.md`; suites and their contracts are discoverable with `./manage.py test --describe`. Actor scenarios are measured in `runtime/coverage/actors.json`, peak RSS and timing in `runtime/memory/report.json`, and compiled mutation sensitivity in `runtime/mutants/report.json`. Scenario counts are not compiler branch-coverage percentages or proofs of exhaustive correctness.
 
 Treat testing as a substantial engineering responsibility. The Rust/Python size ratio is a prompt to inspect gaps, not a coverage metric or a target to pad toward. Build on the existing golden, determinism, round-trip and damaged-input checks; every new suite must be reproducible through the root `./manage.py` entrypoint, with Python orchestration and fixtures kept inside the project. Completion requires automated checks demonstrating the claimed contract; golden cases remain required for language features.
 
@@ -130,7 +137,7 @@ Completed coverage spans:
 These require features from sections 2–3 and a versioned state format. They remain explicit obligations, not claims that disk restoration, effect replay or state migration already works. Today's immutable in-memory pause points, pure recovery and ordinary-data finished-root fixpoints are covered separately; named function and machine inspection graphs are not executable disk snapshots.
 
 - [ ] When suspension lands, compare uninterrupted execution with save/resume at every supported boundary, including nested calls, live locals, hand-edited states and fresh-process restoration
-- [ ] When effects land, use controlled adapters to test failure, retry, cleanup, permissions and interruption; prove completed effects are not accidentally repeated after resume
+- [ ] Extend the existing controlled-adapter failure, retry, cleanup, permission and in-memory interruption tests to fresh-process disk resume; prove completed effects are not accidentally repeated after restoration
 - [ ] Keep compatibility fixtures for persisted states and public errors; test supported upgrades and explicit rejection of unsupported versions as versioning lands
 
 ---
@@ -162,8 +169,8 @@ Audit evidence: `types_declarative`, `types_annotations`, `types_are_values`, `c
 A type should read like the value it describes with the specifics left open: someone who has never seen Helix can look at a record type and say what a valid value looks like. Declarations are order-independent facts, not a checking procedure, so reordering fields or splitting a declaration across maps changes nothing. Types are opt-in descriptions layered on the existing untyped core, never a reason existing programs stop running.
 
 - [ ] A type is declared as plain YAML data in the object graph (fields, their types, defaults), not in a separate schema language
-  - [ ] A declaration is an ordinary node: it has a path and span, and is found by the same lexical lookup as any value
-  - [ ] Declarations are order-independent: reordering fields changes neither the type nor what it accepts
+  - [x] A declaration is an ordinary source node: it has a path and span, and is found by the same lexical lookup as any value (`types_declarative`, `types_first_class_errors`; retaining locations on evaluated values remains separate)
+  - [x] Declarations are order-independent: reordering record fields changes neither the type nor what it accepts (`types_derivation.round_trip` reconstructs fields in canonical order; the shared checker consumes the resulting field map)
   - [x] A type may be named in a map or written inline where it is used, with the same meaning
   - [ ] A malformed declaration is a structured error blaming the declaration node, not the value later checked against it
 - [x] Scalar, list, map and record types, plus optional fields, unions, enums and literal types
@@ -173,12 +180,12 @@ A type should read like the value it describes with the specifics left open: som
     - [x] Required fields: absence is a violation
     - [x] Optional fields: may be absent, checked when present
     - [x] Defaulted fields: the default is itself checked against the field's type
-    - [ ] Decided and documented: are records open (extra fields allowed) or closed, and how is the other one spelled
+    - [x] Decided and documented: records are closed; there is currently no open-record constructor (`LANGUAGE.md`, `types_declarative.fits.endpoint_open_field`; row constraints remain future algebra work)
   - [x] Unions of types
   - [x] Enums and single-value literal types
-  - [ ] Types nest to any depth (a list of records of unions)
+  - [x] Types nest within the runtime's documented resource/depth bounds (lists, records and unions; `types_declarative`, `type_algebra`); unbounded depth is not promised
 - [ ] Refinements: a type can carry a predicate (`port` is an int in 1..65535), written as an ordinary Helix expression
-  - [ ] The predicate is a named or inline `fn` from the value to a boolean, run only after the base type passes
+  - [x] The predicate is a named or inline `fn` from the value to a boolean, run only after the base type passes (`types_declarative`, `types_first_class`; the shared checker gates predicates on base membership)
   - [ ] A predicate that fails or returns a non-boolean is an error blamed on the predicate, distinct from "value rejected"
   - [ ] A rejected value's violation names the refinement, so the report says which rule failed and not only that one did
   - [ ] Refinements stack (a refinement of a refinement) and compose with every other type former
@@ -195,7 +202,7 @@ A type should read like the value it describes with the specifics left open: som
   - [ ] All annotation failures of a whole program are reported in one run
 - [ ] Types survive in the saved state and round-trip: emitted `root` re-read yields the same types
   - [ ] A type emits as the declaration that was written, not an expanded or internal form
-  - [x] Re-running an emitted `root` under `$literal` is a data fixpoint, including type descriptions (covered by the existing round-trip check)
+  - [x] Re-running an emitted ordinary-data `root` under `$literal` is a data fixpoint, including data-only type descriptions (covered by the existing round-trip check; types containing predicate functions use non-restorable inspection graphs)
   - [ ] Annotations survive too: the saved state shows which type governed which value
 - [ ] `helix check` type-checks a program without running it or performing effects
   - [ ] Checks every annotation whose value is computable at type time and reports the rest as unchecked, never as passed
@@ -217,24 +224,24 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Derive a type from another: add, drop or retype a field; make every field optional
   - [x] Build a type by iteration (`map`/`fold` over a list of field names)
   - [x] A constructor given a non-type argument fails with a `type` error blaming that argument
-- [x] Reflection (`types_reflection`, `types_first_class` golden cases): read a type's fields, defaults and parents as data; ask `{$call: [is, {$ref: value}, {$ref: t}]}` and `{$call: [subtype, {$ref: a}, {$ref: b}]}`
+- [ ] Reflection (`types_reflection`, `types_first_class` golden cases): read a type's fields, defaults and parents as data; ask `{$call: [is, {$ref: value}, {$ref: t}]}` and `{$call: [subtype, {$ref: a}, {$ref: b}]}`
   - [x] `{$call: [is, {$ref: value}, {$ref: t}]}`
     - [x] For scalar and collection type names and `any`; an unknown name is a `type` error
     - [x] For every declared type
   - [x] Read a record type's fields, each field's type, and its defaults as plain lists and maps
   - [x] Read a class's parents and its still-open fields
   - [x] `{$call: [subtype, {$ref: a}, {$ref: b}]}`, with documented rules per type former
-  - [x] A value built by reflection re-reads as the same type (reflection and declaration are inverse)
-- [x] Type-time evaluation (`types_type_time`, `types_type_time_effect`; `type_time` suite): a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
+  - [ ] A value built by reflection re-reads as the same type (reflection and declaration are inverse) — record-field reconstruction works, but `fields` omits class parents, fixed values, constraints and provenance; predicate functions do not restore from emitted YAML
+- [ ] Type-time evaluation (`types_type_time`, `types_type_time_effect`; `type_time` suite): a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
   - [x] Decided and documented: what marks type time (see Open questions)
   - [x] An effect attempted at type time is a structured error naming the effect and the node
   - [x] Bounded: the existing `depth` and `limit` caps apply, so type time ends or fails cleanly
-  - [x] Deterministic: no time, randomness, environment or file contents reach type time unpinned
-  - [x] The same type-time result whether reached by `helix check` or by a full run
-- [x] Type-time errors (`types_type_time_error` golden case) are the same structured errors as run-time ones, with the phase recorded in the state
+  - [ ] Deterministic: no time, randomness, environment or file contents reach type time unpinned — effect requests and file imports are blocked, but already supplied function arguments have no input-pinning/provenance enforcement
+  - [x] The same type-time result whether reached by `helix check --evaluate` or by a full run (`type_time` suite); plain `check` does not evaluate type-time regions
+- [ ] Type-time errors (`types_type_time_error` golden case) are the same structured errors as run-time ones, with the phase recorded in the state
   - [x] Same shape and kinds (`kind`, `message`, `path`, `line`, `column`), catchable with `try` like any other
   - [x] The saved state records which phase failed
-  - [x] A type-time failure stops before any run-time effect is attempted
+  - [ ] A type-time failure stops before any run-time effect is attempted — regions are evaluated in ordinary execution order, not in a whole-program preflight; earlier effects and effects after a caught failure remain possible
 
 ### Expanding the type algebra
 
@@ -311,13 +318,13 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
 - [ ] A type inherits from one or more classes; the result is the merge of their fields, defaults and constraints
   - [x] Single parent
   - [x] Several parents with disjoint fields
-  - [ ] Several parents sharing a field they agree on (including diamonds: one ancestor reached twice merges once)
+  - [x] Several parents sharing a field they agree on (including diamonds: one ancestor reached twice merges once; `class_conflicts`, `class_constraints`, `type_algebra`)
   - [ ] Classes inheriting from classes, to any depth
   - [ ] The result is a plain flattened type: emitted, it reads as if written out by hand
-  - [ ] Constraints from every parent all hold on the result
+  - [x] Constraints from every parent all hold on the realized result (`class_constraints`; abstract composition defers whole-record checks until realization)
 - [ ] Documented, deterministic merge and override rules (which parent wins, what counts as a conflict, how lists and maps combine)
   - [ ] Decided: the merge model (see Open questions) and whether inheritance is nominal, structural or both
-  - [ ] Field types from two parents: when they combine and when they conflict
+  - [x] Field types from two parents: when they combine and when they conflict (`class_conflicts`; declarations must agree or the child must explicitly narrow every parent)
   - [ ] Defaults: a child's explicit value overrides a parent default; two differing parent defaults are a conflict
   - [ ] Lists and maps: one stated rule each (replace, append, or merge by key), with an explicit way to ask for another
   - [ ] Parent order never changes the result
@@ -325,15 +332,15 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
 - [ ] Conflicts between parents are type-time errors that name both sources, never silent last-writer-wins
   - [ ] The error gives the field and the path and line of each disagreeing declaration
   - [ ] Every conflict in a declaration is reported in one pass
-  - [ ] A conflict is resolved only by an explicit override in the child, and the override is visible in provenance
+  - [x] A conflict is resolved only by an explicit override in the child, and the override is visible in provenance (`class_conflicts`, `dogfood_class_conflict_fixed`; class names, not source spans)
 - [ ] An abstract class cannot be realized until every required field is filled; the error lists what is missing and which class demanded it
-  - [ ] Using an abstract type where a concrete one is needed is an error, not an implicit default
-  - [ ] All missing fields are listed at once, each with the class that demanded it
+  - [x] Using an abstract type where a concrete one is needed is an error, not an implicit default (`classes.not_yet`; required fields without defaults prevent realization)
+  - [x] All missing fields are listed at once, each with the class that demanded it (`classes`, `type_algebra`; `data.missing` carries `field` and `required_by`)
   - [ ] An override that violates a parent's field type or constraint blames the override and names the parent
 - [ ] Provenance: for any field of a resolved type, the state shows which class or override supplied it
   - [ ] Each field records its source (class or override) as a root-relative path with line
   - [ ] Overridden values are shown too: what lost, and to what
-  - [ ] Provenance is queryable as data from Helix, not only visible in the output
+  - [x] Provenance is queryable as data from Helix, not only visible in the output (`classes`, `class_conflicts`; ordinary `provenance` maps)
   - [ ] Provenance round-trips and does not make the resolved type harder to read or diff
 - [ ] Parametric classes: a class takes arguments (`[web_server, {port: 8080}]`) and yields a class
   - [x] It is an ordinary `fn` returning a class: no separate generics mechanism
@@ -428,7 +435,7 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 
 - `dogfood_work_queue`: stable priority sorting and dispatch through `std:list.sort_by`, with negative priorities, equal-priority payloads, sorted/reversed/empty/singleton inputs, independent calls, idempotence and source-order preservation. The original 100+ line example now shares its sort implementation with the standard library. Friction: insertion sort repeatedly copies lists and is suitable only for small queues.
 
-### Errors as a first-class feature (section 4) — complete
+### Errors as a first-class feature (section 4) — executable coverage
 
 `dogfood_errors` covers independent malformed-row validation, a calculator with per-input recovery, kind-based retry histories, domain wrapping with retained causes, assertion-led caller repair and cleanup on success/failure. Reports retain input positions and full errors; later valid rows still finish.
 
@@ -487,8 +494,8 @@ Implement Helix's own language services and development workflows in Helix. The 
 ### Already within reach of the pure core
 
 - [x] Standard-library arithmetic and list helpers are Helix source: `std/math.yaml` and `std/list.yaml` already implement min/max/clamp, sum/product/reverse/range, exercised by the standard-library golden cases. Extend these modules rather than adding equivalent Rust builtins.
-- [ ] Collection and text algorithms: sorting, grouping, deduplication, map merge/removal, splitting and joining as imported Helix functions over the existing collection primitives. Reuse the algorithms in the dogfooding cases; document copying costs and iteration limits before treating them as general-purpose library functions.
-  - [x] Stable grouping by a string-valued callback in `std:group.by`, covered by `std_group`; preserves first key occurrence and item order, with documented copying costs and iteration limits. Real tooling caller: `./manage.py inventory` invokes `tooling/inventory.yaml` to group repository files by directory and saves replayable input/state; covered by `dogfood_tooling_inventory` and CLI contracts.
+- [x] Collection and text algorithms: sorting, grouping, deduplication, map merge/removal, splitting and joining as imported Helix functions over the existing collection primitives. Reuse the algorithms in the dogfooding cases; document copying costs and iteration limits before treating them as general-purpose library functions.
+  - [x] Stable grouping by a string-valued callback in `std:group.by`, covered by `std_group`; preserves item order within each group, with canonical string-key order for groups and documented copying costs and iteration limits. Real tooling caller: `./manage.py inventory` invokes `tooling/inventory.yaml` to group repository files by directory and saves replayable input/state; covered by `dogfood_tooling_inventory` and CLI contracts.
   - [x] Stable comparator sort (`sort_by`) extracted from the work-queue example, plus first-occurrence deduplication (`unique`), in `std:list`; covered by `std_list_algorithms` and `dogfood_work_queue`. Both use quadratic scans/copying and runtime iteration limits; intended for small inputs.
   - [x] `std:list` access/slicing, enumerate/zip, one-level flatten/flat-map, short-circuit searches, quantifiers, count/partition, grouping/frequencies and default sorting; contracts and boundary cases live in `std_list_helpers`.
   - [x] Shallow right-biased merge and single-key removal in `std:map`, covered by `std_map`: stable key order, missing/null distinction, nested replacement, empty and Unicode keys, and checked arguments. Immutable copies can cost quadratic time/allocations; runtime iteration limits apply.
@@ -541,11 +548,11 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
 
 ### Inventory, connections and observed state
 
-- [x] Select and describe hosts without implicit configuration precedence
-  - [x] Typed inventory supports stable host identities, groups, connection settings and explicit overrides with provenance
-  - [x] Host/group selection and exclusions resolve to a reviewable target list before mutation
-  - [x] Dynamic inventory is an explicit host input with validation; discovery never runs inside pure configuration resolution
-  - [x] Missing hosts, duplicate identities and incompatible settings produce structured diagnostics
+- [ ] Select and describe hosts without implicit configuration precedence
+  - [ ] Typed inventory supports stable host identities, groups, connection settings and explicit overrides with provenance
+  - [ ] Host/group selection and exclusions resolve to a reviewable target list before mutation
+  - [ ] Dynamic inventory is an explicit host input with validation; discovery never runs inside pure configuration resolution
+  - [ ] Missing hosts, duplicate identities and incompatible settings produce structured diagnostics
   - Evidence: `./manage.py test --suite host_inventory` exercises the pure
     `std:inventory` module with static and supplied dynamic data, an independent
     selection oracle, ordered override histories and invalid-input diagnostics.
@@ -568,12 +575,12 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
 
 ### Resource providers and change semantics
 
-- [x] Establish one discoverable provider contract for observation, planning, application and verification
-  - [x] Providers declare argument/result types, capabilities, supported platforms, check/diff support and failure behavior
-  - [x] Distinguish unchanged, changed, failed, skipped and unsupported outcomes using structured data
-  - [x] Pure plan generation shares section 8's semantics; a dry run never silently applies a resource whose preview is unsupported
-  - [x] Re-observe after mutation and report unmet postconditions instead of trusting a successful command exit alone
-  - [x] Define ownership and deletion explicitly so absent configuration does not accidentally remove unmanaged resources
+- [ ] Establish one discoverable provider contract for observation, planning, application and verification
+  - [ ] Providers declare argument/result types, capabilities, supported platforms, check/diff support and failure behavior
+  - [ ] Distinguish unchanged, changed, failed, skipped and unsupported outcomes using structured data
+  - [ ] Pure plan generation shares section 8's semantics; a dry run never silently applies a resource whose preview is unsupported
+  - [ ] Re-observe after mutation and report unmet postconditions instead of trusting a successful command exit alone
+  - [ ] Define ownership and deletion explicitly so absent configuration does not accidentally remove unmanaged resources
   - Evidence: `./manage.py test --suite provider_contract --suite type_algebra --suite library`
     checks `std:provider` with typed callbacks, pure data-only plans compatible
     with `converge`, unsupported-preview gates, exact fresh review matching,
@@ -594,10 +601,10 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Users and groups: membership, ownership implications and authorized keys with explicit removal semantics
   - [ ] Artifacts: authenticated retrieval where needed, pinned versions and integrity verification before use
   - [ ] Arbitrary commands: explicit guards and change/failure predicates; no implied idempotence or reversibility
-- [x] Compose resources and reusable configurations without a second execution model
-  - [x] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
-  - [x] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
-  - [x] Reusable configuration modules expose typed inputs, outputs and versioned dependencies using existing imports and functions
+- [ ] Compose resources and reusable configurations without a second execution model
+  - [ ] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
+  - [ ] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
+  - [ ] Reusable configuration modules expose typed inputs, outputs and versioned dependencies using existing imports and functions
   - Evidence: `./manage.py test --suite resource_composition --suite library`
     checks `std:orchestration` against an independent dependency-order oracle,
     observable callback/file effects, failure gates, coalesced handlers and retained
@@ -616,11 +623,11 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Express cross-host dependencies and controller/delegated tasks with unambiguous execution targets and authority
   - [ ] Gate rolling changes on health checks and stop subsequent batches when the declared policy fails
   - [ ] Support reboot, disconnect and reconnect workflows with bounded readiness waits
-- [x] Make long-running operations practical — bundled local synchronous command adapter
-  - [x] Replace the bundled host's fixed 10-second command deadline with caller-controlled bounded timeouts
-  - [x] Support bounded output capture and progress reporting for package installs and deployments
-  - [x] Define cancellation and descendant-process cleanup so a timed-out controller does not silently leave mutations running
-  - [x] Retry only explicitly classified transient failures with bounded attempts and delays
+- [ ] Make long-running operations practical — bundled local synchronous command adapter
+  - [ ] Replace the bundled host's fixed 10-second command deadline with caller-controlled bounded timeouts
+  - [ ] Support bounded output capture and progress reporting for package installs and deployments
+  - [ ] Define cancellation and descendant-process cleanup so a timed-out controller does not silently leave mutations running
+  - [ ] Retry only explicitly classified transient failures with bounded attempts and delays
   - Evidence: `./manage.py test --suite long_commands --suite effects --suite library`
     exercises real subprocesses, extended deadlines, cumulative capture budgets,
     metadata progress, classified retries, cancellation through both the interpreter
@@ -681,7 +688,7 @@ Decide these before the features that depend on them.
 - [ ] Does a suspended state embed the source, reference it, or both?
 - [x] Types are opt-in outside configs: unannotated code retains its behavior; `expect` and function parameter/result contracts enforce declared types (`types_annotations`; `LANGUAGE.md`).
 - [ ] Is inheritance nominal (declared parents) or structural (anything with the right fields satisfies a class), or both?
-- [x] Type time is an explicit `{$call: [type_time, {$ref: expression}]}` region, with `phase: type` on failures; `check` collects diagnostics with the same evaluator (see `LANGUAGE.md`).
-- [ ] How do parent classes merge: Nix-module-style priorities and merge functions, CUE-style unification, or linearized inheritance?
+- [x] Type time is an explicit `{$call: [type_time, {$ref: expression}]}` region, with `phase: type` on failures; `check --evaluate` collects diagnostics with the same evaluator, while plain `check` is non-executing (see `LANGUAGE.md`).
+- [x] How do parent classes merge? Explicit agreement or child resolution: incompatible declarations/values conflict, child field redeclarations must narrow every parent, and lists/maps are replaced whole. `LANGUAGE.md#classes-machines-and-drift` and `class_conflicts` describe the implemented model; stronger order-independent provenance and richer merge operators remain open above.
 - [ ] What is the story for secrets in persisted state?
 - [ ] Which parts of `flintwinters/helixcpp` are worth carrying over, and which are better left behind?
