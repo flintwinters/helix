@@ -178,47 +178,159 @@ web01:      [inherit, [server, has_ssh], {hostname: web01, packages: [nginx]}]
 A type should read like the value it describes with the specifics left open: someone who has never seen Helix can look at a record type and say what a valid value looks like. Declarations are order-independent facts, not a checking procedure, so reordering fields or splitting a declaration across maps changes nothing. Types are opt-in descriptions layered on the existing untyped core, never a reason existing programs stop running.
 
 - [ ] A type is declared as plain YAML data in the object graph (fields, their types, defaults), not in a separate schema language
+  - [ ] A declaration is an ordinary node: it has a path and span, and is found by the same lexical lookup as any value
+  - [ ] Declarations are order-independent: reordering fields changes neither the type nor what it accepts
+  - [ ] A type may be named in a map or written inline where it is used, with the same meaning
+  - [ ] A malformed declaration is a structured error blaming the declaration node, not the value later checked against it
 - [ ] Scalar, list, map and record types, plus optional fields, unions, enums and literal types
+  - [ ] Scalar types (`integer`, `float`, `string`, `boolean`, `null`) and a top type that accepts anything
+  - [ ] Homogeneous list and map types over an element type
+  - [ ] Record types: named fields, each with its own type
+    - [ ] Required fields: absence is a violation
+    - [ ] Optional fields: may be absent, checked when present
+    - [ ] Defaulted fields: the default is itself checked against the field's type
+    - [ ] Decided and documented: are records open (extra fields allowed) or closed, and how is the other one spelled
+  - [ ] Unions of types
+  - [ ] Enums and single-value literal types
+  - [ ] Types nest to any depth (a list of records of unions)
 - [ ] Refinements: a type can carry a predicate (`port` is an int in 1..65535), written as an ordinary Helix expression
+  - [ ] The predicate is a named or inline `fn` from the value to a boolean, run only after the base type passes
+  - [ ] A predicate that fails or returns a non-boolean is an error blamed on the predicate, distinct from "value rejected"
+  - [ ] A rejected value's violation names the refinement, so the report says which rule failed and not only that one did
+  - [ ] Refinements stack (a refinement of a refinement) and compose with every other type former
 - [ ] Annotate a value or a `fn` parameter/result with a type; a mismatch is a structured `type` error blaming the offending node with path and line
+  - [ ] Annotate a value in a map; the annotated value is still read by other expressions as the plain value
+  - [ ] Annotate `fn` parameters; a bad argument blames the argument at the call site
+  - [ ] Annotate a `fn` result; a bad result blames the body, with the call recorded
+  - [ ] Unannotated code runs exactly as before: every pre-types golden case is unchanged
+  - [ ] The error carries expected type, actual value and the path *inside* the value where they diverge
 - [ ] Type checking collects every violation in one pass instead of stopping at the first
+  - [ ] A violation is data: path into the value, expected, actual, and the rule that rejected it
+  - [ ] All violations of one value against one type are returned together, nested ones included
+  - [ ] Violations come out in a stable, documented order so reports diff cleanly
+  - [ ] All annotation failures of a whole program are reported in one run
 - [ ] Types survive in the saved state and round-trip: emitted `root` re-read yields the same types
+  - [ ] A type emits as the declaration that was written, not an expanded or internal form
+  - [ ] Re-running an emitted `root` that contains types is a fixpoint (covered by the existing round-trip check)
+  - [ ] Annotations survive too: the saved state shows which type governed which value
 - [ ] `helix check` type-checks a program without running it or performing effects
+  - [ ] Checks every annotation whose value is computable at type time and reports the rest as unchecked, never as passed
+  - [ ] Output is the usual state document (`status` plus violations), with the usual exit codes
+  - [ ] Covered by the mutation sweep: damaged programs yield a well-formed state, never a panic
 
 ### First-class types
 
 "First-class" means there is no type-level language: whatever can be done with a number or a map can be done with a type, using the functions, `let`, iteration and errors that already exist. Abstraction over types is therefore just a function that returns a type, which is how Helix avoids the templating (Jinja in Ansible) and the bespoke module machinery other tools grow. Type time is not a different interpreter; it is ordinary evaluation run under a stricter contract (pure, no effects, bounded), and that contract is what makes a type trustworthy to compute before a machine is involved. Functions themselves are not yet first-class values (see `AGENTS.md`), so that gap has to close on the way here.
 
-- [x] Types are values: bind them with `let`, pass them to and return them from functions, store them in lists and maps (scalar/collection type names only so far)
+- [ ] Types are values: bind them with `let`, pass them to and return them from functions, store them in lists and maps
+  - [x] Scalar and collection type names
+  - [ ] Declared types (records, unions, refinements and the rest)
+  - [ ] Equality on types is defined and documented (`eq` of two types)
+  - [ ] Functions are first-class values, so a refinement predicate or a type constructor can be stored and passed like a type
 - [ ] Type constructors are ordinary functions from types (and values) to types (`[list_of, t]`, `[with_field, t, name, u]`)
+  - [ ] Built-in formers accept computed types as arguments, not only literal names
+  - [ ] A user `fn` that returns a type is usable anywhere a type is expected
+  - [ ] Derive a type from another: add, drop or retype a field; make every field optional
+  - [ ] Build a type by iteration (`map`/`fold` over a list of field names)
+  - [ ] A constructor given a non-type argument fails with a `type` error blaming that argument
 - [ ] Reflection: read a type's fields, defaults and parents as data; ask `[is, value, t]` and `[subtype, a, b]`
+  - [ ] `[is, value, t]`
+    - [x] For scalar and collection type names and `any`; an unknown name is a `type` error
+    - [ ] For every declared type
+  - [ ] Read a record type's fields, each field's type, and its defaults as plain lists and maps
+  - [ ] Read a class's parents and its still-open fields
+  - [ ] `[subtype, a, b]`, with documented rules per type former
+  - [ ] A value built by reflection re-reads as the same type (reflection and declaration are inverse)
 - [ ] Type-time evaluation: a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
+  - [ ] Decided and documented: what marks type time (see Open questions)
+  - [ ] An effect attempted at type time is a structured error naming the effect and the node
+  - [ ] Bounded: the existing `depth` and `limit` caps apply, so type time ends or fails cleanly
+  - [ ] Deterministic: no time, randomness, environment or file contents reach type time unpinned
+  - [ ] The same type-time result whether reached by `helix check` or by a full run
 - [ ] Type-time errors are the same structured errors as run-time ones, with the phase recorded in the state
+  - [ ] Same shape and kinds (`kind`, `message`, `path`, `line`, `column`), catchable with `try` like any other
+  - [ ] The saved state records which phase failed
+  - [ ] A type-time failure stops before any run-time effect is attempted
 
 ### Type classes and inheritance
 
 An abstract class is an incomplete description: some fields fixed, some defaulted, some demanded but left open. Inheriting is composing descriptions, and a concrete type is one with nothing left open. This is not object-oriented inheritance: no methods, no dispatch, no behaviour is inherited, only fields, defaults and constraints, so the result of inheriting is always a plain flattened type that could have been written out by hand. Classes are meant to be small and combined freely (`server` plus `has_ssh` plus `monitored`) rather than arranged in a deep tree. Because several parents will disagree, the merge rules are the heart of this group: they must be few, written down, deterministic, and they must refuse to guess. An ambiguity the author did not resolve is an error, never a precedence rule that picks a winner quietly.
 
 - [ ] Abstract type classes: declare required fields and constraints without a concrete value (`machine`, `server`, `has_ssh`)
+  - [ ] A class field is one of: fixed to a value, defaulted, or demanded and left open
+  - [ ] A class can carry constraints over several of its fields (a refinement on the whole record)
+  - [ ] A class is a type value: everything under "First-class types" applies to it
 - [ ] A type inherits from one or more classes; the result is the merge of their fields, defaults and constraints
+  - [ ] Single parent
+  - [ ] Several parents with disjoint fields
+  - [ ] Several parents sharing a field they agree on (including diamonds: one ancestor reached twice merges once)
+  - [ ] Classes inheriting from classes, to any depth
+  - [ ] The result is a plain flattened type: emitted, it reads as if written out by hand
+  - [ ] Constraints from every parent all hold on the result
 - [ ] Documented, deterministic merge and override rules (which parent wins, what counts as a conflict, how lists and maps combine)
+  - [ ] Decided: the merge model (see Open questions) and whether inheritance is nominal, structural or both
+  - [ ] Field types from two parents: when they combine and when they conflict
+  - [ ] Defaults: a child's explicit value overrides a parent default; two differing parent defaults are a conflict
+  - [ ] Lists and maps: one stated rule each (replace, append, or merge by key), with an explicit way to ask for another
+  - [ ] Parent order never changes the result
+  - [ ] The rules are written in `LANGUAGE.md`, with a golden case per rule
 - [ ] Conflicts between parents are type-time errors that name both sources, never silent last-writer-wins
+  - [ ] The error gives the field and the path and line of each disagreeing declaration
+  - [ ] Every conflict in a declaration is reported in one pass
+  - [ ] A conflict is resolved only by an explicit override in the child, and the override is visible in provenance
 - [ ] An abstract class cannot be realized until every required field is filled; the error lists what is missing and which class demanded it
+  - [ ] Using an abstract type where a concrete one is needed is an error, not an implicit default
+  - [ ] All missing fields are listed at once, each with the class that demanded it
+  - [ ] An override that violates a parent's field type or constraint blames the override and names the parent
 - [ ] Provenance: for any field of a resolved type, the state shows which class or override supplied it
+  - [ ] Each field records its source (class or override) as a root-relative path with line
+  - [ ] Overridden values are shown too: what lost, and to what
+  - [ ] Provenance is queryable as data from Helix, not only visible in the output
+  - [ ] Provenance round-trips and does not make the resolved type harder to read or diff
 - [ ] Parametric classes: a class takes arguments (`[web_server, {port: 8080}]`) and yields a class
+  - [ ] It is an ordinary `fn` returning a class: no separate generics mechanism
+  - [ ] Arguments are themselves type-checked
+  - [ ] Provenance records the arguments a class was instantiated with
 
 ### Machine configs as type-time types
 
 The config is the type; the real machine is the value. "Is this machine configured correctly" becomes "does this machine inhabit its type", drift is a machine that no longer does, and applying a config is making the value fit the type. That framing splits the work into two phases with a hard wall between them. Type time resolves classes, overrides and cross-machine constraints into a complete description using nothing but the source: no SSH, no facts gathered from hosts, no network. Everything that can be wrong with the description is found there, and the resolved description is a reviewable artifact in `git diff`. Only then does realization touch a machine, as an explicit, separate, resumable run built on effects (section 3) and suspend/resume (section 2), with its plan and progress as readable state. From Nix this takes pure evaluation before any change and reproducibility; from Ansible it takes agentless, incremental application to machines that already exist. What it rejects is Ansible's failure halfway through a play from an error knowable in advance, and Nix's opaque evaluation whose result cannot simply be read.
 
 - [ ] A machine config is a concrete type inheriting from abstract machine classes; it is fully resolved at type time with no machine contact
+  - [ ] A small standard vocabulary of machine classes (packages, files, services, users), declared in Helix itself
+  - [ ] A config with an unfilled or conflicting field fails at type time with the class errors above
+  - [ ] Resolution makes no contact with any machine or network, enforced by the type-time contract and not by convention
+  - [ ] Facts that only a machine knows are declared as typed inputs to realization, never read during resolution
 - [ ] The resolved config serializes to YAML that reads as the complete, flattened description of the machine and diffs well in `git diff`
+  - [ ] Stable key order and formatting, so an unchanged config produces no diff
+  - [ ] A one-field change in a class shows as a one-line change in every machine that inherits it
+  - [ ] Provenance is available without drowning the description (separable or opt-in)
 - [ ] Same inputs, same resolved config: resolution is deterministic and pinned (imports, versions) so a config is reproducible
+  - [ ] Imports are pinned (section 5) and the pins are recorded in the resolved config
+  - [ ] The Helix version and state format version are recorded
+  - [ ] Resolving twice, on two machines, yields byte-identical output
 - [ ] Fleet-level checks at type time: constraints across several machine types (unique hostnames, every client's server exists, no port clashes)
+  - [ ] A fleet is a typed collection of machine configs
+  - [ ] Fleet constraints are ordinary Helix predicates over that collection
+  - [ ] A violation names every machine involved, with paths
+  - [ ] All fleet violations are reported in one pass
 - [ ] Realization is a separate, explicit step: compare a resolved config with a machine's observed state and produce a plan as data
+  - [ ] Observed state is gathered by effects into a value of a declared type
+  - [ ] The plan is plain YAML: ordered steps, each naming the field of the type it realizes
+  - [ ] An empty plan means the machine inhabits its type
+  - [ ] Planning changes nothing on the machine (dry run is the default, applying is the explicit act)
 - [ ] Applying a plan uses the effect system (section 3), is idempotent, and suspends/resumes per step (section 2) with the pending step visible in the state
+  - [ ] Each step is an explicit effect recorded in the state before it runs
+  - [ ] A failed or interrupted apply resumes from the pending step, not from the start
+  - [ ] Applying twice changes nothing the second time
+  - [ ] After applying, a fresh plan is empty
 - [ ] Drift report: what the machine has that its type does not say, and the reverse
+  - [ ] Both directions reported as data, per field, with the type's provenance for each
+  - [ ] Decided and documented: what counts as unmanaged (ignored) versus drift
 - [ ] Secrets are referenced by a typed handle, never inlined into a resolved config or saved state
+  - [ ] A secret type whose values cannot be emitted: resolved configs and saved states show the handle only
+  - [ ] Secrets are fetched only during realization, by an explicit effect
+  - [ ] Error messages, plans and drift reports never contain a secret value
 
 ---
 
