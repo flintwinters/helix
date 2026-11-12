@@ -94,6 +94,30 @@ def verify(h):
         stage(failures, "policy")
         assert calls["replay"] == 1 and expected_path.read_text() == "unchanged"
 
+        def decision(stage="passed", bless=False, replay=False):
+            return (0, yaml.safe_dump({"status": "finished", "root": {
+                "stage": stage, "bless": bless, "replay": replay}}), "")
+
+        # Well-typed plans still cannot authorize impossible or unrequested actions.
+        for fault, options in (
+            (decision(), {}),  # A passing ordinary root must request replay.
+            (decision(stage="roundtrip"), {}),  # No replay has happened yet.
+            (decision(stage="determinism", bless=True), {"bless": True}),
+            (decision(stage="golden", bless=True), {"bless": True}),
+            (decision(bless=True, replay=True), {}),  # No --bless authorization.
+            (decision(replay=True), {"fault_after": 1}),  # Replay already completed.
+        ):
+            failures, _ = exercise(policy_fault=fault, **options)
+            stage(failures, "policy")
+            assert expected_path.read_text() == FINISHED
+
+        # Even a plausible false pass from a damaged interpreter cannot hide a
+        # host-observed crash, timeout or malformed replay state.
+        for replay in ((-11, "", ""), (124, "", "timeout"), (0, "[", "")):
+            failures, calls = exercise(replay=replay, policy_fault=decision(), fault_after=1)
+            stage(failures, "roundtrip")
+            assert calls["replay"] == 1 and calls["policy"] == 2
+
         # Exercise a real large corpus observation, not only tiny synthetic outputs.
         largest = max((path for directory in h.commands
                        for path in directory.glob("*.expected.yaml")), key=lambda path: path.stat().st_size)
