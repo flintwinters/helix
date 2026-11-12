@@ -265,3 +265,9 @@ suspended execution format or effect permissions are promised by this release.
 
 Use `git log` for the complete implementation history; this changelog records
 user-visible checkpoints rather than claiming published releases.
+
+## Runtime trust boundaries
+
+Run `./manage.py runtime sandbox - program.yaml` to allow embedded modules only, or replace `-` with an allowed import directory. The main input is explicitly authorized; transitive file imports must stay within that directory, including through symlinks. Ordinary `run` remains trusted. See `LANGUAGE.md` for the library API, exact resource budgets and the limits of path-based confinement.
+
+`./manage.py test --suite resources --suite permissions --suite library` verifies accepted/rejected syntax and graph boundaries, call and iteration caps, growing values, dependency/import depth, source blame and permission escapes. The public VM tests also exercise guarded execution on Rust test threads, whose smaller stacks previously exposed a host stack overflow. These guards bound interpreter work and produced data; they do not promise constant memory for programs retaining growing state.

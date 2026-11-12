@@ -1,0 +1,12 @@
+status: error
+error:
+  kind: limit
+  message: evaluation exceeds 8000000 produced value units
+  path: /2/2
+  line: 1
+  column: 37
+  calls:
+    - path: /2
+      line: 1
+      column: 27
+      function: /2

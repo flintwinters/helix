@@ -69,3 +69,8 @@ The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items 
 - Keep production code and tests in the same logical checkpoint, and add or tighten the nearest test when semantics change.
 - Stage explicit paths only (never `git add .` or `git add -A`) and commit each verified checkpoint with a detailed message.
 - Update this file when architecture, invariants, or workflows materially change.
+
+## Runtime safety
+
+- CLI and public VM evaluation run on a fixed-size worker stack. Shared per-VM work/produced-data budgets, graph size and syntax/value/dependency/import depth guards must apply equally to run/check and computed functions; keep their boundary contracts in the `resources` suite.
+- `Vm::load_sandboxed` and `runtime sandbox ROOT FILE` confine transitive file imports to caller-authorized canonical roots; empty roots permit embedded modules only. Program and recovery data never grant host permissions. This is path-based import confinement, not OS isolation; future effects require explicit capabilities.
