@@ -36,9 +36,18 @@ pub const ROOT: NodeId = 0;
 
 impl Graph {
     pub fn parse(src: &str) -> Result<Graph, HelixError> {
+        Self::parse_document(src, false)
+    }
+
+    /// Parse exactly one data document, checking the entire input stream.
+    pub(crate) fn parse_data(src: &str) -> Result<Graph, HelixError> {
+        Self::parse_document(src, true)
+    }
+
+    fn parse_document(src: &str, entire_stream: bool) -> Result<Graph, HelixError> {
         let mut builder = Builder::default();
         Parser::new_from_str(src)
-            .load(&mut builder, false)
+            .load(&mut builder, entire_stream)
             .map_err(|e| HelixError {
                 kind: "parse".into(),
                 message: e.to_string(),
@@ -217,6 +226,7 @@ impl MarkedEventReceiver for Builder {
             Event::SequenceEnd | Event::MappingEnd => {
                 self.stack.pop();
             }
+            Event::DocumentStart if !self.graph.nodes.is_empty() => self.fail("parse", "expected exactly one YAML document", at),
             Event::Alias(_) => self.fail("unsupported", "aliases are not supported", at),
             _ => {}
         }

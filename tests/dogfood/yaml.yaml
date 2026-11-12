@@ -1,0 +1,35 @@
+t: [import, std:test]
+y: [import, std:yaml]
+samples: [list, null, true, false, 42, -3, 1.25, "", "true", "42", "a: b\n", [], {}, [list, "add", "x", 1], {a: [1, null, false], b: "hello"}]
+roundtrip: [t.property, "data survives YAML dump and parse", samples, [fn, [value], [eq, [y.parse, [y.dump, value]], value]]]
+examples:
+  - t.suite
+  - - name: expressions_are_data
+      run: [fn, [], [t.equal, [y.parse, '[add, missing, 1]'], [list, "add", "missing", 1]]]
+    - name: imports_are_data
+      run: [fn, [], [t.equal, [y.parse, '[import, missing.yaml]'], [list, "import", "missing.yaml"]]]
+    - name: nested_lookup
+      run: [fn, [], [t.equal, [y.get_in, {a: [false, null]}, [list, "a", 1]], null]]
+    - name: nested_update
+      run: [fn, [], [t.equal, [y.set_in, {a: [1, 2]}, [list, "a", 0], 7], {a: [7, 2]}]]
+    - name: root_update
+      run: [fn, [], [t.equal, [y.set_in, {a: 1}, [], false], false]]
+    - name: new_key
+      run: [fn, [], [t.equal, [y.set_in, {}, [list, "a"], null], {a: null}]]
+    - name: invalid_syntax
+      run: [fn, [], [t.equal, [y.valid, '[broken'], false]]
+    - name: duplicate_keys
+      run: [fn, [], [t.equal, [y.valid, "a: 1\na: 2"], false]]
+    - name: multiple_documents
+      run: [fn, [], [t.equal, [y.valid, "1\n---\n2\n"], false]]
+    - name: trailing_syntax
+      run: [fn, [], [t.equal, [y.valid, "1\n---\n["], false]]
+    - name: empty_input
+      run: [fn, [], [t.equal, [y.valid, ""], false]]
+    - name: alias_rejected
+      run: [fn, [], [t.equal, [y.valid, "a: &a 1\nb: *a"], false]]
+    - name: missing_path
+      run: [fn, [], [t.equal, [try, [y.get_in, {}, [list, "missing"]], [fn, [error], [get, error, "kind"]]], "missing"]]
+    - name: valid_document
+      run: [fn, [], [t.equal, [y.valid, 'a: [1, false, null]'], true]]
+report: [t.table, [list, [dict, "name", "roundtrip", "input", roundtrip], [dict, "name", "examples", "input", examples]], [fn, [child], [t.require_pass, child]]]

@@ -1,0 +1,12 @@
+# Data-only YAML I/O. No expression evaluation, symbol resolution or imports.
+parse: [fn, [[source, string]], [yaml_parse, source]]
+dump: [fn, [value], [yaml_dump, value], string]
+# Syntax validity, including unsupported features and parser resource limits.
+valid: [fn, [[source, string]], [try, [let, {value: [yaml_parse, source]}, [eq, value, value]], [fn, [error], false]], boolean]
+# Paths are lists of string map keys / integer list indices; [] selects the root.
+get_in: [fn, [value, [path, list]], [fold, [fn, [current, key], [get, current, key]], value, path]]
+# Immutable update. Intermediate containers must exist; final map keys may be new.
+set_in:
+  - fn
+  - [value, [path, list], replacement]
+  - [if, [eq, [len, path], 0], replacement, [let, {key: [get, path, 0], tail: [slice, path, 1, [len, path]]}, [set, value, key, [if, [eq, [len, tail], 0], replacement, [set_in, [get, value, key], tail, replacement]]]]]

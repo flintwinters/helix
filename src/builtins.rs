@@ -13,6 +13,7 @@ mod fault;
 mod number;
 mod typing;
 mod value;
+mod yaml;
 
 pub use fault::Fault;
 pub use typing::{is_primitive, refine, violations, Violation};
@@ -29,6 +30,7 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("map", 2, Some(2)), ("filter", 2, Some(2)), ("fold", 3, Some(3)), ("each", 2, Some(2)), ("until", 3, Some(3)),
     ("len", 1, Some(1)), ("concat", 2, None), ("slice", 3, Some(3)), ("get", 2, Some(3)), ("set", 3, Some(3)),
     ("append", 2, None), ("keys", 1, Some(1)), ("has", 2, Some(2)), ("values", 1, Some(1)), ("duplicates", 1, Some(1)),
+    ("yaml_parse", 1, Some(1)), ("yaml_dump", 1, Some(1)),
     ("str", 1, Some(1)), ("int", 1, Some(1)), ("float", 1, Some(1)), ("type", 1, Some(1)),
     ("list_of", 1, Some(1)), ("map_of", 1, Some(1)), ("record", 0, None), ("optional", 1, Some(1)), ("default", 2, Some(2)), ("union", 1, None),
     ("enum", 1, None), ("literal", 1, Some(1)), ("refine", 2, Some(2)), ("with_field", 3, Some(3)), ("list", 0, None), ("dict", 0, None), ("fields", 1, Some(1)), ("is", 2, Some(2)),
@@ -57,6 +59,7 @@ pub fn apply(actor: &str, args: &[Yaml], pred: &mut Pred) -> Result<Yaml, Fault>
         "not" => boolean(&args[0], 0).map(|b| Yaml::Boolean(!b)),
         _ if typing::handles(actor) => typing::apply(actor, args, pred),
         "len" | "list" | "dict" | "concat" | "slice" | "get" | "set" | "append" | "keys" | "has" | "values" | "duplicates" => collection::apply(actor, args),
+        "yaml_parse" | "yaml_dump" => yaml::apply(actor, &args[0]),
         "str" => text(&args[0]),
         "type" => Ok(Yaml::String(type_name(&args[0]).to_string())),
         "assert" => assert(args),

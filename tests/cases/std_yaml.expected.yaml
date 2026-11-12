@@ -1,0 +1,16 @@
+status: finished
+root:
+  parsed:
+    a:
+      - "add"
+      - missing
+      - 1
+  updated:
+    a:
+      - 1
+      - false
+  selected: ~
+  dumped: "a:\n  - 1\n  - false\n"
+  invalid: false
+  wrong_type: type
+  malformed: parse
