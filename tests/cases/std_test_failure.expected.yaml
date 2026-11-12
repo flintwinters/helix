@@ -30,11 +30,15 @@ error:
               line: 21
               column: 5
               function: /1/t.equal
+              function_line: 3
+              function_column: 5
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 19
+              function_column: 3
         name: deliberate_mismatch
         input: ~
       - outcome: passed
@@ -46,3 +50,6 @@ error:
       line: 4
       column: 3
       function: /require_pass
+      function_file: "std:test"
+      function_line: 48
+      function_column: 3

@@ -72,6 +72,8 @@ root:
         line: 6
         column: 17
         function: /url
+        function_line: 4
+        function_column: 6
   ident:
     - fn
     - - x

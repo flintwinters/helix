@@ -10,3 +10,5 @@ error:
       line: 1
       column: 10
       function: /r/1
+      function_line: 1
+      function_column: 10

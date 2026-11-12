@@ -10,3 +10,5 @@ error:
       line: 2
       column: 6
       function: /double
+      function_line: 1
+      function_column: 9

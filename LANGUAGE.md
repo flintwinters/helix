@@ -244,7 +244,11 @@ there is no competing test entrypoint.
 
 Function failures carry an optional `calls` list, ordered from the innermost call outward.
 Each entry records the call-site `path`, `line`, `column`, optional imported `file`,
-and the function declaration's `function` path. This includes callback, parameter-contract,
+and the function declaration's `function` path, `function_line`, `function_column`,
+and optional `function_file`. Call-site and declaration files are independent: a call
+in the main program can invoke a function declared in an imported module. Missing
+file fields refer to the main program; coordinates are 1-indexed. Use these fields
+for navigation rather than parsing `message`. This includes callback, parameter-contract,
 and result-contract failures. Errors caught with `try` have the same diagnostic fields.
 Re-raising with `[raise, error]` records the complete supplied error map under `cause`;
 the new error blames the re-raise site and accumulates its own call chain. Repeating this

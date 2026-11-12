@@ -465,6 +465,10 @@ impl Evaluator {
             location.insert(s("line"), Yaml::Integer(span.line as i64));
             location.insert(s("column"), Yaml::Integer(span.col as i64));
             location.insert(s("function"), s(&self.graph.path(function)));
+            if let Some(file) = self.graph.source(function) { location.insert(s("function_file"), s(file)); }
+            let definition = self.graph.span(function);
+            location.insert(s("function_line"), Yaml::Integer(definition.line as i64));
+            location.insert(s("function_column"), Yaml::Integer(definition.col as i64));
             error.calls.push(Yaml::Hash(location));
             error
         })

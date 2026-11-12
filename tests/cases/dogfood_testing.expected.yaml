@@ -846,6 +846,8 @@ root:
               line: 14
               column: 17
               function: /
+              function_line: 1
+              function_column: 1
         name: cleanup_on_success
         input: ~
       - outcome: passed
@@ -860,6 +862,8 @@ root:
               line: 14
               column: 17
               function: /
+              function_line: 1
+              function_column: 1
         name: cleanup_on_failure
         input: ~
   self_test:
@@ -882,11 +886,15 @@ root:
               line: 21
               column: 5
               function: /1/t.equal
+              function_line: 3
+              function_column: 5
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 19
+              function_column: 3
         name: mismatch
         input: ~
       - outcome: failed
@@ -909,16 +917,22 @@ root:
                   line: 14
                   column: 17
                   function: /
+                  function_line: 1
+                  function_column: 1
           calls:
             - path: /2/2
               line: 71
               column: 5
               function: /1/t.throws/2
+              function_line: 23
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 69
+              function_column: 3
         name: wrong_error
         input: ~
       - outcome: failed
@@ -936,11 +950,15 @@ root:
               line: 71
               column: 5
               function: /1/t.throws/2
+              function_line: 23
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 69
+              function_column: 3
         name: missing_error
         input: ~
       - outcome: failed
@@ -956,6 +974,8 @@ root:
               line: 8
               column: 51
               function: /
+              function_line: 1
+              function_column: 1
         name: bad_predicate
         input: ~
       - outcome: passed
@@ -2085,11 +2105,15 @@ root:
               line: 23
               column: 7
               function: /1/verify/2
+              function_line: 10
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 20
+              function_column: 3
         name: all numbers are positive
         input: -5
       - outcome: failed
@@ -2104,11 +2128,15 @@ root:
               line: 23
               column: 7
               function: /1/verify/2
+              function_line: 10
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 20
+              function_column: 3
         name: all numbers are positive
         input: -4
       - outcome: failed
@@ -2123,11 +2151,15 @@ root:
               line: 23
               column: 7
               function: /1/verify/2
+              function_line: 10
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 20
+              function_column: 3
         name: all numbers are positive
         input: -3
       - outcome: failed
@@ -2142,11 +2174,15 @@ root:
               line: 23
               column: 7
               function: /1/verify/2
+              function_line: 10
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 20
+              function_column: 3
         name: all numbers are positive
         input: -2
       - outcome: failed
@@ -2161,11 +2197,15 @@ root:
               line: 23
               column: 7
               function: /1/verify/2
+              function_line: 10
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 20
+              function_column: 3
         name: all numbers are positive
         input: -1
       - outcome: failed
@@ -2180,11 +2220,15 @@ root:
               line: 23
               column: 7
               function: /1/verify/2
+              function_line: 10
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 20
+              function_column: 3
         name: all numbers are positive
         input: 0
       - outcome: passed
@@ -2228,11 +2272,15 @@ root:
                 line: 23
                 column: 7
                 function: /1/verify/2
+                function_line: 10
+                function_column: 7
               - file: "std:test"
                 path: /capture/2/1/4/1
                 line: 8
                 column: 51
                 function: /2
+                function_line: 20
+                function_column: 3
           name: all numbers are positive
           input: 0
   nested:
@@ -2267,11 +2315,15 @@ root:
                       line: 21
                       column: 5
                       function: /1/t.equal
+                      function_line: 3
+                      function_column: 5
                     - file: "std:test"
                       path: /capture/2/1/4/1
                       line: 8
                       column: 51
                       function: /2
+                      function_line: 19
+                      function_column: 3
                 name: mismatch
                 input: ~
               - outcome: failed
@@ -2294,16 +2346,22 @@ root:
                           line: 14
                           column: 17
                           function: /
+                          function_line: 1
+                          function_column: 1
                   calls:
                     - path: /2/2
                       line: 71
                       column: 5
                       function: /1/t.throws/2
+                      function_line: 23
+                      function_column: 7
                     - file: "std:test"
                       path: /capture/2/1/4/1
                       line: 8
                       column: 51
                       function: /2
+                      function_line: 69
+                      function_column: 3
                 name: wrong_error
                 input: ~
               - outcome: failed
@@ -2321,11 +2379,15 @@ root:
                       line: 71
                       column: 5
                       function: /1/t.throws/2
+                      function_line: 23
+                      function_column: 7
                     - file: "std:test"
                       path: /capture/2/1/4/1
                       line: 8
                       column: 51
                       function: /2
+                      function_line: 69
+                      function_column: 3
                 name: missing_error
                 input: ~
               - outcome: failed
@@ -2341,6 +2403,8 @@ root:
                       line: 8
                       column: 51
                       function: /
+                      function_line: 1
+                      function_column: 1
                 name: bad_predicate
                 input: ~
               - outcome: passed
@@ -2352,11 +2416,15 @@ root:
               line: 120
               column: 5
               function: /1/t.require_pass
+              function_line: 3
+              function_column: 5
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 134
+              function_column: 3
         name: child failure
         input: ~
       - outcome: passed
@@ -2402,11 +2470,15 @@ root:
               line: 21
               column: 5
               function: /1/t.equal
+              function_line: 3
+              function_column: 5
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 19
+              function_column: 3
         name: mismatch
         input: ~
       - outcome: failed
@@ -2429,16 +2501,22 @@ root:
                   line: 14
                   column: 17
                   function: /
+                  function_line: 1
+                  function_column: 1
           calls:
             - path: /2/2
               line: 71
               column: 5
               function: /1/t.throws/2
+              function_line: 23
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 69
+              function_column: 3
         name: wrong_error
         input: ~
       - outcome: failed
@@ -2456,11 +2534,15 @@ root:
               line: 71
               column: 5
               function: /1/t.throws/2
+              function_line: 23
+              function_column: 7
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 69
+              function_column: 3
         name: missing_error
         input: ~
       - outcome: failed
@@ -2476,6 +2558,8 @@ root:
               line: 8
               column: 51
               function: /
+              function_line: 1
+              function_column: 1
         name: bad_predicate
         input: ~
     passed:
@@ -2550,11 +2634,15 @@ root:
               line: 21
               column: 5
               function: /1/t.equal
+              function_line: 3
+              function_column: 5
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 19
+              function_column: 3
         name: known_bug
         input: ~
       - outcome: passed
@@ -2583,11 +2671,15 @@ root:
               line: 21
               column: 5
               function: /1/t.equal
+              function_line: 3
+              function_column: 5
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
               function: /2
+              function_line: 19
+              function_column: 3
         name: known_bug
         input: ~
   state_rows:
@@ -2644,15 +2736,21 @@ root:
         line: 50
         column: 15
         function: /1/t.suite/1/case/2
+        function_line: 25
+        function_column: 11
       - path: /2/2
         line: 80
         column: 5
         function: /1/t.suite/2
+        function_line: 44
+        function_column: 7
       - file: "std:test"
         path: /capture/2/1/4/1
         line: 8
         column: 51
         function: /2
+        function_line: 78
+        function_column: 3
   checks:
     - ~
     - ~

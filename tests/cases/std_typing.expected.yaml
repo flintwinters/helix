@@ -677,6 +677,9 @@ root:
         line: 13
         column: 16
         function: /abs
+        function_file: "std:math"
+        function_line: 4
+        function_column: 6
   bad_min:
     violations:
       - argument: a

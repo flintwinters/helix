@@ -10,6 +10,8 @@ error:
       line: 3
       column: 50
       function: /guard
+      function_line: 2
+      function_column: 8
   cause:
     kind: fatal
     message: disk gone
