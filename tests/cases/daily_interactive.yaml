@@ -1,0 +1,3 @@
+# The same self-contained program runs in a REPL, watch session, or installed CLI.
+input: 6
+answer: [mul, input, 7]

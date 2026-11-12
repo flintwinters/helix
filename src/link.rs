@@ -43,6 +43,27 @@ pub fn link(
     main: Option<&Path>,
     roots: Option<&[PathBuf]>,
 ) -> Result<Modules, HelixError> {
+    link_observed(graph, main, roots, &mut Vec::new())
+}
+
+/// Discover attempted file dependencies through the same linker used for execution.
+/// Failed imports remain observable so watch mode can notice their later creation.
+pub(crate) fn dependencies(source: &str, main: &Path) -> Vec<PathBuf> {
+    let mut files = vec![main.to_path_buf()];
+    if let Ok(mut graph) = Graph::parse(source) {
+        let _ = link_observed(&mut graph, Some(main), None, &mut files);
+    }
+    files.sort();
+    files.dedup();
+    files
+}
+
+fn link_observed(
+    graph: &mut Graph,
+    main: Option<&Path>,
+    roots: Option<&[PathBuf]>,
+    files: &mut Vec<PathBuf>,
+) -> Result<Modules, HelixError> {
     let dir = main
         .and_then(Path::parent)
         .filter(|d| !d.as_os_str().is_empty())
@@ -73,6 +94,7 @@ pub fn link(
         loaded: HashMap::new(),
         stack: Vec::new(),
         allowed,
+        files,
     };
     if let Some(main) = main {
         if let Ok(path) = main.canonicalize() {
@@ -94,6 +116,7 @@ struct Linker<'g> {
     stack: Vec<(String, String)>,
     /// None retains trusted loading; an empty list permits only embedded modules.
     allowed: Option<Vec<PathBuf>>,
+    files: &'g mut Vec<PathBuf>,
 }
 
 impl Linker<'_> {
@@ -169,6 +192,7 @@ impl Linker<'_> {
                     ));
                 };
                 let path = dir.join(&spec);
+                self.files.push(path.clone());
                 let read_path = if let Some(allowed) = &self.allowed {
                     let canonical = path.canonicalize().map_err(|_| {
                         self.graph.error(

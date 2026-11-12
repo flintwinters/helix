@@ -1,0 +1,22 @@
+#compdef helix
+# Generate into a directory on $fpath: helix completion zsh > /path/to/_helix
+# Or source the generated output after compinit.
+_helix() {
+    local -a commands
+    commands=(@COMMANDS@)
+    if (( CURRENT == 2 )); then
+        _describe 'command' commands
+    else
+        case "$words[2]" in
+            completion) _values 'shell' bash zsh fish ;;
+            std) local -a modules; modules=("${(@f)$(helix std)}"); _describe 'module' modules ;;
+            exec) _arguments '--json[emit JSON]' '--yaml[emit YAML]' '--help[show help]' ;;
+            watch) _arguments '--interval-ms[poll interval]:milliseconds:' '--iterations[stop after runs]:count:' '*:program:_files' ;;
+            check) _arguments '--evaluate[collect runtime errors]' '*:program:_files' ;;
+            step) _arguments '--steps[number of transitions]:count:' '*:program:_files' ;;
+            trace) _arguments '--limit[maximum transitions]:count:' '*:program:_files' ;;
+            *) _files ;;
+        esac
+    fi
+}
+compdef _helix helix

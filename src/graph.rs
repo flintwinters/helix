@@ -172,6 +172,22 @@ impl Graph {
         code
     }
 
+    /// Read syntax without resolving symbols, evaluating lists, or linking imports.
+    pub(crate) fn data(&self, id: NodeId) -> crate::value::Value {
+        use crate::value::{Hash, Value};
+        match self.kind(id) {
+            Kind::Scalar { value, .. } => Value::from_yaml(value),
+            Kind::Seq(items) => Value::Array(items.iter().map(|&item| self.data(item)).collect()),
+            Kind::Map(entries) => {
+                let mut result = Hash::new();
+                for (key, value) in entries {
+                    result.insert(Value::String(key.clone()), self.data(*value));
+                }
+                Value::Hash(result)
+            }
+        }
+    }
+
     /// Structural code equality uses authoritative syntax, never an inspection projection.
     /// Container order and scalar kinds/quoting matter because code controls evaluation order.
     pub fn same_code(&self, left: NodeId, other: &Graph, right: NodeId) -> bool {

@@ -1,10 +1,10 @@
 //! Data-only YAML conversion using the same syntax and emitter as persisted VM state.
 
-use crate::value::{Hash, Value};
+use crate::value::Value;
 
 use crate::{
     emit,
-    graph::{Graph, Kind, NodeId, ROOT},
+    graph::{Graph, ROOT},
 };
 
 use super::fault::Fault;
@@ -25,7 +25,7 @@ pub(super) fn apply(actor: &str, value: &Value) -> Result<Value, Fault> {
                     ),
                 )
             })?;
-            Ok(data(&graph, ROOT))
+            Ok(graph.data(ROOT))
         }
         "yaml_dump" => Ok(Value::String(emit::document(
             &value
@@ -33,21 +33,6 @@ pub(super) fn apply(actor: &str, value: &Value) -> Result<Value, Fault> {
                 .ok_or_else(|| Fault::expected(0, "ordinary data", value))?,
         ))),
         _ => unreachable!("YAML conversion actor"),
-    }
-}
-
-/// Read syntax without resolving symbols, evaluating lists, or linking imports.
-fn data(graph: &Graph, id: NodeId) -> Value {
-    match graph.kind(id) {
-        Kind::Scalar { value, .. } => Value::from_yaml(value),
-        Kind::Seq(items) => Value::Array(items.iter().map(|&item| data(graph, item)).collect()),
-        Kind::Map(entries) => {
-            let mut result = Hash::new();
-            for (key, value) in entries {
-                result.insert(Value::String(key.clone()), data(graph, *value));
-            }
-            Value::Hash(result)
-        }
     }
 }
 

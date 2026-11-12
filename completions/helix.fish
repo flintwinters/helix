@@ -1,0 +1,12 @@
+# Load with: helix completion fish | source
+complete -c helix -n '__fish_use_subcommand' -a '@COMMANDS@'
+complete -c helix -l help -d 'Show help'
+complete -c helix -n '__fish_seen_subcommand_from completion' -f -a 'bash zsh fish'
+complete -c helix -n '__fish_seen_subcommand_from std' -f -a '(helix std)'
+complete -c helix -n '__fish_seen_subcommand_from exec' -l json -d 'Emit JSON'
+complete -c helix -n '__fish_seen_subcommand_from exec' -l yaml -d 'Emit YAML'
+complete -c helix -n '__fish_seen_subcommand_from watch' -l interval-ms -r -d 'Poll interval in milliseconds'
+complete -c helix -n '__fish_seen_subcommand_from watch' -l iterations -r -d 'Stop after this many runs'
+complete -c helix -n '__fish_seen_subcommand_from check' -l evaluate -d 'Collect runtime errors'
+complete -c helix -n '__fish_seen_subcommand_from step' -l steps -r -d 'Number of transitions'
+complete -c helix -n '__fish_seen_subcommand_from trace' -l limit -r -d 'Maximum transitions'

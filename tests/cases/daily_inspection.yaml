@@ -1,0 +1,4 @@
+# A short call with several navigable evaluation positions for CLI tracing.
+base: 20
+increase: [fn, [value], [add, value, 2]]
+answer: [increase, [mul, base, 2]]
