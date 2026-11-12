@@ -39,6 +39,14 @@ and process callback. Override execution for a fixture or compiled mutant with
 shared executable setting. The context captures `HELIX_TEST_TIMEOUT` once per run.
 Its process callback follows `subprocess.run` and supports isolated fault injection.
 
+Golden-test decisions live in `std:test.golden_plan`. Python supplies captured
+run output, saved expectations and ordinary-root replay observations; Helix
+decides determinism, exact text comparison and replay outcomes. Python retains
+independent state validation, process timeouts, crash detection and failure
+artifacts. A policy crash or malformed response fails the suite; there is no
+Python comparison fallback. The `harness` suite uses independent expected
+outcomes and injected process faults to check this self-hosting boundary.
+
 ## Testing contracts and known gaps
 
 All checks run through `./manage.py test`; no separate Python launchers are needed.

@@ -302,6 +302,7 @@ checked: {$call: [t.require_pass, {$ref: report}]}
 | `rerun(cases, report)` | Run source cases whose names failed in the report, preserving source order. Duplicate names select every matching source case; prefer unique names. |
 | `product(axes)` | Enumerate a finite Cartesian product in axis order, retaining duplicates. No axes yields `{$call: [[]]}`; an empty axis yields `[]`. |
 | `lists(alphabet, max_length)` | Enumerate every list of length zero through the nonnegative bound, in length then alphabet order. Negative bounds raise `range`. |
+| `golden_plan(observation)` | Decide golden-test failure precedence, blessing and replay from host-captured observations; return `{stage, bless, replay}`. |
 
 Use `{$call: [t.product, {$call: [list, {$ref: xs}, {$ref: ys}]}]}` for bounded pairs and `{$call: [t.lists, [-1, 0, 1], 3]}`
 for exhaustive short lists. Use `{$call: [t.suite, {$call: [t.tagged, {$ref: cases}, fast]}]}` to run a tag,
@@ -317,10 +318,23 @@ proves a report can produce the usual VM error and exit code 1.
 Only supplied samples are tested; these helpers do not prove a property. Work and
 immutable copying grow with the supplied cases and captured fixtures. Keep samples
 small and within runtime call/iteration limits. Generated list domains grow exponentially; generators do not bypass VM resource bounds. Pure tests cannot observe process
-crashes, timeouts or side effects. Discovery, file golden comparison, serialization
-fixpoints and crash detection remain in `./manage.py test` until the required
-file/process/parsing services exist. The same golden runner tests this module;
-there is no competing test entrypoint.
+crashes, timeouts or side effects. `./manage.py test` supplies process and file
+observations to `golden_plan`, which owns deterministic-output comparison, exact
+golden-text comparison and ordinary-root replay decisions. Python independently
+validates interpreter states and policy responses, runs replay and writes failure
+evidence. The same golden runner tests this module; there is no competing test
+entrypoint.
+
+`golden_plan` takes `run` and `repeated` maps containing `returncode`, `stdout`
+and `stderr`; `expected` is the saved text or null for a missing file. `bless`
+requests expectation replacement. `root` is ordinary-root YAML text, or null
+when replay is inapplicable (including function/machine inspection graphs).
+`replay` is null before replay, then `{returncode, root}` from its result.
+Stages are `determinism`, `golden`, `roundtrip`, or `passed`, in that precedence.
+The returned `replay` flag requests another observation; `passed` with that flag
+is provisional. Text comparisons preserve whitespace and Unicode exactly.
+Hosts must pass observations as literal data, supervise every process, and reject
+invalid policy responses instead of treating them as a passing test.
 
 
 ### Debugging and pure failed-run recovery

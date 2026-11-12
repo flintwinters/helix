@@ -82,7 +82,7 @@ File imports provide isolated namespaces, documented visibility and circular-imp
 
 ## 6. Daily tooling
 
-Completed: `run` and exit codes, REPL, canonical formatter, non-executing `check`, step/trace, saved-state inspection, content-based watch, JSON Schema/LSP, shell completion/help and `cargo install`. `std:test` supplies in-language assertions and semantic state comparison; file discovery and byte comparison remain host duties.
+Completed: `run` and exit codes, REPL, canonical formatter, non-executing `check`, step/trace, saved-state inspection, content-based watch, JSON Schema/LSP, shell completion/help and `cargo install`. `std:test` supplies in-language assertions, semantic state comparison and golden-test decisions over captured text; file discovery and process supervision remain host duties.
 
 Evidence: `daily_interactive`, `daily_inspection` and `tooling_source` golden
 cases accompany the `interactive`, `inspection` and `static` suites. The CLI
@@ -515,6 +515,7 @@ The working tree contains Rust type, class and callable-value work beyond the es
 - [ ] Test and task orchestration: express case discovery, golden comparison, round-trip checks, mutation generation and build/lint invocation in Helix once file, process, argument and parsing effects exist (section 3). Keep `./manage.py` as the obvious root entrypoint and bootstrap launcher; replace its orchestration behind that interface rather than create a competing workflow. Host-level crash checks must still detect a broken interpreter.
   - [x] Pure test policy in `std:test`: assertions, expected errors, per-case recovery, table/state fixtures, bounded properties, differential checks and serializable reports. `dogfood_testing` composes selection, failure reruns, fixture factories, shrinking and nested suites; `std_test_failure` proves a failed report becomes a structured VM error. Host filesystem/process orchestration remains pending.
   - [x] Robustness mutation policy in `std:fuzz.plan`: Helix selects ordered source-slice plans for line prefixes, line deletions and character prefixes. The production Python harness materializes one variant at a time and independently supervises interpreter failures. `std_fuzz` and harness parity contracts cover Unicode boundaries, duplicate ordering, the largest existing fixture and malformed generator results. Full host orchestration remains pending.
+  - [x] Golden-test decision policy in `std:test.golden_plan`: production tests use Helix to decide deterministic-output failures, exact expected-text comparison and ordinary-root replay outcomes. Python captures observations, enforces the policy response contract and independently rejects interpreter failures. Golden fixtures and harness fault injection check the policy and its host boundary. Discovery, process execution and build/lint orchestration remain host responsibilities.
 
 ### Migration bar
 
