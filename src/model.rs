@@ -138,22 +138,10 @@ pub(crate) enum Request {
     Try(NodeId),
     Finally(NodeId),
     Cleanup(Outcome),
-    Iterate {
-        site: NodeId,
-        name: String,
-        args: Vec<NodeId>,
-        values: Vec<Value>,
-        index: usize,
-        output: Vec<Value>,
-        state: Value,
-        count: usize,
-    },
-    Iterated {
-        iteration: Box<Request>,
-        item: Value,
-    },
-    UntilTest(Box<Request>),
-    UntilNext(Box<Request>),
+    Iterate(Iteration),
+    Iterated { iteration: Iteration, item: Value },
+    UntilTest(Iteration),
+    UntilNext(Iteration),
     FormValue {
         site: NodeId,
         name: String,
@@ -166,6 +154,19 @@ pub(crate) enum Request {
     Atomic(Atomic),
     PredicateEnd(Atomic),
     AdvanceChild,
+}
+
+/// Owned iteration progress; continuations cannot contain an unrelated request.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Iteration {
+    pub(crate) site: NodeId,
+    pub(crate) name: String,
+    pub(crate) args: Vec<NodeId>,
+    pub(crate) values: Vec<Value>,
+    pub(crate) index: usize,
+    pub(crate) output: Vec<Value>,
+    pub(crate) state: Value,
+    pub(crate) count: usize,
 }
 
 /// A pure host operation can request a predicate. Completed answers are part of its continuation.

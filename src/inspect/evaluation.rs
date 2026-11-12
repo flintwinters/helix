@@ -1,7 +1,7 @@
 //! Read-only projection of evaluator state and pending continuations.
 use crate::model::{
-    Actor, Atomic, Evaluator, Function, Graph, Mode, NodeId, Operation, Outcome, Request, Scope,
-    Value, string as s,
+    Actor, Atomic, Evaluator, Function, Graph, Iteration, Mode, NodeId, Operation, Outcome,
+    Request, Scope, Value, string as s,
 };
 use std::sync::Arc;
 
@@ -418,28 +418,7 @@ impl Request {
                 vec![("node", g.reference(*id))],
             ),
             Self::Cleanup(outcome) => object("cleanup", vec![("outcome", outcome_view(outcome))]),
-            Self::Iterate {
-                site,
-                name,
-                args,
-                values: vs,
-                index,
-                output,
-                state,
-                count,
-            } => object(
-                "iterate",
-                vec![
-                    ("site", g.reference(*site)),
-                    ("operation", s(name)),
-                    ("nodes", nodes(args)),
-                    ("values", values(vs)),
-                    ("index", number(*index)),
-                    ("output", values(output)),
-                    ("state", state.clone()),
-                    ("count", number(*count)),
-                ],
-            ),
+            Self::Iterate(iteration) => iteration.view(g),
             Self::Iterated { iteration, item } => object(
                 "iterated",
                 vec![("iteration", iteration.view(g)), ("item", item.clone())],
@@ -490,5 +469,26 @@ impl Request {
             ),
             Self::AdvanceChild => object("advance_child", Vec::new()),
         }
+    }
+}
+
+impl Iteration {
+    fn view(&self, graph: &Graph) -> Value {
+        object(
+            "iterate",
+            vec![
+                ("site", graph.reference(self.site)),
+                ("operation", s(&self.name)),
+                (
+                    "nodes",
+                    Value::Array(self.args.iter().map(|n| graph.reference(*n)).collect()),
+                ),
+                ("values", Value::Array(self.values.clone().into())),
+                ("index", Value::Integer(self.index as i64)),
+                ("output", Value::Array(self.output.clone().into())),
+                ("state", self.state.clone()),
+                ("count", Value::Integer(self.count as i64)),
+            ],
+        )
     }
 }

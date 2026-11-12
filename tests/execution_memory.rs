@@ -46,6 +46,7 @@ fn workload(iterations: usize, stepped: bool, retain: bool) -> (usize, usize) {
     let mut vm = ready.clone();
     let mut snapshots = Vec::new();
     let mut steps = 0;
+    let allocation_baseline = TOTAL.load(Ordering::Relaxed);
     let started = Instant::now();
     if stepped {
         while matches!(vm.status(), Status::Ready | Status::Running) {
@@ -60,6 +61,9 @@ fn workload(iterations: usize, stepped: bool, retain: bool) -> (usize, usize) {
         vm.run();
     }
     let elapsed = started.elapsed();
+    let allocated = TOTAL
+        .load(Ordering::Relaxed)
+        .saturating_sub(allocation_baseline);
     let live = LIVE.load(Ordering::Relaxed).saturating_sub(baseline);
     let peak = PEAK.load(Ordering::Relaxed).saturating_sub(baseline);
     assert_eq!(vm.status(), Status::Finished);
@@ -71,7 +75,7 @@ fn workload(iterations: usize, stepped: bool, retain: bool) -> (usize, usize) {
         assert_eq!(branch, vm);
     }
     println!(
-        "execution-profile: iterations={iterations} stepped={stepped} retained={retain} transitions={steps} live_bytes={live} peak_bytes={peak} seconds={:.4}",
+        "execution-profile: iterations={iterations} stepped={stepped} retained={retain} transitions={steps} live_bytes={live} peak_bytes={peak} allocated_bytes={allocated} seconds={:.4}",
         elapsed.as_secs_f64()
     );
     assert!(

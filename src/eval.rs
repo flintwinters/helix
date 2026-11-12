@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 mod lexical;
 mod forms;
+mod iteration;
 
 use crate::model::Limits;
 use crate::model::{Outcome, Vm};
@@ -414,34 +415,13 @@ impl Evaluator {
                 values.push(self.value());
                 self.form_values(site, name, args, values, index + 1)?;
             }
-            Request::Iterate { .. } => self.iterate(request)?,
-            Request::Iterated { iteration, item } => self.iterated(*iteration, item)?,
-            Request::UntilTest(iteration) => self.until_test(*iteration)?,
-            Request::UntilNext(iteration) => {
-                let value = self.value();
-                let Request::Iterate {
-                    site,
-                    name,
-                    args,
-                    values,
-                    index,
-                    output,
-                    count,
-                    ..
-                } = *iteration
-                else {
-                    unreachable!()
-                };
-                self.push(Request::Iterate {
-                    site,
-                    name,
-                    args,
-                    values,
-                    index,
-                    output,
-                    state: value,
-                    count: count + 1,
-                });
+            Request::Iterate(iteration) => self.iterate(iteration)?,
+            Request::Iterated { iteration, item } => self.iterated(iteration, item)?,
+            Request::UntilTest(iteration) => self.until_test(iteration)?,
+            Request::UntilNext(mut iteration) => {
+                iteration.state = self.value();
+                iteration.count += 1;
+                self.push(Request::Iterate(iteration));
             }
             Request::Refine(site, args, base) => {
                 let check = self.value();
@@ -631,113 +611,6 @@ impl Evaluator {
             }
         }
         self.collect(id, Some(actor), args, None, true);
-        Ok(())
-    }
-    fn iterate(&mut self, iteration: Request) -> Result<(), HelixError> {
-        let Request::Iterate {
-            site,
-            ref name,
-            ref args,
-            ref values,
-            index,
-            ref output,
-            ref state,
-            count,
-        } = iteration
-        else {
-            unreachable!()
-        };
-        if name == "until" {
-            if count >= self.limits.max_iterations {
-                return Err(self.err(
-                    site,
-                    "limit",
-                    format!(
-                        "`until` did not finish within {} steps",
-                        self.limits.max_iterations
-                    ),
-                ));
-            }
-            let callback = args[0];
-            let arg = state.clone();
-            self.push(Request::UntilTest(Box::new(iteration)));
-            self.push(Request::CallArgument(callback, vec![arg]));
-        } else if let Some(item) = values.get(index).cloned() {
-            let callback = args[0];
-            let arguments = if name == "fold" {
-                vec![state.clone(), item.clone()]
-            } else {
-                vec![item.clone()]
-            };
-            self.push(Request::Iterated {
-                iteration: Box::new(iteration),
-                item,
-            });
-            self.push(Request::CallArgument(callback, arguments));
-        } else {
-            self.finish(match name.as_str() {
-                "fold" => state.clone(),
-                "each" => Value::Null,
-                _ => Value::Array(output.clone().into()),
-            });
-        }
-        Ok(())
-    }
-    fn iterated(&mut self, iteration: Request, item: Value) -> Result<(), HelixError> {
-        let value = self.value();
-        let Request::Iterate {
-            site,
-            name,
-            args,
-            values,
-            index,
-            mut output,
-            mut state,
-            count,
-        } = iteration
-        else {
-            unreachable!()
-        };
-        match name.as_str() {
-            "map" => output.push(value),
-            "filter" => {
-                if self.truth(&value, args[0])? {
-                    output.push(item)
-                }
-            }
-            "fold" => state = value,
-            _ => {}
-        }
-        self.push(Request::Iterate {
-            site,
-            name,
-            args,
-            values,
-            index: index + 1,
-            output,
-            state,
-            count,
-        });
-        Ok(())
-    }
-    fn until_test(&mut self, iteration: Request) -> Result<(), HelixError> {
-        let verdict = self.value();
-        let Request::Iterate {
-            ref args,
-            ref state,
-            ..
-        } = iteration
-        else {
-            unreachable!()
-        };
-        if self.truth(&verdict, args[0])? {
-            self.finish(state.clone());
-        } else {
-            let callback = args[1];
-            let arg = state.clone();
-            self.push(Request::UntilNext(Box::new(iteration)));
-            self.push(Request::CallArgument(callback, vec![arg]));
-        }
         Ok(())
     }
     fn parameters_next(

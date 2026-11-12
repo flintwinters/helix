@@ -1,6 +1,6 @@
 //! Special forms choose argument order and schedule work on the shared request engine.
 use crate::builtins;
-use crate::model::{Evaluator, Function, HelixError, Kind, NodeId, Request, Value, Vm};
+use crate::model::{Evaluator, Function, HelixError, Iteration, Kind, NodeId, Request, Value, Vm};
 use std::sync::Arc;
 
 impl Evaluator {
@@ -196,7 +196,7 @@ impl Evaluator {
                         Value::Null,
                     ),
                 };
-                self.push(Request::Iterate {
+                self.push(Request::Iterate(Iteration {
                     site,
                     name,
                     args,
@@ -205,7 +205,7 @@ impl Evaluator {
                     output: Vec::new(),
                     state,
                     count: 0,
-                });
+                }));
             }
         }
         Ok(())
