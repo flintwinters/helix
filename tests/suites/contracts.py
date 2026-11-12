@@ -314,8 +314,9 @@ def scale(h):
 def execution(h):
     import os
     import signal
+    from manage import build_lock
     # Kill the whole Cargo/test process group on timeout, including a stuck test binary.
-    with subprocess.Popen(["cargo", "test", "--quiet", "--test", "execution", "--test", "execution_memory", "--", "--nocapture"],
+    with build_lock(), subprocess.Popen(["cargo", "test", "--quiet", "--test", "execution", "--test", "execution_memory", "--", "--nocapture"],
                           cwd=h.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                           text=True, start_new_session=True) as process:
         try:

@@ -229,8 +229,10 @@ class TestContext:
                             **details})
 
         def library():
-            result = subprocess.run(["cargo", "test", "--quiet", "--lib", "--test", "vm"], cwd=self.root, timeout=120,
-                                    capture_output=True, text=True)
+            from manage import build_lock
+            with build_lock():
+                result = subprocess.run(["cargo", "test", "--quiet", "--lib", "--test", "vm"], cwd=self.root, timeout=120,
+                                        capture_output=True, text=True)
             print(result.stdout, end="")
             print(result.stderr, end="", file=sys.stderr)
             return ["library: cargo test failed"] if result.returncode else []

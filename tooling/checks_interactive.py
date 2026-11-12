@@ -122,10 +122,12 @@ def verify_completions(ctx):
 
 
 def verify_install(ctx):
+    from manage import build_lock
     destination = ctx.root / 'runtime/interactive/install'
-    result = subprocess.run(['cargo', 'install', '--path', '.', '--locked', '--offline', '--debug',
-                             '--root', str(destination), '--force'], cwd=ctx.root,
-                            capture_output=True, text=True, timeout=180)
+    with build_lock():
+        result = subprocess.run(['cargo', 'install', '--path', '.', '--locked', '--offline', '--debug',
+                                 '--root', str(destination), '--force'], cwd=ctx.root,
+                                capture_output=True, text=True, timeout=180)
     assert result.returncode == 0, result.stderr
     binary = destination / 'bin' / ('helix.exe' if os.name == 'nt' else 'helix')
     result = subprocess.run([str(binary), 'run', str(ctx.root / 'tests/cases/daily_interactive.yaml')],
