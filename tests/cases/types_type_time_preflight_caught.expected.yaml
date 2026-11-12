@@ -1,0 +1,10 @@
+pending_effect:
+  id: 1
+  location:
+    path:
+      - a_read
+    source: "<root>"
+  operation: read_file
+  payload:
+    path: unused
+status: signaled

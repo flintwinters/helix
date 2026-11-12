@@ -227,14 +227,14 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Derive a type from another: add, drop or retype a field; make every field optional
   - [x] Build a type by iteration (`map`/`fold` over a list of field names)
   - [x] A constructor given a non-type argument fails with a `type` error blaming that argument
-- [ ] Reflection (`types_reflection`, `types_first_class` golden cases): read a type's fields, defaults and parents as data; ask `{$call: [is, {$ref: value}, {$ref: t}]}` and `{$call: [subtype, {$ref: a}, {$ref: b}]}`
-  - [ ] `{$call: [is, {$ref: value}, {$ref: t}]}`
+- [x] Reflection (`types_reflection`, `types_first_class`, `types_reflection_inverse` golden cases): read a type's fields, defaults and parents as data; ask `{$call: [is, {$ref: value}, {$ref: t}]}` and `{$call: [subtype, {$ref: a}, {$ref: b}]}`
+  - [x] `{$call: [is, {$ref: value}, {$ref: t}]}`
     - [x] For scalar and collection type names and `any`; an unknown name is a `type` error
     - [x] For every declared type, including classes: field schemas, explicitly fixed values and whole-record constraints (`types_class_membership`; defaults realization filled in are not pinned)
   - [x] Read a record type's fields, each field's type, and its defaults as plain lists and maps
   - [x] Read a class's parents and its still-open fields
   - [x] `{$call: [subtype, {$ref: a}, {$ref: b}]}`, with documented rules per type former
-  - [ ] A value built by reflection re-reads as the same type (reflection and declaration are inverse) — record-field reconstruction works, but `fields` omits class parents, fixed values, constraints and provenance; predicate functions do not restore from emitted YAML
+  - [x] A value built by reflection re-reads as the same type: `from_fields` for records; `std:types.redeclare(class, parents)` recovers a class from provenance, fixed values and constraints beyond its parents' (`types_reflection_inverse`; predicate functions are values within a run, but their emitted YAML is a non-restorable inspection graph)
 - [ ] Type-time evaluation (`types_type_time`, `types_type_time_effect`; `type_time` suite): a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
   - [x] Decided and documented: what marks type time (see Open questions)
   - [x] An effect attempted at type time is a structured error naming the effect and the node

@@ -1,0 +1,6 @@
+# Regions under `try`, `if` and functions are not hoisted: a caught type-time failure leaves the
+# earlier effect requestable, and an unchosen branch is never checked.
+"a_read": {"$call": ["effect", "read_file", {"path": "unused"}]}
+"bad": {"$call": ["expect", {"port": "http"}, {"$call": ["record", "port", {"$ref": "integer"}]}]}
+"caught": {"$call": ["try", {"$call": ["type_time", {"$ref": "bad"}]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}]}
+"unchosen": {"$call": ["if", false, {"$call": ["type_time", {"$ref": "bad"}]}, "skipped"]}

@@ -80,3 +80,57 @@
       - {"$call": ["record"]}
       - {"$call": ["keys", {"$ref": "specs"}]}
   - {"$ref": "map"}
+# Class declaration is recoverable from reflection plus the parent classes: provenance says which
+# fields and values the class itself declared, and constraints beyond the parents' are its own.
+"own_entries":
+  "$call":
+  - "fn"
+  - - "source"
+    - "provenance"
+    - "name"
+    - "which"
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "result"
+        - "key"
+      - "$call":
+        - "if"
+        - {"$call": ["eq", {"$call": ["get", {"$call": ["get", {"$ref": "provenance"}, {"$ref": "key"}]}, {"$ref": "which"}, ""]}, {"$ref": "name"}]}
+        - {"$call": ["set", {"$ref": "result"}, {"$ref": "key"}, {"$call": ["get", {"$ref": "source"}, {"$ref": "key"}]}]}
+        - {"$ref": "result"}
+    - {}
+    - {"$call": ["keys", {"$ref": "source"}]}
+"redeclare":
+  "$call":
+  - "fn"
+  - - "t"
+    - "parents"
+  - "$call":
+    - "let"
+    - "name": {"$call": ["get", {"$ref": "t"}, "name"]}
+    - "$call":
+      - "let"
+      - "declared":
+          "$call":
+          - "extend"
+          - {"$ref": "name"}
+          - {"$ref": "parents"}
+          - {"$call": ["from_fields", {"$call": ["own_entries", {"$call": ["get", {"$ref": "t"}, "fields"]}, {"$call": ["get", {"$ref": "t"}, "provenance"]}, {"$ref": "name"}, "type"]}]}
+          - {"$call": ["own_entries", {"$call": ["get", {"$ref": "t"}, "values"]}, {"$call": ["get", {"$ref": "t"}, "provenance"]}, {"$ref": "name"}, "value"]}
+        "inherited":
+          "$call":
+          - "fold"
+          - {"$call": ["fn", ["result", "parent"], {"$call": ["concat", {"$ref": "result"}, {"$call": ["get", {"$ref": "parent"}, "constraints", []]}]}]}
+          - []
+          - {"$ref": "parents"}
+      - "$call":
+        - "let"
+        - "constrained":
+            "$call":
+            - "fold"
+            - {"$call": ["fn", ["result", "check"], {"$call": ["constrain", {"$ref": "result"}, {"$ref": "check"}]}]}
+            - {"$ref": "declared"}
+            - {"$call": ["filter", {"$call": ["fn", ["check"], {"$call": ["not", {"$call": ["has", {"$ref": "inherited"}, {"$ref": "check"}]}]}]}, {"$call": ["get", {"$ref": "t"}, "constraints", []]}]}
+        - {"$call": ["if", {"$call": ["get", {"$ref": "t"}, "concrete"]}, {"$call": ["realize", {"$ref": "constrained"}]}, {"$ref": "constrained"}]}

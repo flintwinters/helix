@@ -13,6 +13,7 @@ mod expression;
 mod forms;
 mod iteration;
 mod lexical;
+mod preflight;
 
 use crate::model::Limits;
 use crate::model::{Outcome, Vm};
@@ -26,7 +27,7 @@ impl Evaluator {
         roots: Option<&[PathBuf]>,
     ) -> Result<Self, HelixError> {
         let modules = link::link(&mut graph, main, roots)?;
-        Ok(Self::start(
+        let mut evaluator = Self::start(
             Arc::new(Program {
                 code: graph.code_views(),
                 graph,
@@ -34,7 +35,10 @@ impl Evaluator {
             }),
             Vec::new(),
             Request::Eval(ROOT),
-        ))
+        );
+        let regions = evaluator.preflight_regions();
+        evaluator.requests.extend(regions.into_iter().rev().map(Request::Eval));
+        Ok(evaluator)
     }
     fn start(program: Arc<Program>, environment: Vec<Scope>, request: Request) -> Self {
         let limits = Limits::default();

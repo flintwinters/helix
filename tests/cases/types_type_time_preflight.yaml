@@ -1,0 +1,7 @@
+# An unconditional type-time region is evaluated before the first run-time step: the failing region
+# stops the run although `a_read` sorts first and would otherwise have requested its effect.
+"a_read": {"$call": ["effect", "read_file", {"path": "unused"}]}
+"z_config":
+  "$call":
+  - "type_time"
+  - {"$call": ["expect", {"port": "http"}, {"$call": ["record", "port", {"$ref": "integer"}]}]}

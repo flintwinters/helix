@@ -1,0 +1,19 @@
+error:
+  column: 26
+  data:
+    violations:
+      - at: /port
+        message: "expected integer, got string"
+  kind: type
+  line: 7
+  message: "1 type violation: expected integer, got string"
+  path: "/z_config/$call/1/$call/1"
+  phase: type
+  reference:
+    - z_config
+    - "$call"
+    - 1
+    - "$call"
+    - 1
+phase: type
+status: error

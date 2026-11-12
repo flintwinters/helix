@@ -1,0 +1,30 @@
+# Reflection and declaration are inverse: a class is recovered from its reflected parts plus its
+# parent classes, with provenance, fixed values and constraints, so `eq` holds with the original.
+"t": {"$call": ["import", "std:types"]}
+"ordered":
+  "$call":
+  - "fn"
+  - - "v"
+  - {"$call": ["le", {"$call": ["get", {"$ref": "v"}, "min"]}, {"$call": ["get", {"$ref": "v"}, "max"]}]}
+"base":
+  "$call":
+  - "constrain"
+  - "$call":
+    - "class"
+    - "base"
+    - {"$call": ["record", "min", {"$ref": "integer"}, "max", {"$ref": "integer"}, "role", {"$call": ["default", {"$ref": "string"}, "web"]}]}
+    - {"min": 1}
+  - {"$ref": "ordered"}
+"mid":
+  "$call":
+  - "extend"
+  - "mid"
+  - {"$call": ["list", {"$ref": "base"}]}
+  - {"$call": ["record", "zone", {"$call": ["optional", {"$ref": "string"}]}]}
+  - {"max": 5}
+"leaf": {"$call": ["inherit", "leaf", {"$call": ["list", {"$ref": "mid"}]}, {"zone": "a"}]}
+"base_again": {"$call": ["eq", {"$ref": "base"}, {"$call": ["t.redeclare", {"$ref": "base"}, []]}]}
+"mid_again": {"$call": ["eq", {"$ref": "mid"}, {"$call": ["t.redeclare", {"$ref": "mid"}, {"$call": ["list", {"$ref": "base"}]}]}]}
+"leaf_again": {"$call": ["eq", {"$ref": "leaf"}, {"$call": ["t.redeclare", {"$ref": "leaf"}, {"$call": ["list", {"$ref": "mid"}]}]}]}
+"wrong_parent": {"$call": ["try", {"$call": ["t.redeclare", {"$ref": "mid"}, []]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}]}
+"own_constraints_kept": {"$call": ["len", {"$call": ["get", {"$call": ["t.redeclare", {"$ref": "base"}, []]}, "constraints"]}]}

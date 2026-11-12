@@ -33,7 +33,7 @@ objects:
         - from_fields
       source: "std:types"
     program:
-      ref: object4
+      ref: object6
   object1:
     bindings: {}
     code:
@@ -70,7 +70,7 @@ objects:
         - optional_field
       source: "std:types"
     program:
-      ref: object4
+      ref: object6
   object2:
     bindings:
       optional_field:
@@ -117,8 +117,179 @@ objects:
         - optional_fields
       source: "std:types"
     program:
-      ref: object4
+      ref: object6
   object3:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - source
+          - provenance
+          - name
+          - which
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - key
+                - "$call":
+                    - if
+                    - "$call":
+                        - eq
+                        - "$call":
+                            - get
+                            - "$call":
+                                - get
+                                - "$ref": provenance
+                                - "$ref": key
+                            - "$ref": which
+                            - ""
+                        - "$ref": name
+                    - "$call":
+                        - set
+                        - "$ref": result
+                        - "$ref": key
+                        - "$call":
+                            - get
+                            - "$ref": source
+                            - "$ref": key
+                    - "$ref": result
+            - {}
+            - "$call":
+                - keys
+                - "$ref": source
+    environment: []
+    kind: function
+    location:
+      path:
+        - own_entries
+      source: "std:types"
+    program:
+      ref: object6
+  object4:
+    bindings:
+      from_fields:
+        code:
+          path:
+            - from_fields
+          source: "std:types"
+      own_entries:
+        code:
+          path:
+            - own_entries
+          source: "std:types"
+    code:
+      "$call":
+        - fn
+        - - t
+          - parents
+        - "$call":
+            - let
+            - name:
+                "$call":
+                  - get
+                  - "$ref": t
+                  - name
+            - "$call":
+                - let
+                - declared:
+                    "$call":
+                      - extend
+                      - "$ref": name
+                      - "$ref": parents
+                      - "$call":
+                          - from_fields
+                          - "$call":
+                              - own_entries
+                              - "$call":
+                                  - get
+                                  - "$ref": t
+                                  - fields
+                              - "$call":
+                                  - get
+                                  - "$ref": t
+                                  - provenance
+                              - "$ref": name
+                              - type
+                      - "$call":
+                          - own_entries
+                          - "$call":
+                              - get
+                              - "$ref": t
+                              - values
+                          - "$call":
+                              - get
+                              - "$ref": t
+                              - provenance
+                          - "$ref": name
+                          - value
+                  inherited:
+                    "$call":
+                      - fold
+                      - "$call":
+                          - fn
+                          - - result
+                            - parent
+                          - "$call":
+                              - concat
+                              - "$ref": result
+                              - "$call":
+                                  - get
+                                  - "$ref": parent
+                                  - constraints
+                                  - []
+                      - []
+                      - "$ref": parents
+                - "$call":
+                    - let
+                    - constrained:
+                        "$call":
+                          - fold
+                          - "$call":
+                              - fn
+                              - - result
+                                - check
+                              - "$call":
+                                  - constrain
+                                  - "$ref": result
+                                  - "$ref": check
+                          - "$ref": declared
+                          - "$call":
+                              - filter
+                              - "$call":
+                                  - fn
+                                  - - check
+                                  - "$call":
+                                      - not
+                                      - "$call":
+                                          - has
+                                          - "$ref": inherited
+                                          - "$ref": check
+                              - "$call":
+                                  - get
+                                  - "$ref": t
+                                  - constraints
+                                  - []
+                    - "$call":
+                        - if
+                        - "$call":
+                            - get
+                            - "$ref": t
+                            - concrete
+                        - "$call":
+                            - realize
+                            - "$ref": constrained
+                        - "$ref": constrained
+    environment: []
+    kind: function
+    location:
+      path:
+        - redeclare
+      source: "std:types"
+    program:
+      ref: object6
+  object5:
     bindings: {}
     code:
       "$call":
@@ -166,8 +337,8 @@ objects:
         - without_field
       source: "std:types"
     program:
-      ref: object4
-  object4:
+      ref: object6
+  object6:
     kind: program
     sources:
       - code:
@@ -421,6 +592,147 @@ objects:
                           - keys
                           - "$ref": specs
               - "$ref": map
+          own_entries:
+            "$call":
+              - fn
+              - - source
+                - provenance
+                - name
+                - which
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - result
+                        - key
+                      - "$call":
+                          - if
+                          - "$call":
+                              - eq
+                              - "$call":
+                                  - get
+                                  - "$call":
+                                      - get
+                                      - "$ref": provenance
+                                      - "$ref": key
+                                  - "$ref": which
+                                  - ""
+                              - "$ref": name
+                          - "$call":
+                              - set
+                              - "$ref": result
+                              - "$ref": key
+                              - "$call":
+                                  - get
+                                  - "$ref": source
+                                  - "$ref": key
+                          - "$ref": result
+                  - {}
+                  - "$call":
+                      - keys
+                      - "$ref": source
+          redeclare:
+            "$call":
+              - fn
+              - - t
+                - parents
+              - "$call":
+                  - let
+                  - name:
+                      "$call":
+                        - get
+                        - "$ref": t
+                        - name
+                  - "$call":
+                      - let
+                      - declared:
+                          "$call":
+                            - extend
+                            - "$ref": name
+                            - "$ref": parents
+                            - "$call":
+                                - from_fields
+                                - "$call":
+                                    - own_entries
+                                    - "$call":
+                                        - get
+                                        - "$ref": t
+                                        - fields
+                                    - "$call":
+                                        - get
+                                        - "$ref": t
+                                        - provenance
+                                    - "$ref": name
+                                    - type
+                            - "$call":
+                                - own_entries
+                                - "$call":
+                                    - get
+                                    - "$ref": t
+                                    - values
+                                - "$call":
+                                    - get
+                                    - "$ref": t
+                                    - provenance
+                                - "$ref": name
+                                - value
+                        inherited:
+                          "$call":
+                            - fold
+                            - "$call":
+                                - fn
+                                - - result
+                                  - parent
+                                - "$call":
+                                    - concat
+                                    - "$ref": result
+                                    - "$call":
+                                        - get
+                                        - "$ref": parent
+                                        - constraints
+                                        - []
+                            - []
+                            - "$ref": parents
+                      - "$call":
+                          - let
+                          - constrained:
+                              "$call":
+                                - fold
+                                - "$call":
+                                    - fn
+                                    - - result
+                                      - check
+                                    - "$call":
+                                        - constrain
+                                        - "$ref": result
+                                        - "$ref": check
+                                - "$ref": declared
+                                - "$call":
+                                    - filter
+                                    - "$call":
+                                        - fn
+                                        - - check
+                                        - "$call":
+                                            - not
+                                            - "$call":
+                                                - has
+                                                - "$ref": inherited
+                                                - "$ref": check
+                                    - "$call":
+                                        - get
+                                        - "$ref": t
+                                        - constraints
+                                        - []
+                          - "$call":
+                              - if
+                              - "$call":
+                                  - get
+                                  - "$ref": t
+                                  - concrete
+                              - "$call":
+                                  - realize
+                                  - "$ref": constrained
+                              - "$ref": constrained
           without_field:
             "$call":
               - fn
@@ -566,8 +878,12 @@ root:
       ref: object1
     optional_fields:
       ref: object2
-    without_field:
+    own_entries:
       ref: object3
+    redeclare:
+      ref: object4
+    without_field:
+      ref: object5
   via_function:
     fields:
       x:
