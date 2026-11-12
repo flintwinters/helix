@@ -1,0 +1,536 @@
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - t
+        - "$call":
+            - fields
+            - "$ref": t
+    environment: []
+    kind: function
+    location:
+      path:
+        - fields_of
+      source: "<root>"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          as_element_type:
+            "$call":
+              - violations
+              - - hostname: a
+                - hostname: 2
+              - "$call":
+                  - list_of
+                  - "$ref": host
+          deep:
+            "$call":
+              - inherit
+              - deep
+              - "$call":
+                  - list
+                  - "$ref": level4
+              - e: 5
+          deep_fields:
+            "$call":
+              - fields
+              - "$ref": deep
+          deep_missing_leaf:
+            "$call":
+              - try
+              - "$call":
+                  - inherit
+                  - no_leaf
+                  - "$call":
+                      - list
+                      - "$ref": level4
+                  - {}
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - data
+          deep_parents:
+            "$call":
+              - parents
+              - "$ref": deep
+          deep_source:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - k
+                  - "$call":
+                      - get
+                      - "$call":
+                          - get
+                          - "$call":
+                              - get
+                              - "$ref": deep
+                              - provenance
+                          - "$ref": k
+                      - type
+              - "$call":
+                  - keys
+                  - "$ref": deep_fields
+          deep_values:
+            "$call":
+              - get
+              - "$ref": deep
+              - values
+          fields_of:
+            "$call":
+              - fn
+              - - t
+              - "$call":
+                  - fields
+                  - "$ref": t
+          host:
+            "$call":
+              - class
+              - host
+              - "$call":
+                  - record
+                  - hostname
+                  - "$ref": string
+          host_then_sized:
+            "$call":
+              - inherit
+              - node
+              - "$call":
+                  - list
+                  - "$ref": host
+                  - "$ref": sized
+              - hostname: n1
+          level0:
+            "$call":
+              - class
+              - level0
+              - "$call":
+                  - record
+                  - a
+                  - "$ref": integer
+              - a: 1
+          level1:
+            "$call":
+              - extend
+              - level1
+              - "$call":
+                  - list
+                  - "$ref": level0
+              - "$call":
+                  - record
+                  - b
+                  - "$ref": integer
+              - b: 2
+          level2:
+            "$call":
+              - extend
+              - level2
+              - "$call":
+                  - list
+                  - "$ref": level1
+              - "$call":
+                  - record
+                  - c
+                  - "$ref": integer
+              - c: 3
+          level3:
+            "$call":
+              - extend
+              - level3
+              - "$call":
+                  - list
+                  - "$ref": level2
+              - "$call":
+                  - record
+                  - d
+                  - "$ref": integer
+              - d: 4
+          level4:
+            "$call":
+              - extend
+              - level4
+              - "$call":
+                  - list
+                  - "$ref": level3
+              - "$call":
+                  - record
+                  - e
+                  - "$ref": integer
+              - {}
+          member:
+            "$call":
+              - is
+              - hostname: n1
+              - "$ref": host
+          non_member:
+            "$call":
+              - is
+              - hostname: 1
+              - "$ref": host
+          order_independent:
+            fields:
+              "$call":
+                - eq
+                - "$call":
+                    - fields
+                    - "$ref": host_then_sized
+                - "$call":
+                    - fields
+                    - "$ref": sized_then_host
+            provenance:
+              "$call":
+                - eq
+                - "$call":
+                    - get
+                    - "$ref": host_then_sized
+                    - provenance
+                - "$call":
+                    - get
+                    - "$ref": sized_then_host
+                    - provenance
+            values:
+              "$call":
+                - eq
+                - "$call":
+                    - get
+                    - "$ref": host_then_sized
+                    - values
+                - "$call":
+                    - get
+                    - "$ref": sized_then_host
+                    - values
+          passed_class:
+            "$call":
+              - fields_of
+              - "$ref": sized
+          registry:
+            first:
+              "$ref": host
+            second:
+              "$ref": sized
+          registry_names:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - k
+                  - "$call":
+                      - get
+                      - "$call":
+                          - get
+                          - "$ref": registry
+                          - "$ref": k
+                      - name
+              - "$call":
+                  - keys
+                  - "$ref": registry
+          sized:
+            "$call":
+              - class
+              - sized
+              - "$call":
+                  - record
+                  - cpus
+                  - "$ref": integer
+              - cpus: 2
+          sized_then_host:
+            "$call":
+              - inherit
+              - node
+              - "$call":
+                  - list
+                  - "$ref": sized
+                  - "$ref": host
+              - hostname: n1
+        source: "<root>"
+root:
+  as_element_type:
+    - at: /1/hostname
+      message: "expected string, got integer"
+  deep:
+    concrete: true
+    fields:
+      a: integer
+      b: integer
+      c: integer
+      d: integer
+      e: integer
+    name: deep
+    parents:
+      - level4
+    provenance:
+      a:
+        type: level0
+        value: level0
+      b:
+        type: level1
+        value: level1
+      c:
+        type: level2
+        value: level2
+      d:
+        type: level3
+        value: level3
+      e:
+        type: level4
+        value: deep
+    type: class
+    values:
+      a: 1
+      b: 2
+      c: 3
+      d: 4
+      e: 5
+  deep_fields:
+    a: integer
+    b: integer
+    c: integer
+    d: integer
+    e: integer
+  deep_missing_leaf:
+    missing:
+      - field: e
+        required_by: level4
+  deep_parents:
+    - level4
+  deep_source:
+    - level0
+    - level1
+    - level2
+    - level3
+    - level4
+  deep_values:
+    a: 1
+    b: 2
+    c: 3
+    d: 4
+    e: 5
+  fields_of:
+    ref: object0
+  host:
+    concrete: false
+    fields:
+      hostname: string
+    name: host
+    parents: []
+    provenance:
+      hostname:
+        type: host
+    type: class
+    values: {}
+  host_then_sized:
+    concrete: true
+    fields:
+      cpus: integer
+      hostname: string
+    name: node
+    parents:
+      - host
+      - sized
+    provenance:
+      cpus:
+        type: sized
+        value: sized
+      hostname:
+        type: host
+        value: node
+    type: class
+    values:
+      cpus: 2
+      hostname: n1
+  level0:
+    concrete: false
+    fields:
+      a: integer
+    name: level0
+    parents: []
+    provenance:
+      a:
+        type: level0
+        value: level0
+    type: class
+    values:
+      a: 1
+  level1:
+    concrete: false
+    fields:
+      a: integer
+      b: integer
+    name: level1
+    parents:
+      - level0
+    provenance:
+      a:
+        type: level0
+        value: level0
+      b:
+        type: level1
+        value: level1
+    type: class
+    values:
+      a: 1
+      b: 2
+  level2:
+    concrete: false
+    fields:
+      a: integer
+      b: integer
+      c: integer
+    name: level2
+    parents:
+      - level1
+    provenance:
+      a:
+        type: level0
+        value: level0
+      b:
+        type: level1
+        value: level1
+      c:
+        type: level2
+        value: level2
+    type: class
+    values:
+      a: 1
+      b: 2
+      c: 3
+  level3:
+    concrete: false
+    fields:
+      a: integer
+      b: integer
+      c: integer
+      d: integer
+    name: level3
+    parents:
+      - level2
+    provenance:
+      a:
+        type: level0
+        value: level0
+      b:
+        type: level1
+        value: level1
+      c:
+        type: level2
+        value: level2
+      d:
+        type: level3
+        value: level3
+    type: class
+    values:
+      a: 1
+      b: 2
+      c: 3
+      d: 4
+  level4:
+    concrete: false
+    fields:
+      a: integer
+      b: integer
+      c: integer
+      d: integer
+      e: integer
+    name: level4
+    parents:
+      - level3
+    provenance:
+      a:
+        type: level0
+        value: level0
+      b:
+        type: level1
+        value: level1
+      c:
+        type: level2
+        value: level2
+      d:
+        type: level3
+        value: level3
+      e:
+        type: level4
+    type: class
+    values:
+      a: 1
+      b: 2
+      c: 3
+      d: 4
+  member: true
+  non_member: false
+  order_independent:
+    fields: true
+    provenance: true
+    values: true
+  passed_class:
+    cpus: integer
+  registry:
+    first:
+      concrete: false
+      fields:
+        hostname: string
+      name: host
+      parents: []
+      provenance:
+        hostname:
+          type: host
+      type: class
+      values: {}
+    second:
+      concrete: false
+      fields:
+        cpus: integer
+      name: sized
+      parents: []
+      provenance:
+        cpus:
+          type: sized
+          value: sized
+      type: class
+      values:
+        cpus: 2
+  registry_names:
+    - host
+    - sized
+  sized:
+    concrete: false
+    fields:
+      cpus: integer
+    name: sized
+    parents: []
+    provenance:
+      cpus:
+        type: sized
+        value: sized
+    type: class
+    values:
+      cpus: 2
+  sized_then_host:
+    concrete: true
+    fields:
+      cpus: integer
+      hostname: string
+    name: node
+    parents:
+      - sized
+      - host
+    provenance:
+      cpus:
+        type: sized
+        value: sized
+      hostname:
+        type: host
+        value: node
+    type: class
+    values:
+      cpus: 2
+      hostname: n1
+status: finished

@@ -322,7 +322,7 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
   - [x] Single parent
   - [x] Several parents with disjoint fields
   - [x] Several parents sharing a field they agree on (including diamonds: one ancestor reached twice merges once; `class_conflicts`, `class_constraints`, `type_algebra`)
-  - [ ] Classes inheriting from classes, to any depth
+  - [x] Classes inheriting from classes, to any depth (`class_inheritance_depth`: five-level chain; flattened fields, values and per-field provenance; resource bounds still apply)
   - [ ] The result is a plain flattened type: emitted, it reads as if written out by hand
   - [x] Constraints from every parent all hold on the realized result (`class_constraints`; abstract composition defers whole-record checks until realization)
 - [ ] Documented, deterministic merge and override rules (which parent wins, what counts as a conflict, how lists and maps combine)
@@ -330,7 +330,7 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
   - [x] Field types from two parents: when they combine and when they conflict (`class_conflicts`; declarations must agree or the child must explicitly narrow every parent)
   - [x] Defaults: a child's explicit value overrides a parent default; two differing parent defaults are a conflict (`class_defaults` covers inheritance, override, conflict and explicit declaration resolution)
   - [x] Lists and maps: one stated rule each (replace, append, or merge by key), with an explicit way to ask for another (`class_collection_overrides`: whole-value replacement, conflicts, empty overrides, explicit `concat` and `std:map.merge`; `LANGUAGE.md#classes-machines-and-drift`)
-  - [ ] Parent order never changes the result
+  - [x] Parent order never changes the result (`class_inheritance_depth`: fields, values and provenance equal under reversed parent lists)
   - [ ] The rules are written in `LANGUAGE.md`, with a golden case per rule
 - [ ] Conflicts between parents are type-time errors that name both sources, never silent last-writer-wins
   - [ ] The error gives the field and the path and line of each disagreeing declaration
