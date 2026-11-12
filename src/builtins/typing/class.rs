@@ -29,6 +29,13 @@ struct Slot {
     value: Option<(Yaml, String)>,
 }
 
+/// Argument positions of the declared fields and fixed values, for blaming the right one.
+#[derive(Clone, Copy)]
+struct Where {
+    fields: usize,
+    values: usize,
+}
+
 struct Class {
     name: String,
     parents: Vec<String>,
@@ -40,11 +47,11 @@ pub(super) fn apply(actor: &str, args: &[Yaml], pred: &mut Pred) -> Result<Yaml,
     match actor {
         "class" => {
             let values = if args.len() > 2 { hash_arg(args, 2)? } else { &Hash::new() };
-            Ok(extend(name_arg(args, 0)?, &[], fields_arg(args, 1)?, values, pred)?.to_yaml())
+            Ok(extend(name_arg(args, 0)?, &[], fields_arg(args, 1)?, values, Where { fields: 1, values: 2 }, pred)?.to_yaml())
         }
-        "extend" => Ok(extend(name_arg(args, 0)?, &parents_arg(args, 1)?, fields_arg(args, 2)?, hash_arg(args, 3)?, pred)?.to_yaml()),
+        "extend" => Ok(extend(name_arg(args, 0)?, &parents_arg(args, 1)?, fields_arg(args, 2)?, hash_arg(args, 3)?, Where { fields: 2, values: 3 }, pred)?.to_yaml()),
         "inherit" => {
-            let class = extend(name_arg(args, 0)?, &parents_arg(args, 1)?, &Hash::new(), hash_arg(args, 2)?, pred)?;
+            let class = extend(name_arg(args, 0)?, &parents_arg(args, 1)?, &Hash::new(), hash_arg(args, 2)?, Where { fields: 1, values: 2 }, pred)?;
             Ok(realize(class, 0, pred)?.to_yaml())
         }
         "realize" => Ok(realize(Class::from_yaml(&args[0], 0)?, 0, pred)?.to_yaml()),
@@ -152,7 +159,7 @@ fn conflict(field: &str, first: &str, second: &str, what: &str, resolver: &str) 
 }
 
 /// Merge `parents` with this class's own `fields` and `values` (arguments 2 and 3 of `extend`).
-fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, pred: &mut Pred) -> Result<Class, Fault> {
+fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where, pred: &mut Pred) -> Result<Class, Fault> {
     let mut order: Vec<&str> = Vec::new();
     for slot in parents.iter().flat_map(|p| &p.slots) {
         if !order.contains(&slot.name.as_str()) {
@@ -167,7 +174,7 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, pred: &mu
         let own_value = values.get(&s(&field));
         let (spec, declared_by) = match own_spec {
             Some(spec) => {
-                narrow(&field, spec, &inherited, name, pred)?;
+                narrow(&field, spec, &inherited, name, at.fields, pred)?;
                 (spec.clone(), name.to_string())
             }
             None => match inherited.iter().find(|other| !equal(&other.spec, &inherited[0].spec)) {
@@ -189,7 +196,7 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, pred: &mu
     }
     if let Some(stray) = values.keys().find(|k| !slots.iter().any(|slot| s(&slot.name) == **k)) {
         let Yaml::String(stray) = stray else { unreachable!("value names are strings") };
-        return Err(Fault::at(3, "type", format!("`{name}` sets `{stray}`, which no parent or field declares")));
+        return Err(Fault::at(at.values, "type", format!("`{name}` sets `{stray}`, which no parent or field declares")));
     }
     let class = Class { name: name.to_string(), parents: parents.iter().map(|p| p.name.clone()).collect(), slots, concrete: false };
     validate(&class, pred)?;
@@ -197,14 +204,14 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, pred: &mu
 }
 
 /// A redeclared field must fit every inherited declaration (be a subtype, and no less required).
-fn narrow(field: &str, spec: &Yaml, inherited: &[&Slot], name: &str, pred: &mut Pred) -> Result<(), Fault> {
-    let own = Field::parse(spec).map_err(|why| Fault::at(2, "type", why))?;
+fn narrow(field: &str, spec: &Yaml, inherited: &[&Slot], name: &str, arg: usize, pred: &mut Pred) -> Result<(), Fault> {
+    let own = Field::parse(spec).map_err(|why| Fault::at(arg, "type", why))?;
     for slot in inherited {
         let theirs = Field::parse(&slot.spec).map_err(|why| Fault::at(1, "type", why))?;
         if !subtype(&own.ty, &theirs.ty, pred) || (!own.required && theirs.required) {
             let message = format!("`{name}` redeclares field `{field}` in a way that does not fit the declaration from `{}`", slot.declared_by);
             let data = mapping([("field", s(field)), ("sources", Yaml::Array(vec![s(&slot.declared_by), s(name)]))]);
-            return Err(Fault { kind: "conflict".into(), message, arg: Some(2), data: Some(data) });
+            return Err(Fault { kind: "conflict".into(), message, arg: Some(arg), data: Some(data) });
         }
     }
     Ok(())

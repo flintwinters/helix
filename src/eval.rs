@@ -220,7 +220,7 @@ impl Evaluator {
 
     /// A builtin `Fault` as an error blamed on the offending argument node, or the whole call.
     fn from_fault(&self, site: NodeId, args: &[NodeId], fault: Fault) -> HelixError {
-        HelixError { data: fault.data, ..self.err(fault.arg.map_or(site, |i| args[i]), fault.kind, fault.message) }
+        HelixError { data: fault.data, ..self.err(fault.arg.and_then(|i| args.get(i).copied()).unwrap_or(site), fault.kind, fault.message) }
     }
 
     /// Run a refinement's predicate source on `value`. The source arrives as data, so it is grafted

@@ -1,6 +1,7 @@
 # Helix
 
 Helix is an experimental runtime in which readable YAML is both program source and persisted VM state. Programs are object graphs, vector forms such as `[add, x, 1]` are executable expressions (actor first), and completed or suspended execution serializes back to YAML.
+Outputs and syntax should be agent-first and agent-friendly, and all APIs and tooling should be discoverable.
 
 The previous C++ implementation lives in `flintwinters/helixcpp`.
 
