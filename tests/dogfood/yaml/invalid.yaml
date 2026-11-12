@@ -1,0 +1,59 @@
+# Rejected inputs must disagree with neither valid() nor parse(); parse errors are catchable.
+t: [import, std:test]
+y: [import, std:yaml]
+rows:
+  - {name: empty, input: ''}
+  - {name: whitespace_only, input: " \n\t\n"}
+  - {name: comments_only, input: "# one\n# two\n"}
+  - {name: unclosed_sequence, input: '[1, 2'}
+  - {name: unclosed_map, input: '{a: 1'}
+  - {name: mismatched_delimiter, input: '[1, 2}'}
+  - {name: unexpected_closer, input: ']'}
+  - {name: missing_flow_comma, input: '[{}, {} {}]'}
+  - {name: missing_map_comma, input: '{a: 1 b: 2}'}
+  - {name: unclosed_double_quote, input: '"unfinished'}
+  - {name: unclosed_single_quote, input: "'unfinished"}
+  - {name: invalid_escape, input: '"\q"'}
+  - {name: short_unicode_escape, input: '"\u123"'}
+  - {name: invalid_hex_escape, input: '"\xGG"'}
+  - {name: invalid_unicode_codepoint, input: '"\U00110000"'}
+  - {name: surrogate_codepoint, input: '"\uD800"'}
+  - {name: literal_nul, input: "a\0b"}
+  - {name: literal_control, input: "a\u0001b"}
+  - {name: tab_indentation, input: "a:\n\tb: 1\n"}
+  - {name: bad_indentation, input: "a:\n  b: 1\n c: 2\n"}
+  - {name: duplicate_block_key, input: "a: 1\na: 2\n"}
+  - {name: duplicate_flow_key, input: '{a: 1, a: 2}'}
+  - {name: duplicate_quoted_key, input: '{a: 1, "a": 2}'}
+  - {name: duplicate_numeric_key, input: '{1: a, "1": b}'}
+  - {name: duplicate_nested_key, input: '{outer: {a: 1, a: 2}}'}
+  - {name: sequence_key, input: "? [a, b]\n: 1"}
+  - {name: map_key, input: "? {a: b}\n: 1"}
+  - {name: undefined_alias, input: '*missing'}
+  - {name: scalar_alias, input: "a: &a 1\nb: *a\n"}
+  - {name: recursive_alias, input: '&a [*a]'}
+  - {name: merge_alias, input: "a: &a {x: 1}\nb: {<<: *a}\n"}
+  - {name: second_document, input: "1\n---\n2\n"}
+  - {name: empty_second_document, input: "1\n---\n"}
+  - {name: empty_first_document, input: "---\n---\n1\n"}
+  - {name: malformed_second_document, input: "1\n---\n[\n"}
+  - {name: text_after_end, input: "1\n...\ntrailing\n"}
+  - {name: directive_without_start, input: "%YAML 1.2\na: 1\n"}
+  - {name: invalid_block_indent, input: "|0\n  text\n"}
+  - {name: explicit_string_tag, input: '!!str true'}
+  - {name: explicit_integer_tag, input: '!!int "42"'}
+  - {name: sequence_tag, input: '!!seq [1, 2]'}
+  - {name: map_tag, input: '!!map {a: 1}'}
+  - {name: custom_tag, input: '!application value'}
+  - {name: verbatim_tag, input: '!<tag:example.org,2026:thing> value'}
+  - {name: tag_directive, input: "%TAG !e! tag:example.org,2026:\n---\n!e!thing value"}
+  - {name: tagged_key, input: '{!!str name: value}'}
+  - {name: implicit_multiline_key, input: "\"multi\n  line\": value"}
+  - {name: implicit_multiline_key_closing_line, input: "\"multi\n\": value"}
+  - {name: reserved_indicator, input: '@invalid'}
+report:
+  - t.table
+  - rows
+  - - fn
+    - [source]
+    - [finally, [t.throws, [fn, [], [y.parse, source]], "parse"], [t.equal, [y.valid, source], false]]

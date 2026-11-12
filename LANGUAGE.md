@@ -293,7 +293,10 @@ Import `std:yaml` for `parse(source)`, `dump(value)`, `valid(source)`,
 primitives are `yaml_parse` and `yaml_dump`. Parsing reads data only: symbols,
 expression-shaped lists and imports are never executed. It accepts exactly one
 nonempty document using Helix's scalar inference, string map keys, duplicate-key
-checks and syntax resource limits. Aliases and container keys are unsupported.
+checks and syntax resource limits. An initial UTF-8 BOM is accepted. Literal
+non-printable source characters are rejected; escaped character values remain
+valid and serialize with escapes. Aliases, explicit tags and container keys
+are unsupported. Tags are rejected rather than silently discarding their semantics.
 Malformed input raises `parse`; its message includes the location within the
 input text, while the error span identifies the Helix call argument. `valid`
 returns false for rejected YAML; its source must still be a string.

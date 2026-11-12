@@ -32,4 +32,4 @@ examples:
       run: [fn, [], [t.equal, [try, [y.get_in, {}, [list, "missing"]], [fn, [error], [get, error, "kind"]]], "missing"]]
     - name: valid_document
       run: [fn, [], [t.equal, [y.valid, 'a: [1, false, null]'], true]]
-report: [t.table, [list, [dict, "name", "roundtrip", "input", roundtrip], [dict, "name", "examples", "input", examples]], [fn, [child], [t.require_pass, child]]]
+report: [t.combine, [list, roundtrip, examples]]

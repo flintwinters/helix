@@ -33,7 +33,7 @@ pub struct Graph {
 }
 
 pub const ROOT: NodeId = 0;
-const MAX_NODES: usize = 100_000;
+pub(crate) const MAX_NODES: usize = 100_000;
 pub(crate) const MAX_NESTING: usize = 64;
 
 impl Graph {
@@ -47,7 +47,11 @@ impl Graph {
     }
 
     fn parse_document(src: &str, data_only: bool) -> Result<Graph, HelixError> {
-        let mut builder = Builder { reject_tags: data_only, ..Builder::default() };
+        let source_lines = src.split_inclusive('\n').flat_map(|line| {
+            let line = line.strip_suffix('\n').unwrap_or(line);
+            line.strip_suffix('\r').unwrap_or(line).split('\r')
+        }).collect();
+        let mut builder = Builder { source_lines, ends_with_break: src.ends_with(['\r', '\n']), reject_tags: data_only, ..Builder::default() };
         let parsed = Parser::new_from_str(src)
             .load(&mut builder, data_only)
             .map_err(|e| HelixError {
@@ -164,8 +168,10 @@ fn span(m: &Marker) -> Span {
 }
 
 #[derive(Default)]
-struct Builder {
+struct Builder<'src> {
     graph: Graph,
+    source_lines: Vec<&'src str>,
+    ends_with_break: bool,
     /// Data conversion cannot preserve or interpret explicit YAML tags.
     reject_tags: bool,
     /// Open containers; for maps, `key` holds the pending key awaiting its value.
@@ -173,10 +179,32 @@ struct Builder {
     error: Option<HelixError>,
 }
 
-impl Builder {
+impl Builder<'_> {
     /// Record the first error; `on_event` ignores everything after it.
     fn fail(&mut self, kind: &'static str, message: &str, at: Marker) {
         self.error = Some(HelixError { kind: kind.into(), message: message.into(), file: None, path: None, span: span(&at), phase: None, data: None, calls: Vec::new(), cause: None });
+    }
+
+    /// Correct yaml-rust2 0.13 empty-block chomping: clip/strip discard all
+    /// breaks; keep retains content-line breaks, never the header break.
+    fn block_scalar(&self, mut text: String, style: TScalarStyle, at: Marker) -> String {
+        if matches!(style, TScalarStyle::Literal | TScalarStyle::Folded) && text.chars().all(|ch| ch == '\n') {
+            // At EOF the scanner marks the header; otherwise it marks the next
+            // content/token line. For an empty block, the preceding nonblank line is its header.
+            let marked = at.line() - 1;
+            let indicator = if style == TScalarStyle::Literal { '|' } else { '>' };
+            let starts_here = self.source_lines[marked].chars().nth(at.col()) == Some(indicator);
+            let header_line = if starts_here { marked } else {
+                (0..marked).rev().find(|&line| !self.source_lines[line].trim().is_empty()).unwrap_or(marked)
+            };
+            let keep = block_keep(self.source_lines[header_line], indicator);
+            let content_line = header_line + 1;
+            let blank_lines = self.source_lines.iter().skip(content_line)
+                .take_while(|line| line.chars().all(|ch| ch == ' ' || ch == '\t')).count();
+            let unterminated = blank_lines > 0 && content_line + blank_lines == self.source_lines.len() && !self.ends_with_break;
+            text = if keep { "\n".repeat(blank_lines - usize::from(unterminated)) } else { String::new() };
+        }
+        text
     }
 
     /// Attach a new node to the open container (or make it the root) and return its id.
@@ -203,7 +231,7 @@ impl Builder {
     }
 }
 
-impl MarkedEventReceiver for Builder {
+impl MarkedEventReceiver for Builder<'_> {
     fn on_event(&mut self, ev: Event, at: Marker) {
         if self.error.is_some() {
             return;
@@ -216,6 +244,7 @@ impl MarkedEventReceiver for Builder {
         }
         match ev {
             Event::Scalar(text, style, _, _) => {
+                let text = self.block_scalar(text, style, at);
                 if self.awaiting_key() {
                     let id = self.stack.last().unwrap().0;
                     if matches!(self.graph.kind(id), Kind::Map(entries) if entries.iter().any(|(key, _)| key == &text)) {
@@ -266,4 +295,40 @@ fn infer(text: &str) -> Yaml {
             }
         }
     }
+}
+
+/// Find the block header after its key/sequence prefix, including quoted keys and properties.
+fn block_keep(header: &str, indicator: char) -> bool {
+    let mut quote = None;
+    let (mut plain, mut property, mut previous_space) = (false, false, true);
+    let mut chars = header.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if let Some(delimiter) = quote {
+            if delimiter == '"' && ch == '\\' { chars.next(); }
+            else if ch == delimiter {
+                if delimiter == '\'' && chars.peek() == Some(&'\'') { chars.next(); }
+                else { quote = None; }
+            }
+            continue;
+        }
+        if ch == '#' && previous_space { break; }
+        if matches!(ch, ' ' | '\t') {
+            if property { plain = false; property = false; }
+            previous_space = true;
+            continue;
+        }
+        previous_space = false;
+        if ch == ':' && chars.peek().is_none_or(|next| matches!(next, ' ' | '\t')) { plain = false; continue; }
+        if !plain {
+            match ch {
+                '\'' | '"' => { quote = Some(ch); continue; }
+                '-' | '?' if chars.peek().is_some_and(|next| matches!(next, ' ' | '\t')) => continue,
+                '!' | '&' => { property = true; }
+                _ if ch == indicator => return chars.take_while(|ch| matches!(ch, '+' | '-' | '1'..='9')).any(|ch| ch == '+'),
+                _ => {}
+            }
+        }
+        plain = true;
+    }
+    false
 }

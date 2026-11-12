@@ -1,0 +1,26 @@
+# Damage actual YAML syntax in Helix, rather than checking only handpicked errors.
+# A mutation may remain valid: require agreement and round trips, not universal rejection.
+t: [import, std:test]
+y: [import, std:yaml]
+l: [import, std:list]
+seeds: [list, '{a: [1, "x"], b: null}', "a:\n  - true\n  - {}\n", '"escaped\n\u96ea"', "---\n[1, {x: false}]\n...\n"]
+mutants:
+  - l.flat_map
+  - seeds
+  - - fn
+    - [source]
+    - - l.flat_map
+      - [l.range, [add, [len, source], 1]]
+      - - fn
+        - [position]
+        - [list, [slice, source, 0, position], [concat, [slice, source, 0, position], [slice, source, [if, [lt, position, [len, source]], [add, position, 1], position], [len, source]]]]
+report:
+  - t.property
+  - "every prefix and character deletion has consistent validity and stable successful data"
+  - mutants
+  - - fn
+    - [source]
+    - - let
+      - result: [t.capture, [fn, [], [y.parse, source]]]
+        success: [eq, [get, result, "outcome"], "passed"]
+      - [and, [eq, [y.valid, source], success], [if, success, [let, {value: [get, result, "value"]}, [eq, [y.parse, [y.dump, value]], value]], [eq, [get, [get, result, "error"], "kind"], "parse"]]]

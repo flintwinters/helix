@@ -10,7 +10,7 @@ pub(super) fn apply(actor: &str, value: &Yaml) -> Result<Yaml, Fault> {
     match actor {
         "yaml_parse" => {
             let Yaml::String(text) = value else { return Err(Fault::expected(0, "string", value)); };
-            let graph = Graph::parse_data(text).map_err(|error| Fault::at(0, "parse", format!("{} (YAML line {}, column {})", error.message, error.span.line, error.span.col)))?;
+            let graph = Graph::parse_data(source(text)?).map_err(|error| Fault::at(0, "parse", format!("{} (YAML line {}, column {})", error.message, error.span.line, error.span.col)))?;
             Ok(data(&graph, ROOT))
         }
         "yaml_dump" => Ok(Yaml::String(emit::document(value))),
@@ -31,4 +31,23 @@ fn data(graph: &Graph, id: NodeId) -> Yaml {
             Yaml::Hash(result)
         }
     }
+}
+
+/// yaml-rust2 leaves BOM handling and printable-input validation to its caller.
+/// Escaped controls remain valid: only literal characters in the source are checked.
+fn source(text: &str) -> Result<&str, Fault> {
+    let text = text.strip_prefix('\u{feff}').unwrap_or(text);
+    let (mut line, mut column, mut carriage_return) = (1, 1, false);
+    for ch in text.chars() {
+        if !emit::is_printable(ch) {
+            return Err(Fault::at(0, "parse", format!("non-printable character U+{:04X} (YAML line {line}, column {column})", ch as u32)));
+        }
+        match ch {
+            '\r' => { line += 1; column = 1; }
+            '\n' => { if !carriage_return { line += 1; } column = 1; }
+            _ => column += 1,
+        }
+        carriage_return = ch == '\r';
+    }
+    Ok(text)
 }

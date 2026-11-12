@@ -1,0 +1,17 @@
+# Exercise toolkit entrypoints at the shared graph parser's nesting and node limits.
+t: [import, std:test]
+y: [import, std:yaml]
+l: [import, std:list]
+nested: [fn, [depth], [fold, [fn, [source, ignored], [concat, "[", source, "]"]], "0", [l.range, depth]]]
+# Doubling avoids quadratic string-building and does not depend on a 100,000-step fold.
+wide: [fn, [doublings], [concat, "[", [fold, [fn, [source, ignored], [concat, source, source]], "0,", [l.range, doublings]], "0]"]]
+report:
+  - t.suite
+  - - name: depth_at_limit
+      run: [fn, [], [t.equal, [len, [y.parse, [nested, 64]]], 1]]
+    - name: depth_above_limit
+      run: [fn, [], [t.throws, [fn, [], [y.parse, [nested, 65]]], "parse"]]
+    - name: width_below_node_limit
+      run: [fn, [], [t.equal, [len, [y.parse, [wide, 16]]], 65537]]
+    - name: width_above_node_limit
+      run: [fn, [], [t.throws, [fn, [], [y.parse, [wide, 17]]], "parse"]]
