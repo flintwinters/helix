@@ -12,7 +12,7 @@ fn main() -> ExitCode {
         return code;
     }
     if args.first().is_some_and(|arg| arg == "perform") {
-        return perform(&args[1..]);
+        return helix::tooling::perform::run(&args[1..]);
     }
     match args
         .iter()
@@ -161,55 +161,4 @@ fn execute(path: &str, mode: &str, allowed_root: Option<&str>, format: &str) -> 
     } else {
         ExitCode::FAILURE
     }
-}
-
-fn perform(args: &[String]) -> ExitCode {
-    use helix::EffectHost;
-    let mut host = EffectHost::default();
-    let mut index = 0;
-    while let Some(option) = args.get(index).filter(|arg| arg.starts_with("--")) {
-        let takes_value = matches!(option.as_str(), "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--fixed-time" | "--seed");
-        let value = if takes_value {
-            index += 1;
-            let Some(value) = args.get(index) else { eprintln!("missing value for {option}"); return ExitCode::from(2); };
-            value.as_str()
-        } else { "" };
-        match option.as_str() {
-            "--allow-read" => host.read_roots.push(value.into()),
-            "--allow-write" => host.write_roots.push(value.into()),
-            "--allow-env" => { host.env_names.insert(value.into()); }
-            "--allow-command" => { host.commands.insert(value.into()); }
-            "--allow-http" => { host.http_origins.insert(value.into()); }
-            "--allow-stdin" => host.allow_stdin = true,
-            "--allow-stdout" => host.allow_stdout = true,
-            "--allow-time" => host.allow_time = true,
-            "--allow-random" => host.allow_random = true,
-            "--fixed-time" => match value.parse() {
-                Ok(value) => host.fixed_time = Some(value),
-                Err(_) => { eprintln!("fixed time must be integer milliseconds"); return ExitCode::from(2); }
-            },
-            "--seed" => match value.parse() {
-                Ok(value) => host.random_seed = Some(value),
-                Err(_) => { eprintln!("seed must be an unsigned integer"); return ExitCode::from(2); }
-            },
-            "--help" => {
-                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-stdin, --allow-stdout, --allow-time, --allow-random\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
-                return ExitCode::SUCCESS;
-            }
-            _ => { eprintln!("unknown perform option {option}"); return ExitCode::from(2); }
-        }
-        index += 1;
-    }
-    let Some(path) = args.get(index) else { eprintln!("perform requires a source file"); return ExitCode::from(2); };
-    index += 1;
-    if args.get(index).is_some_and(|arg| arg == "--") { index += 1; }
-    host.args = args[index..].to_vec();
-    let source = match std::fs::read_to_string(path) {
-        Ok(source) => source,
-        Err(error) => { eprintln!("cannot read {path}: {error}"); return ExitCode::from(2); }
-    };
-    let mut vm = Vm::load_sandboxed(&source, Some(Path::new(path)), &host.read_roots);
-    host.run(&mut vm);
-    eprint!("{}", vm.state_string());
-    if vm.status() == Status::Finished { ExitCode::from(host.exit_code) } else { ExitCode::FAILURE }
 }

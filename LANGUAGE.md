@@ -425,14 +425,16 @@ Host applications use `Vm::signal(event)` to interrupt an active machine and
 `resume_signal()` to continue it. Events are bounded ordinary YAML data, visible
 under `signal` while interrupted. A pending request survives interruption;
 resolving it does not clear the interrupt. The bundled host leaves interrupted
-machines alone. These are explicit host event APIs, not installed OS signal
-handlers. Retained machine branches remain independent: explicitly handing an
+machines alone. These VM event APIs are separate from the bundled command host's
+OS signal cancellation described below. Retained machine branches remain independent: explicitly handing an
 older pending branch to a host can perform its request again. Request IDs are
 local to a branch, not global deduplication keys.
 
 An effect failure does not promise rollback of partial external changes. The
-runtime never automatically retries requests, and failed machines with completed
-effect records do not emit pure recovery source that could repeat those actions.
+VM never automatically retries requests. The bundled command host can make bounded
+attempts within one request only under the caller's explicit retry policy. Failed
+machines with completed effect records do not emit pure recovery source that could
+repeat those actions.
 
 `helix perform [grants] file.yaml [-- arguments...]` runs requests through the bundled host. It emits program stdout to stdout and full state to stderr. Source comes from a file so stdin remains available to the program. `run` and `exec` never acquire host capabilities. Use `perform --help` to discover grants. Repeated root, name, executable and origin flags accumulate; grants belong to the caller, never to source or saved state.
 
@@ -452,7 +454,66 @@ effect records do not emit pure recovery source that could repeat those actions.
 
 File imports under `perform` require the same `--allow-read` roots (embedded standard modules remain available). Relative file-effect paths resolve against the host working directory; imports retain source-relative resolution. File roots are canonicalized; existing symlinks and parents of new files must remain within a granted root. These checks are import-style confinement, not protection against concurrent filesystem changes or an OS sandbox. Commands use argument vectors without an implicit shell, inherit the host environment and working directory, and receive closed stdin. An executable grant authorizes that executable's ambient access, including subprocesses; granting a shell authorizes shell commands. Nonzero command exits are result data; spawn, encoding and host failures are catchable errors. The `exit` effect selects the eventual successful exit code and does not skip cleanup or later evaluation.
 
-HTTP uses the installed `curl` executable for GET requests, disables curl configuration, proxies, URL globbing and redirects, and restricts protocols to HTTP(S). An origin grant includes scheme, authority and explicit port exactly as written. HTTP error statuses remain result data. Process output, file text and HTTP responses are limited to 1 MiB; processes have a 10-second deadline and HTTP requests an 8-second deadline. Descendant processes are not contained or killed as a process group. Stdin waits for EOF.
+HTTP uses the installed `curl` executable for GET requests, disables curl configuration, proxies, URL globbing and redirects, and restricts protocols to HTTP(S). An origin grant includes scheme, authority and explicit port exactly as written. HTTP error statuses remain result data. File text and HTTP responses are limited to 1 MiB. HTTP retains an eight-second request deadline and a ten-second process deadline, independently of command policy. Stdin waits for EOF.
+
+#### Bounded command operations
+
+The caller configures command policy on `EffectHost`; source and saved state cannot
+increase these limits or authorize retries. `perform` exposes the same policy:
+
+| Flag | Default | Accepted range and meaning |
+| --- | --- | --- |
+| `--command-timeout-ms` | 10000 | 1–86400000 milliseconds for the whole request, including attempts and retry delays |
+| `--command-output-limit` | 1048576 | 1–16777216 bytes per stream, accumulated across attempts |
+| `--command-attempts` | 1 | 1–32 total attempts |
+| `--command-retry-delay-ms` | 0 | 0–60000 milliseconds between attempts |
+| `--command-retry-exit-code` | None | Repeatable integer 1–255 explicitly classified by the caller as transient and safe to retry |
+| `--command-progress` | None | New JSONL file for versioned progress metadata; existing paths are refused |
+
+A successful command result keeps `{code, stdout, stderr}` and contains the final
+attempt's output. Earlier attempts still consume the shared output budget. Exceeding
+the output limit fails instead of silently truncating. VM value and data budgets
+still apply when the captured result enters the machine. An unclassified nonzero exit
+or exhaustion of the attempt count returns the final exit as ordinary result data.
+Timeout, cancellation, output overflow, encoding, spawn and process-lifecycle
+failures never trigger retries. An exit-code classification is a caller assertion
+about a particular command's semantics, not proof that an operation is idempotent.
+The policy applies to every command request handled by that host; classifications
+must be safe for every granted executable that uses them.
+
+Progress reports attempt transitions, elapsed time and byte counts, including
+heartbeats for quiet commands. They exclude executable names, arguments and output;
+program stdout and YAML state on stderr retain their existing contracts. Progress
+is observational host data, not a durable recovery journal. Library callbacks and
+progress storage must remain responsive; their own blocking IO is outside the
+command deadline guarantee.
+
+Each JSONL record has `version: 1`, branch-local `effect_id`, one-based `attempt`,
+`event`, `elapsed_ms`, cumulative `stdout_bytes` and `stderr_bytes`, and nullable
+`code`. Events are `starting` (before spawn, also checking the progress sink),
+`started`, `output`, `heartbeat`, `retry`, `finished`, or the failure categories
+`timeout`, `cancelled`, `resource` and `failed`. This metadata does not replace the
+final effect outcome in machine state.
+
+On Unix, commands execute in a fresh process group. Timeout and cancellation kill
+that group and reap the immediate child; normal completion also cleans up remaining
+group members. An exited command whose descendants keep capture pipes open fails
+as an uncertain process outcome and is not retried. Commands must run synchronously
+and must not daemonize. `perform` handles SIGINT and SIGTERM as cancellation; library
+callers set `EffectHost.cancellation`, a shared atomic flag. Cancellation also gates
+subsequent effect dispatch: catching a command cancellation cannot authorize another
+host mutation. The host interrupts at the next pending effect until the caller
+explicitly clears cancellation and resumes the signal. Pure evaluation and blocking
+non-process adapters are not made preemptible by this command cancellation policy.
+`perform` exits 1 after cancellation even when source catches the error and returns
+a pure value, in which case the emitted VM state can still be `finished`.
+
+This is local process lifecycle control, not an OS sandbox or rollback. It cannot
+clean up after SIGKILL or controller crashes, contain descendants that deliberately
+leave the process group, or establish whether remote mutations survived a broken
+SSH connection. Cancellation does not undo completed external changes. Durable
+recovery, remote adapters and provider-specific reconciliation remain separate
+roadmap work.
 
 `--fixed-time MILLISECONDS` fixes the clock response. `--seed INTEGER` selects a reproducible random sequence, advanced once per request; both still require their grants. Without these options the host reads the system clock and `/dev/urandom`. The deterministic generator is intended for tests and replay inputs, not cryptographic randomness. Effect request/outcome histories expose nondeterministic inputs for inspection; full fresh-process replay of active continuations remains future work. Capability failures occur before host actions and can be handled with `try`/`finally` through the ordinary evaluator.
 

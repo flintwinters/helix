@@ -33,6 +33,7 @@ SUITES = {
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
     "interactive": "REPL, dependency watch, completion and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
+    "long_commands": "Bounded command deadlines, capture, progress, retry classification and process-group cancellation",
     "effects": "Capability-controlled host effects, deterministic inputs, failures and pending requests",
     "startup": "Build-free discovery stays independent of execution and test-only imports",
     "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
@@ -148,6 +149,10 @@ def parser():
                      ["runtime", "eval"], "runtime eval '{$call: [add, 20, 22]}'")
     inline.add_argument("source", metavar="SOURCE", help="YAML program quoted as one shell argument; use -- before a leading dash")
     inline.add_argument("--check", action="store_true", help="collect independent evaluation errors")
+    perform = command(runtime, "perform", "Execute authorized host effects; state on stderr, program output on stdout",
+                      ["runtime", "perform"], "runtime perform --allow-command /bin/echo program.yaml")
+    perform.add_argument("args", nargs=argparse.REMAINDER,
+                         help="caller grants and command policy; runtime perform -- --help lists all flags")
     raw = command(runtime, "cli", "Build and forward arguments verbatim to the Rust CLI",
                   ["runtime", "cli"], "runtime cli std math")
     raw.add_argument("args", nargs=argparse.REMAINDER, help="Rust CLI arguments; use -- to forward --help")
@@ -236,7 +241,7 @@ def parse(argv):
     if argv and argv[0] in aliases:
         argv = [*aliases[argv[0]], *argv[1:]]
     # Forward unknown tool flags intact, while keeping local help discoverable.
-    for name in ("cli", "lint"):
+    for name in ("cli", "perform", "lint"):
         path = aliases[name]
         if argv[:len(path)] == path:
             extra = argv[len(path):]

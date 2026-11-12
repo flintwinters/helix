@@ -18,4 +18,4 @@ pub use emit::{document as yaml_document, json_document};
 
 
 pub mod tooling;
-pub use vm::effects::EffectHost;
+pub use vm::effects::{EffectHost, CommandPolicy, CommandProgress, ProgressCallback};

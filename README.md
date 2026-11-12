@@ -15,6 +15,11 @@ the capability flags. Ordinary `run` yields at an effect without executing it.
 Host events can interrupt and resume in-memory machines through the public VM API.
 These APIs do not restore continuations from emitted YAML.
 
+Long-running local commands have caller-selected time and output budgets, optional
+metadata progress, Unix process-group cancellation, and bounded retries for explicitly
+classified exit codes. Discover the policy with `./manage.py runtime perform -- --help`;
+see [command operation semantics and limits](LANGUAGE.md#bounded-command-operations).
+
 ## Try it
 
 You need Rust with Cargo (2024 edition support) and Python 3.10+.

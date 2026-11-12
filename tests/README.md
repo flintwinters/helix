@@ -4,6 +4,11 @@ Run commands from the repository root. Tests require Python 3.10+, PyYAML, and R
 The `effects` suite also requires `curl`, `/bin/echo`, `/bin/sh`, and permission
 to bind a local loopback HTTP listener. Its files and process fixtures stay under
 the project's `runtime/` directory.
+The `long_commands` suite requires Linux process groups and `/proc`, and exercises
+real child processes with Python. It includes one operation lasting longer than
+ten seconds; its derived test context allows twenty seconds per invocation.
+The Unix public-host tests in `library` also use `/bin/sh` and `/bin/sleep` to
+verify callback cleanup and cancellation through the Rust API.
 
 ```sh
 ./manage.py test --describe                  # discover suites and their contracts
@@ -85,6 +90,7 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | Accepted/rejected syntax, graph, recursion, iteration and computed-growth boundaries | `resources`; computed-growth golden cases; `library` | Budgets are not a byte-exact heap quota; source reads precede limits |
 | Embedded-only and confined file imports, traversal, symlinks, transitive and uncalled imports | `permissions`; `library` | Path authorization assumes no hostile concurrent directory replacement |
 | Host file, environment, stream, command, HTTP, clock and random effects; capability denial, deterministic runs and symlink escapes | `effects`; `tests/cases/effects_world.yaml` | Uses local HTTP and subprocess adapters; grants do not provide OS isolation |
+| Extended deadlines, cumulative output bounds, metadata progress, classified retries, SIGINT/SIGTERM cancellation and descendant liveness | `long_commands`; `tests/suites/long_commands.py` | Linux local synchronous commands; no SIGKILL recovery, detached-process containment or remote execution |
 | Pending effects, completion records, failure cleanup, external interruption and resumption without repeating completed requests | `execution`; `tests/execution.rs` | In-memory continuations only; retained branches require explicit host handling and are not globally deduplicated |
 | Actual compiled arithmetic, source-column and serialization faults rejected by existing suites | `mutants`; `runtime/mutants/` | Three targeted mutations, not a general mutation score |
 | Growing graphs and constant-state 999/99,999-step loops, interpreter peak RSS and environment | `memory`; `runtime/memory/` | Linux + GNU time; broad operational thresholds, not a universal memory bound |

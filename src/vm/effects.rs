@@ -2,12 +2,17 @@
 use std::collections::BTreeSet;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+#[path = "effects/failure.rs"]
+mod failure;
+use failure::{Failure, fault, io_fault};
+#[path = "effects/command.rs"]
+mod command;
+pub use command::{CommandPolicy, CommandProgress, ProgressCallback};
 use yaml_rust2::Yaml;
 use crate::model::{Status, Vm};
 
-type Failure = (String, String);
 type Reply = Result<Yaml, Failure>;
 const LIMIT: usize = 1024 * 1024;
 
@@ -18,6 +23,10 @@ pub struct EffectHost {
     pub write_roots: Vec<PathBuf>,
     pub env_names: BTreeSet<String>,
     pub commands: BTreeSet<String>,
+    pub command_policy: CommandPolicy,
+    pub cancellation: Arc<AtomicBool>,
+    pub cancellation_signal: Option<&'static AtomicBool>,
+    pub command_progress: Option<ProgressCallback>,
     pub http_origins: BTreeSet<String>,
     pub allow_stdin: bool,
     pub allow_stdout: bool,
@@ -36,11 +45,16 @@ impl EffectHost {
             if vm.status() != Status::Signaled { break; }
             if vm.is_interrupted() { break; }
             let Some(request) = vm.pending_effect() else { break };
-            let reply = self.handle(&request.operation, &request.payload);
+            if self.cancellation.load(Ordering::Relaxed)
+                || self.cancellation_signal.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
+                *vm = vm.signal(object([("kind", Yaml::String("cancelled".into()))]));
+                break;
+            }
+            let reply = self.handle(request.id, &request.operation, &request.payload);
             *vm = vm.resolve_effect(reply);
         }
     }
-    fn handle(&mut self, operation: &str, payload: &Yaml) -> Reply {
+    fn handle(&mut self, effect_id: u64, operation: &str, payload: &Yaml) -> Reply {
         match operation {
             "args" => Ok(Yaml::Array(self.args.iter().cloned().map(Yaml::String).collect())),
             "exit" => {
@@ -84,7 +98,10 @@ impl EffectHost {
                 require(self.commands.contains(program), "command executable")?;
                 let args = payload["args"].as_vec().ok_or_else(|| fault("type", "command args must be a list of strings"))?;
                 let args = args.iter().map(text).collect::<Result<Vec<_>, _>>()?;
-                let (code, stdout, stderr) = capture(program, &args)?;
+                let (code, stdout, stderr) = command::capture(program, &args, command::Control {
+                    policy: &self.command_policy, cancellation: &self.cancellation,
+                    cancellation_signal: self.cancellation_signal, progress: &mut self.command_progress, effect_id,
+                })?;
                 Ok(object([("code", Yaml::Integer(code)), ("stdout", Yaml::String(stdout)), ("stderr", Yaml::String(stderr))]))
             }
             "http" => {
@@ -92,7 +109,9 @@ impl EffectHost {
                 let origin = origin(url)?;
                 require(self.http_origins.contains(origin), "HTTP origin")?;
                 // No redirects, proxies, curl config, cookies or URL globbing. Grant is exact origin.
-                let (code, mut output, error) = capture("curl", &["-q", "--silent", "--show-error", "--globoff", "--noproxy", "*", "--proto", "=http,https", "--max-time", "8", "--max-filesize", "1048576", "--write-out", "\n%{http_code}", "--url", url])?;
+                let (code, mut output, error) = command::capture("curl", &["-q", "--silent", "--show-error", "--globoff", "--noproxy", "*", "--proto", "=http,https", "--max-time", "8", "--max-filesize", "1048576", "--write-out", "\n%{http_code}", "--url", url], command::Control { policy: &CommandPolicy::default(),
+                    cancellation: &self.cancellation, cancellation_signal: self.cancellation_signal,
+                    progress: &mut None, effect_id })?;
                 if code != 0 { return Err(fault("http", &error)); }
                 let (body, status) = output.rsplit_once('\n').ok_or_else(|| fault("http", "missing HTTP status"))?;
                 let status = status.parse::<i64>().map_err(io_fault)?;
@@ -120,8 +139,6 @@ impl EffectHost {
         }
     }
 }
-fn fault(kind: &str, message: &str) -> Failure { (kind.into(), message.into()) }
-fn io_fault(error: impl std::fmt::Display) -> Failure { fault("io", &error.to_string()) }
 fn require(granted: bool, name: &str) -> Result<(), Failure> {
     if granted { Ok(()) } else { Err(fault("capability", &format!("{name} capability not granted"))) }
 }
@@ -149,25 +166,4 @@ fn origin(url: &str) -> Result<&str, Failure> {
     let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
     if authority.is_empty() || authority.contains(['@', '\\']) || url.chars().any(char::is_whitespace) { return Err(fault("type", "invalid HTTP authority")); }
     Ok(&url[..url.len() - rest.len() + authority.len()])
-}
-fn capture(program: &str, args: &[&str]) -> Result<(i64, String, String), Failure> {
-    let mut child = Command::new(program).args(args).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).spawn().map_err(io_fault)?;
-    let stdout = child.stdout.take().unwrap();
-    let stderr = child.stderr.take().unwrap();
-    let (out_tx, out) = std::sync::mpsc::channel();
-    let (err_tx, err) = std::sync::mpsc::channel();
-    std::thread::spawn(move || { let _ = out_tx.send(read_text(stdout)); });
-    std::thread::spawn(move || { let _ = err_tx.send(read_text(stderr)); });
-    let start = Instant::now();
-    let status = loop {
-        if let Some(status) = child.try_wait().map_err(io_fault)? { break status; }
-        if start.elapsed() > Duration::from_secs(10) {
-            let _ = child.kill(); let _ = child.wait();
-            return Err(fault("timeout", "command exceeded 10 seconds"));
-        }
-        std::thread::sleep(Duration::from_millis(5));
-    };
-    let output = out.recv_timeout(Duration::from_secs(10).saturating_sub(start.elapsed())).map_err(|_| fault("timeout", "command output pipe remained open"))??;
-    let error = err.recv_timeout(Duration::from_secs(10).saturating_sub(start.elapsed())).map_err(|_| fault("timeout", "command error pipe remained open"))??;
-    Ok((status.code().map(i64::from).unwrap_or(-1), output, error))
 }

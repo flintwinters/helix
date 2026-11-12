@@ -35,6 +35,10 @@ def verify(h):
         assert (forwarded.returncode, forwarded.stdout, forwarded.stderr) == (
             direct.returncode, direct.stdout, direct.stderr,
         )
+    performed = invoke("runtime", "perform", "--", "--help")
+    direct = h.helix("perform", "--help")
+    assert (performed.returncode, performed.stdout, performed.stderr) == (direct.returncode, direct.stdout, direct.stderr)
+    assert "--command-timeout-ms" in performed.stdout and "--command-progress" in performed.stdout
     help_result = invoke("--help")
     assert help_result.returncode == 0
     assert "eval" in help_result.stdout and "cli" in help_result.stdout

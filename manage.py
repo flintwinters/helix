@@ -157,13 +157,44 @@ def main() -> int:
         return code or runtime(args, binary)
 
 
+def perform_forwarded(binary, arguments):
+    """Forward controller cancellation and wait for the adapter's descendant cleanup."""
+    import signal
+    import subprocess
+
+    process = None
+    pending = set()
+
+    def forward(signum, _frame):
+        if process is None:
+            pending.add(signum)
+        else:
+            process.send_signal(signum)
+
+    previous = {}
+    try:
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            previous[signum] = signal.signal(signum, forward)
+        with subprocess.Popen([str(binary), *arguments], cwd=ROOT) as child:
+            process = child
+            for signum in pending:
+                child.send_signal(signum)
+            return child.wait()
+    finally:
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
+
+
 def runtime(args, binary) -> int:
     """Forward runtime contracts through the invocation's immutable executable."""
     import subprocess
 
     command = args.command
-    if command == "cli":
-        return subprocess.call([str(binary), *args.extra], cwd=ROOT)
+    if command in ("cli", "perform"):
+        forwarded = [*(["perform"] if command == "perform" else []), *args.extra]
+        if forwarded[:1] == ["perform"]:
+            return perform_forwarded(binary, forwarded)
+        return subprocess.call([str(binary), *forwarded], cwd=ROOT)
     if command == "eval":
         return subprocess.run([str(binary), *(["check", "--evaluate"] if args.check else ["run"]), "-"],
                               input=args.source, text=True, cwd=ROOT).returncode
