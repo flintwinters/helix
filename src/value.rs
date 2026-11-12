@@ -142,7 +142,7 @@ impl Extend<(Value, Value)> for Hash {
 impl IntoIterator for Hash {
     type Item = (Value, Value);
     type IntoIter = std::iter::Map<
-        hashlink::linked_hash_map::IntoIter<MapKey, Value>,
+        std::collections::btree_map::IntoIter<MapKey, Value>,
         fn((MapKey, Value)) -> (Value, Value),
     >;
     fn into_iter(self) -> Self::IntoIter {
@@ -154,7 +154,7 @@ impl IntoIterator for Hash {
 impl<'a> IntoIterator for &'a Hash {
     type Item = (&'a Value, &'a Value);
     type IntoIter = std::iter::Map<
-        hashlink::linked_hash_map::Iter<'a, MapKey, Value>,
+        std::collections::btree_map::Iter<'a, MapKey, Value>,
         fn((&'a MapKey, &'a Value)) -> (&'a Value, &'a Value),
     >;
     fn into_iter(self) -> Self::IntoIter {
@@ -174,6 +174,17 @@ impl PartialEq for MapKey {
     }
 }
 impl Eq for MapKey {}
+impl PartialOrd for MapKey {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for MapKey {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.as_str().cmp(&other.0.as_str())
+    }
+}
+
 impl std::hash::Hash for MapKey {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         std::hash::Hash::hash(std::borrow::Borrow::<str>::borrow(self), state)
@@ -463,18 +474,29 @@ pub(crate) fn from_host_yaml(data: &yaml_rust2::Yaml) -> Result<Value, String> {
     let mut nodes = 0;
     while let Some((value, depth, graph_node)) = pending.pop() {
         nodes += usize::from(graph_node);
-        units += match value { Yaml::String(s) => 1 + s.len(), _ => 1 };
-        if depth > crate::model::MAX_NESTING || units > crate::model::MAX_VALUE_SIZE || nodes > crate::model::MAX_NODES {
+        units += match value {
+            Yaml::String(s) => 1 + s.len(),
+            _ => 1,
+        };
+        if depth > crate::model::MAX_NESTING
+            || units > crate::model::MAX_VALUE_SIZE
+            || nodes > crate::model::MAX_NODES
+        {
             return Err("effect data exceeds runtime limits".into());
         }
         match value {
             Yaml::Array(values) => pending.extend(values.iter().map(|v| (v, depth + 1, true))),
-            Yaml::Hash(fields) => for (key, value) in fields {
-                if !matches!(key, Yaml::String(_)) { return Err("effect data requires string map keys".into()); }
-                pending.push((key, depth + 1, false)); pending.push((value, depth + 1, true));
-            },
-            Yaml::Real(value) if value.parse::<f64>().is_ok_and(f64::is_finite) => {},
-            Yaml::Null | Yaml::Boolean(_) | Yaml::Integer(_) | Yaml::String(_) => {},
+            Yaml::Hash(fields) => {
+                for (key, value) in fields {
+                    if !matches!(key, Yaml::String(_)) {
+                        return Err("effect data requires string map keys".into());
+                    }
+                    pending.push((key, depth + 1, false));
+                    pending.push((value, depth + 1, true));
+                }
+            }
+            Yaml::Real(value) if value.parse::<f64>().is_ok_and(f64::is_finite) => {}
+            Yaml::Null | Yaml::Boolean(_) | Yaml::Integer(_) | Yaml::String(_) => {}
             _ => return Err("effect data must contain only finite ordinary values".into()),
         }
     }

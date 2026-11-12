@@ -10,7 +10,7 @@ use crate::model::{Node, Span};
 
 pub type NodeId = usize;
 
-pub(crate) use crate::model::{Graph, Kind, ROOT, MAX_NODES, MAX_NESTING};
+pub(crate) use crate::model::{Graph, Kind, MAX_NESTING, MAX_NODES, ROOT};
 
 impl Graph {
     pub fn parse(src: &str) -> Result<Graph, HelixError> {
@@ -22,7 +22,7 @@ impl Graph {
         Self::parse_document(src, true)
     }
 
-    fn parse_document(src: &str, data_only: bool) -> Result<Graph, HelixError> {
+    fn parse_document(src: &str, _data_only: bool) -> Result<Graph, HelixError> {
         let source_lines = src
             .split_inclusive('\n')
             .flat_map(|line| {
@@ -33,11 +33,10 @@ impl Graph {
         let mut builder = Builder {
             source_lines,
             ends_with_break: src.ends_with(['\r', '\n']),
-            reject_tags: data_only,
             ..Builder::default()
         };
         let parsed = Parser::new_from_str(src)
-            .load(&mut builder, data_only)
+            .load(&mut builder, true)
             .map_err(|e| HelixError {
                 kind: "parse".into(),
                 message: e.to_string(),
@@ -149,14 +148,6 @@ impl Graph {
         let mut code = vec![V::Null; self.nodes.len()];
         for id in (0..self.nodes.len()).rev() {
             code[id] = match self.kind(id) {
-                Kind::Scalar {
-                    value: Yaml::String(text),
-                    plain: true,
-                } => V::Hash(
-                    [(V::String("symbol".into()), V::String(text.clone()))]
-                        .into_iter()
-                        .collect(),
-                ),
                 Kind::Scalar { value, .. } => V::from_yaml(value),
                 Kind::Seq(items) => V::Array(items.iter().map(|&c| code[c].clone()).collect()),
                 Kind::Map(entries) => V::Hash(
@@ -187,29 +178,23 @@ impl Graph {
     }
 
     /// Structural code equality uses authoritative syntax, never an inspection projection.
-    /// Container order and scalar kinds/quoting matter because code controls evaluation order.
+    /// Sequence order matters; scalar presentation and mapping order do not.
     pub fn same_code(&self, left: NodeId, other: &Graph, right: NodeId) -> bool {
         let mut pending = vec![(left, right)];
         while let Some((a, b)) = pending.pop() {
             match (self.kind(a), other.kind(b)) {
-                (
-                    Kind::Scalar {
-                        value: a,
-                        plain: ap,
-                    },
-                    Kind::Scalar {
-                        value: b,
-                        plain: bp,
-                    },
-                ) if a == b && ap == bp => {}
+                (Kind::Scalar { value: a }, Kind::Scalar { value: b })
+                    if a == b
+                        || matches!((a, b), (Yaml::Real(a), Yaml::Real(b)) if a.parse::<f64>().ok() == b.parse::<f64>().ok()) =>
+                    {}
                 (Kind::Seq(a), Kind::Seq(b)) if a.len() == b.len() => {
                     pending.extend(a.iter().copied().zip(b.iter().copied()))
                 }
                 (Kind::Map(a), Kind::Map(b)) if a.len() == b.len() => {
-                    for ((key, a), (other, b)) in a.iter().zip(b) {
-                        if key != other {
+                    for (key, a) in a {
+                        let Some((_, b)) = b.iter().find(|(other, _)| other == key) else {
                             return false;
-                        }
+                        };
                         pending.push((*a, *b));
                     }
                 }
@@ -277,23 +262,20 @@ impl Graph {
         }
     }
 
-    /// A plain (unquoted) string, which is a symbol in expression position.
-    pub fn symbol(&self, id: NodeId) -> Option<&str> {
+    /// A string identifier in a semantic declaration or call-head position.
+    pub fn identifier(&self, id: NodeId) -> Option<&str> {
         match self.kind(id) {
             Kind::Scalar {
                 value: Yaml::String(name),
-                plain: true,
+                ..
             } => Some(name),
             _ => None,
         }
     }
 
-    /// The symbol heading a sequence (quoted heads are data).
+    /// A statically named actor in an explicit call form.
     pub fn form(&self, id: NodeId) -> Option<&str> {
-        let Kind::Seq(items) = self.kind(id) else {
-            return None;
-        };
-        self.symbol(*items.first()?)
+        self.identifier(*self.call(id)?.first()?)
     }
 
     /// The enclosing container; parent links are what lexical resolution walks.
@@ -310,13 +292,18 @@ fn span(m: &Marker) -> Span {
     }
 }
 
+#[derive(Clone)]
+enum Anchor {
+    Node(NodeId),
+    Key(String),
+}
+
 #[derive(Default)]
 struct Builder<'src> {
+    anchors: std::collections::HashMap<usize, Anchor>,
     graph: Graph,
     source_lines: Vec<&'src str>,
     ends_with_break: bool,
-    /// Data conversion cannot preserve or interpret explicit YAML tags.
-    reject_tags: bool,
     /// Open containers; for maps, `key` holds the pending key awaiting its value.
     stack: Vec<(NodeId, Option<String>)>,
     error: Option<HelixError>,
@@ -408,6 +395,99 @@ impl Builder<'_> {
         id
     }
 
+    /// Expand acyclic graph sharing at occurrence sites; anchor names carry no authority.
+    fn alias(&mut self, anchor: usize, at: Marker) {
+        let Some(target) = self.anchors.get(&anchor).cloned() else {
+            return self.fail("parse", "unknown YAML alias", at);
+        };
+        let target = match target {
+            Anchor::Key(key) => {
+                if self.awaiting_key() {
+                    let parent = self.stack.last().unwrap().0;
+                    if matches!(self.graph.kind(parent), Kind::Map(entries) if entries.iter().any(|(name, _)| name == &key))
+                    {
+                        return self.fail("parse", "duplicate mapping key", at);
+                    }
+                    self.stack.last_mut().unwrap().1 = Some(key);
+                } else {
+                    self.add(
+                        Kind::Scalar {
+                            value: Yaml::String(key),
+                        },
+                        at,
+                    );
+                }
+                return;
+            }
+            Anchor::Node(id) => id,
+        };
+        if self.stack.iter().any(|(id, _)| *id == target) {
+            return self.fail("unsupported", "cyclic YAML aliases are not supported", at);
+        }
+        if self.awaiting_key() {
+            let Kind::Scalar {
+                value: Yaml::String(key),
+            } = self.graph.kind(target)
+            else {
+                return self.fail("unsupported", "mapping keys must be strings", at);
+            };
+            let key = key.clone();
+            let parent = self.stack.last().unwrap().0;
+            if matches!(self.graph.kind(parent), Kind::Map(entries) if entries.iter().any(|(name, _)| name == &key))
+            {
+                return self.fail("parse", "duplicate mapping key", at);
+            }
+            self.stack.last_mut().unwrap().1 = Some(key);
+            return;
+        }
+        enum Copy {
+            Node(NodeId),
+            Key(String),
+            End,
+        }
+        let mut pending = vec![Copy::Node(target)];
+        while let Some(next) = pending.pop() {
+            match next {
+                Copy::End => {
+                    self.stack.pop();
+                }
+                Copy::Key(key) => self.stack.last_mut().unwrap().1 = Some(key),
+                Copy::Node(source) => {
+                    if self.graph.nodes.len() >= MAX_NODES {
+                        return self.fail("limit", "alias expansion exceeds graph limit", at);
+                    }
+                    if self.stack.len() >= MAX_NESTING {
+                        return self.fail(
+                            "depth",
+                            "alias expansion exceeds syntax nesting limit",
+                            at,
+                        );
+                    }
+                    match self.graph.kind(source).clone() {
+                        Kind::Scalar { value } => {
+                            self.add(Kind::Scalar { value }, at);
+                        }
+                        Kind::Seq(items) => {
+                            let id = self.add(Kind::Seq(Vec::new()), at);
+                            self.stack.push((id, None));
+                            pending.push(Copy::End);
+                            pending.extend(items.into_iter().rev().map(Copy::Node));
+                        }
+                        Kind::Map(entries) => {
+                            let id = self.add(Kind::Map(Vec::new()), at);
+                            self.stack.push((id, None));
+                            pending.push(Copy::End);
+                            for (key, child) in entries.into_iter().rev() {
+                                pending.push(Copy::Node(child));
+                                pending.push(Copy::Key(key));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// Whether the open container is a map whose next scalar is a key.
     fn awaiting_key(&self) -> bool {
         self.stack.last().is_some_and(|(id, key)| {
@@ -421,15 +501,23 @@ impl MarkedEventReceiver for Builder<'_> {
         if self.error.is_some() {
             return;
         }
-        if self.reject_tags
-            && matches!(
-                &ev,
-                Event::Scalar(_, _, _, Some(_))
-                    | Event::SequenceStart(_, Some(_))
-                    | Event::MappingStart(_, Some(_))
-            )
-        {
-            return self.fail("unsupported", "YAML tags are not supported", at);
+        let tagged = match &ev {
+            Event::Scalar(_, _, _, tag) => tag.as_ref().map(|tag| (tag, None)),
+            Event::SequenceStart(_, tag) => tag.as_ref().map(|tag| (tag, Some("seq"))),
+            Event::MappingStart(_, tag) => tag.as_ref().map(|tag| (tag, Some("map"))),
+            _ => None,
+        };
+        if let Some((tag, container)) = tagged {
+            if tag.handle != "tag:yaml.org,2002:"
+                || container.is_some_and(|expected| tag.suffix != expected)
+                || (container.is_none()
+                    && !matches!(
+                        tag.suffix.as_str(),
+                        "str" | "int" | "float" | "bool" | "null"
+                    ))
+            {
+                return self.fail("unsupported", "unsupported YAML tag", at);
+            }
         }
         if self.graph.nodes.len() >= MAX_NODES
             && matches!(
@@ -440,27 +528,59 @@ impl MarkedEventReceiver for Builder<'_> {
             return self.fail("limit", &format!("graph exceeds {MAX_NODES} nodes"), at);
         }
         match ev {
-            Event::Scalar(text, style, _, _) => {
+            Event::Scalar(text, style, anchor, tag) => {
                 let text = self.block_scalar(text, style, at);
+                let plain = style == TScalarStyle::Plain;
+                let value = match tag.as_ref().map(|tag| tag.suffix.as_str()) {
+                    Some("str") => Yaml::String(text.clone()),
+                    Some(kind) => {
+                        let value = infer(&text);
+                        match (kind, value) {
+                            ("int", value @ Yaml::Integer(_))
+                            | ("bool", value @ Yaml::Boolean(_))
+                            | ("null", value @ Yaml::Null) => value,
+                            ("float", value @ Yaml::Real(_)) => value,
+                            ("float", Yaml::Integer(value)) => Yaml::Real(format!("{value}.0")),
+                            _ => {
+                                return self.fail(
+                                    "parse",
+                                    "scalar does not match its YAML tag",
+                                    at,
+                                );
+                            }
+                        }
+                    }
+                    None if plain => infer(&text),
+                    None => Yaml::String(text.clone()),
+                };
+                if matches!(value, Yaml::BadValue) {
+                    return self.fail(
+                        "unsupported",
+                        "numeric scalar exceeds supported finite numeric range",
+                        at,
+                    );
+                }
                 if self.awaiting_key() {
+                    let Yaml::String(key) = value else {
+                        return self.fail("unsupported", "mapping keys must be strings", at);
+                    };
                     let id = self.stack.last().unwrap().0;
-                    if matches!(self.graph.kind(id), Kind::Map(entries) if entries.iter().any(|(key, _)| key == &text))
+                    if matches!(self.graph.kind(id), Kind::Map(entries) if entries.iter().any(|(other, _)| other == &key))
                     {
                         return self.fail("parse", "duplicate mapping key", at);
                     }
-                    self.stack.last_mut().unwrap().1 = Some(text);
+                    if anchor != 0 {
+                        self.anchors.insert(anchor, Anchor::Key(key.clone()));
+                    }
+                    self.stack.last_mut().unwrap().1 = Some(key);
                     return;
                 }
-                let plain = style == TScalarStyle::Plain;
-                let value = if plain {
-                    infer(&text)
-                } else {
-                    Yaml::String(text)
-                };
-                let plain = plain && matches!(value, Yaml::String(_));
-                self.add(Kind::Scalar { value, plain }, at);
+                let id = self.add(Kind::Scalar { value }, at);
+                if anchor != 0 {
+                    self.anchors.insert(anchor, Anchor::Node(id));
+                }
             }
-            Event::SequenceStart(..) | Event::MappingStart(..) => {
+            Event::SequenceStart(anchor, _) | Event::MappingStart(anchor, _) => {
                 if self.stack.len() >= MAX_NESTING {
                     return self.fail(
                         "depth",
@@ -478,14 +598,21 @@ impl MarkedEventReceiver for Builder<'_> {
                 };
                 let id = self.add(kind, at);
                 self.stack.push((id, None));
+                if anchor != 0 {
+                    self.anchors.insert(anchor, Anchor::Node(id));
+                }
             }
             Event::SequenceEnd | Event::MappingEnd => {
-                self.stack.pop();
+                if let Some((id, _)) = self.stack.pop() {
+                    if let Kind::Map(entries) = &mut self.graph.nodes[id].kind {
+                        entries.sort_by(|a, b| a.0.cmp(&b.0));
+                    }
+                }
             }
             Event::DocumentStart if !self.graph.nodes.is_empty() => {
                 self.fail("parse", "expected exactly one YAML document", at)
             }
-            Event::Alias(_) => self.fail("unsupported", "aliases are not supported", at),
+            Event::Alias(anchor) => self.alias(anchor, at),
             _ => {}
         }
     }
@@ -497,16 +624,40 @@ fn infer(text: &str) -> Yaml {
         "" | "~" | "null" | "Null" | "NULL" => Yaml::Null,
         "true" | "True" | "TRUE" => Yaml::Boolean(true),
         "false" | "False" | "FALSE" => Yaml::Boolean(false),
+        ".inf" | ".Inf" | ".INF" | "+.inf" | "+.Inf" | "+.INF" | "-.inf" | "-.Inf" | "-.INF"
+        | ".nan" | ".NaN" | ".NAN" => Yaml::BadValue,
         _ => {
-            if let Ok(i) = text.parse::<i64>() {
-                Yaml::Integer(i)
-            } else if text.parse::<f64>().is_ok_and(f64::is_finite)
-                && text.bytes().any(|b| b.is_ascii_digit())
-            {
-                Yaml::Real(text.to_string())
-            } else {
-                Yaml::String(text.to_string())
+            if let Some(digits) = text.strip_prefix("0x") {
+                if !digits.is_empty() && digits.bytes().all(|c| c.is_ascii_hexdigit()) {
+                    return i64::from_str_radix(digits, 16)
+                        .map(Yaml::Integer)
+                        .unwrap_or(Yaml::BadValue);
+                }
             }
+            if let Some(digits) = text.strip_prefix("0o") {
+                if !digits.is_empty() && digits.bytes().all(|c| (b'0'..=b'7').contains(&c)) {
+                    return i64::from_str_radix(digits, 8)
+                        .map(Yaml::Integer)
+                        .unwrap_or(Yaml::BadValue);
+                }
+            }
+            let digits = text.strip_prefix(['+', '-']).unwrap_or(text);
+            if !digits.is_empty() && digits.bytes().all(|c| c.is_ascii_digit()) {
+                return text
+                    .parse::<i64>()
+                    .map(Yaml::Integer)
+                    .unwrap_or(Yaml::BadValue);
+            }
+            if let Ok(value) = text.parse::<f64>() {
+                if text.bytes().any(|b| b.is_ascii_digit()) {
+                    return if value.is_finite() {
+                        Yaml::Real(text.to_string())
+                    } else {
+                        Yaml::BadValue
+                    };
+                }
+            }
+            Yaml::String(text.to_string())
         }
     }
 }

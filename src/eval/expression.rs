@@ -1,12 +1,11 @@
 //! Source expressions initiate requests; the parent engine resumes their continuations.
 use super::arguments;
 use crate::builtins;
-use crate::model::{
-    Actor, Binding, Evaluator, HelixError, Kind, Mode, NodeId, Request, Value, string as s,
-};
+use crate::model::{Actor, Binding, Evaluator, HelixError, NodeId, Request, Value, string as s};
+use crate::syntax::Syntax;
 
 impl Evaluator {
-    pub(super) fn evaluate(&mut self, id: NodeId, mode: Mode) -> Result<(), HelixError> {
+    pub(super) fn evaluate(&mut self, id: NodeId) -> Result<(), HelixError> {
         self.remaining_work = self.remaining_work.checked_sub(1).ok_or_else(|| {
             self.err(
                 id,
@@ -24,27 +23,17 @@ impl Evaluator {
                 ),
             ));
         }
-        if mode == Mode::Argument {
-            if let Some(name) = self.graph().symbol(id) {
-                match self.resolve(id, name) {
-                    Some(Binding::Value(value)) => {
-                        self.charge_value(id, &value)?;
-                        self.finish(value);
-                        return Ok(());
-                    }
-                    Some(Binding::Node(target)) => {
-                        self.eval(target, false);
-                        return Ok(());
-                    }
-                    None if builtins::is_primitive(name) => {
-                        self.finish(s(name));
-                        return Ok(());
-                    }
-                    None => {
-                        return Err(self.err(id, "unbound", format!("unbound symbol `{name}`")));
-                    }
+        if let Syntax::Reference(name) = self.graph().syntax(id) {
+            match self.resolve(id, name) {
+                Some(Binding::Value(value)) => {
+                    self.charge_value(id, &value)?;
+                    self.finish(value);
                 }
+                Some(Binding::Node(target)) => self.eval(target),
+                None if builtins::is_primitive(name) => self.finish(s(name)),
+                None => return Err(self.err(id, "unbound", format!("unbound symbol `{name}`"))),
             }
+            return Ok(());
         }
         if let Some(value) = self.memo.get(&id).cloned() {
             self.charge_value(id, &value)?;
@@ -57,34 +46,38 @@ impl Evaluator {
             return Err(self.err(id, "cycle", "value depends on itself"));
         }
         self.push(Request::Finish(id, depth, local));
-        match self.graph().kind(id).clone() {
-            Kind::Scalar { value, .. } => self.finish(Value::from_yaml(&value)),
-            Kind::Map(entries) => {
-                let (keys, nodes) = entries.into_iter().unzip();
-                self.collect(id, None, nodes, Some(keys), false);
+        match self.graph().syntax(id) {
+            Syntax::Invalid(message) => return Err(self.err(id, "syntax", message)),
+            Syntax::Reference(_) => unreachable!(),
+            Syntax::Scalar(value) => self.finish(Value::from_yaml(value)),
+            Syntax::Literal(value) => {
+                let value = self.graph().data(value);
+                self.charge_value(id, &value)?;
+                self.finish(value);
             }
-            Kind::Seq(items) => {
-                let head = items.first().copied();
-                if let Some(name) = head
-                    .and_then(|h| self.graph().symbol(h))
-                    .map(str::to_string)
-                {
+            Syntax::Mapping(entries) => {
+                let (keys, nodes) = entries.iter().cloned().unzip();
+                self.collect(id, None, nodes, Some(keys));
+            }
+            Syntax::Sequence(items) => self.collect(id, None, items.to_vec(), None),
+            Syntax::Call(items) => {
+                let items = items.to_vec();
+                let head = items[0];
+                if let Some(name) = self.graph().identifier(head).map(str::to_string) {
                     if builtins::arity(&name).is_some() {
                         self.apply(id, Actor::Builtin(name), items[1..].to_vec())?;
-                    } else if let Some(binding) = self.resolve(head.unwrap(), &name) {
+                    } else if let Some(binding) = self.resolve(id, &name) {
                         self.push(Request::Actor(id, items));
                         match binding {
                             Binding::Value(v) => self.finish(v),
-                            Binding::Node(n) => self.eval(n, false),
+                            Binding::Node(n) => self.eval(n),
                         }
                     } else {
-                        self.collect(id, None, items, None, false);
+                        return Err(self.err(head, "unbound", format!("unbound actor `{name}`")));
                     }
-                } else if head.is_some_and(|h| matches!(self.graph().kind(h), Kind::Seq(_))) {
-                    self.push(Request::Actor(id, items.clone()));
-                    self.eval(head.unwrap(), true);
                 } else {
-                    self.collect(id, None, items, None, false);
+                    self.push(Request::Actor(id, items));
+                    self.eval(head);
                 }
             }
         }
@@ -96,9 +89,8 @@ impl Evaluator {
         actor: Option<Actor>,
         nodes: Vec<NodeId>,
         keys: Option<Vec<String>>,
-        argument: bool,
     ) {
-        self.collect_next(site, actor, nodes, keys, Vec::new(), argument);
+        self.collect_next(site, actor, nodes, keys, Vec::new());
     }
     pub(super) fn collect_next(
         &mut self,
@@ -107,7 +99,6 @@ impl Evaluator {
         nodes: Vec<NodeId>,
         keys: Option<Vec<String>>,
         values: Vec<Value>,
-        argument: bool,
     ) {
         let index = values.len();
         if let Some(&node) = nodes.get(index) {
@@ -117,9 +108,8 @@ impl Evaluator {
                 nodes,
                 keys,
                 values,
-                argument,
             });
-            self.eval(node, argument);
+            self.eval(node);
         } else if let Some(actor) = actor {
             self.push(Request::Apply(site, actor, nodes, values));
         } else if let Some(keys) = keys {
@@ -155,7 +145,7 @@ impl Evaluator {
                 return self.form(id, descriptor, args);
             }
         }
-        self.collect(id, Some(actor), args, None, true);
+        self.collect(id, Some(actor), args, None);
         Ok(())
     }
 }

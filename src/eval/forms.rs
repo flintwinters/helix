@@ -31,7 +31,7 @@ impl Evaluator {
                 if let Some(import) = self.program.modules.file_import() {
                     return Err(self.err(import,"effect","type_time requires a program with no file imports, including unused imports; use embedded std modules or supply source data directly"));
                 }
-                self.eval(args[0], true);
+                self.eval(args[0]);
             }
             Form::Fn => {
                 let function = Arc::new(Function {
@@ -48,17 +48,17 @@ impl Evaluator {
                 {
                     return Err(self.err(id, "type", "a closure needs bindings and a function"));
                 }
-                self.eval(args[1], false);
+                self.eval(args[1]);
             }
             Form::Let => {
                 if !matches!(self.graph().kind(args[0]), Kind::Map(_)) {
                     return Err(self.err(args[0], "type", "`let` bindings must be a map"));
                 }
-                self.eval(args[1], true);
+                self.eval(args[1]);
             }
             Form::Import => {
-                let root=self.program.modules.root_of(id).ok_or_else(||self.err(id,"import","an import must be a literal `[import, SPEC]` in the program or a module it imports"))?;
-                self.eval(root, false);
+                let root=self.program.modules.root_of(id).ok_or_else(||self.err(id,"import","an import must be a literal `{$call: [import, SPEC]}` in the program or a module it imports"))?;
+                self.eval(root);
             }
             Form::If | Form::Cond | Form::And | Form::Or => {
                 if name == "cond" && args.len().is_multiple_of(2) {
@@ -73,19 +73,19 @@ impl Evaluator {
                     args: args.clone(),
                     index: 0,
                 });
-                self.eval(args[0], true);
+                self.eval(args[0]);
             }
             Form::Try => {
                 self.push(Request::Try(args[1]));
-                self.eval(args[0], true);
+                self.eval(args[0]);
             }
             Form::Finally => {
                 self.push(Request::Finally(args[1]));
-                self.eval(args[0], true);
+                self.eval(args[0]);
             }
             Form::Refine => {
                 self.push(Request::Refined(id, args.clone(), Value::Null));
-                self.eval(args[0], true);
+                self.eval(args[0]);
             }
             Form::Vm => {
                 self.form_values(id, name.into(), args, Vec::new(), 0)?;
@@ -105,12 +105,12 @@ impl Evaluator {
         let value = self.value();
         let condition = self.truth(&value, args[index])?;
         match name.as_str() {
-            "if" => self.eval(args[if condition { 1 } else { 2 }], true),
+            "if" => self.eval(args[if condition { 1 } else { 2 }]),
             "cond" => {
                 if condition {
-                    self.eval(args[index + 1], true);
+                    self.eval(args[index + 1]);
                 } else if index + 2 == args.len() - 1 {
-                    self.eval(args[index + 2], true);
+                    self.eval(args[index + 2]);
                 } else {
                     let node = args[index + 2];
                     self.push(Request::Branch {
@@ -118,7 +118,7 @@ impl Evaluator {
                         args,
                         index: index + 2,
                     });
-                    self.eval(node, true);
+                    self.eval(node);
                 }
             }
             _ => {
@@ -134,7 +134,7 @@ impl Evaluator {
                         args,
                         index: index + 1,
                     });
-                    self.eval(node, true);
+                    self.eval(node);
                 }
             }
         }
@@ -165,7 +165,7 @@ impl Evaluator {
                 values,
                 index,
             });
-            self.eval(node, true);
+            self.eval(node);
             return Ok(());
         }
         match name.as_str() {

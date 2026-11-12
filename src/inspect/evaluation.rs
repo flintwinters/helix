@@ -1,7 +1,7 @@
 //! Read-only projection of evaluator state and pending continuations.
 use crate::model::{
-    Actor, Atomic, Evaluator, Function, Graph, Iteration, Mode, NodeId, Operation, Outcome,
-    Request, Scope, Value, string as s,
+    Actor, Atomic, Evaluator, Function, Graph, Iteration, NodeId, Operation, Outcome, Request,
+    Scope, Value, string as s,
 };
 use std::sync::Arc;
 
@@ -256,13 +256,7 @@ impl Request {
                     ),
                 ],
             ),
-            Self::Eval(id, mode) => object(
-                "evaluate",
-                vec![
-                    ("location", g.reference(*id)),
-                    ("symbolic", Value::Boolean(*mode == Mode::Argument)),
-                ],
-            ),
+            Self::Eval(id) => object("evaluate", vec![("location", g.reference(*id))]),
             Self::Finish(id, depth, local) => object(
                 "finish_node",
                 vec![
@@ -281,7 +275,6 @@ impl Request {
                 nodes: ns,
                 keys,
                 values: vs,
-                argument,
             } => object(
                 "collect",
                 vec![
@@ -295,7 +288,6 @@ impl Request {
                             .unwrap_or(Value::Null),
                     ),
                     ("values", values(vs)),
-                    ("symbolic", Value::Boolean(*argument)),
                 ],
             ),
             Self::Apply(site, a, ns, vs) => object(

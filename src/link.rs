@@ -1,4 +1,4 @@
-//! Static import linking. `[import, SPEC]` names its module with a literal, so every import is
+//! Static import linking. `{$call: [import, SPEC]}` names its module with a literal, so every import is
 //! resolved when a program loads: the module's file is parsed and grafted into the graph as a
 //! detached subtree, once per file however many times it is imported. Loading is therefore
 //! deterministic, independent of evaluation order, and reports a missing file or a circular
@@ -12,9 +12,9 @@ use std::path::{Path, PathBuf};
 
 use yaml_rust2::Yaml;
 
-use crate::model::HelixError;
 use crate::graph::{Graph, Kind, NodeId, ROOT};
 use crate::library;
+use crate::model::HelixError;
 
 /// The modules a program imports: each import form's module root, and which nodes are such roots.
 use crate::model::Modules;
@@ -23,7 +23,7 @@ impl Modules {
         self.first_file_import
     }
 
-    /// The root of the module the `[import, ...]` node `import` loads.
+    /// The root of the module the `{$call: [import, ...]}` node `import` loads.
     pub fn root_of(&self, import: NodeId) -> Option<NodeId> {
         self.linked.get(&import).copied()
     }
@@ -136,28 +136,31 @@ impl Linker<'_> {
         Ok(())
     }
 
-    /// Every `[import, ...]` form in the subtree at `tree`, in document order.
+    /// Every `{$call: [import, ...]}` form in the subtree at `tree`, in document order.
     fn imports(&self, tree: NodeId) -> Vec<NodeId> {
         let mut found = Vec::new();
         let mut pending = vec![tree];
         while let Some(id) = pending.pop() {
-            match self.graph.kind(id) {
-                Kind::Seq(items) => {
+            match self.graph.syntax(id) {
+                crate::syntax::Syntax::Call(items) => {
                     if self.graph.form(id) == Some("import") && items.len() == 2 {
                         found.push(id);
                     }
                     pending.extend(items.iter().rev());
                 }
-                Kind::Map(entries) => pending.extend(entries.iter().rev().map(|(_, child)| *child)),
-                Kind::Scalar { .. } => {}
+                crate::syntax::Syntax::Sequence(items) => pending.extend(items.iter().rev()),
+                crate::syntax::Syntax::Mapping(entries) => {
+                    pending.extend(entries.iter().rev().map(|(_, child)| *child));
+                }
+                _ => {}
             }
         }
         found
     }
 
-    /// The root of the module imported by the `[import, SPEC]` node `import`, loading it if new.
+    /// The root of the module imported by the `{$call: [import, SPEC]}` node `import`, loading it if new.
     fn load(&mut self, import: NodeId, origin: &Origin) -> Result<NodeId, HelixError> {
-        let Kind::Seq(items) = self.graph.kind(import) else {
+        let Some(items) = self.graph.call(import) else {
             unreachable!("an import is a sequence")
         };
         let spec_node = items[1];

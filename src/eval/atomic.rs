@@ -2,7 +2,7 @@
 //! All callback work returns to the same explicit request engine.
 use crate::builtins::{self, Fault};
 use crate::model::{
-    Atomic, Evaluator, Function, Hash, HelixError, Kind, NodeId, Operation, Request, Scope, Value,
+    Atomic, Evaluator, Function, Hash, HelixError, NodeId, Operation, Request, Scope, Value,
     string as s,
 };
 use std::sync::Arc;
@@ -59,7 +59,7 @@ impl Evaluator {
             return Err(self.err(
                 args[1],
                 "type",
-                "expected a function (`[fn, [value], body]` or its name)",
+                "expected a function (`{$call: [fn, [value], body]}` or its name)",
             ));
         };
         if self.parameters(function)?.len() != 1 {
@@ -103,7 +103,7 @@ impl Evaluator {
                     found,
                     annotation,
                 });
-                self.eval(annotation, true);
+                self.eval(annotation);
                 return Ok(());
             }
             index += 1;
@@ -118,7 +118,7 @@ impl Evaluator {
                 found,
             ));
         }
-        let Kind::Seq(items) = function.program.graph.kind(function.node) else {
+        let Some(items) = function.program.graph.call(function.node) else {
             unreachable!()
         };
         let body = items[2];
@@ -128,7 +128,7 @@ impl Evaluator {
             args,
         });
         self.push(Request::BodyEnd { result_type, body });
-        self.eval(body, true);
+        self.eval(body);
         Ok(())
     }
     fn from_fault(&self, site: NodeId, args: &[NodeId], fault: Fault) -> HelixError {
@@ -212,7 +212,7 @@ impl Evaluator {
                 _ => self.fail(self.err(
                     site,
                     "type",
-                    "a refinement check must be `[fn, [value], body]`",
+                    "a refinement check must be `{$call: [fn, [value], body]}`",
                 )),
             }
         } else {

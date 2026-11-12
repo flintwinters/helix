@@ -57,7 +57,6 @@ dependencies = [
 name = "helix"
 version = "0.1.0"
 dependencies = [
- "hashlink",
  "serde_json",
  "yaml-rust2",
 ]

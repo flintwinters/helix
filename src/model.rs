@@ -33,7 +33,7 @@ pub(crate) enum Value {
 
 /// Ordered, string-keyed objects. The language never permits arbitrary value keys.
 #[derive(Clone, Debug, Default, PartialEq)]
-pub(crate) struct Hash(pub(crate) Arc<hashlink::LinkedHashMap<MapKey, Value>>);
+pub(crate) struct Hash(pub(crate) Arc<std::collections::BTreeMap<MapKey, Value>>);
 
 #[derive(Clone, Debug)]
 pub(crate) struct MapKey(pub(crate) Value);
@@ -69,12 +69,6 @@ pub(crate) enum Actor {
     Builtin(String),
     Function(Arc<Function>),
 }
-#[derive(Clone, Debug, PartialEq)]
-pub(crate) enum Mode {
-    Node,
-    Argument,
-}
-
 /// Each pending operation is plain, owned state; error handlers are continuations too.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Request {
@@ -82,7 +76,7 @@ pub(crate) enum Request {
         previous: bool,
         memo: Option<HashMap<NodeId, Value>>,
     },
-    Eval(NodeId, Mode),
+    Eval(NodeId),
     Finish(NodeId, usize, bool),
     Actor(NodeId, Vec<NodeId>),
     Collect {
@@ -91,7 +85,6 @@ pub(crate) enum Request {
         nodes: Vec<NodeId>,
         keys: Option<Vec<String>>,
         values: Vec<Value>,
-        argument: bool,
     },
     Apply(NodeId, Actor, Vec<NodeId>, Vec<Value>),
     Call(NodeId, Arc<Function>, Vec<Value>),
@@ -139,7 +132,10 @@ pub(crate) enum Request {
     Finally(NodeId),
     Cleanup(Outcome),
     Iterate(Iteration),
-    Iterated { iteration: Iteration, item: Value },
+    Iterated {
+        iteration: Iteration,
+        item: Value,
+    },
     UntilTest(Iteration),
     UntilNext(Iteration),
     FormValue {
@@ -216,10 +212,9 @@ pub(crate) struct Evaluator {
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Kind {
-    /// `plain` is true for unquoted strings, which are symbols when they appear as expression arguments.
+    /// Resolved YAML scalar value; presentation style has no semantic identity.
     Scalar {
         value: Yaml,
-        plain: bool,
     },
     Seq(Vec<NodeId>),
     Map(Vec<(String, NodeId)>),

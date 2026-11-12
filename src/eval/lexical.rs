@@ -1,10 +1,9 @@
 //! Parameter declarations and lexical environments, including free-binding discovery.
-use crate::builtins;
 use crate::graph::ROOT;
 use crate::model::{
-    Binding, Evaluator, Function, HelixError, Kind, Mode, NodeId, Request, Scope, Value,
-    string as s,
+    Binding, Evaluator, Function, HelixError, Kind, NodeId, Request, Scope, Value, string as s,
 };
+use crate::syntax::Syntax;
 use std::collections::HashSet;
 
 impl Function {
@@ -14,14 +13,14 @@ impl Function {
         let evaluator = Evaluator::start(
             self.program.clone(),
             self.environment.clone(),
-            Request::Eval(node, Mode::Node),
+            Request::Eval(node),
         );
         let graph = &self.program.graph;
         let mut found = Vec::new();
         let mut pending = vec![(node, HashSet::<String>::new(), true)];
         while let Some((id, mut locals, symbolic)) = pending.pop() {
-            match graph.kind(id) {
-                Kind::Seq(items) if graph.form(id) == Some("fn") => {
+            match graph.syntax(id) {
+                Syntax::Call(items) if graph.form(id) == Some("fn") => {
                     let function = Function {
                         program: self.program.clone(),
                         node: id,
@@ -42,32 +41,44 @@ impl Function {
                         pending.push((*ty, HashSet::new(), true));
                     }
                 }
-                Kind::Seq(items) => {
-                    let head = items.first().and_then(|head| graph.symbol(*head));
-                    let builtin = head.is_some_and(|name| builtins::arity(name).is_some());
-                    let expression = builtin
-                        || head.is_some_and(|name| {
-                            locals.contains(name) || evaluator.resolve(id, name).is_some()
-                        })
-                        || items
-                            .first()
-                            .is_some_and(|head| matches!(graph.kind(*head), Kind::Seq(_)));
+                Syntax::Call(items) => {
+                    let head = graph.identifier(items[0]);
                     pending.extend(
-                        items[usize::from(builtin)..]
+                        items
                             .iter()
+                            .skip(1)
                             .rev()
-                            .map(|child| (*child, locals.clone(), expression)),
+                            .map(|child| (*child, locals.clone(), false)),
                     );
+                    if head.is_some_and(|name| crate::builtins::arity(name).is_none()) {
+                        pending.push((items[0], locals, true));
+                    } else if head.is_none() {
+                        pending.push((items[0], locals, false));
+                    }
                 }
-                Kind::Map(entries) => pending.extend(
+                Syntax::Sequence(items) => pending.extend(
+                    items
+                        .iter()
+                        .rev()
+                        .map(|child| (*child, locals.clone(), false)),
+                ),
+                Syntax::Mapping(entries) => pending.extend(
                     entries
                         .iter()
                         .rev()
                         .map(|(_, child)| (*child, locals.clone(), false)),
                 ),
-                Kind::Scalar { .. } if symbolic => {
-                    let Some(name) = graph.symbol(id) else {
-                        continue;
+                Syntax::Reference(_) | Syntax::Scalar(_)
+                    if symbolic || matches!(graph.syntax(id), Syntax::Reference(_)) =>
+                {
+                    let name = match graph.syntax(id) {
+                        Syntax::Reference(name) => name,
+                        _ => {
+                            let Some(name) = graph.identifier(id) else {
+                                continue;
+                            };
+                            name
+                        }
                     };
                     if locals.contains(name) {
                         continue;
@@ -102,15 +113,11 @@ impl Evaluator {
         let mut pending = vec![ROOT];
         let mut nodes = Vec::new();
         while let Some(id) = pending.pop() {
-            match self.graph().kind(id) {
-                Kind::Map(entries) => pending.extend(entries.iter().rev().map(|(_, child)| *child)),
-                Kind::Seq(items)
-                    if self.graph().form(id).is_none_or(|name| {
-                        builtins::arity(name).is_none() && self.resolve(id, name).is_none()
-                    }) =>
-                {
-                    pending.extend(items.iter().rev())
+            match self.graph().syntax(id) {
+                Syntax::Mapping(entries) => {
+                    pending.extend(entries.iter().rev().map(|(_, child)| *child));
                 }
+                Syntax::Sequence(items) => pending.extend(items.iter().rev()),
                 _ => nodes.push(id),
             }
         }
@@ -123,7 +130,7 @@ impl Evaluator {
     ) -> Result<Vec<(String, Option<NodeId>)>, HelixError> {
         let graph = &function.program.graph;
         let id = function.node;
-        let Kind::Seq(items) = graph.kind(id) else {
+        let Some(items) = graph.call(id) else {
             unreachable!()
         };
         if !matches!(items.len(), 3 | 4) {
@@ -150,10 +157,10 @@ impl Evaluator {
             .iter()
             .map(|&p| match graph.kind(p) {
                 Kind::Seq(pair) if pair.len() == 2 => Ok((
-                    graph.symbol(pair[0]).ok_or_else(malformed)?.into(),
+                    graph.identifier(pair[0]).ok_or_else(malformed)?.into(),
                     Some(pair[1]),
                 )),
-                _ => Ok((graph.symbol(p).ok_or_else(malformed)?.into(), None)),
+                _ => Ok((graph.identifier(p).ok_or_else(malformed)?.into(), None)),
             })
             .collect()
     }
@@ -202,10 +209,10 @@ impl Evaluator {
                 .map(|(_, id)| Binding::Node(*id))
         };
         let mut child = from;
-        while let Some(id) = self.graph().parent(child) {
-            let found = match self.graph().kind(id) {
-                Kind::Map(entries) => entry(entries),
-                Kind::Seq(items) if items.get(2) == Some(&child) => {
+        while let Some(id) = self.graph().lexical_parent(child) {
+            let found = match self.graph().syntax(id) {
+                Syntax::Mapping(entries) => entry(entries),
+                Syntax::Call(items) if items.get(2) == Some(&child) => {
                     match (self.graph().form(id), self.graph().kind(items[1])) {
                         (Some("fn"), _) => {
                             let function = Function {

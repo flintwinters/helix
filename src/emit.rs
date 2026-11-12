@@ -1,5 +1,5 @@
 //! Block-style YAML output. Helix owns the emitter because the written text is a public contract:
-//! a string that would re-read as something else (a number, a boolean, or the head of an expression)
+//! a string that would re-read as something else (a number or a boolean)
 //! must stay quoted, or a serialized state would not round-trip.
 
 use yaml_rust2::Yaml;
@@ -32,12 +32,6 @@ impl Encoded {
     fn source(graph: &crate::model::Graph, id: crate::model::NodeId) -> Self {
         use crate::model::Kind;
         match graph.kind(id) {
-            Kind::Scalar {
-                value: Yaml::String(text),
-                plain,
-            } => Self::Scalar(if *plain { text.clone() } else { quoted(text) }),
-            // Source identity retains numeric spelling; value emission may normalize it.
-            Kind::Scalar { value: Yaml::Real(text), .. } => Self::Scalar(text.clone()),
             Kind::Scalar { value, .. } => Self::value(value, false),
             Kind::Seq(items) => {
                 Self::List(items.iter().map(|id| Self::source(graph, *id)).collect())
@@ -140,7 +134,7 @@ pub fn document(value: &Yaml) -> String {
     Encoded::value(value, false).document()
 }
 
-/// Canonical source layout retains symbolic versus quoted scalar identity.
+/// Canonical source layout preserves YAML representation values.
 pub(crate) fn source(graph: &crate::model::Graph) -> String {
     Encoded::source(graph, crate::model::ROOT).document()
 }
@@ -151,15 +145,15 @@ pub(crate) fn recovery(
     graph: &crate::model::Graph,
     memo: &std::collections::HashMap<crate::model::NodeId, crate::model::Value>,
 ) -> String {
-    use crate::model::{Kind, Value};
+    use crate::model::Value;
     let encode = |id| {
         memo.get(&id)
             .and_then(Value::plain_yaml)
-            .map(|v| Encoded::value(&v, false))
+            .map(|v| Encoded::Map(vec![(quoted("$literal"), Encoded::value(&v, false))]))
             .unwrap_or_else(|| Encoded::source(graph, id))
     };
-    match graph.kind(crate::model::ROOT) {
-        Kind::Map(entries) => Encoded::Map(
+    match graph.syntax(crate::model::ROOT) {
+        crate::syntax::Syntax::Mapping(entries) => Encoded::Map(
             entries
                 .iter()
                 .map(|(name, id)| (string(name, false), encode(*id)))
@@ -181,10 +175,8 @@ fn scalar(value: &Yaml, head: bool) -> String {
     }
 }
 
-/// Plain only when unambiguous: identifier-like text that is not a YAML keyword and not the first
-/// item of a sequence (`head`), where it could re-read as an expression naming a builtin or any
-/// user function in scope, which the emitter cannot see.
-fn string(text: &str, head: bool) -> String {
+/// Plain only when the scalar resolves to the same YAML string.
+fn string(text: &str, _head: bool) -> String {
     const KEYWORDS: [&str; 10] = [
         "true", "false", "null", "yes", "no", "on", "off", "y", "n", "~",
     ];
@@ -195,10 +187,9 @@ fn string(text: &str, head: bool) -> String {
     let plain_rest = text
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || " _./@()+=-".contains(c));
-    let reserved = head
-        || KEYWORDS
-            .iter()
-            .any(|keyword| text.eq_ignore_ascii_case(keyword));
+    let reserved = KEYWORDS
+        .iter()
+        .any(|keyword| text.eq_ignore_ascii_case(keyword));
     if plain_start && plain_rest && !text.ends_with(' ') && !reserved {
         return text.to_string();
     }
@@ -215,7 +206,7 @@ fn quoted(text: &str) -> String {
             '\n' => quoted.push_str("\\n"),
             '\t' => quoted.push_str("\\t"),
             '\r' => quoted.push_str("\\r"),
-            c if c.is_control() || !is_printable(c) => {
+            c if c.is_control() || matches!(c, '\u{2028}' | '\u{2029}') || !is_printable(c) => {
                 quoted.push_str(&format!("\\u{:04x}", c as u32))
             }
             c => quoted.push(c),

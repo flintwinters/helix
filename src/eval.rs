@@ -1,23 +1,23 @@
 //! Explicit execution requests and continuations. No transition invokes another interpreter.
-use crate::model::{HelixError, string as s};
 use crate::graph::{Graph, NodeId, ROOT};
 use crate::link;
+use crate::model::{HelixError, string as s};
 use crate::value::{Hash, Value};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-mod lexical;
-mod forms;
-mod iteration;
 mod atomic;
 mod effects;
 mod expression;
+mod forms;
+mod iteration;
+mod lexical;
 
 use crate::model::Limits;
 use crate::model::{Outcome, Vm};
 
-use crate::model::{Actor, Mode, Program, Request, Scope};
+use crate::model::{Actor, Program, Request, Scope};
 pub(crate) use crate::model::{Evaluator, Function};
 impl Evaluator {
     pub fn new(
@@ -33,7 +33,7 @@ impl Evaluator {
                 modules,
             }),
             Vec::new(),
-            Request::Eval(ROOT, Mode::Node),
+            Request::Eval(ROOT),
         ))
     }
     fn start(program: Arc<Program>, environment: Vec<Scope>, request: Request) -> Self {
@@ -86,11 +86,8 @@ impl Evaluator {
     fn push(&mut self, request: Request) {
         self.requests.push(request);
     }
-    fn eval(&mut self, node: NodeId, argument: bool) {
-        self.push(Request::Eval(
-            node,
-            if argument { Mode::Argument } else { Mode::Node },
-        ));
+    fn eval(&mut self, node: NodeId) {
+        self.push(Request::Eval(node));
     }
     fn finish(&mut self, value: Value) {
         self.answer = Some(Ok(value));
@@ -154,7 +151,7 @@ impl Evaluator {
                     self.memo = memo;
                 }
             }
-            Request::Eval(id, mode) => self.evaluate(id, mode)?,
+            Request::Eval(id) => self.evaluate(id)?,
             Request::Finish(id, depth, local) => {
                 self.active.remove(&(id, depth));
                 if let Some(Ok(value)) = &self.answer {
@@ -172,7 +169,11 @@ impl Evaluator {
                 if let Value::Function(function) = value {
                     self.apply(id, Actor::Function(function), items[1..].to_vec())?;
                 } else {
-                    self.collect(id, None, items, None, false);
+                    return Err(self.err(
+                        items[0],
+                        "type",
+                        "$call actor must resolve to a function",
+                    ));
                 }
             }
             Request::Collect {
@@ -181,14 +182,14 @@ impl Evaluator {
                 nodes,
                 keys,
                 mut values,
-                argument,
             } => {
                 values.push(self.value());
-                self.collect_next(site, actor, nodes, keys, values, argument);
+                self.collect_next(site, actor, nodes, keys, values);
             }
             Request::Apply(site, actor, nodes, values) => match actor {
-                Actor::Builtin(name) if name == "effect" => self.request_effect(site, &nodes, &values)?,
-
+                Actor::Builtin(name) if name == "effect" => {
+                    self.request_effect(site, &nodes, &values)?
+                }
 
                 Actor::Function(function) => self.push(Request::Call(site, function, values)),
                 Actor::Builtin(name) if name == "step" => {
@@ -247,14 +248,14 @@ impl Evaluator {
             }
             Request::CallArgument(designator, args) => {
                 self.push(Request::CallResolved(designator, args));
-                self.eval(designator, true);
+                self.eval(designator);
             }
             Request::CallResolved(site, args) => {
                 let Value::Function(function) = self.value() else {
                     return Err(self.err(
                         site,
                         "type",
-                        "expected a function (`[fn, [params], body]` or its name)",
+                        "expected a function (`{$call: [fn, [params], body]}` or its name)",
                     ));
                 };
                 self.push(Request::Call(site, function, args));
@@ -305,7 +306,7 @@ impl Evaluator {
                 if let Some(ty) = result_type {
                     let value = self.value();
                     self.push(Request::ResultAnnotation(body, value));
-                    self.eval(ty, true);
+                    self.eval(ty);
                 }
             }
             Request::CallTrace(site, function) => {
@@ -354,7 +355,7 @@ impl Evaluator {
             Request::Finally(cleanup) => {
                 let outcome = self.take();
                 self.push(Request::Cleanup(outcome));
-                self.eval(cleanup, true);
+                self.eval(cleanup);
             }
             Request::Cleanup(outcome) => {
                 if let Err(error) = self.take() {
@@ -385,7 +386,7 @@ impl Evaluator {
             Request::Refined(site, args, _) => {
                 let base = self.value();
                 self.push(Request::Refine(site, args.clone(), base));
-                self.eval(args[1], true);
+                self.eval(args[1]);
             }
             Request::Atomic(operation) => self.atomic(operation)?,
             Request::PredicateEnd(operation) => self.predicate_end(operation),
@@ -454,11 +455,7 @@ impl Evaluator {
     }
 
     pub fn for_node(&self, node: NodeId) -> Self {
-        let mut state = Self::start(
-            self.program.clone(),
-            Vec::new(),
-            Request::Eval(node, Mode::Node),
-        );
+        let mut state = Self::start(self.program.clone(), Vec::new(), Request::Eval(node));
         state.effects_allowed = false;
         state.memo = self.memo.clone();
         state.limits = self.limits;

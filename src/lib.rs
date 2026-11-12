@@ -4,6 +4,7 @@ mod builtins;
 mod emit;
 mod eval;
 mod graph;
+mod syntax;
 mod library;
 mod link;
 mod vm;
