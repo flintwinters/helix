@@ -98,7 +98,7 @@ INVALID = {
 
 
 def verify(h):
-    declarations = (h.ROOT / "src/builtins.rs").read_text()
+    declarations = (h.root / "src/builtins.rs").read_text()
     arities = re.findall(r'\("([a-z_]+)", (\d+), (None|Some\(\d+\))\)', declarations)
     assert {name for name, _, _ in arities} == WITNESSES.keys(), "update actor witnesses when adding/removing builtins"
     report = {name: {"result": 0, "wrong_type": 0, "wrong_arity": 0} for name in WITNESSES}
@@ -149,7 +149,7 @@ def verify(h):
         result = h.helix("run", "-", stdin=source)
         error = yaml.safe_load(result.stdout)["error"]
         assert (error["path"], error["line"], error["column"]) == (path, 1, column), error
-    artifact = h.ROOT / "runtime" / "coverage"
+    artifact = h.root / "runtime" / "coverage"
     artifact.mkdir(exist_ok=True)
     (artifact / "actors.json").write_text(json.dumps({"schema": 1, "scenarios": report,
         "unrestricted_operands": sorted(UNRESTRICTED),

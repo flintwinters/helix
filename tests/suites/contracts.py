@@ -5,7 +5,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
+from dataclasses import replace
 
 import yaml
 
@@ -22,10 +22,12 @@ def checked(h, source):
 def harness(h):
     import contextlib
     import io
+    from unittest.mock import patch
+    from tooling import test_runner
     # Regression orchestration must keep failures from every selected suite.
-    with patch.object(h, "SUITES", {"first": "probe", "second": "probe"}), \
+    with patch.object(test_runner, "SUITES", {"first": "probe", "second": "probe"}), \
          patch.object(sys.modules[__name__], "run", side_effect=[["probe failure"], []]) as dispatch, \
-         contextlib.redirect_stderr(io.StringIO()):
+         contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
         assert h.regression(False, ["first", "second"]) == 1
         assert [call.args[0] for call in dispatch.call_args_list] == ["first", "second"]
 
@@ -42,53 +44,55 @@ def harness(h):
     assert h.malformed_state("status: finished\nroot: null", 0) is None
     assert h.malformed_state("status: error\nerror: {kind: type, message: bad, line: 1, column: 2}", 1) is None
     assert h.root_section("status: finished\nroot:\n  a: 1\n") == "a: 1\n"
-    assert h.root_section("status: finished\nroot:\n  a: 1\nphase: type\n") == "a: 1\n"
+    assert h.root_section("status: finished\nroot:\n  a: 1\nmode: check\n") == "a: 1\n"
     assert h.root_section("status: error\n") is None
+    assert h.root_section("status: finished\nroot: {ref: function1}\nobjects: {}\n") is None
     for scalar in ("1", "null", "false", "'quoted'", "[]", "{}"):
         assert h.root_section(f"status: finished\nroot: {scalar}\n") == scalar + "\n"
     assert h.root_section("status: finished\nroot: |-\n  first\n  second\n") == "|-\n  first\n  second\n"
     assert "" in list(h.mutations("a: 1\nb: 2\n"))
-    with patch.object(h.subprocess, "run", side_effect=subprocess.TimeoutExpired("helix", 1)):
-        result = h.helix("run", "-", stdin="1")
-        assert result.returncode == 124 and "timed out" in result.stderr
-    # Exercise actual timeout and crash handling without running a second harness entrypoint.
-    with patch.object(h, "BIN", Path(sys.executable)), patch.dict("os.environ", {"HELIX_TEST_TIMEOUT": "0.05"}):
-        assert h.helix("-c", "import time; time.sleep(5)").returncode == 124
-        assert h.malformed_state("", h.helix("-c", "raise SystemExit(7)").returncode)
+    def timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args[0], kwargs["timeout"])
+    timed_out = replace(h, process_runner=timeout)
+    result = timed_out.helix("run", "-", stdin="1")
+    assert result.returncode == 124 and "timed out" in result.stderr
+    # Exercise actual timeout and crash handling without changing the caller's executable.
+    python = replace(h, binary=Path(sys.executable), timeout=0.05)
+    assert python.helix("-c", "import time; time.sleep(5)").returncode == 124
+    assert h.malformed_state("", python.helix("-c", "raise SystemExit(7)").returncode)
     from tooling.test_runner import discover_cases
-    cases = discover_cases(h.COMMANDS, h.ROOT)
+    cases = discover_cases(h.commands, h.root)
     assert cases
     assert all(c.with_suffix(".expected.yaml").is_file() for c in cases)
     assert all(p.with_name(p.name.replace(".expected.yaml", ".yaml")).is_file()
-               for d in h.COMMANDS for p in d.glob("*.expected.yaml"))
+               for d in h.commands for p in d.glob("*.expected.yaml"))
 
 
     import contextlib
     import io
-    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="harness-") as directory:
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="harness-") as directory:
         case = Path(directory) / "probe.yaml"
         case.write_text("value: 42")
         expected = "status: finished\nroot:\n  value: 42\n"
         case.with_suffix(".expected.yaml").write_text(expected)
-        original_helix = h.helix
-        def fake(*args, stdin=None):
-            if args[0] == "std":
-                return original_helix(*args, stdin=stdin)
+        def fake(args, **kwargs):
+            if args[1] == "std":
+                return h.process_runner(args, **kwargs)
             return subprocess.CompletedProcess(args, 0, expected, "")
-        with patch.object(h, "COMMANDS", {case.parent: "run"}), patch.object(h, "build", return_value=0), \
-             patch.object(h, "helix", side_effect=fake), contextlib.redirect_stdout(io.StringIO()), \
-             contextlib.redirect_stderr(io.StringIO()):
-            assert h.test(False, ["golden"]) == 0
+        fixture = replace(h, commands={case.parent: "run"}, process_runner=fake)
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            assert fixture.test(False, ["golden"]) == 0
             case.with_suffix(".expected.yaml").write_text(expected.replace("42", "43"))
-            assert h.test(False, ["golden"]) == 1, "golden comparator accepted a semantic fault"
+            assert fixture.test(False, ["golden"]) == 1, "golden comparator accepted a semantic fault"
             case.with_suffix(".expected.yaml").write_text(expected)
-            def broken_reload(*args, stdin=None):
-                result = fake(*args, stdin=stdin)
-                if stdin is not None:
+            def broken_reload(args, **kwargs):
+                result = fake(args, **kwargs)
+                if kwargs.get("input") is not None:
                     result.stdout = expected.replace("42", "43")
                 return result
-            with patch.object(h, "helix", side_effect=broken_reload):
-                assert h.test(False, ["golden"]) == 1, "round-trip comparator accepted broken emission"
+            broken = replace(fixture, process_runner=broken_reload)
+            assert broken.test(False, ["golden"]) == 1, "round-trip comparator accepted broken emission"
+            assert fixture.test(False, ["golden"]) == 0, "derived context changed the original runner"
 
 
 def cli(h):
@@ -103,7 +107,7 @@ def cli(h):
         assert result.returncode == 2 and not result.stdout and result.stderr, (args, result)
     missing = h.helix("run", "runtime/definitely-missing-helix-input.yaml")
     assert missing.returncode == 2 and not missing.stdout and "cannot read" in missing.stderr
-    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="cli-") as directory:
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="cli-") as directory:
         source = Path(directory) / "program with spaces.yaml"
         for command in ("run", "check"):
             for program, code in [("answer: [add, 20, 22]\n", 0), ("answer: [div, 1, 0]\n", 1), ("[", 1)]:
@@ -181,7 +185,7 @@ def dogfood(h):
 def imports(h):
     from tests.suites.dependencies import verify
     verify(h)
-    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="imports-") as directory:
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="imports-") as directory:
         base = Path(directory)
         (base / "shared.yaml").write_text("value: 21\n")
         for name in ("left", "right"):
@@ -268,7 +272,7 @@ def fuzz(h):
                     candidate = minimized[:pos] + minimized[pos + 1:]
                     if fails(candidate) == why:
                         minimized = candidate
-            artifact = h.ROOT / "runtime" / f"fuzz-{seed}-{sample}.yaml"
+            artifact = h.root / "runtime" / f"fuzz-{seed}-{sample}.yaml"
             artifact.write_text(minimized)
             raise AssertionError(f"seed={seed} sample={sample}: {why}; original={source!r}; "
                                  f"artifact={artifact}; reproduce: ./manage.py {command} {artifact}")
@@ -292,7 +296,7 @@ def execution(h):
     import signal
     # Kill the whole Cargo/test process group on timeout, including a stuck test binary.
     with subprocess.Popen(["cargo", "test", "--quiet", "--test", "execution", "--test", "execution_memory", "--", "--nocapture"],
-                          cwd=h.ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          cwd=h.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                           text=True, start_new_session=True) as process:
         try:
             output, _ = process.communicate(timeout=120)
@@ -300,6 +304,6 @@ def execution(h):
             os.killpg(process.pid, signal.SIGKILL)
             output, _ = process.communicate()
             raise AssertionError(f"execution contracts timed out; {output}")
-    (h.ROOT / "runtime" / "execution-profile.log").write_text(output)
+    (h.root / "runtime" / "execution-profile.log").write_text(output)
     print(output, end="")
     assert process.returncode == 0, "execution contracts failed"

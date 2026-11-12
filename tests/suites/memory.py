@@ -1,6 +1,5 @@
 """Linux peak-RSS regression workloads; GNU time measures only the interpreter child."""
 import json
-import os
 import platform
 import subprocess
 import time
@@ -13,7 +12,7 @@ import yaml
 def verify(h):
     if platform.system() != "Linux" or not Path("/usr/bin/time").exists():
         raise AssertionError("memory suite requires Linux and GNU /usr/bin/time; select other suites on other hosts")
-    base = h.ROOT / "runtime" / "memory"
+    base = h.root / "runtime" / "memory"
     base.mkdir(exist_ok=True)
     artifact = Path(tempfile.mkdtemp(dir=base, prefix="run-"))
     measurements = []
@@ -24,9 +23,9 @@ def verify(h):
         with (artifact / f"{name}.state.yaml").open("w") as output:
             started = time.perf_counter()
             result = subprocess.run(["/usr/bin/time", "-f", "%M", "-o", str(peak),
-                                     str(h.BIN), "run", str(program)], cwd=h.ROOT,
+                                     str(h.binary), "run", str(program)], cwd=h.root,
                                     stdout=output, stderr=subprocess.PIPE, text=True,
-                                    timeout=float(os.environ.get("HELIX_TEST_TIMEOUT", "10")))
+                                    timeout=h.timeout)
             elapsed = time.perf_counter() - started
         state = yaml.safe_load((artifact / f"{name}.state.yaml").read_text())
         assert result.returncode == 0 and state["status"] == "finished", (name, result, state)
@@ -47,7 +46,7 @@ def verify(h):
         assert long <= short + 8 * 1024, (short, long, "constant-state loop retained memory proportional to steps")
     finally:
         report = {"environment": {"platform": platform.platform(), "python": platform.python_version(),
-                                   "binary": str(h.BIN), "profile": "debug", "rss": "GNU time max RSS, KiB"},
+                                   "binary": str(h.binary), "profile": "debug", "rss": "GNU time max RSS, KiB"},
                   "measurements": measurements}
         report["run_directory"] = str(artifact)
         (artifact / "report.json").write_text(json.dumps(report, indent=2) + "\n")

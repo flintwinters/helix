@@ -6,7 +6,7 @@ import yaml
 
 
 def verify(h):
-    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="errors-") as directory:
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="errors-") as directory:
         base = Path(directory)
         (base / "helper.yaml").write_text("leaf: [fn, [], [div, 1, 0]]\nmiddle: [fn, [], [leaf]]\n")
         program = base / "program.yaml"

@@ -7,8 +7,8 @@ import yaml
 
 
 def verify(h):
-    source = h.ROOT / "tests" / "cases"
-    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="dependencies-") as directory:
+    source = h.root / "tests" / "cases"
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="dependencies-") as directory:
         base = Path(directory)
         original = base / "original"
         original.mkdir()

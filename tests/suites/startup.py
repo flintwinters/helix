@@ -8,8 +8,8 @@ def verify(h):
     for args in [(), ("--help",), ("--help-json",), ("runtime", "--help"),
                  ("test", "--list"), ("quality", "test", "--describe")]:
         profiled = subprocess.run(
-            [sys.executable, "-X", "importtime", str(h.ROOT / "manage.py"), *args],
-            cwd=h.ROOT, capture_output=True, text=True, timeout=10,
+            [sys.executable, "-X", "importtime", str(h.root / "manage.py"), *args],
+            cwd=h.root, capture_output=True, text=True, timeout=10,
         )
         assert profiled.returncode == 0, profiled.stderr
         imported = {line.rsplit("|", 1)[-1].strip() for line in profiled.stderr.splitlines()

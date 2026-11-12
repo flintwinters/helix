@@ -6,7 +6,7 @@ import yaml
 
 
 def verify(h):
-    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="permissions-") as directory:
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="permissions-") as directory:
         base = Path(directory)
         allowed = base / "allowed"
         allowed.mkdir()

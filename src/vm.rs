@@ -113,6 +113,8 @@ impl Vm {
             self.advance();
         }
     }
+    /// Evaluate the program collecting independent errors instead of stopping at the first.
+    /// This does not enter type time or change import policy. A clean program ends `finished`.
     pub fn check(&mut self) {
         if self.status != Status::Ready {
             if self.evaluator.is_none() {
@@ -158,6 +160,8 @@ impl Vm {
             self.status = Status::Error
         }
     }
+    /// Check states carry `mode: check` and preserve each error's own evaluation phase.
+    /// Run states carry a single error and, when present, its phase at the top level too.
     pub fn state(&self) -> Yaml {
         use crate::error::s;
         use crate::value::Hash;

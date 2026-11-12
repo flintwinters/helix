@@ -47,8 +47,8 @@ def verify(h):
     # Exercise the actual OS pipe, including raw generated source and stdin defaults.
     result = subprocess.run(
         ['bash', '-o', 'pipefail', '-c', '"$1" exec \'"[add, 20, 22]"\' | "$1" exec',
-         'helix-pipeline', str(h.BIN)],
-        capture_output=True, text=True, cwd=h.ROOT, timeout=10,
+         'helix-pipeline', str(h.binary)],
+        capture_output=True, text=True, cwd=h.root, timeout=10,
     )
     assert (result.returncode, result.stdout, result.stderr) == (0, "42\n", ""), result
     # The project entrypoint exposes the same language behavior and discovery.
@@ -56,8 +56,8 @@ def verify(h):
                          (("exec",), "[add, 20, 22]"),
                          (("runtime", "exec", "--", "-42"), None)]:
         result = subprocess.run(
-            [sys.executable, str(h.ROOT / "manage.py"), *args], input=source,
-            capture_output=True, text=True, cwd=h.ROOT, timeout=120,
+            [sys.executable, str(h.root / "manage.py"), *args], input=source,
+            capture_output=True, text=True, cwd=h.root, timeout=120,
         )
         expected = "-42\n" if "-42" in args else "42\n"
         assert (result.returncode, result.stdout, result.stderr) == (0, expected, ""), result
@@ -87,8 +87,8 @@ def verify_formats(h):
             assert h.malformed_state(result.stderr, 1) is None, result
         assert decode(h.helix("exec", flag, "--", "--literal").stdout) == "--literal"
         result = subprocess.run(
-            [sys.executable, str(h.ROOT / "manage.py"), "runtime", "exec", flag],
-            input='"null"', capture_output=True, text=True, cwd=h.ROOT, timeout=120,
+            [sys.executable, str(h.root / "manage.py"), "runtime", "exec", flag],
+            input='"null"', capture_output=True, text=True, cwd=h.root, timeout=120,
         )
         assert result.returncode == 0 and not result.stderr and decode(result.stdout) == "null", result
     for args in [("--json", "--yaml"), ("--yaml", "--json"), ("--unknown",),
@@ -112,7 +112,7 @@ def verify_consumers(h):
             result = subprocess.run(
                 ["bash", "-o", "pipefail", "-c",
                  "\"$1\" exec \"$2\" '{answer: [add, 20, 22]}' | \"$3\" '.answer' | \"$1\" exec --json",
-                 "helix-consumer", str(h.BIN), flag, executable],
-                capture_output=True, text=True, cwd=h.ROOT, timeout=10,
+                 "helix-consumer", str(h.binary), flag, executable],
+                capture_output=True, text=True, cwd=h.root, timeout=10,
             )
             assert (result.returncode, result.stdout, result.stderr) == (0, "42\n", ""), result

@@ -1,0 +1,18 @@
+bottom: never
+top: any
+nothing: null
+rejects_values: [map, [fn, [v], [is, v, never]], [list, null, false, 0, 1.5, "", [], {}]]
+null_inhabited: [is, nothing, "null"]
+null_not_bottom: [subtype, "null", never]
+bottom_below_types: [map, [fn, [t], [subtype, never, t]], [list, any, never, integer, "null", [list_of, string], [record, "x", boolean]]]
+top_not_bottom: [subtype, any, never]
+empty_list: [is, [], [list_of, never]]
+nonempty_list: [is, [list, null], [list_of, never]]
+empty_map: [is, {}, [map_of, never]]
+nonempty_map: [is, {x: null}, [map_of, never]]
+union_with_bottom: [union, never, integer]
+union_membership: [list, [is, 4, union_with_bottom], [is, "4", union_with_bottom]]
+union_below_integer: [subtype, union_with_bottom, integer]
+integer_below_union: [subtype, integer, union_with_bottom]
+only_bottom: [subtype, [union, never, never], never]
+rejection: [violations, nothing, never]

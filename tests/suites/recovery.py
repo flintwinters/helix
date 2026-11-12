@@ -3,7 +3,7 @@ import yaml
 
 
 def verify(h):
-    source = (h.CASES / "error_recovery.yaml").read_text()
+    source = (h.root / "tests" / "cases" / "error_recovery.yaml").read_text()
     failed = h.helix("recover", "-", stdin=source)
     assert failed.returncode == 1 and not failed.stderr
     for command, original in [("recover", source), ("resume", failed.stdout)]:
@@ -45,7 +45,7 @@ def verify(h):
     # File-relative imports survive multiple failed attempts from a different state directory.
     import tempfile
     from pathlib import Path
-    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="recovery-") as directory:
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="recovery-") as directory:
         base = Path(directory)
         (base / "helper.yaml").write_text("value: 42")
         program = base / "program.yaml"

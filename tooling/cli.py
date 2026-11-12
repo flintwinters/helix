@@ -1,7 +1,30 @@
 """Command discovery and parsing; execution stays in manage.py."""
 import argparse
-import json
 import textwrap
+
+from tooling.output import emit
+
+
+class AgentParser(argparse.ArgumentParser):
+    """Structured discovery and usage failures unless text is explicitly selected."""
+
+    output_format = "json"
+
+    def print_help(self, file=None):
+        if self.output_format == "text":
+            return super().print_help(file)
+        emit({"command": "help", "status": "ok", **getattr(self, "discovery", {}),
+              "tree": describe(self)}, stream=file)
+
+    def error(self, message):
+        if self.output_format == "text":
+            return super().error(message)
+        import sys
+
+        emit({"status": "error", "exit_code": 2,
+              "error": {"kind": "usage", "message": message},
+              "usage": self.format_usage().strip()}, stream=sys.stderr)
+        self.exit(2)
 
 DEFAULT_TEST_JOBS = 4
 
@@ -32,6 +55,8 @@ SUITES = {
 }
 
 CONTRACT = (
+    "Project discovery, build and test reports default to versioned JSON; "
+    "--format=text before the command selects human-readable reports. "
     "Runtime commands build automatically and emit YAML on stdout. "
     "Exit codes: 0 success, 1 evaluation/test failure, 2 invalid usage or unreadable input "
     "(build and forwarded tools retain their own codes). "
@@ -44,11 +69,13 @@ CONTRACT = (
 
 def parser():
     """Build one canonical tree and derive compatibility shortcuts from its leaves."""
-    root = argparse.ArgumentParser(
+    root = AgentParser(
         description="Build, execute, inspect, and verify Helix.",
         epilog=textwrap.fill(CONTRACT, width=88), formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     root.add_argument("--help-json", action="store_true", help="print the complete command/argument tree as JSON without building")
+    root.add_argument("--format", choices=("json", "text"), default="json",
+                      help="project report format (default: json); place before the command; runtime/forwarded output keeps its own format")
     aliases = {}
     leaves = {}
 
@@ -121,6 +148,7 @@ def parser():
     )
     testing.epilog += "\n\nSuites:\n" + "\n".join(f"  {name}: {description}" for name, description in SUITES.items())
     testing.formatter_class = argparse.RawDescriptionHelpFormatter
+    root.discovery = {"shortcuts": aliases, "suites": SUITES}
     return root, aliases, leaves
 
 
@@ -144,9 +172,28 @@ def describe(parser):
 
 def parse(argv):
     root, aliases, leaves = parser()
+    output_format = "json"
+    if argv and (argv[0] == "--format" or argv[0].startswith("--format=")):
+        if argv[0] == "--format":
+            if len(argv) < 2:
+                root.error("--format requires json or text")
+            output_format, argv = argv[1], argv[2:]
+        else:
+            output_format, argv = argv[0].split("=", 1)[1], argv[1:]
+        if output_format not in ("json", "text"):
+            root.error("--format must be json or text")
+
+    def configure(node):
+        node.output_format = output_format
+        for action in node._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                for child in action.choices.values():
+                    configure(child)
+
+    configure(root)
     if argv == ["--help-json"]:
-        print(json.dumps({"version": 1, "shortcuts": aliases, "suites": SUITES,
-                          "tree": describe(root)}, indent=2))
+        root.output_format = "json"
+        root.print_help()
         return None
     if argv and argv[0] in aliases:
         argv = [*aliases[argv[0]], *argv[1:]]
@@ -160,8 +207,9 @@ def parse(argv):
                 return None
             if extra[:1] == ["--"]:
                 extra = extra[1:]
-            return argparse.Namespace(command=name, extra=extra)
+            return argparse.Namespace(command=name, extra=extra, format=output_format)
     args = root.parse_args(argv)
+    args.format = output_format
     if args.help_json:
         root.error("--help-json must be used alone")
     if args.command is None:

@@ -1,0 +1,4 @@
+failure: [div, 1, 0]
+ordinary_again: [add, failure, 1]
+typed: [type_time, failure]
+typed_again: [type_time, failure]

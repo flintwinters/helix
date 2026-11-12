@@ -1,7 +1,6 @@
 """Repeatable CLI speed measurements, with semantic checks outside timed regions."""
 import hashlib
 import json
-import os
 import platform
 import statistics
 import subprocess
@@ -69,7 +68,7 @@ def history_comparison(base, environment, name, source_hash, samples):
 
 
 def verify(h):
-    base = h.ROOT / "runtime" / "speed"
+    base = h.root / "runtime" / "speed"
     base.mkdir(parents=True, exist_ok=True)
     verify_comparison(base)
     artifact = Path(tempfile.mkdtemp(dir=base, prefix="run-"))
@@ -77,7 +76,7 @@ def verify(h):
         "schema_version": 2,
         "environment": {"platform": platform.platform(), "machine": platform.machine(),
                         "python": platform.python_version(), "profile": "debug",
-                        "binary_sha256": hashlib.sha256(h.BIN.read_bytes()).hexdigest()},
+                        "binary_sha256": hashlib.sha256(h.binary.read_bytes()).hexdigest()},
         "method": {"clock": "perf_counter_ns", "samples": SAMPLES, "warmups": WARMUPS,
                    "scope": "CLI process startup, file loading, evaluation and state emission; excludes build and Python YAML decoding",
                    "policy": "correctness and subprocess timeout are enforced; timings are observations, not portable pass/fail thresholds"},
@@ -98,9 +97,9 @@ def verify(h):
             report["measurements"].append(measurement)
             for index in range(WARMUPS + SAMPLES):
                 started = time.perf_counter_ns()
-                result = subprocess.run([str(h.BIN), "run", str(program)], cwd=h.ROOT,
+                result = subprocess.run([str(h.binary), "run", str(program)], cwd=h.root,
                                         capture_output=True, text=True,
-                                        timeout=float(os.environ.get("HELIX_TEST_TIMEOUT", "10")))
+                                        timeout=h.timeout)
                 elapsed = (time.perf_counter_ns() - started) / 1e9
                 (artifact / f"{name}.state.yaml").write_text(result.stdout)
                 (artifact / f"{name}.stderr").write_text(result.stderr)

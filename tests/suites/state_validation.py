@@ -28,7 +28,7 @@ def verify(h):
     # Both safe loaders must assign the same meaning to the actual state corpus.
     accelerated = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
     accelerated_seconds = python_seconds = 0.0
-    for directory in h.COMMANDS:
+    for directory in h.commands:
         for expected in sorted(directory.glob("*.expected.yaml")):
             source = expected.read_text()
             started = perf_counter()

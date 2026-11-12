@@ -8,7 +8,7 @@ from tooling.test_reports import failure
 
 
 def verify(h):
-    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="reports-") as temporary:
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="reports-") as temporary:
         root = Path(temporary)
         case = root / "tests" / "check" / "with spaces.yaml"
         case.parent.mkdir(parents=True)

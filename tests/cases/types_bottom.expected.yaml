@@ -1,0 +1,41 @@
+status: finished
+root:
+  bottom: never
+  top: any
+  nothing: ~
+  rejects_values:
+    - false
+    - false
+    - false
+    - false
+    - false
+    - false
+    - false
+  null_inhabited: true
+  null_not_bottom: false
+  bottom_below_types:
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+  top_not_bottom: false
+  empty_list: true
+  nonempty_list: false
+  empty_map: true
+  nonempty_map: false
+  union_with_bottom:
+    type: union
+    of:
+      - "never"
+      - integer
+  union_membership:
+    - true
+    - false
+  union_below_integer: true
+  integer_below_union: true
+  only_bottom: true
+  rejection:
+    - at: /
+      message: "expected never, got null"

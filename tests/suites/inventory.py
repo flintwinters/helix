@@ -19,7 +19,7 @@ def verify(h):
                 {"directory": "std", "count": 1, "files": [records[1]["path"]]}]
     assert yaml.safe_load(result.stdout)["root"]["report"] == expected
     assert h.helix("run", "-", stdin=source).stdout == result.stdout
-    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="inventory-") as directory:
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="inventory-") as directory:
         replay = Path(directory) / "inventory.input.yaml"
         replay.write_text(source)
         assert h.helix("run", str(replay)).stdout == result.stdout
@@ -29,4 +29,4 @@ def verify(h):
     import contextlib
     import io
     with patch("tooling.inventory.report", return_value=(source, failure)), contextlib.redirect_stderr(io.StringIO()):
-        assert inventory(h.helix, h.ROOT) == 1
+        assert inventory(h.helix, h.root) == 1

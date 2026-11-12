@@ -16,12 +16,23 @@ input; typos fail before building. Filters require explicit golden/robustness
 suite selection and also restrict `--bless` to the selected golden expectations.
 Selected cases retain discovery order and use the existing `--jobs` workers.
 
+## Test execution context
+
+`manage.py` builds and snapshots the interpreter before running contracts.
+`tooling/test_runner.py` owns fixture execution and the immutable `TestContext`
+passed to each suite: repository root, executable, timeout, fixture directories,
+and process callback. Override execution for a fixture or compiled mutant with
+`dataclasses.replace(context, ...)`; never patch the entrypoint module or change a
+shared executable setting. The context captures `HELIX_TEST_TIMEOUT` once per run.
+Its process callback follows `subprocess.run` and supports isolated fault injection.
+
 ## Testing contracts and known gaps
 
 All checks run through `./manage.py test`; no separate Python launchers are needed.
 Golden and robustness cases use four workers by default; `--jobs N` controls case
-concurrency (`--jobs 1` runs serially). Results retain discovery order. Suites that
-mutate shared harness state remain serial; robustness variants stream per case.
+concurrency (`--jobs 1` runs serially). Results retain discovery order. Suites remain
+serial because some capture process-wide output or patch dependencies; robustness
+variants stream per case.
 The default runs every suite. `HELIX_TEST_TIMEOUT` sets the per-interpreter timeout
 in seconds (default 10). Fixtures and failure artifacts stay under this checkout's
 ignored `runtime/` directory. Generated checks report fixed seeds; failures print

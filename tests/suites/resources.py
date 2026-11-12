@@ -54,7 +54,7 @@ def verify(h):
     source = "".join(f"v{i}: [add, v{i + 1}, 0]\n" for i in range(2000)) + "v2000: 0\n"
     failure(h, source, "depth")
     # Deep imports must stop during linking, including in an uncalled function.
-    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="limits-") as directory:
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="limits-") as directory:
         base = Path(directory)
         for i in range(70):
             (base / f"m{i}.yaml").write_text(f"next: [import, m{i + 1}.yaml]\n")

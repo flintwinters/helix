@@ -39,11 +39,14 @@ fn check_collects_errors_and_preserves_success() {
     checked.check();
     assert_eq!(checked.status(), Status::Error);
     assert_eq!(checked.state()["mode"].as_str(), Some("check"));
+    assert!(checked.state()["phase"].is_badvalue());
     assert_eq!(checked.state()["errors"].as_vec().unwrap().len(), 2);
     let mut clean = Vm::load("answer: [add, 1, 2]");
     clean.check();
     assert_eq!(clean.status(), Status::Finished);
     assert_eq!(clean.state()["root"]["answer"].as_i64(), Some(3));
+    assert_eq!(clean.state()["mode"].as_str(), Some("check"));
+    assert!(clean.state()["phase"].is_badvalue());
 }
 
 #[test]
@@ -60,6 +63,7 @@ fn terminal_execution_survives_check_and_repeated_checks() {
         vm.check();
         let saved = vm.state_string();
         assert_eq!(vm.state()["mode"].as_str(), Some("check"));
+        assert!(vm.state()["phase"].is_badvalue());
         vm.check();
         vm.run();
         assert_eq!(vm.state_string(), saved);

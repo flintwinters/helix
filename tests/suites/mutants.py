@@ -6,8 +6,8 @@ import os
 import shutil
 import subprocess
 import tempfile
+from dataclasses import replace
 from pathlib import Path
-from unittest.mock import patch
 
 from tests.suites import contracts
 
@@ -20,16 +20,17 @@ MUTATIONS = [
 
 
 def verify(h):
-    base = h.ROOT / "runtime" / "mutants"
+    base = h.root / "runtime" / "mutants"
     base.mkdir(exist_ok=True)
     run_directory = Path(tempfile.mkdtemp(dir=base, prefix="run-"))
     workspace = run_directory / "workspace"
     workspace.mkdir()
     for name in ("src", "std"):
-        shutil.copytree(h.ROOT / name, workspace / name)
+        shutil.copytree(h.root / name, workspace / name)
     for name in ("Cargo.toml", "Cargo.lock"):
-        shutil.copy2(h.ROOT / name, workspace / name)
+        shutil.copy2(h.root / name, workspace / name)
     target = run_directory / "target"
+    mutant = replace(h, binary=target / "debug" / "helix")
     env = {**os.environ, "CARGO_TARGET_DIR": str(target)}
     reports = []
     def build(label):
@@ -39,12 +40,11 @@ def verify(h):
         assert result.returncode == 0, f"{label}: build failed, not a killed mutation; see runtime/mutants/"
     def run(suite):
         output = io.StringIO()
-        with patch.object(h, "BIN", target / "debug" / "helix"), \
-             contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
             if suite == "golden":
-                failed = h.regression(False, [suite]) != 0
+                failed = mutant.regression(False, [suite]) != 0
             else:
-                failures = contracts.run(suite, h)
+                failures = contracts.run(suite, mutant)
                 output.write("\n".join(failures))
                 failed = bool(failures)
         return failed, output.getvalue()

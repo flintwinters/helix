@@ -20,9 +20,9 @@ def execute(h, source, artifact):
 
 
 def verify(h):
-    destination = h.ROOT / 'runtime' / 'dogfood'
+    destination = h.root / 'runtime' / 'dogfood'
     destination.mkdir(exist_ok=True)
-    sources = sorted((h.ROOT / 'tests' / 'dogfood').rglob('*.yaml'))
+    sources = sorted((h.root / 'tests' / 'dogfood').rglob('*.yaml'))
     assert sources, 'no dogfooded test modules discovered'
     failures = []
     for index, source in enumerate(sources):
@@ -32,7 +32,7 @@ def verify(h):
             failures.append(f'{source}: {state}; replay: ./manage.py run {artifact.with_suffix(".input.yaml")}')
         else:
             report = state['root']['report']
-            print(f'dogfood: {source.relative_to(h.ROOT)}: {report["passed"]}/{report["total"]} passed')
+            print(f'dogfood: {source.relative_to(h.root)}: {report["passed"]}/{report["total"]} passed')
     # Exercise the real bridge against failure, malformed modules, and missing reports.
     with tempfile.TemporaryDirectory(dir=destination, prefix='runner-') as directory:
         source = Path(directory) / 'probe.yaml'

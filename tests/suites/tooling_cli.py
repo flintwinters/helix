@@ -2,17 +2,20 @@
 import contextlib
 import io
 import json
+import os
 import subprocess
 import sys
 
 import yaml
 
+from tooling.cli import SUITES
+
 
 def verify(h):
     def invoke(*args):
         return subprocess.run(
-            [sys.executable, str(h.ROOT / "manage.py"), *args],
-            cwd=h.ROOT, input="", capture_output=True, text=True, timeout=120,
+            [sys.executable, str(h.root / "manage.py"), *args],
+            cwd=h.root, input="", capture_output=True, text=True, timeout=120,
         )
 
     for source, code in [("[add, 20, 22]", 0), ("[div, 1, 0]", 1), ("[", 1)]:
@@ -41,34 +44,59 @@ def verify(h):
     catalog = json.loads(discovery.stdout)
     assert catalog["version"] == 1
     assert set(catalog["tree"]["commands"]) == {"build", "runtime", "inspect", "quality"}
-    assert list(catalog["suites"]) == list(h.SUITES)
-    assert invoke("quality", "test", "--list").stdout.splitlines() == list(h.SUITES)
+    assert list(catalog["suites"]) == list(SUITES)
+    assert json.loads(invoke("quality", "test", "--list").stdout)["suites"] == list(SUITES)
+    assert invoke("--format=text", "test", "--list").stdout.splitlines() == list(SUITES)
     descriptions = invoke("test", "--describe")
     assert descriptions.returncode == 0
-    assert all(description in descriptions.stdout for description in h.SUITES.values())
+    assert json.loads(descriptions.stdout)["suites"] == SUITES
+    assert json.loads(help_result.stdout) == catalog
+    assert "usage:" in invoke("--format", "text", "--help").stdout
 
     def walk(node, path=()):
         help_result = invoke(*path, "--help")
         assert help_result.returncode == 0 and not help_result.stderr, path
+        assert json.loads(help_result.stdout)["tree"] == node
         for name, child in node["commands"].items():
             walk(child, (*path, name))
 
     walk(catalog["tree"])
     for path in [(), ("runtime",), ("inspect",), ("quality",)]:
         result = invoke(*path)
-        assert result.returncode == 0 and "usage:" in result.stdout and not result.stderr
+        assert result.returncode == 0 and json.loads(result.stdout)["tree"] and not result.stderr
     # Discovery needs only Python's standard library, with no Cargo or PyYAML.
     bare = subprocess.run(
-        [sys.executable, "-S", str(h.ROOT / "manage.py"), "--help-json"],
-        cwd=h.ROOT, capture_output=True, text=True, timeout=10,
+        [sys.executable, "-S", str(h.root / "manage.py"), "--help-json"],
+        cwd=h.root, capture_output=True, text=True, timeout=10,
     )
     assert bare.returncode == 0 and json.loads(bare.stdout) == catalog
+    # Invalid fixture selection must fail before trying to build, even without Cargo.
+    unmatched = subprocess.run(
+        [sys.executable, str(h.root / "manage.py"), "test", "--suite", "golden",
+         "--case", "__no_fixture_for_context_contract__"],
+        cwd=h.root, env={**os.environ, "PATH": ""}, capture_output=True, text=True, timeout=10,
+    )
+    assert unmatched.returncode == 2 and not unmatched.stdout and "matched no" in unmatched.stderr
     for args in [("runtime", "unknown"), ("runtime", "run"),
                  ("quality", "test", "--suite", "unknown"),
                  ("quality", "test", "--bless", "--suite", "cli"),
                  ("--help-json", "build")]:
         result = invoke(*args)
-        assert result.returncode == 2 and not result.stdout and "error:" in result.stderr, args
+        assert result.returncode == 2 and not result.stdout, args
+        assert json.loads(result.stderr)["error"]["kind"] == "usage", args
+    text_error = invoke("--format=text", "runtime", "unknown")
+    assert text_error.returncode == 2 and "error:" in text_error.stderr
+    assert json.loads(unmatched.stderr)["error"]["kind"] == "selection"
+    for args in [("test", "--suite", "startup"), ("build",), ("std",)]:
+        result = invoke(*args)
+        report = json.loads(result.stdout)
+        assert result.returncode == report["exit_code"] == 0, report
+        assert report["version"] == 1
+        if args[0] == "test":
+            assert report["status"] == "passed" and report["failure_count"] == 0
+            assert report["results"][0]["suite"] == "startup"
+    text_run = invoke("--format=text", "test", "--suite", "startup")
+    assert text_run.returncode == 0 and "startup: passed" in text_run.stdout
     for command in ("run", "check", "recover", "resume"):
         result = invoke("runtime", command, "-")
         direct = h.helix(command, "-", stdin="")
