@@ -15,6 +15,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parent
 CASES = ROOT / "tests" / "cases"
 BIN = ROOT / "target" / "debug" / "helix"
@@ -47,6 +49,47 @@ def root_section(state: str) -> str | None:
     return "\n".join(l[2:] for l in body) + "\n"
 
 
+ERROR_FIELDS = {"kind", "message", "line", "column"}  # `path` is omitted for errors outside the graph (parse)
+
+
+def malformed_state(out: str, returncode: int) -> str | None:
+    """Why `out` is not a well-formed serialized state (None if it is): the contract that nothing panics
+    and every error is structured, machine-parseable data."""
+    if returncode not in (0, 1):
+        return f"exit code {returncode} (panic?)"
+    try:
+        state = yaml.safe_load(out)
+    except yaml.YAMLError as e:
+        return f"state is not valid YAML: {e}"
+    if not isinstance(state, dict) or "status" not in state:
+        return "state has no `status`"
+    if state["status"] == "error" and not (isinstance(state.get("error"), dict) and ERROR_FIELDS <= state["error"].keys()):
+        return f"error lacks fields {sorted(ERROR_FIELDS)}"
+    return None
+
+
+def mutations(src: str):
+    """Damaged variants of a program: every line prefix, every single-line deletion, and strided character prefixes."""
+    lines = src.splitlines(keepends=True)
+    for n in range(len(lines)):
+        yield "".join(lines[:n])
+        yield "".join(lines[:n] + lines[n + 1 :])
+    for n in range(0, len(src), 5):
+        yield src[:n]
+
+
+def robustness(cases: list[Path]) -> list[str]:
+    failures = []
+    for case in cases:
+        src = case.read_text()
+        for variant in [src, *mutations(src)]:
+            run = helix("run", "-", stdin=variant)
+            if (why := malformed_state(run.stdout, run.returncode)) is not None:
+                failures.append(f"{case.name}: {why}\n--- program\n{variant}--- stderr\n{run.stderr}")
+                break
+    return failures
+
+
 def test(bless: bool) -> int:
     if (code := build()) != 0:
         return code
@@ -64,6 +107,8 @@ def test(bless: bool) -> int:
             again = helix("run", "-", stdin=program).stdout
             if root_section(again) != program:
                 failures.append(f"{case.name}: round trip is not stable\n--- first\n{program}--- second\n{again}")
+    if not bless:
+        failures += robustness(cases)
     for f in failures:
         print("FAIL", f, file=sys.stderr)
     print(f"{len(cases) - len(failures)}/{len(cases)} cases passed")

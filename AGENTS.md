@@ -23,6 +23,7 @@ Rust crate `helix` (lib + `helix run <file|->` CLI); `./manage.py` is the single
 - `src/emit.rs`: Helix's own block-YAML emitter. It exists so output stays re-readable: it quotes strings that would re-read as another type or, as the first item of a list, as an expression head.
 - `src/error.rs`: `HelixError` with stable `kind`, message, root-relative `path`, and `line`/`column`; serialized under `error:`.
 - Tests: golden cases in `tests/cases/NAME.yaml` + `NAME.expected.yaml`; finished states are also checked to round-trip (emitted `root` re-run is a fixpoint).
+  A robustness sweep re-runs damaged variants of every case (line prefixes, line deletions, char prefixes) and requires a well-formed state: exit 0/1, valid YAML, errors with `kind`/`message`/`line`/`column`.
 
 - Lint: `hyperlinter/` is a submodule (`flintwinters/hyperlinter`); `./manage.py lint [--format=text]` runs it from the repo root (it loads Cargo.toml and `.git/hyperlinter/` baselines there). Its ledger lands in git-ignored `runtime/`. Keep the tree at zero diagnostics; do not weaken policy or write a baseline to silence findings. The Rust adapter models each `mod` file as its own module and leaves encapsulation to rustc (entrypoint rules HL108/HL109 do not apply; HL117 bounds `mod` fan-out). Function cycles, dead implementation, and clone rules are still TypeScript-only. Rust style here: private `mod`s with a small `pub use` surface in `src/lib.rs` where it reads well, otherwise ordinary `pub mod` paths; prefer `pub(crate)`/private over `pub` for items no other crate needs.
 

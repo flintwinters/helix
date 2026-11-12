@@ -100,16 +100,16 @@ A daily driver has to do things.
 
 - [x] `try` / recover form, with the error available as data
 - [ ] Error values carry a call chain with paths and source spans
-- [ ] Error output is readable by a human *and* machine-parseable
+- [x] Error output is readable by a human *and* machine-parseable
 - [x] Asserts, with messages
 - [ ] Failed runs are resumable after fixing the cause, where it makes sense
-- [ ] Nothing panics: malformed input always yields a structured error
+- [x] Nothing panics: malformed input always yields a structured error (`manage.py test` mutation sweep: truncated and line-deleted variants of every case)
 - [x] `raise`: user code raises its own error with a user-chosen `kind`, message and data payload
 - [ ] Re-raise from a handler, preserving the original error as a `cause` chain
 - [x] Match handlers on error `kind`, so an unexpected kind is not swallowed
 - [ ] `finally` / cleanup that runs on both success and failure (needed before effects)
 - [x] Errors are values in the saved state: a caught error stays readable in `root`, and the state diff shows it appear
-- [ ] Validation can collect every problem in one run instead of stopping at the first
+- [x] Validation can collect every problem in one run instead of stopping at the first
 
 ---
 
