@@ -35,7 +35,7 @@ impl EffectHost {
             vm.run();
             if vm.status() != Status::Signaled { break; }
             if vm.is_interrupted() { break; }
-            let Some(request) = vm.pending_effect().cloned() else { break };
+            let Some(request) = vm.pending_effect() else { break };
             let reply = self.handle(&request.operation, &request.payload);
             *vm = vm.resolve_effect(reply);
         }
@@ -51,7 +51,7 @@ impl EffectHost {
             }
             "file_read" => {
                 let path = authorized(text(payload)?, &self.read_roots, false)?;
-                read_text(std::fs::File::open(path).map_err(io_fault)?)
+                read_text(std::fs::File::open(path).map_err(io_fault)?).map(Yaml::String)
             }
             "file_write" => {
                 let path = authorized(text(&payload["path"])?, &self.write_roots, true)?;
@@ -69,7 +69,7 @@ impl EffectHost {
                     Err(error) => Err(io_fault(error)),
                 }
             }
-            "stdin" => { require(self.allow_stdin, "stdin")?; read_text(std::io::stdin()) }
+            "stdin" => { require(self.allow_stdin, "stdin")?; read_text(std::io::stdin()).map(Yaml::String) }
             "stdout" => {
                 require(self.allow_stdout, "stdout")?;
                 let value = text(payload)?;
@@ -92,11 +92,12 @@ impl EffectHost {
                 let origin = origin(url)?;
                 require(self.http_origins.contains(origin), "HTTP origin")?;
                 // No redirects, proxies, curl config, cookies or URL globbing. Grant is exact origin.
-                let (code, output, error) = capture("curl", &["-q", "--silent", "--show-error", "--globoff", "--noproxy", "*", "--proto", "=http,https", "--max-time", "8", "--max-filesize", "1048576", "--write-out", "\n%{http_code}", "--url", url])?;
+                let (code, mut output, error) = capture("curl", &["-q", "--silent", "--show-error", "--globoff", "--noproxy", "*", "--proto", "=http,https", "--max-time", "8", "--max-filesize", "1048576", "--write-out", "\n%{http_code}", "--url", url])?;
                 if code != 0 { return Err(fault("http", &error)); }
                 let (body, status) = output.rsplit_once('\n').ok_or_else(|| fault("http", "missing HTTP status"))?;
                 let status = status.parse::<i64>().map_err(io_fault)?;
-                Ok(object([("status", Yaml::Integer(status)), ("body", Yaml::String(body.into()))]))
+                output.truncate(body.len());
+                Ok(object([("status", Yaml::Integer(status)), ("body", Yaml::String(output))]))
             }
             "time" => {
                 require(self.allow_time, "time")?;
@@ -128,11 +129,11 @@ fn text(value: &Yaml) -> Result<&str, Failure> { value.as_str().ok_or_else(|| fa
 fn object<const N: usize>(fields: [(&str, Yaml); N]) -> Yaml {
     Yaml::Hash(fields.into_iter().map(|(key, value)| (Yaml::String(key.into()), value)).collect())
 }
-fn read_text(reader: impl Read) -> Reply {
+fn read_text(reader: impl Read) -> Result<String, Failure> {
     let mut bytes = Vec::new();
     reader.take((LIMIT + 1) as u64).read_to_end(&mut bytes).map_err(io_fault)?;
     if bytes.len() > LIMIT { return Err(fault("resource", "effect input exceeds 1 MiB")); }
-    String::from_utf8(bytes).map(Yaml::String).map_err(io_fault)
+    String::from_utf8(bytes).map_err(io_fault)
 }
 fn authorized(path: &str, roots: &[PathBuf], write: bool) -> Result<PathBuf, Failure> {
     let path = Path::new(path);
@@ -168,5 +169,5 @@ fn capture(program: &str, args: &[&str]) -> Result<(i64, String, String), Failur
     };
     let output = out.recv_timeout(Duration::from_secs(10).saturating_sub(start.elapsed())).map_err(|_| fault("timeout", "command output pipe remained open"))??;
     let error = err.recv_timeout(Duration::from_secs(10).saturating_sub(start.elapsed())).map_err(|_| fault("timeout", "command error pipe remained open"))??;
-    Ok((status.code().map(i64::from).unwrap_or(-1), text(&output)?.into(), text(&error)?.into()))
+    Ok((status.code().map(i64::from).unwrap_or(-1), output, error))
 }

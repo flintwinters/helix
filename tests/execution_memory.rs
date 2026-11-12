@@ -1,5 +1,5 @@
 //! Allocation accounting for versioned execution; one test keeps measurements isolated.
-use helix::{Status, Vm};
+use helix::{EffectHost, Status, Vm};
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
@@ -7,7 +7,9 @@ use std::time::Instant;
 struct Accounting;
 static LIVE: AtomicUsize = AtomicUsize::new(0);
 static PEAK: AtomicUsize = AtomicUsize::new(0);
+static TOTAL: AtomicUsize = AtomicUsize::new(0);
 fn allocated(size: usize) {
+    TOTAL.fetch_add(size, Ordering::Relaxed);
     let live = LIVE.fetch_add(size, Ordering::Relaxed) + size;
     PEAK.fetch_max(live, Ordering::Relaxed);
 }
@@ -78,8 +80,30 @@ fn workload(iterations: usize, stepped: bool, retain: bool) -> (usize, usize) {
     );
     (live, peak)
 }
+
+fn host_request_allocations(bytes: usize) -> usize {
+    // Yield before measuring so source parsing and request construction do not
+    // obscure the host boundary's payload-copy cost. A rejected exit has no
+    // external action but still records its payload and structured failure.
+    let mut vm = Vm::load(&format!("[effect, 'exit', '{}']", "x".repeat(bytes)));
+    vm.run();
+    assert_eq!(vm.status(), Status::Signaled);
+    let baseline = TOTAL.load(Ordering::Relaxed);
+    EffectHost::default().run(&mut vm);
+    let allocated = TOTAL.load(Ordering::Relaxed).saturating_sub(baseline);
+    assert_eq!(vm.status(), Status::Error);
+    assert_eq!(vm.state()["error"]["kind"].as_str(), Some("type"));
+    println!("host-request-profile: payload_bytes={bytes} allocated_bytes={allocated}");
+    allocated
+}
 #[test]
 fn versions_share_code_and_do_not_retain_execution_history() {
+    let small_request = host_request_allocations(32 * 1024);
+    let large_request = host_request_allocations(256 * 1024);
+    assert!(
+        large_request.saturating_sub(small_request) <= 3 * (256 - 32) * 1024 + 16 * 1024,
+        "host dispatch introduced an extra full-payload copy: {small_request} -> {large_request}"
+    );
     let (small, _) = workload(200, false, false);
     let (large, peak) = workload(2000, false, false);
     let (stepped, step_peak) = workload(2000, true, false);

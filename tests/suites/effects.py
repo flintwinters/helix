@@ -64,6 +64,17 @@ def verify(h):
             assert result.returncode == 1 and state['error']['kind'] == kind, state
         result, state = run("[effect, 'command', {program: '/bin/sh', args: [list, '-c', 'printf problem >&2; exit 3']}]", '--allow-command', '/bin/sh')
         assert result.returncode == 0 and state['root'] == {'code': 3, 'stdout': '', 'stderr': 'problem'}, state
+        captured = 'é雪' * 16384
+        script = 'printf "%s" "$1"; printf "%s" "$1" >&2'
+        result, state = run(
+            f"[effect, 'command', {{program: '/bin/sh', args: [list, '-c', {json.dumps(script)}, 'capture', {json.dumps(captured, ensure_ascii=False)}]}}]",
+            '--allow-command', '/bin/sh')
+        assert result.returncode == 0 and state['root'] == {'code': 0, 'stdout': captured, 'stderr': captured}, state
+        for script in ['printf "\\377"', 'printf "\\377" >&2']:
+            result, state = run(
+                f"[effect, 'command', {{program: '/bin/sh', args: [list, '-c', {json.dumps(script)}]}}]",
+                '--allow-command', '/bin/sh')
+            assert result.returncode == 1 and state['error']['kind'] == 'io', state
         target = base / 'value.txt'
         target.write_text('original')
         module = base / 'module.yaml'
