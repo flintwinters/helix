@@ -120,6 +120,15 @@ No implicit conversion, with one exception: **numeric promotion**. `int` op `int
 
 Types use ordinary value evaluation: `let`, function arguments and results, collections, conditionals and iteration all work with primitive names, records, unions, enums, literals and refinements. Constructors validate computed type arguments and blame the offending argument when it is not a type.
 
+The checked constructors `list_of`, `map_of`, `optional`, `default`, `union`,
+`enum`, `literal`, `record`, `with_field` and `secret` assemble their results
+through `std:type_descriptor` in the ordinary evaluator. The runtime retains
+the shared type/field checker and argument diagnostics; annotations and defaults
+do not use a second checker. The module's `build(actor, args)` is the assembly
+implementation, not a replacement for the checked public constructors. Its
+immutable record updates copy growing maps, so large records can incur quadratic
+copying costs and all policy execution shares the caller's resource budgets.
+
 ```yaml
 list_type: {$call: [fn, [t], {$call: [list_of, {$ref: t}]}]}
 strings: {$call: [list_type, {$ref: string}]}
@@ -502,6 +511,14 @@ application lifecycle for provider callbacks; complete declarative machine
 application remains future work. A `{$call: [secret, {$ref: ref}]}` handle (`{type: secret, ref}`) is the only value a `secret`-typed field accepts; inline strings are rejected.
 
 Collection helpers used to build such data: `{$call: [list, ...]}` and `{$call: [dict, {$ref: k}, {$ref: v}, ...]}` evaluate their arguments (plain strings in literal lists and maps are data, not symbols), `values` returns a map's values and `duplicates` returns repeated list members.
+
+`std:convergence.compare(wanted, observed)` and `plan(wanted, observed)` own the
+pure comparison and plan policy over maps. The public `drift` and `converge`
+builtins extract concrete class values and validate their inputs before calling
+these functions through the same evaluator. The module reuses `std:diff`, treats
+nested changes as whole-field replacements, and distinguishes absence from null.
+Its collection passes and immutable map updates consume the caller's work/data
+budgets; this migration does not add observation, application or disk recovery.
 
 ## Error kinds
 

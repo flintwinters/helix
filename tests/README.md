@@ -52,6 +52,14 @@ artifacts. A policy crash or malformed response fails the suite; there is no
 Python comparison fallback. The `harness` suite uses independent expected
 outcomes and injected process faults to check this self-hosting boundary.
 
+Suite selection, ordering, prerequisite insertion, blessing skips and report
+aggregation live in `tooling/test_policy.yaml`. The Python runner executes its
+plan and supplies captured observations; it independently rejects missing or
+unauthorized work, altered evidence and false-success responses. The `harness`
+suite injects damaged policy responses, and `dogfood_test_orchestration` is the
+golden policy contract. Standalone startup checks remain build-free; discovery,
+process concurrency, compilation and lint execution remain host responsibilities.
+
 ## Testing contracts and known gaps
 
 All checks run through `./manage.py test`; no separate Python launchers are needed.
