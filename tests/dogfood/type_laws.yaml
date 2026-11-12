@@ -1,0 +1,32 @@
+t: [import, std:test]
+d: [import, std:types]
+# Values deliberately span scalar/container boundaries and nested violations.
+values: [list, null, false, -1, 0, 1, 1.5, "", "x", [], [list, 1], [list, "x"], {}, {x: 1}, {x: "bad"}, {extra: true}]
+types: [list, any, "null", boolean, integer, float, string, list, map, [list_of, integer], [map_of, integer], [record, "x", integer], [union, integer, string], [literal, 1]]
+rows: [fold, [fn, [acc, spec], [concat, acc, [map, [fn, [value], [list, spec, value]], values]]], [], types]
+validation:
+  - t.property
+  - "membership agrees with complete violations"
+  - rows
+  - [fn, [row], [let, {spec: [get, row, 0], value: [get, row, 1]}, [eq, [is, value, spec], [eq, [len, [violations, value, spec]], 0]]]]
+unions:
+  - t.property
+  - "union membership is disjunction"
+  - rows
+  - [fn, [row], [let, {spec: [get, row, 0], value: [get, row, 1]}, [eq, [is, value, [union, spec, string]], [or, [is, value, spec], [is, value, string]]]]]
+records: [list, [record], [record, "x", integer], [record, "x", [optional, string]], [record, "x", [default, integer, 2], "y", boolean]]
+derivation:
+  - t.property
+  - "reflection rebuild and optionalization preserve declarations"
+  - records
+  - [fn, [spec], [let, {opt: [d.optional_fields, spec]}, [and, [eq, [d.from_fields, [fields, spec]], spec], [eq, [d.without_field, spec, "absent"], spec], [eq, [d.optional_fields, opt], opt], [is, {}, opt]]]]
+# Interleave escaping closures with different captures; callbacks must keep each scope.
+factory: [fn, [offset], [fn, [x], [add, offset, x]]]
+offsets: [-2, 0, 3]
+closures: [map, factory, offsets]
+captures:
+  - t.property
+  - "escaping callbacks retain independent captures"
+  - [-1, 0, 4]
+  - [fn, [x], [eq, [map, [fn, [f], [call, f, x]], closures], [map, [fn, [offset], [add, offset, x]], offsets]]]
+report: [t.table, [list, [dict, "name", "validation", "input", validation], [dict, "name", "unions", "input", unions], [dict, "name", "derivation", "input", derivation], [dict, "name", "captures", "input", captures]], [fn, [child], [t.require_pass, child]]]

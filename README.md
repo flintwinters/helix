@@ -200,6 +200,12 @@ See `tests/dogfood/collections.yaml` for bounded property samples and compositio
 of child reports. Use `[dict, "input", variable]` to put evaluated values into
 case records; a plain scalar map value is literal data. Keep host-specific tests
 in the Python contract suites and exact serialization contracts in golden cases.
+The collection laws exhaust all 40 lists of length zero through three over
+`{-1, 0, 1}`, including 200 split boundaries and an independent counting oracle
+for sorting. Type laws cross scalar/container samples with primitive and constructed
+types, check union membership, record derivation, and independently captured closures.
+These are deterministic finite checks, not exhaustive language verification.
+
 The bridge self-tests failing assertions, continued execution, missing reports,
 and malformed modules on every dogfood run.
 
