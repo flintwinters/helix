@@ -1,0 +1,33 @@
+name: Runtime contracts
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install PyYAML
+      - run: mkdir -p runtime
+      - name: Fast regression contracts
+        if: github.event_name != 'schedule' && github.event_name != 'workflow_dispatch'
+        run: ./manage.py test --suite golden --suite harness --suite cli --suite generated --suite imports --suite library --suite parser 2>&1 | tee runtime/test.log
+      - name: Full bounded sweep
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: ./manage.py test 2>&1 | tee runtime/test.log
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: runtime-failures
+          path: runtime/
+          if-no-files-found: ignore

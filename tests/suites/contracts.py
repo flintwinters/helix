@@ -43,8 +43,36 @@ def harness(h):
                for d in h.COMMANDS for p in d.glob("*.expected.yaml"))
 
 
+    import contextlib
+    import io
+    with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="harness-") as directory:
+        case = Path(directory) / "probe.yaml"
+        case.write_text("value: 42")
+        expected = "status: finished\nroot:\n  value: 42\n"
+        case.with_suffix(".expected.yaml").write_text(expected)
+        original_helix = h.helix
+        def fake(*args, stdin=None):
+            if args[0] == "std":
+                return original_helix(*args, stdin=stdin)
+            return subprocess.CompletedProcess(args, 0, expected, "")
+        with patch.object(h, "COMMANDS", {case.parent: "run"}), patch.object(h, "build", return_value=0), \
+             patch.object(h, "helix", side_effect=fake), contextlib.redirect_stdout(io.StringIO()), \
+             contextlib.redirect_stderr(io.StringIO()):
+            assert h.test(False, ["golden"]) == 0
+            case.with_suffix(".expected.yaml").write_text(expected.replace("42", "43"))
+            assert h.test(False, ["golden"]) == 1, "golden comparator accepted a semantic fault"
+            case.with_suffix(".expected.yaml").write_text(expected)
+            def broken_reload(*args, stdin=None):
+                result = fake(*args, stdin=stdin)
+                if stdin is not None:
+                    result.stdout = expected.replace("42", "43")
+                return result
+            with patch.object(h, "helix", side_effect=broken_reload):
+                assert h.test(False, ["golden"]) == 1, "round-trip comparator accepted broken emission"
+
+
 def cli(h):
-    for args in [(), ("unknown",), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
+    for args in [(), ("unknown",), ("--help",), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
         result = h.helix(*args)
         assert result.returncode == 2 and not result.stdout and result.stderr, (args, result)
     missing = h.helix("run", "runtime/definitely-missing-helix-input.yaml")
@@ -74,6 +102,15 @@ def expression(rng, depth):
     return f"[{head}, {left}, {right}]", oracle[op]()
 
 
+def literal_meaning(value):
+    """Include scalar kinds: Python equality alone conflates True, 1 and 1.0."""
+    if isinstance(value, dict):
+        return {key: literal_meaning(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [literal_meaning(item) for item in value]
+    return type(value).__name__, value
+
+
 def generated(h):
     seed = 714209
     rng = random.Random(seed)
@@ -83,13 +120,18 @@ def generated(h):
     root = checked(h, source)
     for i, (_, expected) in enumerate(programs):
         assert root[f"v{i}"] == expected, f"seed={seed} expression={programs[i]}"
+    assert checked(h, "[eq, [add, 0.5, 0.25], 0.75]") is True
+    assert checked(h, "[if, true, [add, 1, 0], [div, 1, 0]]") == 1
+    overflow = h.helix("run", "-", stdin="[add, 9223372036854775807, 1]")
+    assert overflow.returncode == 1
+    assert yaml.safe_load(overflow.stdout)["error"]["kind"] == "overflow"
     for i in range(25):
         xs = [rng.randint(-12, 12) for _ in range(rng.randrange(12))]
         values = "[list" + "".join(f", {x}" for x in xs) + "]"
         root = checked(h, f"l: [import, std:list]\nxs: {values}\ns: [l.sum, xs]\nr: [l.reverse, xs]\nrr: [l.reverse, [l.reverse, xs]]\np: [add, [l.sum, xs], 0]\n")
         assert root["s"] == root["p"] == sum(xs), f"seed={seed} sample={i}"
         assert root["r"] == xs[::-1] and root["rr"] == xs
-    literals = [None, True, False, 0, -9223372036854775808, 9223372036854775807,
+    literals = [None, True, False, 0, 0.5, -1.25, -9223372036854775808, 9223372036854775807,
                 "add", "true", "null", "1", "é雪🙂", "line\nbreak", "", "a: b", "'quoted'", "\\"]
     for _ in range(30):
         value = {"value": [rng.choice(literals) for _ in range(rng.randrange(8))], "nested": {"text": rng.choice(literals)}}
@@ -98,7 +140,7 @@ def generated(h):
         for cycle in range(3):
             result = h.helix("run", "-", stdin=source)
             assert h.malformed_state(result.stdout, result.returncode) is None
-            assert yaml.safe_load(result.stdout)["root"] == value, f"seed={seed} cycle={cycle} source={source}"
+            assert literal_meaning(yaml.safe_load(result.stdout)["root"]) == literal_meaning(value), f"seed={seed} cycle={cycle} source={source}"
             next_source = h.root_section(result.stdout)
             if cycle:
                 assert next_source == source
@@ -143,3 +185,65 @@ def run(name, h):
     except Exception as error:
         import traceback
         return [f"{name}: {error}\n{traceback.format_exc()}\nreproduce: ./manage.py test --suite {name}"]
+
+
+def parser(h):
+    for source, expected in [('"é雪🙂"', "é雪🙂"), ("'a: b'", "a: b"),
+                             ("|\n  first\n  second\n", "first\nsecond\n"),
+                             (">\n  first\n  second\n", "first second\n"),
+                             ("{outer: {n: 3, result: [add, n, 2]}}", {"outer": {"n": 3, "result": 5}})]:
+        assert checked(h, source) == expected
+    duplicate = h.helix("run", "-", stdin="a: 1\na: 2\n")
+    assert duplicate.returncode == 1 and h.malformed_state(duplicate.stdout, 1) is None
+    for source in ["a: &a 1\nb: *a", "? [a, b]\n: value"]:
+        result = h.helix("run", "-", stdin=source)
+        assert h.malformed_state(result.stdout, result.returncode) is None
+        assert yaml.safe_load(result.stdout)["error"]["kind"] == "unsupported"
+    result = h.helix("run", "-", stdin="outer:\n  result: [add, missing, 1]\n")
+    error = yaml.safe_load(result.stdout)["error"]
+    assert (error["path"], error["line"], error["column"]) == ("/outer/result/1", 2, 17), error
+
+
+def fuzz(h):
+    seed = 901723
+    rng = random.Random(seed)
+    corpus = ['x: [add, 1, 2]', 'f: [fn, [x], [add, x, 1]]\nr: [f, 2]',
+              'm: [import, std:math]\nr: [m.square, 3]', '["add", "雪", null]',
+              'r: [try, [div, 1, 0], [fn, [e], e]]']
+    alphabet = '[]{}:,\n\t abcdef0129"\'&*!#雪'
+    for sample in range(200):
+        source = rng.choice(corpus)
+        for _ in range(rng.randint(1, 5)):
+            pos = rng.randrange(len(source) + 1)
+            source = source[:pos] + rng.choice(alphabet) + source[pos + rng.randrange(2):]
+        command = rng.choice(("run", "check"))
+        def fails(candidate):
+            result = h.helix(command, "-", stdin=candidate)
+            return h.malformed_state(result.stdout, result.returncode)
+        why = fails(source)
+        if why:
+            # Bounded deletion minimization; preserve exactly the same failure category.
+            minimized = source
+            for _ in range(2):
+                for pos in range(len(minimized) - 1, -1, -1):
+                    candidate = minimized[:pos] + minimized[pos + 1:]
+                    if fails(candidate) == why:
+                        minimized = candidate
+            artifact = h.ROOT / "runtime" / f"fuzz-{seed}-{sample}.yaml"
+            artifact.write_text(minimized)
+            raise AssertionError(f"seed={seed} sample={sample}: {why}; original={source!r}; "
+                                 f"artifact={artifact}; reproduce: ./manage.py {command} {artifact}")
+    print(f"fuzz: seed={seed}, 200 mutations")
+
+
+def scale(h):
+    import time
+    for count in (250, 1000, 2500):
+        # One map root plus four nodes per expression = 10,001 nodes at the largest size.
+        source = "".join(f"v{i}: [add, {i}, 1]\n" for i in range(count))
+        started = time.perf_counter()
+        root = checked(h, source)
+        elapsed = time.perf_counter() - started
+        assert len(root) == count and root[f"v{count - 1}"] == count
+        print(f"scale: {1 + 4 * count} nodes, {elapsed:.3f}s (debug CLI + Python decode)")
+        assert elapsed < (1 if count == 2500 else 10), "scale workload exceeded its time budget"

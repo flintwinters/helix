@@ -1,0 +1,6 @@
+math: [import, std:math]
+prices: [list, 3, 5, 8]
+square_price: [fn, [price], [math.square, price]]
+squared: [map, square_price, prices]
+valid: [assert, [eq, squared, [list, 9, 25, 64]], "unexpected squared prices"]
+recovered: [try, [div, 1, 0], [fn, [error], [get, error, "kind"]]]

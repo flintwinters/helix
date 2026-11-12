@@ -5,9 +5,11 @@
     ./manage.py run FILE            run a program, print its serialized VM state
     ./manage.py std [MODULE]        list standard modules or print module source
     ./manage.py lint [ARGS...]      structural lint via the hyperlinter submodule (JSON; pass --format=text for people)
-    ./manage.py test [--bless]      golden-test every tests/cases/*.yaml (--bless rewrites expectations)
+    ./manage.py test [--suite NAME] [--bless]   regression suites (--list discovers names)
 
-Golden cases: tests/cases/NAME.yaml is the program, NAME.expected.yaml the exact serialized state.
+Golden cases: tests/cases/NAME.yaml is the program, NAME.expected.yaml the exact serialized state
+(`helix run`). tests/check/ holds the same for `helix check`. Every case also runs twice and must
+produce identical output (deterministic resolution).
 Finished cases are also checked for round-trip stability: feeding the emitted `root` back in as a
 program must reproduce the same `root`.
 """
@@ -15,6 +17,8 @@ import argparse
 import subprocess
 import sys
 import os
+import shutil
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -22,7 +26,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent
 CASES = ROOT / "tests" / "cases"
 COMMANDS = {CASES: "run"}
-BIN = ROOT / "target" / "debug" / "helix"
+BIN = ROOT / os.environ.get("CARGO_TARGET_DIR", "target") / "debug" / "helix"
 HYPERLINTER = ROOT / "hyperlinter"
 
 
@@ -76,8 +80,10 @@ def malformed_state(out: str, returncode: int) -> str | None:
         return "exit code disagrees with status"
     if state["status"] == "finished" and "root" not in state:
         return "finished state has no root"
-    if state["status"] == "error" and not (isinstance(state.get("error"), dict) and ERROR_FIELDS <= state["error"].keys()):
-        return f"error lacks fields {sorted(ERROR_FIELDS)}"
+    if state["status"] == "error":
+        errors = state.get("errors") if "errors" in state else [state.get("error")]
+        if not (isinstance(errors, list) and errors and all(isinstance(e, dict) and ERROR_FIELDS <= e.keys() for e in errors)):
+            return f"error lacks fields {sorted(ERROR_FIELDS)}"
     return None
 
 
@@ -95,8 +101,9 @@ def robustness(cases: list[Path]) -> list[str]:
     failures = []
     for case in cases:
         src = case.read_text()
+        command = COMMANDS[case.parent]
         for variant in [src, *mutations(src)]:
-            run = helix("run", "-", stdin=variant)
+            run = helix(command, "-", stdin=variant)
             if (why := malformed_state(run.stdout, run.returncode)) is not None:
                 failures.append(f"{case.name}: {why}\n--- program\n{variant}--- stderr\n{run.stderr}")
                 break
@@ -104,11 +111,42 @@ def robustness(cases: list[Path]) -> list[str]:
 
 
 def test(bless: bool, suites: list[str] | None = None) -> int:
+    global BIN
     if (code := build()) != 0:
         return code
-    cases = [c for c in sorted(CASES.glob("*.yaml")) if not c.name.endswith(".expected.yaml")]
+    (ROOT / "runtime").mkdir(exist_ok=True)
+    # Freeze this run's executable so another build cannot replace it mid-suite.
+    with tempfile.TemporaryDirectory(dir=ROOT / "runtime", prefix="test-binary-") as directory:
+        original = BIN
+        snapshot = Path(directory) / "helix"
+        shutil.copy2(original, snapshot)
+        BIN = snapshot
+        try:
+            return regression(bless, suites)
+        finally:
+            BIN = original
+
+
+def regression(bless: bool, suites: list[str] | None) -> int:
+    selected = set(suites or SUITES)
+    failures = []
+    for name in (name for name in SUITES if name in selected - {"golden", "robustness"}):
+        if name == "library":
+            result = subprocess.run(["cargo", "test", "--quiet"], cwd=ROOT, timeout=120)
+            if result.returncode:
+                failures.append("library: cargo test failed")
+        else:
+            from tests.suites import contracts
+            failures.extend(contracts.run(name, sys.modules[__name__]))
+    if not selected & {"golden", "robustness"}:
+        for failure in failures:
+            print("FAIL", failure, file=sys.stderr)
+        return int(bool(failures))
+    cases = [c for d in COMMANDS for c in sorted(d.glob("*.yaml")) if not c.name.endswith(".expected.yaml")]
     modules = helix("std")
-    if modules.returncode != 0 or modules.stdout.splitlines() != ["std:math", "std:list", "std:group"]:
+    expected_modules = {f"std:{source.stem}" for source in (ROOT / "std").glob("*.yaml")}
+    discovered_modules = modules.stdout.splitlines()
+    if modules.returncode != 0 or set(discovered_modules) != expected_modules or len(discovered_modules) != len(expected_modules):
         failures.append("standard library discovery failed")
     for source in sorted((ROOT / "std").glob("*.yaml")):
         shown = helix("std", source.stem)
@@ -118,7 +156,15 @@ def test(bless: bool, suites: list[str] | None = None) -> int:
         failures.append("unknown standard library must exit with usage error")
     for case in cases if "golden" in selected else []:
         expected_path = case.with_suffix(".expected.yaml")
-        out = helix("run", str(case.relative_to(ROOT))).stdout
+        command = COMMANDS[case.parent]
+        run = helix(command, str(case.relative_to(ROOT)))
+        out = run.stdout
+        if (why := malformed_state(out, run.returncode)) is not None:
+            failures.append(f"{case.name}: {why}\n{run.stderr}")
+            continue
+        if helix(command, str(case.relative_to(ROOT))).stdout != out:
+            failures.append(f"{case.name}: two runs of the same program differ (nondeterminism)")
+            continue
         if bless:
             expected_path.write_text(out)
         elif not expected_path.exists() or expected_path.read_text() != out:
@@ -132,11 +178,11 @@ def test(bless: bool, suites: list[str] | None = None) -> int:
         failures += robustness(cases)
     for f in failures:
         print("FAIL", f, file=sys.stderr)
-    print(f"{len(cases) - len(failures)}/{len(cases)} cases passed")
+    print(f"{len(cases)} golden inputs; {len(failures)} failures")
     return 1 if failures else 0
 
 
-SUITES = ("golden", "robustness", "harness", "cli", "generated", "imports", "library")
+SUITES = ("golden", "robustness", "harness", "cli", "generated", "imports", "library", "parser", "fuzz", "scale")
 
 
 def main() -> int:
