@@ -1,9 +1,9 @@
-status: finished
 root:
   debug: false
+  lazy: 1
   "n": 7
   negated: true
-  size: small
-  lazy: 1
   nested: 2
+  size: small
   symbol_branch: 14
+status: finished

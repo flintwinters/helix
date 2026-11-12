@@ -1,23 +1,65 @@
-m: [import, std:map]
-left: {z: 1, shared: {old: true}, absent: null}
-right: {shared: {new: true}, a: false}
-merged: [m.merge, left, right]
-merge_order: [assert, [eq, [keys, merged], ["z", "shared", "absent", "a"]]]
-shallow: [assert, [eq, [get, merged, "shared"], {new: true}]]
-unchanged: [assert, [eq, [get, left, "shared"], {old: true}]]
-empty_merge: [m.merge, {}, {}]
-left_identity: [assert, [eq, [m.merge, {}, left], left]]
-right_identity: [assert, [eq, [m.merge, left, {}], left]]
-removed: [m.remove, merged, "shared"]
-remove_order: [assert, [eq, [keys, removed], ["z", "absent", "a"]]]
-missing: [assert, [eq, [m.remove, left, "missing"], left]]
-empty_remove: [m.remove, {}, "x"]
-only_key: [m.remove, {x: 1}, "x"]
-unicode: [m.remove, [m.merge, {"": 1, "é": 2}, {"é": [null, false], "🙂": 3}], ""]
-remove_null: [assert, [not, [has, [m.remove, left, "absent"], "absent"]]]
-idempotent: [assert, [eq, [m.remove, removed, "shared"], removed]]
-wrong_left: [try, [m.merge, [], {}], [fn, [e], [get, e, "kind"]]]
-wrong_right: [try, [m.merge, {}, null], [fn, [e], [get, e, "kind"]]]
-wrong_source: [try, [m.remove, [], "x"], [fn, [e], [get, e, "kind"]]]
-wrong_key: [try, [m.remove, {}, 1], [fn, [e], [get, e, "kind"]]]
-wrong_arity: [try, [m.merge, {}], [fn, [e], [get, e, "kind"]]]
+# Helix explicit syntax; migrated from legacy source.
+"m": {"$call": ["import", "std:map"]}
+"left":
+  "z": 1
+  "shared":
+    "old": true
+  "absent": null
+"right":
+  "shared":
+    "new": true
+  "a": false
+"merged": {"$call": ["m.merge", {"$ref": "left"}, {"$ref": "right"}]}
+"merge_order":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$call": ["keys", {"$ref": "merged"}]}, ["a", "absent", "shared", "z"]]}
+"shallow": {"$call": ["assert", {"$call": ["eq", {"$call": ["get", {"$ref": "merged"}, "shared"]}, {"new": true}]}]}
+"unchanged": {"$call": ["assert", {"$call": ["eq", {"$call": ["get", {"$ref": "left"}, "shared"]}, {"old": true}]}]}
+"empty_merge": {"$call": ["m.merge", {}, {}]}
+"left_identity": {"$call": ["assert", {"$call": ["eq", {"$call": ["m.merge", {}, {"$ref": "left"}]}, {"$ref": "left"}]}]}
+"right_identity": {"$call": ["assert", {"$call": ["eq", {"$call": ["m.merge", {"$ref": "left"}, {}]}, {"$ref": "left"}]}]}
+"removed": {"$call": ["m.remove", {"$ref": "merged"}, "shared"]}
+"remove_order": {"$call": ["assert", {"$call": ["eq", {"$call": ["keys", {"$ref": "removed"}]}, ["a", "absent",
+          "z"]]}]}
+"missing":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$call": ["m.remove", {"$ref": "left"}, "missing"]}, {"$ref": "left"}]}
+"empty_remove": {"$call": ["m.remove", {}, "x"]}
+"only_key": {"$call": ["m.remove", {"x": 1}, "x"]}
+"unicode": {"$call": ["m.remove", {"$call": ["m.merge", {? "" : 1, "\xE9": 2}, {"\xE9": [null, false], "\U0001F642": 3}]},
+    ""]}
+"remove_null":
+  "$call":
+  - "assert"
+  - {"$call": ["not", {"$call": ["has", {"$call": ["m.remove", {"$ref": "left"}, "absent"]}, "absent"]}]}
+"idempotent":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$call": ["m.remove", {"$ref": "removed"}, "shared"]}, {"$ref": "removed"}]}
+"wrong_left":
+  "$call":
+  - "try"
+  - {"$call": ["m.merge", [], {}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_right":
+  "$call":
+  - "try"
+  - {"$call": ["m.merge", {}, null]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_source":
+  "$call":
+  - "try"
+  - {"$call": ["m.remove", [], "x"]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_key":
+  "$call":
+  - "try"
+  - {"$call": ["m.remove", {}, 1]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_arity":
+  "$call":
+  - "try"
+  - {"$call": ["m.merge", {}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}

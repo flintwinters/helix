@@ -1,12 +1,13 @@
-user:
-  name: ada
-  age: 36
-name: [get, user, "name"]
-missing_ok: [get, user, "email", "n/a"]
-older: [set, user, "age", 37]
-extended: [set, user, "email", "ada@example.com"]
-names: [keys, extended]
-size: [len, user]
-has_name: [has, user, "name"]
-has_email: [has, user, "email"]
-same: [eq, user, [set, user, "age", 36]]
+# Helix explicit syntax; migrated from legacy source.
+"user":
+  "name": "ada"
+  "age": 36
+"name": {"$call": ["get", {"$ref": "user"}, "name"]}
+"missing_ok": {"$call": ["get", {"$ref": "user"}, "email", "n/a"]}
+"older": {"$call": ["set", {"$ref": "user"}, "age", 37]}
+"extended": {"$call": ["set", {"$ref": "user"}, "email", "ada@example.com"]}
+"names": {"$call": ["keys", {"$ref": "extended"}]}
+"size": {"$call": ["len", {"$ref": "user"}]}
+"has_name": {"$call": ["has", {"$ref": "user"}, "name"]}
+"has_email": {"$call": ["has", {"$ref": "user"}, "email"]}
+"same": {"$call": ["eq", {"$ref": "user"}, {"$call": ["set", {"$ref": "user"}, "age", 36]}]}

@@ -1,16 +1,85 @@
-machine: [class, "machine", [record, "hostname", string, "role", [enum, "web", "db"], "port", [default, integer, 22], "token", secret]]
-web1: [inherit, "web1", [list, machine], {hostname: "w1", role: "web", token: [secret, "vault/web"]}]
-web2: [inherit, "web2", [list, machine], {hostname: "w2", role: "web", port: 2200, token: [secret, "vault/web"]}]
-db1: [inherit, "db1", [list, machine], {hostname: "db1", role: "db", token: [secret, "vault/db"]}]
-inline_secret: [try, [inherit, "leak", [list, machine], {hostname: "x", role: "db", token: "hunter2"}], [fn, [e], [get, e, "data"]]]
-fleet: [list, web1, web2, db1]
-hostnames: [map, [fn, [m], [get, [get, m, "values"], "hostname"]], fleet]
-hostnames_unique: [eq, [duplicates, hostnames], []]
-ports: [map, [fn, [m], [get, [get, m, "values"], "port"]], fleet]
-ports_clash: [duplicates, ports]
-observed: {hostname: "w1", role: "web", port: 2222, uptime: 5}
-drift_web1: [drift, web1, observed]
-plan_web1: [converge, web1, observed]
-plan_when_converged: [converge, web1, [get, web1, "values"]]
-no_plan_for_abstract: [try, [drift, machine, observed], [fn, [e], [get, e, "kind"]]]
-inhabits: [is, {hostname: "w1", role: "web", port: 22, token: [secret, "vault/web"]}, web1]
+# Helix explicit syntax; migrated from legacy source.
+"machine":
+  "$call":
+  - "class"
+  - "machine"
+  - "$call":
+    - "record"
+    - "hostname"
+    - {"$ref": "string"}
+    - "role"
+    - {"$call": ["enum", "web", "db"]}
+    - "port"
+    - {"$call": ["default", {"$ref": "integer"}, 22]}
+    - "token"
+    - {"$ref": "secret"}
+"web1":
+  "$call":
+  - "inherit"
+  - "web1"
+  - {"$call": ["list", {"$ref": "machine"}]}
+  - "hostname": "w1"
+    "role": "web"
+    "token": {"$call": ["secret", "vault/web"]}
+"web2":
+  "$call":
+  - "inherit"
+  - "web2"
+  - {"$call": ["list", {"$ref": "machine"}]}
+  - "hostname": "w2"
+    "role": "web"
+    "port": 2200
+    "token": {"$call": ["secret", "vault/web"]}
+"db1":
+  "$call":
+  - "inherit"
+  - "db1"
+  - {"$call": ["list", {"$ref": "machine"}]}
+  - "hostname": "db1"
+    "role": "db"
+    "token": {"$call": ["secret", "vault/db"]}
+"inline_secret":
+  "$call":
+  - "try"
+  - "$call":
+    - "inherit"
+    - "leak"
+    - {"$call": ["list", {"$ref": "machine"}]}
+    - "hostname": "x"
+      "role": "db"
+      "token": "hunter2"
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
+"fleet": {"$call": ["list", {"$ref": "web1"}, {"$ref": "web2"}, {"$ref": "db1"}]}
+"hostnames":
+  "$call":
+  - "map"
+  - {"$call": ["fn", ["m"], {"$call": ["get", {"$call": ["get", {"$ref": "m"}, "values"]}, "hostname"]}]}
+  - {"$ref": "fleet"}
+"hostnames_unique": {"$call": ["eq", {"$call": ["duplicates", {"$ref": "hostnames"}]}, []]}
+"ports":
+  "$call":
+  - "map"
+  - {"$call": ["fn", ["m"], {"$call": ["get", {"$call": ["get", {"$ref": "m"}, "values"]}, "port"]}]}
+  - {"$ref": "fleet"}
+"ports_clash": {"$call": ["duplicates", {"$ref": "ports"}]}
+"observed":
+  "hostname": "w1"
+  "role": "web"
+  "port": 2222
+  "uptime": 5
+"drift_web1": {"$call": ["drift", {"$ref": "web1"}, {"$ref": "observed"}]}
+"plan_web1": {"$call": ["converge", {"$ref": "web1"}, {"$ref": "observed"}]}
+"plan_when_converged": {"$call": ["converge", {"$ref": "web1"}, {"$call": ["get", {"$ref": "web1"}, "values"]}]}
+"no_plan_for_abstract":
+  "$call":
+  - "try"
+  - {"$call": ["drift", {"$ref": "machine"}, {"$ref": "observed"}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"inhabits":
+  "$call":
+  - "is"
+  - "hostname": "w1"
+    "role": "web"
+    "port": 22
+    "token": {"$call": ["secret", "vault/web"]}
+  - {"$ref": "web1"}

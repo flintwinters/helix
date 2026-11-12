@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 27
   kind: import
+  line: 2
   message: "cannot read `tests/cases/modules/nope.yaml`: No such file or directory (os error 2)"
-  path: /a/1
+  path: "/a/$call/1"
   reference:
-    - "a"
+    - a
+    - "$call"
     - 1
-  line: 1
-  column: 13
+status: error

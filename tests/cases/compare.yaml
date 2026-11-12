@@ -1,11 +1,12 @@
-a: 3
-b: 5
-lt: [lt, a, b]
-le: [le, a, 3]
-gt: [gt, a, b]
-ge: [ge, a, 4]
-eq_int: [eq, a, 3]
-ne_int: [ne, a, b]
-eq_str: [eq, "x", "x"]
-eq_mixed: [eq, a, "3"]
-eq_list: [eq, [add, 1, 1], 2]
+# Helix explicit syntax; migrated from legacy source.
+"a": 3
+"b": 5
+"lt": {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}
+"le": {"$call": ["le", {"$ref": "a"}, 3]}
+"gt": {"$call": ["gt", {"$ref": "a"}, {"$ref": "b"}]}
+"ge": {"$call": ["ge", {"$ref": "a"}, 4]}
+"eq_int": {"$call": ["eq", {"$ref": "a"}, 3]}
+"ne_int": {"$call": ["ne", {"$ref": "a"}, {"$ref": "b"}]}
+"eq_str": {"$call": ["eq", "x", "x"]}
+"eq_mixed": {"$call": ["eq", {"$ref": "a"}, "3"]}
+"eq_list": {"$call": ["eq", {"$call": ["add", 1, 1]}, 2]}

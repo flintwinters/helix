@@ -1,7 +1,7 @@
-geo: [import, "modules/geometry.yaml"]
-again: [import, "modules/geometry.yaml"]
-disc: [geo.area, 2]
-constant: geo.pi
-nested: [geo.m.max, 1, 2]
-scoped:
-  [let, {g: [import, "modules/geometry.yaml"]}, [g.area, 3]]
+# Helix explicit syntax; migrated from legacy source.
+"geo": {"$call": ["import", "modules/geometry.yaml"]}
+"again": {"$call": ["import", "modules/geometry.yaml"]}
+"disc": {"$call": ["geo.area", 2]}
+"constant": "geo.pi"
+"nested": {"$call": ["geo.m.max", 1, 2]}
+"scoped": {"$call": ["let", {"g": {"$call": ["import", "modules/geometry.yaml"]}}, {"$call": ["g.area", 3]}]}

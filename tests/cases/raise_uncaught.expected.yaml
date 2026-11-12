@@ -1,11 +1,11 @@
-status: error
 error:
+  column: 10
+  data:
+    quantity: -2
   kind: invalid_order
+  line: 2
   message: quantity must be positive
   path: /check
   reference:
-    - "check"
-  line: 1
-  column: 8
-  data:
-    quantity: -2
+    - check
+status: error

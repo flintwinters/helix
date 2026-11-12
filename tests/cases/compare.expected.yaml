@@ -1,13 +1,13 @@
-status: finished
 root:
   a: 3
   b: 5
-  lt: true
-  le: true
-  gt: false
-  ge: false
   eq_int: true
-  ne_int: true
-  eq_str: true
-  eq_mixed: false
   eq_list: true
+  eq_mixed: false
+  eq_str: true
+  ge: false
+  gt: false
+  le: true
+  lt: true
+  ne_int: true
+status: finished

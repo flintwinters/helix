@@ -1,1 +1,2 @@
-answer: [add, 20, 22]
+# Helix explicit syntax; migrated from legacy source.
+"answer": {"$call": ["add", 20, 22]}

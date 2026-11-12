@@ -1,15 +1,92 @@
-d: [import, std:diff]
-t: [import, std:test]
-empty: [t.equal, [d.compare, {}, {}], {added: [], removed: [], changed: []}]
-old: {z: null, gone: null, "": false, nested: {x: 1}, same: [null, false, 0]}
-new: {"": 0, "🙂": null, nested: {x: 2}, z: null, same: [null, false, 0], a: false}
-report: [d.compare, old, new]
-ordered: [t.equal, report, {added: ["🙂", "a"], removed: ["gone"], changed: [{key: "", before: false, after: 0}, {key: "nested", before: {x: 1}, after: {x: 2}}]}]
-identity: [t.equal, [d.compare, old, old], {added: [], removed: [], changed: []}]
-add_null: [t.equal, [d.compare, {}, {n: null}], {added: ["n"], removed: [], changed: []}]
-remove_null: [t.equal, [d.compare, {n: null}, {}], {added: [], removed: ["n"], changed: []}]
-numeric_equality: [t.equal, [d.compare, {n: 1}, {n: 1.0}], {added: [], removed: [], changed: []}]
-reordered: [t.equal, [d.compare, {a: 1, b: 2}, {b: 2, a: 1}], {added: [], removed: [], changed: []}]
-wrong_old: [try, [d.compare, [], {}], [fn, [e], [get, e, "kind"]]]
-wrong_new: [try, [d.compare, {}, null], [fn, [e], [get, e, "kind"]]]
-wrong_arity: [try, [d.compare, {}], [fn, [e], [get, e, "kind"]]]
+# Helix explicit syntax; migrated from legacy source.
+"d": {"$call": ["import", "std:diff"]}
+"t": {"$call": ["import", "std:test"]}
+"empty": {"$call": ["t.equal", {"$call": ["d.compare", {}, {}]}, {"added": [], "removed": [], "changed": []}]}
+"old":
+  "z": null
+  "gone": null
+  ? ""
+  : false
+  "nested":
+    "x": 1
+  "same": [null, false, 0]
+"new":
+  ? ""
+  : 0
+  "\U0001F642": null
+  "nested":
+    "x": 2
+  "z": null
+  "same": [null, false, 0]
+  "a": false
+"report": {"$call": ["d.compare", {"$ref": "old"}, {"$ref": "new"}]}
+"ordered":
+  "$call":
+  - "t.equal"
+  - {"$ref": "report"}
+  - "added":
+    - "a"
+    - "\U0001F642"
+    "removed":
+    - "gone"
+    "changed":
+    - "key": ""
+      "before": false
+      "after": 0
+    - "key": "nested"
+      "before":
+        "x": 1
+      "after":
+        "x": 2
+"identity":
+  "$call":
+  - "t.equal"
+  - {"$call": ["d.compare", {"$ref": "old"}, {"$ref": "old"}]}
+  - "added": []
+    "removed": []
+    "changed": []
+"add_null":
+  "$call":
+  - "t.equal"
+  - {"$call": ["d.compare", {}, {"n": null}]}
+  - "added":
+    - "n"
+    "removed": []
+    "changed": []
+"remove_null":
+  "$call":
+  - "t.equal"
+  - {"$call": ["d.compare", {"n": null}, {}]}
+  - "added": []
+    "removed":
+    - "n"
+    "changed": []
+"numeric_equality":
+  "$call":
+  - "t.equal"
+  - {"$call": ["d.compare", {"n": 1}, {"n": 1.0}]}
+  - "added": []
+    "removed": []
+    "changed": []
+"reordered":
+  "$call":
+  - "t.equal"
+  - {"$call": ["d.compare", {"a": 1, "b": 2}, {"b": 2, "a": 1}]}
+  - "added": []
+    "removed": []
+    "changed": []
+"wrong_old":
+  "$call":
+  - "try"
+  - {"$call": ["d.compare", [], {}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_new":
+  "$call":
+  - "try"
+  - {"$call": ["d.compare", {}, null]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_arity":
+  "$call":
+  - "try"
+  - {"$call": ["d.compare", {}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}

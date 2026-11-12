@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 6
   kind: arity
+  line: 3
   message: "`add` takes at least 2 arguments, got 1"
   path: /b
   reference:
-    - "b"
-  line: 2
-  column: 4
+    - b
+status: error

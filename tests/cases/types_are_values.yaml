@@ -1,9 +1,15 @@
-kinds: ["integer", "string", "list"]
-by_map: {port: "integer", name: "string"}
-check: [fn, [v, t], [is, v, t]]
-bound: [let, {t: "integer"}, [is, 3, t]]
-via_fn: [check, "x", "string"]
-mismatch: [check, 1.5, "integer"]
-from_type: [is, [type, [1]], [get, by_map, "name"]]
-anything: [is, null, "any"]
-stored: [map, [fn, [t], [is, 1, t]], kinds]
+# Helix explicit syntax; migrated from legacy source.
+"kinds":
+- "integer"
+- "string"
+- "list"
+"by_map":
+  "port": "integer"
+  "name": "string"
+"check": {"$call": ["fn", ["v", "t"], {"$call": ["is", {"$ref": "v"}, {"$ref": "t"}]}]}
+"bound": {"$call": ["let", {"t": "integer"}, {"$call": ["is", 3, {"$ref": "t"}]}]}
+"via_fn": {"$call": ["check", "x", "string"]}
+"mismatch": {"$call": ["check", 1.5, "integer"]}
+"from_type": {"$call": ["is", {"$call": ["type", [1]]}, {"$call": ["get", {"$ref": "by_map"}, "name"]}]}
+"anything": {"$call": ["is", null, "any"]}
+"stored": {"$call": ["map", {"$call": ["fn", ["t"], {"$call": ["is", 1, {"$ref": "t"}]}]}, {"$ref": "kinds"}]}

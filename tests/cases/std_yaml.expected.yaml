@@ -1,16 +1,16 @@
-status: finished
 root:
+  dumped: "a:\n  - 1\n  - false\n"
+  invalid: false
+  malformed: parse
   parsed:
     a:
-      - "add"
+      - add
       - missing
       - 1
+  selected: ~
   updated:
     a:
       - 1
       - false
-  selected: ~
-  dumped: "a:\n  - 1\n  - false\n"
-  invalid: false
   wrong_type: type
-  malformed: parse
+status: finished

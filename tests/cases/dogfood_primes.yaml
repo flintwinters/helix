@@ -1,11 +1,33 @@
+# Helix explicit syntax; migrated from legacy source.
 # Dogfood: primes below 50 by trial division up to the square root.
-range: [fn, [lo, hi], [until, [fn, [xs], [eq, [len, xs], [sub, hi, lo]]], [fn, [xs], [append, xs, [add, lo, [len, xs]]]], []]]
-divisible:
-  [fn, [n, d],
-    [cond,
-      [gt, [mul, d, d], n], false,
-      [eq, [mod, n, d], 0], true,
-      [divisible, n, [add, d, 1]]]]
-prime: [fn, [n], [not, [divisible, n, 2]]]
-primes: [filter, prime, [range, 2, 50]]
-count: [len, primes]
+"range":
+  "$call":
+  - "fn"
+  - - "lo"
+    - "hi"
+  - "$call":
+    - "until"
+    - "$call":
+      - "fn"
+      - - "xs"
+      - {"$call": ["eq", {"$call": ["len", {"$ref": "xs"}]}, {"$call": ["sub", {"$ref": "hi"}, {"$ref": "lo"}]}]}
+    - "$call":
+      - "fn"
+      - - "xs"
+      - {"$call": ["append", {"$ref": "xs"}, {"$call": ["add", {"$ref": "lo"}, {"$call": ["len", {"$ref": "xs"}]}]}]}
+    - []
+"divisible":
+  "$call":
+  - "fn"
+  - - "n"
+    - "d"
+  - "$call":
+    - "cond"
+    - {"$call": ["gt", {"$call": ["mul", {"$ref": "d"}, {"$ref": "d"}]}, {"$ref": "n"}]}
+    - false
+    - {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, {"$ref": "d"}]}, 0]}
+    - true
+    - {"$call": ["divisible", {"$ref": "n"}, {"$call": ["add", {"$ref": "d"}, 1]}]}
+"prime": {"$call": ["fn", ["n"], {"$call": ["not", {"$call": ["divisible", {"$ref": "n"}, 2]}]}]}
+"primes": {"$call": ["filter", {"$ref": "prime"}, {"$call": ["range", 2, 50]}]}
+"count": {"$call": ["len", {"$ref": "primes"}]}

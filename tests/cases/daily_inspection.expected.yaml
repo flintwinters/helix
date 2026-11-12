@@ -1,40 +1,46 @@
-status: finished
-root:
-  base: 20
-  increase:
-    ref: object0
-  answer: 42
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - value
+        - "$call":
+            - add
+            - "$ref": value
+            - 2
+    environment: []
     kind: function
+    location:
+      path:
+        - increase
+      source: "<root>"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - symbol: value
-      - - symbol: add
-        - symbol: value
-        - 2
-    location:
-      source: "<root>"
-      path:
-        - "increase"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
+      - code:
+          answer:
+            "$call":
+              - increase
+              - "$call":
+                  - mul
+                  - "$ref": base
+                  - 2
           base: 20
           increase:
-            - symbol: fn
-            - - symbol: value
-            - - symbol: add
-              - symbol: value
-              - 2
-          answer:
-            - symbol: increase
-            - - symbol: mul
-              - symbol: base
-              - 2
+            "$call":
+              - fn
+              - - value
+              - "$call":
+                  - add
+                  - "$ref": value
+                  - 2
+        source: "<root>"
+root:
+  answer: 42
+  base: 20
+  increase:
+    ref: object0
+status: finished

@@ -1,1 +1,2 @@
-f: [import, "modules/fails.yaml"]
+# Helix explicit syntax; migrated from legacy source.
+"f": {"$call": ["import", "modules/fails.yaml"]}

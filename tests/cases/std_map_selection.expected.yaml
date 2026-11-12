@@ -1,433 +1,546 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - left
+            - "$ref": map
+          - - right
+            - "$ref": map
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - key
+                - "$call":
+                    - set
+                    - "$ref": result
+                    - "$ref": key
+                    - "$call":
+                        - get
+                        - "$ref": right
+                        - "$ref": key
+            - "$ref": left
+            - "$call":
+                - keys
+                - "$ref": right
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - merge
+      source: "std:map"
+    program:
+      ref: object4
+  object1:
+    bindings:
+      select:
+        code:
+          path:
+            - select
+          source: "std:map"
+    code:
+      "$call":
+        - fn
+        - - - source
+            - "$ref": map
+          - - requested
+            - "$call":
+                - list_of
+                - "$ref": string
+        - "$call":
+            - select
+            - "$ref": source
+            - "$call":
+                - filter
+                - "$call":
+                    - fn
+                    - - name
+                    - "$call":
+                        - not
+                        - "$call":
+                            - has
+                            - "$ref": requested
+                            - "$ref": name
+                - "$call":
+                    - keys
+                    - "$ref": source
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - omit
+      source: "std:map"
+    program:
+      ref: object4
+  object2:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - source
+            - "$ref": map
+          - - key
+            - "$ref": string
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - name
+                - "$call":
+                    - if
+                    - "$call":
+                        - eq
+                        - "$ref": name
+                        - "$ref": key
+                    - "$ref": result
+                    - "$call":
+                        - set
+                        - "$ref": result
+                        - "$ref": name
+                        - "$call":
+                            - get
+                            - "$ref": source
+                            - "$ref": name
+            - {}
+            - "$call":
+                - keys
+                - "$ref": source
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - remove
+      source: "std:map"
+    program:
+      ref: object4
+  object3:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - source
+            - "$ref": map
+          - - requested
+            - "$call":
+                - list_of
+                - "$ref": string
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - name
+                - "$call":
+                    - if
+                    - "$call":
+                        - has
+                        - "$ref": requested
+                        - "$ref": name
+                    - "$call":
+                        - set
+                        - "$ref": result
+                        - "$ref": name
+                        - "$call":
+                            - get
+                            - "$ref": source
+                            - "$ref": name
+                    - "$ref": result
+            - {}
+            - "$call":
+                - keys
+                - "$ref": source
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - select
+      source: "std:map"
+    program:
+      ref: object4
+  object4:
+    kind: program
+    sources:
+      - code:
+          empty_omit:
+            "$call":
+              - assert
+              - "$call":
+                  - eq
+                  - "$call":
+                      - m.omit
+                      - "$ref": source
+                      - []
+                  - "$ref": source
+          empty_select:
+            "$call":
+              - m.select
+              - "$ref": source
+              - []
+          empty_sources:
+            "$call":
+              - list
+              - "$call":
+                  - m.select
+                  - {}
+                  - - x
+              - "$call":
+                  - m.omit
+                  - {}
+                  - - x
+          m:
+            "$call":
+              - import
+              - "std:map"
+          nested:
+            "$call":
+              - m.select
+              - "$ref": source
+              - - ""
+          omitted:
+            "$call":
+              - m.omit
+              - "$ref": source
+              - - a
+                - "é"
+                - a
+                - missing
+          omitted_order:
+            "$call":
+              - assert
+              - "$call":
+                  - eq
+                  - "$call":
+                      - keys
+                      - "$ref": omitted
+                  - - ""
+                    - z
+                    - "🙂"
+          selected:
+            "$call":
+              - m.select
+              - "$ref": source
+              - - "🙂"
+                - z
+                - a
+                - z
+                - missing
+          selected_order:
+            "$call":
+              - assert
+              - "$call":
+                  - eq
+                  - "$call":
+                      - keys
+                      - "$ref": selected
+                  - - a
+                    - z
+                    - "🙂"
+          source:
+            "":
+              nested:
+                - 1
+                - 2
+            a: false
+            z: ~
+            "é": 3
+            "🙂": 4
+          wrong_omit_arity:
+            "$call":
+              - try
+              - "$call":
+                  - m.omit
+                  - "$ref": source
+                  - []
+                  - []
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          wrong_omit_keys:
+            "$call":
+              - try
+              - "$call":
+                  - m.omit
+                  - "$ref": source
+                  - z
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          wrong_omit_member:
+            "$call":
+              - try
+              - "$call":
+                  - m.omit
+                  - "$ref": source
+                  - "$call":
+                      - list
+                      - ~
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          wrong_omit_source:
+            "$call":
+              - try
+              - "$call":
+                  - m.omit
+                  - ~
+                  - []
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          wrong_select_arity:
+            "$call":
+              - try
+              - "$call":
+                  - m.select
+                  - "$ref": source
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          wrong_select_keys:
+            "$call":
+              - try
+              - "$call":
+                  - m.select
+                  - "$ref": source
+                  - {}
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          wrong_select_member:
+            "$call":
+              - try
+              - "$call":
+                  - m.select
+                  - "$ref": source
+                  - "$call":
+                      - list
+                      - z
+                      - 1
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          wrong_select_source:
+            "$call":
+              - try
+              - "$call":
+                  - m.select
+                  - []
+                  - []
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+        source: "<root>"
+      - code:
+          merge:
+            "$call":
+              - fn
+              - - - left
+                  - "$ref": map
+                - - right
+                  - "$ref": map
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - result
+                        - key
+                      - "$call":
+                          - set
+                          - "$ref": result
+                          - "$ref": key
+                          - "$call":
+                              - get
+                              - "$ref": right
+                              - "$ref": key
+                  - "$ref": left
+                  - "$call":
+                      - keys
+                      - "$ref": right
+              - "$ref": map
+          omit:
+            "$call":
+              - fn
+              - - - source
+                  - "$ref": map
+                - - requested
+                  - "$call":
+                      - list_of
+                      - "$ref": string
+              - "$call":
+                  - select
+                  - "$ref": source
+                  - "$call":
+                      - filter
+                      - "$call":
+                          - fn
+                          - - name
+                          - "$call":
+                              - not
+                              - "$call":
+                                  - has
+                                  - "$ref": requested
+                                  - "$ref": name
+                      - "$call":
+                          - keys
+                          - "$ref": source
+              - "$ref": map
+          remove:
+            "$call":
+              - fn
+              - - - source
+                  - "$ref": map
+                - - key
+                  - "$ref": string
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - result
+                        - name
+                      - "$call":
+                          - if
+                          - "$call":
+                              - eq
+                              - "$ref": name
+                              - "$ref": key
+                          - "$ref": result
+                          - "$call":
+                              - set
+                              - "$ref": result
+                              - "$ref": name
+                              - "$call":
+                                  - get
+                                  - "$ref": source
+                                  - "$ref": name
+                  - {}
+                  - "$call":
+                      - keys
+                      - "$ref": source
+              - "$ref": map
+          select:
+            "$call":
+              - fn
+              - - - source
+                  - "$ref": map
+                - - requested
+                  - "$call":
+                      - list_of
+                      - "$ref": string
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - result
+                        - name
+                      - "$call":
+                          - if
+                          - "$call":
+                              - has
+                              - "$ref": requested
+                              - "$ref": name
+                          - "$call":
+                              - set
+                              - "$ref": result
+                              - "$ref": name
+                              - "$call":
+                                  - get
+                                  - "$ref": source
+                                  - "$ref": name
+                          - "$ref": result
+                  - {}
+                  - "$call":
+                      - keys
+                      - "$ref": source
+              - "$ref": map
+        source: "std:map"
 root:
+  empty_omit: ~
+  empty_select: {}
+  empty_sources:
+    - {}
+    - {}
   m:
     merge:
       ref: object0
-    remove:
-      ref: object1
-    select:
-      ref: object2
     omit:
+      ref: object1
+    remove:
+      ref: object2
+    select:
       ref: object3
-  source:
-    z: ~
-    a: false
-    "":
-      nested:
-        - 1
-        - 2
-    "é": 3
-    "🙂": 4
-  selected:
-    z: ~
-    a: false
-    "🙂": 4
-  selected_order: ~
-  omitted:
-    z: ~
-    "":
-      nested:
-        - 1
-        - 2
-    "🙂": 4
-  omitted_order: ~
   nested:
     "":
       nested:
         - 1
         - 2
-  empty_select: {}
-  empty_omit: ~
-  empty_sources:
-    - {}
-    - {}
-  wrong_select_source: type
-  wrong_omit_source: type
-  wrong_select_keys: type
-  wrong_omit_keys: type
-  wrong_select_member: type
-  wrong_omit_member: type
-  wrong_select_arity: arity
+  omitted:
+    "":
+      nested:
+        - 1
+        - 2
+    z: ~
+    "🙂": 4
+  omitted_order: ~
+  selected:
+    a: false
+    z: ~
+    "🙂": 4
+  selected_order: ~
+  source:
+    "":
+      nested:
+        - 1
+        - 2
+    a: false
+    z: ~
+    "é": 3
+    "🙂": 4
   wrong_omit_arity: arity
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object4
-    code:
-      - symbol: fn
-      - - - symbol: left
-          - symbol: map
-        - - symbol: right
-          - symbol: map
-      - - symbol: fold
-        - - symbol: fn
-          - - symbol: result
-            - symbol: key
-          - - symbol: set
-            - symbol: result
-            - symbol: key
-            - - symbol: get
-              - symbol: right
-              - symbol: key
-        - symbol: left
-        - - symbol: keys
-          - symbol: right
-      - symbol: map
-    location:
-      source: "std:map"
-      path:
-        - "merge"
-    environment: []
-    bindings: {}
-  object1:
-    kind: function
-    program:
-      ref: object4
-    code:
-      - symbol: fn
-      - - - symbol: source
-          - symbol: map
-        - - symbol: key
-          - symbol: string
-      - - symbol: fold
-        - - symbol: fn
-          - - symbol: result
-            - symbol: name
-          - - symbol: if
-            - - symbol: eq
-              - symbol: name
-              - symbol: key
-            - symbol: result
-            - - symbol: set
-              - symbol: result
-              - symbol: name
-              - - symbol: get
-                - symbol: source
-                - symbol: name
-        - {}
-        - - symbol: keys
-          - symbol: source
-      - symbol: map
-    location:
-      source: "std:map"
-      path:
-        - "remove"
-    environment: []
-    bindings: {}
-  object2:
-    kind: function
-    program:
-      ref: object4
-    code:
-      - symbol: fn
-      - - - symbol: source
-          - symbol: map
-        - - symbol: requested
-          - - symbol: list_of
-            - symbol: string
-      - - symbol: fold
-        - - symbol: fn
-          - - symbol: result
-            - symbol: name
-          - - symbol: if
-            - - symbol: has
-              - symbol: requested
-              - symbol: name
-            - - symbol: set
-              - symbol: result
-              - symbol: name
-              - - symbol: get
-                - symbol: source
-                - symbol: name
-            - symbol: result
-        - {}
-        - - symbol: keys
-          - symbol: source
-      - symbol: map
-    location:
-      source: "std:map"
-      path:
-        - "select"
-    environment: []
-    bindings: {}
-  object3:
-    kind: function
-    program:
-      ref: object4
-    code:
-      - symbol: fn
-      - - - symbol: source
-          - symbol: map
-        - - symbol: requested
-          - - symbol: list_of
-            - symbol: string
-      - - symbol: select
-        - symbol: source
-        - - symbol: filter
-          - - symbol: fn
-            - - symbol: name
-            - - symbol: not
-              - - symbol: has
-                - symbol: requested
-                - symbol: name
-          - - symbol: keys
-            - symbol: source
-      - symbol: map
-    location:
-      source: "std:map"
-      path:
-        - "omit"
-    environment: []
-    bindings:
-      select:
-        code:
-          source: "std:map"
-          path:
-            - "select"
-  object4:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          m:
-            - symbol: import
-            - symbol: "std:map"
-          source:
-            z: ~
-            a: false
-            "":
-              nested:
-                - 1
-                - 2
-            "é": 3
-            "🙂": 4
-          selected:
-            - symbol: m.select
-            - symbol: source
-            - - "🙂"
-              - z
-              - a
-              - z
-              - missing
-          selected_order:
-            - symbol: assert
-            - - symbol: eq
-              - - symbol: keys
-                - symbol: selected
-              - - "z"
-                - a
-                - "🙂"
-          omitted:
-            - symbol: m.omit
-            - symbol: source
-            - - "a"
-              - "é"
-              - a
-              - missing
-          omitted_order:
-            - symbol: assert
-            - - symbol: eq
-              - - symbol: keys
-                - symbol: omitted
-              - - "z"
-                - ""
-                - "🙂"
-          nested:
-            - symbol: m.select
-            - symbol: source
-            - - ""
-          empty_select:
-            - symbol: m.select
-            - symbol: source
-            - []
-          empty_omit:
-            - symbol: assert
-            - - symbol: eq
-              - - symbol: m.omit
-                - symbol: source
-                - []
-              - symbol: source
-          empty_sources:
-            - symbol: list
-            - - symbol: m.select
-              - {}
-              - - "x"
-            - - symbol: m.omit
-              - {}
-              - - "x"
-          wrong_select_source:
-            - symbol: try
-            - - symbol: m.select
-              - []
-              - []
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          wrong_omit_source:
-            - symbol: try
-            - - symbol: m.omit
-              - ~
-              - []
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          wrong_select_keys:
-            - symbol: try
-            - - symbol: m.select
-              - symbol: source
-              - {}
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          wrong_omit_keys:
-            - symbol: try
-            - - symbol: m.omit
-              - symbol: source
-              - z
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          wrong_select_member:
-            - symbol: try
-            - - symbol: m.select
-              - symbol: source
-              - - symbol: list
-                - z
-                - 1
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          wrong_omit_member:
-            - symbol: try
-            - - symbol: m.omit
-              - symbol: source
-              - - symbol: list
-                - ~
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          wrong_select_arity:
-            - symbol: try
-            - - symbol: m.select
-              - symbol: source
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          wrong_omit_arity:
-            - symbol: try
-            - - symbol: m.omit
-              - symbol: source
-              - []
-              - []
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-      - source: "std:map"
-        code:
-          merge:
-            - symbol: fn
-            - - - symbol: left
-                - symbol: map
-              - - symbol: right
-                - symbol: map
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: result
-                  - symbol: key
-                - - symbol: set
-                  - symbol: result
-                  - symbol: key
-                  - - symbol: get
-                    - symbol: right
-                    - symbol: key
-              - symbol: left
-              - - symbol: keys
-                - symbol: right
-            - symbol: map
-          remove:
-            - symbol: fn
-            - - - symbol: source
-                - symbol: map
-              - - symbol: key
-                - symbol: string
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: result
-                  - symbol: name
-                - - symbol: if
-                  - - symbol: eq
-                    - symbol: name
-                    - symbol: key
-                  - symbol: result
-                  - - symbol: set
-                    - symbol: result
-                    - symbol: name
-                    - - symbol: get
-                      - symbol: source
-                      - symbol: name
-              - {}
-              - - symbol: keys
-                - symbol: source
-            - symbol: map
-          select:
-            - symbol: fn
-            - - - symbol: source
-                - symbol: map
-              - - symbol: requested
-                - - symbol: list_of
-                  - symbol: string
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: result
-                  - symbol: name
-                - - symbol: if
-                  - - symbol: has
-                    - symbol: requested
-                    - symbol: name
-                  - - symbol: set
-                    - symbol: result
-                    - symbol: name
-                    - - symbol: get
-                      - symbol: source
-                      - symbol: name
-                  - symbol: result
-              - {}
-              - - symbol: keys
-                - symbol: source
-            - symbol: map
-          omit:
-            - symbol: fn
-            - - - symbol: source
-                - symbol: map
-              - - symbol: requested
-                - - symbol: list_of
-                  - symbol: string
-            - - symbol: select
-              - symbol: source
-              - - symbol: filter
-                - - symbol: fn
-                  - - symbol: name
-                  - - symbol: not
-                    - - symbol: has
-                      - symbol: requested
-                      - symbol: name
-                - - symbol: keys
-                  - symbol: source
-            - symbol: map
+  wrong_omit_keys: type
+  wrong_omit_member: type
+  wrong_omit_source: type
+  wrong_select_arity: arity
+  wrong_select_keys: type
+  wrong_select_member: type
+  wrong_select_source: type
+status: finished

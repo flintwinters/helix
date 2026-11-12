@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 24
   kind: type
-  message: "expected a function (`[fn, [params], body]` or its name)"
-  path: /r/1
+  line: 3
+  message: "expected a function (`{$call: [fn, [params], body]}` or its name)"
+  path: "/r/$call/1"
   reference:
-    - "r"
+    - r
+    - "$call"
     - 1
-  line: 2
-  column: 10
+status: error

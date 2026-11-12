@@ -1,7 +1,13 @@
-debug: false
-n: 7
-negated: [not, debug]
-size: [if, [lt, n, 10], "small", "big"]
-lazy: [if, true, 1, [div, 1, 0]]
-nested: [if, [not, [eq, n, 7]], 0, [if, debug, 1, 2]]
-symbol_branch: [if, debug, n, [mul, n, 2]]
+# Helix explicit syntax; migrated from legacy source.
+"debug": false
+"n": 7
+"negated": {"$call": ["not", {"$ref": "debug"}]}
+"size": {"$call": ["if", {"$call": ["lt", {"$ref": "n"}, 10]}, "small", "big"]}
+"lazy": {"$call": ["if", true, 1, {"$call": ["div", 1, 0]}]}
+"nested":
+  "$call":
+  - "if"
+  - {"$call": ["not", {"$call": ["eq", {"$ref": "n"}, 7]}]}
+  - 0
+  - {"$call": ["if", {"$ref": "debug"}, 1, 2]}
+"symbol_branch": {"$call": ["if", {"$ref": "debug"}, {"$ref": "n"}, {"$call": ["mul", {"$ref": "n"}, 2]}]}

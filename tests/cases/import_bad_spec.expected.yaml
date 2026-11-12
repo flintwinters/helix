@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 27
   kind: type
+  line: 2
   message: "an import names its module with a literal string such as `lib/x.yaml` or `std:math`"
-  path: /a/1
+  path: "/a/$call/1"
   reference:
-    - "a"
+    - a
+    - "$call"
     - 1
-  line: 1
-  column: 13
+status: error

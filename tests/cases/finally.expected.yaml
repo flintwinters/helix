@@ -1,160 +1,206 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - finally
+            - "$call":
+                - div
+                - 12
+                - "$ref": "n"
+            - "$call":
+                - assert
+                - "$call":
+                    - ne
+                    - "$ref": "n"
+                    - -1
+                - cleanup rejected argument
+    environment: []
+    kind: function
+    location:
+      path:
+        - function
+      source: "<root>"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          calls:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - "n"
+                  - "$call":
+                      - try
+                      - "$call":
+                          - function
+                          - "$ref": "n"
+                      - "$call":
+                          - fn
+                          - - e
+                          - "$call":
+                              - get
+                              - "$ref": e
+                              - kind
+              - - 2
+                - 0
+                - -1
+                - 3
+          cleanup_after_failure:
+            "$call":
+              - try
+              - "$call":
+                  - finally
+                  - "$call":
+                      - raise
+                      - original
+                      - body failed
+                  - "$call":
+                      - raise
+                      - cleanup
+                      - cleanup ran
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          cleanup_after_success:
+            "$call":
+              - try
+              - "$call":
+                  - finally
+                  - 42
+                  - "$call":
+                      - raise
+                      - cleanup
+                      - cleanup ran
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          cleanup_value_ignored:
+            "$call":
+              - finally
+              - ~
+              - 99
+          function:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - finally
+                  - "$call":
+                      - div
+                      - 12
+                      - "$ref": "n"
+                  - "$call":
+                      - assert
+                      - "$call":
+                          - ne
+                          - "$ref": "n"
+                          - -1
+                      - cleanup rejected argument
+          nested:
+            "$call":
+              - try
+              - "$call":
+                  - finally
+                  - "$call":
+                      - finally
+                      - 1
+                      - "$call":
+                          - raise
+                          - inner
+                          - inner cleanup
+                  - "$call":
+                      - raise
+                      - outer
+                      - outer cleanup
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          original_error:
+            "$call":
+              - try
+              - "$call":
+                  - finally
+                  - "$call":
+                      - raise
+                      - original
+                      - body failed
+                      - step: 2
+                  - ~
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          success:
+            "$call":
+              - finally
+              - "$call":
+                  - add
+                  - 2
+                  - 3
+              - "$call":
+                  - assert
+                  - true
+        source: "<root>"
 root:
-  success: 5
-  original_error:
-    kind: original
-    message: body failed
-    path: /original_error/1/1
-    reference:
-      - "original_error"
-      - 1
-      - 1
-    line: 3
-    column: 33
-    data:
-      step: 2
-  cleanup_after_success:
-    kind: cleanup
-    message: cleanup ran
-    path: /cleanup_after_success/1/2
-    reference:
-      - "cleanup_after_success"
-      - 1
-      - 2
-    line: 4
-    column: 44
-  cleanup_after_failure:
-    kind: cleanup
-    message: cleanup ran
-    path: /cleanup_after_failure/1/2
-    reference:
-      - "cleanup_after_failure"
-      - 1
-      - 2
-    line: 5
-    column: 76
-  cleanup_value_ignored: ~
-  function:
-    ref: object0
   calls:
     - 6
     - divide_by_zero
     - assertion
     - 4
+  cleanup_after_failure:
+    column: 7
+    kind: cleanup
+    line: 20
+    message: cleanup ran
+    path: "/cleanup_after_failure/$call/1/$call/2"
+    reference:
+      - cleanup_after_failure
+      - "$call"
+      - 1
+      - "$call"
+      - 2
+  cleanup_after_success:
+    column: 31
+    kind: cleanup
+    line: 12
+    message: cleanup ran
+    path: "/cleanup_after_success/$call/1/$call/2"
+    reference:
+      - cleanup_after_success
+      - "$call"
+      - 1
+      - "$call"
+      - 2
+  cleanup_value_ignored: ~
+  function:
+    ref: object0
   nested: outer
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object1
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: finally
-        - - symbol: div
-          - 12
-          - symbol: "n"
-        - - symbol: assert
-          - - symbol: ne
-            - symbol: "n"
-            - -1
-          - cleanup rejected argument
-    location:
-      source: "<root>"
-      path:
-        - "function"
-    environment: []
-    bindings: {}
-  object1:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          success:
-            - symbol: finally
-            - - symbol: add
-              - 2
-              - 3
-            - - symbol: assert
-              - true
-          original_error:
-            - symbol: try
-            - - symbol: finally
-              - - symbol: raise
-                - original
-                - body failed
-                - step: 2
-              - ~
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          cleanup_after_success:
-            - symbol: try
-            - - symbol: finally
-              - 42
-              - - symbol: raise
-                - cleanup
-                - cleanup ran
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          cleanup_after_failure:
-            - symbol: try
-            - - symbol: finally
-              - - symbol: raise
-                - original
-                - body failed
-              - - symbol: raise
-                - cleanup
-                - cleanup ran
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          cleanup_value_ignored:
-            - symbol: finally
-            - ~
-            - 99
-          function:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: finally
-              - - symbol: div
-                - 12
-                - symbol: "n"
-              - - symbol: assert
-                - - symbol: ne
-                  - symbol: "n"
-                  - -1
-                - cleanup rejected argument
-          calls:
-            - symbol: map
-            - - symbol: fn
-              - - symbol: "n"
-              - - symbol: try
-                - - symbol: function
-                  - symbol: "n"
-                - - symbol: fn
-                  - - symbol: e
-                  - - symbol: get
-                    - symbol: e
-                    - kind
-            - - 2
-              - 0
-              - -1
-              - 3
-          nested:
-            - symbol: try
-            - - symbol: finally
-              - - symbol: finally
-                - 1
-                - - symbol: raise
-                  - inner
-                  - inner cleanup
-              - - symbol: raise
-                - outer
-                - outer cleanup
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
+  original_error:
+    column: 27
+    data:
+      step: 2
+    kind: original
+    line: 7
+    message: body failed
+    path: "/original_error/$call/1/$call/1"
+    reference:
+      - original_error
+      - "$call"
+      - 1
+      - "$call"
+      - 1
+  success: 5
+status: finished

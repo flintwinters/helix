@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 10
   kind: assertion
+  line: 2
   message: assertion failed
   path: /check
   reference:
-    - "check"
-  line: 1
-  column: 8
+    - check
+status: error

@@ -1,29 +1,36 @@
-status: finished
 root:
-  status: signaled
+  invalid_operation: type
+  original_status: ready
   request:
     id: 1
-    operation: time
-    payload: ~
     location:
-      source: "<root>"
       path:
+        - "$call"
         - 1
         - original
+        - "$call"
         - 1
+        - "$call"
         - 2
+      source: "<root>"
+    operation: time
+    payload: ~
+  status: signaled
   step_preserves_pending: true
-  original_status: ready
   type_time:
+    column: 31
     kind: purity
+    line: 27
     message: effects are forbidden during type time
+    path: "/$call/2/$call/10/$call/1/$call/1"
     phase: type
-    path: /2/10/1/1
     reference:
+      - "$call"
       - 2
+      - "$call"
       - 10
+      - "$call"
       - 1
+      - "$call"
       - 1
-    line: 13
-    column: 35
-  invalid_operation: type
+status: finished

@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 39
   kind: unbound
+  line: 3
   message: "unbound symbol `nope`"
-  path: /b/2
+  path: "/b/$call/2"
   reference:
-    - "b"
+    - b
+    - "$call"
     - 2
-  line: 2
-  column: 13
+status: error

@@ -1,90 +1,105 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - v
+          - t
+        - "$call":
+            - is
+            - "$ref": v
+            - "$ref": t
+    environment: []
+    kind: function
+    location:
+      path:
+        - check
+      source: "<root>"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          anything:
+            "$call":
+              - is
+              - ~
+              - any
+          bound:
+            "$call":
+              - let
+              - t: integer
+              - "$call":
+                  - is
+                  - 3
+                  - "$ref": t
+          by_map:
+            name: string
+            port: integer
+          check:
+            "$call":
+              - fn
+              - - v
+                - t
+              - "$call":
+                  - is
+                  - "$ref": v
+                  - "$ref": t
+          from_type:
+            "$call":
+              - is
+              - "$call":
+                  - type
+                  - - 1
+              - "$call":
+                  - get
+                  - "$ref": by_map
+                  - name
+          kinds:
+            - integer
+            - string
+            - list
+          mismatch:
+            "$call":
+              - check
+              - 1.5
+              - integer
+          stored:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - t
+                  - "$call":
+                      - is
+                      - 1
+                      - "$ref": t
+              - "$ref": kinds
+          via_fn:
+            "$call":
+              - check
+              - x
+              - string
+        source: "<root>"
 root:
-  kinds:
-    - "integer"
-    - string
-    - list
+  anything: true
+  bound: true
   by_map:
-    port: integer
     name: string
+    port: integer
   check:
     ref: object0
-  bound: true
-  via_fn: true
-  mismatch: false
   from_type: true
-  anything: true
+  kinds:
+    - integer
+    - string
+    - list
+  mismatch: false
   stored:
     - true
     - false
     - false
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object1
-    code:
-      - symbol: fn
-      - - symbol: v
-        - symbol: t
-      - - symbol: is
-        - symbol: v
-        - symbol: t
-    location:
-      source: "<root>"
-      path:
-        - "check"
-    environment: []
-    bindings: {}
-  object1:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          kinds:
-            - "integer"
-            - string
-            - list
-          by_map:
-            port: integer
-            name: string
-          check:
-            - symbol: fn
-            - - symbol: v
-              - symbol: t
-            - - symbol: is
-              - symbol: v
-              - symbol: t
-          bound:
-            - symbol: let
-            - t: integer
-            - - symbol: is
-              - 3
-              - symbol: t
-          via_fn:
-            - symbol: check
-            - x
-            - string
-          mismatch:
-            - symbol: check
-            - 1.5
-            - integer
-          from_type:
-            - symbol: is
-            - - symbol: type
-              - - 1
-            - - symbol: get
-              - symbol: by_map
-              - name
-          anything:
-            - symbol: is
-            - ~
-            - any
-          stored:
-            - symbol: map
-            - - symbol: fn
-              - - symbol: t
-              - - symbol: is
-                - 1
-                - symbol: t
-            - symbol: kinds
+  via_fn: true
+status: finished

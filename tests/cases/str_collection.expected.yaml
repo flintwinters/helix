@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 24
   kind: type
+  line: 2
   message: "expected a scalar, got list"
-  path: /x/1
+  path: "/x/$call/1"
   reference:
-    - "x"
+    - x
+    - "$call"
     - 1
-  line: 1
-  column: 10
+status: error

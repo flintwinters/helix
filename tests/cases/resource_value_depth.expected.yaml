@@ -1,17 +1,19 @@
-status: error
 error:
-  kind: depth
-  message: value nested deeper than 64 containers
-  path: /2/2
-  reference:
-    - 2
-    - 2
-  line: 1
-  column: 37
   calls:
-    - path: /2
-      line: 1
-      column: 27
-      function: /2
-      function_line: 1
-      function_column: 27
+    - column: 3
+      function: "/$call/2"
+      function_column: 3
+      function_line: 5
+      line: 5
+      path: "/$call/2"
+  column: 27
+  kind: depth
+  line: 5
+  message: value nested deeper than 64 containers
+  path: "/$call/2/$call/2"
+  reference:
+    - "$call"
+    - 2
+    - "$call"
+    - 2
+status: error

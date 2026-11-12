@@ -1,10 +1,10 @@
-status: error
-mode: check
 errors:
-  - kind: limit
+  - column: 10
+    kind: limit
+    line: 3
     message: "`until` did not finish within 100000 steps"
     path: /spin
     reference:
-      - "spin"
-    line: 1
-    column: 7
+      - spin
+mode: check
+status: error

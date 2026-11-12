@@ -1,8 +1,9 @@
-positive_fraction: +.5
-negative_fraction: -.5
-trailing_decimal: 1.
-positive_exponent: 1e20
-negative_exponent: 1e-20
-negative_zero: -0.0
-literal_fraction: "+.5"
-literal_exponent: "1e20"
+# Helix explicit syntax; migrated from legacy source.
+"positive_fraction": 0.5
+"negative_fraction": -0.5
+"trailing_decimal": 1.0
+"positive_exponent": 1.0e+20
+"negative_exponent": 1.0e-20
+"negative_zero": -0.0
+"literal_fraction": "+.5"
+"literal_exponent": "1e20"

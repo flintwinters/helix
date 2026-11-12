@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 6
   kind: divide_by_zero
+  line: 2
   message: "`mod` by zero"
   path: /a
   reference:
-    - "a"
-  line: 1
-  column: 4
+    - a
+status: error

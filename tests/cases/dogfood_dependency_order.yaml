@@ -1,8 +1,8 @@
+# Helix explicit syntax; migrated from legacy source.
 # Plan repository checks through the reusable dependency library.
-deps: [import, std:dependency]
-# Diamond dependencies are deliberately supplied out of execution order.
-checks: [deps.plan, {test: ["build"], lint: ["build"], review: ["test", "lint"], build: []}]
-missing: [deps.plan, {test: ["compile"], docs: []}]
-cycle: [deps.plan, {a: ["b"], b: ["a"], downstream: ["a"], independent: []}]
-self_cycle: [deps.plan, {self: ["self"]}]
-empty: [deps.plan, {}]
+"deps": {"$call": ["import", "std:dependency"]}
+"checks": {"$call": ["deps.plan", {"test": ["build"], "lint": ["build"], "review": ["test", "lint"], "build": []}]}
+"missing": {"$call": ["deps.plan", {"test": ["compile"], "docs": []}]}
+"cycle": {"$call": ["deps.plan", {"a": ["b"], "b": ["a"], "downstream": ["a"], "independent": []}]}
+"self_cycle": {"$call": ["deps.plan", {"self": ["self"]}]}
+"empty": {"$call": ["deps.plan", {}]}

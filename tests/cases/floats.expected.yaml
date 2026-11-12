@@ -1,18 +1,18 @@
-status: finished
 root:
-  pi: 3.5
-  whole: 2.0
-  sum: 4.5
-  product: 0.5
-  quotient: 3.5
-  int_division_stays_int: 3
-  remainder: 1.5
-  negated: -3.5
-  negated_int: -4
-  mixed_order: true
   equal_across_types: true
   exponent: 2000.0
-  truncated: -2
-  widened: 3.0
+  int_division_stays_int: 3
+  mixed_order: true
+  negated: -3.5
+  negated_int: -4
   parsed_float: 2.5
   parsed_int: 42
+  pi: 3.5
+  product: 0.5
+  quotient: 3.5
+  remainder: 1.5
+  sum: 4.5
+  truncated: -2
+  whole: 2.0
+  widened: 3.0
+status: finished

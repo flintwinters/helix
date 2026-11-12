@@ -1,5 +1,20 @@
-leaf: [fn, [], [div, 1, 0]]
-middle: [fn, [], [leaf]]
-caught: [try, [middle], [fn, [e], e]]
-reraised: [try, [try, [middle], [fn, [e], [raise, e]]], [fn, [e], e]]
-nested: [try, [try, [try, [raise, "original", "failure", {step: 3}], [fn, [e], [raise, e]]], [fn, [e], [raise, e]]], [fn, [e], e]]
+# Helix explicit syntax; migrated from legacy source.
+"leaf": {"$call": ["fn", [], {"$call": ["div", 1, 0]}]}
+"middle": {"$call": ["fn", [], {"$call": ["leaf"]}]}
+"caught": {"$call": ["try", {"$call": ["middle"]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
+"reraised":
+  "$call":
+  - "try"
+  - {"$call": ["try", {"$call": ["middle"]}, {"$call": ["fn", ["e"], {"$call": ["raise", {"$ref": "e"}]}]}]}
+  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+"nested":
+  "$call":
+  - "try"
+  - "$call":
+    - "try"
+    - "$call":
+      - "try"
+      - {"$call": ["raise", "original", "failure", {"step": 3}]}
+      - {"$call": ["fn", ["e"], {"$call": ["raise", {"$ref": "e"}]}]}
+    - {"$call": ["fn", ["e"], {"$call": ["raise", {"$ref": "e"}]}]}
+  - {"$call": ["fn", ["e"], {"$ref": "e"}]}

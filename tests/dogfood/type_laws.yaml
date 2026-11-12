@@ -1,32 +1,137 @@
-t: [import, std:test]
-d: [import, std:types]
-# Values deliberately span scalar/container boundaries and nested violations.
-values: [list, null, false, -1, 0, 1, 1.5, "", "x", [], [list, 1], [list, "x"], {}, {x: 1}, {x: "bad"}, {extra: true}]
-types: [list, any, "null", boolean, integer, float, string, list, map, [list_of, integer], [map_of, integer], [record, "x", integer], [union, integer, string], [literal, 1]]
-rows: [fold, [fn, [acc, spec], [concat, acc, [map, [fn, [value], [list, spec, value]], values]]], [], types]
-validation:
-  - t.property
+# Helix explicit syntax; migrated from legacy source.
+"t": {"$call": ["import", "std:test"]}
+"d": {"$call": ["import", "std:types"]}
+"values":
+  "$call":
+  - "list"
+  - null
+  - false
+  - -1
+  - 0
+  - 1
+  - 1.5
+  - ""
+  - "x"
+  - []
+  - {"$call": ["list", 1]}
+  - {"$call": ["list", "x"]}
+  - {}
+  - "x": 1
+  - "x": "bad"
+  - "extra": true
+"types":
+  "$call":
+  - "list"
+  - {"$ref": "any"}
+  - "null"
+  - {"$ref": "boolean"}
+  - {"$ref": "integer"}
+  - {"$ref": "float"}
+  - {"$ref": "string"}
+  - {"$ref": "list"}
+  - {"$ref": "map"}
+  - {"$call": ["list_of", {"$ref": "integer"}]}
+  - {"$call": ["map_of", {"$ref": "integer"}]}
+  - {"$call": ["record", "x", {"$ref": "integer"}]}
+  - {"$call": ["union", {"$ref": "integer"}, {"$ref": "string"}]}
+  - {"$call": ["literal", 1]}
+"rows":
+  "$call":
+  - "fold"
+  - "$call":
+    - "fn"
+    - - "acc"
+      - "spec"
+    - "$call":
+      - "concat"
+      - {"$ref": "acc"}
+      - "$call":
+        - "map"
+        - {"$call": ["fn", ["value"], {"$call": ["list", {"$ref": "spec"}, {"$ref": "value"}]}]}
+        - {"$ref": "values"}
+  - []
+  - {"$ref": "types"}
+"validation":
+  "$call":
+  - "t.property"
   - "membership agrees with complete violations"
-  - rows
-  - [fn, [row], [let, {spec: [get, row, 0], value: [get, row, 1]}, [eq, [is, value, spec], [eq, [len, [violations, value, spec]], 0]]]]
-unions:
-  - t.property
+  - {"$ref": "rows"}
+  - "$call":
+    - "fn"
+    - - "row"
+    - "$call":
+      - "let"
+      - "spec": {"$call": ["get", {"$ref": "row"}, 0]}
+        "value": {"$call": ["get", {"$ref": "row"}, 1]}
+      - "$call":
+        - "eq"
+        - {"$call": ["is", {"$ref": "value"}, {"$ref": "spec"}]}
+        - {"$call": ["eq", {"$call": ["len", {"$call": ["violations", {"$ref": "value"}, {"$ref": "spec"}]}]}, 0]}
+"unions":
+  "$call":
+  - "t.property"
   - "union membership is disjunction"
-  - rows
-  - [fn, [row], [let, {spec: [get, row, 0], value: [get, row, 1]}, [eq, [is, value, [union, spec, string]], [or, [is, value, spec], [is, value, string]]]]]
-records: [list, [record], [record, "x", integer], [record, "x", [optional, string]], [record, "x", [default, integer, 2], "y", boolean]]
-derivation:
-  - t.property
+  - {"$ref": "rows"}
+  - "$call":
+    - "fn"
+    - - "row"
+    - "$call":
+      - "let"
+      - "spec": {"$call": ["get", {"$ref": "row"}, 0]}
+        "value": {"$call": ["get", {"$ref": "row"}, 1]}
+      - "$call":
+        - "eq"
+        - {"$call": ["is", {"$ref": "value"}, {"$call": ["union", {"$ref": "spec"}, {"$ref": "string"}]}]}
+        - "$call":
+          - "or"
+          - {"$call": ["is", {"$ref": "value"}, {"$ref": "spec"}]}
+          - {"$call": ["is", {"$ref": "value"}, {"$ref": "string"}]}
+"records":
+  "$call":
+  - "list"
+  - {"$call": ["record"]}
+  - {"$call": ["record", "x", {"$ref": "integer"}]}
+  - {"$call": ["record", "x", {"$call": ["optional", {"$ref": "string"}]}]}
+  - {"$call": ["record", "x", {"$call": ["default", {"$ref": "integer"}, 2]}, "y", {"$ref": "boolean"}]}
+"derivation":
+  "$call":
+  - "t.property"
   - "reflection rebuild and optionalization preserve declarations"
-  - records
-  - [fn, [spec], [let, {opt: [d.optional_fields, spec]}, [and, [eq, [d.from_fields, [fields, spec]], spec], [eq, [d.without_field, spec, "absent"], spec], [eq, [d.optional_fields, opt], opt], [is, {}, opt]]]]
-# Interleave escaping closures with different captures; callbacks must keep each scope.
-factory: [fn, [offset], [fn, [x], [add, offset, x]]]
-offsets: [-2, 0, 3]
-closures: [map, factory, offsets]
-captures:
-  - t.property
+  - {"$ref": "records"}
+  - "$call":
+    - "fn"
+    - - "spec"
+    - "$call":
+      - "let"
+      - "opt": {"$call": ["d.optional_fields", {"$ref": "spec"}]}
+      - "$call":
+        - "and"
+        - {"$call": ["eq", {"$call": ["d.from_fields", {"$call": ["fields", {"$ref": "spec"}]}]}, {"$ref": "spec"}]}
+        - {"$call": ["eq", {"$call": ["d.without_field", {"$ref": "spec"}, "absent"]}, {"$ref": "spec"}]}
+        - {"$call": ["eq", {"$call": ["d.optional_fields", {"$ref": "opt"}]}, {"$ref": "opt"}]}
+        - {"$call": ["is", {}, {"$ref": "opt"}]}
+"factory": {"$call": ["fn", ["offset"], {"$call": ["fn", ["x"], {"$call": ["add", {"$ref": "offset"}, {"$ref": "x"}]}]}]}
+"offsets": [-2, 0, 3]
+"closures": {"$call": ["map", {"$ref": "factory"}, {"$ref": "offsets"}]}
+"captures":
+  "$call":
+  - "t.property"
   - "escaping callbacks retain independent captures"
   - [-1, 0, 4]
-  - [fn, [x], [eq, [map, [fn, [f], [call, f, x]], closures], [map, [fn, [offset], [add, offset, x]], offsets]]]
-report: [t.combine, [list, validation, unions, derivation, captures]]
+  - "$call":
+    - "fn"
+    - - "x"
+    - "$call":
+      - "eq"
+      - "$call":
+        - "map"
+        - {"$call": ["fn", ["f"], {"$call": ["call", {"$ref": "f"}, {"$ref": "x"}]}]}
+        - {"$ref": "closures"}
+      - "$call":
+        - "map"
+        - {"$call": ["fn", ["offset"], {"$call": ["add", {"$ref": "offset"}, {"$ref": "x"}]}]}
+        - {"$ref": "offsets"}
+"report":
+  "$call":
+  - "t.combine"
+  - {"$call": ["list", {"$ref": "validation"}, {"$ref": "unions"}, {"$ref": "derivation"}, {"$ref": "captures"}]}

@@ -1,3 +1,4 @@
+# Helix explicit syntax; migrated from legacy source.
 # The same self-contained program runs in a REPL, watch session, or installed CLI.
-input: 6
-answer: [mul, input, 7]
+"input": 6
+"answer": {"$call": ["mul", {"$ref": "input"}, 7]}

@@ -1,38 +1,102 @@
+# Helix explicit syntax; migrated from legacy source.
 # Pure text helpers for small inputs. Indices count Unicode scalar values.
 # Splitting is literal, left-to-right and non-overlapping; empty fields survive.
 # An empty separator is rejected. join([], separator) returns the empty string.
 # Scanning/slicing and immutable string/list copies can take quadratic time and
 # total allocations. until/fold iteration limits and shared runtime budgets apply.
-split:
-  - fn
-  - [[source, string], [separator, string]]
-  - - if
-    - [eq, [len, separator], 0]
-    - [raise, "range", "split separator must not be empty"]
-    - - let
-      - width: [len, separator]
-        size: [len, source]
-        result:
-          - until
-          - [fn, [state], [gt, [get, state, "index"], [sub, size, width]]]
-          - - fn
-            - [state]
-            - - if
-              - [eq, [slice, source, [get, state, "index"], [add, [get, state, "index"], width]], separator]
-              - [dict, "index", [add, [get, state, "index"], width], "start", [add, [get, state, "index"], width], "parts", [append, [get, state, "parts"], [slice, source, [get, state, "start"], [get, state, "index"]]]]
-              - [set, state, "index", [add, [get, state, "index"], 1]]
-          - {index: 0, start: 0, parts: []}
-      - [append, [get, result, "parts"], [slice, source, [get, result, "start"], size]]
-  - [list_of, string]
-join:
-  - fn
-  - [[parts, [list_of, string]], [separator, string]]
-  - - get
-    - - fold
-      - - fn
-        - [state, part]
-        - [dict, "text", [concat, [get, state, "text"], [if, [get, state, "first"], "", separator], part], "first", false]
-      - {text: "", first: true}
-      - parts
+"split":
+  "$call":
+  - "fn"
+  - - - "source"
+      - {"$ref": "string"}
+    - - "separator"
+      - {"$ref": "string"}
+  - "$call":
+    - "if"
+    - {"$call": ["eq", {"$call": ["len", {"$ref": "separator"}]}, 0]}
+    - {"$call": ["raise", "range", "split separator must not be empty"]}
+    - "$call":
+      - "let"
+      - "width": {"$call": ["len", {"$ref": "separator"}]}
+        "size": {"$call": ["len", {"$ref": "source"}]}
+        "result":
+          "$call":
+          - "until"
+          - "$call":
+            - "fn"
+            - - "state"
+            - "$call":
+              - "gt"
+              - {"$call": ["get", {"$ref": "state"}, "index"]}
+              - {"$call": ["sub", {"$ref": "size"}, {"$ref": "width"}]}
+          - "$call":
+            - "fn"
+            - - "state"
+            - "$call":
+              - "if"
+              - "$call":
+                - "eq"
+                - "$call":
+                  - "slice"
+                  - {"$ref": "source"}
+                  - {"$call": ["get", {"$ref": "state"}, "index"]}
+                  - {"$call": ["add", {"$call": ["get", {"$ref": "state"}, "index"]}, {"$ref": "width"}]}
+                - {"$ref": "separator"}
+              - "$call":
+                - "dict"
+                - "index"
+                - {"$call": ["add", {"$call": ["get", {"$ref": "state"}, "index"]}, {"$ref": "width"}]}
+                - "start"
+                - {"$call": ["add", {"$call": ["get", {"$ref": "state"}, "index"]}, {"$ref": "width"}]}
+                - "parts"
+                - "$call":
+                  - "append"
+                  - {"$call": ["get", {"$ref": "state"}, "parts"]}
+                  - "$call":
+                    - "slice"
+                    - {"$ref": "source"}
+                    - {"$call": ["get", {"$ref": "state"}, "start"]}
+                    - {"$call": ["get", {"$ref": "state"}, "index"]}
+              - "$call":
+                - "set"
+                - {"$ref": "state"}
+                - "index"
+                - {"$call": ["add", {"$call": ["get", {"$ref": "state"}, "index"]}, 1]}
+          - "index": 0
+            "start": 0
+            "parts": []
+      - "$call":
+        - "append"
+        - {"$call": ["get", {"$ref": "result"}, "parts"]}
+        - {"$call": ["slice", {"$ref": "source"}, {"$call": ["get", {"$ref": "result"}, "start"]}, {"$ref": "size"}]}
+  - {"$call": ["list_of", {"$ref": "string"}]}
+"join":
+  "$call":
+  - "fn"
+  - - - "parts"
+      - {"$call": ["list_of", {"$ref": "string"}]}
+    - - "separator"
+      - {"$ref": "string"}
+  - "$call":
+    - "get"
+    - "$call":
+      - "fold"
+      - "$call":
+        - "fn"
+        - - "state"
+          - "part"
+        - "$call":
+          - "dict"
+          - "text"
+          - "$call":
+            - "concat"
+            - {"$call": ["get", {"$ref": "state"}, "text"]}
+            - {"$call": ["if", {"$call": ["get", {"$ref": "state"}, "first"]}, "", {"$ref": "separator"}]}
+            - {"$ref": "part"}
+          - "first"
+          - false
+      - "text": ""
+        "first": true
+      - {"$ref": "parts"}
     - "text"
-  - string
+  - {"$ref": "string"}

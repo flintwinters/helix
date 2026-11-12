@@ -1,18 +1,386 @@
-status: finished
+objects:
+  object0:
+    bindings:
+      range:
+        code:
+          path:
+            - range
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - - s
+        - "$call":
+            - map
+            - "$call":
+                - fn
+                - - i
+                - "$call":
+                    - slice
+                    - "$ref": s
+                    - "$ref": i
+                    - "$call":
+                        - add
+                        - "$ref": i
+                        - 1
+            - "$call":
+                - range
+                - 0
+                - "$call":
+                    - len
+                    - "$ref": s
+    environment: []
+    kind: function
+    location:
+      path:
+        - chars
+      source: "<root>"
+    program:
+      ref: object5
+  object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - acc
+        - "$call":
+            - if
+            - "$call":
+                - eq
+                - "$call":
+                    - get
+                    - "$ref": acc
+                    - word
+                - ""
+            - "$ref": acc
+            - word: ""
+              words:
+                "$call":
+                  - append
+                  - "$call":
+                      - get
+                      - "$ref": acc
+                      - words
+                  - "$call":
+                      - get
+                      - "$ref": acc
+                      - word
+    environment: []
+    kind: function
+    location:
+      path:
+        - flush
+      source: "<root>"
+    program:
+      ref: object5
+  object2:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - lo
+          - hi
+        - "$call":
+            - until
+            - "$call":
+                - fn
+                - - xs
+                - "$call":
+                    - eq
+                    - "$call":
+                        - len
+                        - "$ref": xs
+                    - "$call":
+                        - sub
+                        - "$ref": hi
+                        - "$ref": lo
+            - "$call":
+                - fn
+                - - xs
+                - "$call":
+                    - append
+                    - "$ref": xs
+                    - "$call":
+                        - add
+                        - "$ref": lo
+                        - "$call":
+                            - len
+                            - "$ref": xs
+            - []
+    environment: []
+    kind: function
+    location:
+      path:
+        - range
+      source: "<root>"
+    program:
+      ref: object5
+  object3:
+    bindings:
+      chars:
+        code:
+          path:
+            - chars
+          source: "<root>"
+      flush:
+        code:
+          path:
+            - flush
+          source: "<root>"
+      step:
+        code:
+          path:
+            - step
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - - s
+        - "$call":
+            - get
+            - "$call":
+                - flush
+                - "$call":
+                    - fold
+                    - "$ref": step
+                    - word: ""
+                      words: []
+                    - "$call":
+                        - chars
+                        - "$ref": s
+            - words
+    environment: []
+    kind: function
+    location:
+      path:
+        - split
+      source: "<root>"
+    program:
+      ref: object5
+  object4:
+    bindings:
+      flush:
+        code:
+          path:
+            - flush
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - - acc
+          - c
+        - "$call":
+            - if
+            - "$call":
+                - eq
+                - "$ref": c
+                - " "
+            - "$call":
+                - flush
+                - "$ref": acc
+            - "$call":
+                - set
+                - "$ref": acc
+                - word
+                - "$call":
+                    - concat
+                    - "$call":
+                        - get
+                        - "$ref": acc
+                        - word
+                    - "$ref": c
+    environment: []
+    kind: function
+    location:
+      path:
+        - step
+      source: "<root>"
+    program:
+      ref: object5
+  object5:
+    kind: program
+    sources:
+      - code:
+          chars:
+            "$call":
+              - fn
+              - - s
+              - "$call":
+                  - map
+                  - "$call":
+                      - fn
+                      - - i
+                      - "$call":
+                          - slice
+                          - "$ref": s
+                          - "$ref": i
+                          - "$call":
+                              - add
+                              - "$ref": i
+                              - 1
+                  - "$call":
+                      - range
+                      - 0
+                      - "$call":
+                          - len
+                          - "$ref": s
+          counts:
+            "$call":
+              - fold
+              - "$call":
+                  - fn
+                  - - acc
+                    - w
+                  - "$call":
+                      - set
+                      - "$ref": acc
+                      - "$ref": w
+                      - "$call":
+                          - add
+                          - "$call":
+                              - get
+                              - "$ref": acc
+                              - "$ref": w
+                              - 0
+                          - 1
+              - {}
+              - "$ref": words
+          distinct:
+            "$call":
+              - len
+              - "$call":
+                  - keys
+                  - "$ref": counts
+          flush:
+            "$call":
+              - fn
+              - - acc
+              - "$call":
+                  - if
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - get
+                          - "$ref": acc
+                          - word
+                      - ""
+                  - "$ref": acc
+                  - word: ""
+                    words:
+                      "$call":
+                        - append
+                        - "$call":
+                            - get
+                            - "$ref": acc
+                            - words
+                        - "$call":
+                            - get
+                            - "$ref": acc
+                            - word
+          range:
+            "$call":
+              - fn
+              - - lo
+                - hi
+              - "$call":
+                  - until
+                  - "$call":
+                      - fn
+                      - - xs
+                      - "$call":
+                          - eq
+                          - "$call":
+                              - len
+                              - "$ref": xs
+                          - "$call":
+                              - sub
+                              - "$ref": hi
+                              - "$ref": lo
+                  - "$call":
+                      - fn
+                      - - xs
+                      - "$call":
+                          - append
+                          - "$ref": xs
+                          - "$call":
+                              - add
+                              - "$ref": lo
+                              - "$call":
+                                  - len
+                                  - "$ref": xs
+                  - []
+          split:
+            "$call":
+              - fn
+              - - s
+              - "$call":
+                  - get
+                  - "$call":
+                      - flush
+                      - "$call":
+                          - fold
+                          - "$ref": step
+                          - word: ""
+                            words: []
+                          - "$call":
+                              - chars
+                              - "$ref": s
+                  - words
+          step:
+            "$call":
+              - fn
+              - - acc
+                - c
+              - "$call":
+                  - if
+                  - "$call":
+                      - eq
+                      - "$ref": c
+                      - " "
+                  - "$call":
+                      - flush
+                      - "$ref": acc
+                  - "$call":
+                      - set
+                      - "$ref": acc
+                      - word
+                      - "$call":
+                          - concat
+                          - "$call":
+                              - get
+                              - "$ref": acc
+                              - word
+                          - "$ref": c
+          text: the cat and the hat and the bat sat on the mat
+          words:
+            "$call":
+              - split
+              - "$ref": text
+        source: "<root>"
 root:
-  text: the cat and the hat and the bat sat on the mat
-  range:
-    ref: object0
   chars:
-    ref: object1
+    ref: object0
+  counts:
+    and: 2
+    bat: 1
+    cat: 1
+    hat: 1
+    mat: 1
+    "on": 1
+    sat: 1
+    the: 4
+  distinct: 8
   flush:
+    ref: object1
+  range:
     ref: object2
-  step:
-    ref: object3
   split:
+    ref: object3
+  step:
     ref: object4
+  text: the cat and the hat and the bat sat on the mat
   words:
-    - "the"
+    - the
     - cat
     - and
     - the
@@ -24,292 +392,4 @@ root:
     - "on"
     - the
     - mat
-  counts:
-    the: 4
-    cat: 1
-    and: 2
-    hat: 1
-    bat: 1
-    sat: 1
-    "on": 1
-    mat: 1
-  distinct: 8
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object5
-    code:
-      - symbol: fn
-      - - symbol: lo
-        - symbol: hi
-      - - symbol: until
-        - - symbol: fn
-          - - symbol: xs
-          - - symbol: eq
-            - - symbol: len
-              - symbol: xs
-            - - symbol: sub
-              - symbol: hi
-              - symbol: lo
-        - - symbol: fn
-          - - symbol: xs
-          - - symbol: append
-            - symbol: xs
-            - - symbol: add
-              - symbol: lo
-              - - symbol: len
-                - symbol: xs
-        - []
-    location:
-      source: "<root>"
-      path:
-        - "range"
-    environment: []
-    bindings: {}
-  object1:
-    kind: function
-    program:
-      ref: object5
-    code:
-      - symbol: fn
-      - - symbol: s
-      - - symbol: map
-        - - symbol: fn
-          - - symbol: i
-          - - symbol: slice
-            - symbol: s
-            - symbol: i
-            - - symbol: add
-              - symbol: i
-              - 1
-        - - symbol: range
-          - 0
-          - - symbol: len
-            - symbol: s
-    location:
-      source: "<root>"
-      path:
-        - "chars"
-    environment: []
-    bindings:
-      range:
-        code:
-          source: "<root>"
-          path:
-            - "range"
-  object2:
-    kind: function
-    program:
-      ref: object5
-    code:
-      - symbol: fn
-      - - symbol: acc
-      - - symbol: if
-        - - symbol: eq
-          - - symbol: get
-            - symbol: acc
-            - word
-          - ""
-        - symbol: acc
-        - words:
-            - symbol: append
-            - - symbol: get
-              - symbol: acc
-              - words
-            - - symbol: get
-              - symbol: acc
-              - word
-          word: ""
-    location:
-      source: "<root>"
-      path:
-        - "flush"
-    environment: []
-    bindings: {}
-  object3:
-    kind: function
-    program:
-      ref: object5
-    code:
-      - symbol: fn
-      - - symbol: acc
-        - symbol: c
-      - - symbol: if
-        - - symbol: eq
-          - symbol: c
-          - " "
-        - - symbol: flush
-          - symbol: acc
-        - - symbol: set
-          - symbol: acc
-          - word
-          - - symbol: concat
-            - - symbol: get
-              - symbol: acc
-              - word
-            - symbol: c
-    location:
-      source: "<root>"
-      path:
-        - "step"
-    environment: []
-    bindings:
-      flush:
-        code:
-          source: "<root>"
-          path:
-            - "flush"
-  object4:
-    kind: function
-    program:
-      ref: object5
-    code:
-      - symbol: fn
-      - - symbol: s
-      - - symbol: get
-        - - symbol: flush
-          - - symbol: fold
-            - symbol: step
-            - words: []
-              word: ""
-            - - symbol: chars
-              - symbol: s
-        - words
-    location:
-      source: "<root>"
-      path:
-        - "split"
-    environment: []
-    bindings:
-      flush:
-        code:
-          source: "<root>"
-          path:
-            - "flush"
-      step:
-        code:
-          source: "<root>"
-          path:
-            - "step"
-      chars:
-        code:
-          source: "<root>"
-          path:
-            - "chars"
-  object5:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          text: the cat and the hat and the bat sat on the mat
-          range:
-            - symbol: fn
-            - - symbol: lo
-              - symbol: hi
-            - - symbol: until
-              - - symbol: fn
-                - - symbol: xs
-                - - symbol: eq
-                  - - symbol: len
-                    - symbol: xs
-                  - - symbol: sub
-                    - symbol: hi
-                    - symbol: lo
-              - - symbol: fn
-                - - symbol: xs
-                - - symbol: append
-                  - symbol: xs
-                  - - symbol: add
-                    - symbol: lo
-                    - - symbol: len
-                      - symbol: xs
-              - []
-          chars:
-            - symbol: fn
-            - - symbol: s
-            - - symbol: map
-              - - symbol: fn
-                - - symbol: i
-                - - symbol: slice
-                  - symbol: s
-                  - symbol: i
-                  - - symbol: add
-                    - symbol: i
-                    - 1
-              - - symbol: range
-                - 0
-                - - symbol: len
-                  - symbol: s
-          flush:
-            - symbol: fn
-            - - symbol: acc
-            - - symbol: if
-              - - symbol: eq
-                - - symbol: get
-                  - symbol: acc
-                  - word
-                - ""
-              - symbol: acc
-              - words:
-                  - symbol: append
-                  - - symbol: get
-                    - symbol: acc
-                    - words
-                  - - symbol: get
-                    - symbol: acc
-                    - word
-                word: ""
-          step:
-            - symbol: fn
-            - - symbol: acc
-              - symbol: c
-            - - symbol: if
-              - - symbol: eq
-                - symbol: c
-                - " "
-              - - symbol: flush
-                - symbol: acc
-              - - symbol: set
-                - symbol: acc
-                - word
-                - - symbol: concat
-                  - - symbol: get
-                    - symbol: acc
-                    - word
-                  - symbol: c
-          split:
-            - symbol: fn
-            - - symbol: s
-            - - symbol: get
-              - - symbol: flush
-                - - symbol: fold
-                  - symbol: step
-                  - words: []
-                    word: ""
-                  - - symbol: chars
-                    - symbol: s
-              - words
-          words:
-            - symbol: split
-            - symbol: text
-          counts:
-            - symbol: fold
-            - - symbol: fn
-              - - symbol: acc
-                - symbol: w
-              - - symbol: set
-                - symbol: acc
-                - symbol: w
-                - - symbol: add
-                  - - symbol: get
-                    - symbol: acc
-                    - symbol: w
-                    - 0
-                  - 1
-            - {}
-            - symbol: words
-          distinct:
-            - symbol: len
-            - - symbol: keys
-              - symbol: counts
+status: finished

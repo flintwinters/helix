@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 38
   kind: type
+  line: 2
   message: "expected string message, got integer"
-  path: /check/2
+  path: "/check/$call/2"
   reference:
-    - "check"
+    - check
+    - "$call"
     - 2
-  line: 1
-  column: 24
+status: error

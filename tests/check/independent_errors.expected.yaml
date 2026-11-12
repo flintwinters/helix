@@ -1,18 +1,19 @@
-status: error
-mode: check
 errors:
-  - kind: divide_by_zero
+  - column: 10
+    kind: divide_by_zero
+    line: 2
     message: "`div` by zero"
     path: /first
     reference:
-      - "first"
-    line: 1
-    column: 8
-  - kind: unbound
+      - first
+  - column: 29
+    kind: unbound
+    line: 3
     message: "unbound symbol `missing`"
-    path: /second/1
+    path: "/second/$call/1"
     reference:
-      - "second"
+      - second
+      - "$call"
       - 1
-    line: 2
-    column: 15
+mode: check
+status: error

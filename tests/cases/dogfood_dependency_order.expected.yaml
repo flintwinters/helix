@@ -1,654 +1,823 @@
-status: finished
-root:
-  deps:
-    maps:
-      merge:
-        ref: object0
-      remove:
-        ref: object1
-      select:
-        ref: object2
-      omit:
-        ref: object3
-    ready:
-      ref: object4
-    done:
-      ref: object5
-    step:
-      ref: object6
-    plan:
-      ref: object7
-  checks:
-    order:
-      - "build"
-      - test
-      - lint
-      - review
-    pending: {}
-    missing: []
-    status: finished
-  missing:
-    order:
-      - "docs"
-    pending:
-      test:
-        - "compile"
-    missing:
-      - task: test
-        dependency: compile
-    status: blocked
-  cycle:
-    order:
-      - "independent"
-    pending:
-      a:
-        - "b"
-      b:
-        - "a"
-      downstream:
-        - "a"
-    missing: []
-    status: blocked
-  self_cycle:
-    pending:
-      self:
-        - "self"
-    order: []
-    missing: []
-    status: blocked
-  empty:
-    pending: {}
-    order: []
-    missing: []
-    status: finished
 objects:
   object0:
+    bindings:
+      ready:
+        code:
+          path:
+            - ready
+          source: "std:dependency"
+    code:
+      "$call":
+        - fn
+        - - state
+        - "$call":
+            - eq
+            - "$call":
+                - len
+                - "$call":
+                    - ready
+                    - "$call":
+                        - get
+                        - "$ref": state
+                        - pending
+                    - "$call":
+                        - get
+                        - "$ref": state
+                        - order
+            - 0
+    environment: []
     kind: function
+    location:
+      path:
+        - done
+      source: "std:dependency"
     program:
       ref: object8
-    code:
-      - symbol: fn
-      - - - symbol: left
-          - symbol: map
-        - - symbol: right
-          - symbol: map
-      - - symbol: fold
-        - - symbol: fn
-          - - symbol: result
-            - symbol: key
-          - - symbol: set
-            - symbol: result
-            - symbol: key
-            - - symbol: get
-              - symbol: right
-              - symbol: key
-        - symbol: left
-        - - symbol: keys
-          - symbol: right
-      - symbol: map
-    location:
-      source: "std:map"
-      path:
-        - "merge"
-    environment: []
-    bindings: {}
   object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - left
+            - "$ref": map
+          - - right
+            - "$ref": map
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - key
+                - "$call":
+                    - set
+                    - "$ref": result
+                    - "$ref": key
+                    - "$call":
+                        - get
+                        - "$ref": right
+                        - "$ref": key
+            - "$ref": left
+            - "$call":
+                - keys
+                - "$ref": right
+        - "$ref": map
+    environment: []
     kind: function
+    location:
+      path:
+        - merge
+      source: "std:map"
     program:
       ref: object8
-    code:
-      - symbol: fn
-      - - - symbol: source
-          - symbol: map
-        - - symbol: key
-          - symbol: string
-      - - symbol: fold
-        - - symbol: fn
-          - - symbol: result
-            - symbol: name
-          - - symbol: if
-            - - symbol: eq
-              - symbol: name
-              - symbol: key
-            - symbol: result
-            - - symbol: set
-              - symbol: result
-              - symbol: name
-              - - symbol: get
-                - symbol: source
-                - symbol: name
-        - {}
-        - - symbol: keys
-          - symbol: source
-      - symbol: map
-    location:
-      source: "std:map"
-      path:
-        - "remove"
-    environment: []
-    bindings: {}
   object2:
-    kind: function
-    program:
-      ref: object8
-    code:
-      - symbol: fn
-      - - - symbol: source
-          - symbol: map
-        - - symbol: requested
-          - - symbol: list_of
-            - symbol: string
-      - - symbol: fold
-        - - symbol: fn
-          - - symbol: result
-            - symbol: name
-          - - symbol: if
-            - - symbol: has
-              - symbol: requested
-              - symbol: name
-            - - symbol: set
-              - symbol: result
-              - symbol: name
-              - - symbol: get
-                - symbol: source
-                - symbol: name
-            - symbol: result
-        - {}
-        - - symbol: keys
-          - symbol: source
-      - symbol: map
-    location:
-      source: "std:map"
-      path:
-        - "select"
-    environment: []
-    bindings: {}
-  object3:
-    kind: function
-    program:
-      ref: object8
-    code:
-      - symbol: fn
-      - - - symbol: source
-          - symbol: map
-        - - symbol: requested
-          - - symbol: list_of
-            - symbol: string
-      - - symbol: select
-        - symbol: source
-        - - symbol: filter
-          - - symbol: fn
-            - - symbol: name
-            - - symbol: not
-              - - symbol: has
-                - symbol: requested
-                - symbol: name
-          - - symbol: keys
-            - symbol: source
-      - symbol: map
-    location:
-      source: "std:map"
-      path:
-        - "omit"
-    environment: []
     bindings:
       select:
         code:
-          source: "std:map"
           path:
-            - "select"
-  object4:
+            - select
+          source: "std:map"
+    code:
+      "$call":
+        - fn
+        - - - source
+            - "$ref": map
+          - - requested
+            - "$call":
+                - list_of
+                - "$ref": string
+        - "$call":
+            - select
+            - "$ref": source
+            - "$call":
+                - filter
+                - "$call":
+                    - fn
+                    - - name
+                    - "$call":
+                        - not
+                        - "$call":
+                            - has
+                            - "$ref": requested
+                            - "$ref": name
+                - "$call":
+                    - keys
+                    - "$ref": source
+        - "$ref": map
+    environment: []
     kind: function
+    location:
+      path:
+        - omit
+      source: "std:map"
     program:
       ref: object8
-    code:
-      - symbol: fn
-      - - symbol: pending
-        - symbol: order
-      - - symbol: filter
-        - - symbol: fn
-          - - symbol: task
-          - - symbol: fold
-            - - symbol: fn
-              - - symbol: ok
-                - symbol: dep
-              - - symbol: and
-                - symbol: ok
-                - - symbol: has
-                  - symbol: order
-                  - symbol: dep
-            - true
-            - - symbol: get
-              - symbol: pending
-              - symbol: task
-        - - symbol: keys
-          - symbol: pending
-    location:
-      source: "std:dependency"
-      path:
-        - "ready"
-    environment: []
+  object3:
     bindings: {}
-  object5:
-    kind: function
-    program:
-      ref: object8
     code:
-      - symbol: fn
-      - - symbol: state
-      - - symbol: eq
-        - - symbol: len
-          - - symbol: ready
-            - - symbol: get
-              - symbol: state
-              - pending
-            - - symbol: get
-              - symbol: state
-              - order
-        - 0
-    location:
-      source: "std:dependency"
-      path:
-        - "done"
-    environment: []
-    bindings:
-      ready:
-        code:
-          source: "std:dependency"
-          path:
-            - "ready"
-  object6:
-    kind: function
-    program:
-      ref: object8
-    code:
-      - symbol: fn
-      - - symbol: state
-      - - symbol: let
-        - pending:
-            - symbol: get
-            - symbol: state
-            - pending
-          order:
-            - symbol: get
-            - symbol: state
-            - order
-          batch:
-            - symbol: ready
-            - symbol: pending
-            - symbol: order
-        - - symbol: set
-          - - symbol: set
+      "$call":
+        - fn
+        - - - source
+            - "$ref": map
+          - - key
+            - "$ref": string
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - name
+                - "$call":
+                    - if
+                    - "$call":
+                        - eq
+                        - "$ref": name
+                        - "$ref": key
+                    - "$ref": result
+                    - "$call":
+                        - set
+                        - "$ref": result
+                        - "$ref": name
+                        - "$call":
+                            - get
+                            - "$ref": source
+                            - "$ref": name
             - {}
-            - order
-            - - symbol: concat
-              - symbol: order
-              - symbol: batch
-          - pending
-          - - symbol: maps.omit
-            - symbol: pending
-            - symbol: batch
-    location:
-      source: "std:dependency"
-      path:
-        - "step"
+            - "$call":
+                - keys
+                - "$ref": source
+        - "$ref": map
     environment: []
-    bindings:
-      ready:
-        code:
-          source: "std:dependency"
-          path:
-            - "ready"
-      maps.omit:
-        code:
-          source: "std:map"
-          path:
-            - "omit"
-  object7:
     kind: function
+    location:
+      path:
+        - remove
+      source: "std:map"
     program:
       ref: object8
+  object4:
+    bindings: {}
     code:
-      - symbol: fn
-      - - - symbol: tasks
-          - - symbol: map_of
-            - - symbol: list_of
-              - symbol: string
-      - - symbol: let
-        - initial:
-            - symbol: set
-            - - symbol: set
-              - {}
-              - pending
-              - symbol: tasks
-            - order
-            - []
-          final:
-            - symbol: until
-            - symbol: done
-            - symbol: step
-            - symbol: initial
-          missing:
-            - symbol: fold
-            - - symbol: fn
-              - - symbol: acc
-                - symbol: task
-              - - symbol: concat
-                - symbol: acc
-                - - symbol: map
-                  - - symbol: fn
-                    - - symbol: dep
-                    - - symbol: set
-                      - - symbol: set
-                        - {}
-                        - task
-                        - symbol: task
-                      - dependency
-                      - symbol: dep
-                  - - symbol: filter
-                    - - symbol: fn
-                      - - symbol: dep
-                      - - symbol: not
-                        - - symbol: has
-                          - symbol: tasks
-                          - symbol: dep
-                    - - symbol: get
-                      - symbol: tasks
-                      - symbol: task
-            - []
-            - - symbol: keys
-              - symbol: tasks
-        - - symbol: set
-          - - symbol: set
-            - symbol: final
-            - missing
-            - symbol: missing
-          - status
-          - - symbol: if
-            - - symbol: eq
-              - - symbol: len
-                - - symbol: get
-                  - symbol: final
-                  - pending
-              - 0
-            - finished
-            - blocked
-    location:
-      source: "std:dependency"
-      path:
-        - "plan"
+      "$call":
+        - fn
+        - - - source
+            - "$ref": map
+          - - requested
+            - "$call":
+                - list_of
+                - "$ref": string
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - name
+                - "$call":
+                    - if
+                    - "$call":
+                        - has
+                        - "$ref": requested
+                        - "$ref": name
+                    - "$call":
+                        - set
+                        - "$ref": result
+                        - "$ref": name
+                        - "$call":
+                            - get
+                            - "$ref": source
+                            - "$ref": name
+                    - "$ref": result
+            - {}
+            - "$call":
+                - keys
+                - "$ref": source
+        - "$ref": map
     environment: []
+    kind: function
+    location:
+      path:
+        - select
+      source: "std:map"
+    program:
+      ref: object8
+  object5:
     bindings:
       done:
         code:
-          source: "std:dependency"
           path:
-            - "done"
+            - done
+          source: "std:dependency"
       step:
         code:
-          source: "std:dependency"
           path:
-            - "step"
+            - step
+          source: "std:dependency"
+    code:
+      "$call":
+        - fn
+        - - - tasks
+            - "$call":
+                - map_of
+                - "$call":
+                    - list_of
+                    - "$ref": string
+        - "$call":
+            - let
+            - final:
+                "$call":
+                  - until
+                  - "$ref": done
+                  - "$ref": step
+                  - "$ref": initial
+              initial:
+                "$call":
+                  - set
+                  - "$call":
+                      - set
+                      - {}
+                      - pending
+                      - "$ref": tasks
+                  - order
+                  - []
+              missing:
+                "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - acc
+                        - task
+                      - "$call":
+                          - concat
+                          - "$ref": acc
+                          - "$call":
+                              - map
+                              - "$call":
+                                  - fn
+                                  - - dep
+                                  - "$call":
+                                      - set
+                                      - "$call":
+                                          - set
+                                          - {}
+                                          - task
+                                          - "$ref": task
+                                      - dependency
+                                      - "$ref": dep
+                              - "$call":
+                                  - filter
+                                  - "$call":
+                                      - fn
+                                      - - dep
+                                      - "$call":
+                                          - not
+                                          - "$call":
+                                              - has
+                                              - "$ref": tasks
+                                              - "$ref": dep
+                                  - "$call":
+                                      - get
+                                      - "$ref": tasks
+                                      - "$ref": task
+                  - []
+                  - "$call":
+                      - keys
+                      - "$ref": tasks
+            - "$call":
+                - set
+                - "$call":
+                    - set
+                    - "$ref": final
+                    - missing
+                    - "$ref": missing
+                - status
+                - "$call":
+                    - if
+                    - "$call":
+                        - eq
+                        - "$call":
+                            - len
+                            - "$call":
+                                - get
+                                - "$ref": final
+                                - pending
+                        - 0
+                    - finished
+                    - blocked
+    environment: []
+    kind: function
+    location:
+      path:
+        - plan
+      source: "std:dependency"
+    program:
+      ref: object8
+  object6:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - pending
+          - order
+        - "$call":
+            - filter
+            - "$call":
+                - fn
+                - - task
+                - "$call":
+                    - fold
+                    - "$call":
+                        - fn
+                        - - ok
+                          - dep
+                        - "$call":
+                            - and
+                            - "$ref": ok
+                            - "$call":
+                                - has
+                                - "$ref": order
+                                - "$ref": dep
+                    - true
+                    - "$call":
+                        - get
+                        - "$ref": pending
+                        - "$ref": task
+            - "$call":
+                - keys
+                - "$ref": pending
+    environment: []
+    kind: function
+    location:
+      path:
+        - ready
+      source: "std:dependency"
+    program:
+      ref: object8
+  object7:
+    bindings:
+      maps.omit:
+        code:
+          path:
+            - omit
+          source: "std:map"
+      ready:
+        code:
+          path:
+            - ready
+          source: "std:dependency"
+    code:
+      "$call":
+        - fn
+        - - state
+        - "$call":
+            - let
+            - batch:
+                "$call":
+                  - ready
+                  - "$ref": pending
+                  - "$ref": order
+              order:
+                "$call":
+                  - get
+                  - "$ref": state
+                  - order
+              pending:
+                "$call":
+                  - get
+                  - "$ref": state
+                  - pending
+            - "$call":
+                - set
+                - "$call":
+                    - set
+                    - {}
+                    - order
+                    - "$call":
+                        - concat
+                        - "$ref": order
+                        - "$ref": batch
+                - pending
+                - "$call":
+                    - maps.omit
+                    - "$ref": pending
+                    - "$ref": batch
+    environment: []
+    kind: function
+    location:
+      path:
+        - step
+      source: "std:dependency"
+    program:
+      ref: object8
   object8:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          deps:
-            - symbol: import
-            - symbol: "std:dependency"
+      - code:
           checks:
-            - symbol: deps.plan
-            - test:
-                - "build"
-              lint:
-                - "build"
-              review:
-                - "test"
-                - lint
-              build: []
-          missing:
-            - symbol: deps.plan
-            - test:
-                - "compile"
-              docs: []
+            "$call":
+              - deps.plan
+              - build: []
+                lint:
+                  - build
+                review:
+                  - test
+                  - lint
+                test:
+                  - build
           cycle:
-            - symbol: deps.plan
-            - a:
-                - "b"
-              b:
-                - "a"
-              downstream:
-                - "a"
-              independent: []
-          self_cycle:
-            - symbol: deps.plan
-            - self:
-                - "self"
+            "$call":
+              - deps.plan
+              - a:
+                  - b
+                b:
+                  - a
+                downstream:
+                  - a
+                independent: []
+          deps:
+            "$call":
+              - import
+              - "std:dependency"
           empty:
-            - symbol: deps.plan
-            - {}
-      - source: "std:dependency"
-        code:
-          maps:
-            - symbol: import
-            - symbol: "std:map"
-          ready:
-            - symbol: fn
-            - - symbol: pending
-              - symbol: order
-            - - symbol: filter
-              - - symbol: fn
-                - - symbol: task
-                - - symbol: fold
-                  - - symbol: fn
-                    - - symbol: ok
-                      - symbol: dep
-                    - - symbol: and
-                      - symbol: ok
-                      - - symbol: has
-                        - symbol: order
-                        - symbol: dep
-                  - true
-                  - - symbol: get
-                    - symbol: pending
-                    - symbol: task
-              - - symbol: keys
-                - symbol: pending
+            "$call":
+              - deps.plan
+              - {}
+          missing:
+            "$call":
+              - deps.plan
+              - docs: []
+                test:
+                  - compile
+          self_cycle:
+            "$call":
+              - deps.plan
+              - self:
+                  - self
+        source: "<root>"
+      - code:
           done:
-            - symbol: fn
-            - - symbol: state
-            - - symbol: eq
-              - - symbol: len
-                - - symbol: ready
-                  - - symbol: get
-                    - symbol: state
-                    - pending
-                  - - symbol: get
-                    - symbol: state
-                    - order
-              - 0
-          step:
-            - symbol: fn
-            - - symbol: state
-            - - symbol: let
-              - pending:
-                  - symbol: get
-                  - symbol: state
-                  - pending
-                order:
-                  - symbol: get
-                  - symbol: state
-                  - order
-                batch:
-                  - symbol: ready
-                  - symbol: pending
-                  - symbol: order
-              - - symbol: set
-                - - symbol: set
-                  - {}
-                  - order
-                  - - symbol: concat
-                    - symbol: order
-                    - symbol: batch
-                - pending
-                - - symbol: maps.omit
-                  - symbol: pending
-                  - symbol: batch
+            "$call":
+              - fn
+              - - state
+              - "$call":
+                  - eq
+                  - "$call":
+                      - len
+                      - "$call":
+                          - ready
+                          - "$call":
+                              - get
+                              - "$ref": state
+                              - pending
+                          - "$call":
+                              - get
+                              - "$ref": state
+                              - order
+                  - 0
+          maps:
+            "$call":
+              - import
+              - "std:map"
           plan:
-            - symbol: fn
-            - - - symbol: tasks
-                - - symbol: map_of
-                  - - symbol: list_of
-                    - symbol: string
-            - - symbol: let
-              - initial:
-                  - symbol: set
-                  - - symbol: set
-                    - {}
-                    - pending
-                    - symbol: tasks
-                  - order
-                  - []
-                final:
-                  - symbol: until
-                  - symbol: done
-                  - symbol: step
-                  - symbol: initial
-                missing:
-                  - symbol: fold
-                  - - symbol: fn
-                    - - symbol: acc
-                      - symbol: task
-                    - - symbol: concat
-                      - symbol: acc
-                      - - symbol: map
-                        - - symbol: fn
-                          - - symbol: dep
-                          - - symbol: set
-                            - - symbol: set
-                              - {}
+            "$call":
+              - fn
+              - - - tasks
+                  - "$call":
+                      - map_of
+                      - "$call":
+                          - list_of
+                          - "$ref": string
+              - "$call":
+                  - let
+                  - final:
+                      "$call":
+                        - until
+                        - "$ref": done
+                        - "$ref": step
+                        - "$ref": initial
+                    initial:
+                      "$call":
+                        - set
+                        - "$call":
+                            - set
+                            - {}
+                            - pending
+                            - "$ref": tasks
+                        - order
+                        - []
+                    missing:
+                      "$call":
+                        - fold
+                        - "$call":
+                            - fn
+                            - - acc
                               - task
-                              - symbol: task
-                            - dependency
-                            - symbol: dep
-                        - - symbol: filter
-                          - - symbol: fn
-                            - - symbol: dep
-                            - - symbol: not
-                              - - symbol: has
-                                - symbol: tasks
-                                - symbol: dep
-                          - - symbol: get
-                            - symbol: tasks
-                            - symbol: task
-                  - []
-                  - - symbol: keys
-                    - symbol: tasks
-              - - symbol: set
-                - - symbol: set
-                  - symbol: final
-                  - missing
-                  - symbol: missing
-                - status
-                - - symbol: if
-                  - - symbol: eq
-                    - - symbol: len
-                      - - symbol: get
-                        - symbol: final
+                            - "$call":
+                                - concat
+                                - "$ref": acc
+                                - "$call":
+                                    - map
+                                    - "$call":
+                                        - fn
+                                        - - dep
+                                        - "$call":
+                                            - set
+                                            - "$call":
+                                                - set
+                                                - {}
+                                                - task
+                                                - "$ref": task
+                                            - dependency
+                                            - "$ref": dep
+                                    - "$call":
+                                        - filter
+                                        - "$call":
+                                            - fn
+                                            - - dep
+                                            - "$call":
+                                                - not
+                                                - "$call":
+                                                    - has
+                                                    - "$ref": tasks
+                                                    - "$ref": dep
+                                        - "$call":
+                                            - get
+                                            - "$ref": tasks
+                                            - "$ref": task
+                        - []
+                        - "$call":
+                            - keys
+                            - "$ref": tasks
+                  - "$call":
+                      - set
+                      - "$call":
+                          - set
+                          - "$ref": final
+                          - missing
+                          - "$ref": missing
+                      - status
+                      - "$call":
+                          - if
+                          - "$call":
+                              - eq
+                              - "$call":
+                                  - len
+                                  - "$call":
+                                      - get
+                                      - "$ref": final
+                                      - pending
+                              - 0
+                          - finished
+                          - blocked
+          ready:
+            "$call":
+              - fn
+              - - pending
+                - order
+              - "$call":
+                  - filter
+                  - "$call":
+                      - fn
+                      - - task
+                      - "$call":
+                          - fold
+                          - "$call":
+                              - fn
+                              - - ok
+                                - dep
+                              - "$call":
+                                  - and
+                                  - "$ref": ok
+                                  - "$call":
+                                      - has
+                                      - "$ref": order
+                                      - "$ref": dep
+                          - true
+                          - "$call":
+                              - get
+                              - "$ref": pending
+                              - "$ref": task
+                  - "$call":
+                      - keys
+                      - "$ref": pending
+          step:
+            "$call":
+              - fn
+              - - state
+              - "$call":
+                  - let
+                  - batch:
+                      "$call":
+                        - ready
+                        - "$ref": pending
+                        - "$ref": order
+                    order:
+                      "$call":
+                        - get
+                        - "$ref": state
+                        - order
+                    pending:
+                      "$call":
+                        - get
+                        - "$ref": state
                         - pending
-                    - 0
-                  - finished
-                  - blocked
-      - source: "std:map"
-        code:
+                  - "$call":
+                      - set
+                      - "$call":
+                          - set
+                          - {}
+                          - order
+                          - "$call":
+                              - concat
+                              - "$ref": order
+                              - "$ref": batch
+                      - pending
+                      - "$call":
+                          - maps.omit
+                          - "$ref": pending
+                          - "$ref": batch
+        source: "std:dependency"
+      - code:
           merge:
-            - symbol: fn
-            - - - symbol: left
-                - symbol: map
-              - - symbol: right
-                - symbol: map
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: result
-                  - symbol: key
-                - - symbol: set
-                  - symbol: result
-                  - symbol: key
-                  - - symbol: get
-                    - symbol: right
-                    - symbol: key
-              - symbol: left
-              - - symbol: keys
-                - symbol: right
-            - symbol: map
-          remove:
-            - symbol: fn
-            - - - symbol: source
-                - symbol: map
-              - - symbol: key
-                - symbol: string
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: result
-                  - symbol: name
-                - - symbol: if
-                  - - symbol: eq
-                    - symbol: name
-                    - symbol: key
-                  - symbol: result
-                  - - symbol: set
-                    - symbol: result
-                    - symbol: name
-                    - - symbol: get
-                      - symbol: source
-                      - symbol: name
-              - {}
-              - - symbol: keys
-                - symbol: source
-            - symbol: map
-          select:
-            - symbol: fn
-            - - - symbol: source
-                - symbol: map
-              - - symbol: requested
-                - - symbol: list_of
-                  - symbol: string
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: result
-                  - symbol: name
-                - - symbol: if
-                  - - symbol: has
-                    - symbol: requested
-                    - symbol: name
-                  - - symbol: set
-                    - symbol: result
-                    - symbol: name
-                    - - symbol: get
-                      - symbol: source
-                      - symbol: name
-                  - symbol: result
-              - {}
-              - - symbol: keys
-                - symbol: source
-            - symbol: map
+            "$call":
+              - fn
+              - - - left
+                  - "$ref": map
+                - - right
+                  - "$ref": map
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - result
+                        - key
+                      - "$call":
+                          - set
+                          - "$ref": result
+                          - "$ref": key
+                          - "$call":
+                              - get
+                              - "$ref": right
+                              - "$ref": key
+                  - "$ref": left
+                  - "$call":
+                      - keys
+                      - "$ref": right
+              - "$ref": map
           omit:
-            - symbol: fn
-            - - - symbol: source
-                - symbol: map
-              - - symbol: requested
-                - - symbol: list_of
-                  - symbol: string
-            - - symbol: select
-              - symbol: source
-              - - symbol: filter
-                - - symbol: fn
-                  - - symbol: name
-                  - - symbol: not
-                    - - symbol: has
-                      - symbol: requested
-                      - symbol: name
-                - - symbol: keys
-                  - symbol: source
-            - symbol: map
+            "$call":
+              - fn
+              - - - source
+                  - "$ref": map
+                - - requested
+                  - "$call":
+                      - list_of
+                      - "$ref": string
+              - "$call":
+                  - select
+                  - "$ref": source
+                  - "$call":
+                      - filter
+                      - "$call":
+                          - fn
+                          - - name
+                          - "$call":
+                              - not
+                              - "$call":
+                                  - has
+                                  - "$ref": requested
+                                  - "$ref": name
+                      - "$call":
+                          - keys
+                          - "$ref": source
+              - "$ref": map
+          remove:
+            "$call":
+              - fn
+              - - - source
+                  - "$ref": map
+                - - key
+                  - "$ref": string
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - result
+                        - name
+                      - "$call":
+                          - if
+                          - "$call":
+                              - eq
+                              - "$ref": name
+                              - "$ref": key
+                          - "$ref": result
+                          - "$call":
+                              - set
+                              - "$ref": result
+                              - "$ref": name
+                              - "$call":
+                                  - get
+                                  - "$ref": source
+                                  - "$ref": name
+                  - {}
+                  - "$call":
+                      - keys
+                      - "$ref": source
+              - "$ref": map
+          select:
+            "$call":
+              - fn
+              - - - source
+                  - "$ref": map
+                - - requested
+                  - "$call":
+                      - list_of
+                      - "$ref": string
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - result
+                        - name
+                      - "$call":
+                          - if
+                          - "$call":
+                              - has
+                              - "$ref": requested
+                              - "$ref": name
+                          - "$call":
+                              - set
+                              - "$ref": result
+                              - "$ref": name
+                              - "$call":
+                                  - get
+                                  - "$ref": source
+                                  - "$ref": name
+                          - "$ref": result
+                  - {}
+                  - "$call":
+                      - keys
+                      - "$ref": source
+              - "$ref": map
+        source: "std:map"
+root:
+  checks:
+    missing: []
+    order:
+      - build
+      - lint
+      - test
+      - review
+    pending: {}
+    status: finished
+  cycle:
+    missing: []
+    order:
+      - independent
+    pending:
+      a:
+        - b
+      b:
+        - a
+      downstream:
+        - a
+    status: blocked
+  deps:
+    done:
+      ref: object0
+    maps:
+      merge:
+        ref: object1
+      omit:
+        ref: object2
+      remove:
+        ref: object3
+      select:
+        ref: object4
+    plan:
+      ref: object5
+    ready:
+      ref: object6
+    step:
+      ref: object7
+  empty:
+    missing: []
+    order: []
+    pending: {}
+    status: finished
+  missing:
+    missing:
+      - dependency: compile
+        task: test
+    order:
+      - docs
+    pending:
+      test:
+        - compile
+    status: blocked
+  self_cycle:
+    missing: []
+    order: []
+    pending:
+      self:
+        - self
+    status: blocked
+status: finished

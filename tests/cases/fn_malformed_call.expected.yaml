@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 6
   kind: arity
+  line: 3
   message: "`fn` takes 2 to 3 arguments, got 1"
   path: /f
   reference:
-    - "f"
-  line: 2
-  column: 4
+    - f
+status: error

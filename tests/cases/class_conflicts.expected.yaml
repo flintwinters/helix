@@ -1,257 +1,307 @@
-status: finished
-root:
-  a:
-    type: class
-    name: a
-    parents: []
-    fields:
-      port: integer
-      mode: string
-    values:
-      mode: fast
-    provenance:
-      port:
-        type: a
-      mode:
-        type: a
-        value: a
-    concrete: false
-  b:
-    type: class
-    name: b
-    parents: []
-    fields:
-      port: string
-      mode: string
-    values:
-      mode: slow
-    provenance:
-      port:
-        type: b
-      mode:
-        type: b
-        value: b
-    concrete: false
-  b2:
-    type: class
-    name: b2
-    parents: []
-    fields:
-      port: integer
-    values: {}
-    provenance:
-      port:
-        type: b2
-    concrete: false
-  type_clash:
-    kind: conflict
-    message: "field `port` has different declarations from both `a` and `b`; resolve it in `ab`"
-    path: /type_clash/1/2
-    reference:
-      - "type_clash"
-      - 1
-      - 2
-    line: 4
-    column: 34
-    data:
-      field: port
-      sources:
-        - "a"
-        - b
-  compatible_parents:
-    type: class
-    name: ab2
-    parents:
-      - "a"
-      - b2
-    fields:
-      port: integer
-      mode: string
-    values:
-      mode: fast
-    provenance:
-      port:
-        type: a
-      mode:
-        type: a
-        value: a
-    concrete: false
-  mode_clash:
-    field: mode
-    sources:
-      - "a"
-      - c
-  resolved:
-    type: class
-    name: m2
-    parents:
-      - "a"
-      - c
-    fields:
-      port: integer
-      mode: string
-    values:
-      mode: fast
-    provenance:
-      port:
-        type: a
-      mode:
-        type: a
-        value: m2
-    concrete: false
-  same_declaration_ok:
-    port: 1
-    mode: fast
-  narrowing:
-    port: 5
-    mode: fast
-  positive:
-    ref: object0
-  widening: "`w` redeclares field `port` in a way that does not fit the declaration from `a`"
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - gt
+            - "$ref": "n"
+            - 0
+    environment: []
     kind: function
+    location:
+      path:
+        - positive
+      source: "<root>"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: gt
-        - symbol: "n"
-        - 0
-    location:
-      source: "<root>"
-      path:
-        - "positive"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
+      - code:
           a:
-            - symbol: class
-            - a
-            - - symbol: record
-              - port
-              - symbol: integer
-              - mode
-              - symbol: string
-            - mode: fast
-          b:
-            - symbol: class
-            - b
-            - - symbol: record
-              - port
-              - symbol: string
-              - mode
-              - symbol: string
-            - mode: slow
-          b2:
-            - symbol: class
-            - b2
-            - - symbol: record
-              - port
-              - symbol: integer
-            - {}
-          type_clash:
-            - symbol: try
-            - - symbol: extend
-              - ab
-              - - symbol: list
-                - symbol: a
-                - symbol: b
-              - - symbol: record
-              - {}
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          compatible_parents:
-            - symbol: try
-            - - symbol: extend
-              - ab2
-              - - symbol: list
-                - symbol: a
-                - symbol: b2
-              - - symbol: record
-              - {}
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          mode_clash:
-            - symbol: try
-            - - symbol: extend
-              - m
-              - - symbol: list
-                - symbol: a
-                - - symbol: class
-                  - c
-                  - - symbol: record
-                    - mode
-                    - symbol: string
-                  - mode: slow
-              - - symbol: record
-              - {}
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - data
-          resolved:
-            - symbol: extend
-            - m2
-            - - symbol: list
-              - symbol: a
-              - - symbol: class
-                - c
-                - - symbol: record
+            "$call":
+              - class
+              - a
+              - "$call":
+                  - record
+                  - port
+                  - "$ref": integer
                   - mode
-                  - symbol: string
-                - mode: slow
-            - - symbol: record
-            - mode: fast
-          same_declaration_ok:
-            - symbol: get
-            - - symbol: extend
-              - ok
-              - - symbol: list
-                - symbol: a
-                - symbol: b2
-              - - symbol: record
-              - port: 1
-            - values
-          narrowing:
-            - symbol: get
-            - - symbol: extend
-              - "n"
-              - - symbol: list
-                - symbol: a
-              - - symbol: record
-                - port
-                - - symbol: refine
-                  - symbol: integer
-                  - symbol: positive
-              - port: 5
-            - values
-          positive:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: gt
-              - symbol: "n"
-              - 0
-          widening:
-            - symbol: try
-            - - symbol: extend
-              - w
-              - - symbol: list
-                - symbol: a
-              - - symbol: record
-                - port
-                - symbol: any
+                  - "$ref": string
+              - mode: fast
+          b:
+            "$call":
+              - class
+              - b
+              - "$call":
+                  - record
+                  - port
+                  - "$ref": string
+                  - mode
+                  - "$ref": string
+              - mode: slow
+          b2:
+            "$call":
+              - class
+              - b2
+              - "$call":
+                  - record
+                  - port
+                  - "$ref": integer
               - {}
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - message
+          compatible_parents:
+            "$call":
+              - try
+              - "$call":
+                  - extend
+                  - ab2
+                  - "$call":
+                      - list
+                      - "$ref": a
+                      - "$ref": b2
+                  - "$call":
+                      - record
+                  - {}
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          mode_clash:
+            "$call":
+              - try
+              - "$call":
+                  - extend
+                  - m
+                  - "$call":
+                      - list
+                      - "$ref": a
+                      - "$call":
+                          - class
+                          - c
+                          - "$call":
+                              - record
+                              - mode
+                              - "$ref": string
+                          - mode: slow
+                  - "$call":
+                      - record
+                  - {}
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - data
+          narrowing:
+            "$call":
+              - get
+              - "$call":
+                  - extend
+                  - "n"
+                  - "$call":
+                      - list
+                      - "$ref": a
+                  - "$call":
+                      - record
+                      - port
+                      - "$call":
+                          - refine
+                          - "$ref": integer
+                          - "$ref": positive
+                  - port: 5
+              - values
+          positive:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - gt
+                  - "$ref": "n"
+                  - 0
+          resolved:
+            "$call":
+              - extend
+              - m2
+              - "$call":
+                  - list
+                  - "$ref": a
+                  - "$call":
+                      - class
+                      - c
+                      - "$call":
+                          - record
+                          - mode
+                          - "$ref": string
+                      - mode: slow
+              - "$call":
+                  - record
+              - mode: fast
+          same_declaration_ok:
+            "$call":
+              - get
+              - "$call":
+                  - extend
+                  - ok
+                  - "$call":
+                      - list
+                      - "$ref": a
+                      - "$ref": b2
+                  - "$call":
+                      - record
+                  - port: 1
+              - values
+          type_clash:
+            "$call":
+              - try
+              - "$call":
+                  - extend
+                  - ab
+                  - "$call":
+                      - list
+                      - "$ref": a
+                      - "$ref": b
+                  - "$call":
+                      - record
+                  - {}
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          widening:
+            "$call":
+              - try
+              - "$call":
+                  - extend
+                  - w
+                  - "$call":
+                      - list
+                      - "$ref": a
+                  - "$call":
+                      - record
+                      - port
+                      - "$ref": any
+                  - {}
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - message
+        source: "<root>"
+root:
+  a:
+    concrete: false
+    fields:
+      mode: string
+      port: integer
+    name: a
+    parents: []
+    provenance:
+      mode:
+        type: a
+        value: a
+      port:
+        type: a
+    type: class
+    values:
+      mode: fast
+  b:
+    concrete: false
+    fields:
+      mode: string
+      port: string
+    name: b
+    parents: []
+    provenance:
+      mode:
+        type: b
+        value: b
+      port:
+        type: b
+    type: class
+    values:
+      mode: slow
+  b2:
+    concrete: false
+    fields:
+      port: integer
+    name: b2
+    parents: []
+    provenance:
+      port:
+        type: b2
+    type: class
+    values: {}
+  compatible_parents:
+    concrete: false
+    fields:
+      mode: string
+      port: integer
+    name: ab2
+    parents:
+      - a
+      - b2
+    provenance:
+      mode:
+        type: a
+        value: a
+      port:
+        type: a
+    type: class
+    values:
+      mode: fast
+  mode_clash:
+    field: mode
+    sources:
+      - a
+      - c
+  narrowing:
+    mode: fast
+    port: 5
+  positive:
+    ref: object0
+  resolved:
+    concrete: false
+    fields:
+      mode: string
+      port: integer
+    name: m2
+    parents:
+      - a
+      - c
+    provenance:
+      mode:
+        type: a
+        value: m2
+      port:
+        type: a
+    type: class
+    values:
+      mode: fast
+  same_declaration_ok:
+    mode: fast
+    port: 1
+  type_clash:
+    column: 32
+    data:
+      field: mode
+      sources:
+        - a
+        - b
+    kind: conflict
+    line: 18
+    message: "field `mode` has different values from both `a` and `b`; resolve it in `ab`"
+    path: "/type_clash/$call/1/$call/2"
+    reference:
+      - type_clash
+      - "$call"
+      - 1
+      - "$call"
+      - 2
+  widening: "`w` redeclares field `port` in a way that does not fit the declaration from `a`"
+status: finished

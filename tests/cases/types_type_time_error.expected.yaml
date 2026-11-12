@@ -1,13 +1,15 @@
-status: error
-phase: type
 error:
+  column: 57
   kind: type
+  line: 2
   message: "expected a type, got integer"
+  path: "/answer/$call/1/$call/1"
   phase: type
-  path: /answer/1/1
   reference:
-    - "answer"
+    - answer
+    - "$call"
     - 1
+    - "$call"
     - 1
-  line: 1
-  column: 31
+phase: type
+status: error

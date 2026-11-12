@@ -1,2 +1,4 @@
-m: {a: 1}
-x: [get, m, "b"]
+# Helix explicit syntax; migrated from legacy source.
+"m":
+  "a": 1
+"x": {"$call": ["get", {"$ref": "m"}, "b"]}

@@ -1,33 +1,268 @@
-status: finished
-root:
-  in_port:
-    ref: object0
-  port:
-    type: refine
-    of: integer
-    check:
-      ref: object0
-  endpoint:
-    type: record
-    fields:
-      host: string
+objects:
+  object0:
+    bindings:
+      endpoint:
+        code:
+          path:
+            - endpoint
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - - - e
+            - "$ref": endpoint
+        - "$call":
+            - get
+            - "$ref": e
+            - host
+    environment: []
+    kind: function
+    location:
+      path:
+        - describe
+      source: "<root>"
+    program:
+      ref: object4
+  object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - and
+            - "$call":
+                - ge
+                - "$ref": "n"
+                - 1
+            - "$call":
+                - le
+                - "$ref": "n"
+                - 65535
+    environment: []
+    kind: function
+    location:
+      path:
+        - in_port
+      source: "<root>"
+    program:
+      ref: object4
+  object2:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - x
+        - "$ref": x
+        - "$ref": string
+    environment: []
+    kind: function
+    location:
+      path:
+        - ident
+      source: "<root>"
+    program:
+      ref: object4
+  object3:
+    bindings:
       port:
-        type: refine
-        of: integer
-        check:
-          ref: object0
-  url:
-    ref: object1
-  good: "a:80"
+        code:
+          path:
+            - port
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - - - host
+            - "$ref": string
+          - - p
+            - "$ref": port
+        - "$call":
+            - concat
+            - "$ref": host
+            - ":"
+            - "$call":
+                - str
+                - "$ref": p
+        - "$ref": string
+    environment: []
+    kind: function
+    location:
+      path:
+        - url
+      source: "<root>"
+    program:
+      ref: object4
+  object4:
+    kind: program
+    sources:
+      - code:
+          bad_args:
+            "$call":
+              - try
+              - "$call":
+                  - url
+                  - 1
+                  - 0
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          bad_record:
+            "$call":
+              - try
+              - "$call":
+                  - describe
+                  - host: 1
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - data
+          checked_value:
+            "$call":
+              - expect
+              - host: h
+                port: 22
+              - "$ref": endpoint
+          describe:
+            "$call":
+              - fn
+              - - - e
+                  - "$ref": endpoint
+              - "$call":
+                  - get
+                  - "$ref": e
+                  - host
+          endpoint:
+            "$call":
+              - record
+              - host
+              - "$ref": string
+              - port
+              - "$ref": port
+          good:
+            "$call":
+              - url
+              - a
+              - 80
+          good_record:
+            "$call":
+              - describe
+              - host: h
+                port: 1
+          ident:
+            "$call":
+              - fn
+              - - x
+              - "$ref": x
+              - "$ref": string
+          in_port:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - and
+                  - "$call":
+                      - ge
+                      - "$ref": "n"
+                      - 1
+                  - "$call":
+                      - le
+                      - "$ref": "n"
+                      - 65535
+          port:
+            "$call":
+              - refine
+              - "$ref": integer
+              - "$ref": in_port
+          typed_map:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - - "n"
+                      - "$ref": port
+                  - "$ref": "n"
+              - - 1
+                - 2
+                - 3
+          typed_map_bad:
+            "$call":
+              - try
+              - "$call":
+                  - map
+                  - "$call":
+                      - fn
+                      - - - "n"
+                          - "$ref": port
+                      - "$ref": "n"
+                  - - 1
+                    - 0
+                    - 70000
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - message
+          unchecked_value:
+            "$call":
+              - try
+              - "$call":
+                  - expect
+                  - host: h
+                    port: 0
+                  - "$ref": endpoint
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - data
+          url:
+            "$call":
+              - fn
+              - - - host
+                  - "$ref": string
+                - - p
+                  - "$ref": port
+              - "$call":
+                  - concat
+                  - "$ref": host
+                  - ":"
+                  - "$call":
+                      - str
+                      - "$ref": p
+              - "$ref": string
+          wrong_result:
+            "$call":
+              - try
+              - "$call":
+                  - ident
+                  - 5
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - message
+        source: "<root>"
+root:
   bad_args:
-    kind: type
-    message: "2 type violations in the arguments of `/url`: expected string, got integer"
-    path: /bad_args/1
-    reference:
-      - "bad_args"
-      - 1
-    line: 6
-    column: 17
+    calls:
+      - column: 31
+        function: /url
+        function_column: 10
+        function_line: 10
+        line: 19
+        path: "/bad_args/$call/1"
+    column: 31
     data:
       violations:
         - argument: host
@@ -36,19 +271,14 @@ root:
         - argument: p
           at: /
           message: failed its refinement check
-    calls:
-      - path: /bad_args/1
-        line: 6
-        column: 17
-        function: /url
-        function_line: 4
-        function_column: 6
-  ident:
-    ref: object2
-  wrong_result: "1 type violation in the result: expected string, got integer"
-  describe:
-    ref: object3
-  good_record: h
+    kind: type
+    line: 19
+    message: "2 type violations in the arguments of `/url`: expected string, got integer"
+    path: "/bad_args/$call/1"
+    reference:
+      - bad_args
+      - "$call"
+      - 1
   bad_record:
     violations:
       - argument: e
@@ -60,220 +290,38 @@ root:
   checked_value:
     host: h
     port: 22
-  unchecked_value:
-    violations:
-      - at: /port
-        message: failed its refinement check
+  describe:
+    ref: object0
+  endpoint:
+    fields:
+      host: string
+      port:
+        check:
+          ref: object1
+        of: integer
+        type: refine
+    type: record
+  good: "a:80"
+  good_record: h
+  ident:
+    ref: object2
+  in_port:
+    ref: object1
+  port:
+    check:
+      ref: object1
+    of: integer
+    type: refine
   typed_map:
     - 1
     - 2
     - 3
-  typed_map_bad: "1 type violation in the arguments of `/typed_map_bad/1/1`: failed its refinement check"
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object4
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: and
-        - - symbol: ge
-          - symbol: "n"
-          - 1
-        - - symbol: le
-          - symbol: "n"
-          - 65535
-    location:
-      source: "<root>"
-      path:
-        - "in_port"
-    environment: []
-    bindings: {}
-  object1:
-    kind: function
-    program:
-      ref: object4
-    code:
-      - symbol: fn
-      - - - symbol: host
-          - symbol: string
-        - - symbol: p
-          - symbol: port
-      - - symbol: concat
-        - symbol: host
-        - ":"
-        - - symbol: str
-          - symbol: p
-      - symbol: string
-    location:
-      source: "<root>"
-      path:
-        - "url"
-    environment: []
-    bindings:
-      port:
-        code:
-          source: "<root>"
-          path:
-            - "port"
-  object2:
-    kind: function
-    program:
-      ref: object4
-    code:
-      - symbol: fn
-      - - symbol: x
-      - symbol: x
-      - symbol: string
-    location:
-      source: "<root>"
-      path:
-        - "ident"
-    environment: []
-    bindings: {}
-  object3:
-    kind: function
-    program:
-      ref: object4
-    code:
-      - symbol: fn
-      - - - symbol: e
-          - symbol: endpoint
-      - - symbol: get
-        - symbol: e
-        - host
-    location:
-      source: "<root>"
-      path:
-        - "describe"
-    environment: []
-    bindings:
-      endpoint:
-        code:
-          source: "<root>"
-          path:
-            - "endpoint"
-  object4:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          in_port:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: and
-              - - symbol: ge
-                - symbol: "n"
-                - 1
-              - - symbol: le
-                - symbol: "n"
-                - 65535
-          port:
-            - symbol: refine
-            - symbol: integer
-            - symbol: in_port
-          endpoint:
-            - symbol: record
-            - host
-            - symbol: string
-            - port
-            - symbol: port
-          url:
-            - symbol: fn
-            - - - symbol: host
-                - symbol: string
-              - - symbol: p
-                - symbol: port
-            - - symbol: concat
-              - symbol: host
-              - ":"
-              - - symbol: str
-                - symbol: p
-            - symbol: string
-          good:
-            - symbol: url
-            - a
-            - 80
-          bad_args:
-            - symbol: try
-            - - symbol: url
-              - 1
-              - 0
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          ident:
-            - symbol: fn
-            - - symbol: x
-            - symbol: x
-            - symbol: string
-          wrong_result:
-            - symbol: try
-            - - symbol: ident
-              - 5
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - message
-          describe:
-            - symbol: fn
-            - - - symbol: e
-                - symbol: endpoint
-            - - symbol: get
-              - symbol: e
-              - host
-          good_record:
-            - symbol: describe
-            - host: h
-              port: 1
-          bad_record:
-            - symbol: try
-            - - symbol: describe
-              - host: 1
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - data
-          checked_value:
-            - symbol: expect
-            - host: h
-              port: 22
-            - symbol: endpoint
-          unchecked_value:
-            - symbol: try
-            - - symbol: expect
-              - host: h
-                port: 0
-              - symbol: endpoint
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - data
-          typed_map:
-            - symbol: map
-            - - symbol: fn
-              - - - symbol: "n"
-                  - symbol: port
-              - symbol: "n"
-            - - 1
-              - 2
-              - 3
-          typed_map_bad:
-            - symbol: try
-            - - symbol: map
-              - - symbol: fn
-                - - - symbol: "n"
-                    - symbol: port
-                - symbol: "n"
-              - - 1
-                - 0
-                - 70000
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - message
+  typed_map_bad: "1 type violation in the arguments of `/typed_map_bad/$call/1/$call/1`: failed its refinement check"
+  unchecked_value:
+    violations:
+      - at: /port
+        message: failed its refinement check
+  url:
+    ref: object3
+  wrong_result: "1 type violation in the result: expected string, got integer"
+status: finished

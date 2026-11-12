@@ -1,71 +1,86 @@
-status: finished
-root:
-  area: 9
-  shadow:
-    w: 100
-    v: 2
-  in_fn:
-    ref: object0
-  r: 26
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - let
+            - sq:
+                "$call":
+                  - mul
+                  - "$ref": "n"
+                  - "$ref": "n"
+            - "$call":
+                - add
+                - "$ref": sq
+                - 1
+    environment: []
     kind: function
+    location:
+      path:
+        - in_fn
+      source: "<root>"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: let
-        - sq:
-            - symbol: mul
-            - symbol: "n"
-            - symbol: "n"
-        - - symbol: add
-          - symbol: sq
-          - 1
-    location:
-      source: "<root>"
-      path:
-        - "in_fn"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
+      - code:
           area:
-            - symbol: let
-            - w: 3
-              h: 4
-              half:
-                - symbol: div
-                - - symbol: mul
-                  - symbol: w
-                  - symbol: h
-                - 2
-            - - symbol: add
-              - symbol: half
-              - symbol: w
-          shadow:
-            w: 100
-            v:
-              - symbol: let
-              - w: 1
-              - - symbol: add
-                - symbol: w
-                - 1
+            "$call":
+              - let
+              - h: 4
+                half:
+                  "$call":
+                    - div
+                    - "$call":
+                        - mul
+                        - "$ref": w
+                        - "$ref": h
+                    - 2
+                w: 3
+              - "$call":
+                  - add
+                  - "$ref": half
+                  - "$ref": w
           in_fn:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: let
-              - sq:
-                  - symbol: mul
-                  - symbol: "n"
-                  - symbol: "n"
-              - - symbol: add
-                - symbol: sq
-                - 1
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - let
+                  - sq:
+                      "$call":
+                        - mul
+                        - "$ref": "n"
+                        - "$ref": "n"
+                  - "$call":
+                      - add
+                      - "$ref": sq
+                      - 1
           r:
-            - symbol: in_fn
-            - 5
+            "$call":
+              - in_fn
+              - 5
+          shadow:
+            v:
+              "$call":
+                - let
+                - w: 1
+                - "$call":
+                    - add
+                    - "$ref": w
+                    - 1
+            w: 100
+        source: "<root>"
+root:
+  area: 9
+  in_fn:
+    ref: object0
+  r: 26
+  shadow:
+    v: 2
+    w: 100
+status: finished

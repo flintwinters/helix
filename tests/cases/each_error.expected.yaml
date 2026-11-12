@@ -1,18 +1,20 @@
-status: error
 error:
-  kind: divide_by_zero
-  message: "`div` by zero"
-  path: /r/1/2
-  reference:
-    - "r"
-    - 1
-    - 2
-  line: 1
-  column: 21
   calls:
-    - path: /r/1
-      line: 1
-      column: 11
-      function: /r/1
-      function_line: 1
-      function_column: 11
+    - column: 25
+      function: "/r/$call/1"
+      function_column: 25
+      function_line: 2
+      line: 2
+      path: "/r/$call/1"
+  column: 49
+  kind: divide_by_zero
+  line: 2
+  message: "`div` by zero"
+  path: "/r/$call/1/$call/2"
+  reference:
+    - r
+    - "$call"
+    - 1
+    - "$call"
+    - 2
+status: error

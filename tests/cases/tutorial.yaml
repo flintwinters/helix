@@ -1,6 +1,15 @@
-math: [import, std:math]
-prices: [list, 3, 5, 8]
-square_price: [fn, [price], [math.square, price]]
-squared: [map, square_price, prices]
-valid: [assert, [eq, squared, [list, 9, 25, 64]], "unexpected squared prices"]
-recovered: [try, [div, 1, 0], [fn, [error], [get, error, "kind"]]]
+# Helix explicit syntax; migrated from legacy source.
+"math": {"$call": ["import", "std:math"]}
+"prices": {"$call": ["list", 3, 5, 8]}
+"square_price": {"$call": ["fn", ["price"], {"$call": ["math.square", {"$ref": "price"}]}]}
+"squared": {"$call": ["map", {"$ref": "square_price"}, {"$ref": "prices"}]}
+"valid":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$ref": "squared"}, {"$call": ["list", 9, 25, 64]}]}
+  - "unexpected squared prices"
+"recovered":
+  "$call":
+  - "try"
+  - {"$call": ["div", 1, 0]}
+  - {"$call": ["fn", ["error"], {"$call": ["get", {"$ref": "error"}, "kind"]}]}

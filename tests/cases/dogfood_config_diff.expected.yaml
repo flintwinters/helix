@@ -1,231 +1,287 @@
-status: finished
-root:
-  before:
-    workers: 2
-    legacy: true
-    nullable: ~
-    enabled: false
-    port: 8000
-    nested:
-      timeout: 30
-    empty: 0
-  after:
-    workers: 4
-    nullable: ~
-    enabled: true
-    port: 8000
-    nested:
-      timeout: 60
-    added_null: ~
-    empty: 0
-  diff:
-    compare:
-      ref: object0
-  report:
-    added:
-      - "added_null"
-    removed:
-      - "legacy"
-    changed:
-      - key: workers
-        before: 2
-        after: 4
-      - key: enabled
-        before: false
-        after: true
-      - key: nested
-        before:
-          timeout: 30
-        after:
-          timeout: 60
-  unchanged:
-    added: []
-    removed: []
-    changed: []
-  empty:
-    added: []
-    removed: []
-    changed: []
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - old
+            - "$ref": map
+          - - new
+            - "$ref": map
+        - "$call":
+            - let
+            - added:
+                "$call":
+                  - filter
+                  - "$call":
+                      - fn
+                      - - key
+                      - "$call":
+                          - not
+                          - "$call":
+                              - has
+                              - "$ref": old
+                              - "$ref": key
+                  - "$call":
+                      - keys
+                      - "$ref": new
+              changed:
+                "$call":
+                  - filter
+                  - "$call":
+                      - fn
+                      - - key
+                      - "$call":
+                          - and
+                          - "$call":
+                              - has
+                              - "$ref": new
+                              - "$ref": key
+                          - "$call":
+                              - ne
+                              - "$call":
+                                  - get
+                                  - "$ref": old
+                                  - "$ref": key
+                              - "$call":
+                                  - get
+                                  - "$ref": new
+                                  - "$ref": key
+                  - "$call":
+                      - keys
+                      - "$ref": old
+              removed:
+                "$call":
+                  - filter
+                  - "$call":
+                      - fn
+                      - - key
+                      - "$call":
+                          - not
+                          - "$call":
+                              - has
+                              - "$ref": new
+                              - "$ref": key
+                  - "$call":
+                      - keys
+                      - "$ref": old
+            - "$call":
+                - dict
+                - added
+                - "$ref": added
+                - removed
+                - "$ref": removed
+                - changed
+                - "$call":
+                    - map
+                    - "$call":
+                        - fn
+                        - - key
+                        - "$call":
+                            - dict
+                            - key
+                            - "$ref": key
+                            - before
+                            - "$call":
+                                - get
+                                - "$ref": old
+                                - "$ref": key
+                            - after
+                            - "$call":
+                                - get
+                                - "$ref": new
+                                - "$ref": key
+                    - "$ref": changed
+        - "$ref": map
+    environment: []
     kind: function
+    location:
+      path:
+        - compare
+      source: "std:diff"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - - symbol: old
-          - symbol: map
-        - - symbol: new
-          - symbol: map
-      - - symbol: let
-        - added:
-            - symbol: filter
-            - - symbol: fn
-              - - symbol: key
-              - - symbol: not
-                - - symbol: has
-                  - symbol: old
-                  - symbol: key
-            - - symbol: keys
-              - symbol: new
-          removed:
-            - symbol: filter
-            - - symbol: fn
-              - - symbol: key
-              - - symbol: not
-                - - symbol: has
-                  - symbol: new
-                  - symbol: key
-            - - symbol: keys
-              - symbol: old
-          changed:
-            - symbol: filter
-            - - symbol: fn
-              - - symbol: key
-              - - symbol: and
-                - - symbol: has
-                  - symbol: new
-                  - symbol: key
-                - - symbol: ne
-                  - - symbol: get
-                    - symbol: old
-                    - symbol: key
-                  - - symbol: get
-                    - symbol: new
-                    - symbol: key
-            - - symbol: keys
-              - symbol: old
-        - - symbol: dict
-          - added
-          - symbol: added
-          - removed
-          - symbol: removed
-          - changed
-          - - symbol: map
-            - - symbol: fn
-              - - symbol: key
-              - - symbol: dict
-                - key
-                - symbol: key
-                - before
-                - - symbol: get
-                  - symbol: old
-                  - symbol: key
-                - after
-                - - symbol: get
-                  - symbol: new
-                  - symbol: key
-            - symbol: changed
-      - symbol: map
-    location:
-      source: "std:diff"
-      path:
-        - "compare"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          before:
-            workers: 2
-            legacy: true
-            nullable: ~
-            enabled: false
-            port: 8000
-            nested:
-              timeout: 30
-            empty: 0
+      - code:
           after:
-            workers: 4
-            nullable: ~
-            enabled: true
-            port: 8000
-            nested:
-              timeout: 60
             added_null: ~
             empty: 0
+            enabled: true
+            nested:
+              timeout: 60
+            nullable: ~
+            port: 8000
+            workers: 4
+          before:
+            empty: 0
+            enabled: false
+            legacy: true
+            nested:
+              timeout: 30
+            nullable: ~
+            port: 8000
+            workers: 2
           diff:
-            - symbol: import
-            - symbol: "std:diff"
-          report:
-            - symbol: diff.compare
-            - symbol: before
-            - symbol: after
-          unchanged:
-            - symbol: diff.compare
-            - symbol: before
-            - symbol: before
+            "$call":
+              - import
+              - "std:diff"
           empty:
-            - symbol: diff.compare
-            - {}
-            - {}
-      - source: "std:diff"
-        code:
+            "$call":
+              - diff.compare
+              - {}
+              - {}
+          report:
+            "$call":
+              - diff.compare
+              - "$ref": before
+              - "$ref": after
+          unchanged:
+            "$call":
+              - diff.compare
+              - "$ref": before
+              - "$ref": before
+        source: "<root>"
+      - code:
           compare:
-            - symbol: fn
-            - - - symbol: old
-                - symbol: map
-              - - symbol: new
-                - symbol: map
-            - - symbol: let
-              - added:
-                  - symbol: filter
-                  - - symbol: fn
-                    - - symbol: key
-                    - - symbol: not
-                      - - symbol: has
-                        - symbol: old
-                        - symbol: key
-                  - - symbol: keys
-                    - symbol: new
-                removed:
-                  - symbol: filter
-                  - - symbol: fn
-                    - - symbol: key
-                    - - symbol: not
-                      - - symbol: has
-                        - symbol: new
-                        - symbol: key
-                  - - symbol: keys
-                    - symbol: old
-                changed:
-                  - symbol: filter
-                  - - symbol: fn
-                    - - symbol: key
-                    - - symbol: and
-                      - - symbol: has
-                        - symbol: new
-                        - symbol: key
-                      - - symbol: ne
-                        - - symbol: get
-                          - symbol: old
-                          - symbol: key
-                        - - symbol: get
-                          - symbol: new
-                          - symbol: key
-                  - - symbol: keys
-                    - symbol: old
-              - - symbol: dict
-                - added
-                - symbol: added
-                - removed
-                - symbol: removed
-                - changed
-                - - symbol: map
-                  - - symbol: fn
-                    - - symbol: key
-                    - - symbol: dict
-                      - key
-                      - symbol: key
-                      - before
-                      - - symbol: get
-                        - symbol: old
-                        - symbol: key
-                      - after
-                      - - symbol: get
-                        - symbol: new
-                        - symbol: key
-                  - symbol: changed
-            - symbol: map
+            "$call":
+              - fn
+              - - - old
+                  - "$ref": map
+                - - new
+                  - "$ref": map
+              - "$call":
+                  - let
+                  - added:
+                      "$call":
+                        - filter
+                        - "$call":
+                            - fn
+                            - - key
+                            - "$call":
+                                - not
+                                - "$call":
+                                    - has
+                                    - "$ref": old
+                                    - "$ref": key
+                        - "$call":
+                            - keys
+                            - "$ref": new
+                    changed:
+                      "$call":
+                        - filter
+                        - "$call":
+                            - fn
+                            - - key
+                            - "$call":
+                                - and
+                                - "$call":
+                                    - has
+                                    - "$ref": new
+                                    - "$ref": key
+                                - "$call":
+                                    - ne
+                                    - "$call":
+                                        - get
+                                        - "$ref": old
+                                        - "$ref": key
+                                    - "$call":
+                                        - get
+                                        - "$ref": new
+                                        - "$ref": key
+                        - "$call":
+                            - keys
+                            - "$ref": old
+                    removed:
+                      "$call":
+                        - filter
+                        - "$call":
+                            - fn
+                            - - key
+                            - "$call":
+                                - not
+                                - "$call":
+                                    - has
+                                    - "$ref": new
+                                    - "$ref": key
+                        - "$call":
+                            - keys
+                            - "$ref": old
+                  - "$call":
+                      - dict
+                      - added
+                      - "$ref": added
+                      - removed
+                      - "$ref": removed
+                      - changed
+                      - "$call":
+                          - map
+                          - "$call":
+                              - fn
+                              - - key
+                              - "$call":
+                                  - dict
+                                  - key
+                                  - "$ref": key
+                                  - before
+                                  - "$call":
+                                      - get
+                                      - "$ref": old
+                                      - "$ref": key
+                                  - after
+                                  - "$call":
+                                      - get
+                                      - "$ref": new
+                                      - "$ref": key
+                          - "$ref": changed
+              - "$ref": map
+        source: "std:diff"
+root:
+  after:
+    added_null: ~
+    empty: 0
+    enabled: true
+    nested:
+      timeout: 60
+    nullable: ~
+    port: 8000
+    workers: 4
+  before:
+    empty: 0
+    enabled: false
+    legacy: true
+    nested:
+      timeout: 30
+    nullable: ~
+    port: 8000
+    workers: 2
+  diff:
+    compare:
+      ref: object0
+  empty:
+    added: []
+    changed: []
+    removed: []
+  report:
+    added:
+      - added_null
+    changed:
+      - after: true
+        before: false
+        key: enabled
+      - after:
+          timeout: 60
+        before:
+          timeout: 30
+        key: nested
+      - after: 4
+        before: 2
+        key: workers
+    removed:
+      - legacy
+  unchanged:
+    added: []
+    changed: []
+    removed: []
+status: finished

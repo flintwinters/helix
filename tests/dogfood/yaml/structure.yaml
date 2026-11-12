@@ -1,73 +1,350 @@
-t: [import, std:test]
-y: [import, std:yaml]
-rows:
-  - name: block_map_and_sequence
-    input:
-      source: |
-        services:
-          - name: web
-            ports: [80, 443]
-          - name: worker
-            ports: []
-      expected: {services: [{name: web, ports: [80, 443]}, {name: worker, ports: []}]}
-  - {name: flow_trailing_commas, input: {source: '{a: [1, 2,], b: {},}', expected: {a: [1, 2], b: {}}}}
-  - {name: empty_containers, input: {source: '[{}, [], {a: []}]', expected: [{}, [], {a: []}]}}
-  - {name: omitted_map_values, input: {source: "a:\nb: null\nc: ~\n", expected: {a: null, b: null, c: null}}}
-  - {name: omitted_sequence_item, input: {source: "-\n- 1\n", expected: [null, 1]}}
-  - {name: scalar_keys_are_strings, input: {source: '{1: a, true: b, null: c, "": d}', expected: {'1': a, 'true': b, 'null': c, '': d}}}
-  - {name: punctuation_keys, input: {source: '{"a:b": 1, "a/b": 2, "a~b": 3, "雪": 4}', expected: {'a:b': 1, 'a/b': 2, 'a~b': 3, '雪': 4}}}
-  - {name: explicit_scalar_key, input: {source: "? name\n: value\n", expected: {name: value}}}
-  - {name: comment_only_lines, input: {source: "# before\na: 1 # after\n# end\n", expected: {a: 1}}}
-  - {name: crlf, input: {source: "a: 1\r\nb: 2\r\n", expected: {a: 1, b: 2}}}
-  - {name: utf8_bom, input: {source: "\uFEFFa: 1\n", expected: {a: 1}}}
-  - {name: bom_before_document_marker, input: {source: "\uFEFF---\na: 1\n", expected: {a: 1}}}
-  - {name: interior_bom_is_content, input: {source: '"a\uFEFFb"', expected: "a\uFEFFb"}}
-  - {name: explicit_document, input: {source: "---\na: 1\n...\n# end\n", expected: {a: 1}}}
-  - {name: repeated_end_markers, input: {source: "1\n...\n...\n", expected: 1}}
-  - {name: yaml_directive, input: {source: "%YAML 1.2\n---\na: 1\n", expected: {a: 1}}}
-  - {name: explicit_empty_document, input: {source: "---\n...\n", expected: null}}
-  - {name: anchor_without_alias, input: {source: 'a: &label [1, 2]', expected: {a: [1, 2]}}}
-  - {name: merge_key_is_ordinary_text, input: {source: '{<<: {a: 1}, b: 2}', expected: {'<<': {a: 1}, b: 2}}}
-  - {name: literal_clip, input: {source: "|\n  first\n  second\n", expected: "first\nsecond\n"}}
-  - {name: literal_strip, input: {source: "|-\n  first\n  second\n\n", expected: "first\nsecond"}}
-  - {name: literal_keep, input: {source: "|+\n  first\n\n", expected: "first\n\n"}}
-  - {name: folded_strip, input: {source: ">-\n  first\n  second\n", expected: 'first second'}}
-  - {name: empty_folded, input: {source: ">\n", expected: ''}}
-  - {name: empty_keep_at_eof, input: {source: "|+\n", expected: ''}}
-  - {name: keep_before_next_field, input: {source: "kept: |+\n\nnext: 1\n", expected: {kept: "\n", next: 1}}}
-  - {name: keep_with_misleading_comment, input: {source: "x: |+ # |- >-\n\nnext: 1\n", expected: {x: "\n", next: 1}}}
-  - {name: clip_with_misleading_comment, input: {source: "x: | # |+\n\nnext: 1\n", expected: {x: '', next: 1}}}
-  - {name: header_after_quoted_key, input: {source: "\"a|+ #\": |-\n\nnext: 1\n", expected: {'a|+ #': '', next: 1}}}
-  - {name: single_quoted_header_key, input: {source: "'it''s |+#': |+\n\nnext: 1\n", expected: [dict, "it's |+#", "\n", "next", 1]}}
-  - {name: escaped_quote_header_key, input: {source: "\"a\\\"|#\": |+\n\nnext: 1\n", expected: [dict, "a\"|#", "\n", "next", 1]}}
-  - {name: header_after_plain_apostrophe, input: {source: "it's: |+\n\nnext: 1\n", expected: {"it's": "\n", next: 1}}}
-  - {name: header_after_plain_quotes, input: {source: "this \"key\": |+\n\nnext: 1\n", expected: {'this "key"': "\n", next: 1}}}
-  - {name: header_after_anchor, input: {source: "x: &value |+\n\nnext: 1\n", expected: {x: "\n", next: 1}}}
-  - {name: empty_sequence_block, input: {source: "- |+\n\n- 1\n", expected: [list, "\n", 1]}}
-  - {name: explicit_multiline_key, input: {source: "? \"multi\n  line\"\n: |+\n\nnext: 1\n", expected: {'multi line': "\n", next: 1}}}
-  - {name: block_scalar_key, input: {source: "? |+\n\n: 1\n", expected: [dict, "\n", 1]}}
-  - {name: nbsp_in_plain_key, input: {source: "a\u00a0#b: |+\n\nnext: 1\n", expected: {"a\u00a0#b": "\n", next: 1}}}
-  - {name: keep_unterminated_blank, input: {source: "|+\n ", expected: ''}}
-  - {name: keep_blank_content, input: {source: "|+\n\n", expected: "\n"}}
-  - {name: clip_blank_content, input: {source: "|\n\n", expected: ''}}
-  - {name: strip_blank_content, input: {source: "|-\n\n", expected: ''}}
-  - {name: keep_after_unicode_key, input: {source: "雪: |+\n\n", expected: {雪: "\n"}}}
-  - {name: empty_block_crlf, input: {source: "|\r\n", expected: ''}}
-  - {name: empty_block_cr, input: {source: "|\r", expected: ''}}
-  - {name: keep_block_crlf, input: {source: "|+\r\n\r\n", expected: "\n"}}
-  - {name: keep_block_cr, input: {source: "|+\r\r", expected: "\n"}}
-  - {name: comment_plus_is_not_chomping, input: {source: "| # + comment\n\n", expected: ''}}
-  - {name: keep_indent_header, input: {source: "|2+\n\n", expected: "\n"}}
-  - {name: empty_literal, input: {source: "|\n", expected: ''}}
-  - {name: alternate_header_order, input: {source: "|-2\n  text\n", expected: text}}
-  - {name: folded_more_indented, input: {source: ">-\n  first\n    indented\n  last\n", expected: "first\n  indented\nlast"}}
-  - {name: folded_blank_line, input: {source: ">\n  first\n\n  second\n", expected: "first\nsecond\n"}}
-  - {name: block_indent_indicator, input: {source: "|2-\n    indented\n", expected: '  indented'}}
-  - {name: block_content_is_literal, input: {source: "|-\n  # comment\n  [add, x, 1]\n  ---\n", expected: "# comment\n[add, x, 1]\n---"}}
-  - {name: multiline_plain, input: {source: "message: first\n  second\n", expected: {message: 'first second'}}}
-  - {name: multiline_single_quote, input: {source: "'first\n  second'", expected: 'first second'}}
-  - {name: multiline_double_quote, input: {source: "\"first\n  second\"", expected: 'first second'}}
-  - {name: escaped_line_break, input: {source: "\"first\\\n  second\"", expected: firstsecond}}
-  - {name: function_syntax_is_data, input: {source: '[fn, [x], [add, x, 1]]', expected: [list, 'fn', [list, 'x'], [list, 'add', 'x', 1]]}}
-  - {name: closure_syntax_is_data, input: {source: '[closure, {x: 1}, [fn, [], x]]', expected: [list, 'closure', {x: 1}, [list, 'fn', [], 'x']]}}
-report: [t.table, rows, [fn, [row], [t.equal, [y.parse, [get, row, "source"]], [get, row, "expected"]]]]
+# Helix explicit syntax; migrated from legacy source.
+"t": {"$call": ["import", "std:test"]}
+"y": {"$call": ["import", "std:yaml"]}
+"rows":
+- "name": "block_map_and_sequence"
+  "input":
+    "source": "services:\n  - name: web\n    ports: [80, 443]\n  - name: worker\n    ports: []\n"
+    "expected":
+      "services":
+      - "name": "web"
+        "ports": [80, 443]
+      - "name": "worker"
+        "ports": []
+- "name": "flow_trailing_commas"
+  "input":
+    "source": "{a: [1, 2,], b: {},}"
+    "expected":
+      "a": [1, 2]
+      "b": {}
+- "name": "empty_containers"
+  "input":
+    "source": "[{}, [], {a: []}]"
+    "expected":
+    - {}
+    - []
+    - "a": []
+- "name": "omitted_map_values"
+  "input":
+    "source": "a:\nb: null\nc: ~\n"
+    "expected":
+      "a": null
+      "b": null
+      "c": null
+- "name": "omitted_sequence_item"
+  "input":
+    "source": "-\n- 1\n"
+    "expected": [null, 1]
+- "name": "string_key_spelling"
+  "input":
+    "source": "{\"1\": a, \"true\": b, \"null\": c, \"\": d}"
+    "expected":
+      "1": "a"
+      "true": "b"
+      "null": "c"
+      ? ""
+      : "d"
+- "name": "punctuation_keys"
+  "input":
+    "source": "{\"a:b\": 1, \"a/b\": 2, \"a~b\": 3, \"\u96EA\": 4}"
+    "expected":
+      "a:b": 1
+      "a/b": 2
+      "a~b": 3
+      "\u96EA": 4
+- "name": "explicit_scalar_key"
+  "input":
+    "source": "? name\n: value\n"
+    "expected":
+      "name": "value"
+- "name": "comment_only_lines"
+  "input":
+    "source": "# before\na: 1 # after\n# end\n"
+    "expected":
+      "a": 1
+- "name": "crlf"
+  "input":
+    "source": "a: 1\r\nb: 2\r\n"
+    "expected":
+      "a": 1
+      "b": 2
+- "name": "utf8_bom"
+  "input":
+    "source": "\uFEFFa: 1\n"
+    "expected":
+      "a": 1
+- "name": "bom_before_document_marker"
+  "input":
+    "source": "\uFEFF---\na: 1\n"
+    "expected":
+      "a": 1
+- "name": "interior_bom_is_content"
+  "input":
+    "source": "\"a\\uFEFFb\""
+    "expected": "a\uFEFFb"
+- "name": "explicit_document"
+  "input":
+    "source": "---\na: 1\n...\n# end\n"
+    "expected":
+      "a": 1
+- "name": "repeated_end_markers"
+  "input":
+    "source": "1\n...\n...\n"
+    "expected": 1
+- "name": "yaml_directive"
+  "input":
+    "source": "%YAML 1.2\n---\na: 1\n"
+    "expected":
+      "a": 1
+- "name": "explicit_empty_document"
+  "input":
+    "source": "---\n...\n"
+    "expected": null
+- "name": "anchor_without_alias"
+  "input":
+    "source": "a: &label [1, 2]"
+    "expected":
+      "a": [1, 2]
+- "name": "merge_key_is_ordinary_text"
+  "input":
+    "source": "{<<: {a: 1}, b: 2}"
+    "expected":
+      "<<":
+        "a": 1
+      "b": 2
+- "name": "literal_clip"
+  "input":
+    "source": "|\n  first\n  second\n"
+    "expected": "first\nsecond\n"
+- "name": "literal_strip"
+  "input":
+    "source": "|-\n  first\n  second\n\n"
+    "expected": "first\nsecond"
+- "name": "literal_keep"
+  "input":
+    "source": "|+\n  first\n\n"
+    "expected": "first\n\n"
+- "name": "folded_strip"
+  "input":
+    "source": ">-\n  first\n  second\n"
+    "expected": "first second"
+- "name": "empty_folded"
+  "input":
+    "source": ">\n"
+    "expected": ""
+- "name": "empty_keep_at_eof"
+  "input":
+    "source": "|+\n"
+    "expected": ""
+- "name": "keep_before_next_field"
+  "input":
+    "source": "kept: |+\n\nnext: 1\n"
+    "expected":
+      "kept": "\n"
+      "next": 1
+- "name": "keep_with_misleading_comment"
+  "input":
+    "source": "x: |+ # |- >-\n\nnext: 1\n"
+    "expected":
+      "x": "\n"
+      "next": 1
+- "name": "clip_with_misleading_comment"
+  "input":
+    "source": "x: | # |+\n\nnext: 1\n"
+    "expected":
+      "x": ""
+      "next": 1
+- "name": "header_after_quoted_key"
+  "input":
+    "source": "\"a|+ #\": |-\n\nnext: 1\n"
+    "expected":
+      "a|+ #": ""
+      "next": 1
+- "name": "single_quoted_header_key"
+  "input":
+    "source": "'it''s |+#': |+\n\nnext: 1\n"
+    "expected": {"$call": ["dict", "it's |+#", "\n", "next", 1]}
+- "name": "escaped_quote_header_key"
+  "input":
+    "source": "\"a\\\"|#\": |+\n\nnext: 1\n"
+    "expected": {"$call": ["dict", "a\"|#", "\n", "next", 1]}
+- "name": "header_after_plain_apostrophe"
+  "input":
+    "source": "it's: |+\n\nnext: 1\n"
+    "expected":
+      "it's": "\n"
+      "next": 1
+- "name": "header_after_plain_quotes"
+  "input":
+    "source": "this \"key\": |+\n\nnext: 1\n"
+    "expected":
+      "this \"key\"": "\n"
+      "next": 1
+- "name": "header_after_anchor"
+  "input":
+    "source": "x: &value |+\n\nnext: 1\n"
+    "expected":
+      "x": "\n"
+      "next": 1
+- "name": "empty_sequence_block"
+  "input":
+    "source": "- |+\n\n- 1\n"
+    "expected": {"$call": ["list", "\n", 1]}
+- "name": "explicit_multiline_key"
+  "input":
+    "source": "? \"multi\n  line\"\n: |+\n\nnext: 1\n"
+    "expected":
+      "multi line": "\n"
+      "next": 1
+- "name": "block_scalar_key"
+  "input":
+    "source": "? |+\n\n: 1\n"
+    "expected": {"$call": ["dict", "\n", 1]}
+- "name": "nbsp_in_plain_key"
+  "input":
+    "source": "a\_#b: |+\n\nnext: 1\n"
+    "expected":
+      "a\_#b": "\n"
+      "next": 1
+- "name": "keep_unterminated_blank"
+  "input":
+    "source": "|+\n "
+    "expected": ""
+- "name": "keep_blank_content"
+  "input":
+    "source": "|+\n\n"
+    "expected": "\n"
+- "name": "clip_blank_content"
+  "input":
+    "source": "|\n\n"
+    "expected": ""
+- "name": "strip_blank_content"
+  "input":
+    "source": "|-\n\n"
+    "expected": ""
+- "name": "keep_after_unicode_key"
+  "input":
+    "source": "\u96EA: |+\n\n"
+    "expected":
+      "\u96EA": "\n"
+- "name": "empty_block_crlf"
+  "input":
+    "source": "|\r\n"
+    "expected": ""
+- "name": "empty_block_cr"
+  "input":
+    "source": "|\r"
+    "expected": ""
+- "name": "keep_block_crlf"
+  "input":
+    "source": "|+\r\n\r\n"
+    "expected": "\n"
+- "name": "keep_block_cr"
+  "input":
+    "source": "|+\r\r"
+    "expected": "\n"
+- "name": "comment_plus_is_not_chomping"
+  "input":
+    "source": "| # + comment\n\n"
+    "expected": ""
+- "name": "keep_indent_header"
+  "input":
+    "source": "|2+\n\n"
+    "expected": "\n"
+- "name": "empty_literal"
+  "input":
+    "source": "|\n"
+    "expected": ""
+- "name": "alternate_header_order"
+  "input":
+    "source": "|-2\n  text\n"
+    "expected": "text"
+- "name": "folded_more_indented"
+  "input":
+    "source": ">-\n  first\n    indented\n  last\n"
+    "expected": "first\n  indented\nlast"
+- "name": "folded_blank_line"
+  "input":
+    "source": ">\n  first\n\n  second\n"
+    "expected": "first\nsecond\n"
+- "name": "block_indent_indicator"
+  "input":
+    "source": "|2-\n    indented\n"
+    "expected": "  indented"
+- "name": "block_content_is_literal"
+  "input":
+    "source": "|-\n  # comment\n  [add, x, 1]\n  ---\n"
+    "expected": "# comment\n[add, x, 1]\n---"
+- "name": "multiline_plain"
+  "input":
+    "source": "message: first\n  second\n"
+    "expected":
+      "message": "first second"
+- "name": "multiline_single_quote"
+  "input":
+    "source": "'first\n  second'"
+    "expected": "first second"
+- "name": "multiline_double_quote"
+  "input":
+    "source": "\"first\n  second\""
+    "expected": "first second"
+- "name": "escaped_line_break"
+  "input":
+    "source": "\"first\\\n  second\""
+    "expected": "firstsecond"
+- "name": "function_syntax_is_data"
+  "input":
+    "source": "[fn, [x], [add, x, 1]]"
+    "expected": {"$call": ["list", "fn", {"$call": ["list", "x"]}, {"$call": ["list", "add", "x", 1]}]}
+- "name": "closure_syntax_is_data"
+  "input":
+    "source": "[closure, {x: 1}, [fn, [], x]]"
+    "expected": {"$call": ["list", "closure", {"x": 1}, {"$call": ["list", "fn", [], "x"]}]}
+- "name": "scalar_alias"
+  "input":
+    "source": "a: &a 1\nb: *a\n"
+    "expected":
+      "a": 1
+      "b": 1
+- "name": "merge_alias"
+  "input":
+    "source": "a: &a {x: 1}\nb: {<<: *a}\n"
+    "expected":
+      "a":
+        "x": 1
+      "b":
+        "<<":
+          "x": 1
+- "name": "explicit_string_tag"
+  "input":
+    "source": "!!str true"
+    "expected": "true"
+- "name": "explicit_integer_tag"
+  "input":
+    "source": "!!int \"42\""
+    "expected": 42
+- "name": "sequence_tag"
+  "input":
+    "source": "!!seq [1, 2]"
+    "expected": [1, 2]
+- "name": "map_tag"
+  "input":
+    "source": "!!map {a: 1}"
+    "expected":
+      "a": 1
+- "name": "tagged_key"
+  "input":
+    "source": "{!!str name: value}"
+    "expected":
+      "name": "value"
+"report":
+  "$call":
+  - "t.table"
+  - {"$ref": "rows"}
+  - "$call":
+    - "fn"
+    - - "row"
+    - "$call":
+      - "t.equal"
+      - {"$call": ["y.parse", {"$call": ["get", {"$ref": "row"}, "source"]}]}
+      - {"$call": ["get", {"$ref": "row"}, "expected"]}

@@ -1,2 +1,3 @@
-a: yes_string
-b: [add, a, 1]
+# Helix explicit syntax; migrated from legacy source.
+"a": "yes_string"
+"b": {"$call": ["add", {"$ref": "a"}, 1]}

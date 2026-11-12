@@ -1,9 +1,28 @@
-xs: [1, 2, 3, 4, 5, 6]
-double: [fn, [n], [mul, n, 2]]
-doubled: [map, double, xs]
-evens: [filter, [fn, [n], [eq, [mod, n, 2], 0]], xs]
-total: [fold, [fn, [acc, n], [add, acc, n]], 0, xs]
-empty_fold: [fold, [fn, [acc, n], [add, acc, n]], 7, []]
-shift: 100
-shifted: [map, [fn, [n], [add, n, shift]], xs]
-done: [each, double, xs]
+# Helix explicit syntax; migrated from legacy source.
+"xs": [1, 2, 3, 4, 5, 6]
+"double": {"$call": ["fn", ["n"], {"$call": ["mul", {"$ref": "n"}, 2]}]}
+"doubled": {"$call": ["map", {"$ref": "double"}, {"$ref": "xs"}]}
+"evens":
+  "$call":
+  - "filter"
+  - {"$call": ["fn", ["n"], {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, 2]}, 0]}]}
+  - {"$ref": "xs"}
+"total":
+  "$call":
+  - "fold"
+  - {"$call": ["fn", ["acc", "n"], {"$call": ["add", {"$ref": "acc"}, {"$ref": "n"}]}]}
+  - 0
+  - {"$ref": "xs"}
+"empty_fold":
+  "$call":
+  - "fold"
+  - {"$call": ["fn", ["acc", "n"], {"$call": ["add", {"$ref": "acc"}, {"$ref": "n"}]}]}
+  - 7
+  - []
+"shift": 100
+"shifted":
+  "$call":
+  - "map"
+  - {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, {"$ref": "shift"}]}]}
+  - {"$ref": "xs"}
+"done": {"$call": ["each", {"$ref": "double"}, {"$ref": "xs"}]}

@@ -1,6 +1,7 @@
-rate: 3
-scale: [fn, [n], [mul, n, rate]]
-here: [scale, 5]
-inner:
-  rate: 10
-  there: [scale, 5]
+# Helix explicit syntax; migrated from legacy source.
+"rate": 3
+"scale": {"$call": ["fn", ["n"], {"$call": ["mul", {"$ref": "n"}, {"$ref": "rate"}]}]}
+"here": {"$call": ["scale", 5]}
+"inner":
+  "rate": 10
+  "there": {"$call": ["scale", 5]}

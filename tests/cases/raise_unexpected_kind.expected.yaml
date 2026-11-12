@@ -1,27 +1,30 @@
-status: error
 error:
-  kind: fatal
-  message: disk gone
-  path: /guard/2/3
-  reference:
-    - "guard"
-    - 2
-    - 3
-  line: 2
-  column: 71
   calls:
-    - path: /unexpected/2
-      line: 3
-      column: 50
+    - column: 77
       function: /guard
-      function_line: 2
-      function_column: 8
+      function_column: 10
+      function_line: 4
+      line: 12
+      path: "/unexpected/$call/2"
   cause:
+    column: 33
     kind: fatal
+    line: 12
     message: disk gone
-    path: /unexpected/1
+    path: "/unexpected/$call/1"
     reference:
-      - "unexpected"
+      - unexpected
+      - "$call"
       - 1
-    line: 3
-    column: 19
+  column: 7
+  kind: fatal
+  line: 11
+  message: disk gone
+  path: "/guard/$call/2/$call/3"
+  reference:
+    - guard
+    - "$call"
+    - 2
+    - "$call"
+    - 3
+status: error

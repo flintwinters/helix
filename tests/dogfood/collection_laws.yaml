@@ -1,58 +1,188 @@
+# Helix explicit syntax; migrated from legacy source.
 # Exhaust every list of length 0..3 over {-1, 0, 1}: 40 reproducible inputs.
-t: [import, std:test]
-l: [import, std:list]
-# Keep generated domains and intermediate reports local to avoid duplicate exports.
-report:
-  - let
-  - alphabet: [-1, 0, 1]
-    samples: [t.lists, alphabet, 3]
-    positive: [fn, [x], [gt, x, 0]]
-    # A counting oracle does not use a comparator or the sorting implementation.
-    sort_oracle: [fn, [xs], [l.flat_map, alphabet, [fn, [x], [map, [fn, [i], x], [l.range, [l.count, xs, [fn, [y], [eq, x, y]]]]]]]]
-    sorting: [t.compare, "sort equals counting oracle", samples, l.sort, sort_oracle]
-    # Positional oracle rejects identity (which passes the involution law).
-    # reverse places every element at its mirrored index
-    reversal:
-      - t.property
+"t": {"$call": ["import", "std:test"]}
+"l": {"$call": ["import", "std:list"]}
+"report":
+  "$call":
+  - "let"
+  - "alphabet": [-1, 0, 1]
+    "samples": {"$call": ["t.lists", {"$ref": "alphabet"}, 3]}
+    "positive": {"$call": ["fn", ["x"], {"$call": ["gt", {"$ref": "x"}, 0]}]}
+    "sort_oracle":
+      "$call":
+      - "fn"
+      - - "xs"
+      - "$call":
+        - "l.flat_map"
+        - {"$ref": "alphabet"}
+        - "$call":
+          - "fn"
+          - - "x"
+          - "$call":
+            - "map"
+            - {"$call": ["fn", ["i"], {"$ref": "x"}]}
+            - "$call":
+              - "l.range"
+              - "$call":
+                - "l.count"
+                - {"$ref": "xs"}
+                - {"$call": ["fn", ["y"], {"$call": ["eq", {"$ref": "x"}, {"$ref": "y"}]}]}
+    "sorting":
+      "$call":
+      - "t.compare"
+      - "sort equals counting oracle"
+      - {"$ref": "samples"}
+      - {"$ref": "l.sort"}
+      - {"$ref": "sort_oracle"}
+    "reversal":
+      "$call":
+      - "t.property"
       - "reversal"
-      - samples
-      - [fn, [xs], [let, {actual: [l.reverse, xs]}, [and, [eq, [len, actual], [len, xs]], [l.all, [l.range, [len, xs]], [fn, [i], [eq, [get, actual, i], [get, xs, [sub, [sub, [len, xs], 1], i]]]]]]]]
-    # First-occurrence indices provide an oracle without calling unique itself.
-    # unique retains exactly the first occurrence in input order
-    uniqueness:
-      - t.property
+      - {"$ref": "samples"}
+      - "$call":
+        - "fn"
+        - - "xs"
+        - "$call":
+          - "let"
+          - "actual": {"$call": ["l.reverse", {"$ref": "xs"}]}
+          - "$call":
+            - "and"
+            - {"$call": ["eq", {"$call": ["len", {"$ref": "actual"}]}, {"$call": ["len", {"$ref": "xs"}]}]}
+            - "$call":
+              - "l.all"
+              - {"$call": ["l.range", {"$call": ["len", {"$ref": "xs"}]}]}
+              - "$call":
+                - "fn"
+                - - "i"
+                - "$call":
+                  - "eq"
+                  - {"$call": ["get", {"$ref": "actual"}, {"$ref": "i"}]}
+                  - "$call":
+                    - "get"
+                    - {"$ref": "xs"}
+                    - {"$call": ["sub", {"$call": ["sub", {"$call": ["len", {"$ref": "xs"}]}, 1]}, {"$ref": "i"}]}
+    "uniqueness":
+      "$call":
+      - "t.property"
       - "uniqueness"
-      - samples
-      - [fn, [xs], [eq, [l.unique, xs], [map, [fn, [i], [get, xs, i]], [filter, [fn, [i], [not, [has, [slice, xs, 0, i], [get, xs, i]]]], [l.range, [len, xs]]]]]]
-    # partition preserves order, multiplicity and classification
-    partitioning:
-      - t.property
+      - {"$ref": "samples"}
+      - "$call":
+        - "fn"
+        - - "xs"
+        - "$call":
+          - "eq"
+          - {"$call": ["l.unique", {"$ref": "xs"}]}
+          - "$call":
+            - "map"
+            - {"$call": ["fn", ["i"], {"$call": ["get", {"$ref": "xs"}, {"$ref": "i"}]}]}
+            - "$call":
+              - "filter"
+              - "$call":
+                - "fn"
+                - - "i"
+                - "$call":
+                  - "not"
+                  - "$call":
+                    - "has"
+                    - {"$call": ["slice", {"$ref": "xs"}, 0, {"$ref": "i"}]}
+                    - {"$call": ["get", {"$ref": "xs"}, {"$ref": "i"}]}
+              - {"$call": ["l.range", {"$call": ["len", {"$ref": "xs"}]}]}
+    "partitioning":
+      "$call":
+      - "t.property"
       - "partitioning"
-      - samples
-      - [fn, [xs], [eq, [l.partition, xs, positive], [list, [filter, positive, xs], [filter, [fn, [x], [not, [positive, x]]], xs]]]]
-    # find returns first positive or explicit fallback
-    searching:
-      - t.property
+      - {"$ref": "samples"}
+      - "$call":
+        - "fn"
+        - - "xs"
+        - "$call":
+          - "eq"
+          - {"$call": ["l.partition", {"$ref": "xs"}, {"$ref": "positive"}]}
+          - "$call":
+            - "list"
+            - {"$call": ["filter", {"$ref": "positive"}, {"$ref": "xs"}]}
+            - "$call":
+              - "filter"
+              - {"$call": ["fn", ["x"], {"$call": ["not", {"$call": ["positive", {"$ref": "x"}]}]}]}
+              - {"$ref": "xs"}
+    "searching":
+      "$call":
+      - "t.property"
       - "searching"
-      - samples
-      - [fn, [xs], [eq, [l.find, xs, positive, "absent"], [get, [filter, positive, xs], 0, "absent"]]]
-    # For each list, exercise every distinct split and one count past its end.
-    # Group boundaries per input rather than creating hundreds of copied reports.
-    slicing:
-      - t.property
+      - {"$ref": "samples"}
+      - "$call":
+        - "fn"
+        - - "xs"
+        - "$call":
+          - "eq"
+          - {"$call": ["l.find", {"$ref": "xs"}, {"$ref": "positive"}, "absent"]}
+          - {"$call": ["get", {"$call": ["filter", {"$ref": "positive"}, {"$ref": "xs"}]}, 0, "absent"]}
+    "slicing":
+      "$call":
+      - "t.property"
       - "slicing"
-      - samples
-      - - fn
-        - [xs]
-        - - l.all
-          - [l.range, [add, [len, xs], 2]]
-          - [fn, [n], [and, [eq, [concat, [l.take, xs, n], [l.drop, xs, n]], xs], [eq, [len, [l.take, xs, n]], [if, [lt, n, [len, xs]], n, [len, xs]]]]]
-    # Check actual positions, rather than comparing enumerate with zip (shared code).
-    # enumeration is lossless and indices are consecutive
-    positions:
-      - t.property
+      - {"$ref": "samples"}
+      - "$call":
+        - "fn"
+        - - "xs"
+        - "$call":
+          - "l.all"
+          - {"$call": ["l.range", {"$call": ["add", {"$call": ["len", {"$ref": "xs"}]}, 2]}]}
+          - "$call":
+            - "fn"
+            - - "n"
+            - "$call":
+              - "and"
+              - "$call":
+                - "eq"
+                - "$call":
+                  - "concat"
+                  - {"$call": ["l.take", {"$ref": "xs"}, {"$ref": "n"}]}
+                  - {"$call": ["l.drop", {"$ref": "xs"}, {"$ref": "n"}]}
+                - {"$ref": "xs"}
+              - "$call":
+                - "eq"
+                - {"$call": ["len", {"$call": ["l.take", {"$ref": "xs"}, {"$ref": "n"}]}]}
+                - "$call":
+                  - "if"
+                  - {"$call": ["lt", {"$ref": "n"}, {"$call": ["len", {"$ref": "xs"}]}]}
+                  - {"$ref": "n"}
+                  - {"$call": ["len", {"$ref": "xs"}]}
+    "positions":
+      "$call":
+      - "t.property"
       - "positions"
-      - samples
-      - [fn, [xs], [let, {pairs: [l.enumerate, xs]}, [and, [eq, [map, [fn, [pair], [get, pair, 1]], pairs], xs], [eq, [map, [fn, [pair], [get, pair, 0]], pairs], [l.range, [len, xs]]]]]]
-    coverage: [t.suite, [{name: exhaustive_sample_count, run: [fn, [], [t.equal, [len, samples], 40]]}]]
-  - [t.combine, [list, coverage, sorting, reversal, uniqueness, partitioning, searching, slicing, positions]]
+      - {"$ref": "samples"}
+      - "$call":
+        - "fn"
+        - - "xs"
+        - "$call":
+          - "let"
+          - "pairs": {"$call": ["l.enumerate", {"$ref": "xs"}]}
+          - "$call":
+            - "and"
+            - "$call":
+              - "eq"
+              - {"$call": ["map", {"$call": ["fn", ["pair"], {"$call": ["get", {"$ref": "pair"}, 1]}]}, {"$ref": "pairs"}]}
+              - {"$ref": "xs"}
+            - "$call":
+              - "eq"
+              - {"$call": ["map", {"$call": ["fn", ["pair"], {"$call": ["get", {"$ref": "pair"}, 0]}]}, {"$ref": "pairs"}]}
+              - {"$call": ["l.range", {"$call": ["len", {"$ref": "xs"}]}]}
+    "coverage":
+      "$call":
+      - "t.suite"
+      - - "name": "exhaustive_sample_count"
+          "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["len", {"$ref": "samples"}]}, 40]}]}
+  - "$call":
+    - "t.combine"
+    - "$call":
+      - "list"
+      - {"$ref": "coverage"}
+      - {"$ref": "sorting"}
+      - {"$ref": "reversal"}
+      - {"$ref": "uniqueness"}
+      - {"$ref": "partitioning"}
+      - {"$ref": "searching"}
+      - {"$ref": "slicing"}
+      - {"$ref": "positions"}

@@ -1,1 +1,2 @@
-x: [neg, "a"]
+# Helix explicit syntax; migrated from legacy source.
+"x": {"$call": ["neg", "a"]}

@@ -1,57 +1,132 @@
+# Helix explicit syntax; migrated from legacy source.
 # Types and functions travel through ordinary values and constructors.
-identity: [fn, [t], t]
-list_type: [fn, [t], [list_of, t]]
-optional_record: [fn, [t], [record, "value", [optional, t]]]
-stored: [list, [identity, [union, integer, string]], [list_type, boolean]]
-selected: [get, stored, 0]
-accepts: [is, "ok", selected]
-rejects: [is, false, selected]
-via_parameter: [call, [fn, [constructor, t], [constructor, t]], list_type, string]
-via_map: [map, identity, [list, integer, [list_of, string]]]
-# Escaping predicates retain constructor arguments, independently for each call.
-at_least: [fn, [minimum], [refine, integer, [fn, [n], [ge, n, minimum]]]]
-positive: [at_least, 1]
-large: [at_least, 100]
-checks: [list, [is, 5, positive], [is, 5, large], [is, "5", positive]]
-make_adder: [fn, [amount], [fn, [n], [add, amount, n]]]
-add_two: [make_adder, 2]
-add_ten: [make_adder, 10]
-closures: [list, [add_two, 3], [add_ten, 3], [call, [get, [list, add_two], 0], 8]]
-lexical: [let, {offset: 20}, [fn, [n], [add, offset, n]]]
-lexical_result: [lexical, 2]
-# Reflection can reconstruct a declaration, and equality ignores map field order.
-shape: [record, "name", string, "count", integer]
-rebuilt: [fold, [fn, [t, name], [with_field, t, name, [get, [fields, shape], name]]], [record], [keys, [fields, shape]]]
-equal: [eq, shape, rebuilt]
-parameter_map: [call, [fn, [config], [is, 1, config.type]], {type: integer}]
-# Local literal map contents must not capture unrelated bindings.
-literal_scope: [let, {danger: [div, 1, 0]}, [fn, [], {label: danger}]]
-literal_result: [literal_scope]
-# Capturing another function preserves its own scope across a move.
-left:
-  offset: 4
-  helper: [fn, [n], [add, n, offset]]
-right:
-  offset: 100
-  copied: [identity, left.helper]
-  result: [copied, 2]
-# A self-recursive function remains callable after passing through a value.
-factorial: [fn, [n], [if, [le, n, 1], 1, [mul, n, [factorial, [sub, n, 1]]]]]
-passed_recursive: [call, [identity, factorial], 5]
-function_kind: [type, add_two]
-function_fits: [is, add_two, function]
-data_is_not_function: [is, ["fn", [], 1], function]
-checked_constructor: [fn, [[constructor, function], t], [constructor, t]]
-checked_result: [checked_constructor, list_type, integer]
-record_factory: [fn, [offset], {apply: [fn, [n], [add, n, offset]]}]
-returned_record: [record_factory, 8]
-record_callback: [map, [get, returned_record, "apply"], [1, 2]]
-# Mutually recursive functions retain separate lexical bindings of the same name.
-a:
-  offset: 1
-  f: [fn, [n], [if, [le, n, 0], offset, [b.g, [sub, n, 1]]]]
-b:
-  offset: 10
-  g: [fn, [n], [if, [le, n, 0], offset, [a.f, [sub, n, 1]]]]
-recursive_copy: [identity, a.f]
-recursive_scope: [list, [recursive_copy, 2], [recursive_copy, 3]]
+"identity": {"$call": ["fn", ["t"], {"$ref": "t"}]}
+"list_type": {"$call": ["fn", ["t"], {"$call": ["list_of", {"$ref": "t"}]}]}
+"optional_record": {"$call": ["fn", ["t"], {"$call": ["record", "value", {"$call": ["optional", {"$ref": "t"}]}]}]}
+"stored":
+  "$call":
+  - "list"
+  - {"$call": ["identity", {"$call": ["union", {"$ref": "integer"}, {"$ref": "string"}]}]}
+  - {"$call": ["list_type", {"$ref": "boolean"}]}
+"selected": {"$call": ["get", {"$ref": "stored"}, 0]}
+"accepts": {"$call": ["is", "ok", {"$ref": "selected"}]}
+"rejects": {"$call": ["is", false, {"$ref": "selected"}]}
+"via_parameter":
+  "$call":
+  - "call"
+  - {"$call": ["fn", ["constructor", "t"], {"$call": ["constructor", {"$ref": "t"}]}]}
+  - {"$ref": "list_type"}
+  - {"$ref": "string"}
+"via_map":
+  "$call":
+  - "map"
+  - {"$ref": "identity"}
+  - {"$call": ["list", {"$ref": "integer"}, {"$call": ["list_of", {"$ref": "string"}]}]}
+"at_least":
+  "$call":
+  - "fn"
+  - - "minimum"
+  - "$call":
+    - "refine"
+    - {"$ref": "integer"}
+    - {"$call": ["fn", ["n"], {"$call": ["ge", {"$ref": "n"}, {"$ref": "minimum"}]}]}
+"positive": {"$call": ["at_least", 1]}
+"large": {"$call": ["at_least", 100]}
+"checks":
+  "$call":
+  - "list"
+  - {"$call": ["is", 5, {"$ref": "positive"}]}
+  - {"$call": ["is", 5, {"$ref": "large"}]}
+  - {"$call": ["is", "5", {"$ref": "positive"}]}
+"make_adder": {"$call": ["fn", ["amount"], {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "amount"}, {"$ref": "n"}]}]}]}
+"add_two": {"$call": ["make_adder", 2]}
+"add_ten": {"$call": ["make_adder", 10]}
+"closures":
+  "$call":
+  - "list"
+  - {"$call": ["add_two", 3]}
+  - {"$call": ["add_ten", 3]}
+  - {"$call": ["call", {"$call": ["get", {"$call": ["list", {"$ref": "add_two"}]}, 0]}, 8]}
+"lexical":
+  "$call":
+  - "let"
+  - "offset": 20
+  - {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "offset"}, {"$ref": "n"}]}]}
+"lexical_result": {"$call": ["lexical", 2]}
+"shape": {"$call": ["record", "name", {"$ref": "string"}, "count", {"$ref": "integer"}]}
+"rebuilt":
+  "$call":
+  - "fold"
+  - "$call":
+    - "fn"
+    - - "t"
+      - "name"
+    - "$call":
+      - "with_field"
+      - {"$ref": "t"}
+      - {"$ref": "name"}
+      - {"$call": ["get", {"$call": ["fields", {"$ref": "shape"}]}, {"$ref": "name"}]}
+  - {"$call": ["record"]}
+  - {"$call": ["keys", {"$call": ["fields", {"$ref": "shape"}]}]}
+"equal": {"$call": ["eq", {"$ref": "shape"}, {"$ref": "rebuilt"}]}
+"parameter_map":
+  "$call":
+  - "call"
+  - {"$call": ["fn", ["config"], {"$call": ["is", 1, {"$ref": "config.type"}]}]}
+  - "type": "integer"
+"literal_scope": {"$call": ["let", {"danger": {"$call": ["div", 1, 0]}}, {"$call": ["fn", [], {"label": "danger"}]}]}
+"literal_result": {"$call": ["literal_scope"]}
+"left":
+  "offset": 4
+  "helper": {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, {"$ref": "offset"}]}]}
+"right":
+  "offset": 100
+  "copied": {"$call": ["identity", {"$ref": "left.helper"}]}
+  "result": {"$call": ["copied", 2]}
+"factorial":
+  "$call":
+  - "fn"
+  - - "n"
+  - "$call":
+    - "if"
+    - {"$call": ["le", {"$ref": "n"}, 1]}
+    - 1
+    - {"$call": ["mul", {"$ref": "n"}, {"$call": ["factorial", {"$call": ["sub", {"$ref": "n"}, 1]}]}]}
+"passed_recursive": {"$call": ["call", {"$call": ["identity", {"$ref": "factorial"}]}, 5]}
+"function_kind": {"$call": ["type", {"$ref": "add_two"}]}
+"function_fits": {"$call": ["is", {"$ref": "add_two"}, {"$ref": "function"}]}
+"data_is_not_function": {"$call": ["is", ["fn", [], 1], {"$ref": "function"}]}
+"checked_constructor": {"$call": ["fn", [["constructor", {"$ref": "function"}], "t"], {"$call": ["constructor",
+        {"$ref": "t"}]}]}
+"checked_result": {"$call": ["checked_constructor", {"$ref": "list_type"}, {"$ref": "integer"}]}
+"record_factory":
+  "$call":
+  - "fn"
+  - - "offset"
+  - "apply": {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, {"$ref": "offset"}]}]}
+"returned_record": {"$call": ["record_factory", 8]}
+"record_callback": {"$call": ["map", {"$call": ["get", {"$ref": "returned_record"}, "apply"]}, [1, 2]]}
+"a":
+  "offset": 1
+  "f":
+    "$call":
+    - "fn"
+    - - "n"
+    - "$call":
+      - "if"
+      - {"$call": ["le", {"$ref": "n"}, 0]}
+      - {"$ref": "offset"}
+      - {"$call": ["b.g", {"$call": ["sub", {"$ref": "n"}, 1]}]}
+"b":
+  "offset": 10
+  "g":
+    "$call":
+    - "fn"
+    - - "n"
+    - "$call":
+      - "if"
+      - {"$call": ["le", {"$ref": "n"}, 0]}
+      - {"$ref": "offset"}
+      - {"$call": ["a.f", {"$call": ["sub", {"$ref": "n"}, 1]}]}
+"recursive_copy": {"$call": ["identity", {"$ref": "a.f"}]}
+"recursive_scope": {"$call": ["list", {"$call": ["recursive_copy", 2]}, {"$call": ["recursive_copy", 3]}]}

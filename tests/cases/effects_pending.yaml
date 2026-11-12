@@ -1,14 +1,33 @@
+# Helix explicit syntax; migrated from legacy source.
 # Stepping exposes an effect without executing a host adapter.
-- let
-- original: [vm, [fn, [], [effect, "time", null]]]
-  ready_to_stop: [fn, [machine], [eq, [get, [inspect, machine], "status"], "signaled"]]
-  advance: [fn, [machine], [step, machine]]
-  pending: [until, ready_to_stop, advance, original]
-  view: [inspect, pending]
-- [dict,
-   "status", [get, view, "status"],
-   "request", [get, view, "pending_effect"],
-   "step_preserves_pending", [eq, pending, [step, pending]],
-   "original_status", [get, [inspect, original], "status"],
-   "type_time", [try, [type_time, [effect, "time", null]], [fn, [e], e]],
-   "invalid_operation", [try, [effect, 1, null], [fn, [e], [get, e, "kind"]]]]
+"$call":
+- "let"
+- "original": {"$call": ["vm", {"$call": ["fn", [], {"$call": ["effect", "time", null]}]}]}
+  "ready_to_stop":
+    "$call":
+    - "fn"
+    - - "machine"
+    - {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "machine"}]}, "status"]}, "signaled"]}
+  "advance": {"$call": ["fn", ["machine"], {"$call": ["step", {"$ref": "machine"}]}]}
+  "pending": {"$call": ["until", {"$ref": "ready_to_stop"}, {"$ref": "advance"}, {"$ref": "original"}]}
+  "view": {"$call": ["inspect", {"$ref": "pending"}]}
+- "$call":
+  - "dict"
+  - "status"
+  - {"$call": ["get", {"$ref": "view"}, "status"]}
+  - "request"
+  - {"$call": ["get", {"$ref": "view"}, "pending_effect"]}
+  - "step_preserves_pending"
+  - {"$call": ["eq", {"$ref": "pending"}, {"$call": ["step", {"$ref": "pending"}]}]}
+  - "original_status"
+  - {"$call": ["get", {"$call": ["inspect", {"$ref": "original"}]}, "status"]}
+  - "type_time"
+  - "$call":
+    - "try"
+    - {"$call": ["type_time", {"$call": ["effect", "time", null]}]}
+    - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+  - "invalid_operation"
+  - "$call":
+    - "try"
+    - {"$call": ["effect", 1, null]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}

@@ -1,460 +1,700 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - fleet
+            - "$ref": list
+        - "$call":
+            - map
+            - "$call":
+                - fn
+                - - m
+                - "$call":
+                    - get
+                    - "$call":
+                        - get
+                        - "$ref": m
+                        - values
+                    - hostname
+            - "$ref": fleet
+        - "$ref": list
+    environment: []
+    kind: function
+    location:
+      path:
+        - hostnames
+      source: "std:machine"
+    program:
+      ref: object3
+  object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - and
+            - "$call":
+                - ge
+                - "$ref": "n"
+                - 1
+            - "$call":
+                - le
+                - "$ref": "n"
+                - 65535
+    environment: []
+    kind: function
+    location:
+      path:
+        - port
+        - "$call"
+        - 2
+      source: "std:machine"
+    program:
+      ref: object3
+  object2:
+    bindings:
+      hostnames:
+        code:
+          path:
+            - hostnames
+          source: "std:machine"
+    code:
+      "$call":
+        - fn
+        - - - fleet
+            - "$ref": list
+        - "$call":
+            - eq
+            - "$call":
+                - duplicates
+                - "$call":
+                    - hostnames
+                    - "$ref": fleet
+            - []
+        - "$ref": boolean
+    environment: []
+    kind: function
+    location:
+      path:
+        - unique_hostnames
+      source: "std:machine"
+    program:
+      ref: object3
+  object3:
+    kind: program
+    sources:
+      - code:
+          abstract:
+            "$call":
+              - get
+              - "$ref": m.machine
+              - concrete
+          bad_file:
+            "$call":
+              - try
+              - "$call":
+                  - inherit
+                  - bad
+                  - "$call":
+                      - list
+                      - "$ref": m.machine
+                  - files:
+                      /etc/motd: 5
+                    hostname: x
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          bad_service:
+            "$call":
+              - try
+              - "$call":
+                  - inherit
+                  - bad
+                  - "$call":
+                      - list
+                      - "$ref": m.machine
+                  - hostname: x
+                    services:
+                      nginx: flapping
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          clashing:
+            "$call":
+              - m.unique_hostnames
+              - "$call":
+                  - list
+                  - "$ref": web1
+                  - "$ref": dup
+          dup:
+            "$call":
+              - inherit
+              - dup
+              - "$call":
+                  - list
+                  - "$ref": m.machine
+              - hostname: w1
+          fleet:
+            "$call":
+              - list
+              - "$ref": web1
+              - "$ref": web2
+          m:
+            "$call":
+              - import
+              - "std:machine"
+          missing_hostname:
+            "$call":
+              - try
+              - "$call":
+                  - inherit
+                  - bare
+                  - "$call":
+                      - list
+                      - "$ref": m.machine
+                  - {}
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          partial:
+            "$call":
+              - inherit
+              - partial
+              - "$call":
+                  - list
+                  - "$ref": m.host
+                  - "$ref": m.packages
+              - hostname: p
+                packages: []
+          partial_fields:
+            "$call":
+              - keys
+              - "$call":
+                  - fields
+                  - "$ref": partial
+          ports:
+            "$call":
+              - list
+              - "$call":
+                  - is
+                  - 22
+                  - "$ref": m.port
+              - "$call":
+                  - is
+                  - 0
+                  - "$ref": m.port
+              - "$call":
+                  - is
+                  - 65536
+                  - "$ref": m.port
+          unique:
+            "$call":
+              - m.unique_hostnames
+              - "$ref": fleet
+          web1:
+            "$call":
+              - inherit
+              - web1
+              - "$call":
+                  - list
+                  - "$ref": m.machine
+              - hostname: w1
+                packages:
+                  - nginx
+                services:
+                  nginx: running
+                users:
+                  - deploy
+          web2:
+            "$call":
+              - inherit
+              - web2
+              - "$call":
+                  - list
+                  - "$ref": m.machine
+              - hostname: w2
+        source: "<root>"
+      - code:
+          files:
+            "$call":
+              - class
+              - files
+              - "$call":
+                  - record
+                  - files
+                  - "$call":
+                      - default
+                      - "$call":
+                          - map_of
+                          - "$ref": string
+                      - {}
+          host:
+            "$call":
+              - class
+              - host
+              - "$call":
+                  - record
+                  - hostname
+                  - "$ref": string
+          hostnames:
+            "$call":
+              - fn
+              - - - fleet
+                  - "$ref": list
+              - "$call":
+                  - map
+                  - "$call":
+                      - fn
+                      - - m
+                      - "$call":
+                          - get
+                          - "$call":
+                              - get
+                              - "$ref": m
+                              - values
+                          - hostname
+                  - "$ref": fleet
+              - "$ref": list
+          machine:
+            "$call":
+              - extend
+              - machine
+              - "$call":
+                  - list
+                  - "$ref": host
+                  - "$ref": packages
+                  - "$ref": files
+                  - "$ref": services
+                  - "$ref": users
+              - "$call":
+                  - record
+              - {}
+          packages:
+            "$call":
+              - class
+              - packages
+              - "$call":
+                  - record
+                  - packages
+                  - "$call":
+                      - default
+                      - "$call":
+                          - list_of
+                          - "$ref": string
+                      - []
+          port:
+            "$call":
+              - refine
+              - "$ref": integer
+              - "$call":
+                  - fn
+                  - - "n"
+                  - "$call":
+                      - and
+                      - "$call":
+                          - ge
+                          - "$ref": "n"
+                          - 1
+                      - "$call":
+                          - le
+                          - "$ref": "n"
+                          - 65535
+          services:
+            "$call":
+              - class
+              - services
+              - "$call":
+                  - record
+                  - services
+                  - "$call":
+                      - default
+                      - "$call":
+                          - map_of
+                          - "$call":
+                              - enum
+                              - running
+                              - stopped
+                      - {}
+          unique_hostnames:
+            "$call":
+              - fn
+              - - - fleet
+                  - "$ref": list
+              - "$call":
+                  - eq
+                  - "$call":
+                      - duplicates
+                      - "$call":
+                          - hostnames
+                          - "$ref": fleet
+                  - []
+              - "$ref": boolean
+          users:
+            "$call":
+              - class
+              - users
+              - "$call":
+                  - record
+                  - users
+                  - "$call":
+                      - default
+                      - "$call":
+                          - list_of
+                          - "$ref": string
+                      - []
+        source: "std:machine"
 root:
-  m:
-    port:
-      type: refine
-      of: integer
-      check:
-        ref: object0
-    host:
-      type: class
-      name: host
-      parents: []
-      fields:
-        hostname: string
-      values: {}
-      provenance:
-        hostname:
-          type: host
-      concrete: false
-    packages:
-      type: class
-      name: packages
-      parents: []
-      fields:
-        packages:
-          type: default
-          of:
-            type: list
-            of: string
-          default: []
-      values: {}
-      provenance:
-        packages:
-          type: packages
-      concrete: false
-    files:
-      type: class
-      name: files
-      parents: []
-      fields:
-        files:
-          type: default
-          of:
-            type: map
-            of: string
-          default: {}
-      values: {}
-      provenance:
-        files:
-          type: files
-      concrete: false
-    services:
-      type: class
-      name: services
-      parents: []
-      fields:
-        services:
-          type: default
-          of:
-            type: map
-            of:
-              type: enum
-              values:
-                - "running"
-                - stopped
-          default: {}
-      values: {}
-      provenance:
-        services:
-          type: services
-      concrete: false
-    users:
-      type: class
-      name: users
-      parents: []
-      fields:
-        users:
-          type: default
-          of:
-            type: list
-            of: string
-          default: []
-      values: {}
-      provenance:
-        users:
-          type: users
-      concrete: false
-    machine:
-      type: class
-      name: machine
-      parents:
-        - "host"
-        - packages
-        - files
-        - services
-        - users
-      fields:
-        hostname: string
-        packages:
-          type: default
-          of:
-            type: list
-            of: string
-          default: []
-        files:
-          type: default
-          of:
-            type: map
-            of: string
-          default: {}
-        services:
-          type: default
-          of:
-            type: map
-            of:
-              type: enum
-              values:
-                - "running"
-                - stopped
-          default: {}
-        users:
-          type: default
-          of:
-            type: list
-            of: string
-          default: []
-      values: {}
-      provenance:
-        hostname:
-          type: host
-        packages:
-          type: packages
-        files:
-          type: files
-        services:
-          type: services
-        users:
-          type: users
-      concrete: false
-    hostnames:
-      ref: object1
-    unique_hostnames:
-      ref: object2
-  web1:
-    type: class
-    name: web1
-    parents:
-      - "machine"
-    fields:
-      hostname: string
-      packages:
-        type: default
-        of:
-          type: list
-          of: string
-        default: []
-      files:
-        type: default
-        of:
-          type: map
-          of: string
-        default: {}
-      services:
-        type: default
-        of:
-          type: map
-          of:
-            type: enum
-            values:
-              - "running"
-              - stopped
-        default: {}
-      users:
-        type: default
-        of:
-          type: list
-          of: string
-        default: []
-    values:
-      hostname: w1
-      packages:
-        - "nginx"
-      files: {}
-      services:
-        nginx: running
-      users:
-        - "deploy"
-    provenance:
-      hostname:
-        type: host
-        value: web1
-      packages:
-        type: packages
-        value: web1
-      files:
-        type: files
-        value: default of files
-      services:
-        type: services
-        value: web1
-      users:
-        type: users
-        value: web1
-    concrete: true
-  web2:
-    type: class
-    name: web2
-    parents:
-      - "machine"
-    fields:
-      hostname: string
-      packages:
-        type: default
-        of:
-          type: list
-          of: string
-        default: []
-      files:
-        type: default
-        of:
-          type: map
-          of: string
-        default: {}
-      services:
-        type: default
-        of:
-          type: map
-          of:
-            type: enum
-            values:
-              - "running"
-              - stopped
-        default: {}
-      users:
-        type: default
-        of:
-          type: list
-          of: string
-        default: []
-    values:
-      hostname: w2
-      packages: []
-      files: {}
-      services: {}
-      users: []
-    provenance:
-      hostname:
-        type: host
-        value: web2
-      packages:
-        type: packages
-        value: default of packages
-      files:
-        type: files
-        value: default of files
-      services:
-        type: services
-        value: default of services
-      users:
-        type: users
-        value: default of users
-    concrete: true
+  abstract: false
+  bad_file: type
+  bad_service: type
+  clashing: false
   dup:
-    type: class
+    concrete: true
+    fields:
+      files:
+        default: {}
+        of:
+          of: string
+          type: map
+        type: default
+      hostname: string
+      packages:
+        default: []
+        of:
+          of: string
+          type: list
+        type: default
+      services:
+        default: {}
+        of:
+          of:
+            type: enum
+            values:
+              - running
+              - stopped
+          type: map
+        type: default
+      users:
+        default: []
+        of:
+          of: string
+          type: list
+        type: default
     name: dup
     parents:
-      - "machine"
-    fields:
-      hostname: string
-      packages:
-        type: default
-        of:
-          type: list
-          of: string
-        default: []
-      files:
-        type: default
-        of:
-          type: map
-          of: string
-        default: {}
-      services:
-        type: default
-        of:
-          type: map
-          of:
-            type: enum
-            values:
-              - "running"
-              - stopped
-        default: {}
-      users:
-        type: default
-        of:
-          type: list
-          of: string
-        default: []
-    values:
-      hostname: w1
-      packages: []
-      files: {}
-      services: {}
-      users: []
+      - machine
     provenance:
+      files:
+        type: files
+        value: default of files
       hostname:
         type: host
         value: dup
       packages:
         type: packages
         value: default of packages
-      files:
-        type: files
-        value: default of files
       services:
         type: services
         value: default of services
       users:
         type: users
         value: default of users
-    concrete: true
+    type: class
+    values:
+      files: {}
+      hostname: w1
+      packages: []
+      services: {}
+      users: []
   fleet:
-    - type: class
-      name: web1
-      parents:
-        - "machine"
+    - concrete: true
       fields:
+        files:
+          default: {}
+          of:
+            of: string
+            type: map
+          type: default
         hostname: string
         packages:
-          type: default
-          of:
-            type: list
-            of: string
           default: []
-        files:
-          type: default
           of:
-            type: map
             of: string
-          default: {}
-        services:
+            type: list
           type: default
+        services:
+          default: {}
           of:
-            type: map
             of:
               type: enum
               values:
-                - "running"
+                - running
                 - stopped
-          default: {}
-        users:
+            type: map
           type: default
-          of:
-            type: list
-            of: string
-          default: []
-      values:
-        hostname: w1
-        packages:
-          - "nginx"
-        files: {}
-        services:
-          nginx: running
         users:
-          - "deploy"
+          default: []
+          of:
+            of: string
+            type: list
+          type: default
+      name: web1
+      parents:
+        - machine
       provenance:
+        files:
+          type: files
+          value: default of files
         hostname:
           type: host
           value: web1
         packages:
           type: packages
           value: web1
-        files:
-          type: files
-          value: default of files
         services:
           type: services
           value: web1
         users:
           type: users
           value: web1
-      concrete: true
-    - type: class
-      name: web2
-      parents:
-        - "machine"
+      type: class
+      values:
+        files: {}
+        hostname: w1
+        packages:
+          - nginx
+        services:
+          nginx: running
+        users:
+          - deploy
+    - concrete: true
       fields:
+        files:
+          default: {}
+          of:
+            of: string
+            type: map
+          type: default
         hostname: string
         packages:
-          type: default
-          of:
-            type: list
-            of: string
           default: []
-        files:
-          type: default
           of:
-            type: map
             of: string
-          default: {}
-        services:
+            type: list
           type: default
+        services:
+          default: {}
           of:
-            type: map
             of:
               type: enum
               values:
-                - "running"
+                - running
                 - stopped
-          default: {}
-        users:
+            type: map
           type: default
-          of:
-            type: list
-            of: string
+        users:
           default: []
-      values:
-        hostname: w2
-        packages: []
-        files: {}
-        services: {}
-        users: []
+          of:
+            of: string
+            type: list
+          type: default
+      name: web2
+      parents:
+        - machine
       provenance:
+        files:
+          type: files
+          value: default of files
         hostname:
           type: host
           value: web2
         packages:
           type: packages
           value: default of packages
-        files:
-          type: files
-          value: default of files
         services:
           type: services
           value: default of services
         users:
           type: users
           value: default of users
-      concrete: true
-  unique: true
-  clashing: false
+      type: class
+      values:
+        files: {}
+        hostname: w2
+        packages: []
+        services: {}
+        users: []
+  m:
+    files:
+      concrete: false
+      fields:
+        files:
+          default: {}
+          of:
+            of: string
+            type: map
+          type: default
+      name: files
+      parents: []
+      provenance:
+        files:
+          type: files
+      type: class
+      values: {}
+    host:
+      concrete: false
+      fields:
+        hostname: string
+      name: host
+      parents: []
+      provenance:
+        hostname:
+          type: host
+      type: class
+      values: {}
+    hostnames:
+      ref: object0
+    machine:
+      concrete: false
+      fields:
+        files:
+          default: {}
+          of:
+            of: string
+            type: map
+          type: default
+        hostname: string
+        packages:
+          default: []
+          of:
+            of: string
+            type: list
+          type: default
+        services:
+          default: {}
+          of:
+            of:
+              type: enum
+              values:
+                - running
+                - stopped
+            type: map
+          type: default
+        users:
+          default: []
+          of:
+            of: string
+            type: list
+          type: default
+      name: machine
+      parents:
+        - host
+        - packages
+        - files
+        - services
+        - users
+      provenance:
+        files:
+          type: files
+        hostname:
+          type: host
+        packages:
+          type: packages
+        services:
+          type: services
+        users:
+          type: users
+      type: class
+      values: {}
+    packages:
+      concrete: false
+      fields:
+        packages:
+          default: []
+          of:
+            of: string
+            type: list
+          type: default
+      name: packages
+      parents: []
+      provenance:
+        packages:
+          type: packages
+      type: class
+      values: {}
+    port:
+      check:
+        ref: object1
+      of: integer
+      type: refine
+    services:
+      concrete: false
+      fields:
+        services:
+          default: {}
+          of:
+            of:
+              type: enum
+              values:
+                - running
+                - stopped
+            type: map
+          type: default
+      name: services
+      parents: []
+      provenance:
+        services:
+          type: services
+      type: class
+      values: {}
+    unique_hostnames:
+      ref: object2
+    users:
+      concrete: false
+      fields:
+        users:
+          default: []
+          of:
+            of: string
+            type: list
+          type: default
+      name: users
+      parents: []
+      provenance:
+        users:
+          type: users
+      type: class
+      values: {}
+  missing_hostname: abstract
   partial:
-    type: class
-    name: partial
-    parents:
-      - "host"
-      - packages
+    concrete: true
     fields:
       hostname: string
       packages:
-        type: default
-        of:
-          type: list
-          of: string
         default: []
-    values:
-      hostname: p
-      packages: []
+        of:
+          of: string
+          type: list
+        type: default
+    name: partial
+    parents:
+      - host
+      - packages
     provenance:
       hostname:
         type: host
@@ -462,290 +702,135 @@ root:
       packages:
         type: packages
         value: partial
-    concrete: true
+    type: class
+    values:
+      hostname: p
+      packages: []
   partial_fields:
-    - "hostname"
+    - hostname
     - packages
-  abstract: false
-  missing_hostname: abstract
-  bad_service: type
-  bad_file: type
   ports:
     - true
     - false
     - false
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object3
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: and
-        - - symbol: ge
-          - symbol: "n"
-          - 1
-        - - symbol: le
-          - symbol: "n"
-          - 65535
-    location:
-      source: "std:machine"
-      path:
-        - "port"
-        - 2
-    environment: []
-    bindings: {}
-  object1:
-    kind: function
-    program:
-      ref: object3
-    code:
-      - symbol: fn
-      - - - symbol: fleet
-          - symbol: list
-      - - symbol: map
-        - - symbol: fn
-          - - symbol: m
-          - - symbol: get
-            - - symbol: get
-              - symbol: m
-              - values
-            - hostname
-        - symbol: fleet
-      - symbol: list
-    location:
-      source: "std:machine"
-      path:
-        - "hostnames"
-    environment: []
-    bindings: {}
-  object2:
-    kind: function
-    program:
-      ref: object3
-    code:
-      - symbol: fn
-      - - - symbol: fleet
-          - symbol: list
-      - - symbol: eq
-        - - symbol: duplicates
-          - - symbol: hostnames
-            - symbol: fleet
-        - []
-      - symbol: boolean
-    location:
-      source: "std:machine"
-      path:
-        - "unique_hostnames"
-    environment: []
-    bindings:
-      hostnames:
-        code:
-          source: "std:machine"
-          path:
-            - "hostnames"
-  object3:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          m:
-            - symbol: import
-            - symbol: "std:machine"
-          web1:
-            - symbol: inherit
-            - web1
-            - - symbol: list
-              - symbol: m.machine
-            - hostname: w1
-              packages:
-                - "nginx"
-              services:
-                nginx: running
-              users:
-                - "deploy"
-          web2:
-            - symbol: inherit
-            - web2
-            - - symbol: list
-              - symbol: m.machine
-            - hostname: w2
-          dup:
-            - symbol: inherit
-            - dup
-            - - symbol: list
-              - symbol: m.machine
-            - hostname: w1
-          fleet:
-            - symbol: list
-            - symbol: web1
-            - symbol: web2
-          unique:
-            - symbol: m.unique_hostnames
-            - symbol: fleet
-          clashing:
-            - symbol: m.unique_hostnames
-            - - symbol: list
-              - symbol: web1
-              - symbol: dup
-          partial:
-            - symbol: inherit
-            - partial
-            - - symbol: list
-              - symbol: m.host
-              - symbol: m.packages
-            - hostname: p
-              packages: []
-          partial_fields:
-            - symbol: keys
-            - - symbol: fields
-              - symbol: partial
-          abstract:
-            - symbol: get
-            - symbol: m.machine
-            - concrete
-          missing_hostname:
-            - symbol: try
-            - - symbol: inherit
-              - bare
-              - - symbol: list
-                - symbol: m.machine
-              - {}
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          bad_service:
-            - symbol: try
-            - - symbol: inherit
-              - bad
-              - - symbol: list
-                - symbol: m.machine
-              - hostname: x
-                services:
-                  nginx: flapping
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          bad_file:
-            - symbol: try
-            - - symbol: inherit
-              - bad
-              - - symbol: list
-                - symbol: m.machine
-              - hostname: x
-                files:
-                  /etc/motd: 5
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          ports:
-            - symbol: list
-            - - symbol: is
-              - 22
-              - symbol: m.port
-            - - symbol: is
-              - 0
-              - symbol: m.port
-            - - symbol: is
-              - 65536
-              - symbol: m.port
-      - source: "std:machine"
-        code:
-          port:
-            - symbol: refine
-            - symbol: integer
-            - - symbol: fn
-              - - symbol: "n"
-              - - symbol: and
-                - - symbol: ge
-                  - symbol: "n"
-                  - 1
-                - - symbol: le
-                  - symbol: "n"
-                  - 65535
-          host:
-            - symbol: class
-            - host
-            - - symbol: record
-              - hostname
-              - symbol: string
-          packages:
-            - symbol: class
-            - packages
-            - - symbol: record
-              - packages
-              - - symbol: default
-                - - symbol: list_of
-                  - symbol: string
-                - []
-          files:
-            - symbol: class
-            - files
-            - - symbol: record
-              - files
-              - - symbol: default
-                - - symbol: map_of
-                  - symbol: string
-                - {}
-          services:
-            - symbol: class
-            - services
-            - - symbol: record
-              - services
-              - - symbol: default
-                - - symbol: map_of
-                  - - symbol: enum
-                    - running
-                    - stopped
-                - {}
-          users:
-            - symbol: class
-            - users
-            - - symbol: record
-              - users
-              - - symbol: default
-                - - symbol: list_of
-                  - symbol: string
-                - []
-          machine:
-            - symbol: extend
-            - machine
-            - - symbol: list
-              - symbol: host
-              - symbol: packages
-              - symbol: files
-              - symbol: services
-              - symbol: users
-            - - symbol: record
-            - {}
-          hostnames:
-            - symbol: fn
-            - - - symbol: fleet
-                - symbol: list
-            - - symbol: map
-              - - symbol: fn
-                - - symbol: m
-                - - symbol: get
-                  - - symbol: get
-                    - symbol: m
-                    - values
-                  - hostname
-              - symbol: fleet
-            - symbol: list
-          unique_hostnames:
-            - symbol: fn
-            - - - symbol: fleet
-                - symbol: list
-            - - symbol: eq
-              - - symbol: duplicates
-                - - symbol: hostnames
-                  - symbol: fleet
-              - []
-            - symbol: boolean
+  unique: true
+  web1:
+    concrete: true
+    fields:
+      files:
+        default: {}
+        of:
+          of: string
+          type: map
+        type: default
+      hostname: string
+      packages:
+        default: []
+        of:
+          of: string
+          type: list
+        type: default
+      services:
+        default: {}
+        of:
+          of:
+            type: enum
+            values:
+              - running
+              - stopped
+          type: map
+        type: default
+      users:
+        default: []
+        of:
+          of: string
+          type: list
+        type: default
+    name: web1
+    parents:
+      - machine
+    provenance:
+      files:
+        type: files
+        value: default of files
+      hostname:
+        type: host
+        value: web1
+      packages:
+        type: packages
+        value: web1
+      services:
+        type: services
+        value: web1
+      users:
+        type: users
+        value: web1
+    type: class
+    values:
+      files: {}
+      hostname: w1
+      packages:
+        - nginx
+      services:
+        nginx: running
+      users:
+        - deploy
+  web2:
+    concrete: true
+    fields:
+      files:
+        default: {}
+        of:
+          of: string
+          type: map
+        type: default
+      hostname: string
+      packages:
+        default: []
+        of:
+          of: string
+          type: list
+        type: default
+      services:
+        default: {}
+        of:
+          of:
+            type: enum
+            values:
+              - running
+              - stopped
+          type: map
+        type: default
+      users:
+        default: []
+        of:
+          of: string
+          type: list
+        type: default
+    name: web2
+    parents:
+      - machine
+    provenance:
+      files:
+        type: files
+        value: default of files
+      hostname:
+        type: host
+        value: web2
+      packages:
+        type: packages
+        value: default of packages
+      services:
+        type: services
+        value: default of services
+      users:
+        type: users
+        value: default of users
+    type: class
+    values:
+      files: {}
+      hostname: w2
+      packages: []
+      services: {}
+      users: []
+status: finished

@@ -1,7 +1,7 @@
-status: error
-mode: check
 errors:
-  - kind: parse
-    message: "while parsing a flow sequence, expected ',' or ']' at byte 9 line 2 column 1"
+  - column: 1
+    kind: parse
     line: 2
-    column: 1
+    message: "while parsing a flow sequence, expected ',' or ']' at byte 9 line 2 column 1"
+mode: check
+status: error

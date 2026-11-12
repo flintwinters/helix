@@ -1,21 +1,24 @@
+# Helix explicit syntax; migrated from legacy source.
 # Review snapshots: distinguish missing keys from explicit null, false and zero.
-before:
-  workers: 2
-  legacy: true
-  nullable: null
-  enabled: false
-  port: 8000
-  nested: {timeout: 30}
-  empty: 0
-after:
-  workers: 4
-  nullable: null
-  enabled: true
-  port: 8000
-  nested: {timeout: 60}
-  added_null: null
-  empty: 0
-diff: [import, std:diff]
-report: [diff.compare, before, after]
-unchanged: [diff.compare, before, before]
-empty: [diff.compare, {}, {}]
+"before":
+  "workers": 2
+  "legacy": true
+  "nullable": null
+  "enabled": false
+  "port": 8000
+  "nested":
+    "timeout": 30
+  "empty": 0
+"after":
+  "workers": 4
+  "nullable": null
+  "enabled": true
+  "port": 8000
+  "nested":
+    "timeout": 60
+  "added_null": null
+  "empty": 0
+"diff": {"$call": ["import", "std:diff"]}
+"report": {"$call": ["diff.compare", {"$ref": "before"}, {"$ref": "after"}]}
+"unchanged": {"$call": ["diff.compare", {"$ref": "before"}, {"$ref": "before"}]}
+"empty": {"$call": ["diff.compare", {}, {}]}

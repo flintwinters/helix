@@ -1,18 +1,20 @@
-status: error
 error:
-  kind: unbound
-  message: "unbound symbol `missing`"
-  path: /f/2/2
-  reference:
-    - "f"
-    - 2
-    - 2
-  line: 1
-  column: 23
   calls:
-    - path: /r
-      line: 2
-      column: 4
+    - column: 6
       function: /f
-      function_line: 1
-      function_column: 4
+      function_column: 6
+      function_line: 2
+      line: 3
+      path: /r
+  column: 63
+  kind: unbound
+  line: 2
+  message: "unbound symbol `missing`"
+  path: "/f/$call/2/$call/2"
+  reference:
+    - f
+    - "$call"
+    - 2
+    - "$call"
+    - 2
+status: error

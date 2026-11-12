@@ -1,3 +1,12 @@
+# Helix explicit syntax; migrated from legacy source.
 # A handler matches the kinds it expects and re-raises the rest, so nothing is swallowed.
-guard: [fn, [e], [cond, [eq, [get, e, "kind"], "transient"], "retry", [raise, e]]]
-expected: [try, [raise, "transient", "flaky"], guard]
+"guard":
+  "$call":
+  - "fn"
+  - - "e"
+  - "$call":
+    - "cond"
+    - {"$call": ["eq", {"$call": ["get", {"$ref": "e"}, "kind"]}, "transient"]}
+    - "retry"
+    - {"$call": ["raise", {"$ref": "e"}]}
+"expected": {"$call": ["try", {"$call": ["raise", "transient", "flaky"]}, {"$ref": "guard"}]}

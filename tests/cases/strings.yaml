@@ -1,10 +1,21 @@
-name: world
-greeting: [concat, "hello, ", name, "!"]
-length: [len, greeting]
-unicode_length: [len, "héllo"]
-middle: [slice, greeting, 7, 12]
-empty_slice: [slice, name, 2, 2]
-has_sub: [has, greeting, "world"]
-lacks_sub: [has, greeting, "xyz"]
-ordered: [lt, "apple", "banana"]
-as_text: [concat, "n=", [str, 42], " ok=", [str, true], " x=", [str, 1.5], " z=", [str, null]]
+# Helix explicit syntax; migrated from legacy source.
+"name": "world"
+"greeting": {"$call": ["concat", "hello, ", {"$ref": "name"}, "!"]}
+"length": {"$call": ["len", {"$ref": "greeting"}]}
+"unicode_length": {"$call": ["len", "h\xE9llo"]}
+"middle": {"$call": ["slice", {"$ref": "greeting"}, 7, 12]}
+"empty_slice": {"$call": ["slice", {"$ref": "name"}, 2, 2]}
+"has_sub": {"$call": ["has", {"$ref": "greeting"}, "world"]}
+"lacks_sub": {"$call": ["has", {"$ref": "greeting"}, "xyz"]}
+"ordered": {"$call": ["lt", "apple", "banana"]}
+"as_text":
+  "$call":
+  - "concat"
+  - "n="
+  - {"$call": ["str", 42]}
+  - " ok="
+  - {"$call": ["str", true]}
+  - " x="
+  - {"$call": ["str", 1.5]}
+  - " z="
+  - {"$call": ["str", null]}

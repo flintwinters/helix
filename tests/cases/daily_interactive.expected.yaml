@@ -1,4 +1,4 @@
-status: finished
 root:
-  input: 6
   answer: 42
+  input: 6
+status: finished

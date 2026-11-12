@@ -1,67 +1,220 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - and
+            - "$call":
+                - ge
+                - "$ref": "n"
+                - 1
+            - "$call":
+                - le
+                - "$ref": "n"
+                - 65535
+    environment: []
+    kind: function
+    location:
+      path:
+        - in_port
+      source: "<root>"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          all_at_once:
+            "$call":
+              - violations
+              - extra: 1
+                host: 5
+                port: 0
+              - "$ref": endpoint
+          endpoint:
+            "$call":
+              - record
+              - host
+              - "$ref": string
+              - port
+              - "$ref": port
+              - tls
+              - "$call":
+                  - default
+                  - "$ref": boolean
+                  - true
+              - note
+              - "$call":
+                  - optional
+                  - "$ref": string
+          fits:
+            endpoint_full:
+              "$call":
+                - is
+                - host: a
+                  note: x
+                  port: 22
+                  tls: false
+                - "$ref": endpoint
+            endpoint_minimal:
+              "$call":
+                - is
+                - host: a
+                  port: 22
+                - "$ref": endpoint
+            endpoint_open_field:
+              "$call":
+                - is
+                - extra: 1
+                  host: a
+                  port: 22
+                - "$ref": endpoint
+            enum_member:
+              "$call":
+                - is
+                - info
+                - "$ref": level
+            enum_other:
+              "$call":
+                - is
+                - trace
+                - "$ref": level
+            float_is_not_integer:
+              "$call":
+                - is
+                - 3.0
+                - "$ref": integer
+            list_bad:
+              "$call":
+                - is
+                - - 1
+                  - 0
+                  - x
+                - "$ref": ports
+            list_ok:
+              "$call":
+                - is
+                - - 1
+                  - 2
+                  - 3
+                - "$ref": ports
+            literal:
+              "$call":
+                - is
+                - 80
+                - "$call":
+                    - literal
+                    - 80
+            map_bad:
+              "$call":
+                - is
+                - env: 1
+                - "$ref": tags
+            map_ok:
+              "$call":
+                - is
+                - env: prod
+                - "$ref": tags
+            port_bad:
+              "$call":
+                - is
+                - 70000
+                - "$ref": port
+            port_ok:
+              "$call":
+                - is
+                - 8080
+                - "$ref": port
+            scalar:
+              "$call":
+                - is
+                - 3
+                - "$ref": integer
+            top:
+              "$call":
+                - is
+                - - 1
+                  - x
+                - "$ref": any
+            union_null:
+              "$call":
+                - is
+                - ~
+                - "$ref": id
+            union_string:
+              "$call":
+                - is
+                - abc
+                - "$ref": id
+          id:
+            "$call":
+              - union
+              - "$ref": integer
+              - "$ref": string
+          in_port:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - and
+                  - "$call":
+                      - ge
+                      - "$ref": "n"
+                      - 1
+                  - "$call":
+                      - le
+                      - "$ref": "n"
+                      - 65535
+          level:
+            "$call":
+              - enum
+              - debug
+              - info
+              - warn
+          nested:
+            "$call":
+              - violations
+              - - - 1
+                  - a
+                - - b
+                  - 2
+              - "$call":
+                  - list_of
+                  - "$call":
+                      - list_of
+                      - "$ref": integer
+          no_type:
+            "$call":
+              - try
+              - "$call":
+                  - is
+                  - 1
+                  - nonsense
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - message
+          port:
+            "$call":
+              - refine
+              - "$ref": integer
+              - "$ref": in_port
+          ports:
+            "$call":
+              - list_of
+              - "$ref": port
+          tags:
+            "$call":
+              - map_of
+              - "$ref": string
+        source: "<root>"
 root:
-  in_port:
-    ref: object0
-  port:
-    type: refine
-    of: integer
-    check:
-      ref: object0
-  level:
-    type: enum
-    values:
-      - "debug"
-      - info
-      - warn
-  endpoint:
-    type: record
-    fields:
-      host: string
-      port:
-        type: refine
-        of: integer
-        check:
-          ref: object0
-      tls:
-        type: default
-        of: boolean
-        default: true
-      note:
-        type: optional
-        of: string
-  ports:
-    type: list
-    of:
-      type: refine
-      of: integer
-      check:
-        ref: object0
-  tags:
-    type: map
-    of: string
-  id:
-    type: union
-    of:
-      - "integer"
-      - string
-  fits:
-    scalar: true
-    float_is_not_integer: false
-    enum_member: true
-    enum_other: false
-    literal: true
-    union_string: true
-    union_null: false
-    top: true
-    port_ok: true
-    port_bad: false
-    endpoint_minimal: true
-    endpoint_full: true
-    endpoint_open_field: false
-    list_ok: true
-    list_bad: false
-    map_ok: true
-    map_bad: false
   all_at_once:
     - at: /host
       message: "expected string, got integer"
@@ -69,183 +222,72 @@ root:
       message: failed its refinement check
     - at: /extra
       message: "unexpected field `extra`"
+  endpoint:
+    fields:
+      host: string
+      note:
+        of: string
+        type: optional
+      port:
+        check:
+          ref: object0
+        of: integer
+        type: refine
+      tls:
+        default: true
+        of: boolean
+        type: default
+    type: record
+  fits:
+    endpoint_full: true
+    endpoint_minimal: true
+    endpoint_open_field: false
+    enum_member: true
+    enum_other: false
+    float_is_not_integer: false
+    list_bad: false
+    list_ok: true
+    literal: true
+    map_bad: false
+    map_ok: true
+    port_bad: false
+    port_ok: true
+    scalar: true
+    top: true
+    union_null: false
+    union_string: true
+  id:
+    of:
+      - integer
+      - string
+    type: union
+  in_port:
+    ref: object0
+  level:
+    type: enum
+    values:
+      - debug
+      - info
+      - warn
   nested:
     - at: /0/1
       message: "expected integer, got string"
     - at: /1/0
       message: "expected integer, got string"
   no_type: "unknown type `nonsense`"
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object1
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: and
-        - - symbol: ge
-          - symbol: "n"
-          - 1
-        - - symbol: le
-          - symbol: "n"
-          - 65535
-    location:
-      source: "<root>"
-      path:
-        - "in_port"
-    environment: []
-    bindings: {}
-  object1:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          in_port:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: and
-              - - symbol: ge
-                - symbol: "n"
-                - 1
-              - - symbol: le
-                - symbol: "n"
-                - 65535
-          port:
-            - symbol: refine
-            - symbol: integer
-            - symbol: in_port
-          level:
-            - symbol: enum
-            - debug
-            - info
-            - warn
-          endpoint:
-            - symbol: record
-            - host
-            - symbol: string
-            - port
-            - symbol: port
-            - tls
-            - - symbol: default
-              - symbol: boolean
-              - true
-            - note
-            - - symbol: optional
-              - symbol: string
-          ports:
-            - symbol: list_of
-            - symbol: port
-          tags:
-            - symbol: map_of
-            - symbol: string
-          id:
-            - symbol: union
-            - symbol: integer
-            - symbol: string
-          fits:
-            scalar:
-              - symbol: is
-              - 3
-              - symbol: integer
-            float_is_not_integer:
-              - symbol: is
-              - 3.0
-              - symbol: integer
-            enum_member:
-              - symbol: is
-              - info
-              - symbol: level
-            enum_other:
-              - symbol: is
-              - trace
-              - symbol: level
-            literal:
-              - symbol: is
-              - 80
-              - - symbol: literal
-                - 80
-            union_string:
-              - symbol: is
-              - abc
-              - symbol: id
-            union_null:
-              - symbol: is
-              - ~
-              - symbol: id
-            top:
-              - symbol: is
-              - - 1
-                - x
-              - symbol: any
-            port_ok:
-              - symbol: is
-              - 8080
-              - symbol: port
-            port_bad:
-              - symbol: is
-              - 70000
-              - symbol: port
-            endpoint_minimal:
-              - symbol: is
-              - host: a
-                port: 22
-              - symbol: endpoint
-            endpoint_full:
-              - symbol: is
-              - host: a
-                port: 22
-                tls: false
-                note: x
-              - symbol: endpoint
-            endpoint_open_field:
-              - symbol: is
-              - host: a
-                port: 22
-                extra: 1
-              - symbol: endpoint
-            list_ok:
-              - symbol: is
-              - - 1
-                - 2
-                - 3
-              - symbol: ports
-            list_bad:
-              - symbol: is
-              - - 1
-                - 0
-                - x
-              - symbol: ports
-            map_ok:
-              - symbol: is
-              - env: prod
-              - symbol: tags
-            map_bad:
-              - symbol: is
-              - env: 1
-              - symbol: tags
-          all_at_once:
-            - symbol: violations
-            - host: 5
-              port: 0
-              extra: 1
-            - symbol: endpoint
-          nested:
-            - symbol: violations
-            - - - 1
-                - a
-              - - "b"
-                - 2
-            - - symbol: list_of
-              - - symbol: list_of
-                - symbol: integer
-          no_type:
-            - symbol: try
-            - - symbol: is
-              - 1
-              - nonsense
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - message
+  port:
+    check:
+      ref: object0
+    of: integer
+    type: refine
+  ports:
+    of:
+      check:
+        ref: object0
+      of: integer
+      type: refine
+    type: list
+  tags:
+    of: string
+    type: map
+status: finished

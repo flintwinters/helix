@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 6
   kind: arity
+  line: 2
   message: "`div` takes 2 arguments, got 3"
   path: /x
   reference:
-    - "x"
-  line: 1
-  column: 4
+    - x
+status: error

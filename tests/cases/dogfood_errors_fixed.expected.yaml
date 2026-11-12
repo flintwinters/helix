@@ -1,56 +1,69 @@
-status: finished
-root:
-  count: 1
-  allocate:
-    ref: object0
-  result: 2
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - count
+        - "$call":
+            - if
+            - "$call":
+                - eq
+                - "$call":
+                    - assert
+                    - "$call":
+                        - gt
+                        - "$ref": count
+                        - 0
+                    - "allocate count must be positive; pass at least 1"
+                - ~
+            - "$call":
+                - mul
+                - "$ref": count
+                - 2
+            - ~
+    environment: []
     kind: function
+    location:
+      path:
+        - allocate
+      source: "<root>"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - symbol: count
-      - - symbol: if
-        - - symbol: eq
-          - - symbol: assert
-            - - symbol: gt
-              - symbol: count
-              - 0
-            - "allocate count must be positive; pass at least 1"
-          - ~
-        - - symbol: mul
-          - symbol: count
-          - 2
-        - ~
-    location:
-      source: "<root>"
-      path:
-        - "allocate"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          count: 1
+      - code:
           allocate:
-            - symbol: fn
-            - - symbol: count
-            - - symbol: if
-              - - symbol: eq
-                - - symbol: assert
-                  - - symbol: gt
-                    - symbol: count
-                    - 0
-                  - "allocate count must be positive; pass at least 1"
-                - ~
-              - - symbol: mul
-                - symbol: count
-                - 2
-              - ~
+            "$call":
+              - fn
+              - - count
+              - "$call":
+                  - if
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - assert
+                          - "$call":
+                              - gt
+                              - "$ref": count
+                              - 0
+                          - "allocate count must be positive; pass at least 1"
+                      - ~
+                  - "$call":
+                      - mul
+                      - "$ref": count
+                      - 2
+                  - ~
+          count: 1
           result:
-            - symbol: allocate
-            - symbol: count
+            "$call":
+              - allocate
+              - "$ref": count
+        source: "<root>"
+root:
+  allocate:
+    ref: object0
+  count: 1
+  result: 2
+status: finished

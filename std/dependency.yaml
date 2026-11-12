@@ -1,38 +1,96 @@
+# Helix explicit syntax; migrated from legacy source.
 # Stable dependency batches for small task maps. Import as std:dependency.
 # plan(tasks) accepts a map of task names to lists of prerequisite names.
-# Ready tasks retain input key order; blocked results preserve pending tasks
-# and enumerate missing references, including duplicates, in declaration order.
+# Ready tasks follow canonical task-name order; blocked results preserve pending tasks
+# and enumerate missing references, including duplicates, in canonical task-name order.
 # A blocked result without missing references indicates cycles (and dependents).
 # Repeated scans and immutable copies can be cubic on long chains; runtime
 # work/data budgets and until/fold iteration limits apply. No recursive calls.
-maps: [import, std:map]
-ready:
-  [fn, [pending, order],
-    [filter,
-      [fn, [task], [fold, [fn, [ok, dep], [and, ok, [has, order, dep]]], true, [get, pending, task]]],
-      [keys, pending]]]
-done:
-  [fn, [state],
-    [eq, [len, [ready, [get, state, "pending"], [get, state, "order"]]], 0]]
-step:
-  [fn, [state],
-    [let,
-      {pending: [get, state, "pending"],
-       order: [get, state, "order"],
-       batch: [ready, pending, order]},
-      [set,
-        [set, {}, "order", [concat, order, batch]],
-        "pending", [maps.omit, pending, batch]]]]
-plan:
-  [fn, [[tasks, [map_of, [list_of, string]]]],
-    [let,
-      {initial: [set, [set, {}, "pending", tasks], "order", []],
-       final: [until, done, step, initial],
-       missing: [fold,
-         [fn, [acc, task],
-           [concat, acc,
-             [map, [fn, [dep], [set, [set, {}, "task", task], "dependency", dep]],
-               [filter, [fn, [dep], [not, [has, tasks, dep]]], [get, tasks, task]]]]],
-         [], [keys, tasks]]},
-      [set, [set, final, "missing", missing], "status",
-        [if, [eq, [len, [get, final, "pending"]], 0], "finished", "blocked"]]]]
+"maps": {"$call": ["import", "std:map"]}
+"ready":
+  "$call":
+  - "fn"
+  - - "pending"
+    - "order"
+  - "$call":
+    - "filter"
+    - "$call":
+      - "fn"
+      - - "task"
+      - "$call":
+        - "fold"
+        - "$call":
+          - "fn"
+          - - "ok"
+            - "dep"
+          - {"$call": ["and", {"$ref": "ok"}, {"$call": ["has", {"$ref": "order"}, {"$ref": "dep"}]}]}
+        - true
+        - {"$call": ["get", {"$ref": "pending"}, {"$ref": "task"}]}
+    - {"$call": ["keys", {"$ref": "pending"}]}
+"done":
+  "$call":
+  - "fn"
+  - - "state"
+  - "$call":
+    - "eq"
+    - "$call":
+      - "len"
+      - "$call":
+        - "ready"
+        - {"$call": ["get", {"$ref": "state"}, "pending"]}
+        - {"$call": ["get", {"$ref": "state"}, "order"]}
+    - 0
+"step":
+  "$call":
+  - "fn"
+  - - "state"
+  - "$call":
+    - "let"
+    - "pending": {"$call": ["get", {"$ref": "state"}, "pending"]}
+      "order": {"$call": ["get", {"$ref": "state"}, "order"]}
+      "batch": {"$call": ["ready", {"$ref": "pending"}, {"$ref": "order"}]}
+    - "$call":
+      - "set"
+      - {"$call": ["set", {}, "order", {"$call": ["concat", {"$ref": "order"}, {"$ref": "batch"}]}]}
+      - "pending"
+      - {"$call": ["maps.omit", {"$ref": "pending"}, {"$ref": "batch"}]}
+"plan":
+  "$call":
+  - "fn"
+  - - - "tasks"
+      - {"$call": ["map_of", {"$call": ["list_of", {"$ref": "string"}]}]}
+  - "$call":
+    - "let"
+    - "initial": {"$call": ["set", {"$call": ["set", {}, "pending", {"$ref": "tasks"}]}, "order", []]}
+      "final": {"$call": ["until", {"$ref": "done"}, {"$ref": "step"}, {"$ref": "initial"}]}
+      "missing":
+        "$call":
+        - "fold"
+        - "$call":
+          - "fn"
+          - - "acc"
+            - "task"
+          - "$call":
+            - "concat"
+            - {"$ref": "acc"}
+            - "$call":
+              - "map"
+              - "$call":
+                - "fn"
+                - - "dep"
+                - {"$call": ["set", {"$call": ["set", {}, "task", {"$ref": "task"}]}, "dependency", {"$ref": "dep"}]}
+              - "$call":
+                - "filter"
+                - {"$call": ["fn", ["dep"], {"$call": ["not", {"$call": ["has", {"$ref": "tasks"}, {"$ref": "dep"}]}]}]}
+                - {"$call": ["get", {"$ref": "tasks"}, {"$ref": "task"}]}
+        - []
+        - {"$call": ["keys", {"$ref": "tasks"}]}
+    - "$call":
+      - "set"
+      - {"$call": ["set", {"$ref": "final"}, "missing", {"$ref": "missing"}]}
+      - "status"
+      - "$call":
+        - "if"
+        - {"$call": ["eq", {"$call": ["len", {"$call": ["get", {"$ref": "final"}, "pending"]}]}, 0]}
+        - "finished"
+        - "blocked"

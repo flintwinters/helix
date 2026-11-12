@@ -1,35 +1,170 @@
+# Helix explicit syntax; migrated from legacy source.
 # One declared type owns field requirements and nested value validation.
-project: [record, "name", string, "owner", string, "dependencies", [list_of, string]]
-projects:
-  - {name: core, owner: runtime, dependencies: []}
-  - {name: cli, owner: tools, dependencies: ["core"]}
-  - {name: cli, dependencies: ["ghost"]}
-  - {owner: docs, dependencies: []}
-# Invalid rows remain in the report; only string names participate in references.
-name_of: [fn, [row], [if, [is, row, map], [let, {name: [get, row, "name", null]}, [if, [is, name, string], name, null]], null]]
-validate:
-  [fn, [[records, list]],
-    [let,
-      {names: [map, name_of, records],
-       counts: [fold, [fn, [acc, name], [if, [eq, name, null], acc, [set, acc, name, [add, [get, acc, name, 0], 1]]]], {}, names]},
-      [map,
-        [fn, [row],
-          [let,
-            {value: [if, [is, row, map], row, {}],
-             missing: [filter, [fn, [field], [not, [has, value, field]]], [keys, [fields, project]]],
-             name: [name_of, row],
-             deps: [get, value, "dependencies", []],
-             broken: [if, [is, deps, list], [filter, [fn, [dep], [and, [is, dep, string], [not, [has, names, dep]]]], deps], []],
-             duplicate: [and, [ne, name, null], [gt, [get, counts, name, 0], 1]]},
-            [set, [set, [set, [set, [set, {}, "name", name], "missing", missing], "duplicate", duplicate], "broken", broken], "violations", [violations, row, project]]]],
-        records]]]
-report: [validate, projects]
-valid: [validate, [{name: core, owner: runtime, dependencies: []}, {name: cli, owner: tools, dependencies: ["core"]}]]
-empty: [validate, []]
-malformed: [validate, [{name: 9, owner: false, dependencies: ["ghost", 7, null]}, {name: "ok", owner: "tools", dependencies: null}, null]]
-# A type report adds wrong-type and nested paths without losing domain findings.
-nested_errors: [assert, [eq, [get, [get, malformed, 0], "violations"], [{at: "/name", message: "expected string, got integer"}, {at: "/owner", message: "expected string, got boolean"}, {at: "/dependencies/1", message: "expected string, got integer"}, {at: "/dependencies/2", message: "expected string, got null"}]]]
-broken_survives: [assert, [eq, [get, [get, malformed, 0], "broken"], ["ghost"]]]
-duplicate_survives: [assert, [get, [get, report, 2], "duplicate"]]
-required_survives: [assert, [eq, [get, [get, report, 2], "missing"], ["owner"]]]
-valid_clean: [assert, [eq, [map, [fn, [row], [get, row, "violations"]], valid], [[], []]]]
+"project":
+  "$call":
+  - "record"
+  - "name"
+  - {"$ref": "string"}
+  - "owner"
+  - {"$ref": "string"}
+  - "dependencies"
+  - {"$call": ["list_of", {"$ref": "string"}]}
+"projects":
+- "name": "core"
+  "owner": "runtime"
+  "dependencies": []
+- "name": "cli"
+  "owner": "tools"
+  "dependencies":
+  - "core"
+- "name": "cli"
+  "dependencies":
+  - "ghost"
+- "owner": "docs"
+  "dependencies": []
+"name_of":
+  "$call":
+  - "fn"
+  - - "row"
+  - "$call":
+    - "if"
+    - {"$call": ["is", {"$ref": "row"}, {"$ref": "map"}]}
+    - "$call":
+      - "let"
+      - "name": {"$call": ["get", {"$ref": "row"}, "name", null]}
+      - {"$call": ["if", {"$call": ["is", {"$ref": "name"}, {"$ref": "string"}]}, {"$ref": "name"}, null]}
+    - null
+"validate":
+  "$call":
+  - "fn"
+  - - - "records"
+      - {"$ref": "list"}
+  - "$call":
+    - "let"
+    - "names": {"$call": ["map", {"$ref": "name_of"}, {"$ref": "records"}]}
+      "counts":
+        "$call":
+        - "fold"
+        - "$call":
+          - "fn"
+          - - "acc"
+            - "name"
+          - "$call":
+            - "if"
+            - {"$call": ["eq", {"$ref": "name"}, null]}
+            - {"$ref": "acc"}
+            - "$call":
+              - "set"
+              - {"$ref": "acc"}
+              - {"$ref": "name"}
+              - {"$call": ["add", {"$call": ["get", {"$ref": "acc"}, {"$ref": "name"}, 0]}, 1]}
+        - {}
+        - {"$ref": "names"}
+    - "$call":
+      - "map"
+      - "$call":
+        - "fn"
+        - - "row"
+        - "$call":
+          - "let"
+          - "value": {"$call": ["if", {"$call": ["is", {"$ref": "row"}, {"$ref": "map"}]}, {"$ref": "row"}, {}]}
+            "missing":
+              "$call":
+              - "filter"
+              - {"$call": ["fn", ["field"], {"$call": ["not", {"$call": ["has", {"$ref": "value"}, {"$ref": "field"}]}]}]}
+              - {"$call": ["keys", {"$call": ["fields", {"$ref": "project"}]}]}
+            "name": {"$call": ["name_of", {"$ref": "row"}]}
+            "deps": {"$call": ["get", {"$ref": "value"}, "dependencies", []]}
+            "broken":
+              "$call":
+              - "if"
+              - {"$call": ["is", {"$ref": "deps"}, {"$ref": "list"}]}
+              - "$call":
+                - "filter"
+                - "$call":
+                  - "fn"
+                  - - "dep"
+                  - "$call":
+                    - "and"
+                    - {"$call": ["is", {"$ref": "dep"}, {"$ref": "string"}]}
+                    - {"$call": ["not", {"$call": ["has", {"$ref": "names"}, {"$ref": "dep"}]}]}
+                - {"$ref": "deps"}
+              - []
+            "duplicate":
+              "$call":
+              - "and"
+              - {"$call": ["ne", {"$ref": "name"}, null]}
+              - {"$call": ["gt", {"$call": ["get", {"$ref": "counts"}, {"$ref": "name"}, 0]}, 1]}
+          - "$call":
+            - "set"
+            - "$call":
+              - "set"
+              - "$call":
+                - "set"
+                - {"$call": ["set", {"$call": ["set", {}, "name", {"$ref": "name"}]}, "missing", {"$ref": "missing"}]}
+                - "duplicate"
+                - {"$ref": "duplicate"}
+              - "broken"
+              - {"$ref": "broken"}
+            - "violations"
+            - {"$call": ["violations", {"$ref": "row"}, {"$ref": "project"}]}
+      - {"$ref": "records"}
+"report": {"$call": ["validate", {"$ref": "projects"}]}
+"valid":
+  "$call":
+  - "validate"
+  - - "name": "core"
+      "owner": "runtime"
+      "dependencies": []
+    - "name": "cli"
+      "owner": "tools"
+      "dependencies":
+      - "core"
+"empty": {"$call": ["validate", []]}
+"malformed":
+  "$call":
+  - "validate"
+  - - "name": 9
+      "owner": false
+      "dependencies":
+      - "ghost"
+      - 7
+      - null
+    - "name": "ok"
+      "owner": "tools"
+      "dependencies": null
+    - null
+"nested_errors":
+  "$call":
+  - "assert"
+  - "$call":
+    - "eq"
+    - {"$call": ["get", {"$call": ["get", {"$ref": "malformed"}, 0]}, "violations"]}
+    - - "at": "/dependencies/1"
+        "message": "expected string, got integer"
+      - "at": "/dependencies/2"
+        "message": "expected string, got null"
+      - "at": "/name"
+        "message": "expected string, got integer"
+      - "at": "/owner"
+        "message": "expected string, got boolean"
+"broken_survives":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$call": ["get", {"$call": ["get", {"$ref": "malformed"}, 0]}, "broken"]}, ["ghost"]]}
+"duplicate_survives": {"$call": ["assert", {"$call": ["get", {"$call": ["get", {"$ref": "report"}, 2]}, "duplicate"]}]}
+"required_survives":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$call": ["get", {"$call": ["get", {"$ref": "report"}, 2]}, "missing"]}, ["owner"]]}
+"valid_clean":
+  "$call":
+  - "assert"
+  - "$call":
+    - "eq"
+    - "$call":
+      - "map"
+      - {"$call": ["fn", ["row"], {"$call": ["get", {"$ref": "row"}, "violations"]}]}
+      - {"$ref": "valid"}
+    - - []
+      - []

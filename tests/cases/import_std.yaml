@@ -1,12 +1,13 @@
-math: [import, std:math]
-lists: [import, std:list]
-biggest: [math.max, 3, 9]
-clipped: [math.clamp, 15, 0, 10]
-absolute: [math.abs, -4]
-total: [lists.sum, [1, 2, 3, 4]]
-product: [lists.product, [1, 2, 3, 4]]
-reversed: [lists.reverse, [1, 2, 3]]
-first_five: [lists.range, 5]
-squares: [map, math.square, [1, 2, 3]]
-negative_sign: [math.sign, -8]
-minimum: [math.min, 7, 2]
+# Helix explicit syntax; migrated from legacy source.
+"math": {"$call": ["import", "std:math"]}
+"lists": {"$call": ["import", "std:list"]}
+"biggest": {"$call": ["math.max", 3, 9]}
+"clipped": {"$call": ["math.clamp", 15, 0, 10]}
+"absolute": {"$call": ["math.abs", -4]}
+"total": {"$call": ["lists.sum", [1, 2, 3, 4]]}
+"product": {"$call": ["lists.product", [1, 2, 3, 4]]}
+"reversed": {"$call": ["lists.reverse", [1, 2, 3]]}
+"first_five": {"$call": ["lists.range", 5]}
+"squares": {"$call": ["map", {"$ref": "math.square"}, [1, 2, 3]]}
+"negative_sign": {"$call": ["math.sign", -8]}
+"minimum": {"$call": ["math.min", 7, 2]}

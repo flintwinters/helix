@@ -1,4 +1,5 @@
+# Helix explicit syntax; migrated from legacy source.
 # A user module: a constant, helpers, and an import of its own.
-m: [import, "std:math"]
-pi: 3
-area: [fn, [r], [mul, pi, [m.square, r]]]
+"m": {"$call": ["import", "std:math"]}
+"pi": 3
+"area": {"$call": ["fn", ["r"], {"$call": ["mul", {"$ref": "pi"}, {"$call": ["m.square", {"$ref": "r"}]}]}]}

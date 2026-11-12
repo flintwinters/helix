@@ -1,7 +1,8 @@
-sum: [add, 1, 2, 3, 4]
-product: [mul, 2, 3, 4]
-quotient: [div, 17, 5]
-neg_quotient: [div, -17, 5]
-remainder: [mod, 17, 5]
-neg_remainder: [mod, -17, 5]
-difference: [sub, 10, 4]
+# Helix explicit syntax; migrated from legacy source.
+"sum": {"$call": ["add", 1, 2, 3, 4]}
+"product": {"$call": ["mul", 2, 3, 4]}
+"quotient": {"$call": ["div", 17, 5]}
+"neg_quotient": {"$call": ["div", -17, 5]}
+"remainder": {"$call": ["mod", 17, 5]}
+"neg_remainder": {"$call": ["mod", -17, 5]}
+"difference": {"$call": ["sub", 10, 4]}

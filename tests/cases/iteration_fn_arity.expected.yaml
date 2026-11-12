@@ -1,17 +1,18 @@
-status: error
 error:
-  kind: arity
-  message: "function `/r/1` takes 2 arguments, got 1"
-  path: /r/1
-  reference:
-    - "r"
-    - 1
-  line: 1
-  column: 10
   calls:
-    - path: /r/1
-      line: 1
-      column: 10
-      function: /r/1
-      function_line: 1
-      function_column: 10
+    - column: 24
+      function: "/r/$call/1"
+      function_column: 24
+      function_line: 2
+      line: 2
+      path: "/r/$call/1"
+  column: 24
+  kind: arity
+  line: 2
+  message: "function `/r/$call/1` takes 2 arguments, got 1"
+  path: "/r/$call/1"
+  reference:
+    - r
+    - "$call"
+    - 1
+status: error

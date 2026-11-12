@@ -1,2 +1,3 @@
-helpers: [import, "modules/forward.yaml"]
-area: [helpers.area, 4]
+# Helix explicit syntax; migrated from legacy source.
+"helpers": {"$call": ["import", "modules/forward.yaml"]}
+"area": {"$call": ["helpers.area", 4]}

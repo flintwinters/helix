@@ -1,7 +1,35 @@
-base: [class, "base", [record, "required", integer, "fixed", string, "optional", [optional, boolean], "defaulted", [default, integer, 7]], {fixed: "yes"}]
-child: [extend, "child", [list, base], [record, "extra", string], {}]
-parents_of: [parents, child]
-open: [open_fields, child]
-filled: [extend, "filled", [list, child], [record], {required: 1, extra: "done"}]
-closed: [open_fields, [realize, filled]]
-invalid: [try, [open_fields, [record]], [fn, [e], e]]
+# Helix explicit syntax; migrated from legacy source.
+"base":
+  "$call":
+  - "class"
+  - "base"
+  - "$call":
+    - "record"
+    - "required"
+    - {"$ref": "integer"}
+    - "fixed"
+    - {"$ref": "string"}
+    - "optional"
+    - {"$call": ["optional", {"$ref": "boolean"}]}
+    - "defaulted"
+    - {"$call": ["default", {"$ref": "integer"}, 7]}
+  - "fixed": "yes"
+"child":
+  "$call":
+  - "extend"
+  - "child"
+  - {"$call": ["list", {"$ref": "base"}]}
+  - {"$call": ["record", "extra", {"$ref": "string"}]}
+  - {}
+"parents_of": {"$call": ["parents", {"$ref": "child"}]}
+"open": {"$call": ["open_fields", {"$ref": "child"}]}
+"filled":
+  "$call":
+  - "extend"
+  - "filled"
+  - {"$call": ["list", {"$ref": "child"}]}
+  - {"$call": ["record"]}
+  - "required": 1
+    "extra": "done"
+"closed": {"$call": ["open_fields", {"$call": ["realize", {"$ref": "filled"}]}]}
+"invalid": {"$call": ["try", {"$call": ["open_fields", {"$call": ["record"]}]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}

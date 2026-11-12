@@ -1,13 +1,34 @@
+# Helix explicit syntax; migrated from legacy source.
 # Passing functions inside collections must preserve the declaration's lexical environment.
-check: [fn, [actual, expected], [assert, [eq, actual, expected], "values differ"]]
-run: [fn, [spec], [call, [get, spec, "run"]]]
-cases:
-  - {name: fails, run: [fn, [], [check, 1, 2]]}
-  - {name: passes, run: [fn, [], [check, 2, 2]]}
-results: [map, [fn, [spec], [try, [run, spec], [fn, [error], [get, error, "kind"]]]], cases]
-verify: [assert, [eq, results, [list, "assertion", null]], "record callbacks lost lexical scope"]
-# Nested lists and records also retain functions, including imported names.
-m: [import, std:math]
-nested: [list, {callback: [fn, [n], [m.square, n]]}]
-value: [call, [get, [get, nested, 0], "callback"], 4]
-verified_value: [assert, [eq, value, 16]]
+"check":
+  "$call":
+  - "fn"
+  - - "actual"
+    - "expected"
+  - {"$call": ["assert", {"$call": ["eq", {"$ref": "actual"}, {"$ref": "expected"}]}, "values differ"]}
+"run": {"$call": ["fn", ["spec"], {"$call": ["call", {"$call": ["get", {"$ref": "spec"}, "run"]}]}]}
+"cases":
+- "name": "fails"
+  "run": {"$call": ["fn", [], {"$call": ["check", 1, 2]}]}
+- "name": "passes"
+  "run": {"$call": ["fn", [], {"$call": ["check", 2, 2]}]}
+"results":
+  "$call":
+  - "map"
+  - "$call":
+    - "fn"
+    - - "spec"
+    - "$call":
+      - "try"
+      - {"$call": ["run", {"$ref": "spec"}]}
+      - {"$call": ["fn", ["error"], {"$call": ["get", {"$ref": "error"}, "kind"]}]}
+  - {"$ref": "cases"}
+"verify":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$ref": "results"}, {"$call": ["list", "assertion", null]}]}
+  - "record callbacks lost lexical scope"
+"m": {"$call": ["import", "std:math"]}
+"nested": {"$call": ["list", {"callback": {"$call": ["fn", ["n"], {"$call": ["m.square", {"$ref": "n"}]}]}}]}
+"value": {"$call": ["call", {"$call": ["get", {"$call": ["get", {"$ref": "nested"}, 0]}, "callback"]}, 4]}
+"verified_value": {"$call": ["assert", {"$call": ["eq", {"$ref": "value"}, 16]}]}

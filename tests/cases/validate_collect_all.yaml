@@ -1,5 +1,32 @@
+# Helix explicit syntax; migrated from legacy source.
 # Validation reports every bad record, not just the first.
-check: [fn, [row], [try, [let, {ok: [assert, [gt, [get, row, "qty"], 0], "qty must be positive"]}, [if, [eq, [get, row, "name"], ""], [raise, "invalid", "name is empty"], ok]], [fn, [e], [get, e, "message"]]]]
-rows: [{name: a, qty: 1}, {name: "", qty: 2}, {name: c, qty: 0}, {name: d, qty: 4}]
-results: [map, check, rows]
-problems: [filter, [fn, [r], [ne, r, null]], results]
+"check":
+  "$call":
+  - "fn"
+  - - "row"
+  - "$call":
+    - "try"
+    - "$call":
+      - "let"
+      - "ok":
+          "$call":
+          - "assert"
+          - {"$call": ["gt", {"$call": ["get", {"$ref": "row"}, "qty"]}, 0]}
+          - "qty must be positive"
+      - "$call":
+        - "if"
+        - {"$call": ["eq", {"$call": ["get", {"$ref": "row"}, "name"]}, ""]}
+        - {"$call": ["raise", "invalid", "name is empty"]}
+        - {"$ref": "ok"}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}
+"rows":
+- "name": "a"
+  "qty": 1
+- "name": ""
+  "qty": 2
+- "name": "c"
+  "qty": 0
+- "name": "d"
+  "qty": 4
+"results": {"$call": ["map", {"$ref": "check"}, {"$ref": "rows"}]}
+"problems": {"$call": ["filter", {"$call": ["fn", ["r"], {"$call": ["ne", {"$ref": "r"}, null]}]}, {"$ref": "results"}]}

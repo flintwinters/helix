@@ -1,18 +1,57 @@
-m: [import, std:map]
-source: {z: null, a: false, "": {nested: [1, 2]}, "é": 3, "🙂": 4}
-selected: [m.select, source, ["🙂", "z", "a", "z", "missing"]]
-selected_order: [assert, [eq, [keys, selected], ["z", "a", "🙂"]]]
-omitted: [m.omit, source, ["a", "é", "a", "missing"]]
-omitted_order: [assert, [eq, [keys, omitted], ["z", "", "🙂"]]]
-nested: [m.select, source, [""]]
-empty_select: [m.select, source, []]
-empty_omit: [assert, [eq, [m.omit, source, []], source]]
-empty_sources: [list, [m.select, {}, ["x"]], [m.omit, {}, ["x"]]]
-wrong_select_source: [try, [m.select, [], []], [fn, [e], [get, e, "kind"]]]
-wrong_omit_source: [try, [m.omit, null, []], [fn, [e], [get, e, "kind"]]]
-wrong_select_keys: [try, [m.select, source, {}], [fn, [e], [get, e, "kind"]]]
-wrong_omit_keys: [try, [m.omit, source, "z"], [fn, [e], [get, e, "kind"]]]
-wrong_select_member: [try, [m.select, source, [list, "z", 1]], [fn, [e], [get, e, "kind"]]]
-wrong_omit_member: [try, [m.omit, source, [list, null]], [fn, [e], [get, e, "kind"]]]
-wrong_select_arity: [try, [m.select, source], [fn, [e], [get, e, "kind"]]]
-wrong_omit_arity: [try, [m.omit, source, [], []], [fn, [e], [get, e, "kind"]]]
+# Helix explicit syntax; migrated from legacy source.
+"m": {"$call": ["import", "std:map"]}
+"source":
+  "z": null
+  "a": false
+  ? ""
+  : "nested": [1, 2]
+  "\xE9": 3
+  "\U0001F642": 4
+"selected": {"$call": ["m.select", {"$ref": "source"}, ["\U0001F642", "z", "a", "z", "missing"]]}
+"selected_order": {"$call": ["assert", {"$call": ["eq", {"$call": ["keys", {"$ref": "selected"}]}, ["a", "z", "\U0001F642"]]}]}
+"omitted": {"$call": ["m.omit", {"$ref": "source"}, ["a", "\xE9", "a", "missing"]]}
+"omitted_order": {"$call": ["assert", {"$call": ["eq", {"$call": ["keys", {"$ref": "omitted"}]}, ["", "z", "\U0001F642"]]}]}
+"nested": {"$call": ["m.select", {"$ref": "source"}, [""]]}
+"empty_select": {"$call": ["m.select", {"$ref": "source"}, []]}
+"empty_omit": {"$call": ["assert", {"$call": ["eq", {"$call": ["m.omit", {"$ref": "source"}, []]}, {"$ref": "source"}]}]}
+"empty_sources": {"$call": ["list", {"$call": ["m.select", {}, ["x"]]}, {"$call": ["m.omit", {}, ["x"]]}]}
+"wrong_select_source":
+  "$call":
+  - "try"
+  - {"$call": ["m.select", [], []]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_omit_source":
+  "$call":
+  - "try"
+  - {"$call": ["m.omit", null, []]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_select_keys":
+  "$call":
+  - "try"
+  - {"$call": ["m.select", {"$ref": "source"}, {}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_omit_keys":
+  "$call":
+  - "try"
+  - {"$call": ["m.omit", {"$ref": "source"}, "z"]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_select_member":
+  "$call":
+  - "try"
+  - {"$call": ["m.select", {"$ref": "source"}, {"$call": ["list", "z", 1]}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_omit_member":
+  "$call":
+  - "try"
+  - {"$call": ["m.omit", {"$ref": "source"}, {"$call": ["list", null]}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_select_arity":
+  "$call":
+  - "try"
+  - {"$call": ["m.select", {"$ref": "source"}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_omit_arity":
+  "$call":
+  - "try"
+  - {"$call": ["m.omit", {"$ref": "source"}, [], []]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}

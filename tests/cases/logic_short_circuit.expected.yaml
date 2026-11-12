@@ -1,11 +1,11 @@
-status: finished
 root:
-  t: true
-  f: false
+  all: true
   both: false
   either: true
-  all: true
+  f: false
   none: false
   skips_error_and: false
   skips_error_or: true
   skips_type_error: false
+  t: true
+status: finished

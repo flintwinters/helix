@@ -1,18 +1,19 @@
-status: finished
 root:
   custom:
-    kind: out_of_stock
-    message: no widgets left
-    path: /custom/1
-    reference:
-      - "custom"
-      - 1
-    line: 2
-    column: 15
+    column: 5
     data:
       item: widget
       wanted: 3
+    kind: out_of_stock
+    line: 6
+    message: no widgets left
+    path: "/custom/$call/1"
+    reference:
+      - custom
+      - "$call"
+      - 1
   kind: custom
   payload:
     - 1
     - 2
+status: finished

@@ -1,56 +1,68 @@
-status: finished
-root:
-  double:
-    ref: object0
-  reached: 1024
-  countdown: -2
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - mul
+            - "$ref": "n"
+            - 2
+    environment: []
     kind: function
+    location:
+      path:
+        - double
+      source: "<root>"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: mul
-        - symbol: "n"
-        - 2
-    location:
-      source: "<root>"
-      path:
-        - "double"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          double:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: mul
-              - symbol: "n"
-              - 2
-          reached:
-            - symbol: until
-            - - symbol: fn
-              - - symbol: "n"
-              - - symbol: gt
-                - symbol: "n"
-                - 1000
-            - symbol: double
-            - 1
+      - code:
           countdown:
-            - symbol: until
-            - - symbol: fn
-              - - symbol: "n"
-              - - symbol: le
-                - symbol: "n"
-                - 0
-            - - symbol: fn
-              - - symbol: "n"
-              - - symbol: sub
-                - symbol: "n"
-                - 3
-            - 10
+            "$call":
+              - until
+              - "$call":
+                  - fn
+                  - - "n"
+                  - "$call":
+                      - le
+                      - "$ref": "n"
+                      - 0
+              - "$call":
+                  - fn
+                  - - "n"
+                  - "$call":
+                      - sub
+                      - "$ref": "n"
+                      - 3
+              - 10
+          double:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - mul
+                  - "$ref": "n"
+                  - 2
+          reached:
+            "$call":
+              - until
+              - "$call":
+                  - fn
+                  - - "n"
+                  - "$call":
+                      - gt
+                      - "$ref": "n"
+                      - 1000
+              - "$ref": double
+              - 1
+        source: "<root>"
+root:
+  countdown: -2
+  double:
+    ref: object0
+  reached: 1024
+status: finished

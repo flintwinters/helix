@@ -1,34 +1,34 @@
-status: finished
 root:
   results:
+    disjoint: true
+    empty_difference: []
     empty_disjoint: true
     empty_equal: true
-    empty_difference: []
-    disjoint: true
+    invalid_arguments:
+      - type
+      - type
+      - type
+      - type
+      - type
+      - type
+    left_empty:
+      - 2
+      - 1
     overlap: false
-    reordered_duplicates: true
     proper_subset: false
     proper_superset: false
-    structural: true
+    reordered_duplicates: true
+    right_empty:
+      - 2
+      - 1
     stable:
       - 3
       - 5
       - 4
       - 6
+    structural: true
     structural_difference:
       - a: 1
       - ~
       - false
-    left_empty:
-      - 2
-      - 1
-    right_empty:
-      - 2
-      - 1
-    invalid_arguments:
-      - "type"
-      - type
-      - type
-      - type
-      - type
-      - type
+status: finished

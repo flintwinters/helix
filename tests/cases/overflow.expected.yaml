@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 6
   kind: overflow
+  line: 3
   message: "`add` overflowed i64"
   path: /b
   reference:
-    - "b"
-  line: 2
-  column: 4
+    - b
+status: error

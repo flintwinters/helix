@@ -1,0 +1,50 @@
+root:
+  calculated: 42
+  canonical_keys:
+    - a
+    - z
+  computed_call: 42
+  model_equality: true
+  occurrence_scope:
+    left:
+      read: 3
+      value: 3
+    right:
+      read: 8
+      value: 8
+  ordinary_list:
+    - add
+    - 1
+    - 2
+  quoted_form: 42
+  radices:
+    - 42
+    - 42
+    - 42
+  reference: 42
+  reserved_data:
+    "$call":
+      - add
+      - 1
+      - 2
+  shared_data:
+    first:
+      - 1
+      - 2
+    second:
+      - 1
+      - 2
+  standard_tags:
+    boolean: true
+    integer: 42
+    mapping:
+      answer: 42
+    sequence:
+      - 1
+      - 2
+    text: "42"
+  strings:
+    - add
+    - add
+    - add
+status: finished

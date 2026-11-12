@@ -3,6 +3,7 @@
 import sys
 import os
 from pathlib import Path
+from contextlib import contextmanager
 
 from tooling.cli import DEFAULT_TEST_JOBS, SUITES, parse
 from tooling.output import DEFAULT_FORMAT, emit
@@ -12,7 +13,7 @@ BIN = ROOT / os.environ.get("CARGO_TARGET_DIR", "target") / "debug" / "helix"
 HYPERLINTER = ROOT / "hyperlinter"
 
 
-def build(*, report=False, output_format=DEFAULT_FORMAT) -> int:
+def _build_unlocked(*, report=False, output_format=DEFAULT_FORMAT) -> int:
     import subprocess
 
     try:
@@ -33,6 +34,25 @@ def build(*, report=False, output_format=DEFAULT_FORMAT) -> int:
     return result.returncode
 
 
+@contextmanager
+def build_lock():
+    """Serialize project wrappers through build and executable snapshot creation."""
+    import fcntl
+
+    (ROOT / "runtime").mkdir(exist_ok=True)
+    with (ROOT / "runtime" / "build.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def build(*, report=False, output_format=DEFAULT_FORMAT) -> int:
+    with build_lock():
+        return _build_unlocked(report=report, output_format=output_format)
+
+
 def lint(extra: list[str]) -> int:
     """Run hyperlinter from the host root (required so it loads this repo's Cargo.toml and baseline)."""
     import subprocess
@@ -41,7 +61,11 @@ def lint(extra: list[str]) -> int:
     if not tsx.exists():
         subprocess.check_call(["git", "submodule", "update", "--init", "hyperlinter"], cwd=ROOT)
         subprocess.check_call(["npm", "--prefix", str(HYPERLINTER), "ci", "--include=dev"], cwd=ROOT)
-    return subprocess.call([str(tsx), str(HYPERLINTER / "src" / "cli.ts"), *extra], cwd=ROOT)
+    scratch = ROOT / "runtime" / "tsx"
+    scratch.mkdir(parents=True, exist_ok=True)
+    environment = dict(os.environ)
+    environment.setdefault("TMPDIR", str(scratch))
+    return subprocess.call([str(tsx), str(HYPERLINTER / "src" / "cli.ts"), *extra], cwd=ROOT, env=environment)
 
 
 def test_context():
@@ -50,9 +74,25 @@ def test_context():
     return TestContext(ROOT, BIN, timeout=float(os.environ.get("HELIX_TEST_TIMEOUT", "10")))
 
 
+@contextmanager
+def frozen_test_context(context, output_format=DEFAULT_FORMAT):
+    """Build and freeze atomically relative to other manage.py builds."""
+    from dataclasses import replace
+    import shutil
+    import tempfile
+
+    (ROOT / "runtime").mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=ROOT / "runtime", prefix="test-binary-") as directory:
+        snapshot = Path(directory) / "helix"
+        with build_lock():
+            code = _build_unlocked(output_format=output_format)
+            if code == 0:
+                shutil.copy2(context.binary, snapshot)
+        yield (replace(context, binary=snapshot) if code == 0 else None), code
+
+
 def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS,
          patterns: list[str] | None = None, output_format: str = DEFAULT_FORMAT) -> int:
-    from dataclasses import replace
     from tooling.test_runner import discover_cases
 
     context = test_context()
@@ -68,17 +108,8 @@ def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_
     if suites and set(suites) == {"startup"}:
         return context.regression(bless, suites, jobs, output_format=output_format)
 
-    import shutil
-    import tempfile
-
-    if (code := build(output_format=output_format)) != 0:
-        return code
-    (ROOT / "runtime").mkdir(exist_ok=True)
-    # Freeze this run's executable so another build cannot replace it mid-suite.
-    with tempfile.TemporaryDirectory(dir=ROOT / "runtime", prefix="test-binary-") as directory:
-        snapshot = Path(directory) / "helix"
-        shutil.copy2(context.binary, snapshot)
-        return replace(context, binary=snapshot).regression(bless, suites, jobs, cases, output_format)
+    with frozen_test_context(context, output_format) as (frozen, code):
+        return code or frozen.regression(bless, suites, jobs, cases, output_format)
 
 
 def main() -> int:
@@ -93,9 +124,22 @@ def main() -> int:
             for name, description in SUITES.items():
                 print(f"{name}: {description}" if args.describe else name)
         return 0
+    if command == "migrate-syntax":
+        from tooling.syntax_migration import migrate_files
+        results = migrate_files([Path(path) for path in args.paths], write=args.write)
+        if args.format == "json":
+            emit({"command": command, "status": "ok", "written": args.write, "files": results})
+        else:
+            for result in results:
+                print(f"{result['status']}: {result['path']}" + (f": {result['reason']}" if "reason" in result else ""))
+        return 2 if any(result["status"] == "error" for result in results) else 0
     # Discovery must respond before loading process execution and test machinery.
     import subprocess
 
+    if command == "migration-audit":
+        from tooling.syntax_migration import audit_golden
+        with frozen_test_context(test_context(), args.format) as (frozen, code):
+            return code or audit_golden(frozen, args.baseline, args.format)
     if command == "lint":
         return lint(args.extra)
     if command == "cli":

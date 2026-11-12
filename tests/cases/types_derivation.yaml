@@ -1,19 +1,58 @@
-t: [import, std:types]
-original: [record, "name", string, "count", integer, "note", [optional, string], "enabled", [default, boolean, true]]
-rebuilt: [t.from_fields, [fields, original]]
-round_trip: [eq, original, rebuilt]
-dropped: [t.without_field, original, "count"]
-drop_missing: [eq, original, [t.without_field, original, "absent"]]
-retyped: [with_field, original, "count", string]
-added: [with_field, original, "extra", boolean]
-all_optional: [t.optional_fields, original]
-idempotent: [eq, all_optional, [t.optional_fields, all_optional]]
-default_preserved: [eq, [get, [fields, original], "enabled"], [get, [fields, all_optional], "enabled"]]
-checks: [list, [is, {}, all_optional], [is, {count: 4}, all_optional], [is, {count: "bad"}, all_optional], [is, {name: "x"}, dropped], [is, {name: "x", count: "four"}, retyped]]
-empty: [t.from_fields, {}]
-empty_optional: [eq, empty, [t.optional_fields, empty]]
-# Build a type by iteration and pass the transformer itself through a function value.
-constructed: [fold, [fn, [record_type, field], [with_field, record_type, field, integer]], [record], ["x", "y"]]
-via_function: [call, t.optional_fields, constructed]
-invalid_spec: [try, [t.from_fields, {broken: 42}], [fn, [e], [get, e, "kind"]]]
-invalid_type: [try, [t.optional_fields, integer], [fn, [e], [get, e, "kind"]]]
+# Helix explicit syntax; migrated from legacy source.
+"t": {"$call": ["import", "std:types"]}
+"original":
+  "$call":
+  - "record"
+  - "name"
+  - {"$ref": "string"}
+  - "count"
+  - {"$ref": "integer"}
+  - "note"
+  - {"$call": ["optional", {"$ref": "string"}]}
+  - "enabled"
+  - {"$call": ["default", {"$ref": "boolean"}, true]}
+"rebuilt": {"$call": ["t.from_fields", {"$call": ["fields", {"$ref": "original"}]}]}
+"round_trip": {"$call": ["eq", {"$ref": "original"}, {"$ref": "rebuilt"}]}
+"dropped": {"$call": ["t.without_field", {"$ref": "original"}, "count"]}
+"drop_missing": {"$call": ["eq", {"$ref": "original"}, {"$call": ["t.without_field", {"$ref": "original"}, "absent"]}]}
+"retyped": {"$call": ["with_field", {"$ref": "original"}, "count", {"$ref": "string"}]}
+"added": {"$call": ["with_field", {"$ref": "original"}, "extra", {"$ref": "boolean"}]}
+"all_optional": {"$call": ["t.optional_fields", {"$ref": "original"}]}
+"idempotent": {"$call": ["eq", {"$ref": "all_optional"}, {"$call": ["t.optional_fields", {"$ref": "all_optional"}]}]}
+"default_preserved":
+  "$call":
+  - "eq"
+  - {"$call": ["get", {"$call": ["fields", {"$ref": "original"}]}, "enabled"]}
+  - {"$call": ["get", {"$call": ["fields", {"$ref": "all_optional"}]}, "enabled"]}
+"checks":
+  "$call":
+  - "list"
+  - {"$call": ["is", {}, {"$ref": "all_optional"}]}
+  - {"$call": ["is", {"count": 4}, {"$ref": "all_optional"}]}
+  - {"$call": ["is", {"count": "bad"}, {"$ref": "all_optional"}]}
+  - {"$call": ["is", {"name": "x"}, {"$ref": "dropped"}]}
+  - {"$call": ["is", {"name": "x", "count": "four"}, {"$ref": "retyped"}]}
+"empty": {"$call": ["t.from_fields", {}]}
+"empty_optional": {"$call": ["eq", {"$ref": "empty"}, {"$call": ["t.optional_fields", {"$ref": "empty"}]}]}
+"constructed":
+  "$call":
+  - "fold"
+  - "$call":
+    - "fn"
+    - - "record_type"
+      - "field"
+    - {"$call": ["with_field", {"$ref": "record_type"}, {"$ref": "field"}, {"$ref": "integer"}]}
+  - {"$call": ["record"]}
+  - - "x"
+    - "y"
+"via_function": {"$call": ["call", {"$ref": "t.optional_fields"}, {"$ref": "constructed"}]}
+"invalid_spec":
+  "$call":
+  - "try"
+  - {"$call": ["t.from_fields", {"broken": 42}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"invalid_type":
+  "$call":
+  - "try"
+  - {"$call": ["t.optional_fields", {"$ref": "integer"}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}

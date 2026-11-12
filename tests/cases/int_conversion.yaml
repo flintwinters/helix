@@ -1,1 +1,2 @@
-x: [int, "12abc"]
+# Helix explicit syntax; migrated from legacy source.
+"x": {"$call": ["int", "12abc"]}

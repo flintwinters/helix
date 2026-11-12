@@ -1,4 +1,5 @@
-old: [import, modules/vendor/offset-v1/main.yaml]
-new: [import, modules/vendor/offset-v2/main.yaml]
-old_result: [old.apply, 40]
-new_result: [new.apply, 40]
+# Helix explicit syntax; migrated from legacy source.
+"old": {"$call": ["import", "modules/vendor/offset-v1/main.yaml"]}
+"new": {"$call": ["import", "modules/vendor/offset-v2/main.yaml"]}
+"old_result": {"$call": ["old.apply", 40]}
+"new_result": {"$call": ["new.apply", 40]}

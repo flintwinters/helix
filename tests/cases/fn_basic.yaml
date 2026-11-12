@@ -1,5 +1,6 @@
-double: [fn, [n], [mul, n, 2]]
-sum3: [fn, [a, b, c], [add, a, b, c]]
-answer: [double, 21]
-total: [sum3, 1, 2, 3]
-nested: [double, [double, 4]]
+# Helix explicit syntax; migrated from legacy source.
+"double": {"$call": ["fn", ["n"], {"$call": ["mul", {"$ref": "n"}, 2]}]}
+"sum3": {"$call": ["fn", ["a", "b", "c"], {"$call": ["add", {"$ref": "a"}, {"$ref": "b"}, {"$ref": "c"}]}]}
+"answer": {"$call": ["double", 21]}
+"total": {"$call": ["sum3", 1, 2, 3]}
+"nested": {"$call": ["double", {"$call": ["double", 4]}]}

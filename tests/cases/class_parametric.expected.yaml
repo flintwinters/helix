@@ -1,120 +1,141 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - p
+            - "$ref": integer
+        - "$call":
+            - class
+            - "$call":
+                - concat
+                - web_
+                - "$call":
+                    - str
+                    - "$ref": p
+            - "$call":
+                - record
+                - listen
+                - "$ref": integer
+            - "$call":
+                - dict
+                - listen
+                - "$ref": p
+    environment: []
+    kind: function
+    location:
+      path:
+        - web_server
+      source: "<root>"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          both:
+            "$call":
+              - try
+              - "$call":
+                  - inherit
+                  - both
+                  - "$call":
+                      - list
+                      - "$ref": w80
+                      - "$ref": w8080
+                  - {}
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - data
+          front:
+            "$call":
+              - inherit
+              - front
+              - "$call":
+                  - list
+                  - "$ref": w80
+              - {}
+          w80:
+            "$call":
+              - web_server
+              - 80
+          w8080:
+            "$call":
+              - web_server
+              - 8080
+          web_server:
+            "$call":
+              - fn
+              - - - p
+                  - "$ref": integer
+              - "$call":
+                  - class
+                  - "$call":
+                      - concat
+                      - web_
+                      - "$call":
+                          - str
+                          - "$ref": p
+                  - "$call":
+                      - record
+                      - listen
+                      - "$ref": integer
+                  - "$call":
+                      - dict
+                      - listen
+                      - "$ref": p
+        source: "<root>"
 root:
-  web_server:
-    ref: object0
-  w80:
-    type: class
-    name: web_80
-    parents: []
+  both:
+    field: listen
+    sources:
+      - web_80
+      - web_8080
+  front:
+    concrete: true
     fields:
       listen: integer
-    values:
-      listen: 80
+    name: front
+    parents:
+      - web_80
     provenance:
       listen:
         type: web_80
         value: web_80
-    concrete: false
-  w8080:
     type: class
-    name: web_8080
-    parents: []
+    values:
+      listen: 80
+  w80:
+    concrete: false
     fields:
       listen: integer
+    name: web_80
+    parents: []
+    provenance:
+      listen:
+        type: web_80
+        value: web_80
+    type: class
     values:
-      listen: 8080
+      listen: 80
+  w8080:
+    concrete: false
+    fields:
+      listen: integer
+    name: web_8080
+    parents: []
     provenance:
       listen:
         type: web_8080
         value: web_8080
-    concrete: false
-  front:
     type: class
-    name: front
-    parents:
-      - "web_80"
-    fields:
-      listen: integer
     values:
-      listen: 80
-    provenance:
-      listen:
-        type: web_80
-        value: web_80
-    concrete: true
-  both:
-    field: listen
-    sources:
-      - "web_80"
-      - web_8080
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object1
-    code:
-      - symbol: fn
-      - - - symbol: p
-          - symbol: integer
-      - - symbol: class
-        - - symbol: concat
-          - web_
-          - - symbol: str
-            - symbol: p
-        - - symbol: record
-          - listen
-          - symbol: integer
-        - - symbol: dict
-          - listen
-          - symbol: p
-    location:
-      source: "<root>"
-      path:
-        - "web_server"
-    environment: []
-    bindings: {}
-  object1:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          web_server:
-            - symbol: fn
-            - - - symbol: p
-                - symbol: integer
-            - - symbol: class
-              - - symbol: concat
-                - web_
-                - - symbol: str
-                  - symbol: p
-              - - symbol: record
-                - listen
-                - symbol: integer
-              - - symbol: dict
-                - listen
-                - symbol: p
-          w80:
-            - symbol: web_server
-            - 80
-          w8080:
-            - symbol: web_server
-            - 8080
-          front:
-            - symbol: inherit
-            - front
-            - - symbol: list
-              - symbol: w80
-            - {}
-          both:
-            - symbol: try
-            - - symbol: inherit
-              - both
-              - - symbol: list
-                - symbol: w80
-                - symbol: w8080
-              - {}
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - data
+      listen: 8080
+  web_server:
+    ref: object0
+status: finished

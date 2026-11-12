@@ -1,2 +1,7 @@
-f: [fn, [n], [let, {a: [add, a, n]}, a]]
-r: [f, 1]
+# Helix explicit syntax; migrated from legacy source.
+"f":
+  "$call":
+  - "fn"
+  - - "n"
+  - {"$call": ["let", {"a": {"$call": ["add", {"$ref": "a"}, {"$ref": "n"}]}}, {"$ref": "a"}]}
+"r": {"$call": ["f", 1]}

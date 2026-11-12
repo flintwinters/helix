@@ -1,19 +1,55 @@
-l: [import, std:list]
-empty_unique: [l.unique, []]
-unique: [l.unique, [3, 1, 3, 2, 1]]
-numeric: [l.unique, [1, 1.0, 2.0, 2]]
-nested: [l.unique, [[1, 2], [1, 2], {a: 1}, {a: 1}, null, null, false, false]]
-text: [l.unique, ["é", "é", "x"]]
-empty_sort: [l.sort_by, [], [fn, [a, b], [lt, a, b]]]
-singleton: [l.sort_by, [7], [fn, [a, b], [lt, a, b]]]
-ascending: [l.sort_by, [3, -1, 2, 2, 0], [fn, [a, b], [lt, a, b]]]
-descending: [l.sort_by, [1, 3, 2], [fn, [a, b], [gt, a, b]]]
-words: [l.sort_by, ["z", "a", "b"], [fn, [a, b], [lt, a, b]]]
-again: [l.sort_by, ascending, [fn, [a, b], [lt, a, b]]]
-bad_list: [try, [l.unique, 1], [fn, [e], [get, e, "kind"]]]
-bad_predicate: [try, [l.sort_by, [2, 1], [fn, [a, b], 0]], [fn, [e], [get, e, "kind"]]]
-# Exercise both scan extremes on a modest, explicitly supported input size.
-small_range: [l.range, 32]
-reverse_sorted: [l.sort_by, [l.reverse, small_range], [fn, [a, b], [lt, a, b]]]
-size_sort_ok: [assert, [eq, reverse_sorted, small_range]]
-size_unique_ok: [assert, [eq, [l.unique, [concat, small_range, small_range]], small_range]]
+# Helix explicit syntax; migrated from legacy source.
+"l": {"$call": ["import", "std:list"]}
+"empty_unique": {"$call": ["l.unique", []]}
+"unique": {"$call": ["l.unique", [3, 1, 3, 2, 1]]}
+"numeric": {"$call": ["l.unique", [1, 1.0, 2.0, 2]]}
+"nested": {"$call": ["l.unique", [[1, 2], [1, 2], {"a": 1}, {"a": 1}, null, null, false, false]]}
+"text": {"$call": ["l.unique", ["\xE9", "\xE9", "x"]]}
+"empty_sort": {"$call": ["l.sort_by", [], {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}]}
+"singleton": {"$call": ["l.sort_by", [7], {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}]}
+"ascending":
+  "$call":
+  - "l.sort_by"
+  - [3, -1, 2, 2, 0]
+  - {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}
+"descending":
+  "$call":
+  - "l.sort_by"
+  - [1, 3, 2]
+  - {"$call": ["fn", ["a", "b"], {"$call": ["gt", {"$ref": "a"}, {"$ref": "b"}]}]}
+"words":
+  "$call":
+  - "l.sort_by"
+  - - "z"
+    - "a"
+    - "b"
+  - {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}
+"again":
+  "$call":
+  - "l.sort_by"
+  - {"$ref": "ascending"}
+  - {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}
+"bad_list":
+  "$call":
+  - "try"
+  - {"$call": ["l.unique", 1]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"bad_predicate":
+  "$call":
+  - "try"
+  - {"$call": ["l.sort_by", [2, 1], {"$call": ["fn", ["a", "b"], 0]}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"small_range": {"$call": ["l.range", 32]}
+"reverse_sorted":
+  "$call":
+  - "l.sort_by"
+  - {"$call": ["l.reverse", {"$ref": "small_range"}]}
+  - {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}
+"size_sort_ok": {"$call": ["assert", {"$call": ["eq", {"$ref": "reverse_sorted"}, {"$ref": "small_range"}]}]}
+"size_unique_ok":
+  "$call":
+  - "assert"
+  - "$call":
+    - "eq"
+    - {"$call": ["l.unique", {"$call": ["concat", {"$ref": "small_range"}, {"$ref": "small_range"}]}]}
+    - {"$ref": "small_range"}

@@ -1,12 +1,31 @@
+# Helix explicit syntax; migrated from legacy source.
 # Ordinary lexical constructors and embedded modules work in an explicit pure region.
-types: [import, std:types]
-shape: [record, "name", string, "count", [default, integer, 0]]
-derived: [type_time, [types.optional_fields, shape]]
-iteration: [type_time, [fold, [fn, [t, name], [with_field, t, name, boolean]], [record], ["a", "b"]]]
-nested: [type_time, [type_time, [list_of, integer]]]
-caught_inside: [type_time, [try, [list_of, 42], [fn, [e], e]]]
-caught_outside: [try, [type_time, [div, 1, 0]], [fn, [e], e]]
-runtime_after: [try, [div, 1, 0], [fn, [e], e]]
-# Recompute memoized dependencies so caught errors describe the active phase.
-captured_error: [try, [div, 1, 0], [fn, [e], e]]
-rechecked: [type_time, captured_error]
+"types": {"$call": ["import", "std:types"]}
+"shape": {"$call": ["record", "name", {"$ref": "string"}, "count", {"$call": ["default", {"$ref": "integer"}, 0]}]}
+"derived": {"$call": ["type_time", {"$call": ["types.optional_fields", {"$ref": "shape"}]}]}
+"iteration":
+  "$call":
+  - "type_time"
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "t"
+        - "name"
+      - {"$call": ["with_field", {"$ref": "t"}, {"$ref": "name"}, {"$ref": "boolean"}]}
+    - {"$call": ["record"]}
+    - - "a"
+      - "b"
+"nested": {"$call": ["type_time", {"$call": ["type_time", {"$call": ["list_of", {"$ref": "integer"}]}]}]}
+"caught_inside":
+  "$call":
+  - "type_time"
+  - {"$call": ["try", {"$call": ["list_of", 42]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
+"caught_outside":
+  "$call":
+  - "try"
+  - {"$call": ["type_time", {"$call": ["div", 1, 0]}]}
+  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+"runtime_after": {"$call": ["try", {"$call": ["div", 1, 0]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
+"captured_error": {"$call": ["try", {"$call": ["div", 1, 0]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
+"rechecked": {"$call": ["type_time", {"$ref": "captured_error"}]}

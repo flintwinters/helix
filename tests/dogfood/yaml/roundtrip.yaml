@@ -1,28 +1,141 @@
+# Helix explicit syntax; migrated from legacy source.
 # Deterministic Cartesian domains, generated in Helix. Keep inputs small enough for VM budgets.
-t: [import, std:test]
-y: [import, std:yaml]
-l: [import, std:list]
-texts: [list, '', 'null', 'NULL', '~', 'true', 'FALSE', 'yes', 'ON', '0', '-0.0', '+42', '1e3', '012', '.inf', '.nan', '0xFF', 'a: b', 'a#b', '# comment', '[a]', '{a: b}', '---', '...', '&anchor', '*alias', '!tag', '|', '>', '%YAML 1.2', '@name', '`name', '-', '?', ':', ',', ' leading', 'trailing ', 'two  spaces', 'quote"', "apostrophe'", 'back\slash', "line\nbreak", "\t\r", "\0\a\b\v\f\e", '雪🙂', "\u0085", "\u2028", "\u2029"]
-text_rows: [map, [fn, [text], [dict, "name", "text as scalar key and list element", "input", text]], texts]
-text_report:
-  - t.table
-  - text_rows
-  - - fn
-    - [text]
-    - - let
-      - value: [dict, text, [list, text, [dict, text, text]], "nested", [list, [], {}]]
-        dumped: [y.dump, value]
-        parsed: [y.parse, dumped]
-      - [finally, [t.equal, parsed, value], [t.equal, [y.dump, parsed], dumped]]
-# All ordered pairs from mixed scalars: nested lists/maps, first-item quoting, null vs false.
-atoms: [list, null, false, true, 0, -1, 1.25, '', 'add', 'true']
-pairs: [l.flat_map, atoms, [fn, [a], [map, [fn, [b], [list, a, b]], atoms]]]
-containers: [map, [fn, [pair], [dict, "left", pair, "right", [list, pair, [], {}]]], pairs]
-container_report: [t.property, "nested data round trip", containers, [fn, [value], [eq, [y.parse, [y.dump, value]], value]]]
-# Separately assert order because structural map equality deliberately ignores it.
-key_report:
-  - t.table
-  - - {name: forward_keys, input: [list, 'z', '', '1', 'true', 'a/b', '雪']}
-    - {name: reverse_keys, input: [list, '雪', 'a/b', 'true', '1', '', 'z']}
-  - [fn, [names], [let, {value: [fold, [fn, [acc, name], [set, acc, name, false]], {}, names]}, [t.equal, [keys, [y.parse, [y.dump, value]]], names]]]
-report: [t.combine, [list, text_report, container_report, key_report]]
+"t": {"$call": ["import", "std:test"]}
+"y": {"$call": ["import", "std:yaml"]}
+"l": {"$call": ["import", "std:list"]}
+"texts":
+  "$call":
+  - "list"
+  - ""
+  - "null"
+  - "NULL"
+  - "~"
+  - "true"
+  - "FALSE"
+  - "yes"
+  - "ON"
+  - "0"
+  - "-0.0"
+  - "+42"
+  - "1e3"
+  - "012"
+  - ".inf"
+  - ".nan"
+  - "0xFF"
+  - "a: b"
+  - "a#b"
+  - "# comment"
+  - "[a]"
+  - "{a: b}"
+  - "---"
+  - "..."
+  - "&anchor"
+  - "*alias"
+  - "!tag"
+  - "|"
+  - ">"
+  - "%YAML 1.2"
+  - "@name"
+  - "`name"
+  - "-"
+  - "?"
+  - ":"
+  - ","
+  - " leading"
+  - "trailing "
+  - "two  spaces"
+  - "quote\""
+  - "apostrophe'"
+  - "back\\slash"
+  - "line\nbreak"
+  - "\t\r"
+  - "\0\a\b\v\f\e"
+  - "\u96EA\U0001F642"
+  - "\N"
+  - "\L"
+  - "\P"
+"text_rows":
+  "$call":
+  - "map"
+  - "$call":
+    - "fn"
+    - - "text"
+    - {"$call": ["dict", "name", "text as scalar key and list element", "input", {"$ref": "text"}]}
+  - {"$ref": "texts"}
+"text_report":
+  "$call":
+  - "t.table"
+  - {"$ref": "text_rows"}
+  - "$call":
+    - "fn"
+    - - "text"
+    - "$call":
+      - "let"
+      - "value":
+          "$call":
+          - "dict"
+          - {"$ref": "text"}
+          - {"$call": ["list", {"$ref": "text"}, {"$call": ["dict", {"$ref": "text"}, {"$ref": "text"}]}]}
+          - "nested"
+          - {"$call": ["list", [], {}]}
+        "dumped": {"$call": ["y.dump", {"$ref": "value"}]}
+        "parsed": {"$call": ["y.parse", {"$ref": "dumped"}]}
+      - "$call":
+        - "finally"
+        - {"$call": ["t.equal", {"$ref": "parsed"}, {"$ref": "value"}]}
+        - {"$call": ["t.equal", {"$call": ["y.dump", {"$ref": "parsed"}]}, {"$ref": "dumped"}]}
+"atoms": {"$call": ["list", null, false, true, 0, -1, 1.25, "", "add", "true"]}
+"pairs":
+  "$call":
+  - "l.flat_map"
+  - {"$ref": "atoms"}
+  - "$call":
+    - "fn"
+    - - "a"
+    - "$call":
+      - "map"
+      - {"$call": ["fn", ["b"], {"$call": ["list", {"$ref": "a"}, {"$ref": "b"}]}]}
+      - {"$ref": "atoms"}
+"containers":
+  "$call":
+  - "map"
+  - "$call":
+    - "fn"
+    - - "pair"
+    - {"$call": ["dict", "left", {"$ref": "pair"}, "right", {"$call": ["list", {"$ref": "pair"}, [], {}]}]}
+  - {"$ref": "pairs"}
+"container_report":
+  "$call":
+  - "t.property"
+  - "nested data round trip"
+  - {"$ref": "containers"}
+  - "$call":
+    - "fn"
+    - - "value"
+    - {"$call": ["eq", {"$call": ["y.parse", {"$call": ["y.dump", {"$ref": "value"}]}]}, {"$ref": "value"}]}
+"key_report":
+  "$call":
+  - "t.table"
+  - - "name": "forward_keys"
+      "input": {"$call": ["list", "z", "", "1", "true", "a/b", "\u96EA"]}
+    - "name": "reverse_keys"
+      "input": {"$call": ["list", "\u96EA", "a/b", "true", "1", "", "z"]}
+  - "$call":
+    - "fn"
+    - - "names"
+    - "$call":
+      - "let"
+      - "value":
+          "$call":
+          - "fold"
+          - {"$call": ["fn", ["acc", "name"], {"$call": ["set", {"$ref": "acc"}, {"$ref": "name"}, false]}]}
+          - {}
+          - {"$ref": "names"}
+      - "$call":
+        - "t.equal"
+        - {"$call": ["keys", {"$call": ["y.parse", {"$call": ["y.dump", {"$ref": "value"}]}]}]}
+        - {"$call": ["l.sort", {"$ref": "names"}]}
+"report":
+  "$call":
+  - "t.combine"
+  - {"$call": ["list", {"$ref": "text_report"}, {"$ref": "container_report"}, {"$ref": "key_report"}]}

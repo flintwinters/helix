@@ -1,1 +1,2 @@
-broken: [fn, [1, 2], 3]
+# Helix explicit syntax; migrated from legacy source.
+"broken": {"$call": ["fn", [1, 2], 3]}

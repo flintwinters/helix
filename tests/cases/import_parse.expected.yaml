@@ -1,7 +1,7 @@
-status: error
 error:
-  kind: parse
-  message: "while parsing a node, did not find expected node content at byte 9 line 2 column 1"
-  file: tests/cases/modules/malformed.yaml
-  line: 2
   column: 1
+  file: tests/cases/modules/malformed.yaml
+  kind: parse
+  line: 2
+  message: "while parsing a node, did not find expected node content at byte 9 line 2 column 1"
+status: error

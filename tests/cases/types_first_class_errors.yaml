@@ -1,6 +1,23 @@
+# Helix explicit syntax; migrated from legacy source.
 # Computed callables and type arguments keep structured failures.
-not_callable: [try, [call, 42, 1], [fn, [e], e]]
-bad_constructor: [try, [list_of, [call, [fn, [], 42]]], [fn, [e], e]]
-bad_callback: [try, [map, [if, true, 3, [fn, [n], n]], [1]], [fn, [e], e]]
-bad_closure: [try, [closure, [], [fn, [n], n]], [fn, [e], e]]
-wrong_type: [try, [call, [fn, [[t, function]], t], integer], [fn, [e], e]]
+"not_callable": {"$call": ["try", {"$call": ["call", 42, 1]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
+"bad_constructor":
+  "$call":
+  - "try"
+  - {"$call": ["list_of", {"$call": ["call", {"$call": ["fn", [], 42]}]}]}
+  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+"bad_callback":
+  "$call":
+  - "try"
+  - {"$call": ["map", {"$call": ["if", true, 3, {"$call": ["fn", ["n"], {"$ref": "n"}]}]}, [1]]}
+  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+"bad_closure":
+  "$call":
+  - "try"
+  - {"$call": ["closure", [], {"$call": ["fn", ["n"], {"$ref": "n"}]}]}
+  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+"wrong_type":
+  "$call":
+  - "try"
+  - {"$call": ["call", {"$call": ["fn", [["t", {"$ref": "function"}]], {"$ref": "t"}]}, {"$ref": "integer"}]}
+  - {"$call": ["fn", ["e"], {"$ref": "e"}]}

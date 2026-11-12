@@ -1,9 +1,166 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - cond
+            - "$call":
+                - eq
+                - "$call":
+                    - mod
+                    - "$ref": "n"
+                    - 15
+                - 0
+            - FizzBuzz
+            - "$call":
+                - eq
+                - "$call":
+                    - mod
+                    - "$ref": "n"
+                    - 3
+                - 0
+            - Fizz
+            - "$call":
+                - eq
+                - "$call":
+                    - mod
+                    - "$ref": "n"
+                    - 5
+                - 0
+            - Buzz
+            - "$ref": "n"
+    environment: []
+    kind: function
+    location:
+      path:
+        - fizzbuzz
+      source: "<root>"
+    program:
+      ref: object2
+  object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - lo
+          - hi
+        - "$call":
+            - until
+            - "$call":
+                - fn
+                - - xs
+                - "$call":
+                    - eq
+                    - "$call":
+                        - len
+                        - "$ref": xs
+                    - "$call":
+                        - sub
+                        - "$ref": hi
+                        - "$ref": lo
+            - "$call":
+                - fn
+                - - xs
+                - "$call":
+                    - append
+                    - "$ref": xs
+                    - "$call":
+                        - add
+                        - "$ref": lo
+                        - "$call":
+                            - len
+                            - "$ref": xs
+            - []
+    environment: []
+    kind: function
+    location:
+      path:
+        - range
+      source: "<root>"
+    program:
+      ref: object2
+  object2:
+    kind: program
+    sources:
+      - code:
+          fizzbuzz:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - cond
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - mod
+                          - "$ref": "n"
+                          - 15
+                      - 0
+                  - FizzBuzz
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - mod
+                          - "$ref": "n"
+                          - 3
+                      - 0
+                  - Fizz
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - mod
+                          - "$ref": "n"
+                          - 5
+                      - 0
+                  - Buzz
+                  - "$ref": "n"
+          out:
+            "$call":
+              - map
+              - "$ref": fizzbuzz
+              - "$call":
+                  - range
+                  - 1
+                  - 16
+          range:
+            "$call":
+              - fn
+              - - lo
+                - hi
+              - "$call":
+                  - until
+                  - "$call":
+                      - fn
+                      - - xs
+                      - "$call":
+                          - eq
+                          - "$call":
+                              - len
+                              - "$ref": xs
+                          - "$call":
+                              - sub
+                              - "$ref": hi
+                              - "$ref": lo
+                  - "$call":
+                      - fn
+                      - - xs
+                      - "$call":
+                          - append
+                          - "$ref": xs
+                          - "$call":
+                              - add
+                              - "$ref": lo
+                              - "$call":
+                                  - len
+                                  - "$ref": xs
+                  - []
+        source: "<root>"
 root:
-  range:
-    ref: object0
   fizzbuzz:
-    ref: object1
+    ref: object0
   out:
     - 1
     - 2
@@ -20,125 +177,6 @@ root:
     - 13
     - 14
     - FizzBuzz
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object2
-    code:
-      - symbol: fn
-      - - symbol: lo
-        - symbol: hi
-      - - symbol: until
-        - - symbol: fn
-          - - symbol: xs
-          - - symbol: eq
-            - - symbol: len
-              - symbol: xs
-            - - symbol: sub
-              - symbol: hi
-              - symbol: lo
-        - - symbol: fn
-          - - symbol: xs
-          - - symbol: append
-            - symbol: xs
-            - - symbol: add
-              - symbol: lo
-              - - symbol: len
-                - symbol: xs
-        - []
-    location:
-      source: "<root>"
-      path:
-        - "range"
-    environment: []
-    bindings: {}
-  object1:
-    kind: function
-    program:
-      ref: object2
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: cond
-        - - symbol: eq
-          - - symbol: mod
-            - symbol: "n"
-            - 15
-          - 0
-        - FizzBuzz
-        - - symbol: eq
-          - - symbol: mod
-            - symbol: "n"
-            - 3
-          - 0
-        - Fizz
-        - - symbol: eq
-          - - symbol: mod
-            - symbol: "n"
-            - 5
-          - 0
-        - Buzz
-        - symbol: "n"
-    location:
-      source: "<root>"
-      path:
-        - "fizzbuzz"
-    environment: []
-    bindings: {}
-  object2:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          range:
-            - symbol: fn
-            - - symbol: lo
-              - symbol: hi
-            - - symbol: until
-              - - symbol: fn
-                - - symbol: xs
-                - - symbol: eq
-                  - - symbol: len
-                    - symbol: xs
-                  - - symbol: sub
-                    - symbol: hi
-                    - symbol: lo
-              - - symbol: fn
-                - - symbol: xs
-                - - symbol: append
-                  - symbol: xs
-                  - - symbol: add
-                    - symbol: lo
-                    - - symbol: len
-                      - symbol: xs
-              - []
-          fizzbuzz:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: cond
-              - - symbol: eq
-                - - symbol: mod
-                  - symbol: "n"
-                  - 15
-                - 0
-              - FizzBuzz
-              - - symbol: eq
-                - - symbol: mod
-                  - symbol: "n"
-                  - 3
-                - 0
-              - Fizz
-              - - symbol: eq
-                - - symbol: mod
-                  - symbol: "n"
-                  - 5
-                - 0
-              - Buzz
-              - symbol: "n"
-          out:
-            - symbol: map
-            - symbol: fizzbuzz
-            - - symbol: range
-              - 1
-              - 16
+  range:
+    ref: object1
+status: finished

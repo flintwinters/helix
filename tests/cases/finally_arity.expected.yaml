@@ -1,8 +1,8 @@
-status: error
 error:
+  column: 1
   kind: arity
+  line: 2
   message: "`finally` takes 2 arguments, got 1"
   path: /
   reference: []
-  line: 1
-  column: 1
+status: error

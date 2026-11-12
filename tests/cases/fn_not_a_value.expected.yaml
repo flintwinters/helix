@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 24
   kind: type
+  line: 3
   message: "expected string, list or map, got function"
-  path: /r/1
+  path: "/r/$call/1"
   reference:
-    - "r"
+    - r
+    - "$call"
     - 1
-  line: 2
-  column: 10
+status: error

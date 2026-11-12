@@ -1,82 +1,270 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - and
+            - "$call":
+                - ge
+                - "$ref": "n"
+                - 1
+            - "$call":
+                - le
+                - "$ref": "n"
+                - 65535
+    environment: []
+    kind: function
+    location:
+      path:
+        - in_port
+      source: "<root>"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          abstract_stays:
+            "$call":
+              - get
+              - "$ref": server
+              - concrete
+          has_ssh:
+            "$call":
+              - class
+              - has_ssh
+              - "$call":
+                  - record
+                  - ssh_port
+                  - "$call":
+                      - default
+                      - "$ref": port
+                      - 22
+          in_port:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - and
+                  - "$call":
+                      - ge
+                      - "$ref": "n"
+                      - 1
+                  - "$call":
+                      - le
+                      - "$ref": "n"
+                      - 65535
+          machine:
+            "$call":
+              - class
+              - machine
+              - "$call":
+                  - record
+                  - hostname
+                  - "$ref": string
+          not_yet:
+            "$call":
+              - try
+              - "$call":
+                  - inherit
+                  - bare
+                  - "$call":
+                      - list
+                      - "$ref": server
+                  - hostname: bare
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          parents_of:
+            "$call":
+              - parents
+              - "$ref": web01
+          port:
+            "$call":
+              - refine
+              - "$ref": integer
+              - "$ref": in_port
+          realized_twice:
+            "$call":
+              - eq
+              - "$call":
+                  - realize
+                  - "$ref": web01
+              - "$ref": web01
+          server:
+            "$call":
+              - extend
+              - server
+              - "$call":
+                  - list
+                  - "$ref": machine
+              - "$call":
+                  - record
+                  - packages
+                  - "$call":
+                      - list_of
+                      - "$ref": string
+              - {}
+          server_fields:
+            "$call":
+              - fields
+              - "$ref": server
+          undeclared:
+            "$call":
+              - try
+              - "$call":
+                  - inherit
+                  - typo
+                  - "$call":
+                      - list
+                      - "$ref": machine
+                  - hostnam: x
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - message
+          web01:
+            "$call":
+              - inherit
+              - web01
+              - "$call":
+                  - list
+                  - "$ref": server
+                  - "$ref": has_ssh
+              - hostname: web01
+                packages:
+                  - nginx
+          web02:
+            "$call":
+              - inherit
+              - web02
+              - "$call":
+                  - list
+                  - "$ref": server
+                  - "$ref": has_ssh
+              - hostname: web02
+                packages: []
+                ssh_port: 2222
+          wrong_value:
+            "$call":
+              - try
+              - "$call":
+                  - inherit
+                  - bad
+                  - "$call":
+                      - list
+                      - "$ref": machine
+                  - hostname: 5
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+        source: "<root>"
 root:
-  in_port:
-    ref: object0
-  port:
-    type: refine
-    of: integer
-    check:
-      ref: object0
-  machine:
-    type: class
-    name: machine
-    parents: []
-    fields:
-      hostname: string
-    values: {}
-    provenance:
-      hostname:
-        type: machine
-    concrete: false
+  abstract_stays: false
   has_ssh:
-    type: class
-    name: has_ssh
-    parents: []
+    concrete: false
     fields:
       ssh_port:
-        type: default
+        default: 22
         of:
-          type: refine
-          of: integer
           check:
             ref: object0
-        default: 22
-    values: {}
+          of: integer
+          type: refine
+        type: default
+    name: has_ssh
+    parents: []
     provenance:
       ssh_port:
         type: has_ssh
-    concrete: false
-  server:
     type: class
-    name: server
-    parents:
-      - "machine"
+    values: {}
+  in_port:
+    ref: object0
+  machine:
+    concrete: false
+    fields:
+      hostname: string
+    name: machine
+    parents: []
+    provenance:
+      hostname:
+        type: machine
+    type: class
+    values: {}
+  not_yet:
+    column: 5
+    data:
+      missing:
+        - field: packages
+          required_by: server
+    kind: abstract
+    line: 42
+    message: "class `bare` is abstract: missing `packages` (required by server)"
+    path: "/not_yet/$call/1"
+    reference:
+      - not_yet
+      - "$call"
+      - 1
+  parents_of:
+    - server
+    - has_ssh
+  port:
+    check:
+      ref: object0
+    of: integer
+    type: refine
+  realized_twice: true
+  server:
+    concrete: false
     fields:
       hostname: string
       packages:
-        type: list
         of: string
-    values: {}
+        type: list
+    name: server
+    parents:
+      - machine
     provenance:
       hostname:
         type: machine
       packages:
         type: server
-    concrete: false
-  web01:
     type: class
-    name: web01
-    parents:
-      - "server"
-      - has_ssh
+    values: {}
+  server_fields:
+    hostname: string
+    packages:
+      of: string
+      type: list
+  undeclared: "`typo` sets `hostnam`, which no parent or field declares"
+  web01:
+    concrete: true
     fields:
       hostname: string
       packages:
-        type: list
         of: string
+        type: list
       ssh_port:
-        type: default
+        default: 22
         of:
-          type: refine
-          of: integer
           check:
             ref: object0
-        default: 22
-    values:
-      hostname: web01
-      packages:
-        - "nginx"
-      ssh_port: 22
+          of: integer
+          type: refine
+        type: default
+    name: web01
+    parents:
+      - server
+      - has_ssh
     provenance:
       hostname:
         type: machine
@@ -87,30 +275,31 @@ root:
       ssh_port:
         type: has_ssh
         value: default of has_ssh
-    concrete: true
-  web02:
     type: class
-    name: web02
-    parents:
-      - "server"
-      - has_ssh
+    values:
+      hostname: web01
+      packages:
+        - nginx
+      ssh_port: 22
+  web02:
+    concrete: true
     fields:
       hostname: string
       packages:
-        type: list
         of: string
+        type: list
       ssh_port:
-        type: default
+        default: 22
         of:
-          type: refine
-          of: integer
           check:
             ref: object0
-        default: 22
-    values:
-      hostname: web02
-      packages: []
-      ssh_port: 2222
+          of: integer
+          type: refine
+        type: default
+    name: web02
+    parents:
+      - server
+      - has_ssh
     provenance:
       hostname:
         type: machine
@@ -121,170 +310,23 @@ root:
       ssh_port:
         type: has_ssh
         value: web02
-    concrete: true
-  parents_of:
-    - "server"
-    - has_ssh
-  server_fields:
-    hostname: string
-    packages:
-      type: list
-      of: string
-  not_yet:
-    kind: abstract
-    message: "class `bare` is abstract: missing `packages` (required by server)"
-    path: /not_yet/1
-    reference:
-      - "not_yet"
-      - 1
-    line: 10
-    column: 16
-    data:
-      missing:
-        - field: packages
-          required_by: server
+    type: class
+    values:
+      hostname: web02
+      packages: []
+      ssh_port: 2222
   wrong_value:
-    kind: type
-    message: "1 misfit in the values of `bad`: /hostname: expected string, got integer"
-    path: /wrong_value/1
-    reference:
-      - "wrong_value"
-      - 1
-    line: 11
-    column: 20
+    column: 5
     data:
       violations:
         - at: /hostname
           message: "expected string, got integer"
-  undeclared: "`typo` sets `hostnam`, which no parent or field declares"
-  realized_twice: true
-  abstract_stays: false
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object1
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: and
-        - - symbol: ge
-          - symbol: "n"
-          - 1
-        - - symbol: le
-          - symbol: "n"
-          - 65535
-    location:
-      source: "<root>"
-      path:
-        - "in_port"
-    environment: []
-    bindings: {}
-  object1:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          in_port:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: and
-              - - symbol: ge
-                - symbol: "n"
-                - 1
-              - - symbol: le
-                - symbol: "n"
-                - 65535
-          port:
-            - symbol: refine
-            - symbol: integer
-            - symbol: in_port
-          machine:
-            - symbol: class
-            - machine
-            - - symbol: record
-              - hostname
-              - symbol: string
-          has_ssh:
-            - symbol: class
-            - has_ssh
-            - - symbol: record
-              - ssh_port
-              - - symbol: default
-                - symbol: port
-                - 22
-          server:
-            - symbol: extend
-            - server
-            - - symbol: list
-              - symbol: machine
-            - - symbol: record
-              - packages
-              - - symbol: list_of
-                - symbol: string
-            - {}
-          web01:
-            - symbol: inherit
-            - web01
-            - - symbol: list
-              - symbol: server
-              - symbol: has_ssh
-            - hostname: web01
-              packages:
-                - "nginx"
-          web02:
-            - symbol: inherit
-            - web02
-            - - symbol: list
-              - symbol: server
-              - symbol: has_ssh
-            - hostname: web02
-              packages: []
-              ssh_port: 2222
-          parents_of:
-            - symbol: parents
-            - symbol: web01
-          server_fields:
-            - symbol: fields
-            - symbol: server
-          not_yet:
-            - symbol: try
-            - - symbol: inherit
-              - bare
-              - - symbol: list
-                - symbol: server
-              - hostname: bare
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          wrong_value:
-            - symbol: try
-            - - symbol: inherit
-              - bad
-              - - symbol: list
-                - symbol: machine
-              - hostname: 5
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          undeclared:
-            - symbol: try
-            - - symbol: inherit
-              - typo
-              - - symbol: list
-                - symbol: machine
-              - hostnam: x
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - message
-          realized_twice:
-            - symbol: eq
-            - - symbol: realize
-              - symbol: web01
-            - symbol: web01
-          abstract_stays:
-            - symbol: get
-            - symbol: server
-            - concrete
+    kind: type
+    line: 47
+    message: "1 misfit in the values of `bad`: /hostname: expected string, got integer"
+    path: "/wrong_value/$call/1"
+    reference:
+      - wrong_value
+      - "$call"
+      - 1
+status: finished

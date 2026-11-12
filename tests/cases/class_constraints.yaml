@@ -1,8 +1,36 @@
-machine: [class, "machine", [record, "min", integer, "max", integer]]
-ordered: [fn, [v], [le, [get, v, "min"], [get, v, "max"]]]
-sane: [constrain, machine, ordered]
-open_before: [open_fields, sane]
-ok: [get, [inherit, "ok", [list, sane], {min: 1, max: 5}], "values"]
-violated: [try, [inherit, "bad", [list, sane], {min: 9, max: 5}], [fn, [e], [get, e, "data"]]]
-inherited_twice: [get, [inherit, "d", [list, sane, [extend, "x", [list, sane], [record], {}]], {min: 1, max: 2}], "constraints"]
-open_after_partial: [open_fields, [extend, "p", [list, sane], [record], {min: 1}]]
+# Helix explicit syntax; migrated from legacy source.
+"machine": {"$call": ["class", "machine", {"$call": ["record", "min", {"$ref": "integer"}, "max", {"$ref": "integer"}]}]}
+"ordered":
+  "$call":
+  - "fn"
+  - - "v"
+  - {"$call": ["le", {"$call": ["get", {"$ref": "v"}, "min"]}, {"$call": ["get", {"$ref": "v"}, "max"]}]}
+"sane": {"$call": ["constrain", {"$ref": "machine"}, {"$ref": "ordered"}]}
+"open_before": {"$call": ["open_fields", {"$ref": "sane"}]}
+"ok":
+  "$call":
+  - "get"
+  - {"$call": ["inherit", "ok", {"$call": ["list", {"$ref": "sane"}]}, {"min": 1, "max": 5}]}
+  - "values"
+"violated":
+  "$call":
+  - "try"
+  - {"$call": ["inherit", "bad", {"$call": ["list", {"$ref": "sane"}]}, {"min": 9, "max": 5}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
+"inherited_twice":
+  "$call":
+  - "get"
+  - "$call":
+    - "inherit"
+    - "d"
+    - "$call":
+      - "list"
+      - {"$ref": "sane"}
+      - {"$call": ["extend", "x", {"$call": ["list", {"$ref": "sane"}]}, {"$call": ["record"]}, {}]}
+    - "min": 1
+      "max": 2
+  - "constraints"
+"open_after_partial":
+  "$call":
+  - "open_fields"
+  - {"$call": ["extend", "p", {"$call": ["list", {"$ref": "sane"}]}, {"$call": ["record"]}, {"min": 1}]}

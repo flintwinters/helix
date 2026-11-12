@@ -1,83 +1,106 @@
-status: finished
-root:
-  handle:
-    ref: object0
-  transient: retry
-  builtin: zero
-  reraised: fatal
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - e
+        - "$call":
+            - cond
+            - "$call":
+                - eq
+                - "$call":
+                    - get
+                    - "$ref": e
+                    - kind
+                - transient
+            - retry
+            - "$call":
+                - eq
+                - "$call":
+                    - get
+                    - "$ref": e
+                    - kind
+                - divide_by_zero
+            - zero
+            - "$call":
+                - raise
+                - "$ref": e
+    environment: []
     kind: function
+    location:
+      path:
+        - handle
+      source: "<root>"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - symbol: e
-      - - symbol: cond
-        - - symbol: eq
-          - - symbol: get
-            - symbol: e
-            - kind
-          - transient
-        - retry
-        - - symbol: eq
-          - - symbol: get
-            - symbol: e
-            - kind
-          - divide_by_zero
-        - zero
-        - - symbol: raise
-          - symbol: e
-    location:
-      source: "<root>"
-      path:
-        - "handle"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          handle:
-            - symbol: fn
-            - - symbol: e
-            - - symbol: cond
-              - - symbol: eq
-                - - symbol: get
-                  - symbol: e
-                  - kind
-                - transient
-              - retry
-              - - symbol: eq
-                - - symbol: get
-                  - symbol: e
-                  - kind
-                - divide_by_zero
-              - zero
-              - - symbol: raise
-                - symbol: e
-          transient:
-            - symbol: try
-            - - symbol: raise
-              - transient
-              - try again
-            - symbol: handle
+      - code:
           builtin:
-            - symbol: try
-            - - symbol: div
-              - 1
-              - 0
-            - symbol: handle
+            "$call":
+              - try
+              - "$call":
+                  - div
+                  - 1
+                  - 0
+              - "$ref": handle
+          handle:
+            "$call":
+              - fn
+              - - e
+              - "$call":
+                  - cond
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - get
+                          - "$ref": e
+                          - kind
+                      - transient
+                  - retry
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - get
+                          - "$ref": e
+                          - kind
+                      - divide_by_zero
+                  - zero
+                  - "$call":
+                      - raise
+                      - "$ref": e
           reraised:
-            - symbol: try
-            - - symbol: try
-              - - symbol: raise
-                - fatal
-                - disk gone
-              - symbol: handle
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
+            "$call":
+              - try
+              - "$call":
+                  - try
+                  - "$call":
+                      - raise
+                      - fatal
+                      - disk gone
+                  - "$ref": handle
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          transient:
+            "$call":
+              - try
+              - "$call":
+                  - raise
+                  - transient
+                  - try again
+              - "$ref": handle
+        source: "<root>"
+root:
+  builtin: zero
+  handle:
+    ref: object0
+  reraised: fatal
+  transient: retry
+status: finished

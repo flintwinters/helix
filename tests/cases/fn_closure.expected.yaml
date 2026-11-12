@@ -1,51 +1,57 @@
-status: finished
+objects:
+  object0:
+    bindings:
+      rate:
+        code:
+          path:
+            - rate
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - mul
+            - "$ref": "n"
+            - "$ref": rate
+    environment: []
+    kind: function
+    location:
+      path:
+        - scale
+      source: "<root>"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          here:
+            "$call":
+              - scale
+              - 5
+          inner:
+            rate: 10
+            there:
+              "$call":
+                - scale
+                - 5
+          rate: 3
+          scale:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - mul
+                  - "$ref": "n"
+                  - "$ref": rate
+        source: "<root>"
 root:
-  rate: 3
-  scale:
-    ref: object0
   here: 15
   inner:
     rate: 10
     there: 15
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object1
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: mul
-        - symbol: "n"
-        - symbol: rate
-    location:
-      source: "<root>"
-      path:
-        - "scale"
-    environment: []
-    bindings:
-      rate:
-        code:
-          source: "<root>"
-          path:
-            - "rate"
-  object1:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          rate: 3
-          scale:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: mul
-              - symbol: "n"
-              - symbol: rate
-          here:
-            - symbol: scale
-            - 5
-          inner:
-            rate: 10
-            there:
-              - symbol: scale
-              - 5
+  rate: 3
+  scale:
+    ref: object0
+status: finished

@@ -1,12 +1,12 @@
-status: finished
 root:
-  name: world
-  greeting: "hello, world!"
-  length: 13
-  unicode_length: 5
-  middle: world
+  as_text: n=42 ok=true x=1.5 z=null
   empty_slice: ""
+  greeting: "hello, world!"
   has_sub: true
   lacks_sub: false
+  length: 13
+  middle: world
+  name: world
   ordered: true
-  as_text: n=42 ok=true x=1.5 z=null
+  unicode_length: 5
+status: finished

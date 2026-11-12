@@ -1,9 +1,9 @@
-status: signaled
 pending_effect:
   id: 1
+  location:
+    path:
+      - arguments
+    source: "<root>"
   operation: args
   payload: ~
-  location:
-    source: "<root>"
-    path:
-      - "arguments"
+status: signaled

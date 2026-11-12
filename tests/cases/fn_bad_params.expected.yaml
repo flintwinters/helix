@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 28
   kind: type
+  line: 2
   message: "parameters must be a list of names or `[name, type]` pairs"
-  path: /broken/1
+  path: "/broken/$call/1"
   reference:
-    - "broken"
+    - broken
+    - "$call"
     - 1
-  line: 1
-  column: 14
+status: error

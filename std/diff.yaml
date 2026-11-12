@@ -1,14 +1,61 @@
+# Helix explicit syntax; migrated from legacy source.
 # Shallow configuration comparison; nested values are compared structurally as units.
-# Added keys follow new-map order; removed and changed keys follow old-map order.
+# Added, removed and changed keys each follow canonical string-key order.
 # Presence is checked separately from values: missing is distinct from null.
 # Immutable list copies and key lookups can be quadratic for large inputs.
 # Bounded map/filter iteration applies; intended for small configuration maps.
-compare:
-  - fn
-  - [[old, map], [new, map]]
-  - - let
-    - added: [filter, [fn, [key], [not, [has, old, key]]], [keys, new]]
-      removed: [filter, [fn, [key], [not, [has, new, key]]], [keys, old]]
-      changed: [filter, [fn, [key], [and, [has, new, key], [ne, [get, old, key], [get, new, key]]]], [keys, old]]
-    - [dict, "added", added, "removed", removed, "changed", [map, [fn, [key], [dict, "key", key, "before", [get, old, key], "after", [get, new, key]]], changed]]
-  - map
+"compare":
+  "$call":
+  - "fn"
+  - - - "old"
+      - {"$ref": "map"}
+    - - "new"
+      - {"$ref": "map"}
+  - "$call":
+    - "let"
+    - "added":
+        "$call":
+        - "filter"
+        - {"$call": ["fn", ["key"], {"$call": ["not", {"$call": ["has", {"$ref": "old"}, {"$ref": "key"}]}]}]}
+        - {"$call": ["keys", {"$ref": "new"}]}
+      "removed":
+        "$call":
+        - "filter"
+        - {"$call": ["fn", ["key"], {"$call": ["not", {"$call": ["has", {"$ref": "new"}, {"$ref": "key"}]}]}]}
+        - {"$call": ["keys", {"$ref": "old"}]}
+      "changed":
+        "$call":
+        - "filter"
+        - "$call":
+          - "fn"
+          - - "key"
+          - "$call":
+            - "and"
+            - {"$call": ["has", {"$ref": "new"}, {"$ref": "key"}]}
+            - "$call":
+              - "ne"
+              - {"$call": ["get", {"$ref": "old"}, {"$ref": "key"}]}
+              - {"$call": ["get", {"$ref": "new"}, {"$ref": "key"}]}
+        - {"$call": ["keys", {"$ref": "old"}]}
+    - "$call":
+      - "dict"
+      - "added"
+      - {"$ref": "added"}
+      - "removed"
+      - {"$ref": "removed"}
+      - "changed"
+      - "$call":
+        - "map"
+        - "$call":
+          - "fn"
+          - - "key"
+          - "$call":
+            - "dict"
+            - "key"
+            - {"$ref": "key"}
+            - "before"
+            - {"$call": ["get", {"$ref": "old"}, {"$ref": "key"}]}
+            - "after"
+            - {"$call": ["get", {"$ref": "new"}, {"$ref": "key"}]}
+        - {"$ref": "changed"}
+  - {"$ref": "map"}

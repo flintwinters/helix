@@ -1,9 +1,10 @@
-t: true
-f: false
-both: [and, t, f]
-either: [or, f, t]
-all: [and, t, t, t]
-none: [or, f, f]
-skips_error_and: [and, f, [div, 1, 0]]
-skips_error_or: [or, t, [div, 1, 0]]
-skips_type_error: [and, f, 1]
+# Helix explicit syntax; migrated from legacy source.
+"t": true
+"f": false
+"both": {"$call": ["and", {"$ref": "t"}, {"$ref": "f"}]}
+"either": {"$call": ["or", {"$ref": "f"}, {"$ref": "t"}]}
+"all": {"$call": ["and", {"$ref": "t"}, {"$ref": "t"}, {"$ref": "t"}]}
+"none": {"$call": ["or", {"$ref": "f"}, {"$ref": "f"}]}
+"skips_error_and": {"$call": ["and", {"$ref": "f"}, {"$call": ["div", 1, 0]}]}
+"skips_error_or": {"$call": ["or", {"$ref": "t"}, {"$call": ["div", 1, 0]}]}
+"skips_type_error": {"$call": ["and", {"$ref": "f"}, 1]}

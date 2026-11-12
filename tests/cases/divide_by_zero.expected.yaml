@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 6
   kind: divide_by_zero
+  line: 3
   message: "`div` by zero"
   path: /b
   reference:
-    - "b"
-  line: 2
-  column: 4
+    - b
+status: error

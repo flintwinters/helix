@@ -1,12 +1,14 @@
-status: finished
 root:
   caught:
+    column: 55
     kind: missing
+    line: 3
     message: no index 9
-    path: /caught/1/2
+    path: "/caught/$call/1/$call/2"
     reference:
-      - "caught"
+      - caught
+      - "$call"
       - 1
+      - "$call"
       - 2
-    line: 2
-    column: 29
+status: finished

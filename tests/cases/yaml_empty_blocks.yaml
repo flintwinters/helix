@@ -1,6 +1,6 @@
-literal: |
-folded: >
-keep: |+
-
-strip: |-
-end: |
+# Helix explicit syntax; migrated from legacy source.
+"literal": ""
+"folded": ""
+"keep": "\n"
+"strip": ""
+"end": ""

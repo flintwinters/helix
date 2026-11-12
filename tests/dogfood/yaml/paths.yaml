@@ -1,43 +1,214 @@
-t: [import, std:test]
-y: [import, std:yaml]
-l: [import, std:list]
-atoms: [list, null, false, 0, '', [1, 2], {nested: true}]
-pairs: [l.flat_map, atoms, [fn, [old], [map, [fn, [replacement], [list, old, replacement]], atoms]]]
-laws:
-  - t.property
+# Helix explicit syntax; migrated from legacy source.
+"t": {"$call": ["import", "std:test"]}
+"y": {"$call": ["import", "std:yaml"]}
+"l": {"$call": ["import", "std:list"]}
+"atoms": {"$call": ["list", null, false, 0, "", [1, 2], {"nested": true}]}
+"pairs":
+  "$call":
+  - "l.flat_map"
+  - {"$ref": "atoms"}
+  - "$call":
+    - "fn"
+    - - "old"
+    - "$call":
+      - "map"
+      - {"$call": ["fn", ["replacement"], {"$call": ["list", {"$ref": "old"}, {"$ref": "replacement"}]}]}
+      - {"$ref": "atoms"}
+"laws":
+  "$call":
+  - "t.property"
   - "read after write, sibling preservation, original immutability, and replacement idempotence"
-  - pairs
-  - - fn
-    - [pair]
-    - - let
-      - old: [get, pair, 0]
-        replacement: [get, pair, 1]
-        original: [dict, "root", [list, old, [dict, "leaf", old, "sibling", false]], "untouched", null]
-        path: [list, "root", 1, "leaf"]
-        updated: [y.set_in, original, path, replacement]
-      - [and, [eq, [y.get_in, updated, path], replacement], [eq, [y.get_in, original, path], old], [eq, [y.get_in, updated, [list, "root", 0]], old], [eq, [y.get_in, updated, [list, "root", 1, "sibling"]], false], [eq, [get, updated, "untouched"], null], [eq, [y.set_in, updated, path, replacement], updated]]
-errors:
-  - {name: missing_map_key, input: {operation: get, value: {}, path: [list, 'absent'], kind: missing}}
-  - {name: missing_list_index, input: {operation: get, value: [], path: [0], kind: missing}}
-  - {name: negative_index, input: {operation: get, value: [1], path: [-1], kind: range}}
-  - {name: string_list_index, input: {operation: get, value: [1], path: [list, '0'], kind: type}}
-  - {name: numeric_map_key, input: {operation: get, value: {'0': 1}, path: [0], kind: type}}
-  - {name: null_intermediate, input: {operation: get, value: {a: null}, path: [list, 'a', 'b'], kind: type}}
-  - {name: scalar_root, input: {operation: get, value: false, path: [list, 'a'], kind: type}}
-  - {name: nonlist_get_path, input: {operation: get, value: {}, path: 'a', kind: type}}
-  - {name: missing_intermediate, input: {operation: set, value: {}, path: [list, 'a', 'b'], kind: missing}}
-  - {name: out_of_bounds_set, input: {operation: set, value: [1], path: [1], kind: range}}
-  - {name: negative_set, input: {operation: set, value: [1], path: [-1], kind: range}}
-  - {name: numeric_map_set, input: {operation: set, value: {}, path: [0], kind: type}}
-  - {name: scalar_intermediate_set, input: {operation: set, value: {a: false}, path: [list, 'a', 'b'], kind: type}}
-  - {name: nonlist_set_path, input: {operation: set, value: {}, path: null, kind: type}}
-error_report: [t.table, errors, [fn, [row], [t.throws, [fn, [], [if, [eq, [get, row, "operation"], "get"], [y.get_in, [get, row, "value"], [get, row, "path"]], [y.set_in, [get, row, "value"], [get, row, "path"], 42]]], [get, row, "kind"]]]]
-examples:
-  - t.suite
-  - - {name: empty_get_path, run: [fn, [], [t.equal, [y.get_in, false, []], false]]}
-    - {name: empty_set_path, run: [fn, [], [t.equal, [y.set_in, false, [], {a: 1}], {a: 1}]]}
-    - {name: empty_and_punctuation_keys, run: [fn, [], [t.equal, [y.get_in, {'': {'a/b': {'a~b': 7}}}, [list, '', 'a/b', 'a~b']], 7]]}
-    - {name: replacement_keeps_key_order, run: [fn, [], [t.equal, [keys, [y.set_in, {z: 1, a: 2}, [list, 'z'], null]], [list, 'z', 'a']]]}
-    - {name: insertion_appends_key, run: [fn, [], [t.equal, [keys, [y.set_in, {z: 1, a: 2}, [list, 'new'], false]], [list, 'z', 'a', 'new']]]}
-    - {name: missing_null_remains_distinct, run: [fn, [], [t.equal, [has, [y.set_in, {}, [list, 'new'], null], 'new'], true]]}
-report: [t.combine, [list, laws, error_report, examples]]
+  - {"$ref": "pairs"}
+  - "$call":
+    - "fn"
+    - - "pair"
+    - "$call":
+      - "let"
+      - "old": {"$call": ["get", {"$ref": "pair"}, 0]}
+        "replacement": {"$call": ["get", {"$ref": "pair"}, 1]}
+        "original":
+          "$call":
+          - "dict"
+          - "root"
+          - {"$call": ["list", {"$ref": "old"}, {"$call": ["dict", "leaf", {"$ref": "old"}, "sibling", false]}]}
+          - "untouched"
+          - null
+        "path": {"$call": ["list", "root", 1, "leaf"]}
+        "updated": {"$call": ["y.set_in", {"$ref": "original"}, {"$ref": "path"}, {"$ref": "replacement"}]}
+      - "$call":
+        - "and"
+        - {"$call": ["eq", {"$call": ["y.get_in", {"$ref": "updated"}, {"$ref": "path"}]}, {"$ref": "replacement"}]}
+        - {"$call": ["eq", {"$call": ["y.get_in", {"$ref": "original"}, {"$ref": "path"}]}, {"$ref": "old"}]}
+        - "$call":
+          - "eq"
+          - {"$call": ["y.get_in", {"$ref": "updated"}, {"$call": ["list", "root", 0]}]}
+          - {"$ref": "old"}
+        - "$call":
+          - "eq"
+          - {"$call": ["y.get_in", {"$ref": "updated"}, {"$call": ["list", "root", 1, "sibling"]}]}
+          - false
+        - {"$call": ["eq", {"$call": ["get", {"$ref": "updated"}, "untouched"]}, null]}
+        - "$call":
+          - "eq"
+          - {"$call": ["y.set_in", {"$ref": "updated"}, {"$ref": "path"}, {"$ref": "replacement"}]}
+          - {"$ref": "updated"}
+"errors":
+- "name": "missing_map_key"
+  "input":
+    "operation": "get"
+    "value": {}
+    "path": {"$call": ["list", "absent"]}
+    "kind": "missing"
+- "name": "missing_list_index"
+  "input":
+    "operation": "get"
+    "value": []
+    "path": [0]
+    "kind": "missing"
+- "name": "negative_index"
+  "input":
+    "operation": "get"
+    "value": [1]
+    "path": [-1]
+    "kind": "range"
+- "name": "string_list_index"
+  "input":
+    "operation": "get"
+    "value": [1]
+    "path": {"$call": ["list", "0"]}
+    "kind": "type"
+- "name": "numeric_map_key"
+  "input":
+    "operation": "get"
+    "value":
+      "0": 1
+    "path": [0]
+    "kind": "type"
+- "name": "null_intermediate"
+  "input":
+    "operation": "get"
+    "value":
+      "a": null
+    "path": {"$call": ["list", "a", "b"]}
+    "kind": "type"
+- "name": "scalar_root"
+  "input":
+    "operation": "get"
+    "value": false
+    "path": {"$call": ["list", "a"]}
+    "kind": "type"
+- "name": "nonlist_get_path"
+  "input":
+    "operation": "get"
+    "value": {}
+    "path": "a"
+    "kind": "type"
+- "name": "missing_intermediate"
+  "input":
+    "operation": "set"
+    "value": {}
+    "path": {"$call": ["list", "a", "b"]}
+    "kind": "missing"
+- "name": "out_of_bounds_set"
+  "input":
+    "operation": "set"
+    "value": [1]
+    "path": [1]
+    "kind": "range"
+- "name": "negative_set"
+  "input":
+    "operation": "set"
+    "value": [1]
+    "path": [-1]
+    "kind": "range"
+- "name": "numeric_map_set"
+  "input":
+    "operation": "set"
+    "value": {}
+    "path": [0]
+    "kind": "type"
+- "name": "scalar_intermediate_set"
+  "input":
+    "operation": "set"
+    "value":
+      "a": false
+    "path": {"$call": ["list", "a", "b"]}
+    "kind": "type"
+- "name": "nonlist_set_path"
+  "input":
+    "operation": "set"
+    "value": {}
+    "path": null
+    "kind": "type"
+"error_report":
+  "$call":
+  - "t.table"
+  - {"$ref": "errors"}
+  - "$call":
+    - "fn"
+    - - "row"
+    - "$call":
+      - "t.throws"
+      - "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "if"
+          - {"$call": ["eq", {"$call": ["get", {"$ref": "row"}, "operation"]}, "get"]}
+          - "$call":
+            - "y.get_in"
+            - {"$call": ["get", {"$ref": "row"}, "value"]}
+            - {"$call": ["get", {"$ref": "row"}, "path"]}
+          - "$call":
+            - "y.set_in"
+            - {"$call": ["get", {"$ref": "row"}, "value"]}
+            - {"$call": ["get", {"$ref": "row"}, "path"]}
+            - 42
+      - {"$call": ["get", {"$ref": "row"}, "kind"]}
+"examples":
+  "$call":
+  - "t.suite"
+  - - "name": "empty_get_path"
+      "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["y.get_in", false, []]}, false]}]}
+    - "name": "empty_set_path"
+      "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["y.set_in", false, [], {"a": 1}]}, {"a": 1}]}]}
+    - "name": "empty_and_punctuation_keys"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - {"$call": ["y.get_in", {? "" : {"a/b": {"a~b": 7}}}, {"$call": ["list", "", "a/b", "a~b"]}]}
+          - 7
+    - "name": "replacement_keeps_key_order"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - {"$call": ["keys", {"$call": ["y.set_in", {"z": 1, "a": 2}, {"$call": ["list", "z"]}, null]}]}
+          - {"$call": ["list", "a", "z"]}
+    - "name": "insertion_has_canonical_order"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - {"$call": ["keys", {"$call": ["y.set_in", {"z": 1, "a": 2}, {"$call": ["list", "new"]}, false]}]}
+          - {"$call": ["list", "a", "new", "z"]}
+    - "name": "missing_null_remains_distinct"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - {"$call": ["has", {"$call": ["y.set_in", {}, {"$call": ["list", "new"]}, null]}, "new"]}
+          - true
+"report":
+  "$call":
+  - "t.combine"
+  - {"$call": ["list", {"$ref": "laws"}, {"$ref": "error_report"}, {"$ref": "examples"}]}

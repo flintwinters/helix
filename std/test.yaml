@@ -1,137 +1,369 @@
+# Helix explicit syntax; migrated from legacy source.
 # Pure testing policy. Cases are {name: string, run: zero-argument function}.
 # Reports are values; a failing case never prevents later cases from running.
 # No file/process discovery, clocks, effects, or interpreter crash detection live here.
-capture:
-  - fn
-  - [[thunk, function]]
-  - - try
-    - [dict, "outcome", "passed", "value", [call, thunk]]
-    - [fn, [error], [dict, "outcome", "failed", "error", error]]
-  - map
-equal:
-  - fn
-  - [actual, expected]
-  - - if
-    - [eq, actual, expected]
+"capture":
+  "$call":
+  - "fn"
+  - - - "thunk"
+      - {"$ref": "function"}
+  - "$call":
+    - "try"
+    - {"$call": ["dict", "outcome", "passed", "value", {"$call": ["call", {"$ref": "thunk"}]}]}
+    - {"$call": ["fn", ["error"], {"$call": ["dict", "outcome", "failed", "error", {"$ref": "error"}]}]}
+  - {"$ref": "map"}
+"equal":
+  "$call":
+  - "fn"
+  - - "actual"
+    - "expected"
+  - "$call":
+    - "if"
+    - {"$call": ["eq", {"$ref": "actual"}, {"$ref": "expected"}]}
     - null
-    - [raise, "assertion", "values differ", [dict, "expected", expected, "actual", actual]]
-# Return the original error so callers can additionally inspect payload and source blame.
-throws:
-  - fn
-  - [[thunk, function], [kind, string]]
-  - - let
-    - result: [capture, thunk]
-    - - if
-      - [eq, [get, result, "outcome"], "passed"]
-      - [raise, "assertion", "expected an error", [dict, "expected_kind", kind, "actual", [get, result, "value"]]]
-      - - let
-        - error: [get, result, "error"]
-        - - if
-          - [eq, [get, error, "kind"], kind]
-          - error
-          - [raise, "assertion", "unexpected error kind", [dict, "expected_kind", kind, "error", error]]
-  - map
-case:
-  - fn
-  - [[spec, map]]
-  - [set, [set, [capture, [get, spec, "run"]], "name", [get, spec, "name"]], "input", [get, spec, "input", null]]
-  - map
-suite:
-  - fn
-  - [[cases, list]]
-  - - let
-    - results: [map, case, cases]
-      failures: [filter, is_failure, results]
-    - [dict, "total", [len, results], "passed", [sub, [len, results], [len, failures]], "failed", [len, failures], "results", results]
-  - map
-require_pass:
-  - fn
-  - [[report, map]]
-  - [if, [eq, [get, report, "failed"], 0], report, [raise, "test_failure", "suite contains failures", report]]
-  - map
-# Each row is {name: string, input: value}. Verify returns normally or raises.
-# Each thunk captures its own row; inputs are retained in the result for reproduction.
-table:
-  - fn
-  - [[rows, list], [verify, function]]
-  - - suite
-    - - map
-      - [fn, [row], [dict, "name", [get, row, "name"], "input", [get, row, "input"], "run", [fn, [], [call, verify, [get, row, "input"]]]]]
-      - rows
-  - map
-# Bounded, explicitly supplied samples make runs deterministic; false is an assertion failure.
-property:
-  - fn
-  - [[name, string], [samples, list], [predicate, function]]
-  - - table
-    - [map, [fn, [sample], [dict, "name", name, "input", sample]], samples]
-    - [fn, [sample], [assert, [call, predicate, sample], "property rejected sample"]]
-  - map
-# Both algorithms receive the same sample; equality uses Helix's public value semantics.
-compare:
-  - fn
-  - [[name, string], [samples, list], [left, function], [right, function]]
-  - - table
-    - [map, [fn, [sample], [dict, "name", name, "input", sample]], samples]
-    - [fn, [sample], [equal, [call, left, sample], [call, right, sample]]]
-  - map
-# Combine reports without wrapping each entire report in a captured test thunk.
-# Retain each leaf result (and its input/error) once, in child encounter order.
-combine:
-  - fn
-  - [[reports, list]]
-  - - fold
-    - - fn
-      - [acc, child]
-      - [dict, "total", [add, [get, acc, "total"], [get, child, "total"]], "passed", [add, [get, acc, "passed"], [get, child, "passed"]], "failed", [add, [get, acc, "failed"], [get, child, "failed"]], "results", [concat, [get, acc, "results"], [get, child, "results"]]]
-    - {total: 0, passed: 0, failed: 0, results: []}
-    - reports
-  - map
-# Assert a top-level subset of map fields; absent differs from present null.
-# Nested values use exact equality. Extra actual fields (e.g. source blame) survive.
-fields_equal:
-  - fn
-  - [[actual, map], [expected, map]]
-  - - if
-    - [fold, [fn, [ok, key], [and, ok, [has, actual, key], [eq, [get, actual, key], [get, expected, key]]]], true, [keys, expected]]
+    - "$call":
+      - "raise"
+      - "assertion"
+      - "values differ"
+      - {"$call": ["dict", "expected", {"$ref": "expected"}, "actual", {"$ref": "actual"}]}
+"throws":
+  "$call":
+  - "fn"
+  - - - "thunk"
+      - {"$ref": "function"}
+    - - "kind"
+      - {"$ref": "string"}
+  - "$call":
+    - "let"
+    - "result": {"$call": ["capture", {"$ref": "thunk"}]}
+    - "$call":
+      - "if"
+      - {"$call": ["eq", {"$call": ["get", {"$ref": "result"}, "outcome"]}, "passed"]}
+      - "$call":
+        - "raise"
+        - "assertion"
+        - "expected an error"
+        - "$call":
+          - "dict"
+          - "expected_kind"
+          - {"$ref": "kind"}
+          - "actual"
+          - {"$call": ["get", {"$ref": "result"}, "value"]}
+      - "$call":
+        - "let"
+        - "error": {"$call": ["get", {"$ref": "result"}, "error"]}
+        - "$call":
+          - "if"
+          - {"$call": ["eq", {"$call": ["get", {"$ref": "error"}, "kind"]}, {"$ref": "kind"}]}
+          - {"$ref": "error"}
+          - "$call":
+            - "raise"
+            - "assertion"
+            - "unexpected error kind"
+            - {"$call": ["dict", "expected_kind", {"$ref": "kind"}, "error", {"$ref": "error"}]}
+  - {"$ref": "map"}
+"case":
+  "$call":
+  - "fn"
+  - - - "spec"
+      - {"$ref": "map"}
+  - "$call":
+    - "set"
+    - "$call":
+      - "set"
+      - {"$call": ["capture", {"$call": ["get", {"$ref": "spec"}, "run"]}]}
+      - "name"
+      - {"$call": ["get", {"$ref": "spec"}, "name"]}
+    - "input"
+    - {"$call": ["get", {"$ref": "spec"}, "input", null]}
+  - {"$ref": "map"}
+"suite":
+  "$call":
+  - "fn"
+  - - - "cases"
+      - {"$ref": "list"}
+  - "$call":
+    - "let"
+    - "results": {"$call": ["map", {"$ref": "case"}, {"$ref": "cases"}]}
+      "failures": {"$call": ["filter", {"$ref": "is_failure"}, {"$ref": "results"}]}
+    - "$call":
+      - "dict"
+      - "total"
+      - {"$call": ["len", {"$ref": "results"}]}
+      - "passed"
+      - {"$call": ["sub", {"$call": ["len", {"$ref": "results"}]}, {"$call": ["len", {"$ref": "failures"}]}]}
+      - "failed"
+      - {"$call": ["len", {"$ref": "failures"}]}
+      - "results"
+      - {"$ref": "results"}
+  - {"$ref": "map"}
+"require_pass":
+  "$call":
+  - "fn"
+  - - - "report"
+      - {"$ref": "map"}
+  - "$call":
+    - "if"
+    - {"$call": ["eq", {"$call": ["get", {"$ref": "report"}, "failed"]}, 0]}
+    - {"$ref": "report"}
+    - {"$call": ["raise", "test_failure", "suite contains failures", {"$ref": "report"}]}
+  - {"$ref": "map"}
+"table":
+  "$call":
+  - "fn"
+  - - - "rows"
+      - {"$ref": "list"}
+    - - "verify"
+      - {"$ref": "function"}
+  - "$call":
+    - "suite"
+    - "$call":
+      - "map"
+      - "$call":
+        - "fn"
+        - - "row"
+        - "$call":
+          - "dict"
+          - "name"
+          - {"$call": ["get", {"$ref": "row"}, "name"]}
+          - "input"
+          - {"$call": ["get", {"$ref": "row"}, "input"]}
+          - "run"
+          - {"$call": ["fn", [], {"$call": ["call", {"$ref": "verify"}, {"$call": ["get", {"$ref": "row"}, "input"]}]}]}
+      - {"$ref": "rows"}
+  - {"$ref": "map"}
+"property":
+  "$call":
+  - "fn"
+  - - - "name"
+      - {"$ref": "string"}
+    - - "samples"
+      - {"$ref": "list"}
+    - - "predicate"
+      - {"$ref": "function"}
+  - "$call":
+    - "table"
+    - "$call":
+      - "map"
+      - {"$call": ["fn", ["sample"], {"$call": ["dict", "name", {"$ref": "name"}, "input", {"$ref": "sample"}]}]}
+      - {"$ref": "samples"}
+    - "$call":
+      - "fn"
+      - - "sample"
+      - "$call":
+        - "assert"
+        - {"$call": ["call", {"$ref": "predicate"}, {"$ref": "sample"}]}
+        - "property rejected sample"
+  - {"$ref": "map"}
+"compare":
+  "$call":
+  - "fn"
+  - - - "name"
+      - {"$ref": "string"}
+    - - "samples"
+      - {"$ref": "list"}
+    - - "left"
+      - {"$ref": "function"}
+    - - "right"
+      - {"$ref": "function"}
+  - "$call":
+    - "table"
+    - "$call":
+      - "map"
+      - {"$call": ["fn", ["sample"], {"$call": ["dict", "name", {"$ref": "name"}, "input", {"$ref": "sample"}]}]}
+      - {"$ref": "samples"}
+    - "$call":
+      - "fn"
+      - - "sample"
+      - "$call":
+        - "equal"
+        - {"$call": ["call", {"$ref": "left"}, {"$ref": "sample"}]}
+        - {"$call": ["call", {"$ref": "right"}, {"$ref": "sample"}]}
+  - {"$ref": "map"}
+"combine":
+  "$call":
+  - "fn"
+  - - - "reports"
+      - {"$ref": "list"}
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "acc"
+        - "child"
+      - "$call":
+        - "dict"
+        - "total"
+        - "$call":
+          - "add"
+          - {"$call": ["get", {"$ref": "acc"}, "total"]}
+          - {"$call": ["get", {"$ref": "child"}, "total"]}
+        - "passed"
+        - "$call":
+          - "add"
+          - {"$call": ["get", {"$ref": "acc"}, "passed"]}
+          - {"$call": ["get", {"$ref": "child"}, "passed"]}
+        - "failed"
+        - "$call":
+          - "add"
+          - {"$call": ["get", {"$ref": "acc"}, "failed"]}
+          - {"$call": ["get", {"$ref": "child"}, "failed"]}
+        - "results"
+        - "$call":
+          - "concat"
+          - {"$call": ["get", {"$ref": "acc"}, "results"]}
+          - {"$call": ["get", {"$ref": "child"}, "results"]}
+    - "total": 0
+      "passed": 0
+      "failed": 0
+      "results": []
+    - {"$ref": "reports"}
+  - {"$ref": "map"}
+"fields_equal":
+  "$call":
+  - "fn"
+  - - - "actual"
+      - {"$ref": "map"}
+    - - "expected"
+      - {"$ref": "map"}
+  - "$call":
+    - "if"
+    - "$call":
+      - "fold"
+      - "$call":
+        - "fn"
+        - - "ok"
+          - "key"
+        - "$call":
+          - "and"
+          - {"$ref": "ok"}
+          - {"$call": ["has", {"$ref": "actual"}, {"$ref": "key"}]}
+          - "$call":
+            - "eq"
+            - {"$call": ["get", {"$ref": "actual"}, {"$ref": "key"}]}
+            - {"$call": ["get", {"$ref": "expected"}, {"$ref": "key"}]}
+      - true
+      - {"$call": ["keys", {"$ref": "expected"}]}
     - null
-    - [raise, "assertion", "map fields differ", [dict, "expected", expected, "actual", actual]]
-# Expected must include kind. Check additional fields without discarding the error.
-throws_matching:
-  - fn
-  - [[thunk, function], [expected, map]]
-  - - let
-    - error: [throws, thunk, [get, expected, "kind"]]
-    - [finally, error, [fields_equal, error, expected]]
-  - map
-# One classification predicate is shared by suite counts and failure selection.
-is_failure: [fn, [[result, map]], [eq, [get, result, "outcome"], "failed"], boolean]
-# Filtering retains original result records, including replay input and error details.
-failures: [fn, [[report, map]], [filter, is_failure, [get, report, "results"]], list]
-# Missing tags are empty; selected cases keep their source order and callbacks.
-tagged: [fn, [[cases, list], [tag, string]], [filter, [fn, [spec], [has, [get, spec, "tags", []], tag]], cases], list]
-# Names identify reruns: every source case with a failed name runs, in source order.
-# Duplicate names intentionally select all matching cases; prefer unique case names.
-rerun:
-  - fn
-  - [[cases, list], [report, map]]
-  - [let, {names: [map, [fn, [result], [get, result, "name"]], [failures, report]]}, [suite, [filter, [fn, [spec], [has, names, [get, spec, "name"]]], cases]]]
-  - map
-# Finite deterministic generators. Order and duplicates are intentional.
-# product([]) = [[]]; an empty axis produces no rows. Runtime limits still apply.
-sequences: [import, std:list]
-product:
-  - fn
-  - [[axes, [list_of, list]]]
-  - [fold, [fn, [rows, axis], [sequences.flat_map, rows, [fn, [row], [map, [fn, [value], [append, row, value]], axis]]]], [list, []], axes]
-  - list
-# Enumerate lengths 0..max_length, then alphabet order within each length.
-# This is exhaustive and grows exponentially; callers choose small bounds.
-lists:
-  - fn
-  - [[alphabet, list], [max_length, integer]]
-  - - if
-    - [lt, max_length, 0]
-    - [raise, "range", "maximum sample length must be non-negative"]
-    - [sequences.flat_map, [sequences.range, [add, max_length, 1]], [fn, [size], [product, [map, [fn, [ignored], alphabet], [sequences.range, size]]]]]
-  - list
+    - "$call":
+      - "raise"
+      - "assertion"
+      - "map fields differ"
+      - {"$call": ["dict", "expected", {"$ref": "expected"}, "actual", {"$ref": "actual"}]}
+"throws_matching":
+  "$call":
+  - "fn"
+  - - - "thunk"
+      - {"$ref": "function"}
+    - - "expected"
+      - {"$ref": "map"}
+  - "$call":
+    - "let"
+    - "error": {"$call": ["throws", {"$ref": "thunk"}, {"$call": ["get", {"$ref": "expected"}, "kind"]}]}
+    - "$call":
+      - "finally"
+      - {"$ref": "error"}
+      - {"$call": ["fields_equal", {"$ref": "error"}, {"$ref": "expected"}]}
+  - {"$ref": "map"}
+"is_failure":
+  "$call":
+  - "fn"
+  - - - "result"
+      - {"$ref": "map"}
+  - {"$call": ["eq", {"$call": ["get", {"$ref": "result"}, "outcome"]}, "failed"]}
+  - {"$ref": "boolean"}
+"failures":
+  "$call":
+  - "fn"
+  - - - "report"
+      - {"$ref": "map"}
+  - {"$call": ["filter", {"$ref": "is_failure"}, {"$call": ["get", {"$ref": "report"}, "results"]}]}
+  - {"$ref": "list"}
+"tagged":
+  "$call":
+  - "fn"
+  - - - "cases"
+      - {"$ref": "list"}
+    - - "tag"
+      - {"$ref": "string"}
+  - "$call":
+    - "filter"
+    - "$call":
+      - "fn"
+      - - "spec"
+      - {"$call": ["has", {"$call": ["get", {"$ref": "spec"}, "tags", []]}, {"$ref": "tag"}]}
+    - {"$ref": "cases"}
+  - {"$ref": "list"}
+"rerun":
+  "$call":
+  - "fn"
+  - - - "cases"
+      - {"$ref": "list"}
+    - - "report"
+      - {"$ref": "map"}
+  - "$call":
+    - "let"
+    - "names":
+        "$call":
+        - "map"
+        - {"$call": ["fn", ["result"], {"$call": ["get", {"$ref": "result"}, "name"]}]}
+        - {"$call": ["failures", {"$ref": "report"}]}
+    - "$call":
+      - "suite"
+      - "$call":
+        - "filter"
+        - "$call":
+          - "fn"
+          - - "spec"
+          - {"$call": ["has", {"$ref": "names"}, {"$call": ["get", {"$ref": "spec"}, "name"]}]}
+        - {"$ref": "cases"}
+  - {"$ref": "map"}
+"sequences": {"$call": ["import", "std:list"]}
+"product":
+  "$call":
+  - "fn"
+  - - - "axes"
+      - {"$call": ["list_of", {"$ref": "list"}]}
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "rows"
+        - "axis"
+      - "$call":
+        - "sequences.flat_map"
+        - {"$ref": "rows"}
+        - "$call":
+          - "fn"
+          - - "row"
+          - "$call":
+            - "map"
+            - {"$call": ["fn", ["value"], {"$call": ["append", {"$ref": "row"}, {"$ref": "value"}]}]}
+            - {"$ref": "axis"}
+    - {"$call": ["list", []]}
+    - {"$ref": "axes"}
+  - {"$ref": "list"}
+"lists":
+  "$call":
+  - "fn"
+  - - - "alphabet"
+      - {"$ref": "list"}
+    - - "max_length"
+      - {"$ref": "integer"}
+  - "$call":
+    - "if"
+    - {"$call": ["lt", {"$ref": "max_length"}, 0]}
+    - {"$call": ["raise", "range", "maximum sample length must be non-negative"]}
+    - "$call":
+      - "sequences.flat_map"
+      - {"$call": ["sequences.range", {"$call": ["add", {"$ref": "max_length"}, 1]}]}
+      - "$call":
+        - "fn"
+        - - "size"
+        - "$call":
+          - "product"
+          - "$call":
+            - "map"
+            - {"$call": ["fn", ["ignored"], {"$ref": "alphabet"}]}
+            - {"$call": ["sequences.range", {"$ref": "size"}]}
+  - {"$ref": "list"}

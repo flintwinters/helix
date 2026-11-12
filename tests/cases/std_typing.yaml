@@ -1,20 +1,63 @@
-m: [import, std:math]
-l: [import, std:list]
-# Shared type values are usable by callers as well as library annotations.
-numeric: [list, [is, 1, m.number], [is, 1.5, m.number], [is, "1", m.number]]
-absolute: [list, [m.abs, -3], [m.abs, -2.5]]
-signs: [list, [m.sign, -0.5], [m.sign, 0], [m.sign, 4.5]]
-bounds: [list, [m.min, 3, 2.5], [m.max, 3, 2.5], [m.clamp, 10, 0.5, 4.5]]
-square: [m.square, 1.5]
-aggregates: [list, [l.sum, []], [l.product, []], [l.sum, [1, 2.5]], [l.product, [2, 1.5]]]
-ranges: [list, [l.range, -1], [l.range, 0], [l.range, 3]]
-heterogeneous: [l.reverse, [1, "two", null]]
-# Contracts reject at entry, including callbacks that would never be called.
-bad_abs: [try, [m.abs, "x"], [fn, [e], e]]
-bad_min: [try, [m.min, "a", "b"], [fn, [e], [get, e, "data"]]]
-bad_sum: [try, [l.sum, [1, "x", false]], [fn, [e], [get, e, "data"]]]
-bad_product: [try, [l.product, {}], [fn, [e], [get, e, "data"]]]
-bad_reverse: [try, [l.reverse, "abc"], [fn, [e], [get, e, "data"]]]
-bad_range: [try, [l.range, 2.5], [fn, [e], [get, e, "data"]]]
-bad_unique: [try, [l.unique, {}], [fn, [e], [get, e, "data"]]]
-bad_sort: [try, [l.sort_by, [], 0], [fn, [e], [get, e, "data"]]]
+# Helix explicit syntax; migrated from legacy source.
+"m": {"$call": ["import", "std:math"]}
+"l": {"$call": ["import", "std:list"]}
+"numeric":
+  "$call":
+  - "list"
+  - {"$call": ["is", 1, {"$ref": "m.number"}]}
+  - {"$call": ["is", 1.5, {"$ref": "m.number"}]}
+  - {"$call": ["is", "1", {"$ref": "m.number"}]}
+"absolute": {"$call": ["list", {"$call": ["m.abs", -3]}, {"$call": ["m.abs", -2.5]}]}
+"signs": {"$call": ["list", {"$call": ["m.sign", -0.5]}, {"$call": ["m.sign", 0]}, {"$call": ["m.sign", 4.5]}]}
+"bounds":
+  "$call":
+  - "list"
+  - {"$call": ["m.min", 3, 2.5]}
+  - {"$call": ["m.max", 3, 2.5]}
+  - {"$call": ["m.clamp", 10, 0.5, 4.5]}
+"square": {"$call": ["m.square", 1.5]}
+"aggregates":
+  "$call":
+  - "list"
+  - {"$call": ["l.sum", []]}
+  - {"$call": ["l.product", []]}
+  - {"$call": ["l.sum", [1, 2.5]]}
+  - {"$call": ["l.product", [2, 1.5]]}
+"ranges": {"$call": ["list", {"$call": ["l.range", -1]}, {"$call": ["l.range", 0]}, {"$call": ["l.range", 3]}]}
+"heterogeneous": {"$call": ["l.reverse", [1, "two", null]]}
+"bad_abs": {"$call": ["try", {"$call": ["m.abs", "x"]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
+"bad_min":
+  "$call":
+  - "try"
+  - {"$call": ["m.min", "a", "b"]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
+"bad_sum":
+  "$call":
+  - "try"
+  - {"$call": ["l.sum", [1, "x", false]]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
+"bad_product":
+  "$call":
+  - "try"
+  - {"$call": ["l.product", {}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
+"bad_reverse":
+  "$call":
+  - "try"
+  - {"$call": ["l.reverse", "abc"]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
+"bad_range":
+  "$call":
+  - "try"
+  - {"$call": ["l.range", 2.5]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
+"bad_unique":
+  "$call":
+  - "try"
+  - {"$call": ["l.unique", {}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
+"bad_sort":
+  "$call":
+  - "try"
+  - {"$call": ["l.sort_by", [], 0]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}

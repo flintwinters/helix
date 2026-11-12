@@ -1,1 +1,2 @@
-x: [div, 1.5, 0.0]
+# Helix explicit syntax; migrated from legacy source.
+"x": {"$call": ["div", 1.5, 0.0]}

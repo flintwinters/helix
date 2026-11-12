@@ -1,109 +1,347 @@
-# List helpers over plain data. Import with `l: [import, std:list]`, call as `[l.sum, xs]`.
-math: [import, std:math]
-numbers: [list_of, math.number]
-sum: [fn, [[xs, numbers]], [fold, [fn, [acc, x], [add, acc, x]], 0, xs], math.number]
-product: [fn, [[xs, numbers]], [fold, [fn, [acc, x], [mul, acc, x]], 1, xs], math.number]
-reverse: [fn, [[xs, list]], [fold, [fn, [acc, x], [concat, [list, x], acc]], [list], xs], list]
-range: [fn, [[n, integer]], [let, {done: [fn, [xs], [ge, [len, xs], n]], step: [fn, [xs], [append, xs, [len, xs]]]}, [until, done, step, [list]]], [list_of, integer]]
-# Keep the first occurrence of each structurally equal value (including numeric equality).
-# Repeated scans and immutable list copies make this suitable for small inputs.
-unique:
-  - fn
-  - [[xs, list]]
-  - - fold
-    - - fn
-      - [seen, item]
-      - - if
-        - [has, seen, item]
-        - seen
-        - [append, seen, item]
+# Helix explicit syntax; migrated from legacy source.
+# List helpers over plain data. Import with `l: {$call: [import, std:list]}`, call as `{$call: [l.sum, {$ref: xs}]}`.
+"math": {"$call": ["import", "std:math"]}
+"numbers": {"$call": ["list_of", {"$ref": "math.number"}]}
+"sum":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "numbers"}
+  - "$call":
+    - "fold"
+    - {"$call": ["fn", ["acc", "x"], {"$call": ["add", {"$ref": "acc"}, {"$ref": "x"}]}]}
+    - 0
+    - {"$ref": "xs"}
+  - {"$ref": "math.number"}
+"product":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "numbers"}
+  - "$call":
+    - "fold"
+    - {"$call": ["fn", ["acc", "x"], {"$call": ["mul", {"$ref": "acc"}, {"$ref": "x"}]}]}
+    - 1
+    - {"$ref": "xs"}
+  - {"$ref": "math.number"}
+"reverse":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+  - "$call":
+    - "fold"
+    - {"$call": ["fn", ["acc", "x"], {"$call": ["concat", {"$call": ["list", {"$ref": "x"}]}, {"$ref": "acc"}]}]}
+    - {"$call": ["list"]}
+    - {"$ref": "xs"}
+  - {"$ref": "list"}
+"range":
+  "$call":
+  - "fn"
+  - - - "n"
+      - {"$ref": "integer"}
+  - "$call":
+    - "let"
+    - "done": {"$call": ["fn", ["xs"], {"$call": ["ge", {"$call": ["len", {"$ref": "xs"}]}, {"$ref": "n"}]}]}
+      "step": {"$call": ["fn", ["xs"], {"$call": ["append", {"$ref": "xs"}, {"$call": ["len", {"$ref": "xs"}]}]}]}
+    - {"$call": ["until", {"$ref": "done"}, {"$ref": "step"}, {"$call": ["list"]}]}
+  - {"$call": ["list_of", {"$ref": "integer"}]}
+"unique":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "seen"
+        - "item"
+      - "$call":
+        - "if"
+        - {"$call": ["has", {"$ref": "seen"}, {"$ref": "item"}]}
+        - {"$ref": "seen"}
+        - {"$call": ["append", {"$ref": "seen"}, {"$ref": "item"}]}
     - []
-    - xs
-  - list
-# Stable insertion sort. `before(a, b)` must be a strict ordering predicate.
-# Each insertion scans the ordered prefix; comparisons and copying are quadratic.
-# until avoids recursion proportional to input length; runtime iteration limits apply.
-sort_by:
-  - fn
-  - [[xs, list], [before, function]]
-  - - fold
-    - - fn
-      - [ordered, item]
-      - - let
-        - position:
-            - until
-            - - fn
-              - [index]
-              - - or
-                - [ge, index, [len, ordered]]
-                - [before, item, [get, ordered, index]]
-            - [fn, [index], [add, index, 1]]
+    - {"$ref": "xs"}
+  - {"$ref": "list"}
+"sort_by":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "before"
+      - {"$ref": "function"}
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "ordered"
+        - "item"
+      - "$call":
+        - "let"
+        - "position":
+            "$call":
+            - "until"
+            - "$call":
+              - "fn"
+              - - "index"
+              - "$call":
+                - "or"
+                - {"$call": ["ge", {"$ref": "index"}, {"$call": ["len", {"$ref": "ordered"}]}]}
+                - {"$call": ["before", {"$ref": "item"}, {"$call": ["get", {"$ref": "ordered"}, {"$ref": "index"}]}]}
+            - {"$call": ["fn", ["index"], {"$call": ["add", {"$ref": "index"}, 1]}]}
             - 0
-        - - concat
-          - [slice, ordered, 0, position]
-          - [list, item]
-          - [slice, ordered, position, [len, ordered]]
+        - "$call":
+          - "concat"
+          - {"$call": ["slice", {"$ref": "ordered"}, 0, {"$ref": "position"}]}
+          - {"$call": ["list", {"$ref": "item"}]}
+          - {"$call": ["slice", {"$ref": "ordered"}, {"$ref": "position"}, {"$call": ["len", {"$ref": "ordered"}]}]}
     - []
-    - xs
-  - list
-
-# Access and slicing. Empty first/last and unsuccessful find return the explicit fallback.
-first: [fn, [[xs, list], fallback], [get, xs, 0, fallback]]
-last: [fn, [[xs, list], fallback], [if, [eq, [len, xs], 0], fallback, [get, xs, [sub, [len, xs], 1]]]]
-take:
-  - fn
-  - [[xs, list], [n, integer]]
-  - [if, [lt, n, 0], [raise, "range", "take count must be non-negative"], [slice, xs, 0, [math.min, n, [len, xs]]]]
-  - list
-drop:
-  - fn
-  - [[xs, list], [n, integer]]
-  - [if, [lt, n, 0], [raise, "range", "drop count must be non-negative"], [slice, xs, [math.min, n, [len, xs]], [len, xs]]]
-  - list
-# Pairs are [index, value] or [left, right]; zip stops at the shorter input.
-enumerate: [fn, [[xs, list]], [map, [fn, [i], [list, i, [get, xs, i]]], [range, [len, xs]]], list]
-zip: [fn, [[xs, list], [ys, list]], [map, [fn, [i], [list, [get, xs, i], [get, ys, i]]], [range, [math.min, [len, xs], [len, ys]]]], list]
-# Flatten exactly one level. Inner values (or callback results) must be lists.
-flatten: [fn, [[xss, [list_of, list]]], [fold, [fn, [acc, xs], [concat, acc, xs]], [], xss], list]
-flat_map: [fn, [[xs, list], [transform, function]], [flatten, [map, transform, xs]], list]
-# Search once, left to right, stopping before invoking the predicate again after a match.
-# -1 distinguishes absence from a matching null, false, or zero value.
-find_index:
-  - fn
-  - [[xs, list], [predicate, function]]
-  - - let
-    - position:
-        - until
-        - [fn, [i], [or, [ge, i, [len, xs]], [predicate, [get, xs, i]]]]
-        - [fn, [i], [add, i, 1]]
+    - {"$ref": "xs"}
+  - {"$ref": "list"}
+"first":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - "fallback"
+  - {"$call": ["get", {"$ref": "xs"}, 0, {"$ref": "fallback"}]}
+"last":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - "fallback"
+  - "$call":
+    - "if"
+    - {"$call": ["eq", {"$call": ["len", {"$ref": "xs"}]}, 0]}
+    - {"$ref": "fallback"}
+    - {"$call": ["get", {"$ref": "xs"}, {"$call": ["sub", {"$call": ["len", {"$ref": "xs"}]}, 1]}]}
+"take":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "n"
+      - {"$ref": "integer"}
+  - "$call":
+    - "if"
+    - {"$call": ["lt", {"$ref": "n"}, 0]}
+    - {"$call": ["raise", "range", "take count must be non-negative"]}
+    - "$call":
+      - "slice"
+      - {"$ref": "xs"}
+      - 0
+      - {"$call": ["math.min", {"$ref": "n"}, {"$call": ["len", {"$ref": "xs"}]}]}
+  - {"$ref": "list"}
+"drop":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "n"
+      - {"$ref": "integer"}
+  - "$call":
+    - "if"
+    - {"$call": ["lt", {"$ref": "n"}, 0]}
+    - {"$call": ["raise", "range", "drop count must be non-negative"]}
+    - "$call":
+      - "slice"
+      - {"$ref": "xs"}
+      - {"$call": ["math.min", {"$ref": "n"}, {"$call": ["len", {"$ref": "xs"}]}]}
+      - {"$call": ["len", {"$ref": "xs"}]}
+  - {"$ref": "list"}
+"enumerate":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+  - "$call":
+    - "map"
+    - "$call":
+      - "fn"
+      - - "i"
+      - {"$call": ["list", {"$ref": "i"}, {"$call": ["get", {"$ref": "xs"}, {"$ref": "i"}]}]}
+    - {"$call": ["range", {"$call": ["len", {"$ref": "xs"}]}]}
+  - {"$ref": "list"}
+"zip":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "ys"
+      - {"$ref": "list"}
+  - "$call":
+    - "map"
+    - "$call":
+      - "fn"
+      - - "i"
+      - "$call":
+        - "list"
+        - {"$call": ["get", {"$ref": "xs"}, {"$ref": "i"}]}
+        - {"$call": ["get", {"$ref": "ys"}, {"$ref": "i"}]}
+    - "$call":
+      - "range"
+      - {"$call": ["math.min", {"$call": ["len", {"$ref": "xs"}]}, {"$call": ["len", {"$ref": "ys"}]}]}
+  - {"$ref": "list"}
+"flatten":
+  "$call":
+  - "fn"
+  - - - "xss"
+      - {"$call": ["list_of", {"$ref": "list"}]}
+  - "$call":
+    - "fold"
+    - {"$call": ["fn", ["acc", "xs"], {"$call": ["concat", {"$ref": "acc"}, {"$ref": "xs"}]}]}
+    - []
+    - {"$ref": "xss"}
+  - {"$ref": "list"}
+"flat_map":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "transform"
+      - {"$ref": "function"}
+  - {"$call": ["flatten", {"$call": ["map", {"$ref": "transform"}, {"$ref": "xs"}]}]}
+  - {"$ref": "list"}
+"find_index":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "predicate"
+      - {"$ref": "function"}
+  - "$call":
+    - "let"
+    - "position":
+        "$call":
+        - "until"
+        - "$call":
+          - "fn"
+          - - "i"
+          - "$call":
+            - "or"
+            - {"$call": ["ge", {"$ref": "i"}, {"$call": ["len", {"$ref": "xs"}]}]}
+            - {"$call": ["predicate", {"$call": ["get", {"$ref": "xs"}, {"$ref": "i"}]}]}
+        - {"$call": ["fn", ["i"], {"$call": ["add", {"$ref": "i"}, 1]}]}
         - 0
-    - [if, [lt, position, [len, xs]], position, -1]
-  - integer
-find:
-  - fn
-  - [[xs, list], [predicate, function], fallback]
-  - [let, {i: [find_index, xs, predicate]}, [if, [lt, i, 0], fallback, [get, xs, i]]]
-any: [fn, [[xs, list], [predicate, function]], [ge, [find_index, xs, predicate], 0], boolean]
-all: [fn, [[xs, list], [predicate, function]], [lt, [find_index, xs, [fn, [x], [not, [predicate, x]]]], 0], boolean]
-count: [fn, [[xs, list], [predicate, function]], [len, [filter, predicate, xs]], integer]
-# Stable split into [matching, nonmatching], invoking the predicate once per element.
-partition:
-  - fn
-  - [[xs, list], [predicate, function]]
-  - - fold
-    - - fn
-      - [parts, x]
-      - [let, {side: [if, [predicate, x], 0, 1]}, [set, parts, side, [append, [get, parts, side], x]]]
-    - [[], []]
-    - xs
-  - list
-# Keys must be strings. Maps retain first-key encounter order; buckets retain input order.
-grouping: [import, std:group]
-group_by: [fn, [[xs, list], [key_for, function]], [grouping.by, xs, key_for], map]
-frequencies:
-  - fn
-  - [[xs, [list_of, string]]]
-  - [fold, [fn, [counts, x], [set, counts, x, [add, [get, counts, x, 0], 1]]], {}, xs]
-  - map
-# Ascending numeric or string order, using the existing stable implementation.
-sort: [fn, [[xs, list]], [sort_by, xs, [fn, [a, b], [lt, a, b]]], list]
+    - "$call":
+      - "if"
+      - {"$call": ["lt", {"$ref": "position"}, {"$call": ["len", {"$ref": "xs"}]}]}
+      - {"$ref": "position"}
+      - -1
+  - {"$ref": "integer"}
+"find":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "predicate"
+      - {"$ref": "function"}
+    - "fallback"
+  - "$call":
+    - "let"
+    - "i": {"$call": ["find_index", {"$ref": "xs"}, {"$ref": "predicate"}]}
+    - "$call":
+      - "if"
+      - {"$call": ["lt", {"$ref": "i"}, 0]}
+      - {"$ref": "fallback"}
+      - {"$call": ["get", {"$ref": "xs"}, {"$ref": "i"}]}
+"any":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "predicate"
+      - {"$ref": "function"}
+  - {"$call": ["ge", {"$call": ["find_index", {"$ref": "xs"}, {"$ref": "predicate"}]}, 0]}
+  - {"$ref": "boolean"}
+"all":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "predicate"
+      - {"$ref": "function"}
+  - "$call":
+    - "lt"
+    - "$call":
+      - "find_index"
+      - {"$ref": "xs"}
+      - {"$call": ["fn", ["x"], {"$call": ["not", {"$call": ["predicate", {"$ref": "x"}]}]}]}
+    - 0
+  - {"$ref": "boolean"}
+"count":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "predicate"
+      - {"$ref": "function"}
+  - {"$call": ["len", {"$call": ["filter", {"$ref": "predicate"}, {"$ref": "xs"}]}]}
+  - {"$ref": "integer"}
+"partition":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "predicate"
+      - {"$ref": "function"}
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "parts"
+        - "x"
+      - "$call":
+        - "let"
+        - "side": {"$call": ["if", {"$call": ["predicate", {"$ref": "x"}]}, 0, 1]}
+        - "$call":
+          - "set"
+          - {"$ref": "parts"}
+          - {"$ref": "side"}
+          - {"$call": ["append", {"$call": ["get", {"$ref": "parts"}, {"$ref": "side"}]}, {"$ref": "x"}]}
+    - - []
+      - []
+    - {"$ref": "xs"}
+  - {"$ref": "list"}
+"grouping": {"$call": ["import", "std:group"]}
+"group_by":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "key_for"
+      - {"$ref": "function"}
+  - {"$call": ["grouping.by", {"$ref": "xs"}, {"$ref": "key_for"}]}
+  - {"$ref": "map"}
+"frequencies":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$call": ["list_of", {"$ref": "string"}]}
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "counts"
+        - "x"
+      - "$call":
+        - "set"
+        - {"$ref": "counts"}
+        - {"$ref": "x"}
+        - {"$call": ["add", {"$call": ["get", {"$ref": "counts"}, {"$ref": "x"}, 0]}, 1]}
+    - {}
+    - {"$ref": "xs"}
+  - {"$ref": "map"}
+"sort":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+  - "$call":
+    - "sort_by"
+    - {"$ref": "xs"}
+    - {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}
+  - {"$ref": "list"}

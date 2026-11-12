@@ -1,27 +1,306 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - xs
+            - "$ref": list
+          - - key
+            - "$ref": function
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - groups
+                  - item
+                - "$call":
+                    - let
+                    - name:
+                        "$call":
+                          - key
+                          - "$ref": item
+                    - "$call":
+                        - set
+                        - "$ref": groups
+                        - "$ref": name
+                        - "$call":
+                            - append
+                            - "$call":
+                                - get
+                                - "$ref": groups
+                                - "$ref": name
+                                - []
+                            - "$ref": item
+            - {}
+            - "$ref": xs
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - by
+      source: "std:group"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          callback_error:
+            "$call":
+              - try
+              - "$call":
+                  - g.by
+                  - - 1
+                  - "$call":
+                      - fn
+                      - - x
+                      - "$call":
+                          - raise
+                          - group_key
+                          - failed
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          closure:
+            "$call":
+              - let
+              - prefix: "team:"
+              - "$call":
+                  - g.by
+                  - "$ref": items
+                  - "$call":
+                      - fn
+                      - - item
+                      - "$call":
+                          - concat
+                          - "$ref": prefix
+                          - "$call":
+                              - get
+                              - "$ref": item
+                              - team
+          constant:
+            "$call":
+              - g.by
+              - - ~
+                - false
+                - - 1
+                  - 2
+                - x: 1
+              - "$call":
+                  - fn
+                  - - item
+                  - all
+          empty:
+            "$call":
+              - g.by
+              - []
+              - "$call":
+                  - fn
+                  - - item
+                  - "$call":
+                      - raise
+                      - unused
+                      - must not run
+          g:
+            "$call":
+              - import
+              - "std:group"
+          groups:
+            "$call":
+              - g.by
+              - "$ref": items
+              - "$call":
+                  - fn
+                  - - item
+                  - "$call":
+                      - get
+                      - "$ref": item
+                      - team
+          items:
+            - "n": 1
+              team: b
+            - "n": 2
+              team: a
+            - "n": 3
+              team: b
+          items_ok:
+            "$call":
+              - assert
+              - "$call":
+                  - eq
+                  - "$call":
+                      - get
+                      - "$ref": groups
+                      - b
+                  - - "n": 1
+                      team: b
+                    - "n": 3
+                      team: b
+          keys:
+            "$call":
+              - g.by
+              - - ""
+                - "é"
+                - ""
+                - "🙂"
+                - "é"
+              - "$call":
+                  - fn
+                  - - item
+                  - "$ref": item
+          order_ok:
+            "$call":
+              - assert
+              - "$call":
+                  - eq
+                  - "$call":
+                      - keys
+                      - "$ref": groups
+                  - - a
+                    - b
+          wrong_arity:
+            "$call":
+              - try
+              - "$call":
+                  - g.by
+                  - []
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          wrong_callback:
+            "$call":
+              - try
+              - "$call":
+                  - g.by
+                  - []
+                  - 1
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          wrong_key:
+            "$call":
+              - try
+              - "$call":
+                  - g.by
+                  - - 1
+                  - "$call":
+                      - fn
+                      - - x
+                      - "$ref": x
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          wrong_list:
+            "$call":
+              - try
+              - "$call":
+                  - g.by
+                  - 1
+                  - "$call":
+                      - fn
+                      - - x
+                      - x
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+        source: "<root>"
+      - code:
+          by:
+            "$call":
+              - fn
+              - - - xs
+                  - "$ref": list
+                - - key
+                  - "$ref": function
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - groups
+                        - item
+                      - "$call":
+                          - let
+                          - name:
+                              "$call":
+                                - key
+                                - "$ref": item
+                          - "$call":
+                              - set
+                              - "$ref": groups
+                              - "$ref": name
+                              - "$call":
+                                  - append
+                                  - "$call":
+                                      - get
+                                      - "$ref": groups
+                                      - "$ref": name
+                                      - []
+                                  - "$ref": item
+                  - {}
+                  - "$ref": xs
+              - "$ref": map
+        source: "std:group"
 root:
+  callback_error: group_key
+  closure:
+    "team:a":
+      - "n": 2
+        team: a
+    "team:b":
+      - "n": 1
+        team: b
+      - "n": 3
+        team: b
+  constant:
+    all:
+      - ~
+      - false
+      - - 1
+        - 2
+      - x: 1
+  empty: {}
   g:
     by:
       ref: object0
-  items:
-    - team: b
-      "n": 1
-    - team: a
-      "n": 2
-    - team: b
-      "n": 3
   groups:
-    b:
-      - team: b
-        "n": 1
-      - team: b
-        "n": 3
     a:
-      - team: a
-        "n": 2
-  order_ok: ~
+      - "n": 2
+        team: a
+    b:
+      - "n": 1
+        team: b
+      - "n": 3
+        team: b
+  items:
+    - "n": 1
+      team: b
+    - "n": 2
+      team: a
+    - "n": 3
+      team: b
   items_ok: ~
-  empty: {}
   keys:
     "":
       - ""
@@ -31,226 +310,9 @@ root:
       - "é"
     "🙂":
       - "🙂"
-  constant:
-    all:
-      - ~
-      - false
-      - - 1
-        - 2
-      - x: 1
-  closure:
-    "team:b":
-      - team: b
-        "n": 1
-      - team: b
-        "n": 3
-    "team:a":
-      - team: a
-        "n": 2
-  wrong_list: type
+  order_ok: ~
+  wrong_arity: arity
   wrong_callback: type
   wrong_key: type
-  callback_error: group_key
-  wrong_arity: arity
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object1
-    code:
-      - symbol: fn
-      - - - symbol: xs
-          - symbol: list
-        - - symbol: key
-          - symbol: function
-      - - symbol: fold
-        - - symbol: fn
-          - - symbol: groups
-            - symbol: item
-          - - symbol: let
-            - name:
-                - symbol: key
-                - symbol: item
-            - - symbol: set
-              - symbol: groups
-              - symbol: name
-              - - symbol: append
-                - - symbol: get
-                  - symbol: groups
-                  - symbol: name
-                  - []
-                - symbol: item
-        - {}
-        - symbol: xs
-      - symbol: map
-    location:
-      source: "std:group"
-      path:
-        - "by"
-    environment: []
-    bindings: {}
-  object1:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          g:
-            - symbol: import
-            - symbol: "std:group"
-          items:
-            - team: b
-              "n": 1
-            - team: a
-              "n": 2
-            - team: b
-              "n": 3
-          groups:
-            - symbol: g.by
-            - symbol: items
-            - - symbol: fn
-              - - symbol: item
-              - - symbol: get
-                - symbol: item
-                - team
-          order_ok:
-            - symbol: assert
-            - - symbol: eq
-              - - symbol: keys
-                - symbol: groups
-              - - "b"
-                - a
-          items_ok:
-            - symbol: assert
-            - - symbol: eq
-              - - symbol: get
-                - symbol: groups
-                - b
-              - - team: b
-                  "n": 1
-                - team: b
-                  "n": 3
-          empty:
-            - symbol: g.by
-            - []
-            - - symbol: fn
-              - - symbol: item
-              - - symbol: raise
-                - unused
-                - must not run
-          keys:
-            - symbol: g.by
-            - - ""
-              - "é"
-              - ""
-              - "🙂"
-              - "é"
-            - - symbol: fn
-              - - symbol: item
-              - symbol: item
-          constant:
-            - symbol: g.by
-            - - ~
-              - false
-              - - 1
-                - 2
-              - x: 1
-            - - symbol: fn
-              - - symbol: item
-              - all
-          closure:
-            - symbol: let
-            - prefix: "team:"
-            - - symbol: g.by
-              - symbol: items
-              - - symbol: fn
-                - - symbol: item
-                - - symbol: concat
-                  - symbol: prefix
-                  - - symbol: get
-                    - symbol: item
-                    - team
-          wrong_list:
-            - symbol: try
-            - - symbol: g.by
-              - 1
-              - - symbol: fn
-                - - symbol: x
-                - x
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          wrong_callback:
-            - symbol: try
-            - - symbol: g.by
-              - []
-              - 1
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          wrong_key:
-            - symbol: try
-            - - symbol: g.by
-              - - 1
-              - - symbol: fn
-                - - symbol: x
-                - symbol: x
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          callback_error:
-            - symbol: try
-            - - symbol: g.by
-              - - 1
-              - - symbol: fn
-                - - symbol: x
-                - - symbol: raise
-                  - group_key
-                  - failed
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-          wrong_arity:
-            - symbol: try
-            - - symbol: g.by
-              - []
-            - - symbol: fn
-              - - symbol: e
-              - - symbol: get
-                - symbol: e
-                - kind
-      - source: "std:group"
-        code:
-          by:
-            - symbol: fn
-            - - - symbol: xs
-                - symbol: list
-              - - symbol: key
-                - symbol: function
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: groups
-                  - symbol: item
-                - - symbol: let
-                  - name:
-                      - symbol: key
-                      - symbol: item
-                  - - symbol: set
-                    - symbol: groups
-                    - symbol: name
-                    - - symbol: append
-                      - - symbol: get
-                        - symbol: groups
-                        - symbol: name
-                        - []
-                      - symbol: item
-              - {}
-              - symbol: xs
-            - symbol: map
+  wrong_list: type
+status: finished

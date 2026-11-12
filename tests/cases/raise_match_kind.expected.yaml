@@ -1,51 +1,63 @@
-status: finished
-root:
-  guard:
-    ref: object0
-  expected: retry
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - e
+        - "$call":
+            - cond
+            - "$call":
+                - eq
+                - "$call":
+                    - get
+                    - "$ref": e
+                    - kind
+                - transient
+            - retry
+            - "$call":
+                - raise
+                - "$ref": e
+    environment: []
     kind: function
+    location:
+      path:
+        - guard
+      source: "<root>"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - symbol: e
-      - - symbol: cond
-        - - symbol: eq
-          - - symbol: get
-            - symbol: e
-            - kind
-          - transient
-        - retry
-        - - symbol: raise
-          - symbol: e
-    location:
-      source: "<root>"
-      path:
-        - "guard"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          guard:
-            - symbol: fn
-            - - symbol: e
-            - - symbol: cond
-              - - symbol: eq
-                - - symbol: get
-                  - symbol: e
-                  - kind
-                - transient
-              - retry
-              - - symbol: raise
-                - symbol: e
+      - code:
           expected:
-            - symbol: try
-            - - symbol: raise
-              - transient
-              - flaky
-            - symbol: guard
+            "$call":
+              - try
+              - "$call":
+                  - raise
+                  - transient
+                  - flaky
+              - "$ref": guard
+          guard:
+            "$call":
+              - fn
+              - - e
+              - "$call":
+                  - cond
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - get
+                          - "$ref": e
+                          - kind
+                      - transient
+                  - retry
+                  - "$call":
+                      - raise
+                      - "$ref": e
+        source: "<root>"
+root:
+  expected: retry
+  guard:
+    ref: object0
+status: finished

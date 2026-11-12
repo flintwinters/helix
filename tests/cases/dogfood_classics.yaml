@@ -1,32 +1,104 @@
+# Helix explicit syntax; migrated from legacy source.
 # Classic pure-core examples, including empty inputs and boundary values.
-l: [import, std:list]
-fizzbuzz: [fn, [n], [cond,
-  [eq, [mod, n, 15], 0], "FizzBuzz",
-  [eq, [mod, n, 3], 0], "Fizz",
-  [eq, [mod, n, 5], 0], "Buzz",
-  [str, n]]]
-fizzbuzz_1_to_20: [map, fizzbuzz, [map, [fn, [n], [add, n, 1]], [l.range, 20]]]
-fizzbuzz_empty: [map, fizzbuzz, []]
-# Trial division through n-1 is deliberately simple, for small inline inputs.
-prime: [fn, [n], [and, [ge, n, 2], [eq,
-  [len, [filter, [fn, [d], [eq, [mod, n, d], 0]],
-    [filter, [fn, [d], [ge, d, 2]], [l.range, [if, [ge, n, 0], n, 0]]]]], 0]]]
-primes_under_30: [filter, prime, [l.range, 30]]
-prime_boundaries: [map, prime, [-3, 0, 1, 2, 3, 4]]
-primes_empty: [filter, prime, []]
-# Tokenize inline text on ASCII spaces; repeated spaces never create empty words.
-words: [fn, [text], [get,
-  [fold, [fn, [state, i], [let,
-    {token: [get, state, "token"], found: [get, state, "words"], char: [slice, text, i, [add, i, 1]]},
-    [if, [eq, char, " "],
-      [dict, "token", "", "words", [if, [eq, token, ""], found, [append, found, token]]],
-      [dict, "token", [concat, token, char], "words", found]]]],
-    [dict, "token", "", "words", [list]], [l.range, [len, text]]], "words"]]
-# Appending a delimiter flushes the final word without a second tokenization path.
-frequency: [fn, [text], [fold, [fn, [counts, word],
-  [set, counts, word, [add, [get, counts, word, 0], 1]]],
-  [dict], [words, [concat, text, " "]]]]
-word_frequency: [frequency, "  red blue red  green blue red "]
-word_frequency_empty: [frequency, ""]
-word_frequency_spaces: [frequency, "   "]
-word_frequency_unicode: [frequency, "猫 café 猫"]
+"l": {"$call": ["import", "std:list"]}
+"fizzbuzz":
+  "$call":
+  - "fn"
+  - - "n"
+  - "$call":
+    - "cond"
+    - {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, 15]}, 0]}
+    - "FizzBuzz"
+    - {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, 3]}, 0]}
+    - "Fizz"
+    - {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, 5]}, 0]}
+    - "Buzz"
+    - {"$call": ["str", {"$ref": "n"}]}
+"fizzbuzz_1_to_20":
+  "$call":
+  - "map"
+  - {"$ref": "fizzbuzz"}
+  - {"$call": ["map", {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, 1]}]}, {"$call": ["l.range", 20]}]}
+"fizzbuzz_empty": {"$call": ["map", {"$ref": "fizzbuzz"}, []]}
+"prime":
+  "$call":
+  - "fn"
+  - - "n"
+  - "$call":
+    - "and"
+    - {"$call": ["ge", {"$ref": "n"}, 2]}
+    - "$call":
+      - "eq"
+      - "$call":
+        - "len"
+        - "$call":
+          - "filter"
+          - {"$call": ["fn", ["d"], {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, {"$ref": "d"}]}, 0]}]}
+          - "$call":
+            - "filter"
+            - {"$call": ["fn", ["d"], {"$call": ["ge", {"$ref": "d"}, 2]}]}
+            - {"$call": ["l.range", {"$call": ["if", {"$call": ["ge", {"$ref": "n"}, 0]}, {"$ref": "n"}, 0]}]}
+      - 0
+"primes_under_30": {"$call": ["filter", {"$ref": "prime"}, {"$call": ["l.range", 30]}]}
+"prime_boundaries": {"$call": ["map", {"$ref": "prime"}, [-3, 0, 1, 2, 3, 4]]}
+"primes_empty": {"$call": ["filter", {"$ref": "prime"}, []]}
+"words":
+  "$call":
+  - "fn"
+  - - "text"
+  - "$call":
+    - "get"
+    - "$call":
+      - "fold"
+      - "$call":
+        - "fn"
+        - - "state"
+          - "i"
+        - "$call":
+          - "let"
+          - "token": {"$call": ["get", {"$ref": "state"}, "token"]}
+            "found": {"$call": ["get", {"$ref": "state"}, "words"]}
+            "char": {"$call": ["slice", {"$ref": "text"}, {"$ref": "i"}, {"$call": ["add", {"$ref": "i"}, 1]}]}
+          - "$call":
+            - "if"
+            - {"$call": ["eq", {"$ref": "char"}, " "]}
+            - "$call":
+              - "dict"
+              - "token"
+              - ""
+              - "words"
+              - "$call":
+                - "if"
+                - {"$call": ["eq", {"$ref": "token"}, ""]}
+                - {"$ref": "found"}
+                - {"$call": ["append", {"$ref": "found"}, {"$ref": "token"}]}
+            - "$call":
+              - "dict"
+              - "token"
+              - {"$call": ["concat", {"$ref": "token"}, {"$ref": "char"}]}
+              - "words"
+              - {"$ref": "found"}
+      - {"$call": ["dict", "token", "", "words", {"$call": ["list"]}]}
+      - {"$call": ["l.range", {"$call": ["len", {"$ref": "text"}]}]}
+    - "words"
+"frequency":
+  "$call":
+  - "fn"
+  - - "text"
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "counts"
+        - "word"
+      - "$call":
+        - "set"
+        - {"$ref": "counts"}
+        - {"$ref": "word"}
+        - {"$call": ["add", {"$call": ["get", {"$ref": "counts"}, {"$ref": "word"}, 0]}, 1]}
+    - {"$call": ["dict"]}
+    - {"$call": ["words", {"$call": ["concat", {"$ref": "text"}, " "]}]}
+"word_frequency": {"$call": ["frequency", "  red blue red  green blue red "]}
+"word_frequency_empty": {"$call": ["frequency", ""]}
+"word_frequency_spaces": {"$call": ["frequency", "   "]}
+"word_frequency_unicode": {"$call": ["frequency", "\u732B caf\xE9 \u732B"]}

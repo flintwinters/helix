@@ -1,22 +1,22 @@
-status: finished
 root:
-  user:
-    name: ada
-    age: 36
-  name: ada
-  missing_ok: n/a
-  older:
-    name: ada
-    age: 37
   extended:
-    name: ada
     age: 36
     email: ada@example.com
+    name: ada
+  has_email: false
+  has_name: true
+  missing_ok: n/a
+  name: ada
   names:
-    - "name"
     - age
     - email
-  size: 2
-  has_name: true
-  has_email: false
+    - name
+  older:
+    age: 37
+    name: ada
   same: true
+  size: 2
+  user:
+    age: 36
+    name: ada
+status: finished

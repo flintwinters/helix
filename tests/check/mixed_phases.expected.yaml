@@ -1,18 +1,18 @@
-status: error
-mode: check
 errors:
-  - kind: divide_by_zero
+  - column: 12
+    kind: divide_by_zero
+    line: 2
     message: "`div` by zero"
     path: /failure
     reference:
-      - "failure"
-    line: 1
-    column: 10
-  - kind: divide_by_zero
+      - failure
+  - column: 12
+    kind: divide_by_zero
+    line: 2
     message: "`div` by zero"
+    path: /failure
     phase: type
-    path: /failure
     reference:
-      - "failure"
-    line: 1
-    column: 10
+      - failure
+mode: check
+status: error

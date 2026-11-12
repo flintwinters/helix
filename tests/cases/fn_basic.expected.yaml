@@ -1,77 +1,89 @@
-status: finished
-root:
-  double:
-    ref: object0
-  sum3:
-    ref: object1
-  answer: 42
-  total: 6
-  nested: 16
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - mul
+            - "$ref": "n"
+            - 2
+    environment: []
     kind: function
+    location:
+      path:
+        - double
+      source: "<root>"
     program:
       ref: object2
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: mul
-        - symbol: "n"
-        - 2
-    location:
-      source: "<root>"
-      path:
-        - "double"
-    environment: []
-    bindings: {}
   object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - a
+          - b
+          - c
+        - "$call":
+            - add
+            - "$ref": a
+            - "$ref": b
+            - "$ref": c
+    environment: []
     kind: function
+    location:
+      path:
+        - sum3
+      source: "<root>"
     program:
       ref: object2
-    code:
-      - symbol: fn
-      - - symbol: a
-        - symbol: b
-        - symbol: c
-      - - symbol: add
-        - symbol: a
-        - symbol: b
-        - symbol: c
-    location:
-      source: "<root>"
-      path:
-        - "sum3"
-    environment: []
-    bindings: {}
   object2:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          double:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: mul
-              - symbol: "n"
-              - 2
-          sum3:
-            - symbol: fn
-            - - symbol: a
-              - symbol: b
-              - symbol: c
-            - - symbol: add
-              - symbol: a
-              - symbol: b
-              - symbol: c
+      - code:
           answer:
-            - symbol: double
-            - 21
-          total:
-            - symbol: sum3
-            - 1
-            - 2
-            - 3
+            "$call":
+              - double
+              - 21
+          double:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - mul
+                  - "$ref": "n"
+                  - 2
           nested:
-            - symbol: double
-            - - symbol: double
-              - 4
+            "$call":
+              - double
+              - "$call":
+                  - double
+                  - 4
+          sum3:
+            "$call":
+              - fn
+              - - a
+                - b
+                - c
+              - "$call":
+                  - add
+                  - "$ref": a
+                  - "$ref": b
+                  - "$ref": c
+          total:
+            "$call":
+              - sum3
+              - 1
+              - 2
+              - 3
+        source: "<root>"
+root:
+  answer: 42
+  double:
+    ref: object0
+  nested: 16
+  sum3:
+    ref: object1
+  total: 6
+status: finished

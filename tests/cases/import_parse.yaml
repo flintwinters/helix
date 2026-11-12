@@ -1,1 +1,2 @@
-[import, "modules/malformed.yaml"]
+# Helix explicit syntax; migrated from legacy source.
+{"$call": ["import", "modules/malformed.yaml"]}

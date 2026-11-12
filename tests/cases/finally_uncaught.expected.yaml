@@ -1,9 +1,10 @@
-status: error
 error:
+  column: 23
   kind: divide_by_zero
+  line: 2
   message: "`div` by zero"
-  path: /1
+  path: "/$call/1"
   reference:
+    - "$call"
     - 1
-  line: 1
-  column: 11
+status: error

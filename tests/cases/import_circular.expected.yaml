@@ -1,11 +1,12 @@
-status: error
 error:
-  kind: import
-  message: "circular import: tests/cases/modules/cycle_a.yaml -> tests/cases/modules/cycle_b.yaml -> tests/cases/modules/cycle_a.yaml"
+  column: 27
   file: tests/cases/modules/cycle_b.yaml
-  path: /a/1
+  kind: import
+  line: 2
+  message: "circular import: tests/cases/modules/cycle_a.yaml -> tests/cases/modules/cycle_b.yaml -> tests/cases/modules/cycle_a.yaml"
+  path: "/a/$call/1"
   reference:
-    - "a"
+    - a
+    - "$call"
     - 1
-  line: 1
-  column: 13
+status: error

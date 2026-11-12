@@ -1,2 +1,8 @@
-spin: [until, [fn, [n], false], [fn, [n], [add, n, 1]], 0]
-fine: 1
+# Helix explicit syntax; migrated from legacy source.
+"spin":
+  "$call":
+  - "until"
+  - {"$call": ["fn", ["n"], false]}
+  - {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, 1]}]}
+  - 0
+"fine": 1

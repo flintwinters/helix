@@ -1,7 +1,135 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - row
+        - "$call":
+            - try
+            - "$call":
+                - let
+                - ok:
+                    "$call":
+                      - assert
+                      - "$call":
+                          - gt
+                          - "$call":
+                              - get
+                              - "$ref": row
+                              - qty
+                          - 0
+                      - qty must be positive
+                - "$call":
+                    - if
+                    - "$call":
+                        - eq
+                        - "$call":
+                            - get
+                            - "$ref": row
+                            - name
+                        - ""
+                    - "$call":
+                        - raise
+                        - invalid
+                        - name is empty
+                    - "$ref": ok
+            - "$call":
+                - fn
+                - - e
+                - "$call":
+                    - get
+                    - "$ref": e
+                    - message
+    environment: []
+    kind: function
+    location:
+      path:
+        - check
+      source: "<root>"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          check:
+            "$call":
+              - fn
+              - - row
+              - "$call":
+                  - try
+                  - "$call":
+                      - let
+                      - ok:
+                          "$call":
+                            - assert
+                            - "$call":
+                                - gt
+                                - "$call":
+                                    - get
+                                    - "$ref": row
+                                    - qty
+                                - 0
+                            - qty must be positive
+                      - "$call":
+                          - if
+                          - "$call":
+                              - eq
+                              - "$call":
+                                  - get
+                                  - "$ref": row
+                                  - name
+                              - ""
+                          - "$call":
+                              - raise
+                              - invalid
+                              - name is empty
+                          - "$ref": ok
+                  - "$call":
+                      - fn
+                      - - e
+                      - "$call":
+                          - get
+                          - "$ref": e
+                          - message
+          problems:
+            "$call":
+              - filter
+              - "$call":
+                  - fn
+                  - - r
+                  - "$call":
+                      - ne
+                      - "$ref": r
+                      - ~
+              - "$ref": results
+          results:
+            "$call":
+              - map
+              - "$ref": check
+              - "$ref": rows
+          rows:
+            - name: a
+              qty: 1
+            - name: ""
+              qty: 2
+            - name: c
+              qty: 0
+            - name: d
+              qty: 4
+        source: "<root>"
 root:
   check:
     ref: object0
+  problems:
+    - name is empty
+    - qty must be positive
+  results:
+    - ~
+    - name is empty
+    - qty must be positive
+    - ~
   rows:
     - name: a
       qty: 1
@@ -11,107 +139,4 @@ root:
       qty: 0
     - name: d
       qty: 4
-  results:
-    - ~
-    - name is empty
-    - qty must be positive
-    - ~
-  problems:
-    - "name is empty"
-    - qty must be positive
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object1
-    code:
-      - symbol: fn
-      - - symbol: row
-      - - symbol: try
-        - - symbol: let
-          - ok:
-              - symbol: assert
-              - - symbol: gt
-                - - symbol: get
-                  - symbol: row
-                  - qty
-                - 0
-              - qty must be positive
-          - - symbol: if
-            - - symbol: eq
-              - - symbol: get
-                - symbol: row
-                - name
-              - ""
-            - - symbol: raise
-              - invalid
-              - name is empty
-            - symbol: ok
-        - - symbol: fn
-          - - symbol: e
-          - - symbol: get
-            - symbol: e
-            - message
-    location:
-      source: "<root>"
-      path:
-        - "check"
-    environment: []
-    bindings: {}
-  object1:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          check:
-            - symbol: fn
-            - - symbol: row
-            - - symbol: try
-              - - symbol: let
-                - ok:
-                    - symbol: assert
-                    - - symbol: gt
-                      - - symbol: get
-                        - symbol: row
-                        - qty
-                      - 0
-                    - qty must be positive
-                - - symbol: if
-                  - - symbol: eq
-                    - - symbol: get
-                      - symbol: row
-                      - name
-                    - ""
-                  - - symbol: raise
-                    - invalid
-                    - name is empty
-                  - symbol: ok
-              - - symbol: fn
-                - - symbol: e
-                - - symbol: get
-                  - symbol: e
-                  - message
-          rows:
-            - name:
-                symbol: a
-              qty: 1
-            - name: ""
-              qty: 2
-            - name:
-                symbol: c
-              qty: 0
-            - name:
-                symbol: d
-              qty: 4
-          results:
-            - symbol: map
-            - symbol: check
-            - symbol: rows
-          problems:
-            - symbol: filter
-            - - symbol: fn
-              - - symbol: r
-              - - symbol: ne
-                - symbol: r
-                - ~
-            - symbol: results
+status: finished

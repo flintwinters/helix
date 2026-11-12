@@ -1,5 +1,20 @@
+# Helix explicit syntax; migrated from legacy source.
 # Handle only the kinds you expect; re-raise anything else so it is not swallowed.
-handle: [fn, [e], [cond, [eq, [get, e, "kind"], "transient"], "retry", [eq, [get, e, "kind"], "divide_by_zero"], "zero", [raise, e]]]
-transient: [try, [raise, "transient", "try again"], handle]
-builtin: [try, [div, 1, 0], handle]
-reraised: [try, [try, [raise, "fatal", "disk gone"], handle], [fn, [e], [get, e, "kind"]]]
+"handle":
+  "$call":
+  - "fn"
+  - - "e"
+  - "$call":
+    - "cond"
+    - {"$call": ["eq", {"$call": ["get", {"$ref": "e"}, "kind"]}, "transient"]}
+    - "retry"
+    - {"$call": ["eq", {"$call": ["get", {"$ref": "e"}, "kind"]}, "divide_by_zero"]}
+    - "zero"
+    - {"$call": ["raise", {"$ref": "e"}]}
+"transient": {"$call": ["try", {"$call": ["raise", "transient", "try again"]}, {"$ref": "handle"}]}
+"builtin": {"$call": ["try", {"$call": ["div", 1, 0]}, {"$ref": "handle"}]}
+"reraised":
+  "$call":
+  - "try"
+  - {"$call": ["try", {"$call": ["raise", "fatal", "disk gone"]}, {"$ref": "handle"}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}

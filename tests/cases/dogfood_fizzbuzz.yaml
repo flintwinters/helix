@@ -1,10 +1,32 @@
+# Helix explicit syntax; migrated from legacy source.
 # Dogfood: FizzBuzz over 1..15.
-range: [fn, [lo, hi], [until, [fn, [xs], [eq, [len, xs], [sub, hi, lo]]], [fn, [xs], [append, xs, [add, lo, [len, xs]]]], []]]
-fizzbuzz:
-  [fn, [n],
-    [cond,
-      [eq, [mod, n, 15], 0], "FizzBuzz",
-      [eq, [mod, n, 3], 0], "Fizz",
-      [eq, [mod, n, 5], 0], "Buzz",
-      n]]
-out: [map, fizzbuzz, [range, 1, 16]]
+"range":
+  "$call":
+  - "fn"
+  - - "lo"
+    - "hi"
+  - "$call":
+    - "until"
+    - "$call":
+      - "fn"
+      - - "xs"
+      - {"$call": ["eq", {"$call": ["len", {"$ref": "xs"}]}, {"$call": ["sub", {"$ref": "hi"}, {"$ref": "lo"}]}]}
+    - "$call":
+      - "fn"
+      - - "xs"
+      - {"$call": ["append", {"$ref": "xs"}, {"$call": ["add", {"$ref": "lo"}, {"$call": ["len", {"$ref": "xs"}]}]}]}
+    - []
+"fizzbuzz":
+  "$call":
+  - "fn"
+  - - "n"
+  - "$call":
+    - "cond"
+    - {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, 15]}, 0]}
+    - "FizzBuzz"
+    - {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, 3]}, 0]}
+    - "Fizz"
+    - {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, 5]}, 0]}
+    - "Buzz"
+    - {"$ref": "n"}
+"out": {"$call": ["map", {"$ref": "fizzbuzz"}, {"$call": ["range", 1, 16]}]}

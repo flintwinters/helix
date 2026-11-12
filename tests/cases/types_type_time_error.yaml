@@ -1,1 +1,2 @@
-answer: [type_time, [list_of, 42]]
+# Helix explicit syntax; migrated from legacy source.
+"answer": {"$call": ["type_time", {"$call": ["list_of", 42]}]}

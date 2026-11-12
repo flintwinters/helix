@@ -1,52 +1,56 @@
-status: finished
-root:
-  answer: 42
-  literal_head:
-    - "add"
-    - 1
-    - 2
-  quoted_number: "42"
-  text: "Hello, 雪.\nKeep this newline.\n"
-  function:
-    ref: object0
-  plain_multiline: "first\nsecond\n\nfourth"
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - add
+        - "$call":
+            - add
+            - 20
+            - 22
+    environment: []
     kind: function
+    location:
+      path:
+        - function
+      source: "<root>"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - symbol: add
-      - - symbol: add
-        - 20
-        - 22
-    location:
-      source: "<root>"
-      path:
-        - "function"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
+      - code:
           answer:
-            - symbol: add
-            - 20
-            - 22
-          literal_head:
-            - "add"
-            - 1
-            - 2
-          quoted_number: "42"
-          text: "Hello, 雪.\nKeep this newline.\n"
-          function:
-            - symbol: fn
-            - - symbol: add
-            - - symbol: add
+            "$call":
+              - add
               - 20
               - 22
-          plain_multiline:
-            symbol: "first\nsecond\n\nfourth"
+          function:
+            "$call":
+              - fn
+              - - add
+              - "$call":
+                  - add
+                  - 20
+                  - 22
+          literal_head:
+            - add
+            - 1
+            - 2
+          plain_multiline: "first\nsecond\n\nfourth"
+          quoted_number: "42"
+          text: "Hello, 雪.\nKeep this newline.\n"
+        source: "<root>"
+root:
+  answer: 42
+  function:
+    ref: object0
+  literal_head:
+    - add
+    - 1
+    - 2
+  plain_multiline: "first\nsecond\n\nfourth"
+  quoted_number: "42"
+  text: "Hello, 雪.\nKeep this newline.\n"
+status: finished

@@ -1,9 +1,25 @@
-shim: [import, "../../tooling/inventory.yaml"]
-files:
-  - {path: "src/vm.rs", directory: "src"}
-  - {path: "std/group.yaml", directory: "std"}
-  - {path: "src/雪.rs", directory: "src"}
-  - {path: "README.md", directory: "."}
-report: [shim.report, files]
-empty: [shim.report, []]
-order: [assert, [eq, [map, [fn, [row], [get, row, "directory"]], report], ["src", "std", "."]]]
+# Helix explicit syntax; migrated from legacy source.
+"shim": {"$call": ["import", "../../tooling/inventory.yaml"]}
+"files":
+- "path": "src/vm.rs"
+  "directory": "src"
+- "path": "std/group.yaml"
+  "directory": "std"
+- "path": "src/\u96EA.rs"
+  "directory": "src"
+- "path": "README.md"
+  "directory": "."
+"report": {"$call": ["shim.report", {"$ref": "files"}]}
+"empty": {"$call": ["shim.report", []]}
+"order":
+  "$call":
+  - "assert"
+  - "$call":
+    - "eq"
+    - "$call":
+      - "map"
+      - {"$call": ["fn", ["row"], {"$call": ["get", {"$ref": "row"}, "directory"]}]}
+      - {"$ref": "report"}
+    - - "."
+      - "src"
+      - "std"

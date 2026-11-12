@@ -1,7 +1,16 @@
+# Helix explicit syntax; migrated from legacy source.
 # Same deployment, resolved explicitly using the diagnostic's restart field.
-base: [record, "restart", string, "enabled", boolean]
-interactive: [class, "interactive", base, {restart: "on-failure", enabled: true}]
-unattended: [class, "unattended", base, {restart: "always", enabled: true}]
-resolved: [type_time, [extend, "worker", [list, interactive, unattended], [record], {restart: "on-failure"}]]
-values: [get, resolved, "values"]
-explicit_choice: [assert, [eq, values, {restart: "on-failure", enabled: true}]]
+"base": {"$call": ["record", "restart", {"$ref": "string"}, "enabled", {"$ref": "boolean"}]}
+"interactive": {"$call": ["class", "interactive", {"$ref": "base"}, {"restart": "on-failure", "enabled": true}]}
+"unattended": {"$call": ["class", "unattended", {"$ref": "base"}, {"restart": "always", "enabled": true}]}
+"resolved":
+  "$call":
+  - "type_time"
+  - "$call":
+    - "extend"
+    - "worker"
+    - {"$call": ["list", {"$ref": "interactive"}, {"$ref": "unattended"}]}
+    - {"$call": ["record"]}
+    - "restart": "on-failure"
+"values": {"$call": ["get", {"$ref": "resolved"}, "values"]}
+"explicit_choice": {"$call": ["assert", {"$call": ["eq", {"$ref": "values"}, {"restart": "on-failure", "enabled": true}]}]}

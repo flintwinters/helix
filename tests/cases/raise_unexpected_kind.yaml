@@ -1,3 +1,12 @@
+# Helix explicit syntax; migrated from legacy source.
 # The handler only expects `transient`; any other kind propagates out unchanged.
-guard: [fn, [e], [cond, [eq, [get, e, "kind"], "transient"], "retry", [raise, e]]]
-unexpected: [try, [raise, "fatal", "disk gone"], guard]
+"guard":
+  "$call":
+  - "fn"
+  - - "e"
+  - "$call":
+    - "cond"
+    - {"$call": ["eq", {"$call": ["get", {"$ref": "e"}, "kind"]}, "transient"]}
+    - "retry"
+    - {"$call": ["raise", {"$ref": "e"}]}
+"unexpected": {"$call": ["try", {"$call": ["raise", "fatal", "disk gone"]}, {"$ref": "guard"}]}

@@ -1,1 +1,3 @@
-{a: [assert, [eq, 1, 1]], b: [assert, true, "never shown"]}
+# Helix explicit syntax; migrated from legacy source.
+"a": {"$call": ["assert", {"$call": ["eq", 1, 1]}]}
+"b": {"$call": ["assert", true, "never shown"]}

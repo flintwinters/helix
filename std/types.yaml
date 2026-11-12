@@ -1,40 +1,82 @@
+# Helix explicit syntax; migrated from legacy source.
 # Type derivation stays ordinary Helix: reflection, folds and the checked constructors.
-# These helpers preserve field order and leave the input declaration unchanged.
-from_fields:
-  - fn
-  - [[specs, map]]
-  - - fold
-    - [fn, [result, name], [with_field, result, name, [get, specs, name]]]
-    - [record]
-    - [keys, specs]
-  - map
-# Removing an absent field is an identity operation. Class fields may be projected to a record;
-# class parents, fixed values and provenance are deliberately not inherited by that projection.
-without_field:
-  - fn
-  - [t, [name, string]]
-  - - let
-    - specs: [fields, t]
-    - - fold
-      - [fn, [result, field], [if, [eq, field, name], result, [with_field, result, field, [get, specs, field]]]]
-      - [record]
-      - [keys, specs]
-  - map
-# Preserve already-optional fields and defaults instead of nesting field wrappers.
-optional_field:
-  - fn
-  - [spec]
-  - - if
-    - [and, [eq, [type, spec], "map"], [has, ["optional", "default"], [get, spec, "type", ""]]]
-    - spec
-    - [optional, spec]
-optional_fields:
-  - fn
-  - [t]
-  - - let
-    - specs: [fields, t]
-    - - fold
-      - [fn, [result, name], [with_field, result, name, [optional_field, [get, specs, name]]]]
-      - [record]
-      - [keys, specs]
-  - map
+# These helpers use canonical field order and leave the input declaration unchanged.
+"from_fields":
+  "$call":
+  - "fn"
+  - - - "specs"
+      - {"$ref": "map"}
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "result"
+        - "name"
+      - "$call":
+        - "with_field"
+        - {"$ref": "result"}
+        - {"$ref": "name"}
+        - {"$call": ["get", {"$ref": "specs"}, {"$ref": "name"}]}
+    - {"$call": ["record"]}
+    - {"$call": ["keys", {"$ref": "specs"}]}
+  - {"$ref": "map"}
+"without_field":
+  "$call":
+  - "fn"
+  - - "t"
+    - - "name"
+      - {"$ref": "string"}
+  - "$call":
+    - "let"
+    - "specs": {"$call": ["fields", {"$ref": "t"}]}
+    - "$call":
+      - "fold"
+      - "$call":
+        - "fn"
+        - - "result"
+          - "field"
+        - "$call":
+          - "if"
+          - {"$call": ["eq", {"$ref": "field"}, {"$ref": "name"}]}
+          - {"$ref": "result"}
+          - "$call":
+            - "with_field"
+            - {"$ref": "result"}
+            - {"$ref": "field"}
+            - {"$call": ["get", {"$ref": "specs"}, {"$ref": "field"}]}
+      - {"$call": ["record"]}
+      - {"$call": ["keys", {"$ref": "specs"}]}
+  - {"$ref": "map"}
+"optional_field":
+  "$call":
+  - "fn"
+  - - "spec"
+  - "$call":
+    - "if"
+    - "$call":
+      - "and"
+      - {"$call": ["eq", {"$call": ["type", {"$ref": "spec"}]}, "map"]}
+      - {"$call": ["has", ["optional", "default"], {"$call": ["get", {"$ref": "spec"}, "type", ""]}]}
+    - {"$ref": "spec"}
+    - {"$call": ["optional", {"$ref": "spec"}]}
+"optional_fields":
+  "$call":
+  - "fn"
+  - - "t"
+  - "$call":
+    - "let"
+    - "specs": {"$call": ["fields", {"$ref": "t"}]}
+    - "$call":
+      - "fold"
+      - "$call":
+        - "fn"
+        - - "result"
+          - "name"
+        - "$call":
+          - "with_field"
+          - {"$ref": "result"}
+          - {"$ref": "name"}
+          - {"$call": ["optional_field", {"$call": ["get", {"$ref": "specs"}, {"$ref": "name"}]}]}
+      - {"$call": ["record"]}
+      - {"$call": ["keys", {"$ref": "specs"}]}
+  - {"$ref": "map"}

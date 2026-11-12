@@ -1,36 +1,36 @@
-status: finished
 root:
-  xs:
-    - 10
-    - 20
-    - 30
+  absent: false
+  computed:
+    - 2
+    - 6
+  contains: true
+  contains_float: true
   count: 3
-  second: 20
   fallback: none
-  with_tail:
-    - 10
-    - 20
-    - 30
-    - 40
-    - 50
   joined:
     - 10
     - 20
     - 30
     - 1
     - 2
+  nested_eq: true
   replaced:
-    - "ten"
+    - ten
     - 20
     - 30
+  second: 20
+  still_first: 10
   window:
     - 20
     - 30
-  contains: true
-  contains_float: true
-  absent: false
-  computed:
-    - 2
-    - 6
-  still_first: 10
-  nested_eq: true
+  with_tail:
+    - 10
+    - 20
+    - 30
+    - 40
+    - 50
+  xs:
+    - 10
+    - 20
+    - 30
+status: finished

@@ -1,30 +1,41 @@
+# Helix explicit syntax; migrated from legacy source.
 # A parent retains a ready child while two independent versions finish.
 # Observe status and outcome, never an implementation-specific transition count.
-- let
-- make: [fn, [captured], [vm, [fn, [], [add, captured, 2]]]]
-  done: [fn, [child], [eq, [get, [inspect, child], "status"], "finished"]]
-  advance: [fn, [child], [step, child]]
-  finish: [fn, [child], [until, done, advance, child]]
-  original: [make, 40]
-  advanced: [step, original]
-  left: [finish, original]
-  right: [finish, advanced]
-- - dict
+"$call":
+- "let"
+- "make":
+    "$call":
+    - "fn"
+    - - "captured"
+    - {"$call": ["vm", {"$call": ["fn", [], {"$call": ["add", {"$ref": "captured"}, 2]}]}]}
+  "done":
+    "$call":
+    - "fn"
+    - - "child"
+    - {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "child"}]}, "status"]}, "finished"]}
+  "advance": {"$call": ["fn", ["child"], {"$call": ["step", {"$ref": "child"}]}]}
+  "finish": {"$call": ["fn", ["child"], {"$call": ["until", {"$ref": "done"}, {"$ref": "advance"}, {"$ref": "child"}]}]}
+  "original": {"$call": ["make", 40]}
+  "advanced": {"$call": ["step", {"$ref": "original"}]}
+  "left": {"$call": ["finish", {"$ref": "original"}]}
+  "right": {"$call": ["finish", {"$ref": "advanced"}]}
+- "$call":
+  - "dict"
   - "original_status"
-  - [get, [inspect, original], "status"]
+  - {"$call": ["get", {"$call": ["inspect", {"$ref": "original"}]}, "status"]}
   - "advanced_status"
-  - [get, [inspect, advanced], "status"]
+  - {"$call": ["get", {"$call": ["inspect", {"$ref": "advanced"}]}, "status"]}
   - "versions_differ"
-  - [ne, original, advanced]
+  - {"$call": ["ne", {"$ref": "original"}, {"$ref": "advanced"}]}
   - "left_status"
-  - [get, [inspect, left], "status"]
+  - {"$call": ["get", {"$call": ["inspect", {"$ref": "left"}]}, "status"]}
   - "left_result"
-  - [get, [inspect, left], "outcome"]
+  - {"$call": ["get", {"$call": ["inspect", {"$ref": "left"}]}, "outcome"]}
   - "right_status"
-  - [get, [inspect, right], "status"]
+  - {"$call": ["get", {"$call": ["inspect", {"$ref": "right"}]}, "status"]}
   - "right_result"
-  - [get, [inspect, right], "outcome"]
+  - {"$call": ["get", {"$call": ["inspect", {"$ref": "right"}]}, "outcome"]}
   - "branches_equal"
-  - [eq, left, right]
+  - {"$call": ["eq", {"$ref": "left"}, {"$ref": "right"}]}
   - "original_still_ready"
-  - [eq, [get, [inspect, original], "status"], "ready"]
+  - {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "original"}]}, "status"]}, "ready"]}

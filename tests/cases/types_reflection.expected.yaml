@@ -1,111 +1,113 @@
-status: finished
 root:
   base:
-    type: class
+    concrete: false
+    fields:
+      defaulted:
+        default: 7
+        of: integer
+        type: default
+      fixed: string
+      optional:
+        of: boolean
+        type: optional
+      required: integer
     name: base
     parents: []
-    fields:
-      required: integer
-      fixed: string
-      optional:
-        type: optional
-        of: boolean
-      defaulted:
-        type: default
-        of: integer
-        default: 7
-    values:
-      fixed: "yes"
     provenance:
-      required:
+      defaulted:
         type: base
       fixed:
         type: base
         value: base
       optional:
         type: base
-      defaulted:
+      required:
         type: base
-    concrete: false
-  child:
     type: class
+    values:
+      fixed: "yes"
+  child:
+    concrete: false
+    fields:
+      defaulted:
+        default: 7
+        of: integer
+        type: default
+      extra: string
+      fixed: string
+      optional:
+        of: boolean
+        type: optional
+      required: integer
     name: child
     parents:
-      - "base"
-    fields:
-      required: integer
-      fixed: string
-      optional:
-        type: optional
-        of: boolean
-      defaulted:
-        type: default
-        of: integer
-        default: 7
-      extra: string
-    values:
-      fixed: "yes"
+      - base
     provenance:
-      required:
+      defaulted:
         type: base
+      extra:
+        type: child
       fixed:
         type: base
         value: base
       optional:
         type: base
-      defaulted:
+      required:
         type: base
-      extra:
-        type: child
-    concrete: false
-  parents_of:
-    - "base"
-  open:
-    required: integer
-    extra: string
-  filled:
     type: class
+    values:
+      fixed: "yes"
+  closed: {}
+  filled:
+    concrete: false
+    fields:
+      defaulted:
+        default: 7
+        of: integer
+        type: default
+      extra: string
+      fixed: string
+      optional:
+        of: boolean
+        type: optional
+      required: integer
     name: filled
     parents:
-      - "child"
-    fields:
-      required: integer
-      fixed: string
-      optional:
-        type: optional
-        of: boolean
-      defaulted:
-        type: default
-        of: integer
-        default: 7
-      extra: string
-    values:
-      required: 1
-      fixed: "yes"
-      extra: done
+      - child
     provenance:
-      required:
+      defaulted:
         type: base
+      extra:
+        type: child
         value: filled
       fixed:
         type: base
         value: base
       optional:
         type: base
-      defaulted:
+      required:
         type: base
-      extra:
-        type: child
         value: filled
-    concrete: false
-  closed: {}
+    type: class
+    values:
+      extra: done
+      fixed: "yes"
+      required: 1
   invalid:
+    column: 56
     kind: type
+    line: 35
     message: expected a class
-    path: /invalid/1/1
+    path: "/invalid/$call/1/$call/1"
     reference:
-      - "invalid"
+      - invalid
+      - "$call"
       - 1
+      - "$call"
       - 1
-    line: 7
-    column: 30
+  open:
+    extra: string
+    required: integer
+  parents_of:
+    - base
+status: finished

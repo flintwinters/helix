@@ -1,14 +1,58 @@
-g: [import, std:group]
-items: [{team: "b", n: 1}, {team: "a", n: 2}, {team: "b", n: 3}]
-groups: [g.by, items, [fn, [item], [get, item, "team"]]]
-order_ok: [assert, [eq, [keys, groups], ["b", "a"]]]
-items_ok: [assert, [eq, [get, groups, "b"], [{team: "b", n: 1}, {team: "b", n: 3}]]]
-empty: [g.by, [], [fn, [item], [raise, "unused", "must not run"]]]
-keys: [g.by, ["", "é", "", "🙂", "é"], [fn, [item], item]]
-constant: [g.by, [null, false, [1, 2], {x: 1}], [fn, [item], "all"]]
-closure: [let, {prefix: "team:"}, [g.by, items, [fn, [item], [concat, prefix, [get, item, "team"]]]]]
-wrong_list: [try, [g.by, 1, [fn, [x], "x"]], [fn, [e], [get, e, "kind"]]]
-wrong_callback: [try, [g.by, [], 1], [fn, [e], [get, e, "kind"]]]
-wrong_key: [try, [g.by, [1], [fn, [x], x]], [fn, [e], [get, e, "kind"]]]
-callback_error: [try, [g.by, [1], [fn, [x], [raise, "group_key", "failed"]]], [fn, [e], [get, e, "kind"]]]
-wrong_arity: [try, [g.by, []], [fn, [e], [get, e, "kind"]]]
+# Helix explicit syntax; migrated from legacy source.
+"g": {"$call": ["import", "std:group"]}
+"items":
+- "team": "b"
+  "n": 1
+- "team": "a"
+  "n": 2
+- "team": "b"
+  "n": 3
+"groups":
+  "$call":
+  - "g.by"
+  - {"$ref": "items"}
+  - {"$call": ["fn", ["item"], {"$call": ["get", {"$ref": "item"}, "team"]}]}
+"order_ok": {"$call": ["assert", {"$call": ["eq", {"$call": ["keys", {"$ref": "groups"}]}, ["a", "b"]]}]}
+"items_ok":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$call": ["get", {"$ref": "groups"}, "b"]}, [{"team": "b", "n": 1}, {"team": "b", "n": 3}]]}
+"empty": {"$call": ["g.by", [], {"$call": ["fn", ["item"], {"$call": ["raise", "unused", "must not run"]}]}]}
+"keys": {"$call": ["g.by", ["", "\xE9", "", "\U0001F642", "\xE9"], {"$call": ["fn", ["item"], {"$ref": "item"}]}]}
+"constant": {"$call": ["g.by", [null, false, [1, 2], {"x": 1}], {"$call": ["fn", ["item"], "all"]}]}
+"closure":
+  "$call":
+  - "let"
+  - "prefix": "team:"
+  - "$call":
+    - "g.by"
+    - {"$ref": "items"}
+    - "$call":
+      - "fn"
+      - - "item"
+      - {"$call": ["concat", {"$ref": "prefix"}, {"$call": ["get", {"$ref": "item"}, "team"]}]}
+"wrong_list":
+  "$call":
+  - "try"
+  - {"$call": ["g.by", 1, {"$call": ["fn", ["x"], "x"]}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_callback":
+  "$call":
+  - "try"
+  - {"$call": ["g.by", [], 1]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_key":
+  "$call":
+  - "try"
+  - {"$call": ["g.by", [1], {"$call": ["fn", ["x"], {"$ref": "x"}]}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"callback_error":
+  "$call":
+  - "try"
+  - {"$call": ["g.by", [1], {"$call": ["fn", ["x"], {"$call": ["raise", "group_key", "failed"]}]}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_arity":
+  "$call":
+  - "try"
+  - {"$call": ["g.by", []]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}

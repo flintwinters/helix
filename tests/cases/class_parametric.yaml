@@ -1,5 +1,19 @@
-web_server: [fn, [[p, integer]], [class, [concat, "web_", [str, p]], [record, "listen", integer], [dict, "listen", p]]]
-w80: [web_server, 80]
-w8080: [web_server, 8080]
-front: [inherit, "front", [list, w80], {}]
-both: [try, [inherit, "both", [list, w80, w8080], {}], [fn, [e], [get, e, "data"]]]
+# Helix explicit syntax; migrated from legacy source.
+"web_server":
+  "$call":
+  - "fn"
+  - - - "p"
+      - {"$ref": "integer"}
+  - "$call":
+    - "class"
+    - {"$call": ["concat", "web_", {"$call": ["str", {"$ref": "p"}]}]}
+    - {"$call": ["record", "listen", {"$ref": "integer"}]}
+    - {"$call": ["dict", "listen", {"$ref": "p"}]}
+"w80": {"$call": ["web_server", 80]}
+"w8080": {"$call": ["web_server", 8080]}
+"front": {"$call": ["inherit", "front", {"$call": ["list", {"$ref": "w80"}]}, {}]}
+"both":
+  "$call":
+  - "try"
+  - {"$call": ["inherit", "both", {"$call": ["list", {"$ref": "w80"}, {"$ref": "w8080"}]}, {}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}

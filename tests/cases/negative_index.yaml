@@ -1,1 +1,2 @@
-x: [get, [1, 2], -1]
+# Helix explicit syntax; migrated from legacy source.
+"x": {"$call": ["get", [1, 2], -1]}

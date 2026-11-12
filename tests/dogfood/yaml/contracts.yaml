@@ -1,30 +1,109 @@
-t: [import, std:test]
-y: [import, std:yaml]
-wrong_sources: [list, null, false, 42, [], {}]
-source_contracts:
-  - t.table
-  - [map, [fn, [value], [dict, "name", "parse and valid require text", "input", value]], wrong_sources]
-  - [fn, [value], [finally, [t.throws, [fn, [], [y.parse, value]], "type"], [t.throws, [fn, [], [y.valid, value]], "type"]]]
-examples:
-  - t.suite
-  - - name: duplicate_key_location_in_text
-      run: [fn, [], [let, {error: [t.throws, [fn, [], [y.parse, "a: 1\na: 2\n"]], "parse"]}, [t.equal, [get, error, "message"], "duplicate mapping key (YAML line 2, column 1)"]]]
-    - name: unsupported_alias_location_in_text
-      run: [fn, [], [let, {error: [t.throws, [fn, [], [y.parse, "a: &a 1\nb: *a\n"]], "parse"]}, [t.equal, [get, error, "message"], "aliases are not supported (YAML line 2, column 4)"]]]
-    - name: empty_document_location
-      run: [fn, [], [let, {error: [t.throws, [fn, [], [y.parse, ""]], "parse"]}, [t.equal, [get, error, "message"], "empty document (YAML line 1, column 1)"]]]
-    - name: forbidden_character_after_crlf
-      run: [fn, [], [let, {error: [t.throws, [fn, [], [y.parse, "a: 1\r\nb: \u0001"]], "parse"]}, [t.equal, [get, error, "message"], "non-printable character U+0001 (YAML line 2, column 4)"]]]
-    - name: forbidden_character_after_cr
-      run: [fn, [], [let, {error: [t.throws, [fn, [], [y.parse, "a: 1\rb: \u0001"]], "parse"]}, [t.equal, [get, error, "message"], "non-printable character U+0001 (YAML line 2, column 4)"]]]
-    - name: forbidden_character_after_unicode
-      run: [fn, [], [let, {error: [t.throws, [fn, [], [y.parse, "雪\u0001"]], "parse"]}, [t.equal, [get, error, "message"], "non-printable character U+0001 (YAML line 1, column 2)"]]]
-    - name: parse_arity
-      run: [fn, [], [t.throws, [fn, [], [y.parse]], "arity"]]
-    - name: dump_arity
-      run: [fn, [], [t.throws, [fn, [], [y.dump, 1, 2]], "arity"]]
-    - name: raw_parse_type
-      run: [fn, [], [t.throws, [fn, [], [yaml_parse, false]], "type"]]
-    - name: nested_error_is_catchable
-      run: [fn, [], [t.equal, [try, [y.parse, '[' ], [fn, [error], [y.parse, '{ok: true}']]], {ok: true}]]
-report: [t.combine, [list, source_contracts, examples]]
+# Helix explicit syntax; migrated from legacy source.
+"t": {"$call": ["import", "std:test"]}
+"y": {"$call": ["import", "std:yaml"]}
+"wrong_sources": {"$call": ["list", null, false, 42, [], {}]}
+"source_contracts":
+  "$call":
+  - "t.table"
+  - "$call":
+    - "map"
+    - "$call":
+      - "fn"
+      - - "value"
+      - {"$call": ["dict", "name", "parse and valid require text", "input", {"$ref": "value"}]}
+    - {"$ref": "wrong_sources"}
+  - "$call":
+    - "fn"
+    - - "value"
+    - "$call":
+      - "finally"
+      - {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["y.parse", {"$ref": "value"}]}]}, "type"]}
+      - {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["y.valid", {"$ref": "value"}]}]}, "type"]}
+"examples":
+  "$call":
+  - "t.suite"
+  - - "name": "duplicate_key_location_in_text"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "let"
+          - "error": {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["y.parse", "a: 1\na: 2\n"]}]}, "parse"]}
+          - "$call":
+            - "t.equal"
+            - {"$call": ["get", {"$ref": "error"}, "message"]}
+            - "duplicate mapping key (YAML line 2, column 1)"
+    - "name": "alias_values"
+      "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["y.parse", "a: &a 1\nb: *a\n"]}, {"a": 1, "b": 1}]}]}
+    - "name": "empty_document_location"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "let"
+          - "error": {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["y.parse", ""]}]}, "parse"]}
+          - "$call":
+            - "t.equal"
+            - {"$call": ["get", {"$ref": "error"}, "message"]}
+            - "empty document (YAML line 1, column 1)"
+    - "name": "forbidden_character_after_crlf"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "let"
+          - "error": {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["y.parse", "a: 1\r\nb: \x01"]}]}, "parse"]}
+          - "$call":
+            - "t.equal"
+            - {"$call": ["get", {"$ref": "error"}, "message"]}
+            - "non-printable character U+0001 (YAML line 2, column 4)"
+    - "name": "forbidden_character_after_cr"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "let"
+          - "error": {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["y.parse", "a: 1\rb: \x01"]}]}, "parse"]}
+          - "$call":
+            - "t.equal"
+            - {"$call": ["get", {"$ref": "error"}, "message"]}
+            - "non-printable character U+0001 (YAML line 2, column 4)"
+    - "name": "forbidden_character_after_unicode"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "let"
+          - "error": {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["y.parse", "\u96EA\x01"]}]}, "parse"]}
+          - "$call":
+            - "t.equal"
+            - {"$call": ["get", {"$ref": "error"}, "message"]}
+            - "non-printable character U+0001 (YAML line 1, column 2)"
+    - "name": "parse_arity"
+      "run": {"$call": ["fn", [], {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["y.parse"]}]}, "arity"]}]}
+    - "name": "dump_arity"
+      "run": {"$call": ["fn", [], {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["y.dump", 1, 2]}]}, "arity"]}]}
+    - "name": "raw_parse_type"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["yaml_parse", false]}]}, "type"]}
+    - "name": "nested_error_is_catchable"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - "$call":
+            - "try"
+            - {"$call": ["y.parse", "["]}
+            - {"$call": ["fn", ["error"], {"$call": ["y.parse", "{ok: true}"]}]}
+          - "ok": true
+"report": {"$call": ["t.combine", {"$call": ["list", {"$ref": "source_contracts"}, {"$ref": "examples"}]}]}

@@ -1,4 +1,5 @@
-failure: [div, 1, 0]
-ordinary_again: [add, failure, 1]
-typed: [type_time, failure]
-typed_again: [type_time, failure]
+# Helix explicit syntax; migrated from legacy source.
+"failure": {"$call": ["div", 1, 0]}
+"ordinary_again": {"$call": ["add", {"$ref": "failure"}, 1]}
+"typed": {"$call": ["type_time", {"$ref": "failure"}]}
+"typed_again": {"$call": ["type_time", {"$ref": "failure"}]}

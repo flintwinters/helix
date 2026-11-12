@@ -1,209 +1,250 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - []
+        - "$call":
+            - div
+            - 1
+            - 0
+    environment: []
+    kind: function
+    location:
+      path:
+        - leaf
+      source: "<root>"
+    program:
+      ref: object2
+  object1:
+    bindings:
+      leaf:
+        code:
+          path:
+            - leaf
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - []
+        - "$call":
+            - leaf
+    environment: []
+    kind: function
+    location:
+      path:
+        - middle
+      source: "<root>"
+    program:
+      ref: object2
+  object2:
+    kind: program
+    sources:
+      - code:
+          caught:
+            "$call":
+              - try
+              - "$call":
+                  - middle
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          leaf:
+            "$call":
+              - fn
+              - []
+              - "$call":
+                  - div
+                  - 1
+                  - 0
+          middle:
+            "$call":
+              - fn
+              - []
+              - "$call":
+                  - leaf
+          nested:
+            "$call":
+              - try
+              - "$call":
+                  - try
+                  - "$call":
+                      - try
+                      - "$call":
+                          - raise
+                          - original
+                          - failure
+                          - step: 3
+                      - "$call":
+                          - fn
+                          - - e
+                          - "$call":
+                              - raise
+                              - "$ref": e
+                  - "$call":
+                      - fn
+                      - - e
+                      - "$call":
+                          - raise
+                          - "$ref": e
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          reraised:
+            "$call":
+              - try
+              - "$call":
+                  - try
+                  - "$call":
+                      - middle
+                  - "$call":
+                      - fn
+                      - - e
+                      - "$call":
+                          - raise
+                          - "$ref": e
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+        source: "<root>"
 root:
+  caught:
+    calls:
+      - column: 32
+        function: /leaf
+        function_column: 9
+        function_line: 2
+        line: 3
+        path: "/middle/$call/2"
+      - column: 29
+        function: /middle
+        function_column: 11
+        function_line: 3
+        line: 4
+        path: "/caught/$call/1"
+    column: 30
+    kind: divide_by_zero
+    line: 2
+    message: "`div` by zero"
+    path: "/leaf/$call/2"
+    reference:
+      - leaf
+      - "$call"
+      - 2
   leaf:
     ref: object0
   middle:
     ref: object1
-  caught:
-    kind: divide_by_zero
-    message: "`div` by zero"
-    path: /leaf/2
-    reference:
-      - "leaf"
-      - 2
-    line: 1
-    column: 16
-    calls:
-      - path: /middle/2
-        line: 2
-        column: 18
-        function: /leaf
-        function_line: 1
-        function_column: 7
-      - path: /caught/1
-        line: 3
-        column: 15
-        function: /middle
-        function_line: 2
-        function_column: 9
-  reraised:
-    kind: divide_by_zero
-    message: "`div` by zero"
-    path: /reraised/1/2/2
-    reference:
-      - "reraised"
-      - 1
-      - 2
-      - 2
-    line: 4
-    column: 43
-    calls:
-      - path: /reraised/1/2
-        line: 4
-        column: 33
-        function: /reraised/1/2
-        function_line: 4
-        function_column: 33
-    cause:
-      kind: divide_by_zero
-      message: "`div` by zero"
-      path: /leaf/2
-      reference:
-        - "leaf"
-        - 2
-      line: 1
-      column: 16
-      calls:
-        - path: /middle/2
-          line: 2
-          column: 18
-          function: /leaf
-          function_line: 1
-          function_column: 7
-        - path: /reraised/1/1
-          line: 4
-          column: 23
-          function: /middle
-          function_line: 2
-          function_column: 9
   nested:
-    kind: original
-    message: failure
-    path: /nested/1/2/2
-    reference:
-      - "nested"
-      - 1
-      - 2
-      - 2
-    line: 5
-    column: 104
-    data:
-      step: 3
     calls:
-      - path: /nested/1/2
-        line: 5
-        column: 94
-        function: /nested/1/2
-        function_line: 5
-        function_column: 94
+      - column: 7
+        function: "/nested/$call/1/$call/2"
+        function_column: 7
+        function_line: 19
+        line: 19
+        path: "/nested/$call/1/$call/2"
     cause:
-      kind: original
-      message: failure
-      path: /nested/1/1/2/2
-      reference:
-        - "nested"
-        - 1
-        - 1
-        - 2
-        - 2
-      line: 5
-      column: 80
-      data:
-        step: 3
       calls:
-        - path: /nested/1/1/2
-          line: 5
-          column: 70
-          function: /nested/1/1/2
-          function_line: 5
-          function_column: 70
+        - column: 9
+          function: "/nested/$call/1/$call/1/$call/2"
+          function_column: 9
+          function_line: 18
+          line: 18
+          path: "/nested/$call/1/$call/1/$call/2"
       cause:
-        kind: original
-        message: failure
-        path: /nested/1/1/1
-        reference:
-          - "nested"
-          - 1
-          - 1
-          - 1
-        line: 5
-        column: 27
+        column: 9
         data:
           step: 3
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object2
-    code:
-      - symbol: fn
-      - []
-      - - symbol: div
+        kind: original
+        line: 17
+        message: failure
+        path: "/nested/$call/1/$call/1/$call/1"
+        reference:
+          - nested
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+      column: 33
+      data:
+        step: 3
+      kind: original
+      line: 18
+      message: failure
+      path: "/nested/$call/1/$call/1/$call/2/$call/2"
+      reference:
+        - nested
+        - "$call"
         - 1
-        - 0
-    location:
-      source: "<root>"
-      path:
-        - "leaf"
-    environment: []
-    bindings: {}
-  object1:
-    kind: function
-    program:
-      ref: object2
-    code:
-      - symbol: fn
-      - []
-      - - symbol: leaf
-    location:
-      source: "<root>"
-      path:
-        - "middle"
-    environment: []
-    bindings:
-      leaf:
-        code:
-          source: "<root>"
-          path:
-            - "leaf"
-  object2:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          leaf:
-            - symbol: fn
-            - []
-            - - symbol: div
-              - 1
-              - 0
-          middle:
-            - symbol: fn
-            - []
-            - - symbol: leaf
-          caught:
-            - symbol: try
-            - - symbol: middle
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          reraised:
-            - symbol: try
-            - - symbol: try
-              - - symbol: middle
-              - - symbol: fn
-                - - symbol: e
-                - - symbol: raise
-                  - symbol: e
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          nested:
-            - symbol: try
-            - - symbol: try
-              - - symbol: try
-                - - symbol: raise
-                  - original
-                  - failure
-                  - step: 3
-                - - symbol: fn
-                  - - symbol: e
-                  - - symbol: raise
-                    - symbol: e
-              - - symbol: fn
-                - - symbol: e
-                - - symbol: raise
-                  - symbol: e
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+    column: 31
+    data:
+      step: 3
+    kind: original
+    line: 19
+    message: failure
+    path: "/nested/$call/1/$call/2/$call/2"
+    reference:
+      - nested
+      - "$call"
+      - 1
+      - "$call"
+      - 2
+      - "$call"
+      - 2
+  reraised:
+    calls:
+      - column: 46
+        function: "/reraised/$call/1/$call/2"
+        function_column: 46
+        function_line: 8
+        line: 8
+        path: "/reraised/$call/1/$call/2"
+    cause:
+      calls:
+        - column: 32
+          function: /leaf
+          function_column: 9
+          function_line: 2
+          line: 3
+          path: "/middle/$call/2"
+        - column: 23
+          function: /middle
+          function_column: 11
+          function_line: 3
+          line: 8
+          path: "/reraised/$call/1/$call/1"
+      column: 30
+      kind: divide_by_zero
+      line: 2
+      message: "`div` by zero"
+      path: "/leaf/$call/2"
+      reference:
+        - leaf
+        - "$call"
+        - 2
+    column: 70
+    kind: divide_by_zero
+    line: 8
+    message: "`div` by zero"
+    path: "/reraised/$call/1/$call/2/$call/2"
+    reference:
+      - reraised
+      - "$call"
+      - 1
+      - "$call"
+      - 2
+      - "$call"
+      - 2
+status: finished

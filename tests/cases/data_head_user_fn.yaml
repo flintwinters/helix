@@ -1,4 +1,7 @@
+# Helix explicit syntax; migrated from legacy source.
 # A quoted head naming a user function is data, and must stay quoted in saved state.
-f: [fn, [x], [add, x, 1]]
-call: [f, 1]
-data: ["f", 1]
+"f": {"$call": ["fn", ["x"], {"$call": ["add", {"$ref": "x"}, 1]}]}
+"call": {"$call": ["f", 1]}
+"data":
+- "f"
+- 1

@@ -1,2 +1,3 @@
-total: 3
-check: [assert, [eq, total, 4], "total must be 4"]
+# Helix explicit syntax; migrated from legacy source.
+"total": 3
+"check": {"$call": ["assert", {"$call": ["eq", {"$ref": "total"}, 4]}, "total must be 4"]}

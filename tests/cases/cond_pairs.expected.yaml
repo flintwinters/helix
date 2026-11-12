@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 6
   kind: arity
+  line: 2
   message: "`cond` takes condition/value pairs followed by a default"
   path: /r
   reference:
-    - "r"
-  line: 1
-  column: 4
+    - r
+status: error

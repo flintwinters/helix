@@ -1,12 +1,106 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - mul
+            - "$ref": "n"
+            - 2
+    environment: []
+    kind: function
+    location:
+      path:
+        - double
+      source: "<root>"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          done:
+            "$call":
+              - each
+              - "$ref": double
+              - "$ref": xs
+          double:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - mul
+                  - "$ref": "n"
+                  - 2
+          doubled:
+            "$call":
+              - map
+              - "$ref": double
+              - "$ref": xs
+          empty_fold:
+            "$call":
+              - fold
+              - "$call":
+                  - fn
+                  - - acc
+                    - "n"
+                  - "$call":
+                      - add
+                      - "$ref": acc
+                      - "$ref": "n"
+              - 7
+              - []
+          evens:
+            "$call":
+              - filter
+              - "$call":
+                  - fn
+                  - - "n"
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - mod
+                          - "$ref": "n"
+                          - 2
+                      - 0
+              - "$ref": xs
+          shift: 100
+          shifted:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - "n"
+                  - "$call":
+                      - add
+                      - "$ref": "n"
+                      - "$ref": shift
+              - "$ref": xs
+          total:
+            "$call":
+              - fold
+              - "$call":
+                  - fn
+                  - - acc
+                    - "n"
+                  - "$call":
+                      - add
+                      - "$ref": acc
+                      - "$ref": "n"
+              - 0
+              - "$ref": xs
+          xs:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+        source: "<root>"
 root:
-  xs:
-    - 1
-    - 2
-    - 3
-    - 4
-    - 5
-    - 6
+  done: ~
   double:
     ref: object0
   doubled:
@@ -16,12 +110,11 @@ root:
     - 8
     - 10
     - 12
+  empty_fold: 7
   evens:
     - 2
     - 4
     - 6
-  total: 21
-  empty_fold: 7
   shift: 100
   shifted:
     - 101
@@ -30,86 +123,12 @@ root:
     - 104
     - 105
     - 106
-  done: ~
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object1
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: mul
-        - symbol: "n"
-        - 2
-    location:
-      source: "<root>"
-      path:
-        - "double"
-    environment: []
-    bindings: {}
-  object1:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          xs:
-            - 1
-            - 2
-            - 3
-            - 4
-            - 5
-            - 6
-          double:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: mul
-              - symbol: "n"
-              - 2
-          doubled:
-            - symbol: map
-            - symbol: double
-            - symbol: xs
-          evens:
-            - symbol: filter
-            - - symbol: fn
-              - - symbol: "n"
-              - - symbol: eq
-                - - symbol: mod
-                  - symbol: "n"
-                  - 2
-                - 0
-            - symbol: xs
-          total:
-            - symbol: fold
-            - - symbol: fn
-              - - symbol: acc
-                - symbol: "n"
-              - - symbol: add
-                - symbol: acc
-                - symbol: "n"
-            - 0
-            - symbol: xs
-          empty_fold:
-            - symbol: fold
-            - - symbol: fn
-              - - symbol: acc
-                - symbol: "n"
-              - - symbol: add
-                - symbol: acc
-                - symbol: "n"
-            - 7
-            - []
-          shift: 100
-          shifted:
-            - symbol: map
-            - - symbol: fn
-              - - symbol: "n"
-              - - symbol: add
-                - symbol: "n"
-                - symbol: shift
-            - symbol: xs
-          done:
-            - symbol: each
-            - symbol: double
-            - symbol: xs
+  total: 21
+  xs:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+status: finished

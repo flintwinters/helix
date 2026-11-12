@@ -1,384 +1,492 @@
-status: finished
-root:
-  types:
-    from_fields:
-      ref: object0
-    without_field:
-      ref: object1
-    optional_field:
-      ref: object2
-    optional_fields:
-      ref: object3
-  shape:
-    type: record
-    fields:
-      name: string
-      count:
-        type: default
-        of: integer
-        default: 0
-  derived:
-    type: record
-    fields:
-      name:
-        type: optional
-        of: string
-      count:
-        type: default
-        of: integer
-        default: 0
-  iteration:
-    type: record
-    fields:
-      a: boolean
-      b: boolean
-  nested:
-    type: list
-    of: integer
-  caught_inside:
-    kind: type
-    message: "expected a type, got integer"
-    phase: type
-    path: /caught_inside/1/1/1
-    reference:
-      - "caught_inside"
-      - 1
-      - 1
-      - 1
-    line: 7
-    column: 44
-  caught_outside:
-    kind: divide_by_zero
-    message: "`div` by zero"
-    phase: type
-    path: /caught_outside/1/1
-    reference:
-      - "caught_outside"
-      - 1
-      - 1
-    line: 8
-    column: 35
-  runtime_after:
-    kind: divide_by_zero
-    message: "`div` by zero"
-    path: /runtime_after/1
-    reference:
-      - "runtime_after"
-      - 1
-    line: 9
-    column: 22
-  captured_error:
-    kind: divide_by_zero
-    message: "`div` by zero"
-    path: /captured_error/1
-    reference:
-      - "captured_error"
-      - 1
-    line: 11
-    column: 23
-  rechecked:
-    kind: divide_by_zero
-    message: "`div` by zero"
-    phase: type
-    path: /captured_error/1
-    reference:
-      - "captured_error"
-      - 1
-    line: 11
-    column: 23
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - specs
+            - "$ref": map
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - name
+                - "$call":
+                    - with_field
+                    - "$ref": result
+                    - "$ref": name
+                    - "$call":
+                        - get
+                        - "$ref": specs
+                        - "$ref": name
+            - "$call":
+                - record
+            - "$call":
+                - keys
+                - "$ref": specs
+        - "$ref": map
+    environment: []
     kind: function
+    location:
+      path:
+        - from_fields
+      source: "std:types"
     program:
       ref: object4
-    code:
-      - symbol: fn
-      - - - symbol: specs
-          - symbol: map
-      - - symbol: fold
-        - - symbol: fn
-          - - symbol: result
-            - symbol: name
-          - - symbol: with_field
-            - symbol: result
-            - symbol: name
-            - - symbol: get
-              - symbol: specs
-              - symbol: name
-        - - symbol: record
-        - - symbol: keys
-          - symbol: specs
-      - symbol: map
-    location:
-      source: "std:types"
-      path:
-        - "from_fields"
-    environment: []
-    bindings: {}
   object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - spec
+        - "$call":
+            - if
+            - "$call":
+                - and
+                - "$call":
+                    - eq
+                    - "$call":
+                        - type
+                        - "$ref": spec
+                    - map
+                - "$call":
+                    - has
+                    - - optional
+                      - default
+                    - "$call":
+                        - get
+                        - "$ref": spec
+                        - type
+                        - ""
+            - "$ref": spec
+            - "$call":
+                - optional
+                - "$ref": spec
+    environment: []
     kind: function
+    location:
+      path:
+        - optional_field
+      source: "std:types"
     program:
       ref: object4
-    code:
-      - symbol: fn
-      - - symbol: t
-        - - symbol: name
-          - symbol: string
-      - - symbol: let
-        - specs:
-            - symbol: fields
-            - symbol: t
-        - - symbol: fold
-          - - symbol: fn
-            - - symbol: result
-              - symbol: field
-            - - symbol: if
-              - - symbol: eq
-                - symbol: field
-                - symbol: name
-              - symbol: result
-              - - symbol: with_field
-                - symbol: result
-                - symbol: field
-                - - symbol: get
-                  - symbol: specs
-                  - symbol: field
-          - - symbol: record
-          - - symbol: keys
-            - symbol: specs
-      - symbol: map
-    location:
-      source: "std:types"
-      path:
-        - "without_field"
-    environment: []
-    bindings: {}
   object2:
-    kind: function
-    program:
-      ref: object4
-    code:
-      - symbol: fn
-      - - symbol: spec
-      - - symbol: if
-        - - symbol: and
-          - - symbol: eq
-            - - symbol: type
-              - symbol: spec
-            - map
-          - - symbol: has
-            - - "optional"
-              - default
-            - - symbol: get
-              - symbol: spec
-              - type
-              - ""
-        - symbol: spec
-        - - symbol: optional
-          - symbol: spec
-    location:
-      source: "std:types"
-      path:
-        - "optional_field"
-    environment: []
-    bindings: {}
-  object3:
-    kind: function
-    program:
-      ref: object4
-    code:
-      - symbol: fn
-      - - symbol: t
-      - - symbol: let
-        - specs:
-            - symbol: fields
-            - symbol: t
-        - - symbol: fold
-          - - symbol: fn
-            - - symbol: result
-              - symbol: name
-            - - symbol: with_field
-              - symbol: result
-              - symbol: name
-              - - symbol: optional_field
-                - - symbol: get
-                  - symbol: specs
-                  - symbol: name
-          - - symbol: record
-          - - symbol: keys
-            - symbol: specs
-      - symbol: map
-    location:
-      source: "std:types"
-      path:
-        - "optional_fields"
-    environment: []
     bindings:
       optional_field:
         code:
-          source: "std:types"
           path:
-            - "optional_field"
+            - optional_field
+          source: "std:types"
+    code:
+      "$call":
+        - fn
+        - - t
+        - "$call":
+            - let
+            - specs:
+                "$call":
+                  - fields
+                  - "$ref": t
+            - "$call":
+                - fold
+                - "$call":
+                    - fn
+                    - - result
+                      - name
+                    - "$call":
+                        - with_field
+                        - "$ref": result
+                        - "$ref": name
+                        - "$call":
+                            - optional_field
+                            - "$call":
+                                - get
+                                - "$ref": specs
+                                - "$ref": name
+                - "$call":
+                    - record
+                - "$call":
+                    - keys
+                    - "$ref": specs
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - optional_fields
+      source: "std:types"
+    program:
+      ref: object4
+  object3:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - t
+          - - name
+            - "$ref": string
+        - "$call":
+            - let
+            - specs:
+                "$call":
+                  - fields
+                  - "$ref": t
+            - "$call":
+                - fold
+                - "$call":
+                    - fn
+                    - - result
+                      - field
+                    - "$call":
+                        - if
+                        - "$call":
+                            - eq
+                            - "$ref": field
+                            - "$ref": name
+                        - "$ref": result
+                        - "$call":
+                            - with_field
+                            - "$ref": result
+                            - "$ref": field
+                            - "$call":
+                                - get
+                                - "$ref": specs
+                                - "$ref": field
+                - "$call":
+                    - record
+                - "$call":
+                    - keys
+                    - "$ref": specs
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - without_field
+      source: "std:types"
+    program:
+      ref: object4
   object4:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          types:
-            - symbol: import
-            - symbol: "std:types"
-          shape:
-            - symbol: record
-            - name
-            - symbol: string
-            - count
-            - - symbol: default
-              - symbol: integer
-              - 0
-          derived:
-            - symbol: type_time
-            - - symbol: types.optional_fields
-              - symbol: shape
-          iteration:
-            - symbol: type_time
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: t
-                  - symbol: name
-                - - symbol: with_field
-                  - symbol: t
-                  - symbol: name
-                  - symbol: boolean
-              - - symbol: record
-              - - "a"
-                - b
-          nested:
-            - symbol: type_time
-            - - symbol: type_time
-              - - symbol: list_of
-                - symbol: integer
-          caught_inside:
-            - symbol: type_time
-            - - symbol: try
-              - - symbol: list_of
-                - 42
-              - - symbol: fn
-                - - symbol: e
-                - symbol: e
-          caught_outside:
-            - symbol: try
-            - - symbol: type_time
-              - - symbol: div
-                - 1
-                - 0
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
-          runtime_after:
-            - symbol: try
-            - - symbol: div
-              - 1
-              - 0
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
+      - code:
           captured_error:
-            - symbol: try
-            - - symbol: div
-              - 1
-              - 0
-            - - symbol: fn
-              - - symbol: e
-              - symbol: e
+            "$call":
+              - try
+              - "$call":
+                  - div
+                  - 1
+                  - 0
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          caught_inside:
+            "$call":
+              - type_time
+              - "$call":
+                  - try
+                  - "$call":
+                      - list_of
+                      - 42
+                  - "$call":
+                      - fn
+                      - - e
+                      - "$ref": e
+          caught_outside:
+            "$call":
+              - try
+              - "$call":
+                  - type_time
+                  - "$call":
+                      - div
+                      - 1
+                      - 0
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          derived:
+            "$call":
+              - type_time
+              - "$call":
+                  - types.optional_fields
+                  - "$ref": shape
+          iteration:
+            "$call":
+              - type_time
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - t
+                        - name
+                      - "$call":
+                          - with_field
+                          - "$ref": t
+                          - "$ref": name
+                          - "$ref": boolean
+                  - "$call":
+                      - record
+                  - - a
+                    - b
+          nested:
+            "$call":
+              - type_time
+              - "$call":
+                  - type_time
+                  - "$call":
+                      - list_of
+                      - "$ref": integer
           rechecked:
-            - symbol: type_time
-            - symbol: captured_error
-      - source: "std:types"
-        code:
+            "$call":
+              - type_time
+              - "$ref": captured_error
+          runtime_after:
+            "$call":
+              - try
+              - "$call":
+                  - div
+                  - 1
+                  - 0
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e
+          shape:
+            "$call":
+              - record
+              - name
+              - "$ref": string
+              - count
+              - "$call":
+                  - default
+                  - "$ref": integer
+                  - 0
+          types:
+            "$call":
+              - import
+              - "std:types"
+        source: "<root>"
+      - code:
           from_fields:
-            - symbol: fn
-            - - - symbol: specs
-                - symbol: map
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: result
-                  - symbol: name
-                - - symbol: with_field
-                  - symbol: result
-                  - symbol: name
-                  - - symbol: get
-                    - symbol: specs
-                    - symbol: name
-              - - symbol: record
-              - - symbol: keys
-                - symbol: specs
-            - symbol: map
-          without_field:
-            - symbol: fn
-            - - symbol: t
-              - - symbol: name
-                - symbol: string
-            - - symbol: let
-              - specs:
-                  - symbol: fields
-                  - symbol: t
-              - - symbol: fold
-                - - symbol: fn
-                  - - symbol: result
-                    - symbol: field
-                  - - symbol: if
-                    - - symbol: eq
-                      - symbol: field
-                      - symbol: name
-                    - symbol: result
-                    - - symbol: with_field
-                      - symbol: result
-                      - symbol: field
-                      - - symbol: get
-                        - symbol: specs
-                        - symbol: field
-                - - symbol: record
-                - - symbol: keys
-                  - symbol: specs
-            - symbol: map
+            "$call":
+              - fn
+              - - - specs
+                  - "$ref": map
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - result
+                        - name
+                      - "$call":
+                          - with_field
+                          - "$ref": result
+                          - "$ref": name
+                          - "$call":
+                              - get
+                              - "$ref": specs
+                              - "$ref": name
+                  - "$call":
+                      - record
+                  - "$call":
+                      - keys
+                      - "$ref": specs
+              - "$ref": map
           optional_field:
-            - symbol: fn
-            - - symbol: spec
-            - - symbol: if
-              - - symbol: and
-                - - symbol: eq
-                  - - symbol: type
-                    - symbol: spec
-                  - map
-                - - symbol: has
-                  - - "optional"
-                    - default
-                  - - symbol: get
-                    - symbol: spec
-                    - type
-                    - ""
-              - symbol: spec
-              - - symbol: optional
-                - symbol: spec
+            "$call":
+              - fn
+              - - spec
+              - "$call":
+                  - if
+                  - "$call":
+                      - and
+                      - "$call":
+                          - eq
+                          - "$call":
+                              - type
+                              - "$ref": spec
+                          - map
+                      - "$call":
+                          - has
+                          - - optional
+                            - default
+                          - "$call":
+                              - get
+                              - "$ref": spec
+                              - type
+                              - ""
+                  - "$ref": spec
+                  - "$call":
+                      - optional
+                      - "$ref": spec
           optional_fields:
-            - symbol: fn
-            - - symbol: t
-            - - symbol: let
-              - specs:
-                  - symbol: fields
-                  - symbol: t
-              - - symbol: fold
-                - - symbol: fn
-                  - - symbol: result
-                    - symbol: name
-                  - - symbol: with_field
-                    - symbol: result
-                    - symbol: name
-                    - - symbol: optional_field
-                      - - symbol: get
-                        - symbol: specs
-                        - symbol: name
-                - - symbol: record
-                - - symbol: keys
-                  - symbol: specs
-            - symbol: map
+            "$call":
+              - fn
+              - - t
+              - "$call":
+                  - let
+                  - specs:
+                      "$call":
+                        - fields
+                        - "$ref": t
+                  - "$call":
+                      - fold
+                      - "$call":
+                          - fn
+                          - - result
+                            - name
+                          - "$call":
+                              - with_field
+                              - "$ref": result
+                              - "$ref": name
+                              - "$call":
+                                  - optional_field
+                                  - "$call":
+                                      - get
+                                      - "$ref": specs
+                                      - "$ref": name
+                      - "$call":
+                          - record
+                      - "$call":
+                          - keys
+                          - "$ref": specs
+              - "$ref": map
+          without_field:
+            "$call":
+              - fn
+              - - t
+                - - name
+                  - "$ref": string
+              - "$call":
+                  - let
+                  - specs:
+                      "$call":
+                        - fields
+                        - "$ref": t
+                  - "$call":
+                      - fold
+                      - "$call":
+                          - fn
+                          - - result
+                            - field
+                          - "$call":
+                              - if
+                              - "$call":
+                                  - eq
+                                  - "$ref": field
+                                  - "$ref": name
+                              - "$ref": result
+                              - "$call":
+                                  - with_field
+                                  - "$ref": result
+                                  - "$ref": field
+                                  - "$call":
+                                      - get
+                                      - "$ref": specs
+                                      - "$ref": field
+                      - "$call":
+                          - record
+                      - "$call":
+                          - keys
+                          - "$ref": specs
+              - "$ref": map
+        source: "std:types"
+root:
+  captured_error:
+    column: 37
+    kind: divide_by_zero
+    line: 30
+    message: "`div` by zero"
+    path: "/captured_error/$call/1"
+    reference:
+      - captured_error
+      - "$call"
+      - 1
+  caught_inside:
+    column: 45
+    kind: type
+    line: 23
+    message: "expected a type, got integer"
+    path: "/caught_inside/$call/1/$call/1/$call/1"
+    phase: type
+    reference:
+      - caught_inside
+      - "$call"
+      - 1
+      - "$call"
+      - 1
+      - "$call"
+      - 1
+  caught_outside:
+    column: 29
+    kind: divide_by_zero
+    line: 27
+    message: "`div` by zero"
+    path: "/caught_outside/$call/1/$call/1"
+    phase: type
+    reference:
+      - caught_outside
+      - "$call"
+      - 1
+      - "$call"
+      - 1
+  derived:
+    fields:
+      count:
+        default: 0
+        of: integer
+        type: default
+      name:
+        of: string
+        type: optional
+    type: record
+  iteration:
+    fields:
+      a: boolean
+      b: boolean
+    type: record
+  nested:
+    of: integer
+    type: list
+  rechecked:
+    column: 37
+    kind: divide_by_zero
+    line: 30
+    message: "`div` by zero"
+    path: "/captured_error/$call/1"
+    phase: type
+    reference:
+      - captured_error
+      - "$call"
+      - 1
+  runtime_after:
+    column: 36
+    kind: divide_by_zero
+    line: 29
+    message: "`div` by zero"
+    path: "/runtime_after/$call/1"
+    reference:
+      - runtime_after
+      - "$call"
+      - 1
+  shape:
+    fields:
+      count:
+        default: 0
+        of: integer
+        type: default
+      name: string
+    type: record
+  types:
+    from_fields:
+      ref: object0
+    optional_field:
+      ref: object1
+    optional_fields:
+      ref: object2
+    without_field:
+      ref: object3
+status: finished

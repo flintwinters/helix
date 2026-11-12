@@ -1,16 +1,17 @@
-pi: 3.5
-whole: 2.0
-sum: [add, pi, 1]
-product: [mul, 2, 0.25]
-quotient: [div, 7.0, 2]
-int_division_stays_int: [div, 7, 2]
-remainder: [mod, 7.5, 2]
-negated: [neg, pi]
-negated_int: [neg, 4]
-mixed_order: [lt, 3, pi]
-equal_across_types: [eq, 1, 1.0]
-exponent: [mul, 1e3, 2]
-truncated: [int, -2.9]
-widened: [float, 3]
-parsed_float: [float, "2.50"]
-parsed_int: [int, " 42 "]
+# Helix explicit syntax; migrated from legacy source.
+"pi": 3.5
+"whole": 2.0
+"sum": {"$call": ["add", {"$ref": "pi"}, 1]}
+"product": {"$call": ["mul", 2, 0.25]}
+"quotient": {"$call": ["div", 7.0, 2]}
+"int_division_stays_int": {"$call": ["div", 7, 2]}
+"remainder": {"$call": ["mod", 7.5, 2]}
+"negated": {"$call": ["neg", {"$ref": "pi"}]}
+"negated_int": {"$call": ["neg", 4]}
+"mixed_order": {"$call": ["lt", 3, {"$ref": "pi"}]}
+"equal_across_types": {"$call": ["eq", 1, 1.0]}
+"exponent": {"$call": ["mul", 1000.0, 2]}
+"truncated": {"$call": ["int", -2.9]}
+"widened": {"$call": ["float", 3]}
+"parsed_float": {"$call": ["float", "2.50"]}
+"parsed_int": {"$call": ["int", " 42 "]}

@@ -1,17 +1,19 @@
-status: error
 error:
-  kind: limit
-  message: value exceeds 100000 nodes
-  path: /2/2
-  reference:
-    - 2
-    - 2
-  line: 1
-  column: 57
   calls:
-    - path: /2
-      line: 1
-      column: 46
-      function: /2
-      function_line: 1
-      function_column: 46
+    - column: 3
+      function: "/$call/2"
+      function_column: 3
+      function_line: 5
+      line: 5
+      path: "/$call/2"
+  column: 28
+  kind: limit
+  line: 5
+  message: value exceeds 100000 nodes
+  path: "/$call/2/$call/2"
+  reference:
+    - "$call"
+    - 2
+    - "$call"
+    - 2
+status: error

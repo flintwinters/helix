@@ -1,0 +1,23 @@
+# The YAML data model carries syntax; presentation style carries no authority.
+ordinary_list: [add, 1, 2]
+strings: [add, "add", !!str add]
+calculated: {$call: [add, 20, 22]}
+quoted_form: {"$call": ["add", 20, 22]}
+reference: {$ref: calculated}
+reserved_data: {$literal: {$call: [add, 1, 2]}}
+standard_tags:
+  text: !!str 42
+  integer: !!int "42"
+  boolean: !!bool "true"
+  sequence: !!seq [1, 2]
+  mapping: !!map {answer: 42}
+radices: [0x2a, 0o52, 42]
+shared_data:
+  first: &data [1, 2]
+  second: *data
+occurrence_scope:
+  left: {value: 3, read: &lookup {$ref: value}}
+  right: {value: 8, read: *lookup}
+model_equality: {$call: [eq, {$ref: calculated}, {$ref: quoted_form}]}
+computed_call: {$call: [{$call: [fn, [x], {$call: [add, {$ref: x}, 1]}]}, 41]}
+canonical_keys: {$call: [keys, {z: 1, a: 2}]}

@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 10
   kind: assertion
+  line: 3
   message: total must be 4
   path: /check
   reference:
-    - "check"
-  line: 2
-  column: 8
+    - check
+status: error

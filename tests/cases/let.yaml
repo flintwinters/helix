@@ -1,6 +1,20 @@
-area: [let, {w: 3, h: 4, half: [div, [mul, w, h], 2]}, [add, half, w]]
-shadow:
-  w: 100
-  v: [let, {w: 1}, [add, w, 1]]
-in_fn: [fn, [n], [let, {sq: [mul, n, n]}, [add, sq, 1]]]
-r: [in_fn, 5]
+# Helix explicit syntax; migrated from legacy source.
+"area":
+  "$call":
+  - "let"
+  - "w": 3
+    "h": 4
+    "half": {"$call": ["div", {"$call": ["mul", {"$ref": "w"}, {"$ref": "h"}]}, 2]}
+  - {"$call": ["add", {"$ref": "half"}, {"$ref": "w"}]}
+"shadow":
+  "w": 100
+  "v": {"$call": ["let", {"w": 1}, {"$call": ["add", {"$ref": "w"}, 1]}]}
+"in_fn":
+  "$call":
+  - "fn"
+  - - "n"
+  - "$call":
+    - "let"
+    - "sq": {"$call": ["mul", {"$ref": "n"}, {"$ref": "n"}]}
+    - {"$call": ["add", {"$ref": "sq"}, 1]}
+"r": {"$call": ["in_fn", 5]}

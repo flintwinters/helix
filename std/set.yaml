@@ -1,15 +1,122 @@
+# Helix explicit syntax; migrated from legacy source.
 # Ordered sets are plain lists, using structural/numeric equality.
 # from removes duplicates; other operations accept lists and normalize their results.
 # Stable encounter order, bounded folds, and quadratic copying suit small inputs.
-l: [import, std:list]
-from: [fn, [[xs, list]], [l.unique, xs], list]
-contains: [fn, [[xs, list], value], [has, xs, value], boolean]
-insert: [fn, [[xs, list], value], [from, [append, xs, value]], list]
-remove: [fn, [[xs, list], value], [from, [filter, [fn, [x], [ne, x, value]], xs]], list]
-union: [fn, [[left, list], [right, list]], [from, [concat, left, right]], list]
-intersection: [fn, [[left, list], [right, list]], [from, [filter, [fn, [x], [has, right, x]], left]], list]
-difference: [fn, [[left, list], [right, list]], [from, [filter, [fn, [x], [not, [has, right, x]]], left]], list]
-is_subset: [fn, [[left, list], [right, list]], [l.all, left, [fn, [x], [has, right, x]]], boolean]
-is_disjoint: [fn, [[left, list], [right, list]], [not, [l.any, left, [fn, [x], [has, right, x]]]], boolean]
-equals: [fn, [[left, list], [right, list]], [and, [is_subset, left, right], [is_subset, right, left]], boolean]
-symmetric_difference: [fn, [[left, list], [right, list]], [concat, [difference, left, right], [difference, right, left]], list]
+"l": {"$call": ["import", "std:list"]}
+"from": {"$call": ["fn", [["xs", {"$ref": "list"}]], {"$call": ["l.unique", {"$ref": "xs"}]}, {"$ref": "list"}]}
+"contains":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - "value"
+  - {"$call": ["has", {"$ref": "xs"}, {"$ref": "value"}]}
+  - {"$ref": "boolean"}
+"insert":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - "value"
+  - {"$call": ["from", {"$call": ["append", {"$ref": "xs"}, {"$ref": "value"}]}]}
+  - {"$ref": "list"}
+"remove":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - "value"
+  - "$call":
+    - "from"
+    - "$call":
+      - "filter"
+      - {"$call": ["fn", ["x"], {"$call": ["ne", {"$ref": "x"}, {"$ref": "value"}]}]}
+      - {"$ref": "xs"}
+  - {"$ref": "list"}
+"union":
+  "$call":
+  - "fn"
+  - - - "left"
+      - {"$ref": "list"}
+    - - "right"
+      - {"$ref": "list"}
+  - {"$call": ["from", {"$call": ["concat", {"$ref": "left"}, {"$ref": "right"}]}]}
+  - {"$ref": "list"}
+"intersection":
+  "$call":
+  - "fn"
+  - - - "left"
+      - {"$ref": "list"}
+    - - "right"
+      - {"$ref": "list"}
+  - "$call":
+    - "from"
+    - "$call":
+      - "filter"
+      - {"$call": ["fn", ["x"], {"$call": ["has", {"$ref": "right"}, {"$ref": "x"}]}]}
+      - {"$ref": "left"}
+  - {"$ref": "list"}
+"difference":
+  "$call":
+  - "fn"
+  - - - "left"
+      - {"$ref": "list"}
+    - - "right"
+      - {"$ref": "list"}
+  - "$call":
+    - "from"
+    - "$call":
+      - "filter"
+      - {"$call": ["fn", ["x"], {"$call": ["not", {"$call": ["has", {"$ref": "right"}, {"$ref": "x"}]}]}]}
+      - {"$ref": "left"}
+  - {"$ref": "list"}
+"is_subset":
+  "$call":
+  - "fn"
+  - - - "left"
+      - {"$ref": "list"}
+    - - "right"
+      - {"$ref": "list"}
+  - "$call":
+    - "l.all"
+    - {"$ref": "left"}
+    - {"$call": ["fn", ["x"], {"$call": ["has", {"$ref": "right"}, {"$ref": "x"}]}]}
+  - {"$ref": "boolean"}
+"is_disjoint":
+  "$call":
+  - "fn"
+  - - - "left"
+      - {"$ref": "list"}
+    - - "right"
+      - {"$ref": "list"}
+  - "$call":
+    - "not"
+    - "$call":
+      - "l.any"
+      - {"$ref": "left"}
+      - {"$call": ["fn", ["x"], {"$call": ["has", {"$ref": "right"}, {"$ref": "x"}]}]}
+  - {"$ref": "boolean"}
+"equals":
+  "$call":
+  - "fn"
+  - - - "left"
+      - {"$ref": "list"}
+    - - "right"
+      - {"$ref": "list"}
+  - "$call":
+    - "and"
+    - {"$call": ["is_subset", {"$ref": "left"}, {"$ref": "right"}]}
+    - {"$call": ["is_subset", {"$ref": "right"}, {"$ref": "left"}]}
+  - {"$ref": "boolean"}
+"symmetric_difference":
+  "$call":
+  - "fn"
+  - - - "left"
+      - {"$ref": "list"}
+    - - "right"
+      - {"$ref": "list"}
+  - "$call":
+    - "concat"
+    - {"$call": ["difference", {"$ref": "left"}, {"$ref": "right"}]}
+    - {"$call": ["difference", {"$ref": "right"}, {"$ref": "left"}]}
+  - {"$ref": "list"}

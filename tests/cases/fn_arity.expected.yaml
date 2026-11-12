@@ -1,16 +1,16 @@
-status: error
 error:
+  calls:
+    - column: 8
+      function: /double
+      function_column: 11
+      function_line: 2
+      line: 3
+      path: /bad
+  column: 8
   kind: arity
+  line: 3
   message: "function `/double` takes 1 argument, got 2"
   path: /bad
   reference:
-    - "bad"
-  line: 2
-  column: 6
-  calls:
-    - path: /bad
-      line: 2
-      column: 6
-      function: /double
-      function_line: 1
-      function_column: 9
+    - bad
+status: error

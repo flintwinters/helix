@@ -1,5 +1,421 @@
-status: finished
+objects:
+  object0:
+    bindings:
+      total_by_account:
+        code:
+          path:
+            - total_by_account
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - - expected_rows
+          - actual_rows
+        - "$call":
+            - let
+            - accounts:
+                "$call":
+                  - concat
+                  - "$call":
+                      - keys
+                      - "$ref": expected
+                  - "$call":
+                      - filter
+                      - "$call":
+                          - fn
+                          - - account
+                          - "$call":
+                              - not
+                              - "$call":
+                                  - has
+                                  - "$ref": expected
+                                  - "$ref": account
+                      - "$call":
+                          - keys
+                          - "$ref": actual
+              actual:
+                "$call":
+                  - total_by_account
+                  - "$ref": actual_rows
+              differences:
+                "$call":
+                  - filter
+                  - "$call":
+                      - fn
+                      - - account
+                      - "$call":
+                          - or
+                          - "$call":
+                              - not
+                              - "$call":
+                                  - has
+                                  - "$ref": expected
+                                  - "$ref": account
+                          - "$call":
+                              - not
+                              - "$call":
+                                  - has
+                                  - "$ref": actual
+                                  - "$ref": account
+                          - "$call":
+                              - ne
+                              - "$call":
+                                  - get
+                                  - "$ref": expected
+                                  - "$ref": account
+                                  - 0
+                              - "$call":
+                                  - get
+                                  - "$ref": actual
+                                  - "$ref": account
+                                  - 0
+                  - "$ref": accounts
+              expected:
+                "$call":
+                  - total_by_account
+                  - "$ref": expected_rows
+            - "$call":
+                - map
+                - "$call":
+                    - fn
+                    - - account
+                    - "$call":
+                        - set
+                        - "$call":
+                            - set
+                            - "$call":
+                                - set
+                                - "$call":
+                                    - set
+                                    - "$call":
+                                        - set
+                                        - "$call":
+                                            - set
+                                            - {}
+                                            - account
+                                            - "$ref": account
+                                        - in_ledger
+                                        - "$call":
+                                            - has
+                                            - "$ref": expected
+                                            - "$ref": account
+                                    - in_statement
+                                    - "$call":
+                                        - has
+                                        - "$ref": actual
+                                        - "$ref": account
+                                - expected_cents
+                                - "$call":
+                                    - get
+                                    - "$ref": expected
+                                    - "$ref": account
+                                    - 0
+                            - actual_cents
+                            - "$call":
+                                - get
+                                - "$ref": actual
+                                - "$ref": account
+                                - 0
+                        - delta_cents
+                        - "$call":
+                            - sub
+                            - "$call":
+                                - get
+                                - "$ref": actual
+                                - "$ref": account
+                                - 0
+                            - "$call":
+                                - get
+                                - "$ref": expected
+                                - "$ref": account
+                                - 0
+                - "$ref": differences
+    environment: []
+    kind: function
+    location:
+      path:
+        - reconcile
+      source: "<root>"
+    program:
+      ref: object2
+  object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - rows
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - acc
+                  - row
+                - "$call":
+                    - let
+                    - account:
+                        "$call":
+                          - get
+                          - "$ref": row
+                          - account
+                    - "$call":
+                        - set
+                        - "$ref": acc
+                        - "$ref": account
+                        - "$call":
+                            - add
+                            - "$call":
+                                - get
+                                - "$ref": acc
+                                - "$ref": account
+                                - 0
+                            - "$call":
+                                - get
+                                - "$ref": row
+                                - cents
+            - {}
+            - "$ref": rows
+    environment: []
+    kind: function
+    location:
+      path:
+        - total_by_account
+      source: "<root>"
+    program:
+      ref: object2
+  object2:
+    kind: program
+    sources:
+      - code:
+          balanced:
+            "$call":
+              - reconcile
+              - "$ref": ledger
+              - "$ref": ledger
+          discrepancies:
+            "$call":
+              - reconcile
+              - "$ref": ledger
+              - "$ref": statement
+          empty:
+            "$call":
+              - reconcile
+              - []
+              - []
+          ledger:
+            - account: hosting
+              cents: 1200
+            - account: hosting
+              cents: 800
+            - account: travel
+              cents: 5000
+            - account: travel
+              cents: -1000
+            - account: domain
+              cents: 1500
+            - account: placeholder
+              cents: 0
+          reconcile:
+            "$call":
+              - fn
+              - - expected_rows
+                - actual_rows
+              - "$call":
+                  - let
+                  - accounts:
+                      "$call":
+                        - concat
+                        - "$call":
+                            - keys
+                            - "$ref": expected
+                        - "$call":
+                            - filter
+                            - "$call":
+                                - fn
+                                - - account
+                                - "$call":
+                                    - not
+                                    - "$call":
+                                        - has
+                                        - "$ref": expected
+                                        - "$ref": account
+                            - "$call":
+                                - keys
+                                - "$ref": actual
+                    actual:
+                      "$call":
+                        - total_by_account
+                        - "$ref": actual_rows
+                    differences:
+                      "$call":
+                        - filter
+                        - "$call":
+                            - fn
+                            - - account
+                            - "$call":
+                                - or
+                                - "$call":
+                                    - not
+                                    - "$call":
+                                        - has
+                                        - "$ref": expected
+                                        - "$ref": account
+                                - "$call":
+                                    - not
+                                    - "$call":
+                                        - has
+                                        - "$ref": actual
+                                        - "$ref": account
+                                - "$call":
+                                    - ne
+                                    - "$call":
+                                        - get
+                                        - "$ref": expected
+                                        - "$ref": account
+                                        - 0
+                                    - "$call":
+                                        - get
+                                        - "$ref": actual
+                                        - "$ref": account
+                                        - 0
+                        - "$ref": accounts
+                    expected:
+                      "$call":
+                        - total_by_account
+                        - "$ref": expected_rows
+                  - "$call":
+                      - map
+                      - "$call":
+                          - fn
+                          - - account
+                          - "$call":
+                              - set
+                              - "$call":
+                                  - set
+                                  - "$call":
+                                      - set
+                                      - "$call":
+                                          - set
+                                          - "$call":
+                                              - set
+                                              - "$call":
+                                                  - set
+                                                  - {}
+                                                  - account
+                                                  - "$ref": account
+                                              - in_ledger
+                                              - "$call":
+                                                  - has
+                                                  - "$ref": expected
+                                                  - "$ref": account
+                                          - in_statement
+                                          - "$call":
+                                              - has
+                                              - "$ref": actual
+                                              - "$ref": account
+                                      - expected_cents
+                                      - "$call":
+                                          - get
+                                          - "$ref": expected
+                                          - "$ref": account
+                                          - 0
+                                  - actual_cents
+                                  - "$call":
+                                      - get
+                                      - "$ref": actual
+                                      - "$ref": account
+                                      - 0
+                              - delta_cents
+                              - "$call":
+                                  - sub
+                                  - "$call":
+                                      - get
+                                      - "$ref": actual
+                                      - "$ref": account
+                                      - 0
+                                  - "$call":
+                                      - get
+                                      - "$ref": expected
+                                      - "$ref": account
+                                      - 0
+                      - "$ref": differences
+          statement:
+            - account: hosting
+              cents: 2000
+            - account: travel
+              cents: 4500
+            - account: equipment
+              cents: 3000
+            - account: new_zero
+              cents: 0
+          total_by_account:
+            "$call":
+              - fn
+              - - rows
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - acc
+                        - row
+                      - "$call":
+                          - let
+                          - account:
+                              "$call":
+                                - get
+                                - "$ref": row
+                                - account
+                          - "$call":
+                              - set
+                              - "$ref": acc
+                              - "$ref": account
+                              - "$call":
+                                  - add
+                                  - "$call":
+                                      - get
+                                      - "$ref": acc
+                                      - "$ref": account
+                                      - 0
+                                  - "$call":
+                                      - get
+                                      - "$ref": row
+                                      - cents
+                  - {}
+                  - "$ref": rows
+        source: "<root>"
 root:
+  balanced: []
+  discrepancies:
+    - account: domain
+      actual_cents: 0
+      delta_cents: -1500
+      expected_cents: 1500
+      in_ledger: true
+      in_statement: false
+    - account: placeholder
+      actual_cents: 0
+      delta_cents: 0
+      expected_cents: 0
+      in_ledger: true
+      in_statement: false
+    - account: travel
+      actual_cents: 4500
+      delta_cents: 500
+      expected_cents: 4000
+      in_ledger: true
+      in_statement: true
+    - account: equipment
+      actual_cents: 3000
+      delta_cents: 3000
+      expected_cents: 0
+      in_ledger: false
+      in_statement: true
+    - account: new_zero
+      actual_cents: 0
+      delta_cents: 0
+      expected_cents: 0
+      in_ledger: false
+      in_statement: true
+  empty: []
   ledger:
     - account: hosting
       cents: 1200
@@ -13,6 +429,8 @@ root:
       cents: 1500
     - account: placeholder
       cents: 0
+  reconcile:
+    ref: object0
   statement:
     - account: hosting
       cents: 2000
@@ -23,340 +441,5 @@ root:
     - account: new_zero
       cents: 0
   total_by_account:
-    ref: object0
-  reconcile:
     ref: object1
-  discrepancies:
-    - account: travel
-      in_ledger: true
-      in_statement: true
-      expected_cents: 4000
-      actual_cents: 4500
-      delta_cents: 500
-    - account: domain
-      in_ledger: true
-      in_statement: false
-      expected_cents: 1500
-      actual_cents: 0
-      delta_cents: -1500
-    - account: placeholder
-      in_ledger: true
-      in_statement: false
-      expected_cents: 0
-      actual_cents: 0
-      delta_cents: 0
-    - account: equipment
-      in_ledger: false
-      in_statement: true
-      expected_cents: 0
-      actual_cents: 3000
-      delta_cents: 3000
-    - account: new_zero
-      in_ledger: false
-      in_statement: true
-      expected_cents: 0
-      actual_cents: 0
-      delta_cents: 0
-  balanced: []
-  empty: []
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object2
-    code:
-      - symbol: fn
-      - - symbol: rows
-      - - symbol: fold
-        - - symbol: fn
-          - - symbol: acc
-            - symbol: row
-          - - symbol: let
-            - account:
-                - symbol: get
-                - symbol: row
-                - account
-            - - symbol: set
-              - symbol: acc
-              - symbol: account
-              - - symbol: add
-                - - symbol: get
-                  - symbol: acc
-                  - symbol: account
-                  - 0
-                - - symbol: get
-                  - symbol: row
-                  - cents
-        - {}
-        - symbol: rows
-    location:
-      source: "<root>"
-      path:
-        - "total_by_account"
-    environment: []
-    bindings: {}
-  object1:
-    kind: function
-    program:
-      ref: object2
-    code:
-      - symbol: fn
-      - - symbol: expected_rows
-        - symbol: actual_rows
-      - - symbol: let
-        - expected:
-            - symbol: total_by_account
-            - symbol: expected_rows
-          actual:
-            - symbol: total_by_account
-            - symbol: actual_rows
-          accounts:
-            - symbol: concat
-            - - symbol: keys
-              - symbol: expected
-            - - symbol: filter
-              - - symbol: fn
-                - - symbol: account
-                - - symbol: not
-                  - - symbol: has
-                    - symbol: expected
-                    - symbol: account
-              - - symbol: keys
-                - symbol: actual
-          differences:
-            - symbol: filter
-            - - symbol: fn
-              - - symbol: account
-              - - symbol: or
-                - - symbol: not
-                  - - symbol: has
-                    - symbol: expected
-                    - symbol: account
-                - - symbol: not
-                  - - symbol: has
-                    - symbol: actual
-                    - symbol: account
-                - - symbol: ne
-                  - - symbol: get
-                    - symbol: expected
-                    - symbol: account
-                    - 0
-                  - - symbol: get
-                    - symbol: actual
-                    - symbol: account
-                    - 0
-            - symbol: accounts
-        - - symbol: map
-          - - symbol: fn
-            - - symbol: account
-            - - symbol: set
-              - - symbol: set
-                - - symbol: set
-                  - - symbol: set
-                    - - symbol: set
-                      - - symbol: set
-                        - {}
-                        - account
-                        - symbol: account
-                      - in_ledger
-                      - - symbol: has
-                        - symbol: expected
-                        - symbol: account
-                    - in_statement
-                    - - symbol: has
-                      - symbol: actual
-                      - symbol: account
-                  - expected_cents
-                  - - symbol: get
-                    - symbol: expected
-                    - symbol: account
-                    - 0
-                - actual_cents
-                - - symbol: get
-                  - symbol: actual
-                  - symbol: account
-                  - 0
-              - delta_cents
-              - - symbol: sub
-                - - symbol: get
-                  - symbol: actual
-                  - symbol: account
-                  - 0
-                - - symbol: get
-                  - symbol: expected
-                  - symbol: account
-                  - 0
-          - symbol: differences
-    location:
-      source: "<root>"
-      path:
-        - "reconcile"
-    environment: []
-    bindings:
-      total_by_account:
-        code:
-          source: "<root>"
-          path:
-            - "total_by_account"
-  object2:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          ledger:
-            - account:
-                symbol: hosting
-              cents: 1200
-            - account:
-                symbol: hosting
-              cents: 800
-            - account:
-                symbol: travel
-              cents: 5000
-            - account:
-                symbol: travel
-              cents: -1000
-            - account:
-                symbol: domain
-              cents: 1500
-            - account:
-                symbol: placeholder
-              cents: 0
-          statement:
-            - account:
-                symbol: hosting
-              cents: 2000
-            - account:
-                symbol: travel
-              cents: 4500
-            - account:
-                symbol: equipment
-              cents: 3000
-            - account:
-                symbol: new_zero
-              cents: 0
-          total_by_account:
-            - symbol: fn
-            - - symbol: rows
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: acc
-                  - symbol: row
-                - - symbol: let
-                  - account:
-                      - symbol: get
-                      - symbol: row
-                      - account
-                  - - symbol: set
-                    - symbol: acc
-                    - symbol: account
-                    - - symbol: add
-                      - - symbol: get
-                        - symbol: acc
-                        - symbol: account
-                        - 0
-                      - - symbol: get
-                        - symbol: row
-                        - cents
-              - {}
-              - symbol: rows
-          reconcile:
-            - symbol: fn
-            - - symbol: expected_rows
-              - symbol: actual_rows
-            - - symbol: let
-              - expected:
-                  - symbol: total_by_account
-                  - symbol: expected_rows
-                actual:
-                  - symbol: total_by_account
-                  - symbol: actual_rows
-                accounts:
-                  - symbol: concat
-                  - - symbol: keys
-                    - symbol: expected
-                  - - symbol: filter
-                    - - symbol: fn
-                      - - symbol: account
-                      - - symbol: not
-                        - - symbol: has
-                          - symbol: expected
-                          - symbol: account
-                    - - symbol: keys
-                      - symbol: actual
-                differences:
-                  - symbol: filter
-                  - - symbol: fn
-                    - - symbol: account
-                    - - symbol: or
-                      - - symbol: not
-                        - - symbol: has
-                          - symbol: expected
-                          - symbol: account
-                      - - symbol: not
-                        - - symbol: has
-                          - symbol: actual
-                          - symbol: account
-                      - - symbol: ne
-                        - - symbol: get
-                          - symbol: expected
-                          - symbol: account
-                          - 0
-                        - - symbol: get
-                          - symbol: actual
-                          - symbol: account
-                          - 0
-                  - symbol: accounts
-              - - symbol: map
-                - - symbol: fn
-                  - - symbol: account
-                  - - symbol: set
-                    - - symbol: set
-                      - - symbol: set
-                        - - symbol: set
-                          - - symbol: set
-                            - - symbol: set
-                              - {}
-                              - account
-                              - symbol: account
-                            - in_ledger
-                            - - symbol: has
-                              - symbol: expected
-                              - symbol: account
-                          - in_statement
-                          - - symbol: has
-                            - symbol: actual
-                            - symbol: account
-                        - expected_cents
-                        - - symbol: get
-                          - symbol: expected
-                          - symbol: account
-                          - 0
-                      - actual_cents
-                      - - symbol: get
-                        - symbol: actual
-                        - symbol: account
-                        - 0
-                    - delta_cents
-                    - - symbol: sub
-                      - - symbol: get
-                        - symbol: actual
-                        - symbol: account
-                        - 0
-                      - - symbol: get
-                        - symbol: expected
-                        - symbol: account
-                        - 0
-                - symbol: differences
-          discrepancies:
-            - symbol: reconcile
-            - symbol: ledger
-            - symbol: statement
-          balanced:
-            - symbol: reconcile
-            - symbol: ledger
-            - symbol: ledger
-          empty:
-            - symbol: reconcile
-            - []
-            - []
+status: finished

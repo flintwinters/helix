@@ -1,19 +1,21 @@
-status: error
 error:
+  calls:
+    - column: 6
+      function: /f
+      function_column: 10
+      function_line: 3
+      line: 7
+      path: /r
+  column: 29
   kind: cycle
+  line: 6
   message: value depends on itself
-  path: /f/2/1/a
+  path: "/f/$call/2/$call/1/a"
   reference:
-    - "f"
+    - f
+    - "$call"
     - 2
+    - "$call"
     - 1
     - a
-  line: 1
-  column: 24
-  calls:
-    - path: /r
-      line: 2
-      column: 4
-      function: /f
-      function_line: 1
-      function_column: 4
+status: error

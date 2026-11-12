@@ -1,49 +1,167 @@
+# Helix explicit syntax; migrated from legacy source.
 # All maps over two keys with absent/null/false values, in both key orders.
-t: [import, std:test]
-l: [import, std:list]
-m: [import, std:map]
-choices: [list, null, false]
-singles: [l.flat_map, [list, "a", "b"], [fn, [key], [map, [fn, [value], [dict, key, value]], choices]]]
-pairs: [l.flat_map, choices, [fn, [a], [l.flat_map, choices, [fn, [b], [list, [dict, "a", a, "b", b], [dict, "b", b, "a", a]]]]]]
-samples: [concat, [list, {}], singles, pairs]
-merges: [t.product, [list, samples, samples]]
-# Build expected keys separately from values: map equality alone ignores order.
-# merge keeps left positions and takes right values including null and false
-merge_law:
-  - t.property
+"t": {"$call": ["import", "std:test"]}
+"l": {"$call": ["import", "std:list"]}
+"m": {"$call": ["import", "std:map"]}
+"choices": {"$call": ["list", null, false]}
+"singles":
+  "$call":
+  - "l.flat_map"
+  - {"$call": ["list", "a", "b"]}
+  - "$call":
+    - "fn"
+    - - "key"
+    - "$call":
+      - "map"
+      - {"$call": ["fn", ["value"], {"$call": ["dict", {"$ref": "key"}, {"$ref": "value"}]}]}
+      - {"$ref": "choices"}
+"pairs":
+  "$call":
+  - "l.flat_map"
+  - {"$ref": "choices"}
+  - "$call":
+    - "fn"
+    - - "a"
+    - "$call":
+      - "l.flat_map"
+      - {"$ref": "choices"}
+      - "$call":
+        - "fn"
+        - - "b"
+        - "$call":
+          - "list"
+          - {"$call": ["dict", "a", {"$ref": "a"}, "b", {"$ref": "b"}]}
+          - {"$call": ["dict", "b", {"$ref": "b"}, "a", {"$ref": "a"}]}
+"samples": {"$call": ["concat", {"$call": ["list", {}]}, {"$ref": "singles"}, {"$ref": "pairs"}]}
+"merges": {"$call": ["t.product", {"$call": ["list", {"$ref": "samples"}, {"$ref": "samples"}]}]}
+"merge_law":
+  "$call":
+  - "t.property"
   - "merge_law"
-  - merges
-  - - fn
-    - [row]
-    - - let
-      - left: [get, row, 0]
-        right: [get, row, 1]
-        result: [m.merge, left, right]
-        expected_keys: [concat, [keys, left], [filter, [fn, [key], [not, [has, left, key]]], [keys, right]]]
-      - [and, [eq, [keys, result], expected_keys], [l.all, expected_keys, [fn, [key], [eq, [get, result, key], [if, [has, right, key], [get, right, key], [get, left, key]]]]]]
-removals: [l.flat_map, samples, [fn, [source], [map, [fn, [key], [list, source, key]], [list, "a", "b", "missing"]]]]
-# remove preserves every survivor value and its order
-remove_law:
-  - t.property
+  - {"$ref": "merges"}
+  - "$call":
+    - "fn"
+    - - "row"
+    - "$call":
+      - "let"
+      - "left": {"$call": ["get", {"$ref": "row"}, 0]}
+        "right": {"$call": ["get", {"$ref": "row"}, 1]}
+        "result": {"$call": ["m.merge", {"$ref": "left"}, {"$ref": "right"}]}
+        "expected_keys":
+          "$call":
+          - "l.sort"
+          - "$call":
+            - "concat"
+            - {"$call": ["keys", {"$ref": "left"}]}
+            - "$call":
+              - "filter"
+              - {"$call": ["fn", ["key"], {"$call": ["not", {"$call": ["has", {"$ref": "left"}, {"$ref": "key"}]}]}]}
+              - {"$call": ["keys", {"$ref": "right"}]}
+      - "$call":
+        - "and"
+        - {"$call": ["eq", {"$call": ["keys", {"$ref": "result"}]}, {"$ref": "expected_keys"}]}
+        - "$call":
+          - "l.all"
+          - {"$ref": "expected_keys"}
+          - "$call":
+            - "fn"
+            - - "key"
+            - "$call":
+              - "eq"
+              - {"$call": ["get", {"$ref": "result"}, {"$ref": "key"}]}
+              - "$call":
+                - "if"
+                - {"$call": ["has", {"$ref": "right"}, {"$ref": "key"}]}
+                - {"$call": ["get", {"$ref": "right"}, {"$ref": "key"}]}
+                - {"$call": ["get", {"$ref": "left"}, {"$ref": "key"}]}
+"removals":
+  "$call":
+  - "l.flat_map"
+  - {"$ref": "samples"}
+  - "$call":
+    - "fn"
+    - - "source"
+    - "$call":
+      - "map"
+      - {"$call": ["fn", ["key"], {"$call": ["list", {"$ref": "source"}, {"$ref": "key"}]}]}
+      - {"$call": ["list", "a", "b", "missing"]}
+"remove_law":
+  "$call":
+  - "t.property"
   - "remove_law"
-  - removals
-  - - fn
-    - [row]
-    - - let
-      - source: [get, row, 0]
-        key: [get, row, 1]
-        result: [m.remove, source, key]
-        survivors: [filter, [fn, [name], [ne, name, key]], [keys, source]]
-      - [and, [eq, [keys, result], survivors], [l.all, survivors, [fn, [name], [eq, [get, result, name], [get, source, name]]]]]
-# Distinct literal cases extend the exhaustive scalar domain: shallow replacement,
-# three-key survivor order, and new keys appended in right-hand encounter order.
-examples:
-  - t.suite
-  - - name: shallow_replacement
-      run: [fn, [], [t.equal, [m.merge, {a: {old: 1, keep: 2}}, {a: {new: 3}}], {a: {new: 3}}]]
-    - name: append_order
-      run: [fn, [], [t.equal, [keys, [m.merge, {b: 1}, {c: 2, b: 3, a: 4}]], [list, "b", "c", "a"]]]
-    - name: remove_middle
-      run: [fn, [], [let, {actual: [m.remove, {c: [1, 2], b: false, a: {x: null}}, "b"]}, [t.equal, [list, [keys, actual], actual], [list, [list, "c", "a"], {c: [1, 2], a: {x: null}}]]]]
-coverage: [t.suite, [{name: map_count, run: [fn, [], [t.equal, [len, samples], 13]]}, {name: merge_count, run: [fn, [], [t.equal, [len, merges], 169]]}, {name: removal_count, run: [fn, [], [t.equal, [len, removals], 39]]}]]
-report: [t.combine, [list, examples, coverage, merge_law, remove_law]]
+  - {"$ref": "removals"}
+  - "$call":
+    - "fn"
+    - - "row"
+    - "$call":
+      - "let"
+      - "source": {"$call": ["get", {"$ref": "row"}, 0]}
+        "key": {"$call": ["get", {"$ref": "row"}, 1]}
+        "result": {"$call": ["m.remove", {"$ref": "source"}, {"$ref": "key"}]}
+        "survivors":
+          "$call":
+          - "filter"
+          - {"$call": ["fn", ["name"], {"$call": ["ne", {"$ref": "name"}, {"$ref": "key"}]}]}
+          - {"$call": ["keys", {"$ref": "source"}]}
+      - "$call":
+        - "and"
+        - {"$call": ["eq", {"$call": ["keys", {"$ref": "result"}]}, {"$ref": "survivors"}]}
+        - "$call":
+          - "l.all"
+          - {"$ref": "survivors"}
+          - "$call":
+            - "fn"
+            - - "name"
+            - "$call":
+              - "eq"
+              - {"$call": ["get", {"$ref": "result"}, {"$ref": "name"}]}
+              - {"$call": ["get", {"$ref": "source"}, {"$ref": "name"}]}
+"examples":
+  "$call":
+  - "t.suite"
+  - - "name": "shallow_replacement"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - {"$call": ["m.merge", {"a": {"old": 1, "keep": 2}}, {"a": {"new": 3}}]}
+          - "a":
+              "new": 3
+    - "name": "canonical_merge_order"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - {"$call": ["keys", {"$call": ["m.merge", {"b": 1}, {"c": 2, "b": 3, "a": 4}]}]}
+          - - "a"
+            - "b"
+            - "c"
+    - "name": "remove_middle"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "let"
+          - "actual": {"$call": ["m.remove", {"c": [1, 2], "b": false, "a": {"x": null}}, "b"]}
+          - "$call":
+            - "t.equal"
+            - {"$call": ["list", {"$call": ["keys", {"$ref": "actual"}]}, {"$ref": "actual"}]}
+            - {"$call": ["list", ["a", "c"], {"c": [1, 2], "a": {"x": null}}]}
+"coverage":
+  "$call":
+  - "t.suite"
+  - - "name": "map_count"
+      "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["len", {"$ref": "samples"}]}, 13]}]}
+    - "name": "merge_count"
+      "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["len", {"$ref": "merges"}]}, 169]}]}
+    - "name": "removal_count"
+      "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["len", {"$ref": "removals"}]}, 39]}]}
+"report":
+  "$call":
+  - "t.combine"
+  - {"$call": ["list", {"$ref": "examples"}, {"$ref": "coverage"}, {"$ref": "merge_law"}, {"$ref": "remove_law"}]}

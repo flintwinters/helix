@@ -1,231 +1,281 @@
-status: finished
-root:
-  program:
-    op: add
-    args:
-      - op: mul
-        args:
-          - 2
-          - 3
-      - op: neg
-        args:
-          - 4
-      - op: max
-        args:
-          - 7
-          - op: mul
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - op
+          - xs
+        - "$call":
+            - cond
+            - "$call":
+                - eq
+                - "$ref": op
+                - add
+            - "$call":
+                - fold
+                - "$call":
+                    - fn
+                    - - a
+                      - b
+                    - "$call":
+                        - add
+                        - "$ref": a
+                        - "$ref": b
+                - 0
+                - "$ref": xs
+            - "$call":
+                - eq
+                - "$ref": op
+                - mul
+            - "$call":
+                - fold
+                - "$call":
+                    - fn
+                    - - a
+                      - b
+                    - "$call":
+                        - mul
+                        - "$ref": a
+                        - "$ref": b
+                - 1
+                - "$ref": xs
+            - "$call":
+                - eq
+                - "$ref": op
+                - max
+            - "$call":
+                - fold
+                - "$call":
+                    - fn
+                    - - a
+                      - b
+                    - "$call":
+                        - if
+                        - "$call":
+                            - gt
+                            - "$ref": a
+                            - "$ref": b
+                        - "$ref": a
+                        - "$ref": b
+                - "$call":
+                    - get
+                    - "$ref": xs
+                    - 0
+                - "$ref": xs
+            - "$call":
+                - eq
+                - "$ref": op
+                - neg
+            - "$call":
+                - neg
+                - "$call":
+                    - get
+                    - "$ref": xs
+                    - 0
+            - ~
+    environment: []
+    kind: function
+    location:
+      path:
+        - apply_op
+      source: "<root>"
+    program:
+      ref: object2
+  object1:
+    bindings:
+      apply_op:
+        code:
+          path:
+            - apply_op
+          source: "<root>"
+      calc:
+        code:
+          path:
+            - calc
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - - node
+        - "$call":
+            - if
+            - "$call":
+                - eq
+                - "$call":
+                    - type
+                    - "$ref": node
+                - integer
+            - "$ref": node
+            - "$call":
+                - apply_op
+                - "$call":
+                    - get
+                    - "$ref": node
+                    - op
+                - "$call":
+                    - map
+                    - "$ref": calc
+                    - "$call":
+                        - get
+                        - "$ref": node
+                        - args
+    environment: []
+    kind: function
+    location:
+      path:
+        - calc
+      source: "<root>"
+    program:
+      ref: object2
+  object2:
+    kind: program
+    sources:
+      - code:
+          apply_op:
+            "$call":
+              - fn
+              - - op
+                - xs
+              - "$call":
+                  - cond
+                  - "$call":
+                      - eq
+                      - "$ref": op
+                      - add
+                  - "$call":
+                      - fold
+                      - "$call":
+                          - fn
+                          - - a
+                            - b
+                          - "$call":
+                              - add
+                              - "$ref": a
+                              - "$ref": b
+                      - 0
+                      - "$ref": xs
+                  - "$call":
+                      - eq
+                      - "$ref": op
+                      - mul
+                  - "$call":
+                      - fold
+                      - "$call":
+                          - fn
+                          - - a
+                            - b
+                          - "$call":
+                              - mul
+                              - "$ref": a
+                              - "$ref": b
+                      - 1
+                      - "$ref": xs
+                  - "$call":
+                      - eq
+                      - "$ref": op
+                      - max
+                  - "$call":
+                      - fold
+                      - "$call":
+                          - fn
+                          - - a
+                            - b
+                          - "$call":
+                              - if
+                              - "$call":
+                                  - gt
+                                  - "$ref": a
+                                  - "$ref": b
+                              - "$ref": a
+                              - "$ref": b
+                      - "$call":
+                          - get
+                          - "$ref": xs
+                          - 0
+                      - "$ref": xs
+                  - "$call":
+                      - eq
+                      - "$ref": op
+                      - neg
+                  - "$call":
+                      - neg
+                      - "$call":
+                          - get
+                          - "$ref": xs
+                          - 0
+                  - ~
+          calc:
+            "$call":
+              - fn
+              - - node
+              - "$call":
+                  - if
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - type
+                          - "$ref": node
+                      - integer
+                  - "$ref": node
+                  - "$call":
+                      - apply_op
+                      - "$call":
+                          - get
+                          - "$ref": node
+                          - op
+                      - "$call":
+                          - map
+                          - "$ref": calc
+                          - "$call":
+                              - get
+                              - "$ref": node
+                              - args
+          program:
             args:
-              - 2
-              - 5
-          - 1
+              - args:
+                  - 2
+                  - 3
+                op: mul
+              - args:
+                  - 4
+                op: neg
+              - args:
+                  - 7
+                  - args:
+                      - 2
+                      - 5
+                    op: mul
+                  - 1
+                op: max
+            op: add
+          result:
+            "$call":
+              - calc
+              - "$ref": program
+        source: "<root>"
+root:
   apply_op:
     ref: object0
   calc:
     ref: object1
-  result: 12
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object2
-    code:
-      - symbol: fn
-      - - symbol: op
-        - symbol: xs
-      - - symbol: cond
-        - - symbol: eq
-          - symbol: op
-          - add
-        - - symbol: fold
-          - - symbol: fn
-            - - symbol: a
-              - symbol: b
-            - - symbol: add
-              - symbol: a
-              - symbol: b
-          - 0
-          - symbol: xs
-        - - symbol: eq
-          - symbol: op
-          - mul
-        - - symbol: fold
-          - - symbol: fn
-            - - symbol: a
-              - symbol: b
-            - - symbol: mul
-              - symbol: a
-              - symbol: b
+  program:
+    args:
+      - args:
+          - 2
+          - 3
+        op: mul
+      - args:
+          - 4
+        op: neg
+      - args:
+          - 7
+          - args:
+              - 2
+              - 5
+            op: mul
           - 1
-          - symbol: xs
-        - - symbol: eq
-          - symbol: op
-          - max
-        - - symbol: fold
-          - - symbol: fn
-            - - symbol: a
-              - symbol: b
-            - - symbol: if
-              - - symbol: gt
-                - symbol: a
-                - symbol: b
-              - symbol: a
-              - symbol: b
-          - - symbol: get
-            - symbol: xs
-            - 0
-          - symbol: xs
-        - - symbol: eq
-          - symbol: op
-          - neg
-        - - symbol: neg
-          - - symbol: get
-            - symbol: xs
-            - 0
-        - ~
-    location:
-      source: "<root>"
-      path:
-        - "apply_op"
-    environment: []
-    bindings: {}
-  object1:
-    kind: function
-    program:
-      ref: object2
-    code:
-      - symbol: fn
-      - - symbol: node
-      - - symbol: if
-        - - symbol: eq
-          - - symbol: type
-            - symbol: node
-          - integer
-        - symbol: node
-        - - symbol: apply_op
-          - - symbol: get
-            - symbol: node
-            - op
-          - - symbol: map
-            - symbol: calc
-            - - symbol: get
-              - symbol: node
-              - args
-    location:
-      source: "<root>"
-      path:
-        - "calc"
-    environment: []
-    bindings:
-      apply_op:
-        code:
-          source: "<root>"
-          path:
-            - "apply_op"
-      calc:
-        code:
-          source: "<root>"
-          path:
-            - "calc"
-  object2:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          program:
-            op:
-              symbol: add
-            args:
-              - op:
-                  symbol: mul
-                args:
-                  - 2
-                  - 3
-              - op:
-                  symbol: neg
-                args:
-                  - 4
-              - op:
-                  symbol: max
-                args:
-                  - 7
-                  - op:
-                      symbol: mul
-                    args:
-                      - 2
-                      - 5
-                  - 1
-          apply_op:
-            - symbol: fn
-            - - symbol: op
-              - symbol: xs
-            - - symbol: cond
-              - - symbol: eq
-                - symbol: op
-                - add
-              - - symbol: fold
-                - - symbol: fn
-                  - - symbol: a
-                    - symbol: b
-                  - - symbol: add
-                    - symbol: a
-                    - symbol: b
-                - 0
-                - symbol: xs
-              - - symbol: eq
-                - symbol: op
-                - mul
-              - - symbol: fold
-                - - symbol: fn
-                  - - symbol: a
-                    - symbol: b
-                  - - symbol: mul
-                    - symbol: a
-                    - symbol: b
-                - 1
-                - symbol: xs
-              - - symbol: eq
-                - symbol: op
-                - max
-              - - symbol: fold
-                - - symbol: fn
-                  - - symbol: a
-                    - symbol: b
-                  - - symbol: if
-                    - - symbol: gt
-                      - symbol: a
-                      - symbol: b
-                    - symbol: a
-                    - symbol: b
-                - - symbol: get
-                  - symbol: xs
-                  - 0
-                - symbol: xs
-              - - symbol: eq
-                - symbol: op
-                - neg
-              - - symbol: neg
-                - - symbol: get
-                  - symbol: xs
-                  - 0
-              - ~
-          calc:
-            - symbol: fn
-            - - symbol: node
-            - - symbol: if
-              - - symbol: eq
-                - - symbol: type
-                  - symbol: node
-                - integer
-              - symbol: node
-              - - symbol: apply_op
-                - - symbol: get
-                  - symbol: node
-                  - op
-                - - symbol: map
-                  - symbol: calc
-                  - - symbol: get
-                    - symbol: node
-                    - args
-          result:
-            - symbol: calc
-            - symbol: program
+        op: max
+    op: add
+  result: 12
+status: finished

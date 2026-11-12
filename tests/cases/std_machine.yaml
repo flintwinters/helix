@@ -1,15 +1,61 @@
-m: [import, std:machine]
-web1: [inherit, "web1", [list, m.machine], {hostname: "w1", packages: ["nginx"], services: {nginx: "running"}, users: ["deploy"]}]
-web2: [inherit, "web2", [list, m.machine], {hostname: "w2"}]
-dup: [inherit, "dup", [list, m.machine], {hostname: "w1"}]
-fleet: [list, web1, web2]
-unique: [m.unique_hostnames, fleet]
-clashing: [m.unique_hostnames, [list, web1, dup]]
-# Only the classes a machine needs are mixed in.
-partial: [inherit, "partial", [list, m.host, m.packages], {hostname: "p", packages: []}]
-partial_fields: [keys, [fields, partial]]
-abstract: [get, m.machine, "concrete"]
-missing_hostname: [try, [inherit, "bare", [list, m.machine], {}], [fn, [e], [get, e, "kind"]]]
-bad_service: [try, [inherit, "bad", [list, m.machine], {hostname: "x", services: {nginx: "flapping"}}], [fn, [e], [get, e, "kind"]]]
-bad_file: [try, [inherit, "bad", [list, m.machine], {hostname: "x", files: {"/etc/motd": 5}}], [fn, [e], [get, e, "kind"]]]
-ports: [list, [is, 22, m.port], [is, 0, m.port], [is, 65536, m.port]]
+# Helix explicit syntax; migrated from legacy source.
+"m": {"$call": ["import", "std:machine"]}
+"web1":
+  "$call":
+  - "inherit"
+  - "web1"
+  - {"$call": ["list", {"$ref": "m.machine"}]}
+  - "hostname": "w1"
+    "packages":
+    - "nginx"
+    "services":
+      "nginx": "running"
+    "users":
+    - "deploy"
+"web2": {"$call": ["inherit", "web2", {"$call": ["list", {"$ref": "m.machine"}]}, {"hostname": "w2"}]}
+"dup": {"$call": ["inherit", "dup", {"$call": ["list", {"$ref": "m.machine"}]}, {"hostname": "w1"}]}
+"fleet": {"$call": ["list", {"$ref": "web1"}, {"$ref": "web2"}]}
+"unique": {"$call": ["m.unique_hostnames", {"$ref": "fleet"}]}
+"clashing": {"$call": ["m.unique_hostnames", {"$call": ["list", {"$ref": "web1"}, {"$ref": "dup"}]}]}
+"partial":
+  "$call":
+  - "inherit"
+  - "partial"
+  - {"$call": ["list", {"$ref": "m.host"}, {"$ref": "m.packages"}]}
+  - "hostname": "p"
+    "packages": []
+"partial_fields": {"$call": ["keys", {"$call": ["fields", {"$ref": "partial"}]}]}
+"abstract": {"$call": ["get", {"$ref": "m.machine"}, "concrete"]}
+"missing_hostname":
+  "$call":
+  - "try"
+  - {"$call": ["inherit", "bare", {"$call": ["list", {"$ref": "m.machine"}]}, {}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"bad_service":
+  "$call":
+  - "try"
+  - "$call":
+    - "inherit"
+    - "bad"
+    - {"$call": ["list", {"$ref": "m.machine"}]}
+    - "hostname": "x"
+      "services":
+        "nginx": "flapping"
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"bad_file":
+  "$call":
+  - "try"
+  - "$call":
+    - "inherit"
+    - "bad"
+    - {"$call": ["list", {"$ref": "m.machine"}]}
+    - "hostname": "x"
+      "files":
+        "/etc/motd": 5
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"ports":
+  "$call":
+  - "list"
+  - {"$call": ["is", 22, {"$ref": "m.port"}]}
+  - {"$call": ["is", 0, {"$ref": "m.port"}]}
+  - {"$call": ["is", 65536, {"$ref": "m.port"}]}

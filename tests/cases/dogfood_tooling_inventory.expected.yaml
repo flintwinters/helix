@@ -1,230 +1,285 @@
-status: finished
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - xs
+            - "$ref": list
+          - - key
+            - "$ref": function
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - groups
+                  - item
+                - "$call":
+                    - let
+                    - name:
+                        "$call":
+                          - key
+                          - "$ref": item
+                    - "$call":
+                        - set
+                        - "$ref": groups
+                        - "$ref": name
+                        - "$call":
+                            - append
+                            - "$call":
+                                - get
+                                - "$ref": groups
+                                - "$ref": name
+                                - []
+                            - "$ref": item
+            - {}
+            - "$ref": xs
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - by
+      source: "std:group"
+    program:
+      ref: object2
+  object1:
+    bindings:
+      group.by:
+        code:
+          path:
+            - by
+          source: "std:group"
+    code:
+      "$call":
+        - fn
+        - - - files
+            - "$ref": list
+        - "$call":
+            - let
+            - groups:
+                "$call":
+                  - group.by
+                  - "$ref": files
+                  - "$call":
+                      - fn
+                      - - file
+                      - "$call":
+                          - get
+                          - "$ref": file
+                          - directory
+            - "$call":
+                - map
+                - "$call":
+                    - fn
+                    - - directory
+                    - "$call":
+                        - let
+                        - members:
+                            "$call":
+                              - get
+                              - "$ref": groups
+                              - "$ref": directory
+                        - "$call":
+                            - dict
+                            - directory
+                            - "$ref": directory
+                            - count
+                            - "$call":
+                                - len
+                                - "$ref": members
+                            - files
+                            - "$call":
+                                - map
+                                - "$call":
+                                    - fn
+                                    - - file
+                                    - "$call":
+                                        - get
+                                        - "$ref": file
+                                        - path
+                                - "$ref": members
+                - "$call":
+                    - keys
+                    - "$ref": groups
+        - "$ref": list
+    environment: []
+    kind: function
+    location:
+      path:
+        - report
+      source: tests/cases/../../tooling/inventory.yaml
+    program:
+      ref: object2
+  object2:
+    kind: program
+    sources:
+      - code:
+          empty:
+            "$call":
+              - shim.report
+              - []
+          files:
+            - directory: src
+              path: src/vm.rs
+            - directory: std
+              path: std/group.yaml
+            - directory: src
+              path: "src/雪.rs"
+            - directory: "."
+              path: README.md
+          order:
+            "$call":
+              - assert
+              - "$call":
+                  - eq
+                  - "$call":
+                      - map
+                      - "$call":
+                          - fn
+                          - - row
+                          - "$call":
+                              - get
+                              - "$ref": row
+                              - directory
+                      - "$ref": report
+                  - - "."
+                    - src
+                    - std
+          report:
+            "$call":
+              - shim.report
+              - "$ref": files
+          shim:
+            "$call":
+              - import
+              - "../../tooling/inventory.yaml"
+        source: "<root>"
+      - code:
+          group:
+            "$call":
+              - import
+              - "std:group"
+          report:
+            "$call":
+              - fn
+              - - - files
+                  - "$ref": list
+              - "$call":
+                  - let
+                  - groups:
+                      "$call":
+                        - group.by
+                        - "$ref": files
+                        - "$call":
+                            - fn
+                            - - file
+                            - "$call":
+                                - get
+                                - "$ref": file
+                                - directory
+                  - "$call":
+                      - map
+                      - "$call":
+                          - fn
+                          - - directory
+                          - "$call":
+                              - let
+                              - members:
+                                  "$call":
+                                    - get
+                                    - "$ref": groups
+                                    - "$ref": directory
+                              - "$call":
+                                  - dict
+                                  - directory
+                                  - "$ref": directory
+                                  - count
+                                  - "$call":
+                                      - len
+                                      - "$ref": members
+                                  - files
+                                  - "$call":
+                                      - map
+                                      - "$call":
+                                          - fn
+                                          - - file
+                                          - "$call":
+                                              - get
+                                              - "$ref": file
+                                              - path
+                                      - "$ref": members
+                      - "$call":
+                          - keys
+                          - "$ref": groups
+              - "$ref": list
+        source: tests/cases/../../tooling/inventory.yaml
+      - code:
+          by:
+            "$call":
+              - fn
+              - - - xs
+                  - "$ref": list
+                - - key
+                  - "$ref": function
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - groups
+                        - item
+                      - "$call":
+                          - let
+                          - name:
+                              "$call":
+                                - key
+                                - "$ref": item
+                          - "$call":
+                              - set
+                              - "$ref": groups
+                              - "$ref": name
+                              - "$call":
+                                  - append
+                                  - "$call":
+                                      - get
+                                      - "$ref": groups
+                                      - "$ref": name
+                                      - []
+                                  - "$ref": item
+                  - {}
+                  - "$ref": xs
+              - "$ref": map
+        source: "std:group"
 root:
+  empty: []
+  files:
+    - directory: src
+      path: src/vm.rs
+    - directory: std
+      path: std/group.yaml
+    - directory: src
+      path: "src/雪.rs"
+    - directory: "."
+      path: README.md
+  order: ~
+  report:
+    - count: 1
+      directory: "."
+      files:
+        - README.md
+    - count: 2
+      directory: src
+      files:
+        - src/vm.rs
+        - "src/雪.rs"
+    - count: 1
+      directory: std
+      files:
+        - std/group.yaml
   shim:
     group:
       by:
         ref: object0
     report:
       ref: object1
-  files:
-    - path: src/vm.rs
-      directory: src
-    - path: std/group.yaml
-      directory: std
-    - path: "src/雪.rs"
-      directory: src
-    - path: README.md
-      directory: "."
-  report:
-    - directory: src
-      count: 2
-      files:
-        - "src/vm.rs"
-        - "src/雪.rs"
-    - directory: std
-      count: 1
-      files:
-        - "std/group.yaml"
-    - directory: "."
-      count: 1
-      files:
-        - "README.md"
-  empty: []
-  order: ~
-objects:
-  object0:
-    kind: function
-    program:
-      ref: object2
-    code:
-      - symbol: fn
-      - - - symbol: xs
-          - symbol: list
-        - - symbol: key
-          - symbol: function
-      - - symbol: fold
-        - - symbol: fn
-          - - symbol: groups
-            - symbol: item
-          - - symbol: let
-            - name:
-                - symbol: key
-                - symbol: item
-            - - symbol: set
-              - symbol: groups
-              - symbol: name
-              - - symbol: append
-                - - symbol: get
-                  - symbol: groups
-                  - symbol: name
-                  - []
-                - symbol: item
-        - {}
-        - symbol: xs
-      - symbol: map
-    location:
-      source: "std:group"
-      path:
-        - "by"
-    environment: []
-    bindings: {}
-  object1:
-    kind: function
-    program:
-      ref: object2
-    code:
-      - symbol: fn
-      - - - symbol: files
-          - symbol: list
-      - - symbol: let
-        - groups:
-            - symbol: group.by
-            - symbol: files
-            - - symbol: fn
-              - - symbol: file
-              - - symbol: get
-                - symbol: file
-                - directory
-        - - symbol: map
-          - - symbol: fn
-            - - symbol: directory
-            - - symbol: let
-              - members:
-                  - symbol: get
-                  - symbol: groups
-                  - symbol: directory
-              - - symbol: dict
-                - directory
-                - symbol: directory
-                - count
-                - - symbol: len
-                  - symbol: members
-                - files
-                - - symbol: map
-                  - - symbol: fn
-                    - - symbol: file
-                    - - symbol: get
-                      - symbol: file
-                      - path
-                  - symbol: members
-          - - symbol: keys
-            - symbol: groups
-      - symbol: list
-    location:
-      source: tests/cases/../../tooling/inventory.yaml
-      path:
-        - "report"
-    environment: []
-    bindings:
-      group.by:
-        code:
-          source: "std:group"
-          path:
-            - "by"
-  object2:
-    kind: program
-    sources:
-      - source: "<root>"
-        code:
-          shim:
-            - symbol: import
-            - "../../tooling/inventory.yaml"
-          files:
-            - path: src/vm.rs
-              directory: src
-            - path: std/group.yaml
-              directory: std
-            - path: "src/雪.rs"
-              directory: src
-            - path: README.md
-              directory: "."
-          report:
-            - symbol: shim.report
-            - symbol: files
-          empty:
-            - symbol: shim.report
-            - []
-          order:
-            - symbol: assert
-            - - symbol: eq
-              - - symbol: map
-                - - symbol: fn
-                  - - symbol: row
-                  - - symbol: get
-                    - symbol: row
-                    - directory
-                - symbol: report
-              - - "src"
-                - std
-                - "."
-      - source: tests/cases/../../tooling/inventory.yaml
-        code:
-          group:
-            - symbol: import
-            - symbol: "std:group"
-          report:
-            - symbol: fn
-            - - - symbol: files
-                - symbol: list
-            - - symbol: let
-              - groups:
-                  - symbol: group.by
-                  - symbol: files
-                  - - symbol: fn
-                    - - symbol: file
-                    - - symbol: get
-                      - symbol: file
-                      - directory
-              - - symbol: map
-                - - symbol: fn
-                  - - symbol: directory
-                  - - symbol: let
-                    - members:
-                        - symbol: get
-                        - symbol: groups
-                        - symbol: directory
-                    - - symbol: dict
-                      - directory
-                      - symbol: directory
-                      - count
-                      - - symbol: len
-                        - symbol: members
-                      - files
-                      - - symbol: map
-                        - - symbol: fn
-                          - - symbol: file
-                          - - symbol: get
-                            - symbol: file
-                            - path
-                        - symbol: members
-                - - symbol: keys
-                  - symbol: groups
-            - symbol: list
-      - source: "std:group"
-        code:
-          by:
-            - symbol: fn
-            - - - symbol: xs
-                - symbol: list
-              - - symbol: key
-                - symbol: function
-            - - symbol: fold
-              - - symbol: fn
-                - - symbol: groups
-                  - symbol: item
-                - - symbol: let
-                  - name:
-                      - symbol: key
-                      - symbol: item
-                  - - symbol: set
-                    - symbol: groups
-                    - symbol: name
-                    - - symbol: append
-                      - - symbol: get
-                        - symbol: groups
-                        - symbol: name
-                        - []
-                      - symbol: item
-              - {}
-              - symbol: xs
-            - symbol: map
+status: finished

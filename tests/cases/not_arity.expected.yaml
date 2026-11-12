@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 6
   kind: arity
+  line: 2
   message: "`not` takes 1 argument, got 2"
   path: /x
   reference:
-    - "x"
-  line: 1
-  column: 4
+    - x
+status: error

@@ -1,8 +1,8 @@
-status: error
 error:
+  column: 8
   kind: limit
+  line: 2
   message: "`until` did not finish within 100000 steps"
   path: /
   reference: []
-  line: 1
-  column: 1
+status: error

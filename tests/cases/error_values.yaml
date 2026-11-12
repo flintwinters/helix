@@ -1,2 +1,3 @@
+# Helix explicit syntax; migrated from legacy source.
 # A caught error is plain data: it stays readable in `root` and re-reads as a fixpoint.
-caught: [try, [get, [1, 2], 9], [fn, [e], e]]
+"caught": {"$call": ["try", {"$call": ["get", [1, 2], 9]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}

@@ -1,19 +1,22 @@
-status: error
 error:
-  kind: assertion
-  message: "allocate count must be positive; pass at least 1"
-  path: /allocate/2/1/1
-  reference:
-    - "allocate"
-    - 2
-    - 1
-    - 1
-  line: 3
-  column: 35
   calls:
-    - path: /result
-      line: 4
-      column: 9
+    - column: 11
       function: /allocate
-      function_line: 3
-      function_column: 11
+      function_column: 10
+      function_line: 5
+      line: 19
+      path: /result
+  column: 16
+  kind: assertion
+  line: 12
+  message: "allocate count must be positive; pass at least 1"
+  path: "/allocate/$call/2/$call/1/$call/1"
+  reference:
+    - allocate
+    - "$call"
+    - 2
+    - "$call"
+    - 1
+    - "$call"
+    - 1
+status: error

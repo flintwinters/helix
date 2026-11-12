@@ -1,28 +1,54 @@
-in_port: [fn, [n], [and, [ge, n, 1], [le, n, 65535]]]
-port: [refine, integer, in_port]
-level: [enum, "debug", "info", "warn"]
-endpoint: [record, "host", string, "port", port, "tls", [default, boolean, true], "note", [optional, string]]
-ports: [list_of, port]
-tags: [map_of, string]
-id: [union, integer, string]
-fits:
-  scalar: [is, 3, integer]
-  float_is_not_integer: [is, 3.0, integer]
-  enum_member: [is, "info", level]
-  enum_other: [is, "trace", level]
-  literal: [is, 80, [literal, 80]]
-  union_string: [is, "abc", id]
-  union_null: [is, null, id]
-  top: [is, [1, "x"], any]
-  port_ok: [is, 8080, port]
-  port_bad: [is, 70000, port]
-  endpoint_minimal: [is, {host: "a", port: 22}, endpoint]
-  endpoint_full: [is, {host: "a", port: 22, tls: false, note: "x"}, endpoint]
-  endpoint_open_field: [is, {host: "a", port: 22, extra: 1}, endpoint]
-  list_ok: [is, [1, 2, 3], ports]
-  list_bad: [is, [1, 0, "x"], ports]
-  map_ok: [is, {env: "prod"}, tags]
-  map_bad: [is, {env: 1}, tags]
-all_at_once: [violations, {host: 5, port: 0, extra: 1}, endpoint]
-nested: [violations, [[1, "a"], ["b", 2]], [list_of, [list_of, integer]]]
-no_type: [try, [is, 1, "nonsense"], [fn, [e], [get, e, "message"]]]
+# Helix explicit syntax; migrated from legacy source.
+"in_port":
+  "$call":
+  - "fn"
+  - - "n"
+  - {"$call": ["and", {"$call": ["ge", {"$ref": "n"}, 1]}, {"$call": ["le", {"$ref": "n"}, 65535]}]}
+"port": {"$call": ["refine", {"$ref": "integer"}, {"$ref": "in_port"}]}
+"level": {"$call": ["enum", "debug", "info", "warn"]}
+"endpoint":
+  "$call":
+  - "record"
+  - "host"
+  - {"$ref": "string"}
+  - "port"
+  - {"$ref": "port"}
+  - "tls"
+  - {"$call": ["default", {"$ref": "boolean"}, true]}
+  - "note"
+  - {"$call": ["optional", {"$ref": "string"}]}
+"ports": {"$call": ["list_of", {"$ref": "port"}]}
+"tags": {"$call": ["map_of", {"$ref": "string"}]}
+"id": {"$call": ["union", {"$ref": "integer"}, {"$ref": "string"}]}
+"fits":
+  "scalar": {"$call": ["is", 3, {"$ref": "integer"}]}
+  "float_is_not_integer": {"$call": ["is", 3.0, {"$ref": "integer"}]}
+  "enum_member": {"$call": ["is", "info", {"$ref": "level"}]}
+  "enum_other": {"$call": ["is", "trace", {"$ref": "level"}]}
+  "literal": {"$call": ["is", 80, {"$call": ["literal", 80]}]}
+  "union_string": {"$call": ["is", "abc", {"$ref": "id"}]}
+  "union_null": {"$call": ["is", null, {"$ref": "id"}]}
+  "top": {"$call": ["is", [1, "x"], {"$ref": "any"}]}
+  "port_ok": {"$call": ["is", 8080, {"$ref": "port"}]}
+  "port_bad": {"$call": ["is", 70000, {"$ref": "port"}]}
+  "endpoint_minimal": {"$call": ["is", {"host": "a", "port": 22}, {"$ref": "endpoint"}]}
+  "endpoint_full": {"$call": ["is", {"host": "a", "port": 22, "tls": false, "note": "x"}, {"$ref": "endpoint"}]}
+  "endpoint_open_field": {"$call": ["is", {"host": "a", "port": 22, "extra": 1}, {"$ref": "endpoint"}]}
+  "list_ok": {"$call": ["is", [1, 2, 3], {"$ref": "ports"}]}
+  "list_bad": {"$call": ["is", [1, 0, "x"], {"$ref": "ports"}]}
+  "map_ok": {"$call": ["is", {"env": "prod"}, {"$ref": "tags"}]}
+  "map_bad": {"$call": ["is", {"env": 1}, {"$ref": "tags"}]}
+"all_at_once": {"$call": ["violations", {"host": 5, "port": 0, "extra": 1}, {"$ref": "endpoint"}]}
+"nested":
+  "$call":
+  - "violations"
+  - - - 1
+      - "a"
+    - - "b"
+      - 2
+  - {"$call": ["list_of", {"$call": ["list_of", {"$ref": "integer"}]}]}
+"no_type":
+  "$call":
+  - "try"
+  - {"$call": ["is", 1, "nonsense"]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}

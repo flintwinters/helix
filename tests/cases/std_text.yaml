@@ -1,21 +1,50 @@
-t: [import, std:text]
-basic: [t.split, "one::two::three", "::"]
-empty_fields: [t.split, "::a::::", "::"]
-empty_source: [t.split, "", ","]
-no_match: [t.split, "abc", "abcd"]
-overlap: [t.split, "aaaaa", "aa"]
-unicode: [t.split, "🙂é🙂世界🙂", "🙂"]
-combining: [t.split, "é/é", "/"]
-joined: [t.join, basic, "::"]
-empty_join: [t.join, [], "|"]
-single: [t.join, ["hello"], "|"]
-empty_separator: [t.join, ["🙂", "世界"], ""]
-leading_empty: [t.join, ["", "a", ""], ":"]
-roundtrip: [assert, [eq, [t.join, empty_fields, "::"], "::a::::"]]
-empty_split_separator: [try, [t.split, "abc", ""], [fn, [e], [get, e, "kind"]]]
-wrong_source: [try, [t.split, [], ","], [fn, [e], [get, e, "kind"]]]
-wrong_separator: [try, [t.split, "abc", 1], [fn, [e], [get, e, "kind"]]]
-wrong_parts: [try, [t.join, "abc", ","], [fn, [e], [get, e, "kind"]]]
-wrong_element: [try, [t.join, ["a", 1], ","], [fn, [e], [get, e, "kind"]]]
-wrong_empty_join_separator: [try, [t.join, [], null], [fn, [e], [get, e, "kind"]]]
-wrong_arity: [try, [t.split, "abc"], [fn, [e], [get, e, "kind"]]]
+# Helix explicit syntax; migrated from legacy source.
+"t": {"$call": ["import", "std:text"]}
+"basic": {"$call": ["t.split", "one::two::three", "::"]}
+"empty_fields": {"$call": ["t.split", "::a::::", "::"]}
+"empty_source": {"$call": ["t.split", "", ","]}
+"no_match": {"$call": ["t.split", "abc", "abcd"]}
+"overlap": {"$call": ["t.split", "aaaaa", "aa"]}
+"unicode": {"$call": ["t.split", "\U0001F642\xE9\U0001F642\u4E16\u754C\U0001F642", "\U0001F642"]}
+"combining": {"$call": ["t.split", "e\u0301/e\u0301", "/"]}
+"joined": {"$call": ["t.join", {"$ref": "basic"}, "::"]}
+"empty_join": {"$call": ["t.join", [], "|"]}
+"single": {"$call": ["t.join", ["hello"], "|"]}
+"empty_separator": {"$call": ["t.join", ["\U0001F642", "\u4E16\u754C"], ""]}
+"leading_empty": {"$call": ["t.join", ["", "a", ""], ":"]}
+"roundtrip": {"$call": ["assert", {"$call": ["eq", {"$call": ["t.join", {"$ref": "empty_fields"}, "::"]}, "::a::::"]}]}
+"empty_split_separator":
+  "$call":
+  - "try"
+  - {"$call": ["t.split", "abc", ""]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_source":
+  "$call":
+  - "try"
+  - {"$call": ["t.split", [], ","]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_separator":
+  "$call":
+  - "try"
+  - {"$call": ["t.split", "abc", 1]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_parts":
+  "$call":
+  - "try"
+  - {"$call": ["t.join", "abc", ","]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_element":
+  "$call":
+  - "try"
+  - {"$call": ["t.join", ["a", 1], ","]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_empty_join_separator":
+  "$call":
+  - "try"
+  - {"$call": ["t.join", [], null]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_arity":
+  "$call":
+  - "try"
+  - {"$call": ["t.split", "abc"]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}

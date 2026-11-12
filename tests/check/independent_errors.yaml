@@ -1,2 +1,3 @@
-first: [div, 1, 0]
-second: [add, missing, 1]
+# Helix explicit syntax; migrated from legacy source.
+"first": {"$call": ["div", 1, 0]}
+"second": {"$call": ["add", {"$ref": "missing"}, 1]}

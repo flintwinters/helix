@@ -1,67 +1,67 @@
-status: finished
 root:
   base:
-    type: record
     fields:
-      restart: string
       enabled: boolean
+      restart: string
+    type: record
+  explicit_choice: ~
   interactive:
-    type: class
+    concrete: false
+    fields:
+      enabled: boolean
+      restart: string
     name: interactive
     parents: []
-    fields:
-      restart: string
-      enabled: boolean
+    provenance:
+      enabled:
+        type: interactive
+        value: interactive
+      restart:
+        type: interactive
+        value: interactive
+    type: class
     values:
+      enabled: true
       restart: on-failure
-      enabled: true
-    provenance:
-      restart:
-        type: interactive
-        value: interactive
-      enabled:
-        type: interactive
-        value: interactive
-    concrete: false
-  unattended:
-    type: class
-    name: unattended
-    parents: []
-    fields:
-      restart: string
-      enabled: boolean
-    values:
-      restart: always
-      enabled: true
-    provenance:
-      restart:
-        type: unattended
-        value: unattended
-      enabled:
-        type: unattended
-        value: unattended
-    concrete: false
   resolved:
-    type: class
+    concrete: false
+    fields:
+      enabled: boolean
+      restart: string
     name: worker
     parents:
-      - "interactive"
+      - interactive
       - unattended
-    fields:
-      restart: string
-      enabled: boolean
-    values:
-      restart: on-failure
-      enabled: true
     provenance:
+      enabled:
+        type: interactive
+        value: interactive
       restart:
         type: interactive
         value: worker
-      enabled:
-        type: interactive
-        value: interactive
+    type: class
+    values:
+      enabled: true
+      restart: on-failure
+  unattended:
     concrete: false
+    fields:
+      enabled: boolean
+      restart: string
+    name: unattended
+    parents: []
+    provenance:
+      enabled:
+        type: unattended
+        value: unattended
+      restart:
+        type: unattended
+        value: unattended
+    type: class
+    values:
+      enabled: true
+      restart: always
   values:
-    restart: on-failure
     enabled: true
-  explicit_choice: ~
+    restart: on-failure
+status: finished

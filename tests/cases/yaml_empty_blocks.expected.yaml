@@ -1,7 +1,7 @@
-status: finished
 root:
-  literal: ""
+  end: ""
   folded: ""
   keep: "\n"
+  literal: ""
   strip: ""
-  end: ""
+status: finished

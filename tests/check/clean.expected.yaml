@@ -1,4 +1,4 @@
-status: finished
+mode: check
 root:
   answer: 42
-mode: check
+status: finished

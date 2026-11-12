@@ -1,1 +1,2 @@
-check: [assert, false]
+# Helix explicit syntax; migrated from legacy source.
+"check": {"$call": ["assert", false]}

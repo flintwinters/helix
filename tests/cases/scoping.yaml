@@ -1,5 +1,6 @@
-x: 10
-inner:
-  y: [add, x, 1]
-  x: 1
-  w: [add, x, 1]
+# Helix explicit syntax; migrated from legacy source.
+"x": 10
+"inner":
+  "y": {"$call": ["add", {"$ref": "x"}, 1]}
+  "x": 1
+  "w": {"$call": ["add", {"$ref": "x"}, 1]}

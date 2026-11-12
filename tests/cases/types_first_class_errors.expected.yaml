@@ -1,63 +1,72 @@
-status: finished
 root:
-  not_callable:
-    kind: type
-    message: "expected a function (`[fn, [params], body]` or its name)"
-    path: /not_callable/1/1
-    reference:
-      - "not_callable"
-      - 1
-      - 1
-    line: 2
-    column: 28
-  bad_constructor:
-    kind: type
-    message: "expected a type, got integer"
-    path: /bad_constructor/1/1
-    reference:
-      - "bad_constructor"
-      - 1
-      - 1
-    line: 3
-    column: 34
   bad_callback:
+    column: 23
     kind: type
-    message: "expected a function (`[fn, [params], body]` or its name)"
-    path: /bad_callback/1/1
+    line: 12
+    message: "expected a function (`{$call: [fn, [params], body]}` or its name)"
+    path: "/bad_callback/$call/1/$call/1"
     reference:
-      - "bad_callback"
+      - bad_callback
+      - "$call"
       - 1
+      - "$call"
       - 1
-    line: 4
-    column: 27
   bad_closure:
+    column: 5
     kind: type
+    line: 17
     message: a closure needs bindings and a function
-    path: /bad_closure/1
+    path: "/bad_closure/$call/1"
     reference:
-      - "bad_closure"
+      - bad_closure
+      - "$call"
       - 1
-    line: 5
-    column: 20
-  wrong_type:
+  bad_constructor:
+    column: 27
     kind: type
-    message: "1 type violation in the arguments of `/wrong_type/1/1`: expected function, got string"
-    path: /wrong_type/1/1
+    line: 7
+    message: "expected a type, got integer"
+    path: "/bad_constructor/$call/1/$call/1"
     reference:
-      - "wrong_type"
+      - bad_constructor
+      - "$call"
       - 1
+      - "$call"
       - 1
-    line: 6
-    column: 26
+  not_callable:
+    column: 54
+    kind: type
+    line: 3
+    message: "expected a function (`{$call: [fn, [params], body]}` or its name)"
+    path: "/not_callable/$call/1/$call/1"
+    reference:
+      - not_callable
+      - "$call"
+      - 1
+      - "$call"
+      - 1
+  wrong_type:
+    calls:
+      - column: 24
+        function: "/wrong_type/$call/1/$call/1"
+        function_column: 24
+        function_line: 22
+        line: 22
+        path: "/wrong_type/$call/1/$call/1"
+    column: 24
     data:
       violations:
         - argument: t
           at: /
           message: "expected function, got string"
-    calls:
-      - path: /wrong_type/1/1
-        line: 6
-        column: 26
-        function: /wrong_type/1/1
-        function_line: 6
-        function_column: 26
+    kind: type
+    line: 22
+    message: "1 type violation in the arguments of `/wrong_type/$call/1/$call/1`: expected function, got string"
+    path: "/wrong_type/$call/1/$call/1"
+    reference:
+      - wrong_type
+      - "$call"
+      - 1
+      - "$call"
+      - 1
+status: finished

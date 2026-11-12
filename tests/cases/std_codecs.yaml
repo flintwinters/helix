@@ -1,26 +1,85 @@
-- let
-- j: [import, std:json]
-  c: [import, std:csv]
-- json: [j.parse, '{"z":["add",true,null],"a":"雪🙂","n":-9223372036854775808,"float":1.25}']
-  json_order: [keys, [j.parse, '{"z":1,"a":2}']]
-  json_duplicate: [j.parse, '{"x":1,"x":2}']
-  json_dump: [j.dump, {z: [1, false], a: "雪"}]
-  json_roundtrip: [j.parse, [j.dump, {x: [1, null, "hello\nworld"]}]]
-  csv: [c.parse, "name,note\r\n雪,\"a,b\"\r\n\"\",\"line1\nline2\"\r\n\"quote\"\"here\",last"]
-  csv_empty: [c.parse, ""]
-  csv_blank: [c.parse, "\n"]
-  csv_trailing: [c.parse, "a,"]
-  csv_dump: [c.dump, [list, [list, "name", "note"], [list, "雪", "a,b"], [list, "", "a\"b"]]]
-  csv_roundtrip: [c.parse, [c.dump, [list, [list, "", "a\nb", "雪"], [list, "ragged"]]]]
-  invalid_json: [try, [j.parse, '{bad}'], [fn, [e], [get, e, "kind"]]]
-  trailing_json: [try, [j.parse, '1 2'], [fn, [e], [get, e, "kind"]]]
-  large_integer: [try, [j.parse, '9223372036854775808'], [fn, [e], [get, e, "kind"]]]
-  huge_integer: [try, [j.parse, '999999999999999999999999999999999999'], [fn, [e], [get, e, "kind"]]]
-  huge_float: [try, [j.parse, '1e999'], [fn, [e], [get, e, "kind"]]]
-  open_quote: [try, [c.parse, '"oops'], [fn, [e], [get, e, "kind"]]]
-  bare_quote: [try, [c.parse, 'a"b'], [fn, [e], [get, e, "kind"]]]
-  after_quote: [try, [c.parse, '"a"b'], [fn, [e], [get, e, "kind"]]]
-  typed_csv: [try, [c.dump, [[1]]], [fn, [e], [get, e, "kind"]]]
-  empty_row: [try, [c.dump, [[]]], [fn, [e], [get, e, "kind"]]]
-  function_json: [try, [j.dump, [fn, [], 1]], [fn, [e], [get, e, "kind"]]]
-  pure: [type_time, [j.parse, '[1,2,3]']]
+# Helix explicit syntax; migrated from legacy source.
+"$call":
+- "let"
+- "j": {"$call": ["import", "std:json"]}
+  "c": {"$call": ["import", "std:csv"]}
+- "json": {"$call": ["j.parse", "{\"z\":[\"add\",true,null],\"a\":\"\u96EA\U0001F642\",\"n\":-9223372036854775808,\"\
+        float\":1.25}"]}
+  "json_order": {"$call": ["keys", {"$call": ["j.parse", "{\"z\":1,\"a\":2}"]}]}
+  "json_duplicate": {"$call": ["j.parse", "{\"x\":1,\"x\":2}"]}
+  "json_dump": {"$call": ["j.dump", {"z": [1, false], "a": "\u96EA"}]}
+  "json_roundtrip": {"$call": ["j.parse", {"$call": ["j.dump", {"x": [1, null, "hello\nworld"]}]}]}
+  "csv": {"$call": ["c.parse", "name,note\r\n\u96EA,\"a,b\"\r\n\"\",\"line1\nline2\"\r\n\"quote\"\"here\",last"]}
+  "csv_empty": {"$call": ["c.parse", ""]}
+  "csv_blank": {"$call": ["c.parse", "\n"]}
+  "csv_trailing": {"$call": ["c.parse", "a,"]}
+  "csv_dump":
+    "$call":
+    - "c.dump"
+    - "$call":
+      - "list"
+      - {"$call": ["list", "name", "note"]}
+      - {"$call": ["list", "\u96EA", "a,b"]}
+      - {"$call": ["list", "", "a\"b"]}
+  "csv_roundtrip":
+    "$call":
+    - "c.parse"
+    - "$call":
+      - "c.dump"
+      - {"$call": ["list", {"$call": ["list", "", "a\nb", "\u96EA"]}, {"$call": ["list", "ragged"]}]}
+  "invalid_json":
+    "$call":
+    - "try"
+    - {"$call": ["j.parse", "{bad}"]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "trailing_json":
+    "$call":
+    - "try"
+    - {"$call": ["j.parse", "1 2"]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "large_integer":
+    "$call":
+    - "try"
+    - {"$call": ["j.parse", "9223372036854775808"]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "huge_integer":
+    "$call":
+    - "try"
+    - {"$call": ["j.parse", "999999999999999999999999999999999999"]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "huge_float":
+    "$call":
+    - "try"
+    - {"$call": ["j.parse", "1e999"]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "open_quote":
+    "$call":
+    - "try"
+    - {"$call": ["c.parse", "\"oops"]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "bare_quote":
+    "$call":
+    - "try"
+    - {"$call": ["c.parse", "a\"b"]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "after_quote":
+    "$call":
+    - "try"
+    - {"$call": ["c.parse", "\"a\"b"]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "typed_csv":
+    "$call":
+    - "try"
+    - {"$call": ["c.dump", [[1]]]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "empty_row":
+    "$call":
+    - "try"
+    - {"$call": ["c.dump", [[]]]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "function_json":
+    "$call":
+    - "try"
+    - {"$call": ["j.dump", {"$call": ["fn", [], 1]}]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "pure": {"$call": ["type_time", {"$call": ["j.parse", "[1,2,3]"]}]}

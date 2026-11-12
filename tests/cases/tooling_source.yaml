@@ -1,14 +1,11 @@
+# Helix explicit syntax; migrated from legacy source.
 # This program is also the source-formatting and editor-services fixture.
-answer: [add, 20, 22]
-literal_head: ['add', 1, 2]
-quoted_number: "42"
-text: |
-  Hello, 雪.
-  Keep this newline.
-function: [fn, [add], [add, 20, 22]]
-plain_multiline: first
-
-  second
-
-
-  fourth
+"answer": {"$call": ["add", 20, 22]}
+"literal_head":
+- "add"
+- 1
+- 2
+"quoted_number": "42"
+"text": "Hello, \u96EA.\nKeep this newline.\n"
+"function": {"$call": ["fn", ["add"], {"$call": ["add", 20, 22]}]}
+"plain_multiline": "first\nsecond\n\nfourth"

@@ -1,17 +1,30 @@
-# Stable grouping over small lists. Import with `g: [import, std:group]`.
+# Helix explicit syntax; migrated from legacy source.
+# Stable grouping over small lists. Import with `g: {$call: [import, std:group]}`.
 # by(xs, key) calls key once per item; keys must be strings (empty is valid).
-# Groups follow first key occurrence; items in each group retain input order.
+# Groups use canonical string-key order; items in each group retain input order.
 # Immutable map/list copies can cost quadratic time/space in total allocations.
 # Uses fold, so the runtime iteration limit applies; no input-sized recursion.
-by:
-  - fn
-  - [[xs, list], [key, function]]
-  - - fold
-    - - fn
-      - [groups, item]
-      - - let
-        - name: [key, item]
-        - [set, groups, name, [append, [get, groups, name, []], item]]
+"by":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - - "key"
+      - {"$ref": "function"}
+  - "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "groups"
+        - "item"
+      - "$call":
+        - "let"
+        - "name": {"$call": ["key", {"$ref": "item"}]}
+        - "$call":
+          - "set"
+          - {"$ref": "groups"}
+          - {"$ref": "name"}
+          - {"$call": ["append", {"$call": ["get", {"$ref": "groups"}, {"$ref": "name"}, []]}, {"$ref": "item"}]}
     - {}
-    - xs
-  - map
+    - {"$ref": "xs"}
+  - {"$ref": "map"}

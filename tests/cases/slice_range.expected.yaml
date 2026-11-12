@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 38
   kind: range
+  line: 2
   message: slice 2..9 is out of range for length 5
-  path: /x/3
+  path: "/x/$call/3"
   reference:
-    - "x"
+    - x
+    - "$call"
     - 3
-  line: 1
-  column: 24
+status: error

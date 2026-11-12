@@ -1,5 +1,8 @@
-status: finished
 root:
+  queue:
+    - ~
+    - - false
+    - empty
   sets:
     - - 2
       - 1
@@ -10,7 +13,4 @@ root:
     - false
     - - ~
     - empty
-  queue:
-    - ~
-    - - false
-    - empty
+status: finished

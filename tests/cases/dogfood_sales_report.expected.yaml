@@ -1,35 +1,35 @@
-status: finished
 root:
-  sales:
-    - region: north
-      item: apples
-      qty: 3
-      price: 1.5
-    - region: south
-      item: pears
-      qty: 8
-      price: 2.0
-    - region: north
-      item: plums
-      qty: 5
-      price: 0.5
-    - region: east
-      item: apples
-      qty: 2
-      price: 1.5
-    - region: south
-      item: apples
-      qty: 6
-      price: 1.5
   report:
-    orders: 5
-    units: 24
-    revenue: 35.0
-    units_by_region:
-      north: 8
-      south: 14
-      east: 2
     big_orders:
-      - "pears"
+      - pears
       - plums
       - apples
+    orders: 5
+    revenue: 35.0
+    units: 24
+    units_by_region:
+      east: 2
+      north: 8
+      south: 14
+  sales:
+    - item: apples
+      price: 1.5
+      qty: 3
+      region: north
+    - item: pears
+      price: 2.0
+      qty: 8
+      region: south
+    - item: plums
+      price: 0.5
+      qty: 5
+      region: north
+    - item: apples
+      price: 1.5
+      qty: 2
+      region: east
+    - item: apples
+      price: 1.5
+      qty: 6
+      region: south
+status: finished

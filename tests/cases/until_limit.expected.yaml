@@ -1,9 +1,9 @@
-status: error
 error:
+  column: 6
   kind: limit
+  line: 2
   message: "`until` did not finish within 100000 steps"
   path: /r
   reference:
-    - "r"
-  line: 1
-  column: 4
+    - r
+status: error

@@ -1,18 +1,79 @@
+# Helix explicit syntax; migrated from legacy source.
 # Keep successful reports ordinary data; caught errors retain exact source blame.
-- let
-- v: [import, std:validation]
-  t: [import, std:test]
-  mixed: [v.batch, [0, -1, 2], [fn, [n], [if, [lt, n, 0], [raise, "negative", "negative input", n], [mul, n, 10]]]]
-  results: [get, mixed, "results"]
-- empty: [v.batch, [], [fn, [x], [raise, "unexpected", "empty batch called validator"]]]
-  report: [if, true, mixed, null]
-  counts: [t.fields_equal, mixed, {total: 3, passed: 2, failed: 1}]
-  first: [t.equal, [get, results, 0], {name: "validation", input: {index: 0, value: 0}, outcome: "passed", value: 0}]
-  failed_input: [t.equal, [get, [get, results, 1], "input"], {index: 1, value: -1}]
-  failed_error: [t.fields_equal, [get, [get, results, 1], "error"], {kind: "negative", message: "negative input", data: -1}]
-  last: [t.equal, [get, results, 2], {name: "validation", input: {index: 2, value: 2}, outcome: "passed", value: 20}]
-  false_and_null: [v.batch, [false, null], [fn, [x], x]]
-  duplicates: [v.batch, ["é", "é"], [fn, [x], x]]
-  wrong_values: [get, [t.throws, [fn, [], [v.batch, {}, [fn, [x], x]]], "type"], "kind"]
-  wrong_callback: [get, [t.throws, [fn, [], [v.batch, [], null]], "type"], "kind"]
-  wrong_arity: [get, [t.throws, [fn, [], [v.batch, []]], "arity"], "kind"]
+"$call":
+- "let"
+- "v": {"$call": ["import", "std:validation"]}
+  "t": {"$call": ["import", "std:test"]}
+  "mixed":
+    "$call":
+    - "v.batch"
+    - [0, -1, 2]
+    - "$call":
+      - "fn"
+      - - "n"
+      - "$call":
+        - "if"
+        - {"$call": ["lt", {"$ref": "n"}, 0]}
+        - {"$call": ["raise", "negative", "negative input", {"$ref": "n"}]}
+        - {"$call": ["mul", {"$ref": "n"}, 10]}
+  "results": {"$call": ["get", {"$ref": "mixed"}, "results"]}
+- "empty":
+    "$call":
+    - "v.batch"
+    - []
+    - {"$call": ["fn", ["x"], {"$call": ["raise", "unexpected", "empty batch called validator"]}]}
+  "report": {"$call": ["if", true, {"$ref": "mixed"}, null]}
+  "counts": {"$call": ["t.fields_equal", {"$ref": "mixed"}, {"total": 3, "passed": 2, "failed": 1}]}
+  "first":
+    "$call":
+    - "t.equal"
+    - {"$call": ["get", {"$ref": "results"}, 0]}
+    - "name": "validation"
+      "input":
+        "index": 0
+        "value": 0
+      "outcome": "passed"
+      "value": 0
+  "failed_input":
+    "$call":
+    - "t.equal"
+    - {"$call": ["get", {"$call": ["get", {"$ref": "results"}, 1]}, "input"]}
+    - "index": 1
+      "value": -1
+  "failed_error":
+    "$call":
+    - "t.fields_equal"
+    - {"$call": ["get", {"$call": ["get", {"$ref": "results"}, 1]}, "error"]}
+    - "kind": "negative"
+      "message": "negative input"
+      "data": -1
+  "last":
+    "$call":
+    - "t.equal"
+    - {"$call": ["get", {"$ref": "results"}, 2]}
+    - "name": "validation"
+      "input":
+        "index": 2
+        "value": 2
+      "outcome": "passed"
+      "value": 20
+  "false_and_null": {"$call": ["v.batch", [false, null], {"$call": ["fn", ["x"], {"$ref": "x"}]}]}
+  "duplicates": {"$call": ["v.batch", ["\xE9", "\xE9"], {"$call": ["fn", ["x"], {"$ref": "x"}]}]}
+  "wrong_values":
+    "$call":
+    - "get"
+    - "$call":
+      - "t.throws"
+      - {"$call": ["fn", [], {"$call": ["v.batch", {}, {"$call": ["fn", ["x"], {"$ref": "x"}]}]}]}
+      - "type"
+    - "kind"
+  "wrong_callback":
+    "$call":
+    - "get"
+    - {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["v.batch", [], null]}]}, "type"]}
+    - "kind"
+  "wrong_arity":
+    "$call":
+    - "get"
+    - {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["v.batch", []]}]}, "arity"]}
+    - "kind"

@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 24
   kind: type
+  line: 3
   message: "expected number, got string"
-  path: /b/1
+  path: "/b/$call/1"
   reference:
-    - "b"
+    - b
+    - "$call"
     - 1
-  line: 2
-  column: 10
+status: error

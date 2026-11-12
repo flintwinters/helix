@@ -1,4 +1,24 @@
-fact: [fn, [n], [if, [le, n, 1], 1, [mul, n, [fact, [sub, n, 1]]]]]
-fib: [fn, [n], [if, [lt, n, 2], n, [add, [fib, [sub, n, 1]], [fib, [sub, n, 2]]]]]
-f10: [fact, 10]
-fib15: [fib, 15]
+# Helix explicit syntax; migrated from legacy source.
+"fact":
+  "$call":
+  - "fn"
+  - - "n"
+  - "$call":
+    - "if"
+    - {"$call": ["le", {"$ref": "n"}, 1]}
+    - 1
+    - {"$call": ["mul", {"$ref": "n"}, {"$call": ["fact", {"$call": ["sub", {"$ref": "n"}, 1]}]}]}
+"fib":
+  "$call":
+  - "fn"
+  - - "n"
+  - "$call":
+    - "if"
+    - {"$call": ["lt", {"$ref": "n"}, 2]}
+    - {"$ref": "n"}
+    - "$call":
+      - "add"
+      - {"$call": ["fib", {"$call": ["sub", {"$ref": "n"}, 1]}]}
+      - {"$call": ["fib", {"$call": ["sub", {"$ref": "n"}, 2]}]}
+"f10": {"$call": ["fact", 10]}
+"fib15": {"$call": ["fib", 15]}

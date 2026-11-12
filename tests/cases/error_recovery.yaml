@@ -1,2 +1,3 @@
-done: [add, 20, 22]
-broken: [div, 6, 0]
+# Helix explicit syntax; migrated from legacy source.
+"done": {"$call": ["add", 20, 22]}
+"broken": {"$call": ["div", {"$call": ["sub", {"$ref": "done"}, 36]}, 0]}

@@ -1,12 +1,56 @@
+# Helix explicit syntax; migrated from legacy source.
 # Data-only YAML I/O. No expression evaluation, symbol resolution or imports.
-parse: [fn, [[source, string]], [yaml_parse, source]]
-dump: [fn, [value], [yaml_dump, value], string]
-# Syntax validity, including unsupported features and parser resource limits.
-valid: [fn, [[source, string]], [try, [let, {value: [yaml_parse, source]}, [eq, value, value]], [fn, [error], false]], boolean]
-# Paths are lists of string map keys / integer list indices; [] selects the root.
-get_in: [fn, [value, [path, list]], [fold, [fn, [current, key], [get, current, key]], value, path]]
-# Immutable update. Intermediate containers must exist; final map keys may be new.
-set_in:
-  - fn
-  - [value, [path, list], replacement]
-  - [if, [eq, [len, path], 0], replacement, [let, {key: [get, path, 0], tail: [slice, path, 1, [len, path]]}, [set, value, key, [if, [eq, [len, tail], 0], replacement, [set_in, [get, value, key], tail, replacement]]]]]
+"parse": {"$call": ["fn", [["source", {"$ref": "string"}]], {"$call": ["yaml_parse", {"$ref": "source"}]}]}
+"dump": {"$call": ["fn", ["value"], {"$call": ["yaml_dump", {"$ref": "value"}]}, {"$ref": "string"}]}
+"valid":
+  "$call":
+  - "fn"
+  - - - "source"
+      - {"$ref": "string"}
+  - "$call":
+    - "try"
+    - "$call":
+      - "let"
+      - "value": {"$call": ["yaml_parse", {"$ref": "source"}]}
+      - {"$call": ["eq", {"$ref": "value"}, {"$ref": "value"}]}
+    - {"$call": ["fn", ["error"], false]}
+  - {"$ref": "boolean"}
+"get_in":
+  "$call":
+  - "fn"
+  - - "value"
+    - - "path"
+      - {"$ref": "list"}
+  - "$call":
+    - "fold"
+    - {"$call": ["fn", ["current", "key"], {"$call": ["get", {"$ref": "current"}, {"$ref": "key"}]}]}
+    - {"$ref": "value"}
+    - {"$ref": "path"}
+"set_in":
+  "$call":
+  - "fn"
+  - - "value"
+    - - "path"
+      - {"$ref": "list"}
+    - "replacement"
+  - "$call":
+    - "if"
+    - {"$call": ["eq", {"$call": ["len", {"$ref": "path"}]}, 0]}
+    - {"$ref": "replacement"}
+    - "$call":
+      - "let"
+      - "key": {"$call": ["get", {"$ref": "path"}, 0]}
+        "tail": {"$call": ["slice", {"$ref": "path"}, 1, {"$call": ["len", {"$ref": "path"}]}]}
+      - "$call":
+        - "set"
+        - {"$ref": "value"}
+        - {"$ref": "key"}
+        - "$call":
+          - "if"
+          - {"$call": ["eq", {"$call": ["len", {"$ref": "tail"}]}, 0]}
+          - {"$ref": "replacement"}
+          - "$call":
+            - "set_in"
+            - {"$call": ["get", {"$ref": "value"}, {"$ref": "key"}]}
+            - {"$ref": "tail"}
+            - {"$ref": "replacement"}

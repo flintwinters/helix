@@ -1,1 +1,2 @@
-r: [cond, true, 1, false, 2]
+# Helix explicit syntax; migrated from legacy source.
+"r": {"$call": ["cond", true, 1, false, 2]}

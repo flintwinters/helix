@@ -1,18 +1,65 @@
+# Helix explicit syntax; migrated from legacy source.
 # Abstract machine classes, resolved entirely at type time: no machine or network is contacted.
 # Each class is small so configs mix in only what they manage; `machine` combines them all.
-port: [refine, integer, [fn, [n], [and, [ge, n, 1], [le, n, 65535]]]]
-host: [class, "host", [record, "hostname", string]]
-packages: [class, "packages", [record, "packages", [default, [list_of, string], []]]]
-# Managed file contents keyed by absolute path.
-files: [class, "files", [record, "files", [default, [map_of, string], {}]]]
-# Desired service states keyed by service name.
-services: [class, "services", [record, "services", [default, [map_of, [enum, "running", "stopped"]], {}]]]
-users: [class, "users", [record, "users", [default, [list_of, string], []]]]
-machine: [extend, "machine", [list, host, packages, files, services, users], [record], {}]
-# Fleet checks are ordinary predicates over a list of realized machine configs.
-hostnames:
-  - fn
-  - [[fleet, list]]
-  - [map, [fn, [m], [get, [get, m, "values"], "hostname"]], fleet]
-  - list
-unique_hostnames: [fn, [[fleet, list]], [eq, [duplicates, [hostnames, fleet]], []], boolean]
+"port":
+  "$call":
+  - "refine"
+  - {"$ref": "integer"}
+  - "$call":
+    - "fn"
+    - - "n"
+    - {"$call": ["and", {"$call": ["ge", {"$ref": "n"}, 1]}, {"$call": ["le", {"$ref": "n"}, 65535]}]}
+"host": {"$call": ["class", "host", {"$call": ["record", "hostname", {"$ref": "string"}]}]}
+"packages":
+  "$call":
+  - "class"
+  - "packages"
+  - {"$call": ["record", "packages", {"$call": ["default", {"$call": ["list_of", {"$ref": "string"}]}, []]}]}
+"files":
+  "$call":
+  - "class"
+  - "files"
+  - {"$call": ["record", "files", {"$call": ["default", {"$call": ["map_of", {"$ref": "string"}]}, {}]}]}
+"services":
+  "$call":
+  - "class"
+  - "services"
+  - "$call":
+    - "record"
+    - "services"
+    - {"$call": ["default", {"$call": ["map_of", {"$call": ["enum", "running", "stopped"]}]}, {}]}
+"users":
+  "$call":
+  - "class"
+  - "users"
+  - {"$call": ["record", "users", {"$call": ["default", {"$call": ["list_of", {"$ref": "string"}]}, []]}]}
+"machine":
+  "$call":
+  - "extend"
+  - "machine"
+  - "$call":
+    - "list"
+    - {"$ref": "host"}
+    - {"$ref": "packages"}
+    - {"$ref": "files"}
+    - {"$ref": "services"}
+    - {"$ref": "users"}
+  - {"$call": ["record"]}
+  - {}
+"hostnames":
+  "$call":
+  - "fn"
+  - - - "fleet"
+      - {"$ref": "list"}
+  - "$call":
+    - "map"
+    - {"$call": ["fn", ["m"], {"$call": ["get", {"$call": ["get", {"$ref": "m"}, "values"]}, "hostname"]}]}
+    - {"$ref": "fleet"}
+  - {"$ref": "list"}
+"unique_hostnames":
+  "$call":
+  - "fn"
+  - - - "fleet"
+      - {"$ref": "list"}
+  - {"$call": ["eq", {"$call": ["duplicates", {"$call": ["hostnames", {"$ref": "fleet"}]}]}, []]}
+  - {"$ref": "boolean"}

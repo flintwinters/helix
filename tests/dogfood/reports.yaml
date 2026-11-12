@@ -1,9 +1,56 @@
-t: [import, std:test]
-good: [t.suite, [{name: ok, input: {x: false}, run: [fn, [], 42]}]]
-bad: [t.suite, [{name: bad, input: null, run: [fn, [], [raise, "probe", "expected", {detail: 7}]]}]]
-combined: [t.combine, [list, good, bad, good]]
-report:
-  - t.suite
-  - - {name: empty_combination, run: [fn, [], [t.equal, [t.combine, []], {total: 0, passed: 0, failed: 0, results: []}]]}
-    - {name: combined_counts_and_results, run: [fn, [], [t.equal, combined, [dict, "total", 3, "passed", 2, "failed", 1, "results", [concat, [get, good, "results"], [get, bad, "results"], [get, good, "results"]]]]]}
-    - {name: combined_failure_payload, run: [fn, [], [t.equal, [get, [t.throws, [fn, [], [t.require_pass, combined]], "test_failure"], "data"], combined]]}
+# Helix explicit syntax; migrated from legacy source.
+"t": {"$call": ["import", "std:test"]}
+"good": {"$call": ["t.suite", [{"name": "ok", "input": {"x": false}, "run": {"$call": ["fn", [], 42]}}]]}
+"bad":
+  "$call":
+  - "t.suite"
+  - - "name": "bad"
+      "input": null
+      "run": {"$call": ["fn", [], {"$call": ["raise", "probe", "expected", {"detail": 7}]}]}
+"combined": {"$call": ["t.combine", {"$call": ["list", {"$ref": "good"}, {"$ref": "bad"}, {"$ref": "good"}]}]}
+"report":
+  "$call":
+  - "t.suite"
+  - - "name": "empty_combination"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - {"$call": ["t.equal", {"$call": ["t.combine", []]}, {"total": 0, "passed": 0, "failed": 0, "results": []}]}
+    - "name": "combined_counts_and_results"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - {"$ref": "combined"}
+          - "$call":
+            - "dict"
+            - "total"
+            - 3
+            - "passed"
+            - 2
+            - "failed"
+            - 1
+            - "results"
+            - "$call":
+              - "concat"
+              - {"$call": ["get", {"$ref": "good"}, "results"]}
+              - {"$call": ["get", {"$ref": "bad"}, "results"]}
+              - {"$call": ["get", {"$ref": "good"}, "results"]}
+    - "name": "combined_failure_payload"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - "$call":
+            - "get"
+            - "$call":
+              - "t.throws"
+              - {"$call": ["fn", [], {"$call": ["t.require_pass", {"$ref": "combined"}]}]}
+              - "test_failure"
+            - "data"
+          - {"$ref": "combined"}

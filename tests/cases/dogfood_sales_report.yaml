@@ -1,16 +1,72 @@
+# Helix explicit syntax; migrated from legacy source.
 # Dogfood: reshape a list of records into a summary report.
-sales:
-  - {region: north, item: apples, qty: 3, price: 1.5}
-  - {region: south, item: pears, qty: 8, price: 2.0}
-  - {region: north, item: plums, qty: 5, price: 0.5}
-  - {region: east, item: apples, qty: 2, price: 1.5}
-  - {region: south, item: apples, qty: 6, price: 1.5}
-report:
-  orders: [len, sales]
-  units: [fold, [fn, [t, s], [add, t, [get, s, "qty"]]], 0, sales]
-  revenue: [fold, [fn, [t, s], [add, t, [mul, [get, s, "qty"], [get, s, "price"]]]], 0, sales]
-  units_by_region:
-    [fold,
-      [fn, [acc, s], [let, {r: [get, s, "region"]}, [set, acc, r, [add, [get, acc, r, 0], [get, s, "qty"]]]]],
-      {}, sales]
-  big_orders: [map, [fn, [s], [get, s, "item"]], [filter, [fn, [s], [ge, [get, s, "qty"], 5]], sales]]
+"sales":
+- "region": "north"
+  "item": "apples"
+  "qty": 3
+  "price": 1.5
+- "region": "south"
+  "item": "pears"
+  "qty": 8
+  "price": 2.0
+- "region": "north"
+  "item": "plums"
+  "qty": 5
+  "price": 0.5
+- "region": "east"
+  "item": "apples"
+  "qty": 2
+  "price": 1.5
+- "region": "south"
+  "item": "apples"
+  "qty": 6
+  "price": 1.5
+"report":
+  "orders": {"$call": ["len", {"$ref": "sales"}]}
+  "units":
+    "$call":
+    - "fold"
+    - {"$call": ["fn", ["t", "s"], {"$call": ["add", {"$ref": "t"}, {"$call": ["get", {"$ref": "s"}, "qty"]}]}]}
+    - 0
+    - {"$ref": "sales"}
+  "revenue":
+    "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "t"
+        - "s"
+      - "$call":
+        - "add"
+        - {"$ref": "t"}
+        - {"$call": ["mul", {"$call": ["get", {"$ref": "s"}, "qty"]}, {"$call": ["get", {"$ref": "s"}, "price"]}]}
+    - 0
+    - {"$ref": "sales"}
+  "units_by_region":
+    "$call":
+    - "fold"
+    - "$call":
+      - "fn"
+      - - "acc"
+        - "s"
+      - "$call":
+        - "let"
+        - "r": {"$call": ["get", {"$ref": "s"}, "region"]}
+        - "$call":
+          - "set"
+          - {"$ref": "acc"}
+          - {"$ref": "r"}
+          - "$call":
+            - "add"
+            - {"$call": ["get", {"$ref": "acc"}, {"$ref": "r"}, 0]}
+            - {"$call": ["get", {"$ref": "s"}, "qty"]}
+    - {}
+    - {"$ref": "sales"}
+  "big_orders":
+    "$call":
+    - "map"
+    - {"$call": ["fn", ["s"], {"$call": ["get", {"$ref": "s"}, "item"]}]}
+    - "$call":
+      - "filter"
+      - {"$call": ["fn", ["s"], {"$call": ["ge", {"$call": ["get", {"$ref": "s"}, "qty"]}, 5]}]}
+      - {"$ref": "sales"}

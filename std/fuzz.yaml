@@ -1,54 +1,242 @@
+# Helix explicit syntax; migrated from legacy source.
 # Deterministic damaged-source generation for host-supervised parser/evaluator tests.
 # Unicode scalar offsets; all Python splitlines boundaries, with CRLF kept together.
 # Duplicates and order are intentional; each variant is a list of source slice spans.
-l: [import, std:list]
-plan:
-  - fn
-  - [[source, string]]
-  - [generate, source, [len, source]]
-  - list
-# Eager arguments keep scanning work out of per-variant lexical lookups.
-generate:
-  - fn
-  - [source, size]
-  - - let
-    - scan:
-        - until
-        - [fn, [s], [ge, [get, s, "index"], size]]
-        - - fn
-          - [s]
-          - - let
-            - i: [get, s, "index"]
-              c: [slice, source, i, [add, i, 1]]
-              end: [add, i, [if, [and, [eq, c, "\r"], [lt, [add, i, 1], size], [eq, [slice, source, [add, i, 1], [add, i, 2]], "\n"]], 2, 1]]
-            - - if
-              - [has, ["\n", "\r", "\v", "\f", "\x1c", "\x1d", "\x1e", "\x85", "\u2028", "\u2029"], c]
-              - [dict, "index", end, "start", end, "bounds", [append, [get, s, "bounds"], [list, [get, s, "start"], end]]]
-              - [set, s, "index", end]
-        - {index: 0, start: 0, bounds: []}
-      offsets:
-        - until
-        - [fn, [s], [ge, [get, s, "index"], size]]
-        - [fn, [s], [dict, "index", [add, [get, s, "index"], 5], "offsets", [append, [get, s, "offsets"], [get, s, "index"]]]]
-        - {index: 0, offsets: []}
-    - [finish, size, scan, [get, offsets, "offsets"]]
-  - list
-finish:
-  - fn
-  - [size, scan, offsets]
-  - [render, size, [if, [lt, [get, scan, "start"], size], [append, [get, scan, "bounds"], [list, [get, scan, "start"], size]], [get, scan, "bounds"]], offsets]
-render:
-  - fn
-  - [size, bounds, offsets]
-  - - let
-    - lines:
-        - map
-        - - fn
-          - [index]
-          - - let
-            - pair: [get, bounds, [div, index, 2]]
-              prefix: [list, 0, [get, pair, 0]]
-            - [if, [eq, [mod, index, 2], 0], [list, prefix], [list, prefix, [list, [get, pair, 1], size]]]
-        - [l.range, [mul, [len, bounds], 2]]
-      prefixes: [map, [fn, [offset], [list, [list, 0, offset]]], offsets]
-    - [concat, lines, prefixes]
+# Scan 256-scalar chunks with one-scalar lookahead; absolute cursor consumes seam CRLF once.
+"l": {"$call": ["import", "std:list"]}
+"plan":
+  "$call":
+  - "fn"
+  - - - "source"
+      - {"$ref": "string"}
+  - {"$call": ["generate", {"$ref": "source"}, {"$call": ["len", {"$ref": "source"}]}]}
+  - {"$ref": "list"}
+"generate":
+  "$call":
+  - "fn"
+  - - "source"
+    - "size"
+  - "$call":
+    - "let"
+    - "scan":
+        "$call":
+        - "fold"
+        - {"$ref": "scan_part"}
+        - "index": 0
+          "start": 0
+          "bounds": []
+        - "$call":
+          - "map"
+          - "$call":
+            - "fn"
+            - - "index"
+            - {"$call": ["chunk", {"$ref": "source"}, {"$ref": "size"}, {"$call": ["mul", {"$ref": "index"}, 256]}]}
+          - {"$call": ["l.range", {"$call": ["div", {"$call": ["add", {"$ref": "size"}, 255]}, 256]}]}
+      "offsets":
+        "$call":
+        - "until"
+        - {"$call": ["fn", ["s"], {"$call": ["ge", {"$call": ["get", {"$ref": "s"}, "index"]}, {"$ref": "size"}]}]}
+        - "$call":
+          - "fn"
+          - - "s"
+          - "$call":
+            - "dict"
+            - "index"
+            - {"$call": ["add", {"$call": ["get", {"$ref": "s"}, "index"]}, 5]}
+            - "offsets"
+            - "$call":
+              - "append"
+              - {"$call": ["get", {"$ref": "s"}, "offsets"]}
+              - {"$call": ["get", {"$ref": "s"}, "index"]}
+        - "index": 0
+          "offsets": []
+    - {"$call": ["finish", {"$ref": "size"}, {"$ref": "scan"}, {"$call": ["get", {"$ref": "offsets"}, "offsets"]}]}
+  - {"$ref": "list"}
+"finish":
+  "$call":
+  - "fn"
+  - - "size"
+    - "scan"
+    - "offsets"
+  - "$call":
+    - "render"
+    - {"$ref": "size"}
+    - "$call":
+      - "if"
+      - {"$call": ["lt", {"$call": ["get", {"$ref": "scan"}, "start"]}, {"$ref": "size"}]}
+      - "$call":
+        - "append"
+        - {"$call": ["get", {"$ref": "scan"}, "bounds"]}
+        - {"$call": ["list", {"$call": ["get", {"$ref": "scan"}, "start"]}, {"$ref": "size"}]}
+      - {"$call": ["get", {"$ref": "scan"}, "bounds"]}
+    - {"$ref": "offsets"}
+"render":
+  "$call":
+  - "fn"
+  - - "size"
+    - "bounds"
+    - "offsets"
+  - "$call":
+    - "let"
+    - "lines":
+        "$call":
+        - "map"
+        - "$call":
+          - "fn"
+          - - "index"
+          - "$call":
+            - "let"
+            - "pair": {"$call": ["get", {"$ref": "bounds"}, {"$call": ["div", {"$ref": "index"}, 2]}]}
+              "prefix": {"$call": ["list", 0, {"$call": ["get", {"$ref": "pair"}, 0]}]}
+            - "$call":
+              - "if"
+              - {"$call": ["eq", {"$call": ["mod", {"$ref": "index"}, 2]}, 0]}
+              - {"$call": ["list", {"$ref": "prefix"}]}
+              - "$call":
+                - "list"
+                - {"$ref": "prefix"}
+                - {"$call": ["list", {"$call": ["get", {"$ref": "pair"}, 1]}, {"$ref": "size"}]}
+        - {"$call": ["l.range", {"$call": ["mul", {"$call": ["len", {"$ref": "bounds"}]}, 2]}]}
+      "prefixes":
+        "$call":
+        - "map"
+        - {"$call": ["fn", ["offset"], {"$call": ["list", {"$call": ["list", 0, {"$ref": "offset"}]}]}]}
+        - {"$ref": "offsets"}
+    - {"$call": ["concat", {"$ref": "lines"}, {"$ref": "prefixes"}]}
+"scan_chunk":
+  "$call":
+  - "fn"
+  - - "text"
+    - "base"
+    - "limit"
+    - "size"
+    - "state"
+  - "$call":
+    - "until"
+    - {"$call": ["fn", ["s"], {"$call": ["ge", {"$call": ["get", {"$ref": "s"}, "index"]}, {"$ref": "limit"}]}]}
+    - "$call":
+      - "fn"
+      - - "s"
+      - "$call":
+        - "let"
+        - "i": {"$call": ["get", {"$ref": "s"}, "index"]}
+          "c":
+            "$call":
+            - "slice"
+            - {"$ref": "text"}
+            - {"$call": ["sub", {"$ref": "i"}, {"$ref": "base"}]}
+            - {"$call": ["add", {"$call": ["sub", {"$ref": "i"}, {"$ref": "base"}]}, 1]}
+          "end":
+            "$call":
+            - "add"
+            - {"$ref": "i"}
+            - "$call":
+              - "if"
+              - "$call":
+                - "and"
+                - {"$call": ["eq", {"$ref": "c"}, "\r"]}
+                - {"$call": ["lt", {"$call": ["add", {"$ref": "i"}, 1]}, {"$ref": "size"}]}
+                - "$call":
+                  - "eq"
+                  - "$call":
+                    - "slice"
+                    - {"$ref": "text"}
+                    - {"$call": ["add", {"$call": ["sub", {"$ref": "i"}, {"$ref": "base"}]}, 1]}
+                    - {"$call": ["add", {"$call": ["sub", {"$ref": "i"}, {"$ref": "base"}]}, 2]}
+                  - "\n"
+              - 2
+              - 1
+        - "$call":
+          - "if"
+          - "$call":
+            - "has"
+            - - "\n"
+              - "\r"
+              - "\v"
+              - "\f"
+              - "\x1C"
+              - "\x1D"
+              - "\x1E"
+              - "\N"
+              - "\L"
+              - "\P"
+            - {"$ref": "c"}
+          - "$call":
+            - "dict"
+            - "index"
+            - {"$ref": "end"}
+            - "start"
+            - {"$ref": "end"}
+            - "bounds"
+            - "$call":
+              - "append"
+              - {"$call": ["get", {"$ref": "s"}, "bounds"]}
+              - {"$call": ["list", {"$call": ["get", {"$ref": "s"}, "start"]}, {"$ref": "end"}]}
+          - {"$call": ["set", {"$ref": "s"}, "index", {"$ref": "end"}]}
+    - {"$ref": "state"}
+"scan_part":
+  "$call":
+  - "fn"
+  - - "state"
+    - "chunk"
+  - "$call":
+    - "merge_chunk"
+    - {"$ref": "state"}
+    - "$call":
+      - "scan_chunk"
+      - {"$call": ["get", {"$ref": "chunk"}, "text"]}
+      - {"$call": ["get", {"$ref": "chunk"}, "base"]}
+      - {"$call": ["get", {"$ref": "chunk"}, "limit"]}
+      - {"$call": ["get", {"$ref": "chunk"}, "size"]}
+      - "$call":
+        - "dict"
+        - "index"
+        - {"$call": ["get", {"$ref": "state"}, "index"]}
+        - "start"
+        - {"$call": ["get", {"$ref": "state"}, "start"]}
+        - "bounds"
+        - []
+"chunk":
+  "$call":
+  - "fn"
+  - - "source"
+    - "size"
+    - "base"
+  - "$call":
+    - "dict"
+    - "text"
+    - "$call":
+      - "slice"
+      - {"$ref": "source"}
+      - {"$ref": "base"}
+      - "$call":
+        - "if"
+        - {"$call": ["lt", {"$call": ["add", {"$ref": "base"}, 257]}, {"$ref": "size"}]}
+        - {"$call": ["add", {"$ref": "base"}, 257]}
+        - {"$ref": "size"}
+    - "base"
+    - {"$ref": "base"}
+    - "limit"
+    - "$call":
+      - "if"
+      - {"$call": ["lt", {"$call": ["add", {"$ref": "base"}, 256]}, {"$ref": "size"}]}
+      - {"$call": ["add", {"$ref": "base"}, 256]}
+      - {"$ref": "size"}
+    - "size"
+    - {"$ref": "size"}
+"merge_chunk":
+  "$call":
+  - "fn"
+  - - "previous"
+    - "next"
+  - "$call":
+    - "dict"
+    - "index"
+    - {"$call": ["get", {"$ref": "next"}, "index"]}
+    - "start"
+    - {"$call": ["get", {"$ref": "next"}, "start"]}
+    - "bounds"
+    - "$call":
+      - "concat"
+      - {"$call": ["get", {"$ref": "previous"}, "bounds"]}
+      - {"$call": ["get", {"$ref": "next"}, "bounds"]}

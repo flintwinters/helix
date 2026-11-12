@@ -1,18 +1,20 @@
-status: error
-phase: type
 error:
-  kind: conflict
-  message: "field `restart` has different values from both `interactive` and `unattended`; resolve it in `worker`"
-  phase: type
-  path: /resolved/1/2
-  reference:
-    - "resolved"
-    - 1
-    - 2
-  line: 6
-  column: 42
+  column: 7
   data:
     field: restart
     sources:
-      - "interactive"
+      - interactive
       - unattended
+  kind: conflict
+  line: 13
+  message: "field `restart` has different values from both `interactive` and `unattended`; resolve it in `worker`"
+  path: "/resolved/$call/1/$call/2"
+  phase: type
+  reference:
+    - resolved
+    - "$call"
+    - 1
+    - "$call"
+    - 2
+phase: type
+status: error

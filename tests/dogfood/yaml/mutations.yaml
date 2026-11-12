@@ -1,26 +1,64 @@
+# Helix explicit syntax; migrated from legacy source.
 # Damage actual YAML syntax in Helix, rather than checking only handpicked errors.
 # A mutation may remain valid: require agreement and round trips, not universal rejection.
-t: [import, std:test]
-y: [import, std:yaml]
-l: [import, std:list]
-seeds: [list, '{a: [1, "x"], b: null}', "a:\n  - true\n  - {}\n", '"escaped\n\u96ea"', "---\n[1, {x: false}]\n...\n"]
-mutants:
-  - l.flat_map
-  - seeds
-  - - fn
-    - [source]
-    - - l.flat_map
-      - [l.range, [add, [len, source], 1]]
-      - - fn
-        - [position]
-        - [list, [slice, source, 0, position], [concat, [slice, source, 0, position], [slice, source, [if, [lt, position, [len, source]], [add, position, 1], position], [len, source]]]]
-report:
-  - t.property
+"t": {"$call": ["import", "std:test"]}
+"y": {"$call": ["import", "std:yaml"]}
+"l": {"$call": ["import", "std:list"]}
+"seeds":
+  "$call":
+  - "list"
+  - "{a: [1, \"x\"], b: null}"
+  - "a:\n  - true\n  - {}\n"
+  - "\"escaped\\n\\u96ea\""
+  - "---\n[1, {x: false}]\n...\n"
+"mutants":
+  "$call":
+  - "l.flat_map"
+  - {"$ref": "seeds"}
+  - "$call":
+    - "fn"
+    - - "source"
+    - "$call":
+      - "l.flat_map"
+      - {"$call": ["l.range", {"$call": ["add", {"$call": ["len", {"$ref": "source"}]}, 1]}]}
+      - "$call":
+        - "fn"
+        - - "position"
+        - "$call":
+          - "list"
+          - {"$call": ["slice", {"$ref": "source"}, 0, {"$ref": "position"}]}
+          - "$call":
+            - "concat"
+            - {"$call": ["slice", {"$ref": "source"}, 0, {"$ref": "position"}]}
+            - "$call":
+              - "slice"
+              - {"$ref": "source"}
+              - "$call":
+                - "if"
+                - {"$call": ["lt", {"$ref": "position"}, {"$call": ["len", {"$ref": "source"}]}]}
+                - {"$call": ["add", {"$ref": "position"}, 1]}
+                - {"$ref": "position"}
+              - {"$call": ["len", {"$ref": "source"}]}
+"report":
+  "$call":
+  - "t.property"
   - "every prefix and character deletion has consistent validity and stable successful data"
-  - mutants
-  - - fn
-    - [source]
-    - - let
-      - result: [t.capture, [fn, [], [y.parse, source]]]
-        success: [eq, [get, result, "outcome"], "passed"]
-      - [and, [eq, [y.valid, source], success], [if, success, [let, {value: [get, result, "value"]}, [eq, [y.parse, [y.dump, value]], value]], [eq, [get, [get, result, "error"], "kind"], "parse"]]]
+  - {"$ref": "mutants"}
+  - "$call":
+    - "fn"
+    - - "source"
+    - "$call":
+      - "let"
+      - "result": {"$call": ["t.capture", {"$call": ["fn", [], {"$call": ["y.parse", {"$ref": "source"}]}]}]}
+        "success": {"$call": ["eq", {"$call": ["get", {"$ref": "result"}, "outcome"]}, "passed"]}
+      - "$call":
+        - "and"
+        - {"$call": ["eq", {"$call": ["y.valid", {"$ref": "source"}]}, {"$ref": "success"}]}
+        - "$call":
+          - "if"
+          - {"$ref": "success"}
+          - "$call":
+            - "let"
+            - "value": {"$call": ["get", {"$ref": "result"}, "value"]}
+            - {"$call": ["eq", {"$call": ["y.parse", {"$call": ["y.dump", {"$ref": "value"}]}]}, {"$ref": "value"}]}
+          - {"$call": ["eq", {"$call": ["get", {"$call": ["get", {"$ref": "result"}, "error"]}, "kind"]}, "parse"]}

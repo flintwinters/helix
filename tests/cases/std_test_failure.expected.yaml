@@ -1,65 +1,69 @@
-status: error
 error:
-  kind: test_failure
-  message: suite contains failures
-  file: "std:test"
-  path: /require_pass/2/3
-  reference:
-    - "require_pass"
-    - 2
-    - 3
-  line: 50
-  column: 52
+  calls:
+    - column: 10
+      function: /require_pass
+      function_column: 10
+      function_file: "std:test"
+      function_line: 101
+      line: 5
+      path: /result
+  column: 7
   data:
-    total: 2
-    passed: 1
     failed: 1
+    passed: 1
     results:
-      - outcome: failed
-        error:
-          kind: assertion
-          message: values differ
-          file: "std:test"
-          path: /equal/2/3
-          reference:
-            - "equal"
-            - 2
-            - 3
-          line: 17
-          column: 7
+      - error:
+          calls:
+            - column: 37
+              function: /equal
+              function_column: 10
+              function_file: "std:test"
+              function_line: 16
+              line: 10
+              path: "/result/$call/1/$call/1/0/run/$call/2"
+            - column: 75
+              file: "std:test"
+              function: "/result/$call/1/$call/1/0/run"
+              function_column: 16
+              function_line: 10
+              line: 12
+              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+          column: 14
           data:
-            expected:
-              - 1
-              - 3
             actual:
               - 1
               - 2
-          calls:
-            - path: /result/1/1/0/run/2
-              line: 6
-              column: 51
-              function: /equal
-              function_file: "std:test"
-              function_line: 12
-              function_column: 3
-            - file: "std:test"
-              path: /capture/2/1/4/1
-              line: 8
-              column: 51
-              function: /result/1/1/0/run
-              function_line: 6
-              function_column: 42
+            expected:
+              - 1
+              - 3
+          file: "std:test"
+          kind: assertion
+          line: 24
+          message: values differ
+          path: "/equal/$call/2/$call/3"
+          reference:
+            - equal
+            - "$call"
+            - 2
+            - "$call"
+            - 3
+        input: ~
         name: deliberate_mismatch
-        input: ~
-      - outcome: passed
-        value: ~
+        outcome: failed
+      - input: ~
         name: still_runs
-        input: ~
-  calls:
-    - path: /result
-      line: 4
-      column: 3
-      function: /require_pass
-      function_file: "std:test"
-      function_line: 48
-      function_column: 3
+        outcome: passed
+        value: ~
+    total: 2
+  file: "std:test"
+  kind: test_failure
+  line: 109
+  message: suite contains failures
+  path: "/require_pass/$call/2/$call/3"
+  reference:
+    - require_pass
+    - "$call"
+    - 2
+    - "$call"
+    - 3
+status: error

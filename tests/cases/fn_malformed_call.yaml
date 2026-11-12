@@ -1,2 +1,3 @@
-r: [f, 1]
-f: [fn, [n]]
+# Helix explicit syntax; migrated from legacy source.
+"r": {"$call": ["f", 1]}
+"f": {"$call": ["fn", ["n"]]}

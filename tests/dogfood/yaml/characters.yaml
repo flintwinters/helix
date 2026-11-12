@@ -1,11 +1,112 @@
+# Helix explicit syntax; migrated from legacy source.
 # Exhaust the forbidden C0/C1 ranges and both forbidden BMP noncharacters.
 # Escaped character values are legal; literal characters in YAML source are not.
-t: [import, std:test]
-y: [import, std:yaml]
-l: [import, std:list]
-forbidden: [list, "\u0000", "\u0001", "\u0002", "\u0003", "\u0004", "\u0005", "\u0006", "\u0007", "\b", "\u000b", "\f", "\u000e", "\u000f", "\u0010", "\u0011", "\u0012", "\u0013", "\u0014", "\u0015", "\u0016", "\u0017", "\u0018", "\u0019", "\u001a", "\u001b", "\u001c", "\u001d", "\u001e", "\u001f", "\u007f", "\u0080", "\u0081", "\u0082", "\u0083", "\u0084", "\u0086", "\u0087", "\u0088", "\u0089", "\u008a", "\u008b", "\u008c", "\u008d", "\u008e", "\u008f", "\u0090", "\u0091", "\u0092", "\u0093", "\u0094", "\u0095", "\u0096", "\u0097", "\u0098", "\u0099", "\u009a", "\u009b", "\u009c", "\u009d", "\u009e", "\u009f", "\ufffe", "\uffff"]
-boundaries: [list, "\t", "\n", "\r", "\u0085", "\u00a0", "\ud7ff", "\ue000", "\ufffd", "\U00010000", "\U0010ffff"]
-literal_sources: [l.flat_map, forbidden, [fn, [ch], [list, [concat, "a", ch, "b"], [concat, "\"a", ch, "b\""], [concat, "a: 1\n# ", ch]]]]
-rejections: [t.table, [map, [fn, [source], [dict, "name", "forbidden literal character", "input", source]], literal_sources], [fn, [source], [finally, [t.throws, [fn, [], [y.parse, source]], "parse"], [t.equal, [y.valid, source], false]]]]
-roundtrips: [t.property, "escaped characters survive serialization", [concat, forbidden, boundaries], [fn, [ch], [eq, [y.parse, [y.dump, ch]], ch]]]
-report: [t.combine, [list, rejections, roundtrips]]
+"t": {"$call": ["import", "std:test"]}
+"y": {"$call": ["import", "std:yaml"]}
+"l": {"$call": ["import", "std:list"]}
+"forbidden":
+  "$call":
+  - "list"
+  - "\0"
+  - "\x01"
+  - "\x02"
+  - "\x03"
+  - "\x04"
+  - "\x05"
+  - "\x06"
+  - "\a"
+  - "\b"
+  - "\v"
+  - "\f"
+  - "\x0E"
+  - "\x0F"
+  - "\x10"
+  - "\x11"
+  - "\x12"
+  - "\x13"
+  - "\x14"
+  - "\x15"
+  - "\x16"
+  - "\x17"
+  - "\x18"
+  - "\x19"
+  - "\x1A"
+  - "\e"
+  - "\x1C"
+  - "\x1D"
+  - "\x1E"
+  - "\x1F"
+  - "\x7F"
+  - "\x80"
+  - "\x81"
+  - "\x82"
+  - "\x83"
+  - "\x84"
+  - "\x86"
+  - "\x87"
+  - "\x88"
+  - "\x89"
+  - "\x8A"
+  - "\x8B"
+  - "\x8C"
+  - "\x8D"
+  - "\x8E"
+  - "\x8F"
+  - "\x90"
+  - "\x91"
+  - "\x92"
+  - "\x93"
+  - "\x94"
+  - "\x95"
+  - "\x96"
+  - "\x97"
+  - "\x98"
+  - "\x99"
+  - "\x9A"
+  - "\x9B"
+  - "\x9C"
+  - "\x9D"
+  - "\x9E"
+  - "\x9F"
+  - "\uFFFE"
+  - "\uFFFF"
+"boundaries": {"$call": ["list", "\t", "\n", "\r", "\N", "\_", "\uD7FF", "\uE000", "\uFFFD", "\U00010000", "\U0010FFFF"]}
+"literal_sources":
+  "$call":
+  - "l.flat_map"
+  - {"$ref": "forbidden"}
+  - "$call":
+    - "fn"
+    - - "ch"
+    - "$call":
+      - "list"
+      - {"$call": ["concat", "a", {"$ref": "ch"}, "b"]}
+      - {"$call": ["concat", "\"a", {"$ref": "ch"}, "b\""]}
+      - {"$call": ["concat", "a: 1\n# ", {"$ref": "ch"}]}
+"rejections":
+  "$call":
+  - "t.table"
+  - "$call":
+    - "map"
+    - "$call":
+      - "fn"
+      - - "source"
+      - {"$call": ["dict", "name", "forbidden literal character", "input", {"$ref": "source"}]}
+    - {"$ref": "literal_sources"}
+  - "$call":
+    - "fn"
+    - - "source"
+    - "$call":
+      - "finally"
+      - {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["y.parse", {"$ref": "source"}]}]}, "parse"]}
+      - {"$call": ["t.equal", {"$call": ["y.valid", {"$ref": "source"}]}, false]}
+"roundtrips":
+  "$call":
+  - "t.property"
+  - "escaped characters survive serialization"
+  - {"$call": ["concat", {"$ref": "forbidden"}, {"$ref": "boundaries"}]}
+  - "$call":
+    - "fn"
+    - - "ch"
+    - {"$call": ["eq", {"$call": ["y.parse", {"$call": ["y.dump", {"$ref": "ch"}]}]}, {"$ref": "ch"}]}
+"report": {"$call": ["t.combine", {"$call": ["list", {"$ref": "rejections"}, {"$ref": "roundtrips"}]}]}

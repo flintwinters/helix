@@ -1,1 +1,2 @@
-boom: [div, 1, 0]
+# Helix explicit syntax; migrated from legacy source.
+"boom": {"$call": ["div", 1, 0]}

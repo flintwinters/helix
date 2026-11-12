@@ -1,11 +1,11 @@
-status: finished
 root:
-  original_status: ready
   advanced_status: running
-  versions_differ: true
-  left_status: finished
-  left_result: 42
-  right_status: finished
-  right_result: 42
   branches_equal: true
+  left_result: 42
+  left_status: finished
+  original_status: ready
   original_still_ready: true
+  right_result: 42
+  right_status: finished
+  versions_differ: true
+status: finished

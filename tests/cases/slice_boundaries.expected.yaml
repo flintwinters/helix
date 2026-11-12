@@ -1,8 +1,8 @@
-status: finished
 root:
   ascii: bcde
-  unicode: "é雪🙂"
-  tail: "🙂z"
+  empty: ""
   empty_end: ""
   empty_middle: ""
-  empty: ""
+  tail: "🙂z"
+  unicode: "é雪🙂"
+status: finished

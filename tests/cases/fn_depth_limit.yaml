@@ -1,2 +1,3 @@
-spin: [fn, [n], [spin, [add, n, 1]]]
-never: [spin, 0]
+# Helix explicit syntax; migrated from legacy source.
+"spin": {"$call": ["fn", ["n"], {"$call": ["spin", {"$call": ["add", {"$ref": "n"}, 1]}]}]}
+"never": {"$call": ["spin", 0]}

@@ -1,14 +1,30 @@
-sets:
-  - let
-  - s: [import, std:set]
-  - [list, [s.union, [list, 2, 1, 2], [list, 3, 1]], [s.intersection, [list, null, false, null], [list, null]], [s.difference, [list, 1, 2, 1], [list, 2]]]
-stack:
-  - let
-  - s: [import, std:stack]
-    xs: [s.push, [s.push, [], null], false]
-  - [list, [s.peek, xs, "empty"], [s.pop, xs], [s.peek, [], "empty"]]
-queue:
-  - let
-  - q: [import, std:queue]
-    xs: [q.enqueue, [q.enqueue, [], null], false]
-  - [list, [q.peek, xs, "empty"], [q.dequeue, xs], [q.peek, [], "empty"]]
+# Helix explicit syntax; migrated from legacy source.
+"sets":
+  "$call":
+  - "let"
+  - "s": {"$call": ["import", "std:set"]}
+  - "$call":
+    - "list"
+    - {"$call": ["s.union", {"$call": ["list", 2, 1, 2]}, {"$call": ["list", 3, 1]}]}
+    - {"$call": ["s.intersection", {"$call": ["list", null, false, null]}, {"$call": ["list", null]}]}
+    - {"$call": ["s.difference", {"$call": ["list", 1, 2, 1]}, {"$call": ["list", 2]}]}
+"stack":
+  "$call":
+  - "let"
+  - "s": {"$call": ["import", "std:stack"]}
+    "xs": {"$call": ["s.push", {"$call": ["s.push", [], null]}, false]}
+  - "$call":
+    - "list"
+    - {"$call": ["s.peek", {"$ref": "xs"}, "empty"]}
+    - {"$call": ["s.pop", {"$ref": "xs"}]}
+    - {"$call": ["s.peek", [], "empty"]}
+"queue":
+  "$call":
+  - "let"
+  - "q": {"$call": ["import", "std:queue"]}
+    "xs": {"$call": ["q.enqueue", {"$call": ["q.enqueue", [], null]}, false]}
+  - "$call":
+    - "list"
+    - {"$call": ["q.peek", {"$ref": "xs"}, "empty"]}
+    - {"$call": ["q.dequeue", {"$ref": "xs"}]}
+    - {"$call": ["q.peek", [], "empty"]}

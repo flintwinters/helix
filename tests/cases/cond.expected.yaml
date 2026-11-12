@@ -1,68 +1,81 @@
-status: finished
-root:
-  grade:
-    ref: object0
-  a: A
-  b: B
-  c: C
-  lazy: ok
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - cond
+            - "$call":
+                - ge
+                - "$ref": "n"
+                - 90
+            - A
+            - "$call":
+                - ge
+                - "$ref": "n"
+                - 80
+            - B
+            - C
+    environment: []
     kind: function
+    location:
+      path:
+        - grade
+      source: "<root>"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: cond
-        - - symbol: ge
-          - symbol: "n"
-          - 90
-        - A
-        - - symbol: ge
-          - symbol: "n"
-          - 80
-        - B
-        - C
-    location:
-      source: "<root>"
-      path:
-        - "grade"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          grade:
-            - symbol: fn
-            - - symbol: "n"
-            - - symbol: cond
-              - - symbol: ge
-                - symbol: "n"
-                - 90
-              - A
-              - - symbol: ge
-                - symbol: "n"
-                - 80
-              - B
-              - C
+      - code:
           a:
-            - symbol: grade
-            - 95
+            "$call":
+              - grade
+              - 95
           b:
-            - symbol: grade
-            - 85
+            "$call":
+              - grade
+              - 85
           c:
-            - symbol: grade
-            - 10
+            "$call":
+              - grade
+              - 10
+          grade:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - cond
+                  - "$call":
+                      - ge
+                      - "$ref": "n"
+                      - 90
+                  - A
+                  - "$call":
+                      - ge
+                      - "$ref": "n"
+                      - 80
+                  - B
+                  - C
           lazy:
-            - symbol: cond
-            - true
-            - ok
-            - - symbol: div
-              - 1
-              - 0
-            - never
-            - fallback
+            "$call":
+              - cond
+              - true
+              - ok
+              - "$call":
+                  - div
+                  - 1
+                  - 0
+              - never
+              - fallback
+        source: "<root>"
+root:
+  a: A
+  b: B
+  c: C
+  grade:
+    ref: object0
+  lazy: ok
+status: finished

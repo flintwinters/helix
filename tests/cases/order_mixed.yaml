@@ -1,1 +1,2 @@
-x: [lt, 1, "a"]
+# Helix explicit syntax; migrated from legacy source.
+"x": {"$call": ["lt", 1, "a"]}

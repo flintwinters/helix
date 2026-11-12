@@ -1,22 +1,77 @@
-d: [import, std:dependency]
-empty: [d.plan, {}]
-empty_ok: [assert, [eq, empty, {order: [], pending: {}, missing: [], status: "finished"}]]
-independent: [d.plan, {z: [], a: [], "": [], "🙂": []}]
-stable: [assert, [eq, [get, independent, "order"], ["z", "a", "", "🙂"]]]
-# Batch order differs from a queue that immediately schedules newly ready tasks.
-batches: [d.plan, {last: ["first"], first: [], other: []}]
-batches_ok: [assert, [eq, [get, batches, "order"], ["first", "other", "last"]]]
-duplicates: [d.plan, {end: ["start", "start"], start: []}]
-duplicates_ok: [assert, [eq, [get, duplicates, "order"], ["start", "end"]]]
-missing: [d.plan, {b: ["no", "no"], a: ["absent"], independent: []}]
-missing_ok: [assert, [eq, [get, missing, "missing"], [{task: "b", dependency: "no"}, {task: "b", dependency: "no"}, {task: "a", dependency: "absent"}]]]
-pending_order: [assert, [eq, [keys, [get, missing, "pending"]], ["b", "a"]]]
-cycle: [d.plan, {a: ["b"], b: ["a"], downstream: ["a"], free: []}]
-cycle_ok: [assert, [eq, cycle, {order: ["free"], pending: {a: ["b"], b: ["a"], downstream: ["a"]}, missing: [], status: "blocked"}]]
-self_cycle: [d.plan, {self: ["self"]}]
-unicode: [d.plan, {"🙂": [""], "": []}]
-unicode_ok: [assert, [eq, [get, unicode, "order"], ["", "🙂"]]]
-wrong_map: [try, [d.plan, []], [fn, [e], [get, e, "kind"]]]
-wrong_list: [try, [d.plan, {a: "b"}], [fn, [e], [get, e, "kind"]]]
-wrong_dependency: [try, [d.plan, {a: [null]}], [fn, [e], [get, e, "kind"]]]
-wrong_arity: [try, [d.plan], [fn, [e], [get, e, "kind"]]]
+# Helix explicit syntax; migrated from legacy source.
+"d": {"$call": ["import", "std:dependency"]}
+"empty": {"$call": ["d.plan", {}]}
+"empty_ok":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$ref": "empty"}, {"order": [], "pending": {}, "missing": [], "status": "finished"}]}
+"independent": {"$call": ["d.plan", {"z": [], "a": [], ? "" : [], "\U0001F642": []}]}
+"stable":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$call": ["get", {"$ref": "independent"}, "order"]}, ["", "a", "z", "\U0001F642"]]}
+"batches": {"$call": ["d.plan", {"last": ["first"], "first": [], "other": []}]}
+"batches_ok":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$call": ["get", {"$ref": "batches"}, "order"]}, ["first", "other", "last"]]}
+"duplicates": {"$call": ["d.plan", {"end": ["start", "start"], "start": []}]}
+"duplicates_ok":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$call": ["get", {"$ref": "duplicates"}, "order"]}, ["start", "end"]]}
+"missing": {"$call": ["d.plan", {"b": ["no", "no"], "a": ["absent"], "independent": []}]}
+"missing_ok":
+  "$call":
+  - "assert"
+  - "$call":
+    - "eq"
+    - {"$call": ["get", {"$ref": "missing"}, "missing"]}
+    - - "task": "a"
+        "dependency": "absent"
+      - "task": "b"
+        "dependency": "no"
+      - "task": "b"
+        "dependency": "no"
+"pending_order":
+  "$call":
+  - "assert"
+  - {"$call": ["eq", {"$call": ["keys", {"$call": ["get", {"$ref": "missing"}, "pending"]}]}, ["a", "b"]]}
+"cycle": {"$call": ["d.plan", {"a": ["b"], "b": ["a"], "downstream": ["a"], "free": []}]}
+"cycle_ok":
+  "$call":
+  - "assert"
+  - "$call":
+    - "eq"
+    - {"$ref": "cycle"}
+    - "order":
+      - "free"
+      "pending":
+        "a":
+        - "b"
+        "b":
+        - "a"
+        "downstream":
+        - "a"
+      "missing": []
+      "status": "blocked"
+"self_cycle": {"$call": ["d.plan", {"self": ["self"]}]}
+"unicode": {"$call": ["d.plan", {"\U0001F642": [""], ? "" : []}]}
+"unicode_ok": {"$call": ["assert", {"$call": ["eq", {"$call": ["get", {"$ref": "unicode"}, "order"]}, ["", "\U0001F642"]]}]}
+"wrong_map":
+  "$call":
+  - "try"
+  - {"$call": ["d.plan", []]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_list":
+  "$call":
+  - "try"
+  - {"$call": ["d.plan", {"a": "b"}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_dependency":
+  "$call":
+  - "try"
+  - {"$call": ["d.plan", {"a": [null]}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+"wrong_arity": {"$call": ["try", {"$call": ["d.plan"]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"},
+            "kind"]}]}]}

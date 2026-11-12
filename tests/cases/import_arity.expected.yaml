@@ -1,8 +1,8 @@
-status: error
 error:
+  column: 1
   kind: arity
+  line: 2
   message: "`import` takes 1 argument, got 0"
   path: /
   reference: []
-  line: 1
-  column: 1
+status: error

@@ -1,14 +1,55 @@
-in_port: [fn, [n], [and, [ge, n, 1], [le, n, 65535]]]
-port: [refine, integer, in_port]
-machine: [class, "machine", [record, "hostname", string]]
-has_ssh: [class, "has_ssh", [record, "ssh_port", [default, port, 22]]]
-server: [extend, "server", [list, machine], [record, "packages", [list_of, string]], {}]
-web01: [inherit, "web01", [list, server, has_ssh], {hostname: "web01", packages: ["nginx"]}]
-web02: [inherit, "web02", [list, server, has_ssh], {hostname: "web02", packages: [], ssh_port: 2222}]
-parents_of: [parents, web01]
-server_fields: [fields, server]
-not_yet: [try, [inherit, "bare", [list, server], {hostname: "bare"}], [fn, [e], e]]
-wrong_value: [try, [inherit, "bad", [list, machine], {hostname: 5}], [fn, [e], e]]
-undeclared: [try, [inherit, "typo", [list, machine], {hostnam: "x"}], [fn, [e], [get, e, "message"]]]
-realized_twice: [eq, [realize, web01], web01]
-abstract_stays: [get, server, "concrete"]
+# Helix explicit syntax; migrated from legacy source.
+"in_port":
+  "$call":
+  - "fn"
+  - - "n"
+  - {"$call": ["and", {"$call": ["ge", {"$ref": "n"}, 1]}, {"$call": ["le", {"$ref": "n"}, 65535]}]}
+"port": {"$call": ["refine", {"$ref": "integer"}, {"$ref": "in_port"}]}
+"machine": {"$call": ["class", "machine", {"$call": ["record", "hostname", {"$ref": "string"}]}]}
+"has_ssh":
+  "$call":
+  - "class"
+  - "has_ssh"
+  - {"$call": ["record", "ssh_port", {"$call": ["default", {"$ref": "port"}, 22]}]}
+"server":
+  "$call":
+  - "extend"
+  - "server"
+  - {"$call": ["list", {"$ref": "machine"}]}
+  - {"$call": ["record", "packages", {"$call": ["list_of", {"$ref": "string"}]}]}
+  - {}
+"web01":
+  "$call":
+  - "inherit"
+  - "web01"
+  - {"$call": ["list", {"$ref": "server"}, {"$ref": "has_ssh"}]}
+  - "hostname": "web01"
+    "packages":
+    - "nginx"
+"web02":
+  "$call":
+  - "inherit"
+  - "web02"
+  - {"$call": ["list", {"$ref": "server"}, {"$ref": "has_ssh"}]}
+  - "hostname": "web02"
+    "packages": []
+    "ssh_port": 2222
+"parents_of": {"$call": ["parents", {"$ref": "web01"}]}
+"server_fields": {"$call": ["fields", {"$ref": "server"}]}
+"not_yet":
+  "$call":
+  - "try"
+  - {"$call": ["inherit", "bare", {"$call": ["list", {"$ref": "server"}]}, {"hostname": "bare"}]}
+  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+"wrong_value":
+  "$call":
+  - "try"
+  - {"$call": ["inherit", "bad", {"$call": ["list", {"$ref": "machine"}]}, {"hostname": 5}]}
+  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+"undeclared":
+  "$call":
+  - "try"
+  - {"$call": ["inherit", "typo", {"$call": ["list", {"$ref": "machine"}]}, {"hostnam": "x"}]}
+  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}
+"realized_twice": {"$call": ["eq", {"$call": ["realize", {"$ref": "web01"}]}, {"$ref": "web01"}]}
+"abstract_stays": {"$call": ["get", {"$ref": "server"}, "concrete"]}

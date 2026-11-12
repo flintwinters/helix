@@ -1,15 +1,76 @@
+# Helix explicit syntax; migrated from legacy source.
 # Export a std:test report. The host discovers modules; all test policy stays here.
-t: [import, std:test]
-l: [import, std:list]
-edges:
-  - t.suite
-  - - {name: negative_take, run: [fn, [], [t.throws, [fn, [], [l.take, [], -1]], "range"]]}
-    - {name: negative_drop, run: [fn, [], [t.throws, [fn, [], [l.drop, [], -1]], "range"]]}
-    - {name: find_stops, run: [fn, [], [t.equal, [l.find, [list, 1, 0], [fn, [n], [eq, [div, 1, n], 1]], null], 1]]}
-    - {name: stable_sort, run: [fn, [], [t.equal, [l.sort_by, [list, {key: 1, id: first}, {key: 0, id: middle}, {key: 1, id: last}], [fn, [a, b], [lt, [get, a, "key"], [get, b, "key"]]]], [list, {key: 0, id: middle}, {key: 1, id: first}, {key: 1, id: last}]]]}
-# Literal oracles avoid comparing flat_map with its own flatten dependency.
-flattening:
-  - t.suite
-  - - {name: flatten_ragged, run: [fn, [], [t.equal, [l.flatten, [list, [], [list, 1, 2], [], [list, [list, 3]], [list, 4]]], [list, 1, 2, [list, 3], 4]]]}
-    - {name: flat_map_transform, run: [fn, [], [t.equal, [l.flat_map, [list, 0, 2, 1], [fn, [n], [map, [fn, [i], n], [l.range, n]]]], [list, 2, 2, 1]]]}
-report: [t.combine, [list, edges, flattening]]
+"t": {"$call": ["import", "std:test"]}
+"l": {"$call": ["import", "std:list"]}
+"edges":
+  "$call":
+  - "t.suite"
+  - - "name": "negative_take"
+      "run": {"$call": ["fn", [], {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["l.take", [], -1]}]}, "range"]}]}
+    - "name": "negative_drop"
+      "run": {"$call": ["fn", [], {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["l.drop", [], -1]}]}, "range"]}]}
+    - "name": "find_stops"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - "$call":
+            - "l.find"
+            - {"$call": ["list", 1, 0]}
+            - {"$call": ["fn", ["n"], {"$call": ["eq", {"$call": ["div", 1, {"$ref": "n"}]}, 1]}]}
+            - null
+          - 1
+    - "name": "stable_sort"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - "$call":
+            - "l.sort_by"
+            - {"$call": ["list", {"key": 1, "id": "first"}, {"key": 0, "id": "middle"}, {"key": 1, "id": "last"}]}
+            - "$call":
+              - "fn"
+              - - "a"
+                - "b"
+              - {"$call": ["lt", {"$call": ["get", {"$ref": "a"}, "key"]}, {"$call": ["get", {"$ref": "b"}, "key"]}]}
+          - {"$call": ["list", {"key": 0, "id": "middle"}, {"key": 1, "id": "first"}, {"key": 1, "id": "last"}]}
+"flattening":
+  "$call":
+  - "t.suite"
+  - - "name": "flatten_ragged"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - "$call":
+            - "l.flatten"
+            - "$call":
+              - "list"
+              - []
+              - {"$call": ["list", 1, 2]}
+              - []
+              - {"$call": ["list", {"$call": ["list", 3]}]}
+              - {"$call": ["list", 4]}
+          - {"$call": ["list", 1, 2, {"$call": ["list", 3]}, 4]}
+    - "name": "flat_map_transform"
+      "run":
+        "$call":
+        - "fn"
+        - []
+        - "$call":
+          - "t.equal"
+          - "$call":
+            - "l.flat_map"
+            - {"$call": ["list", 0, 2, 1]}
+            - "$call":
+              - "fn"
+              - - "n"
+              - {"$call": ["map", {"$call": ["fn", ["i"], {"$ref": "n"}]}, {"$call": ["l.range", {"$ref": "n"}]}]}
+          - {"$call": ["list", 2, 2, 1]}
+"report": {"$call": ["t.combine", {"$call": ["list", {"$ref": "edges"}, {"$ref": "flattening"}]}]}

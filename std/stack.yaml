@@ -1,6 +1,33 @@
+# Helix explicit syntax; migrated from legacy source.
 # Immutable LIFO stack: a plain list with its top at the end; [] is empty.
 # peek requires an explicit fallback. pop on empty returns []; push/pop copy lists.
-l: [import, std:list]
-push: [fn, [[xs, list], value], [append, xs, value], list]
-peek: [fn, [[xs, list], fallback], [l.last, xs, fallback]]
-pop: [fn, [[xs, list]], [l.take, xs, [if, [eq, [len, xs], 0], 0, [sub, [len, xs], 1]]], list]
+"l": {"$call": ["import", "std:list"]}
+"push":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - "value"
+  - {"$call": ["append", {"$ref": "xs"}, {"$ref": "value"}]}
+  - {"$ref": "list"}
+"peek":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+    - "fallback"
+  - {"$call": ["l.last", {"$ref": "xs"}, {"$ref": "fallback"}]}
+"pop":
+  "$call":
+  - "fn"
+  - - - "xs"
+      - {"$ref": "list"}
+  - "$call":
+    - "l.take"
+    - {"$ref": "xs"}
+    - "$call":
+      - "if"
+      - {"$call": ["eq", {"$call": ["len", {"$ref": "xs"}]}, 0]}
+      - 0
+      - {"$call": ["sub", {"$call": ["len", {"$ref": "xs"}]}, 1]}
+  - {"$ref": "list"}

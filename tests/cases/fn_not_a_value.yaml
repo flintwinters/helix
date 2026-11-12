@@ -1,2 +1,3 @@
-double: [fn, [n], [mul, n, 2]]
-r: [len, double]
+# Helix explicit syntax; migrated from legacy source.
+"double": {"$call": ["fn", ["n"], {"$call": ["mul", {"$ref": "n"}, 2]}]}
+"r": {"$call": ["len", {"$ref": "double"}]}

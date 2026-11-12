@@ -1,10 +1,10 @@
-status: error
 error:
-  kind: divide_by_zero
-  message: "`div` by zero"
+  column: 9
   file: tests/cases/modules/fails.yaml
+  kind: divide_by_zero
+  line: 2
+  message: "`div` by zero"
   path: /boom
   reference:
-    - "boom"
-  line: 1
-  column: 7
+    - boom
+status: error

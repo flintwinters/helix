@@ -1,483 +1,561 @@
-status: finished
-root:
-  check:
-    ref: object0
-  run:
-    ref: object1
-  cases:
-    - name: fails
-      run:
-        ref: object2
-    - name: passes
-      run:
-        ref: object3
-  results:
-    - "assertion"
-    - ~
-  verify: ~
-  m:
-    number:
-      type: union
-      of:
-        - "integer"
-        - float
-    abs:
-      ref: object4
-    sign:
-      ref: object5
-    min:
-      ref: object6
-    max:
-      ref: object7
-    clamp:
-      ref: object8
-    square:
-      ref: object9
-  nested:
-    - callback:
-        ref: object10
-  value: 16
-  verified_value: ~
 objects:
   object0:
+    bindings:
+      check:
+        code:
+          path:
+            - check
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - []
+        - "$call":
+            - check
+            - 1
+            - 2
+    environment: []
     kind: function
+    location:
+      path:
+        - cases
+        - 0
+        - run
+      source: "<root>"
     program:
       ref: object11
-    code:
-      - symbol: fn
-      - - symbol: actual
-        - symbol: expected
-      - - symbol: assert
-        - - symbol: eq
-          - symbol: actual
-          - symbol: expected
-        - values differ
-    location:
-      source: "<root>"
-      path:
-        - "check"
-    environment: []
-    bindings: {}
   object1:
-    kind: function
-    program:
-      ref: object11
-    code:
-      - symbol: fn
-      - - symbol: spec
-      - - symbol: call
-        - - symbol: get
-          - symbol: spec
-          - run
-    location:
-      source: "<root>"
-      path:
-        - "run"
-    environment: []
-    bindings: {}
-  object2:
-    kind: function
-    program:
-      ref: object11
-    code:
-      - symbol: fn
-      - []
-      - - symbol: check
-        - 1
-        - 2
-    location:
-      source: "<root>"
-      path:
-        - "cases"
-        - 0
-        - run
-    environment: []
     bindings:
       check:
         code:
-          source: "<root>"
           path:
-            - "check"
-  object3:
-    kind: function
-    program:
-      ref: object11
+            - check
+          source: "<root>"
     code:
-      - symbol: fn
-      - []
-      - - symbol: check
-        - 2
-        - 2
+      "$call":
+        - fn
+        - []
+        - "$call":
+            - check
+            - 2
+            - 2
+    environment: []
+    kind: function
     location:
-      source: "<root>"
       path:
-        - "cases"
+        - cases
         - 1
         - run
-    environment: []
-    bindings:
-      check:
-        code:
-          source: "<root>"
-          path:
-            - "check"
-  object4:
-    kind: function
+      source: "<root>"
     program:
       ref: object11
-    code:
-      - symbol: fn
-      - - - symbol: "n"
-          - symbol: number
-      - - symbol: if
-        - - symbol: lt
-          - symbol: "n"
-          - 0
-        - - symbol: neg
-          - symbol: "n"
-        - symbol: "n"
-      - symbol: number
-    location:
-      source: "std:math"
-      path:
-        - "abs"
-    environment: []
-    bindings:
-      number:
-        code:
-          source: "std:math"
-          path:
-            - "number"
-  object5:
-    kind: function
-    program:
-      ref: object11
-    code:
-      - symbol: fn
-      - - - symbol: "n"
-          - symbol: number
-      - - symbol: cond
-        - - symbol: lt
-          - symbol: "n"
-          - 0
-        - -1
-        - - symbol: gt
-          - symbol: "n"
-          - 0
-        - 1
-        - 0
-      - symbol: integer
-    location:
-      source: "std:math"
-      path:
-        - "sign"
-    environment: []
-    bindings:
-      number:
-        code:
-          source: "std:math"
-          path:
-            - "number"
-  object6:
-    kind: function
-    program:
-      ref: object11
-    code:
-      - symbol: fn
-      - - - symbol: a
-          - symbol: number
-        - - symbol: b
-          - symbol: number
-      - - symbol: if
-        - - symbol: lt
-          - symbol: a
-          - symbol: b
-        - symbol: a
-        - symbol: b
-      - symbol: number
-    location:
-      source: "std:math"
-      path:
-        - "min"
-    environment: []
-    bindings:
-      number:
-        code:
-          source: "std:math"
-          path:
-            - "number"
-  object7:
-    kind: function
-    program:
-      ref: object11
-    code:
-      - symbol: fn
-      - - - symbol: a
-          - symbol: number
-        - - symbol: b
-          - symbol: number
-      - - symbol: if
-        - - symbol: gt
-          - symbol: a
-          - symbol: b
-        - symbol: a
-        - symbol: b
-      - symbol: number
-    location:
-      source: "std:math"
-      path:
-        - "max"
-    environment: []
-    bindings:
-      number:
-        code:
-          source: "std:math"
-          path:
-            - "number"
-  object8:
-    kind: function
-    program:
-      ref: object11
-    code:
-      - symbol: fn
-      - - - symbol: "n"
-          - symbol: number
-        - - symbol: lo
-          - symbol: number
-        - - symbol: hi
-          - symbol: number
-      - - symbol: max
-        - symbol: lo
-        - - symbol: min
-          - symbol: "n"
-          - symbol: hi
-      - symbol: number
-    location:
-      source: "std:math"
-      path:
-        - "clamp"
-    environment: []
-    bindings:
-      number:
-        code:
-          source: "std:math"
-          path:
-            - "number"
-      max:
-        code:
-          source: "std:math"
-          path:
-            - "max"
-      min:
-        code:
-          source: "std:math"
-          path:
-            - "min"
-  object9:
-    kind: function
-    program:
-      ref: object11
-    code:
-      - symbol: fn
-      - - - symbol: "n"
-          - symbol: number
-      - - symbol: mul
-        - symbol: "n"
-        - symbol: "n"
-      - symbol: number
-    location:
-      source: "std:math"
-      path:
-        - "square"
-    environment: []
-    bindings:
-      number:
-        code:
-          source: "std:math"
-          path:
-            - "number"
   object10:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - spec
+        - "$call":
+            - call
+            - "$call":
+                - get
+                - "$ref": spec
+                - run
+    environment: []
     kind: function
+    location:
+      path:
+        - run
+      source: "<root>"
     program:
       ref: object11
-    code:
-      - symbol: fn
-      - - symbol: "n"
-      - - symbol: m.square
-        - symbol: "n"
-    location:
-      source: "<root>"
-      path:
-        - "nested"
-        - 1
-        - callback
-    environment: []
-    bindings:
-      m.square:
-        code:
-          source: "std:math"
-          path:
-            - "square"
   object11:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          check:
-            - symbol: fn
-            - - symbol: actual
-              - symbol: expected
-            - - symbol: assert
-              - - symbol: eq
-                - symbol: actual
-                - symbol: expected
-              - values differ
-          run:
-            - symbol: fn
-            - - symbol: spec
-            - - symbol: call
-              - - symbol: get
-                - symbol: spec
-                - run
+      - code:
           cases:
-            - name:
-                symbol: fails
+            - name: fails
               run:
-                - symbol: fn
-                - []
-                - - symbol: check
-                  - 1
-                  - 2
-            - name:
-                symbol: passes
+                "$call":
+                  - fn
+                  - []
+                  - "$call":
+                      - check
+                      - 1
+                      - 2
+            - name: passes
               run:
-                - symbol: fn
-                - []
-                - - symbol: check
-                  - 2
-                  - 2
-          results:
-            - symbol: map
-            - - symbol: fn
-              - - symbol: spec
-              - - symbol: try
-                - - symbol: run
-                  - symbol: spec
-                - - symbol: fn
-                  - - symbol: error
-                  - - symbol: get
-                    - symbol: error
-                    - kind
-            - symbol: cases
-          verify:
-            - symbol: assert
-            - - symbol: eq
-              - symbol: results
-              - - symbol: list
-                - assertion
-                - ~
-            - record callbacks lost lexical scope
+                "$call":
+                  - fn
+                  - []
+                  - "$call":
+                      - check
+                      - 2
+                      - 2
+          check:
+            "$call":
+              - fn
+              - - actual
+                - expected
+              - "$call":
+                  - assert
+                  - "$call":
+                      - eq
+                      - "$ref": actual
+                      - "$ref": expected
+                  - values differ
           m:
-            - symbol: import
-            - symbol: "std:math"
+            "$call":
+              - import
+              - "std:math"
           nested:
-            - symbol: list
-            - callback:
-                - symbol: fn
-                - - symbol: "n"
-                - - symbol: m.square
-                  - symbol: "n"
+            "$call":
+              - list
+              - callback:
+                  "$call":
+                    - fn
+                    - - "n"
+                    - "$call":
+                        - m.square
+                        - "$ref": "n"
+          results:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - spec
+                  - "$call":
+                      - try
+                      - "$call":
+                          - run
+                          - "$ref": spec
+                      - "$call":
+                          - fn
+                          - - error
+                          - "$call":
+                              - get
+                              - "$ref": error
+                              - kind
+              - "$ref": cases
+          run:
+            "$call":
+              - fn
+              - - spec
+              - "$call":
+                  - call
+                  - "$call":
+                      - get
+                      - "$ref": spec
+                      - run
           value:
-            - symbol: call
-            - - symbol: get
-              - - symbol: get
-                - symbol: nested
-                - 0
-              - callback
-            - 4
+            "$call":
+              - call
+              - "$call":
+                  - get
+                  - "$call":
+                      - get
+                      - "$ref": nested
+                      - 0
+                  - callback
+              - 4
           verified_value:
-            - symbol: assert
-            - - symbol: eq
-              - symbol: value
-              - 16
-      - source: "std:math"
-        code:
-          number:
-            - symbol: union
-            - symbol: integer
-            - symbol: float
+            "$call":
+              - assert
+              - "$call":
+                  - eq
+                  - "$ref": value
+                  - 16
+          verify:
+            "$call":
+              - assert
+              - "$call":
+                  - eq
+                  - "$ref": results
+                  - "$call":
+                      - list
+                      - assertion
+                      - ~
+              - record callbacks lost lexical scope
+        source: "<root>"
+      - code:
           abs:
-            - symbol: fn
-            - - - symbol: "n"
-                - symbol: number
-            - - symbol: if
-              - - symbol: lt
-                - symbol: "n"
-                - 0
-              - - symbol: neg
-                - symbol: "n"
-              - symbol: "n"
-            - symbol: number
-          sign:
-            - symbol: fn
-            - - - symbol: "n"
-                - symbol: number
-            - - symbol: cond
-              - - symbol: lt
-                - symbol: "n"
-                - 0
-              - -1
-              - - symbol: gt
-                - symbol: "n"
-                - 0
-              - 1
-              - 0
-            - symbol: integer
-          min:
-            - symbol: fn
-            - - - symbol: a
-                - symbol: number
-              - - symbol: b
-                - symbol: number
-            - - symbol: if
-              - - symbol: lt
-                - symbol: a
-                - symbol: b
-              - symbol: a
-              - symbol: b
-            - symbol: number
-          max:
-            - symbol: fn
-            - - - symbol: a
-                - symbol: number
-              - - symbol: b
-                - symbol: number
-            - - symbol: if
-              - - symbol: gt
-                - symbol: a
-                - symbol: b
-              - symbol: a
-              - symbol: b
-            - symbol: number
+            "$call":
+              - fn
+              - - - "n"
+                  - "$ref": number
+              - "$call":
+                  - if
+                  - "$call":
+                      - lt
+                      - "$ref": "n"
+                      - 0
+                  - "$call":
+                      - neg
+                      - "$ref": "n"
+                  - "$ref": "n"
+              - "$ref": number
           clamp:
-            - symbol: fn
-            - - - symbol: "n"
-                - symbol: number
-              - - symbol: lo
-                - symbol: number
-              - - symbol: hi
-                - symbol: number
-            - - symbol: max
-              - symbol: lo
-              - - symbol: min
-                - symbol: "n"
-                - symbol: hi
-            - symbol: number
+            "$call":
+              - fn
+              - - - "n"
+                  - "$ref": number
+                - - lo
+                  - "$ref": number
+                - - hi
+                  - "$ref": number
+              - "$call":
+                  - max
+                  - "$ref": lo
+                  - "$call":
+                      - min
+                      - "$ref": "n"
+                      - "$ref": hi
+              - "$ref": number
+          max:
+            "$call":
+              - fn
+              - - - a
+                  - "$ref": number
+                - - b
+                  - "$ref": number
+              - "$call":
+                  - if
+                  - "$call":
+                      - gt
+                      - "$ref": a
+                      - "$ref": b
+                  - "$ref": a
+                  - "$ref": b
+              - "$ref": number
+          min:
+            "$call":
+              - fn
+              - - - a
+                  - "$ref": number
+                - - b
+                  - "$ref": number
+              - "$call":
+                  - if
+                  - "$call":
+                      - lt
+                      - "$ref": a
+                      - "$ref": b
+                  - "$ref": a
+                  - "$ref": b
+              - "$ref": number
+          number:
+            "$call":
+              - union
+              - "$ref": integer
+              - "$ref": float
+          sign:
+            "$call":
+              - fn
+              - - - "n"
+                  - "$ref": number
+              - "$call":
+                  - cond
+                  - "$call":
+                      - lt
+                      - "$ref": "n"
+                      - 0
+                  - -1
+                  - "$call":
+                      - gt
+                      - "$ref": "n"
+                      - 0
+                  - 1
+                  - 0
+              - "$ref": integer
           square:
-            - symbol: fn
-            - - - symbol: "n"
-                - symbol: number
-            - - symbol: mul
-              - symbol: "n"
-              - symbol: "n"
-            - symbol: number
+            "$call":
+              - fn
+              - - - "n"
+                  - "$ref": number
+              - "$call":
+                  - mul
+                  - "$ref": "n"
+                  - "$ref": "n"
+              - "$ref": number
+        source: "std:math"
+  object2:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - actual
+          - expected
+        - "$call":
+            - assert
+            - "$call":
+                - eq
+                - "$ref": actual
+                - "$ref": expected
+            - values differ
+    environment: []
+    kind: function
+    location:
+      path:
+        - check
+      source: "<root>"
+    program:
+      ref: object11
+  object3:
+    bindings:
+      number:
+        code:
+          path:
+            - number
+          source: "std:math"
+    code:
+      "$call":
+        - fn
+        - - - "n"
+            - "$ref": number
+        - "$call":
+            - if
+            - "$call":
+                - lt
+                - "$ref": "n"
+                - 0
+            - "$call":
+                - neg
+                - "$ref": "n"
+            - "$ref": "n"
+        - "$ref": number
+    environment: []
+    kind: function
+    location:
+      path:
+        - abs
+      source: "std:math"
+    program:
+      ref: object11
+  object4:
+    bindings:
+      max:
+        code:
+          path:
+            - max
+          source: "std:math"
+      min:
+        code:
+          path:
+            - min
+          source: "std:math"
+      number:
+        code:
+          path:
+            - number
+          source: "std:math"
+    code:
+      "$call":
+        - fn
+        - - - "n"
+            - "$ref": number
+          - - lo
+            - "$ref": number
+          - - hi
+            - "$ref": number
+        - "$call":
+            - max
+            - "$ref": lo
+            - "$call":
+                - min
+                - "$ref": "n"
+                - "$ref": hi
+        - "$ref": number
+    environment: []
+    kind: function
+    location:
+      path:
+        - clamp
+      source: "std:math"
+    program:
+      ref: object11
+  object5:
+    bindings:
+      number:
+        code:
+          path:
+            - number
+          source: "std:math"
+    code:
+      "$call":
+        - fn
+        - - - a
+            - "$ref": number
+          - - b
+            - "$ref": number
+        - "$call":
+            - if
+            - "$call":
+                - gt
+                - "$ref": a
+                - "$ref": b
+            - "$ref": a
+            - "$ref": b
+        - "$ref": number
+    environment: []
+    kind: function
+    location:
+      path:
+        - max
+      source: "std:math"
+    program:
+      ref: object11
+  object6:
+    bindings:
+      number:
+        code:
+          path:
+            - number
+          source: "std:math"
+    code:
+      "$call":
+        - fn
+        - - - a
+            - "$ref": number
+          - - b
+            - "$ref": number
+        - "$call":
+            - if
+            - "$call":
+                - lt
+                - "$ref": a
+                - "$ref": b
+            - "$ref": a
+            - "$ref": b
+        - "$ref": number
+    environment: []
+    kind: function
+    location:
+      path:
+        - min
+      source: "std:math"
+    program:
+      ref: object11
+  object7:
+    bindings:
+      number:
+        code:
+          path:
+            - number
+          source: "std:math"
+    code:
+      "$call":
+        - fn
+        - - - "n"
+            - "$ref": number
+        - "$call":
+            - cond
+            - "$call":
+                - lt
+                - "$ref": "n"
+                - 0
+            - -1
+            - "$call":
+                - gt
+                - "$ref": "n"
+                - 0
+            - 1
+            - 0
+        - "$ref": integer
+    environment: []
+    kind: function
+    location:
+      path:
+        - sign
+      source: "std:math"
+    program:
+      ref: object11
+  object8:
+    bindings:
+      number:
+        code:
+          path:
+            - number
+          source: "std:math"
+    code:
+      "$call":
+        - fn
+        - - - "n"
+            - "$ref": number
+        - "$call":
+            - mul
+            - "$ref": "n"
+            - "$ref": "n"
+        - "$ref": number
+    environment: []
+    kind: function
+    location:
+      path:
+        - square
+      source: "std:math"
+    program:
+      ref: object11
+  object9:
+    bindings:
+      m.square:
+        code:
+          path:
+            - square
+          source: "std:math"
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - m.square
+            - "$ref": "n"
+    environment: []
+    kind: function
+    location:
+      path:
+        - nested
+        - "$call"
+        - 1
+        - callback
+      source: "<root>"
+    program:
+      ref: object11
+root:
+  cases:
+    - name: fails
+      run:
+        ref: object0
+    - name: passes
+      run:
+        ref: object1
+  check:
+    ref: object2
+  m:
+    abs:
+      ref: object3
+    clamp:
+      ref: object4
+    max:
+      ref: object5
+    min:
+      ref: object6
+    number:
+      of:
+        - integer
+        - float
+      type: union
+    sign:
+      ref: object7
+    square:
+      ref: object8
+  nested:
+    - callback:
+        ref: object9
+  results:
+    - assertion
+    - ~
+  run:
+    ref: object10
+  value: 16
+  verified_value: ~
+  verify: ~
+status: finished

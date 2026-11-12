@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 32
   kind: range
+  line: 2
   message: index 2 is out of range for length 2
-  path: /x/2
+  path: "/x/$call/2"
   reference:
-    - "x"
+    - x
+    - "$call"
     - 2
-  line: 1
-  column: 18
+status: error

@@ -29,6 +29,7 @@ class AgentParser(argparse.ArgumentParser):
 DEFAULT_TEST_JOBS = 4
 
 SUITES = {
+    "yaml_model": "Representation-independent explicit syntax, data roundtrip and deterministic effects",
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
     "interactive": "REPL, dependency watch, completion and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
@@ -138,13 +139,13 @@ def parser():
     sandbox.add_argument("root", metavar="ROOT", help="allowed import directory, or - for embedded modules only")
     sandbox.add_argument("file", metavar="FILE", help="YAML file, or - for stdin")
     pipeline = command(runtime, "exec", "Evaluate inline YAML or stdin; emit raw strings or YAML values",
-                       ["runtime", "exec"], "runtime exec '\"[add, 20, 22]\"' | ./manage.py runtime exec")
+                       ["runtime", "exec"], "runtime exec '\"{$call: [add, 20, 22]}\"' | ./manage.py runtime exec")
     formats = pipeline.add_mutually_exclusive_group()
     formats.add_argument("--json", dest="output_format", action="store_const", const="--json", help="emit JSON, including quoted string results, for jq/yq")
     formats.add_argument("--yaml", dest="output_format", action="store_const", const="--yaml", help="emit YAML, including quoted string results, for yq")
     pipeline.add_argument("source", nargs="?", default="-", metavar="PROGRAM", help="inline YAML, or - for stdin (default)")
     inline = command(runtime, "eval", "Evaluate inline YAML and emit VM state",
-                     ["runtime", "eval"], "runtime eval '[add, 20, 22]'")
+                     ["runtime", "eval"], "runtime eval '{$call: [add, 20, 22]}'")
     inline.add_argument("source", metavar="SOURCE", help="YAML program quoted as one shell argument; use -- before a leading dash")
     inline.add_argument("--check", action="store_true", help="collect independent evaluation errors")
     raw = command(runtime, "cli", "Build and forward arguments verbatim to the Rust CLI",
@@ -159,7 +160,14 @@ def parser():
     modules.add_argument("module", nargs="?", help="module name, optionally prefixed with std:")
     command(inspect, "inventory", "Report source files grouped through Helix; save replay artifacts in runtime/",
             ["inspect", "inventory"], "inspect inventory")
+    migration = command(runtime, "migrate-syntax", "Convert legacy YAML source offline to explicit syntax",
+                        ["runtime", "migrate-syntax"], "runtime migrate-syntax --write std tests/cases")
+    migration.add_argument("paths", nargs="+", metavar="PATH", help="source files or directories (expected outputs excluded)")
+    migration.add_argument("--write", action="store_true", help="rewrite source files; default only reports changes")
     quality = group("quality", "Run regression suites and structural lint")
+    audit = command(quality, "migration-audit", "Compare migrated source outcomes against existing golden expectations",
+            ["quality", "migration-audit"], "quality migration-audit")
+    audit.add_argument("--baseline", help="read golden expectations from a Git revision instead of the working tree")
     testing = command(quality, "test", "Run regression suites or discover their contracts",
                       ["quality", "test"], "quality test --suite golden --suite cli")
     testing.add_argument("--bless", action="store_true", help="rewrite golden expectations; requires only golden or default suite selection")

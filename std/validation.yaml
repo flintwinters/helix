@@ -1,3 +1,4 @@
+# Helix explicit syntax; migrated from legacy source.
 # Collect independent validation/transformation outcomes without losing input positions.
 # batch(values, validate) calls validate(value) once per item, in encounter order.
 # Returning normally (including false/null) passes; rejection must raise an error.
@@ -6,12 +7,36 @@
 # and either value (the callback result) or error (the original structured error).
 # Inputs are retained for diagnosis; errors do not prevent later items from running.
 # Immutable copies can be quadratic; bounded iteration applies. Small batches only.
-policy: [import, std:test]
-sequences: [import, std:list]
-batch:
-  - fn
-  - [[values, list], [validate, function]]
-  - - policy.table
-    - [map, [fn, [pair], [dict, "name", "validation", "input", [dict, "index", [get, pair, 0], "value", [get, pair, 1]]]], [sequences.enumerate, values]]
-    - [fn, [input], [call, validate, [get, input, "value"]]]
-  - map
+"policy": {"$call": ["import", "std:test"]}
+"sequences": {"$call": ["import", "std:list"]}
+"batch":
+  "$call":
+  - "fn"
+  - - - "values"
+      - {"$ref": "list"}
+    - - "validate"
+      - {"$ref": "function"}
+  - "$call":
+    - "policy.table"
+    - "$call":
+      - "map"
+      - "$call":
+        - "fn"
+        - - "pair"
+        - "$call":
+          - "dict"
+          - "name"
+          - "validation"
+          - "input"
+          - "$call":
+            - "dict"
+            - "index"
+            - {"$call": ["get", {"$ref": "pair"}, 0]}
+            - "value"
+            - {"$call": ["get", {"$ref": "pair"}, 1]}
+      - {"$call": ["sequences.enumerate", {"$ref": "values"}]}
+    - "$call":
+      - "fn"
+      - - "input"
+      - {"$call": ["call", {"$ref": "validate"}, {"$call": ["get", {"$ref": "input"}, "value"]}]}
+  - {"$ref": "map"}

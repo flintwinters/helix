@@ -1,7 +1,6 @@
-status: finished
 root:
   kinds:
-    - "integer"
+    - integer
     - float
     - string
     - boolean
@@ -9,9 +8,10 @@ root:
     - list
     - map
   nothing: ~
-  null_is_null: true
   null_is_not_zero: false
+  null_is_null: true
   quoted_head_is_data:
-    - "add"
+    - add
     - 1
     - 2
+status: finished

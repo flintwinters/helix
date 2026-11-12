@@ -1,4 +1,5 @@
+# Helix explicit syntax; migrated from legacy source.
 # A short call with several navigable evaluation positions for CLI tracing.
-base: 20
-increase: [fn, [value], [add, value, 2]]
-answer: [increase, [mul, base, 2]]
+"base": 20
+"increase": {"$call": ["fn", ["value"], {"$call": ["add", {"$ref": "value"}, 2]}]}
+"answer": {"$call": ["increase", {"$call": ["mul", {"$ref": "base"}, 2]}]}

@@ -1,1 +1,2 @@
-a: [import, "modules/cycle_a.yaml"]
+# Helix explicit syntax; migrated from legacy source.
+"a": {"$call": ["import", "modules/cycle_a.yaml"]}

@@ -1,3 +1,4 @@
+# Helix explicit syntax; migrated from legacy source.
 # Data-only JSON conversion.
-parse: [fn, [[source, string]], [json_parse, source]]
-dump: [fn, [value], [json_dump, value], string]
+"parse": {"$call": ["fn", [["source", {"$ref": "string"}]], {"$call": ["json_parse", {"$ref": "source"}]}]}
+"dump": {"$call": ["fn", ["value"], {"$call": ["json_dump", {"$ref": "value"}]}, {"$ref": "string"}]}

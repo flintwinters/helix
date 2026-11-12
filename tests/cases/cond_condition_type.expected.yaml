@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 25
   kind: type
+  line: 2
   message: "expected boolean, got integer"
-  path: /r/1
+  path: "/r/$call/1"
   reference:
-    - "r"
+    - r
+    - "$call"
     - 1
-  line: 1
-  column: 11
+status: error

@@ -1,9 +1,19 @@
-- let
-- y: [import, std:yaml]
-- parsed: [y.parse, 'a: [add, missing, 1]']
-  updated: [y.set_in, {a: [1, 2]}, [list, "a", 1], false]
-  selected: [y.get_in, {a: [null, false]}, [list, "a", 0]]
-  dumped: [y.dump, {a: [1, false]}]
-  invalid: [y.valid, "1\n---\n2"]
-  wrong_type: [try, [y.parse, 1], [fn, [error], [get, error, "kind"]]]
-  malformed: [try, [y.parse, "["], [fn, [error], [get, error, "kind"]]]
+# Helix explicit syntax; migrated from legacy source.
+"$call":
+- "let"
+- "y": {"$call": ["import", "std:yaml"]}
+- "parsed": {"$call": ["y.parse", "a: [add, missing, 1]"]}
+  "updated": {"$call": ["y.set_in", {"a": [1, 2]}, {"$call": ["list", "a", 1]}, false]}
+  "selected": {"$call": ["y.get_in", {"a": [null, false]}, {"$call": ["list", "a", 0]}]}
+  "dumped": {"$call": ["y.dump", {"a": [1, false]}]}
+  "invalid": {"$call": ["y.valid", "1\n---\n2"]}
+  "wrong_type":
+    "$call":
+    - "try"
+    - {"$call": ["y.parse", 1]}
+    - {"$call": ["fn", ["error"], {"$call": ["get", {"$ref": "error"}, "kind"]}]}
+  "malformed":
+    "$call":
+    - "try"
+    - {"$call": ["y.parse", "["]}
+    - {"$call": ["fn", ["error"], {"$call": ["get", {"$ref": "error"}, "kind"]}]}

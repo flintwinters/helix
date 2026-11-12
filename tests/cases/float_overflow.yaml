@@ -1,1 +1,2 @@
-x: [mul, 1e308, 10]
+# Helix explicit syntax; migrated from legacy source.
+"x": {"$call": ["mul", 1.0e+308, 10]}

@@ -1,10 +1,11 @@
-status: error
 error:
+  column: 24
   kind: type
+  line: 2
   message: "`let` bindings must be a map"
-  path: /r/1
+  path: "/r/$call/1"
   reference:
-    - "r"
+    - r
+    - "$call"
     - 1
-  line: 1
-  column: 10
+status: error

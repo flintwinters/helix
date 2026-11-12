@@ -1,30 +1,126 @@
+# Helix explicit syntax; migrated from legacy source.
 # Small exact integers plus exactly representable fractions avoid rounding oracles.
-t: [import, std:test]
-l: [import, std:list]
-m: [import, std:math]
-values: [-4, -1, -0.5, 0, 0.5, 1, 4]
-pairs: [t.product, [list, values, values]]
-# Literal expected columns decouple abs/sign/square; correlated bugs cannot agree.
-unary_rows:
-  - {name: negative_integer, input: [-4, 4, -1, 16]}
-  - {name: negative_unit, input: [-1, 1, -1, 1]}
-  - {name: negative_fraction, input: [-0.5, 0.5, -1, 0.25]}
-  - {name: zero, input: [0, 0, 0, 0]}
-  - {name: positive_fraction, input: [0.5, 0.5, 1, 0.25]}
-  - {name: positive_unit, input: [1, 1, 1, 1]}
-  - {name: positive_integer, input: [4, 4, 1, 16]}
-unary: [t.table, unary_rows, [fn, [row], [t.equal, [list, [m.abs, [get, row, 0]], [m.sign, [get, row, 0]], [m.square, [get, row, 0]]], [slice, row, 1, 4]]]]
-ordering:
-  - t.property
+"t": {"$call": ["import", "std:test"]}
+"l": {"$call": ["import", "std:list"]}
+"m": {"$call": ["import", "std:math"]}
+"values": [-4, -1, -0.5, 0, 0.5, 1, 4]
+"pairs": {"$call": ["t.product", {"$call": ["list", {"$ref": "values"}, {"$ref": "values"}]}]}
+"unary_rows":
+- "name": "negative_integer"
+  "input": [-4, 4, -1, 16]
+- "name": "negative_unit"
+  "input": [-1, 1, -1, 1]
+- "name": "negative_fraction"
+  "input": [-0.5, 0.5, -1, 0.25]
+- "name": "zero"
+  "input": [0, 0, 0, 0]
+- "name": "positive_fraction"
+  "input": [0.5, 0.5, 1, 0.25]
+- "name": "positive_unit"
+  "input": [1, 1, 1, 1]
+- "name": "positive_integer"
+  "input": [4, 4, 1, 16]
+"unary":
+  "$call":
+  - "t.table"
+  - {"$ref": "unary_rows"}
+  - "$call":
+    - "fn"
+    - - "row"
+    - "$call":
+      - "t.equal"
+      - "$call":
+        - "list"
+        - {"$call": ["m.abs", {"$call": ["get", {"$ref": "row"}, 0]}]}
+        - {"$call": ["m.sign", {"$call": ["get", {"$ref": "row"}, 0]}]}
+        - {"$call": ["m.square", {"$call": ["get", {"$ref": "row"}, 0]}]}
+      - {"$call": ["slice", {"$ref": "row"}, 1, 4]}
+"ordering":
+  "$call":
+  - "t.property"
   - "min/max select the correctly ordered input endpoints"
-  - pairs
-  - [fn, [row], [let, {a: [get, row, 0], b: [get, row, 1], lo: [m.min, a, b], hi: [m.max, a, b]}, [and, [le, lo, a], [le, lo, b], [ge, hi, a], [ge, hi, b], [or, [eq, lo, a], [eq, lo, b]], [or, [eq, hi, a], [eq, hi, b]]]]]
-intervals: [filter, [fn, [row], [le, [get, row, 0], [get, row, 1]]], pairs]
-clamps: [l.flat_map, intervals, [fn, [bounds], [map, [fn, [x], [list, x, [get, bounds, 0], [get, bounds, 1]]], values]]]
-clamping:
-  - t.property
+  - {"$ref": "pairs"}
+  - "$call":
+    - "fn"
+    - - "row"
+    - "$call":
+      - "let"
+      - "a": {"$call": ["get", {"$ref": "row"}, 0]}
+        "b": {"$call": ["get", {"$ref": "row"}, 1]}
+        "lo": {"$call": ["m.min", {"$ref": "a"}, {"$ref": "b"}]}
+        "hi": {"$call": ["m.max", {"$ref": "a"}, {"$ref": "b"}]}
+      - "$call":
+        - "and"
+        - {"$call": ["le", {"$ref": "lo"}, {"$ref": "a"}]}
+        - {"$call": ["le", {"$ref": "lo"}, {"$ref": "b"}]}
+        - {"$call": ["ge", {"$ref": "hi"}, {"$ref": "a"}]}
+        - {"$call": ["ge", {"$ref": "hi"}, {"$ref": "b"}]}
+        - "$call":
+          - "or"
+          - {"$call": ["eq", {"$ref": "lo"}, {"$ref": "a"}]}
+          - {"$call": ["eq", {"$ref": "lo"}, {"$ref": "b"}]}
+        - "$call":
+          - "or"
+          - {"$call": ["eq", {"$ref": "hi"}, {"$ref": "a"}]}
+          - {"$call": ["eq", {"$ref": "hi"}, {"$ref": "b"}]}
+"intervals":
+  "$call":
+  - "filter"
+  - "$call":
+    - "fn"
+    - - "row"
+    - {"$call": ["le", {"$call": ["get", {"$ref": "row"}, 0]}, {"$call": ["get", {"$ref": "row"}, 1]}]}
+  - {"$ref": "pairs"}
+"clamps":
+  "$call":
+  - "l.flat_map"
+  - {"$ref": "intervals"}
+  - "$call":
+    - "fn"
+    - - "bounds"
+    - "$call":
+      - "map"
+      - "$call":
+        - "fn"
+        - - "x"
+        - "$call":
+          - "list"
+          - {"$ref": "x"}
+          - {"$call": ["get", {"$ref": "bounds"}, 0]}
+          - {"$call": ["get", {"$ref": "bounds"}, 1]}
+      - {"$ref": "values"}
+"clamping":
+  "$call":
+  - "t.property"
   - "clamp selects the nearest endpoint or preserves the interior"
-  - clamps
-  - [fn, [row], [let, {x: [get, row, 0], lo: [get, row, 1], hi: [get, row, 2], actual: [m.clamp, x, lo, hi]}, [eq, actual, [cond, [lt, x, lo], lo, [gt, x, hi], hi, x]]]]
-coverage: [t.suite, [{name: pair_count, run: [fn, [], [t.equal, [len, pairs], 49]]}, {name: clamp_count, run: [fn, [], [t.equal, [len, clamps], 196]]}]]
-report: [t.combine, [list, coverage, unary, ordering, clamping]]
+  - {"$ref": "clamps"}
+  - "$call":
+    - "fn"
+    - - "row"
+    - "$call":
+      - "let"
+      - "x": {"$call": ["get", {"$ref": "row"}, 0]}
+        "lo": {"$call": ["get", {"$ref": "row"}, 1]}
+        "hi": {"$call": ["get", {"$ref": "row"}, 2]}
+        "actual": {"$call": ["m.clamp", {"$ref": "x"}, {"$ref": "lo"}, {"$ref": "hi"}]}
+      - "$call":
+        - "eq"
+        - {"$ref": "actual"}
+        - "$call":
+          - "cond"
+          - {"$call": ["lt", {"$ref": "x"}, {"$ref": "lo"}]}
+          - {"$ref": "lo"}
+          - {"$call": ["gt", {"$ref": "x"}, {"$ref": "hi"}]}
+          - {"$ref": "hi"}
+          - {"$ref": "x"}
+"coverage":
+  "$call":
+  - "t.suite"
+  - - "name": "pair_count"
+      "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["len", {"$ref": "pairs"}]}, 49]}]}
+    - "name": "clamp_count"
+      "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["len", {"$ref": "clamps"}]}, 196]}]}
+"report":
+  "$call":
+  - "t.combine"
+  - {"$call": ["list", {"$ref": "coverage"}, {"$ref": "unary"}, {"$ref": "ordering"}, {"$ref": "clamping"}]}

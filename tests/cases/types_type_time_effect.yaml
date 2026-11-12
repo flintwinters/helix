@@ -1,4 +1,5 @@
+# Helix explicit syntax; migrated from legacy source.
 # Even unused/cached file dependencies cannot smuggle host inputs into type time.
-module: [import, modules/geometry.yaml]
-blocked: [try, [type_time, [record]], [fn, [e], e]]
-runtime_after: [add, 20, 22]
+"module": {"$call": ["import", "modules/geometry.yaml"]}
+"blocked": {"$call": ["try", {"$call": ["type_time", {"$call": ["record"]}]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
+"runtime_after": {"$call": ["add", 20, 22]}

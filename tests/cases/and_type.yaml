@@ -1,1 +1,2 @@
-x: [and, true, 1]
+# Helix explicit syntax; migrated from legacy source.
+"x": {"$call": ["and", true, 1]}

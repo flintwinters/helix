@@ -1,11 +1,18 @@
-- let
-- f: [import, std:fuzz]
-- empty: [f.plan, ""]
-  single: [f.plan, "abcdef"]
-  lines: [f.plan, "a: 1\nb: 2\n"]
-  unterminated: [f.plan, "a\nb"]
-  crlf: [f.plan, "a\r\nb\rc\n"]
-  boundaries: [f.plan, "a\vb\fc\x1cd\x1de\x1ef\x85g\u2028h\u2029"]
-  unicode: [f.plan, "🙂é世界éx"]
-  wrong_source: [try, [f.plan, 42], [fn, [e], [get, e, "kind"]]]
-  wrong_arity: [try, [f.plan], [fn, [e], [get, e, "kind"]]]
+# Helix explicit syntax; migrated from legacy source.
+"$call":
+- "let"
+- "f": {"$call": ["import", "std:fuzz"]}
+- "empty": {"$call": ["f.plan", ""]}
+  "single": {"$call": ["f.plan", "abcdef"]}
+  "lines": {"$call": ["f.plan", "a: 1\nb: 2\n"]}
+  "unterminated": {"$call": ["f.plan", "a\nb"]}
+  "crlf": {"$call": ["f.plan", "a\r\nb\rc\n"]}
+  "boundaries": {"$call": ["f.plan", "a\vb\fc\x1Cd\x1De\x1Ef\Ng\Lh\P"]}
+  "unicode": {"$call": ["f.plan", "\U0001F642\xE9\u4E16\u754Ce\u0301x"]}
+  "wrong_source":
+    "$call":
+    - "try"
+    - {"$call": ["f.plan", 42]}
+    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  "wrong_arity": {"$call": ["try", {"$call": ["f.plan"]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"},
+              "kind"]}]}]}

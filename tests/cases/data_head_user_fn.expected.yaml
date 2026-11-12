@@ -1,42 +1,47 @@
-status: finished
-root:
-  f:
-    ref: object0
-  call: 2
-  data:
-    - "f"
-    - 1
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - x
+        - "$call":
+            - add
+            - "$ref": x
+            - 1
+    environment: []
     kind: function
+    location:
+      path:
+        - f
+      source: "<root>"
     program:
       ref: object1
-    code:
-      - symbol: fn
-      - - symbol: x
-      - - symbol: add
-        - symbol: x
-        - 1
-    location:
-      source: "<root>"
-      path:
-        - "f"
-    environment: []
-    bindings: {}
   object1:
     kind: program
     sources:
-      - source: "<root>"
-        code:
-          f:
-            - symbol: fn
-            - - symbol: x
-            - - symbol: add
-              - symbol: x
-              - 1
+      - code:
           call:
-            - symbol: f
-            - 1
+            "$call":
+              - f
+              - 1
           data:
-            - "f"
+            - f
             - 1
+          f:
+            "$call":
+              - fn
+              - - x
+              - "$call":
+                  - add
+                  - "$ref": x
+                  - 1
+        source: "<root>"
+root:
+  call: 2
+  data:
+    - f
+    - 1
+  f:
+    ref: object0
+status: finished

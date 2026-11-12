@@ -1,11 +1,12 @@
-status: error
 error:
-  kind: type
-  message: "expected number, got string"
+  column: 27
   file: tests/cases/modules/hermetic.yaml
-  path: /leak/1
+  kind: type
+  line: 3
+  message: "expected number, got string"
+  path: "/leak/$call/1"
   reference:
-    - "leak"
+    - leak
+    - "$call"
     - 1
-  line: 2
-  column: 13
+status: error

@@ -1,14 +1,17 @@
-xs: [10, 20, 30]
-count: [len, xs]
-second: [get, xs, 1]
-fallback: [get, xs, 9, "none"]
-with_tail: [append, xs, 40, 50]
-joined: [concat, xs, [1, 2]]
-replaced: [set, xs, 0, "ten"]
-window: [slice, xs, 1, 3]
-contains: [has, xs, 20]
-contains_float: [has, xs, 20.0]
-absent: [has, xs, 99]
-computed: [[add, 1, 1], [mul, 2, 3]]
-still_first: [get, xs, 0]
-nested_eq: [eq, [1, [2, 3]], [1, [2, 3]]]
+# Helix explicit syntax; migrated from legacy source.
+"xs": [10, 20, 30]
+"count": {"$call": ["len", {"$ref": "xs"}]}
+"second": {"$call": ["get", {"$ref": "xs"}, 1]}
+"fallback": {"$call": ["get", {"$ref": "xs"}, 9, "none"]}
+"with_tail": {"$call": ["append", {"$ref": "xs"}, 40, 50]}
+"joined": {"$call": ["concat", {"$ref": "xs"}, [1, 2]]}
+"replaced": {"$call": ["set", {"$ref": "xs"}, 0, "ten"]}
+"window": {"$call": ["slice", {"$ref": "xs"}, 1, 3]}
+"contains": {"$call": ["has", {"$ref": "xs"}, 20]}
+"contains_float": {"$call": ["has", {"$ref": "xs"}, 20.0]}
+"absent": {"$call": ["has", {"$ref": "xs"}, 99]}
+"computed":
+- {"$call": ["add", 1, 1]}
+- {"$call": ["mul", 2, 3]}
+"still_first": {"$call": ["get", {"$ref": "xs"}, 0]}
+"nested_eq": {"$call": ["eq", [1, [2, 3]], [1, [2, 3]]]}
