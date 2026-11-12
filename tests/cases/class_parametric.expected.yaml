@@ -1,0 +1,62 @@
+status: finished
+root:
+  web_server:
+    - fn
+    - - - p
+        - integer
+    - - class
+      - - concat
+        - "web_"
+        - - str
+          - p
+      - - record
+        - "listen"
+        - integer
+      - - dict
+        - "listen"
+        - p
+  w80:
+    type: class
+    name: web_80
+    parents: []
+    fields:
+      listen: integer
+    values:
+      listen: 80
+    provenance:
+      listen:
+        type: web_80
+        value: web_80
+    concrete: false
+  w8080:
+    type: class
+    name: web_8080
+    parents: []
+    fields:
+      listen: integer
+    values:
+      listen: 8080
+    provenance:
+      listen:
+        type: web_8080
+        value: web_8080
+    concrete: false
+  front:
+    type: class
+    name: front
+    parents:
+      - "web_80"
+    fields:
+      listen: integer
+    values:
+      listen: 80
+    provenance:
+      listen:
+        type: web_80
+        value: web_80
+    concrete: true
+  both:
+    field: listen
+    sources:
+      - "web_80"
+      - web_8080

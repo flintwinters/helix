@@ -1,0 +1,299 @@
+status: finished
+root:
+  machine:
+    type: class
+    name: machine
+    parents: []
+    fields:
+      hostname: string
+      role:
+        type: enum
+        values:
+          - "web"
+          - db
+      port:
+        type: default
+        of: integer
+        default: 22
+      token: secret
+    values: {}
+    provenance:
+      hostname:
+        type: machine
+      role:
+        type: machine
+      port:
+        type: machine
+      token:
+        type: machine
+    concrete: false
+  web1:
+    type: class
+    name: web1
+    parents:
+      - "machine"
+    fields:
+      hostname: string
+      role:
+        type: enum
+        values:
+          - "web"
+          - db
+      port:
+        type: default
+        of: integer
+        default: 22
+      token: secret
+    values:
+      hostname: w1
+      role: web
+      port: 22
+      token:
+        type: secret
+        ref: vault/web
+    provenance:
+      hostname:
+        type: machine
+        value: web1
+      role:
+        type: machine
+        value: web1
+      port:
+        type: machine
+        value: default of machine
+      token:
+        type: machine
+        value: web1
+    concrete: true
+  web2:
+    type: class
+    name: web2
+    parents:
+      - "machine"
+    fields:
+      hostname: string
+      role:
+        type: enum
+        values:
+          - "web"
+          - db
+      port:
+        type: default
+        of: integer
+        default: 22
+      token: secret
+    values:
+      hostname: w2
+      role: web
+      port: 2200
+      token:
+        type: secret
+        ref: vault/web
+    provenance:
+      hostname:
+        type: machine
+        value: web2
+      role:
+        type: machine
+        value: web2
+      port:
+        type: machine
+        value: web2
+      token:
+        type: machine
+        value: web2
+    concrete: true
+  db1:
+    type: class
+    name: db1
+    parents:
+      - "machine"
+    fields:
+      hostname: string
+      role:
+        type: enum
+        values:
+          - "web"
+          - db
+      port:
+        type: default
+        of: integer
+        default: 22
+      token: secret
+    values:
+      hostname: db1
+      role: db
+      port: 22
+      token:
+        type: secret
+        ref: vault/db
+    provenance:
+      hostname:
+        type: machine
+        value: db1
+      role:
+        type: machine
+        value: db1
+      port:
+        type: machine
+        value: default of machine
+      token:
+        type: machine
+        value: db1
+    concrete: true
+  inline_secret:
+    violations:
+      - at: /token
+        message: "a secret is a handle (`[secret, ref]`), not an inline string"
+  fleet:
+    - type: class
+      name: web1
+      parents:
+        - "machine"
+      fields:
+        hostname: string
+        role:
+          type: enum
+          values:
+            - "web"
+            - db
+        port:
+          type: default
+          of: integer
+          default: 22
+        token: secret
+      values:
+        hostname: w1
+        role: web
+        port: 22
+        token:
+          type: secret
+          ref: vault/web
+      provenance:
+        hostname:
+          type: machine
+          value: web1
+        role:
+          type: machine
+          value: web1
+        port:
+          type: machine
+          value: default of machine
+        token:
+          type: machine
+          value: web1
+      concrete: true
+    - type: class
+      name: web2
+      parents:
+        - "machine"
+      fields:
+        hostname: string
+        role:
+          type: enum
+          values:
+            - "web"
+            - db
+        port:
+          type: default
+          of: integer
+          default: 22
+        token: secret
+      values:
+        hostname: w2
+        role: web
+        port: 2200
+        token:
+          type: secret
+          ref: vault/web
+      provenance:
+        hostname:
+          type: machine
+          value: web2
+        role:
+          type: machine
+          value: web2
+        port:
+          type: machine
+          value: web2
+        token:
+          type: machine
+          value: web2
+      concrete: true
+    - type: class
+      name: db1
+      parents:
+        - "machine"
+      fields:
+        hostname: string
+        role:
+          type: enum
+          values:
+            - "web"
+            - db
+        port:
+          type: default
+          of: integer
+          default: 22
+        token: secret
+      values:
+        hostname: db1
+        role: db
+        port: 22
+        token:
+          type: secret
+          ref: vault/db
+      provenance:
+        hostname:
+          type: machine
+          value: db1
+        role:
+          type: machine
+          value: db1
+        port:
+          type: machine
+          value: default of machine
+        token:
+          type: machine
+          value: db1
+      concrete: true
+  hostnames:
+    - "w1"
+    - w2
+    - db1
+  hostnames_unique: true
+  ports:
+    - 22
+    - 2200
+    - 22
+  ports_clash:
+    - 22
+  observed:
+    hostname: w1
+    role: web
+    port: 2222
+    uptime: 5
+  drift_web1:
+    missing:
+      token:
+        type: secret
+        ref: vault/web
+    changed:
+      port:
+        want: 22
+        have: 2222
+    extra:
+      uptime: 5
+  plan_web1:
+    - op: set
+      field: port
+      from: 2222
+      to: 22
+    - op: set
+      field: token
+      to:
+        type: secret
+        ref: vault/web
+  plan_when_converged: []
+  no_plan_for_abstract: abstract
+  inhabits: true

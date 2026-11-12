@@ -9,6 +9,7 @@ use super::value::equal;
 pub(super) fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
     match actor {
         "list" => Ok(Yaml::Array(args.to_vec())),
+        "dict" => dict(args),
         "len" => len(&args[0]),
         "concat" => concat(args),
         "slice" => slice(args),
@@ -184,4 +185,17 @@ fn duplicates(value: &Yaml) -> Result<Yaml, Fault> {
         }
     }
     Ok(Yaml::Array(repeated))
+}
+
+/// `[dict, key, value, key, value, ...]`: a map whose keys and values are evaluated expressions.
+fn dict(args: &[Yaml]) -> Result<Yaml, Fault> {
+    if args.len() % 2 != 0 {
+        return Err(Fault::whole("arity", "`dict` takes alternating keys and values".into()));
+    }
+    let mut out = yaml_rust2::yaml::Hash::new();
+    for (i, pair) in args.chunks_exact(2).enumerate() {
+        let key = key(args, 2 * i)?;
+        out.insert(key, pair[1].clone());
+    }
+    Ok(Yaml::Hash(out))
 }
