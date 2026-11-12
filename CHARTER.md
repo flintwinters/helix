@@ -157,7 +157,26 @@ The difference between a language and a language I enjoy using.
 
 The long-range target. A type is ordinary readable YAML, a value like any other, and a machine config is a type rather than a script: everything about it is known and checked at type time, before any effect touches a machine.
 
+Principles that hold for the whole section, and that settle most design questions inside it:
+
+- **One language, one graph.** Types live in the same object graph as programs and state, are written in the same YAML, and are computed by the same evaluator. There is no schema dialect, template layer or generics syntax beside the language. If a feature needs a second notation, the design is wrong.
+- **The round trip covers types.** The founding promise (source and saved state are the same readable thing) applies to types unchanged: a type can be read, diffed, hand-edited and re-read, and a saved state shows the types that governed it.
+- **A type describes, it does not act.** A type says what a value is. It never converts, coerces, fetches or repairs; checking a value against a type either passes or yields error data. This matches the no-silent-coercion rule in `LANGUAGE.md`.
+- **Wrong is loud and early.** The reason for types here is to move failures from "halfway through changing a machine" to "before anything ran", and to report all of them at once, each blamed on a node with path and line.
+- **Explain where things came from.** In Nix and Ansible the hard question is rarely "what is this value" but "who set it and why did it win". Helix answers that from the state, not from a debugger or a precedence table held in the reader's head.
+
+The sketch below shows the intended feel only; the syntax is undecided (see Open questions) and must not be treated as a spec.
+
+```yaml
+has_ssh:    [class, {ssh_port: {type: port, default: 22}}]
+server:     [class, {hostname: string, packages: [list_of, string]}]
+web01:      [inherit, [server, has_ssh], {hostname: web01, packages: [nginx]}]
+```
+
 ### Declarative types
+
+A type should read like the value it describes with the specifics left open: someone who has never seen Helix can look at a record type and say what a valid value looks like. Declarations are order-independent facts, not a checking procedure, so reordering fields or splitting a declaration across maps changes nothing. Types are opt-in descriptions layered on the existing untyped core, never a reason existing programs stop running.
+
 - [ ] A type is declared as plain YAML data in the object graph (fields, their types, defaults), not in a separate schema language
 - [ ] Scalar, list, map and record types, plus optional fields, unions, enums and literal types
 - [ ] Refinements: a type can carry a predicate (`port` is an int in 1..65535), written as an ordinary Helix expression
@@ -167,6 +186,9 @@ The long-range target. A type is ordinary readable YAML, a value like any other,
 - [ ] `helix check` type-checks a program without running it or performing effects
 
 ### First-class types
+
+"First-class" means there is no type-level language: whatever can be done with a number or a map can be done with a type, using the functions, `let`, iteration and errors that already exist. Abstraction over types is therefore just a function that returns a type, which is how Helix avoids the templating (Jinja in Ansible) and the bespoke module machinery other tools grow. Type time is not a different interpreter; it is ordinary evaluation run under a stricter contract (pure, no effects, bounded), and that contract is what makes a type trustworthy to compute before a machine is involved. Functions themselves are not yet first-class values (see `AGENTS.md`), so that gap has to close on the way here.
+
 - [ ] Types are values: bind them with `let`, pass them to and return them from functions, store them in lists and maps
 - [ ] Type constructors are ordinary functions from types (and values) to types (`[list_of, t]`, `[with_field, t, name, u]`)
 - [ ] Reflection: read a type's fields, defaults and parents as data; ask `[is, value, t]` and `[subtype, a, b]`
@@ -174,6 +196,9 @@ The long-range target. A type is ordinary readable YAML, a value like any other,
 - [ ] Type-time errors are the same structured errors as run-time ones, with the phase recorded in the state
 
 ### Type classes and inheritance
+
+An abstract class is an incomplete description: some fields fixed, some defaulted, some demanded but left open. Inheriting is composing descriptions, and a concrete type is one with nothing left open. This is not object-oriented inheritance: no methods, no dispatch, no behaviour is inherited, only fields, defaults and constraints, so the result of inheriting is always a plain flattened type that could have been written out by hand. Classes are meant to be small and combined freely (`server` plus `has_ssh` plus `monitored`) rather than arranged in a deep tree. Because several parents will disagree, the merge rules are the heart of this group: they must be few, written down, deterministic, and they must refuse to guess. An ambiguity the author did not resolve is an error, never a precedence rule that picks a winner quietly.
+
 - [ ] Abstract type classes: declare required fields and constraints without a concrete value (`machine`, `server`, `has_ssh`)
 - [ ] A type inherits from one or more classes; the result is the merge of their fields, defaults and constraints
 - [ ] Documented, deterministic merge and override rules (which parent wins, what counts as a conflict, how lists and maps combine)
@@ -183,6 +208,9 @@ The long-range target. A type is ordinary readable YAML, a value like any other,
 - [ ] Parametric classes: a class takes arguments (`[web_server, {port: 8080}]`) and yields a class
 
 ### Machine configs as type-time types
+
+The config is the type; the real machine is the value. "Is this machine configured correctly" becomes "does this machine inhabit its type", drift is a machine that no longer does, and applying a config is making the value fit the type. That framing splits the work into two phases with a hard wall between them. Type time resolves classes, overrides and cross-machine constraints into a complete description using nothing but the source: no SSH, no facts gathered from hosts, no network. Everything that can be wrong with the description is found there, and the resolved description is a reviewable artifact in `git diff`. Only then does realization touch a machine, as an explicit, separate, resumable run built on effects (section 3) and suspend/resume (section 2), with its plan and progress as readable state. From Nix this takes pure evaluation before any change and reproducibility; from Ansible it takes agentless, incremental application to machines that already exist. What it rejects is Ansible's failure halfway through a play from an error knowable in advance, and Nix's opaque evaluation whose result cannot simply be read.
+
 - [ ] A machine config is a concrete type inheriting from abstract machine classes; it is fully resolved at type time with no machine contact
 - [ ] The resolved config serializes to YAML that reads as the complete, flattened description of the machine and diffs well in `git diff`
 - [ ] Same inputs, same resolved config: resolution is deterministic and pinned (imports, versions) so a config is reproducible
