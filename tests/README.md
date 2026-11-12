@@ -5,8 +5,16 @@ Run commands from the repository root. Tests require Python 3.10+, PyYAML, and R
 ```sh
 ./manage.py test --describe                  # discover suites and their contracts
 ./manage.py test --suite golden --suite cli  # select suites
+./manage.py test --suite golden --case 'types_*'  # focus on a fixture family
 ./manage.py test                            # run all suites
 ```
+
+For `golden` and `robustness`, repeat `--case GLOB` to select the union of matching
+fixture stems or repository-relative paths (for example `tests/check/*.yaml`).
+Quote globs to keep the shell from expanding them. Every pattern must match an
+input; typos fail before building. Filters require explicit golden/robustness
+suite selection and also restrict `--bless` to the selected golden expectations.
+Selected cases retain discovery order and use the existing `--jobs` workers.
 
 ## Testing contracts and known gaps
 

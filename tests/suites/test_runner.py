@@ -1,7 +1,44 @@
 """Concurrency, ordering and exception contracts reached through the harness suite."""
 import threading
 
-from tooling.test_runner import collect_cases
+from tooling.test_runner import collect_cases, discover_cases
+
+
+def verify_selection(h, directory):
+    import contextlib
+    import io
+    from unittest.mock import patch
+
+    first, second = directory / "run", directory / "check"
+    first.mkdir()
+    second.mkdir()
+    cases = [first / "alpha.yaml", first / "beta.yaml", second / "alpha.yaml"]
+    for case in cases:
+        case.write_text("1")
+        case.with_suffix(".expected.yaml").write_text("unchanged")
+    directories = {first: "run", second: "check"}
+    assert discover_cases(directories, h.ROOT) == cases
+    assert discover_cases(directories, h.ROOT, ["alpha", "a*"]) == [cases[0], cases[2]]
+    assert discover_cases(directories, h.ROOT, [str(cases[1].relative_to(h.ROOT))]) == [cases[1]]
+    for patterns in (["missing"], ["alpha", "missing"], ["*.expected.yaml"]):
+        try:
+            discover_cases(directories, h.ROOT, patterns)
+        except ValueError as error:
+            assert "matched no" in str(error)
+        else:
+            raise AssertionError(f"unmatched filter accepted: {patterns}")
+
+    with patch.object(h, "COMMANDS", directories), patch.object(h, "build", return_value=0) as build, \
+         contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        assert h.test(False, ["golden"], patterns=["missing"]) == 2
+        build.assert_not_called()
+        with patch.object(h, "robustness_case", return_value=[]) as robustness:
+            assert h.test(True, ["golden"], patterns=["beta"]) == 0
+            assert cases[1].with_suffix(".expected.yaml").read_text() != "unchanged"
+            assert all(case.with_suffix(".expected.yaml").read_text() == "unchanged"
+                       for case in (cases[0], cases[2]))
+            assert h.test(False, ["golden", "robustness"], patterns=["beta", "b*"]) == 0
+            robustness.assert_called_once_with(cases[1])
 
 
 def verify(h):
@@ -48,9 +85,19 @@ def verify(h):
     from tooling.cli import parse
     assert parse(["test", "--jobs", "1"]).jobs == 1
     assert parse(["quality", "test", "--jobs", "3"]).jobs == 3
+    assert parse(["test", "--suite", "golden", "--case", "a*", "--case", "b*"]).case == ["a*", "b*"]
 
     import contextlib
     import io
+    for args in (["--case", "a*"], ["--suite", "cli", "--case", "a*"],
+                 ["--suite", "golden", "--suite", "cli", "--case", "a*"]):
+        with contextlib.redirect_stderr(io.StringIO()):
+            try:
+                parse(["test", *args])
+            except SystemExit as error:
+                assert error.code == 2
+            else:
+                raise AssertionError("case filter accepted for unrelated suites")
     for value in ("0", "-1"):
         with contextlib.redirect_stderr(io.StringIO()):
             try:
@@ -70,6 +117,7 @@ def verify(h):
         yield source
 
     with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="runner-") as directory:
+        verify_selection(h, Path(directory))
         case = Path(directory) / "probe.yaml"
         case.write_text("1")
         with patch.object(h, "COMMANDS", {case.parent: "run"}), \

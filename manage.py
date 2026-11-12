@@ -37,15 +37,17 @@ def helix(*args: str, stdin: str | None = None) -> "subprocess.CompletedProcess"
 
 
 def root_section(state: str) -> str | None:
-    """Dedented body of the `root:` block of a finished state, or None."""
+    """Standalone root YAML from a finished state, including inline scalars."""
     lines = state.splitlines()
     if not lines or lines[0] != "status: finished":
         return None
-    body = []
-    for line in lines[lines.index("root:") + 1 :]:
+    index = next(i for i, line in enumerate(lines) if line.startswith("root:"))
+    inline = lines[index][len("root:"):].lstrip()
+    body = [inline] if inline else []
+    for line in lines[index + 1 :]:
         if not line.startswith("  "):
             break
-        body.append(line[2:])
+        body.append(line if inline else line[2:])
     return "\n".join(body) + "\n"
 
 
@@ -106,7 +108,15 @@ def robustness(cases: list[Path], jobs: int = DEFAULT_TEST_JOBS) -> list[str]:
     return collect_cases(robustness_case, cases, jobs)
 
 
-def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS) -> int:
+def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS,
+         patterns: list[str] | None = None) -> int:
+    from tooling.test_runner import discover_cases
+
+    try:
+        cases = discover_cases(COMMANDS, ROOT, patterns) if patterns else None
+    except ValueError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
     if suites and set(suites) == {"startup"}:
         return regression(bless, suites, jobs)
 
@@ -124,7 +134,7 @@ def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_
         shutil.copy2(original, snapshot)
         BIN = snapshot
         try:
-            return regression(bless, suites, jobs)
+            return regression(bless, suites, jobs, cases)
         finally:
             BIN = original
 
@@ -156,7 +166,8 @@ def golden_case(case: Path, bless: bool) -> list[str]:
     return failures
 
 
-def regression(bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_JOBS) -> int:
+def regression(bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_JOBS,
+               cases: list[Path] | None = None) -> int:
     selected = set(suites or SUITES)
     failures = []
     for name in (name for name in SUITES if name in selected - {"golden", "robustness"}):
@@ -171,7 +182,10 @@ def regression(bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_J
         for failure in failures:
             print("FAIL", failure, file=sys.stderr)
         return int(bool(failures))
-    cases = [c for d in COMMANDS for c in sorted(d.glob("*.yaml")) if not c.name.endswith(".expected.yaml")]
+    if cases is None:
+        from tooling.test_runner import discover_cases
+
+        cases = discover_cases(COMMANDS, ROOT)
     modules = helix("std")
     expected_modules = {f"std:{source.stem}" for source in (ROOT / "std").glob("*.yaml")}
     discovered_modules = modules.stdout.splitlines()
@@ -231,7 +245,7 @@ def main() -> int:
         return build() or subprocess.call([str(BIN), "sandbox", args.root, args.file], cwd=ROOT)
     if command == "std":
         return build() or subprocess.call([str(BIN), "std", *([args.module] if args.module else [])], cwd=ROOT)
-    return test(args.bless, args.suite, args.jobs)
+    return test(args.bless, args.suite, args.jobs, args.case)
 
 
 if __name__ == "__main__":
