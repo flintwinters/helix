@@ -8,9 +8,7 @@ import yaml
 
 def execute(h, source, artifact):
     # Import from an explicit path so nested test-module imports remain file-relative.
-    program = ('t: [import, std:test]\n'
-               f'cases: [import, {json.dumps(str(source))}]\n'
-               'report: [t.require_pass, cases.report]\n')
+    program = (f'{{"t": {{"$call": ["import", "std:test"]}}, "cases": {{"$call": ["import", {json.dumps(str(source))}]}}, "report": {{"$call": ["t.require_pass", {{"$ref": "cases.report"}}]}}}}')
     artifact.with_suffix('.input.yaml').write_text(program)
     result = h.helix('run', '-', stdin=program)
     artifact.with_suffix('.state.yaml').write_text(result.stdout)
@@ -29,7 +27,16 @@ def verify(h):
         artifact = destination / f'{index}-{source.stem}'
         result, state = execute(h, source, artifact)
         if result.returncode:
-            failures.append(f'{source}: {state}; replay: ./manage.py run {artifact.with_suffix(".input.yaml")}')
+            error = state.get('error', {})
+            report = error.get('data', {})
+            rejected = [row for row in report.get('results', []) if row.get('outcome') == 'failed']
+            examples = list(dict.fromkeys(
+                f'{row.get("name")}: {row.get("error", {}).get("message", "rejected")}'
+                for row in rejected))[:5]
+            summary = '; '.join(examples) or f'{error.get("kind")}: {error.get("message")}'
+            failures.append(f'{source.relative_to(h.root)}: {len(rejected)} failed; {summary}; '
+                            f'state: {artifact.with_suffix(".state.yaml")}; '
+                            f'replay: ./manage.py run {artifact.with_suffix(".input.yaml")}')
         else:
             report = state['root']['report']
             print(f'dogfood: {source.relative_to(h.root)}: {report["passed"]}/{report["total"]} passed')
@@ -37,7 +44,7 @@ def verify(h):
     with tempfile.TemporaryDirectory(dir=destination, prefix='runner-') as directory:
         source = Path(directory) / 'probe.yaml'
         for program, kind in [
-            ('t: [import, std:test]\nreport: [t.suite, [{name: failure, run: [fn, [], [t.equal, 1, 2]]}, {name: later, run: [fn, [], 42]}]]', 'test_failure'),
+            ('{"t": {"$call": ["import", "std:test"]}, "report": {"$call": ["t.suite", [{"name": "failure", "run": {"$call": ["fn", [], {"$call": ["t.equal", 1, 2]}]}}, {"name": "later", "run": {"$call": ["fn", [], 42]}}]]}}', 'test_failure'),
             ('value: 42', 'unbound'),
             ('[', 'parse'),
         ]:
