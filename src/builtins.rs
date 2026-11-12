@@ -35,7 +35,7 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("list_of", 1, Some(1)), ("map_of", 1, Some(1)), ("record", 0, None), ("optional", 1, Some(1)), ("default", 2, Some(2)), ("union", 1, None),
     ("enum", 1, None), ("literal", 1, Some(1)), ("refine", 2, Some(2)), ("with_field", 3, Some(3)), ("list", 0, None), ("dict", 0, None), ("fields", 1, Some(1)), ("is", 2, Some(2)),
     ("violations", 2, Some(2)), ("expect", 2, Some(2)), ("subtype", 2, Some(2)), ("secret", 1, Some(1)),
-    ("class", 2, Some(3)), ("extend", 4, Some(4)), ("inherit", 3, Some(3)), ("realize", 1, Some(1)), ("parents", 1, Some(1)), ("open_fields", 1, Some(1)),
+    ("class", 2, Some(3)), ("extend", 4, Some(4)), ("inherit", 3, Some(3)), ("realize", 1, Some(1)), ("parents", 1, Some(1)), ("open_fields", 1, Some(1)), ("constrain", 2, Some(2)),
     ("drift", 2, Some(2)), ("converge", 2, Some(2)),
     ("type_time", 1, Some(1)), ("import", 1, Some(1)), ("assert", 1, Some(2)), ("raise", 1, Some(3)), ("try", 2, Some(2)), ("finally", 2, Some(2)),
 ];

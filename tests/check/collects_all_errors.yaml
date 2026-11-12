@@ -1,0 +1,11 @@
+in_port: [fn, [n], [and, [ge, n, 1], [le, n, 65535]]]
+port: [refine, integer, in_port]
+endpoint: [record, "host", string, "port", port]
+good: [expect, {host: "a", port: 22}, endpoint]
+bad_port: [expect, {host: "a", port: 0}, endpoint]
+unbound_use: [add, 1, nothing_here]
+fleet:
+  one: [div, 1, 0]
+  two: 5
+  three: [expect, 7, string]
+fleet_unique: [assert, [eq, [duplicates, [list, 1, 1]], []], "values must be unique"]

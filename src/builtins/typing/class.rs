@@ -40,6 +40,8 @@ struct Class {
     name: String,
     parents: Vec<String>,
     slots: Vec<Slot>,
+    /// Raw predicates over the whole record of values, checked when the class is realized.
+    constraints: Vec<Yaml>,
     concrete: bool,
 }
 
@@ -57,6 +59,11 @@ pub(super) fn apply(actor: &str, args: &[Yaml], pred: &mut Pred) -> Result<Yaml,
         "realize" => Ok(realize(Class::from_yaml(&args[0], 0)?, Some(0), pred)?.to_yaml()),
         "parents" => reflect_parents(&args[0]),
         "open_fields" => open_fields(&args[0]),
+        "constrain" => {
+            let mut class = Class::from_yaml(&args[0], 0)?;
+            class.constraints.push(args[1].clone());
+            Ok(class.to_yaml())
+        }
         _ => unreachable!("`{actor}` is not a class builtin"),
     }
 }
@@ -131,6 +138,10 @@ impl Class {
             },
             _ => Err(bad()),
         };
+        let constraints = match get("constraints") {
+            Some(Yaml::Array(items)) => items.clone(),
+            _ => Vec::new(),
+        };
         let slots = fields
             .iter()
             .map(|(field, spec)| {
@@ -140,7 +151,7 @@ impl Class {
             })
             .collect::<Result<_, _>>()?;
         let parents = parents.iter().map(|p| if let Yaml::String(p) = p { Ok(p.clone()) } else { Err(bad()) }).collect::<Result<_, _>>()?;
-        Ok(Class { name: name.clone(), parents, slots, concrete: *concrete })
+        Ok(Class { name: name.clone(), parents, slots, constraints, concrete: *concrete })
     }
 
     fn to_yaml(&self) -> Yaml {
@@ -157,9 +168,13 @@ impl Class {
         }
         let mut class = descriptor("class", [("name", s(&self.name)), ("parents", Yaml::Array(self.parents.iter().map(|p| s(p)).collect()))]);
         if let Yaml::Hash(map) = &mut class {
-            for (k, v) in [("fields", fields), ("values", values), ("provenance", provenance)] {
+            for (k, v) in [("fields", fields), ("values", values)] {
                 map.insert(s(k), Yaml::Hash(v));
             }
+            if !self.constraints.is_empty() {
+                map.insert(s("constraints"), Yaml::Array(self.constraints.clone()));
+            }
+            map.insert(s("provenance"), Yaml::Hash(provenance));
             map.insert(s("concrete"), Yaml::Boolean(self.concrete));
         }
         class
@@ -212,7 +227,13 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where
         let Yaml::String(stray) = stray else { unreachable!("value names are strings") };
         return Err(Fault::at(at.values, "type", format!("`{name}` sets `{stray}`, which no parent or field declares")));
     }
-    let class = Class { name: name.to_string(), parents: parents.iter().map(|p| p.name.clone()).collect(), slots, concrete: false };
+    let mut constraints: Vec<Yaml> = Vec::new();
+    for constraint in parents.iter().flat_map(|p| &p.constraints) {
+        if !constraints.contains(constraint) {
+            constraints.push(constraint.clone());
+        }
+    }
+    let class = Class { name: name.to_string(), parents: parents.iter().map(|p| p.name.clone()).collect(), slots, constraints, concrete: false };
     validate(&class, pred)?;
     Ok(class)
 }
@@ -256,6 +277,25 @@ fn check_slot(field: &str, value: &Yaml, ty: &Ty, pred: &mut Pred) -> Vec<(Yaml,
         .collect()
 }
 
+/// Whole-record constraints run on the realized values; each failure is reported.
+fn constrained(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
+    let values = Yaml::Hash(class.slots.iter().filter_map(|slot| slot.value.as_ref().map(|(v, _)| (s(&slot.name), v.clone()))).collect());
+    let mut found = Vec::new();
+    for (i, check) in class.constraints.iter().enumerate() {
+        let why = match pred(check, &values) {
+            Ok(true) => continue,
+            Ok(false) => format!("constraint {i} of `{}` does not hold", class.name),
+            Err(why) => format!("constraint {i} of `{}` failed to run: {why}", class.name),
+        };
+        found.push(why);
+    }
+    if found.is_empty() {
+        return Ok(());
+    }
+    let entries = found.iter().map(|why| mapping([("at", s("/")), ("message", s(why))])).collect();
+    Err(Fault { cause: None, kind: "type".into(), message: found[0].clone(), arg: None, data: Some(mapping([("violations", Yaml::Array(entries))])) })
+}
+
 /// Fill defaults and mark the class concrete, or fail listing every required field still open.
 fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Class, Fault> {
     let mut missing = Vec::new();
@@ -277,6 +317,7 @@ fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Clas
         return Err(Fault { cause: None, kind: "abstract".into(), message, arg, data: Some(mapping([("missing", Yaml::Array(entries))])) });
     }
     validate(&class, pred)?;
+    constrained(&class, pred)?;
     class.concrete = true;
     Ok(class)
 }

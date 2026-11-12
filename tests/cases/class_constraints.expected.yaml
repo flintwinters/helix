@@ -1,0 +1,72 @@
+status: finished
+root:
+  machine:
+    type: class
+    name: machine
+    parents: []
+    fields:
+      min: integer
+      max: integer
+    values: {}
+    provenance:
+      min:
+        type: machine
+      max:
+        type: machine
+    concrete: false
+  ordered:
+    - fn
+    - - v
+    - - le
+      - - get
+        - v
+        - "min"
+      - - get
+        - v
+        - "max"
+  sane:
+    type: class
+    name: machine
+    parents: []
+    fields:
+      min: integer
+      max: integer
+    values: {}
+    constraints:
+      - - fn
+        - - v
+        - - le
+          - - get
+            - v
+            - "min"
+          - - get
+            - v
+            - "max"
+    provenance:
+      min:
+        type: machine
+      max:
+        type: machine
+    concrete: false
+  open_before:
+    min: integer
+    max: integer
+  ok:
+    min: 1
+    max: 5
+  violated:
+    violations:
+      - at: /
+        message: "constraint 0 of `bad` does not hold"
+  inherited_twice:
+    - - fn
+      - - v
+      - - le
+        - - get
+          - v
+          - "min"
+        - - get
+          - v
+          - "max"
+  open_after_partial:
+    max: integer
