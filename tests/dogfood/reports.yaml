@@ -1,0 +1,9 @@
+t: [import, std:test]
+good: [t.suite, [{name: ok, input: {x: false}, run: [fn, [], 42]}]]
+bad: [t.suite, [{name: bad, input: null, run: [fn, [], [raise, "probe", "expected", {detail: 7}]]}]]
+combined: [t.combine, [list, good, bad, good]]
+report:
+  - t.suite
+  - - {name: empty_combination, run: [fn, [], [t.equal, [t.combine, []], {total: 0, passed: 0, failed: 0, results: []}]]}
+    - {name: combined_counts_and_results, run: [fn, [], [t.equal, combined, [dict, "total", 3, "passed", 2, "failed", 1, "results", [concat, [get, good, "results"], [get, bad, "results"], [get, good, "results"]]]]]}
+    - {name: combined_failure_payload, run: [fn, [], [t.equal, [get, [t.throws, [fn, [], [t.require_pass, combined]], "test_failure"], "data"], combined]]}

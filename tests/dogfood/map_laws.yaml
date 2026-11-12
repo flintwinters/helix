@@ -8,9 +8,10 @@ pairs: [l.flat_map, choices, [fn, [a], [l.flat_map, choices, [fn, [b], [list, [d
 samples: [concat, [list, {}], singles, pairs]
 merges: [l.flat_map, samples, [fn, [left], [map, [fn, [right], [list, left, right]], samples]]]
 # Build expected keys separately from values: map equality alone ignores order.
+# merge keeps left positions and takes right values including null and false
 merge_law:
   - t.property
-  - "merge keeps left positions and takes right values including null and false"
+  - "merge_law"
   - merges
   - - fn
     - [row]
@@ -21,9 +22,10 @@ merge_law:
         expected_keys: [concat, [keys, left], [filter, [fn, [key], [not, [has, left, key]]], [keys, right]]]
       - [and, [eq, [keys, result], expected_keys], [l.all, expected_keys, [fn, [key], [eq, [get, result, key], [if, [has, right, key], [get, right, key], [get, left, key]]]]]]
 removals: [l.flat_map, samples, [fn, [source], [map, [fn, [key], [list, source, key]], [list, "a", "b", "missing"]]]]
+# remove preserves every survivor value and its order
 remove_law:
   - t.property
-  - "remove preserves every survivor value and its order"
+  - "remove_law"
   - removals
   - - fn
     - [row]
@@ -32,6 +34,16 @@ remove_law:
         key: [get, row, 1]
         result: [m.remove, source, key]
         survivors: [filter, [fn, [name], [ne, name, key]], [keys, source]]
-      - [and, [eq, [keys, result], survivors], [l.all, survivors, [fn, [name], [eq, [get, result, name], [get, source, name]]]], [eq, [m.remove, result, key], result]]
+      - [and, [eq, [keys, result], survivors], [l.all, survivors, [fn, [name], [eq, [get, result, name], [get, source, name]]]]]
+# Distinct literal cases extend the exhaustive scalar domain: shallow replacement,
+# three-key survivor order, and new keys appended in right-hand encounter order.
+examples:
+  - t.suite
+  - - name: shallow_replacement
+      run: [fn, [], [t.equal, [m.merge, {a: {old: 1, keep: 2}}, {a: {new: 3}}], {a: {new: 3}}]]
+    - name: append_order
+      run: [fn, [], [t.equal, [keys, [m.merge, {b: 1}, {c: 2, b: 3, a: 4}]], [list, "b", "c", "a"]]]
+    - name: remove_middle
+      run: [fn, [], [let, {actual: [m.remove, {c: [1, 2], b: false, a: {x: null}}, "b"]}, [t.equal, [list, [keys, actual], actual], [list, [list, "c", "a"], {c: [1, 2], a: {x: null}}]]]]
 coverage: [t.suite, [{name: map_count, run: [fn, [], [t.equal, [len, samples], 13]]}, {name: merge_count, run: [fn, [], [t.equal, [len, merges], 169]]}, {name: removal_count, run: [fn, [], [t.equal, [len, removals], 39]]}]]
-report: [t.table, [list, [dict, "name", "coverage", "input", coverage], [dict, "name", "merge", "input", merge_law], [dict, "name", "remove", "input", remove_law]], [fn, [child], [t.require_pass, child]]]
+report: [t.combine, [list, examples, coverage, merge_law, remove_law]]

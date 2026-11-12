@@ -1,37 +1,61 @@
 # Exhaust every list of length 0..3 over {-1, 0, 1}: 40 reproducible inputs.
 t: [import, std:test]
 l: [import, std:list]
-alphabet: [-1, 0, 1]
-append_choices: [fn, [xss], [l.flat_map, xss, [fn, [xs], [map, [fn, [x], [append, xs, x]], alphabet]]]]
-one: [append_choices, [list, []]]
-two: [append_choices, one]
-samples: [concat, [list, []], one, two, [append_choices, two]]
-positive: [fn, [x], [gt, x, 0]]
-# A counting oracle does not use a comparator or the sorting implementation.
-sort_oracle: [fn, [xs], [l.flat_map, alphabet, [fn, [x], [map, [fn, [i], x], [l.range, [l.count, xs, [fn, [y], [eq, x, y]]]]]]]]
-sorting: [t.compare, "sort equals counting oracle", samples, l.sort, sort_oracle]
-reversal: [t.property, "reverse is an involution", samples, [fn, [xs], [eq, [l.reverse, [l.reverse, xs]], xs]]]
-partitioning:
-  - t.property
-  - "partition preserves order, multiplicity and classification"
-  - samples
-  - [fn, [xs], [eq, [l.partition, xs, positive], [list, [filter, positive, xs], [filter, [fn, [x], [not, [positive, x]]], xs]]]]
-searching:
-  - t.property
-  - "find returns first positive or explicit fallback"
-  - samples
-  - [fn, [xs], [eq, [l.find, xs, positive, "absent"], [get, [filter, positive, xs], 0, "absent"]]]
-splits: [l.flat_map, samples, [fn, [xs], [map, [fn, [n], [list, xs, n]], [l.range, 5]]]]
-slicing:
-  - t.property
-  - "all split boundaries preserve values and clamped length"
-  - splits
-  - [fn, [row], [let, {xs: [get, row, 0], n: [get, row, 1]}, [and, [eq, [concat, [l.take, xs, n], [l.drop, xs, n]], xs], [eq, [len, [l.take, xs, n]], [if, [lt, n, [len, xs]], n, [len, xs]]]]]]
-# Check actual positions, rather than comparing enumerate with zip (shared code).
-positions:
-  - t.property
-  - "enumeration is lossless and indices are consecutive"
-  - samples
-  - [fn, [xs], [let, {pairs: [l.enumerate, xs]}, [and, [eq, [map, [fn, [pair], [get, pair, 1]], pairs], xs], [eq, [map, [fn, [pair], [get, pair, 0]], pairs], [l.range, [len, xs]]]]]]
-coverage: [t.suite, [{name: exhaustive_sample_count, run: [fn, [], [t.equal, [len, samples], 40]]}, {name: split_sample_count, run: [fn, [], [t.equal, [len, splits], 200]]}]]
-report: [t.table, [list, [dict, "name", "coverage", "input", coverage], [dict, "name", "sorting", "input", sorting], [dict, "name", "reversal", "input", reversal], [dict, "name", "partition", "input", partitioning], [dict, "name", "search", "input", searching], [dict, "name", "slicing", "input", slicing], [dict, "name", "positions", "input", positions]], [fn, [child], [t.require_pass, child]]]
+# Keep generated domains and intermediate reports local to avoid duplicate exports.
+report:
+  - let
+  - alphabet: [-1, 0, 1]
+    append_choices: [fn, [xss], [l.flat_map, xss, [fn, [xs], [map, [fn, [x], [append, xs, x]], alphabet]]]]
+    one: [append_choices, [list, []]]
+    two: [append_choices, one]
+    samples: [concat, [list, []], one, two, [append_choices, two]]
+    positive: [fn, [x], [gt, x, 0]]
+    # A counting oracle does not use a comparator or the sorting implementation.
+    sort_oracle: [fn, [xs], [l.flat_map, alphabet, [fn, [x], [map, [fn, [i], x], [l.range, [l.count, xs, [fn, [y], [eq, x, y]]]]]]]]
+    sorting: [t.compare, "sort equals counting oracle", samples, l.sort, sort_oracle]
+    # Positional oracle rejects identity (which passes the involution law).
+    # reverse places every element at its mirrored index
+    reversal:
+      - t.property
+      - "reversal"
+      - samples
+      - [fn, [xs], [let, {actual: [l.reverse, xs]}, [and, [eq, [len, actual], [len, xs]], [l.all, [l.range, [len, xs]], [fn, [i], [eq, [get, actual, i], [get, xs, [sub, [sub, [len, xs], 1], i]]]]]]]]
+    # First-occurrence indices provide an oracle without calling unique itself.
+    # unique retains exactly the first occurrence in input order
+    uniqueness:
+      - t.property
+      - "uniqueness"
+      - samples
+      - [fn, [xs], [eq, [l.unique, xs], [map, [fn, [i], [get, xs, i]], [filter, [fn, [i], [not, [has, [slice, xs, 0, i], [get, xs, i]]]], [l.range, [len, xs]]]]]]
+    # partition preserves order, multiplicity and classification
+    partitioning:
+      - t.property
+      - "partitioning"
+      - samples
+      - [fn, [xs], [eq, [l.partition, xs, positive], [list, [filter, positive, xs], [filter, [fn, [x], [not, [positive, x]]], xs]]]]
+    # find returns first positive or explicit fallback
+    searching:
+      - t.property
+      - "searching"
+      - samples
+      - [fn, [xs], [eq, [l.find, xs, positive, "absent"], [get, [filter, positive, xs], 0, "absent"]]]
+    # For each list, exercise every distinct split and one count past its end.
+    # Group boundaries per input rather than creating hundreds of copied reports.
+    slicing:
+      - t.property
+      - "slicing"
+      - samples
+      - - fn
+        - [xs]
+        - - l.all
+          - [l.range, [add, [len, xs], 2]]
+          - [fn, [n], [and, [eq, [concat, [l.take, xs, n], [l.drop, xs, n]], xs], [eq, [len, [l.take, xs, n]], [if, [lt, n, [len, xs]], n, [len, xs]]]]]
+    # Check actual positions, rather than comparing enumerate with zip (shared code).
+    # enumeration is lossless and indices are consecutive
+    positions:
+      - t.property
+      - "positions"
+      - samples
+      - [fn, [xs], [let, {pairs: [l.enumerate, xs]}, [and, [eq, [map, [fn, [pair], [get, pair, 1]], pairs], xs], [eq, [map, [fn, [pair], [get, pair, 0]], pairs], [l.range, [len, xs]]]]]]
+    coverage: [t.suite, [{name: exhaustive_sample_count, run: [fn, [], [t.equal, [len, samples], 40]]}]]
+  - [t.combine, [list, coverage, sorting, reversal, uniqueness, partitioning, searching, slicing, positions]]

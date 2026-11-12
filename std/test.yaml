@@ -75,3 +75,15 @@ compare:
     - [map, [fn, [sample], [dict, "name", name, "input", sample]], samples]
     - [fn, [sample], [equal, [call, left, sample], [call, right, sample]]]
   - map
+# Combine reports without wrapping each entire report in a captured test thunk.
+# Retain each leaf result (and its input/error) once, in child encounter order.
+combine:
+  - fn
+  - [[reports, list]]
+  - - fold
+    - - fn
+      - [acc, child]
+      - [dict, "total", [add, [get, acc, "total"], [get, child, "total"]], "passed", [add, [get, acc, "passed"], [get, child, "passed"]], "failed", [add, [get, acc, "failed"], [get, child, "failed"]], "results", [concat, [get, acc, "results"], [get, child, "results"]]]
+    - {total: 0, passed: 0, failed: 0, results: []}
+    - reports
+  - map
