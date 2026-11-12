@@ -2,7 +2,7 @@ error:
   column: 27
   kind: import
   line: 2
-  message: "unknown standard module `nope`; available: fuzz, validation, dependency, text, diff, json, csv, set, stack, queue, yaml, math, list, group, map, types, test, machine"
+  message: "unknown standard module `nope`; available: inventory, fuzz, validation, dependency, text, diff, json, csv, set, stack, queue, yaml, math, list, group, map, types, test, machine"
   path: "/a/$call/1"
   reference:
     - a
