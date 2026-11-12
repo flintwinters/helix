@@ -1,0 +1,108 @@
+status: finished
+root:
+  empty:
+    total: 0
+    passed: 0
+    failed: 0
+    results: []
+  report:
+    total: 3
+    passed: 2
+    failed: 1
+    results:
+      - outcome: passed
+        value: 0
+        name: validation
+        input:
+          index: 0
+          value: 0
+      - outcome: failed
+        error:
+          kind: negative
+          message: negative input
+          path: /1/mixed/2/2/2
+          reference:
+            - 1
+            - mixed
+            - 2
+            - 2
+            - 2
+          line: 5
+          column: 59
+          data: -1
+          calls:
+            - file: "std:validation"
+              path: /batch/2/2/2/1
+              line: 16
+              column: 28
+              function: /1/mixed/2
+              function_line: 5
+              function_column: 32
+            - file: "std:test"
+              path: /table/2/1/1/2/6/2/1
+              line: 59
+              column: 109
+              function: /batch/2/2
+              function_file: "std:validation"
+              function_line: 16
+              function_column: 7
+            - file: "std:test"
+              path: /capture/2/1/4/1
+              line: 8
+              column: 51
+              function: /table/2/1/1/2/6
+              function_file: "std:test"
+              function_line: 59
+              function_column: 93
+        name: validation
+        input:
+          index: 1
+          value: -1
+      - outcome: passed
+        value: 20
+        name: validation
+        input:
+          index: 2
+          value: 2
+  counts: ~
+  first: ~
+  failed_input: ~
+  failed_error: ~
+  last: ~
+  false_and_null:
+    total: 2
+    passed: 2
+    failed: 0
+    results:
+      - outcome: passed
+        value: false
+        name: validation
+        input:
+          index: 0
+          value: false
+      - outcome: passed
+        value: ~
+        name: validation
+        input:
+          index: 1
+          value: ~
+  duplicates:
+    total: 2
+    passed: 2
+    failed: 0
+    results:
+      - outcome: passed
+        value: "é"
+        name: validation
+        input:
+          index: 0
+          value: "é"
+      - outcome: passed
+        value: "é"
+        name: validation
+        input:
+          index: 1
+          value: "é"
+  wrong_values: type
+  wrong_callback: type
+  wrong_arity: arity

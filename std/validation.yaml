@@ -1,0 +1,17 @@
+# Collect independent validation/transformation outcomes without losing input positions.
+# batch(values, validate) calls validate(value) once per item, in encounter order.
+# Returning normally (including false/null) passes; rejection must raise an error.
+# Reports use std:test's authoritative {total, passed, failed, results} policy.
+# Each result has name: "validation", input: {index, value}, outcome: passed/failed,
+# and either value (the callback result) or error (the original structured error).
+# Inputs are retained for diagnosis; errors do not prevent later items from running.
+# Immutable copies can be quadratic; bounded iteration applies. Small batches only.
+policy: [import, std:test]
+sequences: [import, std:list]
+batch:
+  - fn
+  - [[values, list], [validate, function]]
+  - - policy.table
+    - [map, [fn, [pair], [dict, "name", "validation", "input", [dict, "index", [get, pair, 0], "value", [get, pair, 1]]]], [sequences.enumerate, values]]
+    - [fn, [input], [call, validate, [get, input, "value"]]]
+  - map

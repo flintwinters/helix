@@ -1,9 +1,9 @@
 # Batch rows are independent YAML documents; keep source and index with each error.
 yaml: [import, 'std:yaml']
-l: [import, 'std:list']
+validation: [import, 'std:validation']
 rows: ['{name: core, stock: 3}', '{name: broken', '{name: debt, stock: -2}', '{stock: 1}', '{name: cli, stock: 2}']
 validate: [fn, [row], [let, {name: [get, row, "name"], stock: [get, row, "stock"]}, [if, [eq, [assert, [ge, stock, 0], "stock must be nonnegative"], null], name, null]]]
-batch: [map, [fn, [index], [let, {source: [get, rows, index]}, [try, [validate, [yaml.parse, source]], [fn, [error], [set, [set, [set, {}, "row", index], "source", source], "error", error]]]]], [l.range, [len, rows]]]
+batch: [validation.batch, rows, [fn, [source], [validate, [yaml.parse, source]]]]
 # A tiny data-only calculator: operator and two operands, parsed per input line.
 calculate:
   [fn, [source],
