@@ -1,5 +1,6 @@
 //! Explicit execution requests and continuations. No transition invokes another interpreter.
 use crate::builtins::{self, Fault};
+use yaml_rust2::Yaml;
 use crate::error::{HelixError, s};
 use crate::graph::{Graph, Kind, NodeId, ROOT};
 use crate::link;
@@ -16,7 +17,7 @@ impl Default for Limits {
             max_iterations: 100_000,
             max_work: 2_000_000,
             max_values: 128_000_000,
-            max_value_size: 1_000_000,
+            max_value_size: crate::model::MAX_VALUE_SIZE,
             max_eval_depth: 512,
         }
     }
@@ -143,6 +144,11 @@ impl Evaluator {
             answer: None,
             depth: 0,
             type_time: false,
+            inherited_type_time: false,
+            pending_effect: None,
+            effects: Vec::new().into(),
+            effects_allowed: true,
+            signal: None,
             remaining_work: limits.max_work,
             remaining_values: limits.max_values,
             limits,
@@ -160,7 +166,7 @@ impl Evaluator {
     }
     fn err(&self, id: NodeId, kind: &str, message: impl Into<String>) -> HelixError {
         let mut error = self.graph().error(id, kind, message.into());
-        if self.type_time {
+        if self.type_time || self.inherited_type_time {
             error.phase = Some("type");
         }
         error
@@ -187,7 +193,7 @@ impl Evaluator {
         self.answer = Some(Ok(value));
     }
     fn fail(&mut self, mut error: HelixError) {
-        if self.type_time {
+        if self.type_time || self.inherited_type_time {
             error.phase = Some("type");
         }
         self.answer = Some(Err(error));
@@ -278,6 +284,26 @@ impl Evaluator {
                 self.collect_next(site, actor, nodes, keys, values, argument);
             }
             Request::Apply(site, actor, nodes, values) => match actor {
+                Actor::Builtin(name) if name == "effect" => {
+                    if self.type_time || self.inherited_type_time {
+                        return Err(self.err(site, "purity", "effects are forbidden during type time"));
+                    }
+                    if !self.effects_allowed {
+                        return Err(self.err(site, "effect", "checking cannot execute effects"));
+                    }
+                    let Value::String(operation) = &values[0] else {
+                        return Err(self.err(nodes[0], "type", "expected string effect operation"));
+                    };
+                    let payload = values[1].plain_yaml().ok_or_else(|| self.err(nodes[1], "type", "effect payload must be ordinary data"))?;
+                    let request = crate::model::EffectRequest {
+                        id: self.effects.len() as u64 + 1,
+                        operation: operation.clone(), payload,
+                    };
+                    self.charge_value(site, &self.effect_view(site, &request))?;
+                    self.pending_effect = Some((site, request));
+                    self.answer = None;
+                }
+
                 Actor::Function(function) => self.push(Request::Call(site, function, values)),
                 Actor::Builtin(name) if name == "step" => {
                     let Value::Machine(child) = &values[0] else {
@@ -1270,6 +1296,41 @@ impl Evaluator {
         }
         Ok(())
     }
+    pub fn resolve_effect(&mut self, result: Result<Yaml, (String, String)>) {
+        let Some((site, request)) = self.pending_effect.take() else { return; };
+        let mut outcome = match result {
+            Ok(data) => crate::value::from_host_yaml(&data)
+                .map_err(|why| self.err(site, "type", why))
+                .and_then(|value| { self.charge_value(site, &value)?; Ok(value) }),
+            Err((kind, message)) if kind.len() + message.len() > self.limits.max_value_size =>
+                Err(self.err(site, "limit", "effect error exceeds runtime limits")),
+            Err((kind, message)) => Err(self.err(site, &kind, message)),
+        };
+        let mut record = self.effect_view(site, &request);
+        if let Value::Hash(fields) = &mut record {
+            fields.insert(s("outcome"), match &outcome {
+                Ok(value) => value.clone(), Err(error) => error.to_value(),
+            });
+            fields.insert(s("status"), s(if outcome.is_ok() { "finished" } else { "error" }));
+        }
+        if let Err(error) = self.charge_value(site, &record) {
+            if let Value::Hash(fields) = &mut record {
+                fields.insert(s("outcome"), error.to_value());
+                fields.insert(s("status"), s("error"));
+            }
+            outcome = Err(error);
+        }
+        self.effects.push(record);
+        self.answer = Some(outcome);
+    }
+    pub fn effect_view(&self, site: NodeId, request: &crate::model::EffectRequest) -> Value {
+        Value::Hash([
+            (s("id"), Value::Integer(request.id as i64)),
+            (s("operation"), s(&request.operation)),
+            (s("payload"), Value::from_yaml(&request.payload)),
+            (s("location"), self.graph().reference(site)),
+        ].into_iter().collect())
+    }
     fn charge_value(&mut self, id: NodeId, value: &Value) -> Result<(), HelixError> {
         let mut pending = vec![(value, 0, true)];
         let mut nodes = 0;
@@ -1503,6 +1564,7 @@ impl Evaluator {
             Vec::new(),
             Request::Eval(node, Mode::Node),
         );
+        state.effects_allowed = false;
         state.memo = self.memo.clone();
         state.limits = self.limits;
         state.remaining_work = self.remaining_work;

@@ -1,0 +1,9 @@
+status: signaled
+pending_effect:
+  id: 1
+  operation: args
+  payload: ~
+  location:
+    source: "<root>"
+    path:
+      - "arguments"

@@ -1,0 +1,29 @@
+status: finished
+root:
+  status: signaled
+  request:
+    id: 1
+    operation: time
+    payload: ~
+    location:
+      source: "<root>"
+      path:
+        - 1
+        - original
+        - 1
+        - 2
+  step_preserves_pending: true
+  original_status: ready
+  type_time:
+    kind: purity
+    message: effects are forbidden during type time
+    phase: type
+    path: /2/10/1/1
+    reference:
+      - 2
+      - 10
+      - 1
+      - 1
+    line: 13
+    column: 35
+  invalid_operation: type

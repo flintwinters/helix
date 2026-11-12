@@ -43,7 +43,7 @@ Functions retain their original immutable code and lexical environment, includin
 
 `[let, {name: expr, ...}, body]` evaluates `body` with the bindings in scope. Bindings see each other (mutually, as in a map) and are evaluated only when used; a self-dependent binding is a `cycle`.
 
-**Iteration** takes a function (a name or inline `fn`) first, like every actor: `[map, f, list]`, `[filter, f, list]` (`f` must return a boolean), `[fold, f, init, list]` (`f` takes accumulator then element), `[each, f, list]` (calls `f` for each element, returns `null`; useful once effects exist). `[until, done, step, init]` repeats `state = step(state)` until `done(state)` is `true` and returns the state; more than 100000 steps is a `limit` error.
+**Iteration** takes a function (a name or inline `fn`) first, like every actor: `[map, f, list]`, `[filter, f, list]` (`f` must return a boolean), `[fold, f, init, list]` (`f` takes accumulator then element), `[each, f, list]` (calls `f` for each element, returns `null`; useful for ordered effects). `[until, done, step, init]` repeats `state = step(state)` until `done(state)` is `true` and returns the state; more than 100000 steps is a `limit` error.
 
 **Evaluation order**: arguments left to right, all of them, except the forms that choose: `if`, `cond`, `and`, `or` (lazy), `fn` (body not run until called), `let` (bindings on use). Memoization is per node outside function bodies; inside a body every call re-evaluates.
 
@@ -68,7 +68,7 @@ objects:
 
 Ordinary data retains its compact representation. An inspection graph keeps the normal `root` or `error` projection and places its named `objects` table beside it in the state envelope, so recursive lexical references stay finite and ordinary user keys cannot collide with metadata. It is **not a resumable file format**; loading this output yields ordinary data, not reconstructed functions or machines. Machines compare by logical execution state rather than allocation identity. Transition counts and continuation details are implementation details: wait for a status or observable condition rather than counting steps.
 
-The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Disk snapshots, restoration validation, reversibility-promise syntax, external effects and debugger UI are separate future work.
+The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Disk snapshots, restoration validation, reversibility-promise syntax and debugger UI are separate future work. Explicit host effects are described below.
 
 ## Type rules
 
@@ -349,10 +349,70 @@ selects or replaces the root. Updates copy containers along the path, require
 existing intermediate containers, and permit a new final map key. Missing paths
 and invalid indices use the ordinary `get`/`set` errors.
 
+### JSON and CSV toolkits
+
+Import `std:json` or `std:csv` for `parse(source)` and `dump(value)`;
+the corresponding strict primitives are `json_parse`, `json_dump`, `csv_parse`
+and `csv_dump`. All are pure, data-only operations usable inside `type_time`.
+JSON parsing requires one complete JSON value, preserves object insertion order,
+and uses the last value for a duplicate key. Integer tokens must fit signed
+64-bit integers; decimal/exponent tokens must fit finite floats. JSON dumping
+uses the existing compact JSON output contract, including a final newline.
+Functions and machines cannot be dumped as data. JSON strings never execute.
+
+CSV is a list of rows, each a nonempty list of strings; there is no implicit
+header or numeric conversion. Parsing accepts ragged rows, LF/CRLF/CR record
+endings, quoted commas and newlines, and doubled quotes. Characters after a
+closing quote and quotes inside unquoted fields are rejected. Empty input is
+zero rows; a blank line is one empty field; a trailing comma adds an empty
+field. Dumping uses CRLF record endings and quotes empty fields and fields
+containing commas, quotes or newlines. Empty rows and non-string cells raise
+`type`; malformed input raises `parse`. Valid rows round-trip exactly through
+`parse(dump(rows))`. Parser graph/nesting and evaluator value limits apply.
+
 ## Resource bounds and confined loading
 
 Each VM shares budgets across calls, iterations and error recovery: 2,000,000 evaluated node visits and 128,000,000 produced value units, with at most 1,000,000 units in any one value. A unit is a scalar/container/key plus the UTF-8 bytes of strings; nested values and memoized copies count again. Budget exhaustion is `limit`, not rejection of a value by a declared type. A graph, including imported code, has at most 100,000 nodes. Computed ordinary-data values obey the parser's graph-node cap so their results stay re-readable; map keys contribute text units, not graph nodes. Syntax and produced values have at most 64 nested containers; import chains at most 64 modules; active evaluation at most 512 nodes. These guards return `depth` or `limit` with source blame. The existing 200-call and 100,000-iteration limits still apply. Execution is iterative in both CLI and library use; suspended calls are explicit continuations rather than host call frames.
 
 `helix sandbox ROOT FILE` (also `./manage.py runtime sandbox ROOT FILE`) loads the main file explicitly supplied by the caller and restricts all file imports to canonical paths below ROOT. ROOT `-` permits only embedded `std:` modules. Path traversal, sibling-prefix and symlink escapes are rejected as `permission` errors at the import argument, including transitive and uncalled imports. Ordinary `run` retains trusted loading. Library callers use `Vm::load_sandboxed(source, optional_file, roots)`; empty roots deny file imports. These permissions are host configuration and are never granted by program/state data.
 
-This is an import capability boundary, not operating-system isolation: a host concurrently replacing directory ancestors can race path authorization. Arbitrarily large source files are read before evaluation limits apply, and these budgets are not a byte-exact heap quota. File writes, network and process effects do not exist yet; they must acquire explicit capabilities before being added. Recovery output is source data and conveys no permission grant.
+This is an import capability boundary, not operating-system isolation: a host concurrently replacing directory ancestors can race path authorization. Arbitrarily large source files are read before evaluation limits apply, and these budgets are not a byte-exact heap quota. File writes, network and process effects use the explicit caller grants described below. Recovery output is source data and conveys no permission grant.
+
+### Host effects and explicit grants
+
+`[effect, operation, payload]` yields an explicit request after evaluating its two arguments. Type time rejects effects before yielding. `Vm::run()` stops with `status: signaled`; the state contains `pending_effect` (identity, operation and payload). A host supplies a success value or structured failure through `resolve_effect`. Completed requests and outcomes remain in `effects`; resolving an already completed request does not execute it again. This is in-memory continuation support, not disk snapshot restoration.
+
+Host applications use `Vm::signal(event)` to interrupt an active machine and
+`resume_signal()` to continue it. Events are bounded ordinary YAML data, visible
+under `signal` while interrupted. A pending request survives interruption;
+resolving it does not clear the interrupt. The bundled host leaves interrupted
+machines alone. These are explicit host event APIs, not installed OS signal
+handlers. Retained machine branches remain independent: explicitly handing an
+older pending branch to a host can perform its request again. Request IDs are
+local to a branch, not global deduplication keys.
+
+An effect failure does not promise rollback of partial external changes. The
+runtime never automatically retries requests, and failed machines with completed
+effect records do not emit pure recovery source that could repeat those actions.
+
+`helix perform [grants] file.yaml [-- arguments...]` runs requests through the bundled host. It emits program stdout to stdout and full state to stderr. Source comes from a file so stdin remains available to the program. `run` and `exec` never acquire host capabilities. Use `perform --help` to discover grants. Repeated root, name, executable and origin flags accumulate; grants belong to the caller, never to source or saved state.
+
+| Operation | Payload | Result | Grant |
+| --- | --- | --- | --- |
+| `args` | `null` | List of arguments after the source filename | None |
+| `exit` | Integer 0–255 | `null`; sets successful process exit code after evaluation finishes | None |
+| `file_read` | Path string | UTF-8 text | `--allow-read ROOT` |
+| `file_write` | `{path: string, text: string}` | `null` | `--allow-write ROOT` |
+| `env` | Variable name | String, or `null` if absent | `--allow-env NAME` |
+| `stdin` | `null` | UTF-8 text read until EOF | `--allow-stdin` |
+| `stdout` | Text string | `null` | `--allow-stdout` |
+| `command` | `{program: string, args: list_of_strings}` | `{code, stdout, stderr}` | `--allow-command EXECUTABLE` |
+| `http` | Absolute HTTP(S) URL string | `{status, body}` | `--allow-http ORIGIN` |
+| `time` | `null` | Unix epoch milliseconds | `--allow-time` |
+| `random` | `null` | Nonnegative 63-bit integer | `--allow-random` |
+
+File imports under `perform` require the same `--allow-read` roots (embedded standard modules remain available). File roots are canonicalized; existing symlinks and parents of new files must remain within a granted root. These checks are import-style confinement, not protection against concurrent filesystem changes or an OS sandbox. Commands use argument vectors without an implicit shell, inherit the host environment and working directory, and receive closed stdin. An executable grant authorizes that executable's ambient access, including subprocesses; granting a shell authorizes shell commands. Nonzero command exits are result data; spawn, encoding and host failures are catchable errors. The `exit` effect selects the eventual successful exit code and does not skip cleanup or later evaluation.
+
+HTTP uses the installed `curl` executable for GET requests, disables curl configuration, proxies, URL globbing and redirects, and restricts protocols to HTTP(S). An origin grant includes scheme, authority and explicit port exactly as written. HTTP error statuses remain result data. Process output, file text and HTTP responses are limited to 1 MiB; processes have a 10-second deadline and HTTP requests an 8-second deadline. Descendant processes are not contained or killed as a process group. Stdin waits for EOF.
+
+`--fixed-time MILLISECONDS` fixes the clock response. `--seed INTEGER` selects a reproducible random sequence, advanced once per request; both still require their grants. Without these options the host reads the system clock and `/dev/urandom`. The deterministic generator is intended for tests and replay inputs, not cryptographic randomness. Effect request/outcome histories expose nondeterministic inputs for inspection; full fresh-process replay of active continuations remains future work. Capability failures occur before host actions and can be handled with `try`/`finally` through the ordinary evaluator.

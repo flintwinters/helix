@@ -6,6 +6,10 @@ use std::sync::Arc;
 use yaml_rust2::Yaml;
 pub(crate) type NodeId = usize;
 pub(crate) const ROOT: NodeId = 0;
+// Source, computed values and host data share these structural bounds.
+pub(crate) const MAX_NODES: usize = 100_000;
+pub(crate) const MAX_NESTING: usize = 64;
+pub(crate) const MAX_VALUE_SIZE: usize = 1_000_000;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Segment {
     Key(String),
@@ -199,6 +203,11 @@ pub(crate) struct Evaluator {
     pub(crate) depth: usize,
     pub(crate) limits: Limits,
     pub(crate) type_time: bool,
+    pub(crate) inherited_type_time: bool,
+    pub(crate) pending_effect: Option<(NodeId, EffectRequest)>,
+    pub(crate) effects: List,
+    pub(crate) effects_allowed: bool,
+    pub(crate) signal: Option<Value>,
     pub(crate) remaining_work: usize,
     pub(crate) remaining_values: usize,
 }
@@ -278,4 +287,12 @@ pub struct Vm {
 
 pub(crate) fn string(text: &str) -> Value {
     Value::String(text.into())
+}
+
+/// An explicit host request. IDs are local to an immutable machine branch, not global deduplication keys.
+#[derive(Clone, Debug, PartialEq)]
+pub struct EffectRequest {
+    pub id: u64,
+    pub operation: String,
+    pub payload: Yaml,
 }

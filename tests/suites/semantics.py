@@ -1,6 +1,8 @@
 """Discoverable actor census, arity boundaries and independently specified results."""
 import re
 import json
+import csv
+import io
 
 import yaml
 
@@ -8,6 +10,11 @@ from tests.suites.contracts import checked
 
 # An executable witness per actor. Results here are independent of implementation dispatch.
 WITNESSES = {
+    "effect": ('[try, [type_time, [effect, "time", null]], [fn, [e], [get, e, "kind"]]]', 'purity'),
+    "json_parse": ('[json_parse, \'{"x":[1,true]}\']', {"x": [1, True]}),
+    "json_dump": ('[json_dump, {x: 1}]', '{"x":1}\n'),
+    "csv_parse": ('[csv_parse, "a,b\\nc,d"]', [["a", "b"], ["c", "d"]]),
+    "csv_dump": ('[csv_dump, [list, [list, "a", "b"]]]', 'a,b\r\n'),
     "vm": ('[get, [inspect, [vm, [fn, [], 42]]], "status"]', 'ready'),
     "step": ('[get, [inspect, [step, [vm, [fn, [], 42]]]], "status"]', 'running'),
     "inspect": ('[get, [inspect, [vm, [fn, [], 42]]], "status"]', 'ready'),
@@ -73,8 +80,9 @@ WITNESSES = {
 
 
 # Operations accepting every YAML value cannot have a wrong-type first operand.
-UNRESTRICTED = {"eq", "ne", "type", "literal", "list", "enum", "finally", "yaml_dump", "type_time"}
+UNRESTRICTED = {"eq", "ne", "type", "literal", "list", "enum", "finally", "yaml_dump", "json_dump", "type_time"}
 INVALID = {
+    "effect": "1, null", "json_parse": "null", "csv_parse": "null", "csv_dump": "null",
     "vm": "null", "step": "null", "inspect": "null",
     "add": "null, 1", "mul": "null, 1", "sub": "null, 1", "div": "null, 1", "mod": "null, 1",
     "neg": "null", "lt": "null, 1", "le": "null, 1", "gt": "null, 1", "ge": "null, 1",
@@ -143,6 +151,21 @@ def verify(h):
                    '[div, -9223372036854775808, -1]', '[mul, 1e308, 2.0]']:
         result = h.helix("run", "-", stdin=source)
         assert yaml.safe_load(result.stdout)["error"]["kind"] == "overflow", (source, result)
+    # Independent interchange oracles verify escaping and rows without type inference.
+    for value in [None, True, -9223372036854775808, 1.25,
+                  {"z": ["add", "雪🙂", "\\n", "\n", "\"", "\u0000"], "a": {}}, []]:
+        source = json.dumps(value, ensure_ascii=False)
+        assert checked(h, f"[json_parse, {json.dumps(source, ensure_ascii=False)}]") == value
+        dumped = checked(h, f"[json_dump, [json_parse, {json.dumps(source, ensure_ascii=False)}]]")
+        assert json.loads(dumped) == value
+    for rows in [[], [[""]], [["a", "b"], ["ragged"]],
+                 [["雪🙂", "a,b", 'a"b', "a\nb", "a\rb", "a\r\nb", ""]]]:
+        stream = io.StringIO(newline="")
+        csv.writer(stream).writerows(rows)
+        encoded = json.dumps(stream.getvalue(), ensure_ascii=False)
+        assert checked(h, f"[csv_parse, {encoded}]") == rows
+        dumped = checked(h, f"[csv_dump, [csv_parse, {encoded}]]")
+        assert list(csv.reader(io.StringIO(dumped, newline=""))) == rows
     # Error blame across strict, lazy and callback forms; unused branches are covered above.
     for source, path, column in [('[add, 1, true]', '/2', 10), ('[if, 1, 2, 3]', '/1', 6),
                                  ('[get, [], -1]', '/2', 11), ('[not, 1]', '/1', 7)]:

@@ -7,7 +7,9 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use yaml_rust2::Yaml;
 
-pub use crate::model::{Status, Vm};
+pub use crate::model::{EffectRequest, Status, Vm};
+#[path = "vm/effects.rs"]
+pub mod effects;
 impl Status {
     pub fn as_str(self) -> &'static str {
         match self {
@@ -81,9 +83,16 @@ impl Vm {
                     .expect("an active machine has an evaluator"),
             )
             .take_child();
-            if let Some(child) = child {
+            if let Some(mut child) = child {
+                let parent_state = self.evaluator.as_ref().unwrap();
+                let previous = child.evaluator.as_ref().map(|e| (e.inherited_type_time, e.effects_allowed));
+                if let Some(evaluator) = &mut child.evaluator {
+                    let evaluator = Arc::make_mut(evaluator);
+                    evaluator.inherited_type_time |= parent_state.type_time || parent_state.inherited_type_time;
+                    evaluator.effects_allowed &= parent_state.effects_allowed;
+                }
                 self.status = Status::Running;
-                parents.push(std::mem::replace(self, child));
+                parents.push((std::mem::replace(self, child), previous));
                 if self.terminal() {
                     break;
                 }
@@ -91,6 +100,9 @@ impl Vm {
                 self.status = Status::Running;
                 let evaluator = Arc::make_mut(self.evaluator.as_mut().unwrap());
                 evaluator.transition();
+                if evaluator.pending_effect.is_some() {
+                    self.status = Status::Signaled;
+                }
                 if let Some(outcome) = evaluator.outcome().cloned() {
                     match outcome {
                         Ok(value) => {
@@ -103,10 +115,54 @@ impl Vm {
                 break;
             }
         }
-        while let Some(mut parent) = parents.pop() {
+        while let Some((mut parent, previous)) = parents.pop() {
+            if let (Some(evaluator), Some((inherited_type_time, effects_allowed))) = (&mut self.evaluator, previous) {
+                let evaluator = Arc::make_mut(evaluator);
+                evaluator.inherited_type_time = inherited_type_time;
+                evaluator.effects_allowed = effects_allowed;
+            }
             Arc::make_mut(parent.evaluator.as_mut().unwrap()).return_child(self.clone());
             *self = parent;
         }
+    }
+    /// Yielded requests have no authority until a host explicitly handles them.
+    pub fn pending_effect(&self) -> Option<&EffectRequest> {
+        self.evaluator.as_ref()?.pending_effect.as_ref().map(|(_, request)| request)
+    }
+    /// Resolve only the current request; stepping or running a completed version never repeats it.
+    pub fn resolve_effect(&self, result: Result<Yaml, (String, String)>) -> Self {
+        let mut next = self.clone();
+        if next.status == Status::Signaled && next.pending_effect().is_some() {
+            Arc::make_mut(next.evaluator.as_mut().unwrap()).resolve_effect(result);
+            next.status = if next.evaluator.as_ref().unwrap().signal.is_some() { Status::Signaled } else { Status::Running };
+        }
+        next
+    }
+    pub fn is_interrupted(&self) -> bool {
+        self.evaluator.as_ref().is_some_and(|e| e.signal.is_some())
+    }
+    /// Interrupt an active machine without discarding its continuation or pending request.
+    pub fn signal(&self, event: Yaml) -> Self {
+        let mut next = self.clone();
+        if matches!(next.status, Status::Ready | Status::Running | Status::Signaled) {
+            match crate::value::from_host_yaml(&event) {
+                Ok(event) => {
+                    Arc::make_mut(next.evaluator.as_mut().unwrap()).signal = Some(event);
+                    next.status = Status::Signaled;
+                }
+                Err(message) => next.fail(next.evaluator.as_ref().unwrap().program.graph.error(ROOT, "type", message)),
+            }
+        }
+        next
+    }
+    pub fn resume_signal(&self) -> Self {
+        let mut next = self.clone();
+        if next.status == Status::Signaled {
+            let evaluator = Arc::make_mut(next.evaluator.as_mut().unwrap());
+            evaluator.signal = None;
+            if evaluator.pending_effect.is_none() { next.status = Status::Running; }
+        }
+        next
     }
     pub fn run(&mut self) {
         while !self.terminal() {
@@ -170,6 +226,7 @@ impl Vm {
         if let Some(result) = &self.result {
             fields.insert(s("root"), result.clone());
         }
+        self.effect_fields(&mut fields);
         if self.checking {
             fields.insert(s("mode"), s("check"));
             let errors = if self.errors.is_empty() {
@@ -199,6 +256,20 @@ impl Vm {
             .plain_yaml()
             .expect("machine inspection is data")
     }
+    fn effect_fields(&self, fields: &mut crate::value::Hash) {
+        use crate::error::s;
+        if let Some(evaluator) = &self.evaluator {
+            if let Some((site, request)) = &evaluator.pending_effect {
+                fields.insert(s("pending_effect"), evaluator.effect_view(*site, request));
+            }
+            if !evaluator.effects.is_empty() {
+                fields.insert(s("effects"), Value::Array(evaluator.effects.clone().into()));
+            }
+            if let Some(event) = &evaluator.signal {
+                fields.insert(s("signal"), event.clone());
+            }
+        }
+    }
     pub(crate) fn inspection(&self) -> Value {
         let mut fields = crate::value::Hash::new();
         fields.insert(
@@ -210,6 +281,7 @@ impl Vm {
                 fields.extend(state)
             }
         }
+        self.effect_fields(&mut fields);
         fields.insert(crate::error::s("checking"), Value::Boolean(self.checking));
         fields.insert(
             crate::error::s("errors"),
@@ -239,7 +311,7 @@ impl Vm {
     }
     pub fn recovery_state_string(&self) -> String {
         let mut state = self.state();
-        if self.status == Status::Error {
+        if self.status == Status::Error && self.evaluator.as_ref().is_none_or(|e| e.effects.is_empty()) {
             if let (Some(evaluator), Yaml::Hash(fields)) = (&self.evaluator, &mut state) {
                 fields.insert(text("recovery"), text(&evaluator.recovery_source()));
                 if let Some(file) = &self.source_file {

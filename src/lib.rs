@@ -15,5 +15,7 @@ mod inspect;
 
 pub use library::names as std_modules;
 pub use library::source as std_source;
-pub use vm::{Status, Vm};
+pub use vm::{EffectRequest, Status, Vm};
 pub use emit::{document as yaml_document, json_document};
+
+pub use vm::effects::EffectHost;

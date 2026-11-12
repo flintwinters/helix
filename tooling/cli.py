@@ -29,6 +29,7 @@ class AgentParser(argparse.ArgumentParser):
 DEFAULT_TEST_JOBS = 4
 
 SUITES = {
+    "effects": "Capability-controlled host effects, deterministic inputs, failures and pending requests",
     "startup": "Build-free discovery stays independent of execution and test-only imports",
     "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
     "golden": "Exact YAML states, deterministic evaluation, and finished-root round trips",

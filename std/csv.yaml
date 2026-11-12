@@ -1,0 +1,3 @@
+# Data-only CSV conversion.
+parse: [fn, [[source, string]], [csv_parse, source]]
+dump: [fn, [value], [csv_dump, value], string]

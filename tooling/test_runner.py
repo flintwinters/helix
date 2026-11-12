@@ -79,10 +79,14 @@ def malformed_state(out: str, returncode: int) -> str | None:
         return f"state is not valid YAML: {e}"
     if not isinstance(state, dict) or "status" not in state:
         return "state has no `status`"
-    if state["status"] not in ("finished", "error"):
+    if state["status"] not in ("finished", "error", "signaled"):
         return f"unexpected terminal status {state['status']!r}"
-    if (state["status"] == "error") != (returncode == 1):
+    if (state["status"] in ("error", "signaled")) != (returncode == 1):
         return "exit code disagrees with status"
+    if state["status"] == "signaled":
+        pending = state.get("pending_effect")
+        if not isinstance(pending, dict) or not {"id", "operation", "payload"} <= pending.keys():
+            return "signaled state has no explicit pending effect"
     if state["status"] == "finished" and "root" not in state:
         return "finished state has no root"
     if state["status"] == "error":

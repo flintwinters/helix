@@ -10,9 +10,7 @@ use crate::span::Span;
 
 pub type NodeId = usize;
 
-pub(crate) use crate::model::{Graph, Kind, Node, ROOT};
-pub(crate) const MAX_NODES: usize = 100_000;
-pub(crate) const MAX_NESTING: usize = 64;
+pub(crate) use crate::model::{Graph, Kind, Node, ROOT, MAX_NODES, MAX_NESTING};
 
 impl Graph {
     pub fn parse(src: &str) -> Result<Graph, HelixError> {

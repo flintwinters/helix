@@ -9,6 +9,7 @@
 use crate::value::Value;
 
 mod collection;
+mod codecs;
 mod fault;
 mod number;
 mod typing;
@@ -30,6 +31,8 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("map", 2, Some(2)), ("filter", 2, Some(2)), ("fold", 3, Some(3)), ("each", 2, Some(2)), ("until", 3, Some(3)),
     ("len", 1, Some(1)), ("concat", 2, None), ("slice", 3, Some(3)), ("get", 2, Some(3)), ("set", 3, Some(3)),
     ("append", 2, None), ("keys", 1, Some(1)), ("has", 2, Some(2)), ("values", 1, Some(1)), ("duplicates", 1, Some(1)),
+    ("effect", 2, Some(2)),
+    ("json_parse", 1, Some(1)), ("json_dump", 1, Some(1)), ("csv_parse", 1, Some(1)), ("csv_dump", 1, Some(1)),
     ("yaml_parse", 1, Some(1)), ("yaml_dump", 1, Some(1)),
     ("str", 1, Some(1)), ("int", 1, Some(1)), ("float", 1, Some(1)), ("type", 1, Some(1)),
     ("list_of", 1, Some(1)), ("map_of", 1, Some(1)), ("record", 0, None), ("optional", 1, Some(1)), ("default", 2, Some(2)), ("union", 1, None),
@@ -59,6 +62,7 @@ pub fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Faul
         "not" => boolean(&args[0], 0).map(|b| Value::Boolean(!b)),
         _ if typing::handles(actor) => typing::apply(actor, args, pred),
         "len" | "list" | "dict" | "concat" | "slice" | "get" | "set" | "append" | "keys" | "has" | "values" | "duplicates" => collection::apply(actor, args),
+        "json_parse" | "json_dump" | "csv_parse" | "csv_dump" => codecs::apply(actor, &args[0]),
         "yaml_parse" | "yaml_dump" => yaml::apply(actor, &args[0]),
         "str" => text(&args[0]),
         "type" => Ok(Value::String(type_name(&args[0]).to_string())),
