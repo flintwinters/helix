@@ -35,7 +35,7 @@ Complexity must earn its place through concrete workloads. `CHARTER.md` section 
 
 ## Current Big Tasks
 
-Consolidation takes priority under `CHARTER.md` section 12: select one defining workload, audit the semantics it needs and defer unrelated expansion. The target selection remains open.
+Consolidation takes priority under `CHARTER.md` section 12. The active target is section 11's Docker nginx workload: reviewed package/file/service convergence, independently verified behavior and failure recovery on one disposable Linux container. Implementation and acceptance remain open; audit the semantics it needs and defer unrelated expansion.
 
 1. Expand production dogfooding through test and task orchestration: move complete policy responsibilities into Helix while retaining independent bootstrap and host failure detection. Preserve immutable execution, effect boundaries and structural diagnostics; fix underlying design problems instead of suppressing findings.
 2. Design validated, versioned disk snapshots and reversibility-promise syntax, preserving complete explicit continuation state and readable execution references.

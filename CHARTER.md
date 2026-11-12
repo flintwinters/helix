@@ -545,6 +545,8 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
 
 ### First useful replacement: one Linux host
 
+The active consolidation target is the Docker nginx acceptance specification below. Its local-container scope is deliberately narrower than this parent milestone; completing it does not establish SSH support or general Linux service management.
+
 - [ ] Replace one real configuration playbook with an end-to-end Helix configuration
   - [ ] Declare a package, a managed configuration file and a service using the existing machine vocabulary
   - [ ] Observe their actual state through authorized effects and produce a plan using section 8's realization contract
@@ -552,6 +554,74 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] A second run performs no mutations; deliberately introduced drift produces only the necessary repair
   - [ ] Demonstrate both local execution and SSH execution on a disposable host
   - [ ] Record the supported distribution, resource semantics and remaining limitations alongside the example
+
+### Docker nginx acceptance specification — active consolidation target
+
+**Outcome:** one readable Helix configuration installs nginx, manages its configuration and static content, and keeps it serving the declared response inside a disposable Linux container. An operator can preview, review, apply, verify, repeat without mutations and repair drift. Failures expose actual partial progress. This is a specification; none of the implementation or acceptance evidence below is complete yet.
+
+#### Scope and execution boundary
+
+- [ ] Qualify one Debian-based Linux image and architecture, pinned by digest, with a reproducible package source/version policy. Record resolved image, package and controller versions in run artifacts. Keep nginx absent in the clean baseline; do not bake the desired state into the fixture. Retain bootstrap dependencies separately from resources Helix manages.
+- [ ] Run the Helix controller inside the target container for this first local-execution milestone. The Python harness owns Docker provisioning and independent observations from outside the Helix process. Docker exec is harness transport, not a new Helix effect or a substitute for an SSH adapter.
+- [ ] Use the existing local command host and explicit caller grants. Docker access stays with the harness; the managed container receives no Docker socket, privileged mode, host PID namespace or writable host-system mounts. Scope writable project artifacts to a dedicated run directory, bind any published HTTP port only to loopback and allocate ports without fixed global names.
+- [ ] Define an explicit nginx process lifecycle suitable for this container, with child reaping, bounded startup/shutdown and actual readiness checks. Document the supported supervisor/process arrangement. Do not claim systemd enablement, boot persistence or general service-manager support from this test.
+- [ ] Restrict the workload to one host, one package family and one nginx instance. Fleet scheduling, SSH, TLS/ACME, additional distributions, general package upgrades and disk continuation restoration remain separate milestones. Container recreation supplies test isolation; it is not application rollback.
+
+#### User configuration and architecture
+
+- [ ] Provide one primary example under `tests/programs/` with typed inputs for package version policy, listen port, server identity and response content. The user declares package, file and service intent and their dependencies; provider callbacks, shell lifecycle plumbing and fault-injection hooks belong in reusable implementation or fixtures. Keep a second input variant to demonstrate reuse without copying the resource lifecycle.
+- [ ] Reuse `std:provider`, `std:orchestration`, `std:dependency`, the existing type/configuration vocabulary and effect host. Inspect existing `std:command` and provider examples before introducing helpers. Keep planning pure over explicit observations; neither the Python harness nor a second interpreter may make the desired-state decisions on Helix's behalf.
+- [ ] Define ownership for the nginx package, managed configuration and content files, and managed process. Preserve an unrelated sentinel file and unrelated process throughout the suite. Missing declarations do not authorize deletion; any removal scenario must use explicit ownership and removal intent.
+- [ ] Specify file content, ownership and mode, deterministic rendering, candidate validation with nginx, and atomic replacement of each live file. Validate a candidate configuration before activating it. If a multi-file update can fail between replacements, expose that partial state and the recovery path; do not describe per-file atomicity as a transaction.
+- [ ] Start nginx only after required package and files succeed. For an already running service, coalesce successful configuration changes into one reload after validation. A content-only change that nginx serves directly requires no reload. A no-op requires neither restart nor reload; metadata repair follows a documented policy. Readiness must verify the declared response, not merely an existing PID.
+
+#### Review and application contract
+
+- [ ] Expose resolve, observe, plan, apply and verify through discoverable existing tooling, adding only the smallest missing interface. Pure resolution errors occur before mutation. Observation may query the target but must not install packages, refresh package metadata, write managed files or change service state.
+- [ ] Plans identify target and resource identities, desired inputs, relevant observed state, proposed changes, dependencies and unsupported/unknown observations. File diffs and package/service actions must be understandable without inspecting evaluator internals. Unknown state is a failure to plan safely, never evidence of absence.
+- [ ] Apply only an explicitly reviewed plan with caller authority. Re-observe relevant state and reject a stale review before its affected mutation. A changed desired input, target identity, provider revision or relevant observation invalidates the review. Document the remaining check-to-mutation race; use one controller in this scope and do not imply concurrent-controller locking.
+- [ ] Verify each applied resource with fresh observations and verify the final HTTP response independently. Preserve unchanged, changed, failed and skipped distinctions, source locations, dependency causes and completed effects. A successful command exit with an unmet postcondition is failure.
+- [ ] Specify clean-run, drift and failure outcomes for automation, using existing report and exit-status conventions where applicable. Reports must make an interrupted or partially applied run distinguishable from a successful one. Saved plans and reports are ordinary data, not restored execution or authority grants.
+
+#### Acceptance scenarios
+
+Each scenario must assert actual package/file/process/HTTP state and relevant action counts independently of Helix's summary. Reset to a known fixture when scenarios require independence; preserve the same container for convergence and recovery sequences.
+
+| Scenario | Required evidence |
+| --- | --- |
+| Clean baseline and preview | nginx is absent; resolution and repeated previews leave package, managed paths and processes unchanged; equivalent observations yield equivalent plans. |
+| First application | nginx is installed at the selected supported version; declared bytes, owner and mode are present; the service starts and serves the exact expected response. |
+| No-op convergence | At least two subsequent observe/plan/apply cycles perform zero mutating actions, including package refresh, file replacement, start, stop and reload. Confirm stable file identity/metadata where applicable and stable nginx master identity. |
+| Reviewed configuration update | Change two managed configuration fragments in one application; the valid update becomes active with exactly one reload and no unnecessary package action or restart. |
+| Content update | Change the served body; the new body is observed without a service reload or restart. |
+| Independent drift | Separately alter configuration bytes, file mode/owner, remove a managed file, stop nginx and remove the package. Each fresh plan identifies the affected resources, repairs only necessary state and converges again. Account for actual package removal side effects. |
+| Combined drift | Combine missing package/files and stopped service; dependency ordering repairs the complete state without duplicate service actions or mutation of unmanaged sentinels. |
+| Invalid desired configuration | Candidate nginx validation fails before replacing the corresponding working live configuration or reloading it; the previous response remains available, with source-linked failure and no false success. |
+| Invalid input/dependencies | Wrong input types, unsupported settings, missing prerequisites and dependency cycles fail before resource mutation. |
+| Stale review | Change a managed observation or desired input after review; application rejects the obsolete action. A fresh review permits the repair. Repeat against a recreated target with a different identity. |
+| Missing authority/unknown state | Deny a required grant or make observation fail; report the resource and cause, preserve existing state and skip dependent mutations. |
+| Package failure | Inject unavailable package/version, inaccessible repository and package-lock contention; use bounded waits, report failure and skip resources whose prerequisites are unmet. Distinguish infrastructure setup failures from expected injected failures. |
+| File failure | Inject permission denial and a failed replacement; report any completed writes accurately, preserve unaffected files and avoid an unsafe reload. |
+| Service failure | Occupy the listen port or force start/reload failure; readiness fails within a bound, the report preserves partial progress and unaffected resources remain intact. |
+| False-success command | A fixture command returns success without accomplishing its change; postcondition observation rejects it. |
+| Timeout and cancellation | Interrupt a long-running operation and a run between resource actions; bounded cleanup and dependent-action suppression follow the existing command-host contract. No success or automatic rollback is claimed. |
+| Controller death and fresh reconciliation | Kill the controller after a confirmed mutation but before its acknowledgement, and separately after configuration installation but before reload. A fresh invocation observes actual state, requires a fresh review and converges without trusting the old report or blindly replaying actions. Define how unapplied configuration activation is detected or conservatively repaired. |
+| Explicit removal | Stop the managed service and remove explicitly owned resources according to declared policy; preserve unmanaged content and processes. A second removal is a no-op. |
+| Container lifecycle | Restart the container and reconcile under the declared process model; recreate a clean container and repeat the first-application sequence. Neither case counts as restoring a suspended Helix machine. |
+
+#### Repeatable harness and evidence
+
+- [ ] Integrate a named `docker_nginx` suite into the existing test policy and runner, discoverable with `./manage.py test --describe` and runnable with `./manage.py test --suite docker_nginx`. This is the required future entrypoint, not a claim that the suite exists today. All provisioning, scenario selection, assertions and cleanup are routinized Python tooling reached through `manage.py`; no ad-hoc shell test procedure is the acceptance authority.
+- [ ] Distinguish prerequisites and fixture build/pull failures from interpreter/provider failures. An explicitly requested suite with unavailable Docker or missing required capabilities fails with actionable diagnostics; any default-run opt-out is an explicit reported skip, never passing acceptance evidence. Keep ordinary bootstrap/help and unrelated suites independent of Docker.
+- [ ] Give each run unique labeled containers, networks, ports and project-local `runtime/` artifacts. Bound command, scenario and suite duration and captured output. Clean owned resources on success, failure and cancellation; support explicit failure retention and discoverable cleanup of retained resources. Never remove unrelated Docker resources or use `/tmp` for test artifacts.
+- [ ] Preserve versioned reports, plans, input variants, image/package identities, independent observations and action traces needed to explain a failure. Provide one replay command per failed scenario. Normalize volatile identities/timestamps only in golden projections; retain raw evidence. Avoid embedding credentials in images or reports.
+- [ ] Reuse existing golden, provider, composition and effect suites for pure contracts and diagnostics; add Docker coverage for behavior requiring the actual package manager, filesystem and nginx. Independent Python checks must inspect those systems directly, not merely compare two Helix reports. Prove sensitivity with a suppressed reload, a false no-op and a false-success mutation fixture.
+- [ ] Run the full required scenario set from clean provisioned state, repeat it to expose leaked state and report total duration plus bounded resource observations. Preserve evidence that the negative scenarios failed for their intended reason and that later reconciliation restored the expected response.
+
+#### Completion and consolidation decision
+
+- [ ] Publish the runnable example, supported environment, operator workflow and complete acceptance report. Separate container-specific process behavior from future system service support. Leave section 11's SSH and broader replacement obligations open.
+- [ ] Review the resulting user program against its original intent: package, configuration, content and running service. Identify every new public concept needed, remove redundant mechanisms and document justified remaining complexity under section 12. Framework implementation and a successful happy-path demo alone do not complete this target.
 
 ### Inventory, connections and observed state
 
@@ -723,7 +793,7 @@ These rules apply continuously, including to features already listed above. Reco
 
 ### Finish one defining workload before broadening
 
-- [ ] Select and record one active consolidation target here: either fresh-process restoration of a paused execution from section 2, or the first real-machine configuration from section 11. Define its smallest useful end-to-end acceptance case and the facilities it actually requires. Selection remains open; neither target is complete.
+- [x] Select one active consolidation target: section 11's Docker nginx acceptance specification. Its smallest useful sequence is clean preview, reviewed installation/configuration/start, independently verified HTTP response, no-op reapplication and drift repair. The full specification adds failure and fresh-reconciliation evidence before completion. Target selection is complete; implementation and acceptance remain open. Fresh-process continuation restoration remains a separate section 2 obligation.
 - [ ] Complete that target using the existing architecture wherever possible, with repeatable acceptance evidence through `./manage.py`, an example a user can follow and explicit remaining limitations. Supporting frameworks alone do not close this item.
 - [ ] Until that evidence exists, defer unrelated language expansion, provider/platform breadth and dogfooding migrations pursued only to increase the amount of Helix code. Keep the independent bootstrap and host failure detection. Replacing the active target requires recording why it failed to provide useful evidence and what work is being deferred.
 - [ ] After completion, review which mechanisms the workload used, which complicated it and which remain speculative. Remove, consolidate or explicitly defer unnecessary surface before selecting the next expansion. Completion does not automatically authorize the rest of the roadmap.
