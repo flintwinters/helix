@@ -148,22 +148,22 @@ The difference between a language and a language I enjoy using.
 ## 7. Trust
 
 - [x] Performance: a 10k-node program runs in well under a second
-- [ ] Memory stays bounded on long runs
+- [x] Memory stays bounded on long runs: shared work/data budgets and value/graph/depth caps; `memory` checks constant-state iteration and scaling
 - [x] Fuzzing of the parser and evaluator
-- [ ] Sandbox/permission model for effects (files, network, commands)
+- [x] Sandbox/permission model for current effects: caller-authorized import roots, embedded-only mode, transitive and symlink-escape checks; future effects must acquire capabilities
 - [x] Stability promise: documented what may change and what is frozen
 - [x] Language reference (started: `LANGUAGE.md`) and a tutorial that a stranger could follow
 - [x] A changelog
 
 ### Testing depth and breadth
 
-Completed infrastructure is exercised by the `parser`, `resources` and `mutants` suites through `./manage.py test`; `.github/workflows/test.yml` schedules the full sweep and runs fast contracts on pushes and pull requests.
+The current-runtime trust milestone is implemented. The coverage map and limits are in `README.md`; suites and their contracts are discoverable with `./manage.py test --describe`. Actor scenarios are measured in `runtime/coverage/actors.json`, peak RSS and timing in `runtime/memory/report.json`, and compiled mutation sensitivity in `runtime/mutants/report.json`. Scenario counts are not compiler branch-coverage percentages or proofs of exhaustive correctness.
 
 Treat testing as a substantial engineering responsibility. The Rust/Python size ratio is a prompt to inspect gaps, not a coverage metric or a target to pad toward. Build on the existing golden, determinism, round-trip and damaged-input checks; every new suite must be reproducible through the root `./manage.py` entrypoint, with Python orchestration and fixtures kept inside the project. Testing goals below are complete when their automated checks run and demonstrate the claimed contract; golden cases remain required for language features.
 
-- [ ] Maintain a discoverable coverage map from language contracts and runtime invariants to suites, including known gaps; measure exercised branches and failure paths rather than counting test lines
-- [ ] Cover every builtin and form across valid inputs, wrong arity and types, empty collections, numeric boundaries, Unicode and nested values; include precise error blame
-- [ ] Exercise feature interactions systematically: lexical shadowing, closures, recursion, iteration, lazy branches, memoization and error recovery composed in the same programs
+- [x] Maintain a discoverable coverage map from language contracts and runtime invariants to suites, including known gaps; measure exercised branches and failure paths rather than counting test lines
+- [x] Cover every builtin and form across valid inputs, wrong arity and types, empty collections, numeric boundaries, Unicode and nested values; include precise error blame
+- [x] Exercise feature interactions systematically: lexical shadowing, closures, recursion, iteration, lazy branches, memoization and error recovery composed in the same programs
 - [x] Test parser and graph contracts across YAML scalar styles, nesting, duplicate keys, unsupported constructs, parent links, lexical lookup and source spans
 - [x] Generate values and programs to check serialization preserves meaning, literal/expression distinctions and stable output across repeated save/reload cycles
 - [x] Add property-based and metamorphic tests for semantic laws and equivalent program transformations, respecting overflow, float behavior and documented evaluation order
@@ -174,13 +174,18 @@ Treat testing as a substantial engineering responsibility. The Rust/Python size 
 - [x] Exercise the CLI as a subprocess: files versus stdin, arguments, help, exit codes, stdout/stderr contracts and failed input access
 - [x] Test public library and VM contracts directly, including independent VM instances and repeated use, alongside CLI golden coverage; invoke these checks through `./manage.py`
 - [x] Verify resource limits at their boundaries: deep syntax, recursion, long iteration and large graphs terminate or fail cleanly under enforced timeouts without host stack overflow
-- [ ] Maintain repeatable performance and memory workloads across growing input sizes; detect pathological scaling and regressions with documented environments and tolerances
-- [ ] Expand type and class tests across nested combinations, invalid declarations, collected violations, inheritance conflicts and deterministic provenance; connect these to section 8's algebra and proof obligations
+- [x] Maintain repeatable performance and memory workloads across growing input sizes; detect pathological scaling and regressions with documented environments and tolerances
+- [x] Expand type and class tests across nested combinations, invalid declarations, collected violations, inheritance conflicts and deterministic provenance; connect these to section 8's algebra and proof obligations
+- [x] Run fast regression suites on every change and bounded generated, fuzz and scale suites on a regular automated schedule; report seeds, reproduction commands and artifacts on failure
+- [x] Keep the harness trustworthy: test discovery, golden comparison, timeout/crash detection and failure reporting; provide discoverable suite selection without creating competing entrypoints
+
+### Obligations activated by later milestones
+
+These require features from sections 2–3 and a versioned state format. They remain explicit obligations, not claims that suspension, effect replay or state migration already works. Today's pure recovery and finished-root fixpoints are covered separately.
+
 - [ ] When suspension lands, compare uninterrupted execution with save/resume at every supported boundary, including nested calls, live locals, hand-edited states and fresh-process restoration
 - [ ] When effects land, use controlled adapters to test failure, retry, cleanup, permissions and interruption; prove completed effects are not accidentally repeated after resume
 - [ ] Keep compatibility fixtures for persisted states and public errors; test supported upgrades and explicit rejection of unsupported versions as versioning lands
-- [x] Run fast regression suites on every change and bounded generated, fuzz and scale suites on a regular automated schedule; report seeds, reproduction commands and artifacts on failure
-- [x] Keep the harness trustworthy: test discovery, golden comparison, timeout/crash detection and failure reporting; provide discoverable suite selection without creating competing entrypoints
 
 ---
 

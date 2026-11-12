@@ -16,7 +16,11 @@ SUITES = {
     "library": "Rust public VM API contracts via cargo test",
     "parser": "YAML syntax, unsupported constructs, paths, and source locations",
     "fuzz": "Bounded fixed-seed token mutations and failure minimization",
+    "type_algebra": "Independent nested-type membership oracle, ordered violations and invalid declarations",
+    "semantics": "Every builtin result witness and declared arity boundary, Unicode and precise blame",
     "permissions": "Embedded-only and confined imports, transitive denial, path and symlink escapes",
+    "mutants": "Compile isolated arithmetic, source-blame and serialization faults; require suite failures",
+    "memory": "Linux GNU-time peak RSS and scaling, including constant-state long runs",
     "resources": "Syntax, graph, recursion, iteration, import and computed-growth boundaries",
     "scale": "Large arithmetic maps with execution-time bounds",
 }

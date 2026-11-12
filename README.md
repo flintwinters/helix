@@ -162,15 +162,22 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | Language results, structured errors, deterministic output, saved-root fixpoints | `golden`; `tests/cases/`, `tests/check/` when present | Not every builtin/type/arity combination has a case |
 | First-class type regions, phase-local errors, run/check parity, file-input exclusion and bounded evaluation | `type_time`; `tests/suites/type_time.py` plus type golden cases | File imports are conservatively excluded from programs using explicit type regions |
 | Truncations and deletions produce structured states, no crashes | `robustness`; every golden source | Finite mutations are not a proof of panic freedom |
-| Discovery pairs, invalid states, timeout/crash detection, wrong golden results, broken reload comparison | `harness`; synthetic fixtures and subprocess faults | Production mutation testing remains open |
+| Discovery pairs, invalid states, timeout/crash detection, wrong golden results, broken reload comparison | `harness`; synthetic fixtures and subprocess faults | Compiled faults are checked by `mutants` |
 | Usage errors, inaccessible files, run/check files versus stdin, stream and exit contracts | `cli` | No successful `--help` or shell completion yet |
 | Integer expression trees versus Python, list sums/reversal laws, Unicode/nested literal save cycles | `generated`; seed 714209 | Bounded integers and exact binary fractions; general float/callable generation remains open |
 | Helix assertions, bounded collection laws, nested reports, runner failures | `dogfood`; `tests/dogfood/` | Explicit finite samples; no automatic random generation or shrinking |
 | Shared import dependencies, cycles, missing/malformed files, isolation and imported blame | `imports`; generated file trees | Symlink/path-platform combinations not exhaustive |
 | Independent VMs, repeated run, terminal failures, successful and failing check | `library`; `tests/vm.rs` | Ready states cannot be restored; suspension unavailable |
-| Quoted/block scalars, nested lookup, duplicate-key rejection, unsupported YAML constructs, precise source blame | `parser` | Direct internal parent-link/path coverage remains open |
+| Quoted/block scalars, nested lookup, duplicate-key rejection, unsupported YAML constructs, precise source blame | `parser` | Parent-link consequences checked through nested lexical lookup and precise paths/spans; no graph-internal API exposed |
 | Token mutations across parsing/linking/evaluation/emission, deletion minimization | `fuzz`; seed 901723 | Bounded 200 samples; not coverage-guided fuzzing |
-| 1,001 / 4,001 / 10,001-node flat arithmetic maps | `scale` | No memory sampling or scaling regression baseline yet |
+| 1,001 / 4,001 / 10,001-node flat arithmetic maps | `scale` | `memory` adds peak RSS and broad scaling thresholds; no historical statistical baseline |
+| Every registered actor: independent result witness, declared arity boundaries, applicable wrong types and error blame | `semantics`; `tests/suites/semantics.py`; `runtime/coverage/actors.json` | Finite scenarios; unrestricted operands have no wrong-type case; not every argument-position/type cross-product |
+| Captures, recursion, nested callbacks, lazy recovery and memoization composed together | `dogfood`; `tests/dogfood/interactions.yaml` | Pure recovery only; no suspended continuations |
+| Nested lists/maps/records/unions versus independent Python membership, invalid declarations, ordered violations, diamonds and provenance | `type_algebra`; `tests/suites/type_algebra.py` | Finite implemented fragment; section 8 still owns stronger algebra and proof obligations |
+| Accepted/rejected syntax, graph, recursion, iteration and computed-growth boundaries | `resources`; computed-growth golden cases; `library` | Budgets are not a byte-exact heap quota; source reads precede limits |
+| Embedded-only and confined file imports, traversal, symlinks, transitive and uncalled imports | `permissions`; `library` | Path authorization assumes no hostile concurrent directory replacement; future effects need their own adapters |
+| Actual compiled arithmetic, source-column and serialization faults rejected by existing suites | `mutants`; `runtime/mutants/` | Three targeted mutations, not a general mutation score |
+| Growing graphs and constant-state 999/99,999-step loops, interpreter peak RSS and environment | `memory`; `runtime/memory/` | Linux + GNU time; broad operational thresholds, not a universal memory bound |
 
 These are executable branch scenarios and failure-path contracts, not compiler
 branch-coverage percentages. No instrumented Rust branch report exists yet; do not
@@ -243,11 +250,13 @@ Builtin names, type/class declarations, the Rust API and exact error prose may
 change before a stable release. Error kinds and field shapes are reviewed as public
 behavior. The saved-state envelope has no format version or migration support yet;
 keep source and the runtime revision together when reproducibility matters. No
-suspended execution format or effect permissions are promised by this release.
+suspended execution format is promised. Import permissions are available; other effects remain unimplemented.
 
 ## Changelog
 
 ### Unreleased
+
+- Added guarded runtime execution, import confinement, actor/arity census, nested-type oracles, composed feature tests, compiled mutation checks and Linux peak-RSS regressions.
 
 - Added selectable contract suites, subprocess timeouts, harness self-tests and
   direct public VM tests behind `./manage.py test`.
@@ -271,3 +280,7 @@ user-visible checkpoints rather than claiming published releases.
 Run `./manage.py runtime sandbox - program.yaml` to allow embedded modules only, or replace `-` with an allowed import directory. The main input is explicitly authorized; transitive file imports must stay within that directory, including through symlinks. Ordinary `run` remains trusted. See `LANGUAGE.md` for the library API, exact resource budgets and the limits of path-based confinement.
 
 `./manage.py test --suite resources --suite permissions --suite library` verifies accepted/rejected syntax and graph boundaries, call and iteration caps, growing values, dependency/import depth, source blame and permission escapes. The public VM tests also exercise guarded execution on Rust test threads, whose smaller stacks previously exposed a host stack overflow. These guards bound interpreter work and produced data; they do not promise constant memory for programs retaining growing state.
+
+`semantics` records successful scenario counts per actor and rejects missing witnesses when the builtin registry changes. `type_algebra` checks 357 independent membership judgments over nested descriptions and mixed values, plus ordered violations and class diamonds. This is evidence for the implemented structural fragment; section 8 retains normalization, recursive types and formal proof obligations.
+
+`memory` requires Linux and GNU `/usr/bin/time`. It measures only interpreter peak RSS (KiB), records platform/Python/debug-profile metadata, and saves exact sources and states. Workloads use 1,001/4,001/10,001-node arithmetic maps (each under two seconds and 192 MiB), with a broad 12x-plus-16-MiB scaling allowance, and compare 999 versus 99,999 constant-state iterations (at most 8 MiB extra RSS). The existing `scale` suite retains its one-second 10k-node bound. These tolerances catch large regressions while allowing allocator and host noise; they are not a historical statistical baseline. Linux CI runs these measurements and compiled mutation checks in the weekly/manual full sweep and uploads the reports even on success.
