@@ -195,7 +195,11 @@ def imports(h):
 
 def run(name, h):
     try:
-        globals()[name](h)
+        if name in globals():
+            globals()[name](h)
+        else:
+            from importlib import import_module
+            import_module(f"tests.suites.{name}").verify(h)
         print(f"{name}: passed (generated seed=714209)" if name == "generated" else f"{name}: passed")
         return []
     except Exception as error:

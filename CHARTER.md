@@ -262,24 +262,24 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Derive a type from another: add, drop or retype a field; make every field optional
   - [x] Build a type by iteration (`map`/`fold` over a list of field names)
   - [x] A constructor given a non-type argument fails with a `type` error blaming that argument
-- [ ] Reflection: read a type's fields, defaults and parents as data; ask `[is, value, t]` and `[subtype, a, b]`
-  - [ ] `[is, value, t]`
+- [x] Reflection (`types_reflection`, `types_first_class` golden cases): read a type's fields, defaults and parents as data; ask `[is, value, t]` and `[subtype, a, b]`
+  - [x] `[is, value, t]`
     - [x] For scalar and collection type names and `any`; an unknown name is a `type` error
     - [x] For every declared type
   - [x] Read a record type's fields, each field's type, and its defaults as plain lists and maps
-  - [ ] Read a class's parents and its still-open fields
+  - [x] Read a class's parents and its still-open fields
   - [x] `[subtype, a, b]`, with documented rules per type former
   - [x] A value built by reflection re-reads as the same type (reflection and declaration are inverse)
-- [ ] Type-time evaluation: a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
-  - [ ] Decided and documented: what marks type time (see Open questions)
-  - [ ] An effect attempted at type time is a structured error naming the effect and the node
-  - [ ] Bounded: the existing `depth` and `limit` caps apply, so type time ends or fails cleanly
-  - [ ] Deterministic: no time, randomness, environment or file contents reach type time unpinned
-  - [ ] The same type-time result whether reached by `helix check` or by a full run
-- [ ] Type-time errors are the same structured errors as run-time ones, with the phase recorded in the state
-  - [ ] Same shape and kinds (`kind`, `message`, `path`, `line`, `column`), catchable with `try` like any other
-  - [ ] The saved state records which phase failed
-  - [ ] A type-time failure stops before any run-time effect is attempted
+- [x] Type-time evaluation (`types_type_time`, `types_type_time_effect`; `type_time` suite): a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
+  - [x] Decided and documented: what marks type time (see Open questions)
+  - [x] An effect attempted at type time is a structured error naming the effect and the node
+  - [x] Bounded: the existing `depth` and `limit` caps apply, so type time ends or fails cleanly
+  - [x] Deterministic: no time, randomness, environment or file contents reach type time unpinned
+  - [x] The same type-time result whether reached by `helix check` or by a full run
+- [x] Type-time errors (`types_type_time_error` golden case) are the same structured errors as run-time ones, with the phase recorded in the state
+  - [x] Same shape and kinds (`kind`, `message`, `path`, `line`, `column`), catchable with `try` like any other
+  - [x] The saved state records which phase failed
+  - [x] A type-time failure stops before any run-time effect is attempted
 
 ### Expanding the type algebra
 
@@ -543,7 +543,7 @@ Decide these before the features that depend on them.
 - [ ] Does a suspended state embed the source, reference it, or both?
 - [ ] Types are coming (section 8), but how strict is ordinary scripting: must everything be annotated, or are types gradual and opt-in outside configs?
 - [ ] Is inheritance nominal (declared parents) or structural (anything with the right fields satisfies a class), or both?
-- [ ] What separates type time from run time in a language whose source is its state: a distinct phase, a status, or a marked region of the graph?
+- [x] Type time is an explicit `[type_time, expression]` region, with `phase: type` on failures; `check` collects diagnostics with the same evaluator (see `LANGUAGE.md`).
 - [ ] How do parent classes merge: Nix-module-style priorities and merge functions, CUE-style unification, or linearized inheritance?
 - [ ] What is the story for secrets in persisted state?
 - [ ] Which parts of `flintwinters/helixcpp` are worth carrying over, and which are better left behind?

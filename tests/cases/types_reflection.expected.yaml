@@ -1,0 +1,107 @@
+status: finished
+root:
+  base:
+    type: class
+    name: base
+    parents: []
+    fields:
+      required: integer
+      fixed: string
+      optional:
+        type: optional
+        of: boolean
+      defaulted:
+        type: default
+        of: integer
+        default: 7
+    values:
+      fixed: "yes"
+    provenance:
+      required:
+        type: base
+      fixed:
+        type: base
+        value: base
+      optional:
+        type: base
+      defaulted:
+        type: base
+    concrete: false
+  child:
+    type: class
+    name: child
+    parents:
+      - "base"
+    fields:
+      required: integer
+      fixed: string
+      optional:
+        type: optional
+        of: boolean
+      defaulted:
+        type: default
+        of: integer
+        default: 7
+      extra: string
+    values:
+      fixed: "yes"
+    provenance:
+      required:
+        type: base
+      fixed:
+        type: base
+        value: base
+      optional:
+        type: base
+      defaulted:
+        type: base
+      extra:
+        type: child
+    concrete: false
+  parents_of:
+    - "base"
+  open:
+    required: integer
+    extra: string
+  filled:
+    type: class
+    name: filled
+    parents:
+      - "child"
+    fields:
+      required: integer
+      fixed: string
+      optional:
+        type: optional
+        of: boolean
+      defaulted:
+        type: default
+        of: integer
+        default: 7
+      extra: string
+    values:
+      required: 1
+      fixed: "yes"
+      extra: done
+    provenance:
+      required:
+        type: base
+        value: filled
+      fixed:
+        type: base
+        value: base
+      optional:
+        type: base
+      defaulted:
+        type: base
+      extra:
+        type: child
+        value: filled
+    concrete: false
+  closed: {}
+  invalid:
+    kind: type
+    message: expected a class
+    path: /invalid/1/1
+    line: 7
+    column: 30

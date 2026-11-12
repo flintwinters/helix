@@ -8,6 +8,8 @@ use crate::span::Span;
 pub struct HelixError {
     /// Stable machine-readable category; the full list is in `LANGUAGE.md`.
     pub kind: String,
+    /// Explicit evaluation phase, retained when an error is caught as data.
+    pub(crate) phase: Option<&'static str>,
     pub message: String,
     /// The imported file the error lies in; absent for the program itself. `path`, `line` and
     /// `column` are relative to that file.
@@ -28,6 +30,7 @@ impl HelixError {
         let mut h = Hash::new();
         h.insert(s("kind"), s(&self.kind));
         h.insert(s("message"), s(&self.message));
+        if let Some(phase) = self.phase { h.insert(s("phase"), s(phase)); }
         if let Some(file) = &self.file {
             h.insert(s("file"), s(file));
         }

@@ -52,17 +52,23 @@ pub struct Evaluator {
     /// The modules the program imports.
     modules: Modules,
     closing: HashSet<NodeId>,
+    type_time: bool,
 }
 
 impl Evaluator {
     /// Take a parsed program and link its imports; `main` is the program's file, when it has one.
     pub fn new(mut graph: Graph, main: Option<&Path>) -> Result<Evaluator, HelixError> {
         let modules = link::link(&mut graph, main)?;
-        Ok(Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: HashMap::new(), modules, closing: HashSet::new() })
+        Ok(Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: HashMap::new(), modules, closing: HashSet::new(), type_time: false })
     }
 
     fn err(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
-        self.graph.error(id, kind, message)
+        self.in_phase(self.graph.error(id, kind, message))
+    }
+
+    fn in_phase(&self, mut error: HelixError) -> HelixError {
+        if self.type_time { error.phase = Some("type"); }
+        error
     }
 
     /// Evaluate a node to plain YAML data. A node that needs its own value within one call is a `cycle`.
@@ -76,6 +82,7 @@ impl Evaluator {
             return Err(self.err(id, "cycle", "value depends on itself".into()));
         }
         let result = self.eval_uncached(id);
+        let result = result.map_err(|error| self.in_phase(error));
         self.active.remove(&key);
         if let (false, Ok(v)) = (local, &result) {
             self.memo.insert(id, v.clone());
@@ -388,6 +395,21 @@ impl Evaluator {
         }
     }
 
+    /// Explicit pure region. Budgets are shared with the caller, never reset by nesting.
+    fn at_type_time(&mut self, expression: NodeId) -> Result<Yaml, HelixError> {
+        let previous = self.type_time;
+        self.type_time = true;
+        // Recompute dependencies in this phase, including caught errors stored as values.
+        let memo = if previous { None } else { Some(std::mem::take(&mut self.memo)) };
+        let result = match self.modules.file_import() {
+            Some(import) => Err(self.err(import, "effect", "file import is not allowed in type time; use embedded std modules or supply source data directly".into())),
+            None => self.value_arg(expression),
+        };
+        if let Some(memo) = memo { self.memo = memo; }
+        self.type_time = previous;
+        result
+    }
+
     /// A builtin `Fault` as an error blamed on the offending argument node, or the whole call.
     fn from_fault(&self, site: NodeId, args: &[NodeId], fault: Fault) -> HelixError {
         HelixError { cause: fault.cause, data: fault.data, ..self.err(fault.arg.and_then(|i| args.get(i).copied()).unwrap_or(site), fault.kind, fault.message) }
@@ -585,6 +607,7 @@ impl Evaluator {
                 }
                 builtins::refine(base, self.value_arg(args[1])?).map_err(|fault| self.from_fault(id, args, fault))
             }
+            "type_time" => self.at_type_time(args[0]),
             "import" => match self.modules.root_of(id) {
                 Some(root) => self.eval(root),
                 None => Err(self.err(id, "import", "an import must be a literal `[import, SPEC]` in the program or a module it imports".into())),

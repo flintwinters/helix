@@ -1,0 +1,9 @@
+status: error
+phase: type
+error:
+  kind: type
+  message: "expected a type, got integer"
+  phase: type
+  path: /answer/1/1
+  line: 1
+  column: 31

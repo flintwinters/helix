@@ -4,6 +4,7 @@ import json
 import textwrap
 
 SUITES = {
+    "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
     "golden": "Exact YAML states, deterministic evaluation, and finished-root round trips",
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",

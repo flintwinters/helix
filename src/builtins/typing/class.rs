@@ -56,6 +56,7 @@ pub(super) fn apply(actor: &str, args: &[Yaml], pred: &mut Pred) -> Result<Yaml,
         }
         "realize" => Ok(realize(Class::from_yaml(&args[0], 0)?, Some(0), pred)?.to_yaml()),
         "parents" => reflect_parents(&args[0]),
+        "open_fields" => open_fields(&args[0]),
         _ => unreachable!("`{actor}` is not a class builtin"),
     }
 }
@@ -63,6 +64,19 @@ pub(super) fn apply(actor: &str, args: &[Yaml], pred: &mut Pred) -> Result<Yaml,
 /// `[parents, class]`: the names of the classes it was built from.
 fn reflect_parents(class: &Yaml) -> Result<Yaml, Fault> {
     reflect(class, "parents")
+}
+
+/// Required fields still needing a value; defaults and optional fields need no override.
+fn open_fields(value: &Yaml) -> Result<Yaml, Fault> {
+    let class = Class::from_yaml(value, 0)?;
+    let mut fields = Hash::new();
+    for slot in class.slots {
+        let field = Field::parse(&slot.spec).map_err(|why| Fault::at(0, "type", why))?;
+        if slot.value.is_none() && field.required && field.default.is_none() {
+            fields.insert(s(&slot.name), slot.spec);
+        }
+    }
+    Ok(Yaml::Hash(fields))
 }
 
 fn name_arg(args: &[Yaml], at: usize) -> Result<&str, Fault> {

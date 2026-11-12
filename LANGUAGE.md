@@ -94,6 +94,16 @@ Subtyping uses identity and `any` as the top type. Lists and maps are covariant 
 
 `eq` on types is structural equality of their declaration values: record field order is ignored, list order (including union members and enum alternatives) is significant, and defaults and captured predicates participate. This is declaration equality, not equality of the sets of accepted values. Types retain their readable declaration maps in saved state and round-trip through the same evaluator.
 
+### Type-time evaluation
+
+`[type_time, expression]` marks an explicit pure region in ordinary evaluation. It can compute a type or any intermediate value with the same lexical bindings, functions, iteration and errors as other code. Both `run` and `check` use this form identically; `check` additionally collects independent failures across the program. Uncalled bodies and unchosen branches are not checked.
+
+The region shares the caller's recursion, iteration, node-visit and produced-value budgets; nesting never resets them. It recomputes dependencies in a phase-local cache, so an earlier caught run-time error cannot masquerade as a type-time diagnostic. Errors raised inside carry `phase: type` alongside their usual kind, message, location, payload and call sites. `try` can catch them inside or outside the region. An uncaught failure also puts `phase: type` in the saved VM state and stops ordinary evaluation. Leaving the region, including after a caught error, restores the caller's phase.
+
+Only supplied YAML source and embedded `std:` modules are admitted. A program with any file import is conservatively rejected when it enters a type-time region, even if that import is unused or already evaluated. The catchable `effect` error names the file import and blames its node. Source loading/linking still happens before evaluation: missing files and other link errors remain load errors outside `try`. To compute a reproducible type, provide dependencies as source data or embedded modules; filesystem module contents are not accepted as pinned inputs. Current evaluation has no clock, randomness, environment, network or other host-effect operations. File loading is the sole host-input boundary and occurs outside the region; future effectful actors must be denied before executing in type time.
+
+`[parents, class]` returns immediate parent names in declaration order. `[open_fields, class]` returns a map of required field names to their declared specs that still need values. Fixed, defaulted and optional fields are omitted; a realized class has no open fields. This uses the same field interpretation as realization. Both forms, and `fields`, return ordinary data suitable for further type construction.
+
 ## Libraries and imports
 
 `[import, "helpers.yaml"]` loads a Helix document. Relative paths resolve from the importing file's directory; stdin resolves from the working directory. All imports are linked at load time, including imports inside functions and unchosen branches. The specifier is a literal string, quoted or plain, never an evaluated expression. Missing files, unknown standard modules and circular dependencies fail before execution, outside `try` handlers.
@@ -183,7 +193,7 @@ Callbacks are checked as functions even for empty lists. Predicates must return 
 
 ## Error kinds
 
-`import` (module loading or circular dependency), `parse`, `unbound`, `type`, `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (call nesting), `limit` (iteration cap), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
+`effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (call nesting), `limit` (iteration cap), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
 
 ## Testing in Helix
 

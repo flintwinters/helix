@@ -1,0 +1,12 @@
+# Ordinary lexical constructors and embedded modules work in an explicit pure region.
+types: [import, std:types]
+shape: [record, "name", string, "count", [default, integer, 0]]
+derived: [type_time, [types.optional_fields, shape]]
+iteration: [type_time, [fold, [fn, [t, name], [with_field, t, name, boolean]], [record], ["a", "b"]]]
+nested: [type_time, [type_time, [list_of, integer]]]
+caught_inside: [type_time, [try, [list_of, 42], [fn, [e], e]]]
+caught_outside: [try, [type_time, [div, 1, 0]], [fn, [e], e]]
+runtime_after: [try, [div, 1, 0], [fn, [e], e]]
+# Recompute memoized dependencies so caught errors describe the active phase.
+captured_error: [try, [div, 1, 0], [fn, [e], e]]
+rechecked: [type_time, captured_error]

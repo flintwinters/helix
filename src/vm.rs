@@ -121,6 +121,7 @@ impl Vm {
                 h.insert(s("errors"), Yaml::Array(all.into_iter().map(HelixError::to_yaml).collect()));
             }
         } else if let Some(e) = &self.error {
+            if let Some(phase) = e.phase { h.insert(s("phase"), s(phase)); }
             h.insert(s("error"), e.to_yaml());
         }
         Yaml::Hash(h)

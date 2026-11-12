@@ -21,9 +21,15 @@ use crate::library;
 pub struct Modules {
     linked: HashMap<NodeId, NodeId>,
     roots: HashSet<NodeId>,
+    /// File imports are load-time inputs; explicit type regions accept only embedded sources.
+    first_file_import: Option<NodeId>,
 }
 
 impl Modules {
+    pub(crate) fn file_import(&self) -> Option<NodeId> {
+        self.first_file_import
+    }
+
     /// The root of the module the `[import, ...]` node `import` loads.
     pub fn root_of(&self, import: NodeId) -> Option<NodeId> {
         self.linked.get(&import).copied()
@@ -109,6 +115,7 @@ impl Linker<'_> {
                 None => return Err(fail(self.graph, format!("unknown standard module `{name}`; available: {}", library::names().collect::<Vec<_>>().join(", ")))),
             },
             None => {
+                self.modules.first_file_import.get_or_insert(import);
                 let Origin::Dir(dir) = origin else { return Err(fail(self.graph, format!("standard modules can import only `std:` modules, not `{spec}`"))) };
                 let path = dir.join(&spec);
                 let source = std::fs::read_to_string(&path).map_err(|e| fail(self.graph, format!("cannot read `{}`: {e}", path.display())))?;

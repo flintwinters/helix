@@ -160,6 +160,7 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | Contract and exercised failure paths | Suite / authoritative fixtures | Known gaps |
 | --- | --- | --- |
 | Language results, structured errors, deterministic output, saved-root fixpoints | `golden`; `tests/cases/`, `tests/check/` when present | Not every builtin/type/arity combination has a case |
+| First-class type regions, phase-local errors, run/check parity, file-input exclusion and bounded evaluation | `type_time`; `tests/suites/type_time.py` plus type golden cases | File imports are conservatively excluded from programs using explicit type regions |
 | Truncations and deletions produce structured states, no crashes | `robustness`; every golden source | Finite mutations are not a proof of panic freedom |
 | Discovery pairs, invalid states, timeout/crash detection, wrong golden results, broken reload comparison | `harness`; synthetic fixtures and subprocess faults | Production mutation testing remains open |
 | Usage errors, inaccessible files, run/check files versus stdin, stream and exit contracts | `cli` | No successful `--help` or shell completion yet |

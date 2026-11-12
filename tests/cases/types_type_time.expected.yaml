@@ -1,0 +1,149 @@
+status: finished
+root:
+  types:
+    from_fields:
+      - fn
+      - - - specs
+          - map
+      - - fold
+        - - fn
+          - - result
+            - name
+          - - with_field
+            - result
+            - name
+            - - get
+              - specs
+              - name
+        - - record
+        - - keys
+          - specs
+      - map
+    without_field:
+      - fn
+      - - t
+        - - name
+          - string
+      - - let
+        - specs:
+            - fields
+            - t
+        - - fold
+          - - fn
+            - - result
+              - field
+            - - if
+              - - eq
+                - field
+                - name
+              - result
+              - - with_field
+                - result
+                - field
+                - - get
+                  - specs
+                  - field
+          - - record
+          - - keys
+            - specs
+      - map
+    optional_field:
+      - fn
+      - - spec
+      - - if
+        - - and
+          - - eq
+            - - type
+              - spec
+            - "map"
+          - - has
+            - - "optional"
+              - "default"
+            - - get
+              - spec
+              - "type"
+              - ""
+        - spec
+        - - optional
+          - spec
+    optional_fields:
+      - fn
+      - - t
+      - - let
+        - specs:
+            - fields
+            - t
+        - - fold
+          - - fn
+            - - result
+              - name
+            - - with_field
+              - result
+              - name
+              - - optional_field
+                - - get
+                  - specs
+                  - name
+          - - record
+          - - keys
+            - specs
+      - map
+  shape:
+    type: record
+    fields:
+      name: string
+      count:
+        type: default
+        of: integer
+        default: 0
+  derived:
+    type: record
+    fields:
+      name:
+        type: optional
+        of: string
+      count:
+        type: default
+        of: integer
+        default: 0
+  iteration:
+    type: record
+    fields:
+      a: boolean
+      b: boolean
+  nested:
+    type: list
+    of: integer
+  caught_inside:
+    kind: type
+    message: "expected a type, got integer"
+    phase: type
+    path: /caught_inside/1/1/1
+    line: 7
+    column: 44
+  caught_outside:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    phase: type
+    path: /caught_outside/1/1
+    line: 8
+    column: 35
+  runtime_after:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    path: /runtime_after/1
+    line: 9
+    column: 22
+  captured_error:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    path: /captured_error/1
+    line: 11
+    column: 23
+  rechecked:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    phase: type
+    path: /captured_error/1
+    line: 11
+    column: 23
