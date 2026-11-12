@@ -1,0 +1,97 @@
+# Guarded arbitrary commands behind the resource provider lifecycle.
+# Observation is trusted read-only provider code. A true guard requests execution;
+# verification requires a fresh false guard. This is no proof of idempotence or rollback.
+provider: {$call: [import, 'std:provider']}
+arguments: {$call: [record, program, {$ref: provider.name}, args, {$call: [list_of, {$ref: string}]}]}
+reply: {$call: [record, code, {$ref: integer}, stdout, {$ref: string}, stderr, {$ref: string}]}
+result: {$call: [record, reply, {$ref: reply}, changed, {$ref: boolean}]}
+configuration: {$call: [record, id, {$ref: provider.name}, revision, {$ref: provider.name}, platforms, {$ref: provider.names}, capabilities, {$ref: provider.names}, observation, {$ref: any}, observe, {$ref: function}, guard, {$ref: function}, changed, {$ref: function}, failed, {$ref: function}]}
+make:
+  $call:
+  - fn
+  - [config]
+  - {$call: [type_time, {$call: [configured, {$call: [expect, {$ref: config}, {$ref: configuration}]}]}]}
+configured:
+  $call:
+  - fn
+  - [config]
+  - $call:
+    - provider.require
+    - {$call: [has, {$call: [get, {$ref: config}, capabilities]}, command]}
+    - command_capability
+    - A command provider must declare the command capability
+    - $call:
+      - dict
+      - version
+      - 1
+      - id
+      - {$call: [get, {$ref: config}, id]}
+      - revision
+      - {$call: [get, {$ref: config}, revision]}
+      - arguments
+      - {$ref: arguments}
+      - observation
+      - {$call: [get, {$ref: config}, observation]}
+      - result
+      - {$ref: result}
+      - platforms
+      - {$call: [get, {$ref: config}, platforms]}
+      - capabilities
+      - {$call: [get, {$ref: config}, capabilities]}
+      - check
+      - true
+      - diff
+      - true
+      - failure
+      - stop
+      - observe
+      - {$call: [get, {$ref: config}, observe]}
+      - plan
+      - $call:
+        - fn
+        - [args, before]
+        - $call:
+          - if
+          - {$call: [type_time, {$call: [expect, {$call: [call, {$call: [get, {$ref: config}, guard]}, {$ref: args}, {$ref: before}]}, {$ref: boolean}]}]}
+          - {$call: [list, {$call: [dict, field, command, op, set, to, {$ref: args}]}]}
+          - []
+      - apply
+      - $call:
+        - fn
+        - [args, steps]
+        - {$call: [classify, {$ref: config}, {$ref: args}, {$call: [effect, command, {$ref: args}]}]}
+classify:
+  $call:
+  - fn
+  - [config, args, response]
+  - $call:
+    - type_time
+    - {$call: [classified, {$ref: config}, {$ref: args}, {$call: [expect, {$ref: response}, {$ref: reply}]}]}
+classified:
+  $call:
+  - fn
+  - [config, args, response]
+  - $call:
+    - if
+    - {$call: [expect, {$call: [call, {$call: [get, {$ref: config}, failed]}, {$ref: args}, {$ref: response}]}, {$ref: boolean}]}
+    - {$call: [raise, command_failed, The command failure predicate rejected the result, {$ref: response}]}
+    - {$call: [dict, reply, {$ref: response}, changed, {$call: [expect, {$call: [call, {$call: [get, {$ref: config}, changed]}, {$ref: args}, {$ref: response}]}, {$ref: boolean}]}]}
+plan: {$ref: provider.plan}
+check: {$ref: provider.check}
+apply:
+  $call:
+  - fn
+  - [p, args, ctx, review]
+  - {$call: [reported, {$call: [provider.apply, {$ref: p}, {$ref: args}, {$ref: ctx}, {$ref: review}]}]}
+# Only a verified successful execution can use its change predicate for status.
+# Preview status means execution is proposed; the unchanged result can still
+# carry applied:true and nonempty steps because the command did execute.
+reported:
+  $call:
+  - fn
+  - [report]
+  - $call:
+    - if
+    - {$call: [and, {$call: [eq, {$call: [get, {$ref: report}, status]}, changed]}, {$call: [eq, {$call: [get, {$ref: report}, phase]}, verify]}]}
+    - {$call: [set, {$ref: report}, status, {$call: [if, {$call: [get, {$call: [get, {$ref: report}, result]}, changed]}, changed, unchanged]}]}
+    - {$ref: report}

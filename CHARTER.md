@@ -8,10 +8,12 @@ How to use this file: tick a box only when the feature works end to end *and* ha
 
 Audit (2026-11-12): a parent stays open while any of its stated obligations remain
 open. Implementation evidence is retained even where acceptance is incomplete.
-In particular, section 11's inventory, provider, composition and command-lifecycle
-implementations have dedicated automated suites, but lack golden cases for those
+In particular, section 11's inventory, provider, guarded-command, composition and
+command-lifecycle implementations have dedicated automated suites, but lack golden cases for those
 contracts in `tests/cases/`; their boxes remain open under the rule above. A
 `tests/programs/` example or a generated suite fixture is not a golden case.
+Parameter annotation diagnostics name rejected parameters but blame the call as
+a whole; the individual argument-source-blame obligation also remains open.
 
 **Where it is headed:** the niche Nix and Ansible occupy, declarative machine configuration, approached through types. A machine config is a type, fully resolved at type time and inheriting from abstract machine type classes; section 8 holds that road. Daily-driver scripting comes first because the config language has to be a language worth using.
 
@@ -191,7 +193,7 @@ A type should read like the value it describes with the specifics left open: som
   - [ ] Refinements stack (a refinement of a refinement) and compose with every other type former
 - [ ] Annotate a value or a `fn` parameter/result with a type; a mismatch is a structured `type` error blaming the offending node with path and line
   - [x] Annotate a value in a map; the annotated value is still read by other expressions as the plain value
-  - [x] Annotate `fn` parameters; a bad argument blames the argument at the call site
+  - [ ] Annotate `fn` parameters; a bad argument blames the argument at the call site — annotations work, but `types_annotations.bad_args` records the call's path/span and parameter names, not each offending argument's path/span (`src/eval/atomic.rs`)
   - [x] Annotate a `fn` result; a bad result blames the body, with the call recorded
   - [ ] Unannotated code runs exactly as before: every pre-types golden case is unchanged
   - [ ] The error carries expected type, actual value and the path *inside* the value where they diverge
@@ -603,6 +605,16 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Users and groups: membership, ownership implications and authorized keys with explicit removal semantics
   - [ ] Artifacts: authenticated retrieval where needed, pinned versions and integrity verification before use
   - [ ] Arbitrary commands: explicit guards and change/failure predicates; no implied idempotence or reversibility
+    - Evidence: `./manage.py test --suite command_provider` exercises 31 scenarios
+      for `std:command` through the existing provider lifecycle and bundled local
+      command host. Independent process logs and file assertions cover previews,
+      guarded no-ops, drift repair, stale reviews, argument boundaries, authority
+      denial, explicit failure/change classification and unmet postconditions.
+      Predicates are pure and boolean-checked; verification requires a fresh
+      satisfied guard. See the [example](tests/programs/command_provider.yaml)
+      and [contract](LANGUAGE.md#guarded-command-resources). Preview describes
+      proposed execution, not predicted content changes. SSH, secret redaction,
+      locking, rollback and durable recovery remain separate obligations.
 - [ ] Compose resources and reusable configurations without a second execution model
   - [ ] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
   - [ ] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
