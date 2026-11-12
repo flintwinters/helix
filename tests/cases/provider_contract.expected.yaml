@@ -1,0 +1,269 @@
+root:
+  changed:
+    applied: false
+    args: new
+    before: old
+    context:
+      allow_remove: false
+      capabilities:
+        - file_read
+        - file_write
+      managed: true
+      platform: test-linux
+    phase: plan
+    provider: test.content
+    revision: "1.0.0"
+    status: changed
+    steps:
+      - field: /content
+        op: set
+        to: new
+    version: 1
+  invalid_arguments:
+    applied: false
+    error:
+      calls:
+        - column: 104
+          file: "std:provider"
+          function: /checked
+          function_column: 8
+          function_file: "std:provider"
+          function_line: 24
+          line: 59
+          path: "/plan/$call/2/$call/1/$call/1/$call/5"
+      column: 39
+      data:
+        violations:
+          - at: /
+            message: "expected string, got integer"
+      file: "std:provider"
+      kind: type
+      line: 30
+      message: "1 type violation: expected string, got integer"
+      path: "/checked/$call/2/$call/2/$call/1/$call/1"
+      phase: type
+      reference:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+    phase: plan
+    status: failed
+    steps: []
+    version: 1
+  missing_capabilities:
+    applied: false
+    phase: preflight
+    reason: capabilities
+    status: unsupported
+    steps: []
+    version: 1
+  noop_apply:
+    applied: false
+    args: old
+    before: old
+    context:
+      allow_remove: false
+      capabilities:
+        - file_read
+        - file_write
+      managed: true
+      platform: test-linux
+    phase: plan
+    provider: test.content
+    revision: "1.0.0"
+    status: unchanged
+    steps: []
+    version: 1
+  removal_allowed:
+    applied: false
+    args: new
+    before: old
+    context:
+      allow_remove: true
+      capabilities:
+        - file_read
+        - file_write
+      managed: true
+      platform: test-linux
+    phase: plan
+    provider: test.content
+    revision: "1.0.0"
+    status: changed
+    steps:
+      - field: /content
+        op: remove
+        to: ~
+    version: 1
+  removal_denied:
+    applied: false
+    error:
+      calls:
+        - column: 12
+          file: "std:provider"
+          function: /require
+          function_column: 8
+          function_file: "std:provider"
+          function_line: 12
+          line: 90
+          path: "/valid_steps/$call/2/$call/4"
+        - column: 7
+          file: "std:provider"
+          function: /valid_steps
+          function_column: 8
+          function_file: "std:provider"
+          function_line: 82
+          line: 80
+          path: "/planned/$call/2/$call/5"
+        - column: 7
+          file: "std:provider"
+          function: /planned
+          function_column: 8
+          function_file: "std:provider"
+          function_line: 71
+          line: 68
+          path: "/plan_checked/$call/2/$call/2"
+        - column: 27
+          file: "std:provider"
+          function: /plan_checked
+          function_column: 8
+          function_file: "std:provider"
+          function_line: 62
+          line: 59
+          path: "/plan/$call/2/$call/1/$call/1"
+      column: 45
+      file: "std:provider"
+      kind: provider_removal_denied
+      line: 15
+      message: Removal requires explicit caller consent in addition to managed ownership
+      path: "/require/$call/2/$call/3"
+      phase: type
+      reference:
+        - require
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+    phase: plan
+    status: failed
+    steps: []
+    version: 1
+  stale_review:
+    applied: false
+    error:
+      calls:
+        - column: 7
+          file: "std:provider"
+          function: /apply_checked
+          function_column: 8
+          function_file: "std:provider"
+          function_line: 130
+          line: 127
+          path: "/apply/$call/2/$call/1"
+      column: 9
+      file: "std:provider"
+      kind: provider_stale_plan
+      line: 140
+      message: The reviewed plan does not match fresh provider state and caller inputs
+      path: "/apply_checked/$call/2/$call/2/$call/3"
+      reference:
+        - apply_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+    phase: preflight
+    status: failed
+    steps: []
+    version: 1
+  unchanged:
+    applied: false
+    args: old
+    before: old
+    context:
+      allow_remove: false
+      capabilities:
+        - file_read
+        - file_write
+      managed: true
+      platform: test-linux
+    phase: plan
+    provider: test.content
+    revision: "1.0.0"
+    status: unchanged
+    steps: []
+    version: 1
+  unmanaged:
+    applied: false
+    phase: preflight
+    reason: unmanaged
+    status: skipped
+    steps: []
+    version: 1
+  unmet_postcondition:
+    after:
+      applied: false
+      args: new
+      before: old
+      context:
+        allow_remove: false
+        capabilities:
+          - file_read
+          - file_write
+        managed: true
+        platform: test-linux
+      phase: plan
+      provider: test.content
+      revision: "1.0.0"
+      status: changed
+      steps:
+        - field: /content
+          op: set
+          to: new
+      version: 1
+    applied: true
+    args: new
+    attempted: true
+    before: old
+    context:
+      allow_remove: false
+      capabilities:
+        - file_read
+        - file_write
+      managed: true
+      platform: test-linux
+    error:
+      kind: provider_postcondition
+      message: Fresh observation does not produce an empty plan
+    phase: verify
+    provider: test.content
+    result: ~
+    revision: "1.0.0"
+    status: failed
+    steps:
+      - field: /content
+        op: set
+        to: new
+    version: 1
+  unsupported_platform:
+    applied: false
+    phase: preflight
+    reason: platform
+    status: unsupported
+    steps: []
+    version: 1
+  unsupported_preview:
+    applied: false
+    phase: preflight
+    reason: check
+    status: unsupported
+    steps: []
+    version: 1
+status: finished

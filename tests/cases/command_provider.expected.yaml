@@ -1,0 +1,231 @@
+root:
+  changed:
+    changed: true
+    reply:
+      code: 0
+      stderr: ""
+      stdout: "changed\n"
+  effectful_guard:
+    applied: false
+    error:
+      calls:
+        - column: 65
+          file: "std:command"
+          function: "/$call/2/effectful_guard/$call/1/$call/1/$call/3"
+          function_column: 16
+          function_line: 169
+          line: 55
+          path: "/configured/$call/2/$call/4/$call/26/$call/2/$call/1/$call/1/$call/1/$call/1"
+        - column: 76
+          file: "std:provider"
+          function: "/configured/$call/2/$call/4/$call/26"
+          function_column: 14
+          function_file: "std:command"
+          function_line: 50
+          line: 80
+          path: "/planned/$call/2/$call/5/$call/1/$call/1/$call/1/$call/1"
+        - column: 7
+          file: "std:provider"
+          function: /planned
+          function_column: 8
+          function_file: "std:provider"
+          function_line: 71
+          line: 68
+          path: "/plan_checked/$call/2/$call/2"
+        - column: 27
+          file: "std:provider"
+          function: /plan_checked
+          function_column: 8
+          function_file: "std:provider"
+          function_line: 62
+          line: 59
+          path: "/plan/$call/2/$call/1/$call/1"
+      column: 18
+      kind: purity
+      line: 173
+      message: effects are forbidden during type time
+      path: "/$call/2/effectful_guard/$call/1/$call/1/$call/3/$call/2"
+      phase: type
+      reference:
+        - "$call"
+        - 2
+        - effectful_guard
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+    phase: plan
+    status: failed
+    steps: []
+    version: 1
+  failed:
+    calls:
+      - column: 7
+        file: "std:command"
+        function: /classified
+        function_column: 8
+        function_file: "std:command"
+        function_line: 71
+        line: 69
+        path: "/classify/$call/2/$call/1"
+      - column: 12
+        function: /classify
+        function_column: 8
+        function_file: "std:command"
+        function_line: 64
+        line: 130
+        path: "/$call/2/failed/$call/1"
+    column: 7
+    data:
+      code: 7
+      stderr: ""
+      stdout: "changed\n"
+    file: "std:command"
+    kind: command_failed
+    line: 77
+    message: The command failure predicate rejected the result
+    path: "/classified/$call/2/$call/2"
+    phase: type
+    reference:
+      - classified
+      - "$call"
+      - 2
+      - "$call"
+      - 2
+  guard_satisfied:
+    applied: false
+    args:
+      args:
+        - "spaces ; $literal"
+        - "Unicode: λ"
+      program: /bin/echo
+    before: done
+    context:
+      allow_remove: false
+      capabilities:
+        - command
+      managed: true
+      platform: test-linux
+    phase: plan
+    provider: golden.command
+    revision: "1"
+    status: unchanged
+    steps: []
+    version: 1
+  invalid_guard:
+    applied: false
+    error:
+      calls:
+        - column: 76
+          file: "std:provider"
+          function: "/configured/$call/2/$call/4/$call/26"
+          function_column: 14
+          function_file: "std:command"
+          function_line: 50
+          line: 80
+          path: "/planned/$call/2/$call/5/$call/1/$call/1/$call/1/$call/1"
+        - column: 7
+          file: "std:provider"
+          function: /planned
+          function_column: 8
+          function_file: "std:provider"
+          function_line: 71
+          line: 68
+          path: "/plan_checked/$call/2/$call/2"
+        - column: 27
+          file: "std:provider"
+          function: /plan_checked
+          function_column: 8
+          function_file: "std:provider"
+          function_line: 62
+          line: 59
+          path: "/plan/$call/2/$call/1/$call/1"
+      column: 50
+      data:
+        violations:
+          - at: /
+            message: "expected boolean, got string"
+      file: "std:command"
+      kind: type
+      line: 55
+      message: "1 type violation: expected boolean, got string"
+      path: "/configured/$call/2/$call/4/$call/26/$call/2/$call/1/$call/1/$call/1"
+      phase: type
+      reference:
+        - configured
+        - "$call"
+        - 2
+        - "$call"
+        - 4
+        - "$call"
+        - 26
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+    phase: plan
+    status: failed
+    steps: []
+    version: 1
+  noop_apply:
+    applied: false
+    args:
+      args:
+        - "spaces ; $literal"
+        - "Unicode: λ"
+      program: /bin/echo
+    before: done
+    context:
+      allow_remove: false
+      capabilities:
+        - command
+      managed: true
+      platform: test-linux
+    phase: plan
+    provider: golden.command
+    revision: "1"
+    status: unchanged
+    steps: []
+    version: 1
+  preview:
+    applied: false
+    args:
+      args:
+        - "spaces ; $literal"
+        - "Unicode: λ"
+      program: /bin/echo
+    before: pending
+    context:
+      allow_remove: false
+      capabilities:
+        - command
+      managed: true
+      platform: test-linux
+    phase: plan
+    provider: golden.command
+    revision: "1"
+    status: changed
+    steps:
+      - field: command
+        op: set
+        to:
+          args:
+            - "spaces ; $literal"
+            - "Unicode: λ"
+          program: /bin/echo
+    version: 1
+  unchanged:
+    changed: false
+    reply:
+      code: 0
+      stderr: ""
+      stdout: ""
+status: finished

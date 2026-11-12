@@ -1,0 +1,17 @@
+# Defaults are declarations, not parent-order precedence. Explicit child values
+# replace defaults; different inherited defaults require a child declaration.
+$call:
+  - let
+  - first: {$call: [class, first, {$call: [record, port, {$call: [default, {$ref: integer}, 80]}]}, {}]}
+    second: {$call: [class, second, {$call: [record, port, {$call: [default, {$ref: integer}, 8080]}]}, {}]}
+  - inherited: {$call: [realize, {$call: [inherit, child, {$call: [list, {$ref: first}]}, {}]}]}
+    overridden: {$call: [realize, {$call: [inherit, child, {$call: [list, {$ref: first}]}, {port: 443}]}]}
+    conflict:
+      $call:
+        - try
+        - {$call: [inherit, child, {$call: [list, {$ref: first}, {$ref: second}]}, {}]}
+        - {$call: [fn, [error], {$ref: error}]}
+    resolved:
+      $call:
+        - realize
+        - {$call: [extend, child, {$call: [list, {$ref: first}, {$ref: second}]}, {$call: [record, port, {$ref: integer}]}, {port: 443}]}

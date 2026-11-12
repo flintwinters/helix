@@ -8,10 +8,11 @@ How to use this file: tick a box only when the feature works end to end *and* ha
 
 Audit (2026-11-12): a parent stays open while any of its stated obligations remain
 open. Implementation evidence is retained even where acceptance is incomplete.
-In particular, section 11's inventory, provider, guarded-command, composition and
-command-lifecycle implementations have dedicated automated suites, but lack golden cases for those
-contracts in `tests/cases/`; their boxes remain open under the rule above. A
-`tests/programs/` example or a generated suite fixture is not a golden case.
+Section 11's inventory, provider, guarded-command, composition and local command
+lifecycle implementations now pair golden cases in `tests/cases/` with their
+independent acceptance suites. Golden cases fix deterministic plans, diagnostics
+and request boundaries; host suites verify actual effects and lifecycle policy.
+A `tests/programs/` example or generated suite fixture alone is not a golden case.
 Parameter annotation diagnostics name rejected parameters but blame the call as
 a whole; the individual argument-source-blame obligation also remains open.
 
@@ -327,7 +328,7 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
 - [ ] Documented, deterministic merge and override rules (which parent wins, what counts as a conflict, how lists and maps combine)
   - [ ] Decided: the merge model (see Open questions) and whether inheritance is nominal, structural or both
   - [x] Field types from two parents: when they combine and when they conflict (`class_conflicts`; declarations must agree or the child must explicitly narrow every parent)
-  - [ ] Defaults: a child's explicit value overrides a parent default; two differing parent defaults are a conflict
+  - [x] Defaults: a child's explicit value overrides a parent default; two differing parent defaults are a conflict (`class_defaults` covers inheritance, override, conflict and explicit declaration resolution)
   - [ ] Lists and maps: one stated rule each (replace, append, or merge by key), with an explicit way to ask for another
   - [ ] Parent order never changes the result
   - [ ] The rules are written in `LANGUAGE.md`, with a golden case per rule
@@ -550,14 +551,16 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
 
 ### Inventory, connections and observed state
 
-- [ ] Select and describe hosts without implicit configuration precedence
-  - [ ] Typed inventory supports stable host identities, groups, connection settings and explicit overrides with provenance
-  - [ ] Host/group selection and exclusions resolve to a reviewable target list before mutation
-  - [ ] Dynamic inventory is an explicit host input with validation; discovery never runs inside pure configuration resolution
-  - [ ] Missing hosts, duplicate identities and incompatible settings produce structured diagnostics
+- [x] Select and describe hosts without implicit configuration precedence
+  - [x] Typed inventory supports stable host identities, groups, connection settings and explicit overrides with provenance
+  - [x] Host/group selection and exclusions resolve to a reviewable target list before mutation
+  - [x] Dynamic inventory is an explicit host input with validation; discovery never runs inside pure configuration resolution
+  - [x] Missing hosts, duplicate identities and incompatible settings produce structured diagnostics
   - Evidence: `./manage.py test --suite host_inventory` exercises the pure
     `std:inventory` module with static and supplied dynamic data, an independent
     selection oracle, ordered override histories and invalid-input diagnostics.
+    `host_inventory` golden coverage fixes target ordering, override histories,
+    selection, empty inputs and invalid-input diagnostics.
     Validation includes unselected hosts and empty inventories; failures return
     no targets. The [runnable example](tests/programs/host_inventory.yaml) and
     [inventory contract](LANGUAGE.md#host-inventory) document the versioned schema,
@@ -577,17 +580,19 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
 
 ### Resource providers and change semantics
 
-- [ ] Establish one discoverable provider contract for observation, planning, application and verification
-  - [ ] Providers declare argument/result types, capabilities, supported platforms, check/diff support and failure behavior
-  - [ ] Distinguish unchanged, changed, failed, skipped and unsupported outcomes using structured data
-  - [ ] Pure plan generation shares section 8's semantics; a dry run never silently applies a resource whose preview is unsupported
-  - [ ] Re-observe after mutation and report unmet postconditions instead of trusting a successful command exit alone
-  - [ ] Define ownership and deletion explicitly so absent configuration does not accidentally remove unmanaged resources
+- [x] Establish one discoverable provider contract for observation, planning, application and verification
+  - [x] Providers declare argument/result types, capabilities, supported platforms, check/diff support and failure behavior
+  - [x] Distinguish unchanged, changed, failed, skipped and unsupported outcomes using structured data
+  - [x] Pure plan generation shares section 8's semantics; a dry run never silently applies a resource whose preview is unsupported
+  - [x] Re-observe after mutation and report unmet postconditions instead of trusting a successful command exit alone
+  - [x] Define ownership and deletion explicitly so absent configuration does not accidentally remove unmanaged resources
   - Evidence: `./manage.py test --suite provider_contract --suite type_algebra --suite library`
     checks `std:provider` with typed callbacks, pure data-only plans compatible
     with `converge`, unsupported-preview gates, exact fresh review matching,
     authorized file changes, no-op reapplication, drift repair and explicit
-    removal. Independent host-state assertions cover preservation of unmanaged
+    removal. The `provider_contract` golden covers plans, ownership/removal gates,
+    unsupported previews, stale reviews, no-ops and unmet postconditions.
+    Independent host-state assertions cover preservation of unmanaged
     files, mutation followed by failure and unmet postconditions. See the
     [runnable example](tests/programs/provider_contract.yaml) and
     [provider contract](LANGUAGE.md#resource-provider-contract). Callbacks are
@@ -602,25 +607,29 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Services: enabled/running state, reload/restart policy and readiness checks
   - [ ] Users and groups: membership, ownership implications and authorized keys with explicit removal semantics
   - [ ] Artifacts: authenticated retrieval where needed, pinned versions and integrity verification before use
-  - [ ] Arbitrary commands: explicit guards and change/failure predicates; no implied idempotence or reversibility
+  - [x] Arbitrary commands: explicit guards and change/failure predicates; no implied idempotence or reversibility
     - Evidence: `./manage.py test --suite command_provider` exercises 31 scenarios
       for `std:command` through the existing provider lifecycle and bundled local
       command host. Independent process logs and file assertions cover previews,
       guarded no-ops, drift repair, stale reviews, argument boundaries, authority
       denial, explicit failure/change classification and unmet postconditions.
+      The `command_provider` golden fixes preview/no-op reports, explicit result
+      classification and rejection of non-boolean or effectful guards.
       Predicates are pure and boolean-checked; verification requires a fresh
       satisfied guard. See the [example](tests/programs/command_provider.yaml)
       and [contract](LANGUAGE.md#guarded-command-resources). Preview describes
       proposed execution, not predicted content changes. SSH, secret redaction,
       locking, rollback and durable recovery remain separate obligations.
-- [ ] Compose resources and reusable configurations without a second execution model
-  - [ ] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
-  - [ ] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
-  - [ ] Reusable configuration modules expose typed inputs, outputs and versioned dependencies using existing imports and functions
+- [x] Compose resources and reusable configurations without a second execution model
+  - [x] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
+  - [x] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
+  - [x] Reusable configuration modules expose typed inputs, outputs and versioned dependencies using existing imports and functions
   - Evidence: `./manage.py test --suite resource_composition --suite library`
     checks `std:orchestration` against an independent dependency-order oracle,
     observable callback/file effects, failure gates, coalesced handlers and retained
-    VM continuations. Full graph validation precedes executor callbacks; handlers
+    VM continuations. `resource_composition` and `resource_composition_module`
+    goldens cover dependency failures, coalesced handlers, failure gates and the
+    pinned typed module. Full graph validation precedes executor callbacks; handlers
     run once after resources and require successful prerequisites and notifiers.
     The [typed module example](tests/programs/resource_composition.yaml) includes
     relocatable, vendored dependencies with explicit provenance. See the
@@ -635,15 +644,17 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Express cross-host dependencies and controller/delegated tasks with unambiguous execution targets and authority
   - [ ] Gate rolling changes on health checks and stop subsequent batches when the declared policy fails
   - [ ] Support reboot, disconnect and reconnect workflows with bounded readiness waits
-- [ ] Make long-running operations practical — bundled local synchronous command adapter
-  - [ ] Replace the bundled host's fixed 10-second command deadline with caller-controlled bounded timeouts
-  - [ ] Support bounded output capture and progress reporting for package installs and deployments
-  - [ ] Define cancellation and descendant-process cleanup so a timed-out controller does not silently leave mutations running
-  - [ ] Retry only explicitly classified transient failures with bounded attempts and delays
+- [x] Make long-running operations practical — bundled local synchronous command adapter
+  - [x] Replace the bundled host's fixed 10-second command deadline with caller-controlled bounded timeouts
+  - [x] Support bounded output capture and progress reporting for package installs and deployments
+  - [x] Define cancellation and descendant-process cleanup so a timed-out controller does not silently leave mutations running
+  - [x] Retry only explicitly classified transient failures with bounded attempts and delays
   - Evidence: `./manage.py test --suite long_commands --suite effects --suite library`
     exercises real subprocesses, extended deadlines, cumulative capture budgets,
     metadata progress, classified retries, cancellation through both the interpreter
     and project wrapper, descendant liveness, and callback failure/panic cleanup.
+    The `long_commands` golden fixes the pending command request; the suite
+    performs that same source past the old deadline and checks capture/progress.
     The caller owns all policy; time and output budgets span attempts and delays.
     Unix process groups provide local cleanup, not rollback or containment of
     deliberately detached descendants. SIGKILL/controller crashes and uncertain

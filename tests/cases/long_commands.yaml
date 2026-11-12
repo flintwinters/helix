@@ -1,0 +1,10 @@
+# Golden pending request; long_commands also performs this exact source with a
+# caller-owned 14-second deadline and verifies capture and metadata progress.
+# Policy is supplied by the host, never by this source or its saved state.
+$call:
+  - effect
+  - command
+  - program: /bin/sh
+    args:
+      - -c
+      - "sleep 10.1; printf 'complete\\n'"
