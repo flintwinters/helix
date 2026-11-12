@@ -162,6 +162,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:machine` | Abstract machine classes `host`, `packages`, `files`, `services`, `users`, their combination `machine`, the `port` refinement, and fleet checks `hostnames(fleet)` / `unique_hostnames(fleet)` over realized configs |
 | `std:text` | `split(source, separator)` (literal, non-overlapping), `join(parts, separator)` |
 | `std:diff` | `compare(old, new)` (shallow configuration changes) |
+| `std:validation` | `batch(values, validate)` (indexed validation and transformation reports) |
 | `std:dependency` | `plan(tasks)` (stable dependency batches and blocked-task report) |
 | `std:types` | `from_fields(specs)`, `without_field(t,name)`, `optional_field(spec)`, `optional_fields(t)` |
 | `std:math` | `number` (numeric type), `abs(n)`, `sign(n)`, `min(a,b)`, `max(a,b)`, `clamp(n,lo,hi)`, `square(n)` |
@@ -174,6 +175,8 @@ Standard libraries are Helix source embedded in the executable:
 `std:text.split` preserves empty fields, including the one field in an empty source, and rejects an empty separator with a `range` error. Matching uses Unicode scalar indices. `join` accepts a list of strings and a string separator; an empty list produces an empty string and an empty separator concatenates directly. Arguments are checked even for empty inputs. Scanning and immutable copies can take quadratic time and allocations; runtime iteration and work budgets apply.
 
 `std:diff.compare` accepts two maps and returns `added` and `removed` key lists plus `changed` records containing `key`, `before` and `after`. Added keys follow new-map order; removed and changed keys follow old-map order. Missing keys differ from explicit null; nested values are compared structurally as whole values. Lookup and immutable copying suit small configurations and may be quadratic.
+
+`std:validation.batch` collects independent callback outcomes using the report policy in `std:test`. Its report has `total`, `passed`, `failed` and `results`; each result retains `input: {index, value}`, the name `validation`, and either a passed value or the original structured error. Callbacks receive one value in input order. Normal returns, including false and null, pass; rejection must raise. Failures do not stop later inputs. Retaining inputs and immutable copies suits small batches; iteration and work budgets apply.
 
 `std:dependency.plan` accepts a map from task names to lists of prerequisite names. It returns `order`, `pending`, `missing` and `status` (`finished` or `blocked`). Ready tasks run in stable batches following declaration order. Blocked tasks remain in `pending`; missing references are reported as task/dependency records in declaration order, including duplicates. A blocked graph with no missing references contains a cycle; the report retains its blocked dependents too. Repeated scans and immutable copies may be cubic on long chains; runtime budgets and iteration limits apply.
 

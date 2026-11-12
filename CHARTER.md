@@ -507,7 +507,7 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 
 - `dogfood_config_diff`: added/removed/changed keys, nested value changes, null versus absence, unchanged and empty snapshots. Friction: building report records requires nested `set` calls because symbols in ordinary map values are literal data; nested changes are reported at the top-level key.
 
-- `dogfood_project_inventory`: missing required fields, duplicate names and dangling dependencies, plus valid and empty inventories. Friction: presence checks do not validate field types; this example assumes string names and list dependencies. Schema validation remains separate work.
+- `dogfood_project_inventory`: missing required fields, duplicate names and dangling dependencies, plus valid and empty inventories. A declared record type now supplies required fields and collected nested violations; malformed rows retain their diagnostics without aborting duplicate and reference reporting.
 
 - `dogfood_dependency_order`: stable ordering of diamond dependencies, missing references, cycles, self-dependencies and empty graphs; independent work completes before blocked tasks are reported. Friction: immutable maps have no removal operation, so each batch rebuilds the pending map. Blocked results preserve the graph rather than claiming every blocked node belongs to a cycle.
 
@@ -561,10 +561,10 @@ Friction: `let` bindings are lazy, so an unused assertion does not enforce a con
 - [ ] Give someone else a useful script and have them install Helix, run it and adapt it using only the documentation
 
 ### With types and machine configs (section 8)
-- [ ] Replace the hand-rolled field checks in `dogfood_project_inventory` with a declared type; the type error report matches or beats the hand-written one
-- [ ] Write a function that takes a type and returns a derived type, and use it to remove real duplication between two declarations
+- [x] Replace the hand-rolled field checks in `dogfood_project_inventory` with a declared type; the type error report matches or beats the hand-written one
+- [x] Write a function that takes a type and returns a derived type, and use it to remove real duplication between two declarations — `dogfood_derived_changes` shares audit metadata and partial-update policy between file and service proposals using `std:types.optional_fields`.
 - [ ] Model my own machines as types: a laptop and a server sharing abstract classes, differing only in what they override
-- [ ] Introduce a deliberate conflict between two parent classes and fix it from the type-time error alone
+- [x] Introduce a deliberate conflict between two parent classes and fix it from the type-time error alone — `dogfood_class_conflict` identifies the field and parents; `dogfood_class_conflict_fixed` supplies an explicit child override.
 - [ ] Review a config change as a `git diff` of the resolved type before anything is applied
 - [ ] Manage one real piece of one real machine (a dotfile set, a package list, a service) from its Helix type for a month
 - [ ] Rebuild a machine, or bring up a second one, from its type alone and record everything that had to be done by hand
@@ -588,9 +588,10 @@ Implement Helix's own language services and development workflows in Helix. The 
   - [x] `std:list` access/slicing, enumerate/zip, one-level flatten/flat-map, short-circuit searches, quantifiers, count/partition, grouping/frequencies and default sorting; contracts and boundary cases live in `std_list_helpers`.
   - [x] Shallow right-biased merge and single-key removal in `std:map`, covered by `std_map`: stable key order, missing/null distinction, nested replacement, empty and Unicode keys, and checked arguments. Immutable copies can cost quadratic time/allocations; runtime iteration limits apply.
   - [x] Literal splitting and joining in `std:text`, covered by `std_text`: Unicode, empty fields, separator policy and argument contracts; copying costs and iteration limits are documented in `LANGUAGE.md`.
-- [ ] Configuration diff, dependency ordering and validation reports as reusable Helix modules, extracted from the existing dogfooding cases. Their policies and error recovery belong in Helix; primitive lookup, equality and structured error attribution remain runtime services.
+- [x] Configuration diff, dependency ordering and validation reports as reusable Helix modules, extracted from the existing dogfooding cases. Their policies and error recovery belong in Helix; primitive lookup, equality and structured error attribution remain runtime services.
   - [x] Shallow configuration comparison in `std:diff.compare`, extracted into the authoritative module used by `dogfood_config_diff`; `std_diff` covers ordering, missing/null distinctions, nested values and invalid inputs.
-  - [x] Stable dependency planning in `std:dependency.plan`, used by `dogfood_dependency_order`; `std_dependency` covers blocked graphs, missing prerequisites and argument contracts. Reusable validation reports remain pending.
+  - [x] Indexed batch validation in `std:validation.batch` reuses `std:test` report policy and retains inputs and original errors; `std_validation` covers continuation and boundary contracts, and `dogfood_errors` uses it for YAML row validation.
+  - [x] Stable dependency planning in `std:dependency.plan`, used by `dogfood_dependency_order`; `std_dependency` covers blocked graphs, missing prerequisites and argument contracts.
 - [ ] Type descriptor construction and transformation: build list/map/record/union/optional/default descriptions and derive fields with Helix functions over plain maps and lists. Replace the corresponding policy in `src/builtins/typing/construct.rs` once type-value validation and call compatibility are preserved; checking defaults depends on the checker below.
 - [ ] Drift and convergence planning: replace the pure comparison and plan construction in `src/builtins/typing/machine.rs` with Helix modules, using desired and observed maps as inputs. Preserve missing versus null, stable step order, extra-field policy and empty plans for conforming inputs. Observation and application stay separate effects.
 
