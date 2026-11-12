@@ -1,0 +1,22 @@
+t: [import, std:test]
+# A callback captures a different binding on each invocation; nested iteration, lazy
+# branches and error recovery must not reuse another call's memoized result.
+factory: [fn, [offset], [fn, [xs], [fold, [fn, [acc, n], [add, acc, [if, [lt, n, 0], [try, [div, 1, 0], [fn, [e], offset]], [add, n, offset]]]], 0, xs]]]
+closures: [map, factory, [-2, 0, 3]]
+composed:
+  - t.property
+  - "captures + lazy recovery + nested folds stay independent"
+  - [0, 1, 2]
+  - [fn, [i], [let, {offset: [get, [-2, 0, 3], i], f: [get, closures, i]}, [and, [eq, [call, f, [-1, 0, 2]], [add, 2, [mul, 3, offset]]], [eq, [call, f, []], 0], [eq, [call, f, [4]], [add, 4, offset]]]]]
+factorial: [fn, [n], [if, [le, n, 1], 1, [mul, n, [factorial, [sub, n, 1]]]]]
+recursion:
+  - t.property
+  - "recursive calls compose with callbacks, laziness and catch handlers"
+  - [0, 1, 2, 3, 4, 5]
+  - [fn, [n], [eq, [try, [call, [if, true, factorial, [div, 1, 0]], n], [fn, [e], -1]], [get, [1, 1, 2, 6, 24, 120], n]]]
+shadow:
+  n: 100
+  f: [fn, [n], [let, {shifted: [add, n, 1]}, [fn, [x], [add, shifted, x]]]]
+shadowing: [t.equal, [map, [call, shadow.f, 2], [0, 1, 2]], [3, 4, 5]]
+cleanup: [t.equal, [try, [finally, [div, 1, 0], [assert, true]], [fn, [e], [get, e, "kind"]]], "divide_by_zero"]
+report: [t.suite, [{name: composed, run: [fn, [], [t.require_pass, composed]]}, {name: recursion, run: [fn, [], [t.require_pass, recursion]]}, {name: shadowing, run: [fn, [], shadowing]}, {name: cleanup, run: [fn, [], cleanup]}]]

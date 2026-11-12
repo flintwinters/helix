@@ -1,7 +1,7 @@
 status: error
 error:
   kind: limit
-  message: evaluation exceeds 8000000 produced value units
+  message: value exceeds 1000000 units
   path: /2/2
   line: 1
   column: 37

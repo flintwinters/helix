@@ -22,7 +22,8 @@ const MAX_DEPTH: usize = 200;
 /// Iterations `until` allows before failing with a `limit` error.
 const MAX_STEPS: usize = 100_000;
 const MAX_WORK: usize = 2_000_000;
-const MAX_VALUES: usize = 8_000_000;
+const MAX_VALUES: usize = 128_000_000;
+const MAX_VALUE_SIZE: usize = 1_000_000;
 const MAX_EVAL_DEPTH: usize = 512;
 
 /// What a symbol resolves to: a node to evaluate, or an argument value of an active call.
@@ -115,11 +116,16 @@ impl Evaluator {
     /// Bound cumulative produced data, including strings and nested collection copies.
     fn charge_value(&mut self, id: NodeId, value: &Yaml) -> Result<(), HelixError> {
         let mut pending = vec![(value, 0)];
+        let mut produced = 0;
         while let Some((value, depth)) = pending.pop() {
             if depth > crate::graph::MAX_NESTING {
                 return Err(self.err(id, "depth", format!("value nested deeper than {} containers", crate::graph::MAX_NESTING)));
             }
             let size = match value { Yaml::String(s) | Yaml::Real(s) => 1 + s.len(), _ => 1 };
+            produced += size;
+            if produced > MAX_VALUE_SIZE {
+                return Err(self.err(id, "limit", format!("value exceeds {MAX_VALUE_SIZE} units")));
+            }
             self.remaining_values = self.remaining_values.checked_sub(size)
                 .ok_or_else(|| self.err(id, "limit", format!("evaluation exceeds {MAX_VALUES} produced value units")))?;
             match value {
