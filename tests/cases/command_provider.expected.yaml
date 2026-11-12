@@ -229,3 +229,284 @@ root:
       stderr: ""
       stdout: ""
 status: finished
+type_time_inputs:
+  - location:
+      path:
+        - classify
+        - "$call"
+        - 2
+      source: "std:command"
+    reads:
+      - function:
+          path:
+            - classify
+          source: "std:command"
+        name: config
+      - function:
+          path:
+            - classify
+          source: "std:command"
+        name: args
+      - function:
+          path:
+            - classify
+          source: "std:command"
+        name: response
+  - location:
+      path:
+        - make
+        - "$call"
+        - 2
+      source: "std:command"
+    reads:
+      - function:
+          path:
+            - make
+          source: "std:command"
+        name: config
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
+      - function:
+          path:
+            - configured
+          source: "std:command"
+        name: config
+  - location:
+      path:
+        - classify
+        - "$call"
+        - 2
+      source: "std:command"
+    reads:
+      - function:
+          path:
+            - classify
+          source: "std:command"
+        name: config
+      - function:
+          path:
+            - classify
+          source: "std:command"
+        name: args
+      - function:
+          path:
+            - classify
+          source: "std:command"
+        name: response
+  - location:
+      path:
+        - make
+        - "$call"
+        - 2
+      source: "std:command"
+    reads:
+      - function:
+          path:
+            - make
+          source: "std:command"
+        name: config
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
+      - function:
+          path:
+            - configured
+          source: "std:command"
+        name: config
+  - location:
+      path:
+        - make
+        - "$call"
+        - 2
+      source: "std:command"
+    reads:
+      - function:
+          path:
+            - make
+          source: "std:command"
+        name: config
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
+      - function:
+          path:
+            - configured
+          source: "std:command"
+        name: config
+  - location:
+      path:
+        - apply
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 4
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - apply
+          source: "std:provider"
+        name: review
+  - location:
+      path:
+        - check
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 4
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - check
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - check
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - check
+          source: "std:provider"
+        name: ctx
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
+      - function:
+          path:
+            - configured
+          source: "std:command"
+        name: config
+  - location:
+      path:
+        - classify
+        - "$call"
+        - 2
+      source: "std:command"
+    reads:
+      - function:
+          path:
+            - classify
+          source: "std:command"
+        name: config
+      - function:
+          path:
+            - classify
+          source: "std:command"
+        name: args
+      - function:
+          path:
+            - classify
+          source: "std:command"
+        name: response

@@ -126,7 +126,9 @@ impl Evaluator {
         self.environment.push(Scope {
             function: function.node,
             args,
+            born: self.scopes,
         });
+        self.scopes += 1;
         self.push(Request::BodyEnd { result_type, body });
         self.eval(body);
         Ok(())

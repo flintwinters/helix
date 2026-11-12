@@ -306,19 +306,32 @@ fn effects_yield_preserve_continuations_and_do_not_repeat_on_resume() {
 }
 
 #[test]
-fn type_time_after_effects_names_the_outcomes_that_could_reach_it() {
-    let mut vm = Vm::load(r##"{"early": {"$call": ["type_time", {"$call": ["add", 1, 1]}]}, "f": {"$call": ["fn", ["x"], {"$call": ["type_time", {"$call": ["add", {"$ref": "x"}, 1]}]}]}, "answer": {"$call": ["f", {"$call": ["effect", "time", null]}]}}"##);
+fn type_time_records_the_run_time_values_it_reads() {
+    let mut vm = Vm::load(r##"{"early": {"$call": ["type_time", {"$call": ["add", 1, 1]}]}, "f": {"$call": ["fn", ["x", "y"], {"$call": ["type_time", {"$call": ["add", {"$ref": "x"}, 1]}]}]}, "answer": {"$call": ["f", {"$call": ["effect", "time", null]}, 7]}}"##);
     vm.run();
     assert_eq!(vm.status(), Status::Signaled);
-    assert!(vm.state()["type_time_inputs"].is_badvalue(), "no outcome precedes a preflighted region");
+    assert!(vm.state()["type_time_inputs"].is_badvalue(), "a preflighted region reads no run-time value");
     let mut resolved = vm.resolve_effect(Ok(Yaml::Integer(40)));
     resolved.run();
     assert_eq!(resolved.state()["root"]["answer"].as_i64(), Some(41));
-    let inputs = resolved.state()["type_time_inputs"].clone();
+    let summary = resolved.state()["type_time_inputs"].clone();
+    assert_eq!(summary.as_vec().unwrap().len(), 1, "closed regions leave no entry");
+    assert_eq!(summary[0]["reads"][0]["name"].as_str(), Some("x"), "the state names what was read");
+    let inputs = resolved.inspect()["type_time_inputs"].clone();
     let inputs = inputs.as_vec().unwrap();
-    assert_eq!(inputs.len(), 1, "only the region after the effect is recorded");
-    assert_eq!(inputs[0]["effects"][0].as_i64(), Some(1));
     assert_eq!(inputs[0]["location"]["path"][0].as_str(), Some("f"));
+    let read = inputs[0]["inputs"].as_vec().unwrap();
+    assert_eq!(read.len(), 1, "only the parameter the region read is an input");
+    assert_eq!(read[0]["name"].as_str(), Some("x"));
+    assert_eq!(read[0]["value"].as_i64(), Some(40), "inspection retains the value itself");
+}
+
+#[test]
+fn type_time_frames_it_creates_are_not_inputs() {
+    let mut vm = Vm::load(r##"{"f": {"$call": ["fn", ["x"], {"$call": ["add", {"$ref": "x"}, 1]}]}, "answer": {"$call": ["type_time", {"$call": ["f", 1]}]}}"##);
+    vm.run();
+    assert_eq!(vm.state()["root"]["answer"].as_i64(), Some(2));
+    assert!(vm.state()["type_time_inputs"].is_badvalue());
 }
 
 #[test]

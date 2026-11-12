@@ -4,3 +4,5 @@
 "bad": {"$call": ["expect", {"port": "http"}, {"$call": ["record", "port", {"$ref": "integer"}]}]}
 "caught": {"$call": ["try", {"$call": ["type_time", {"$ref": "bad"}]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}]}
 "unchosen": {"$call": ["if", false, {"$call": ["type_time", {"$ref": "bad"}]}, "skipped"]}
+"lazy_binding": {"$call": ["let", {"unused": {"$call": ["type_time", {"$ref": "bad"}]}}, 1]}
+"branch_only": {"$call": ["if", true, "taken", {"$call": ["type_time", {"$ref": "bad"}]}]}

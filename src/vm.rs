@@ -266,7 +266,7 @@ impl Vm {
                 fields.insert(s("effects"), Value::Array(evaluator.effects.clone().into()));
             }
             if !evaluator.type_inputs.is_empty() {
-                fields.insert(s("type_time_inputs"), Value::Array(evaluator.type_inputs.clone().into()));
+                fields.insert(s("type_time_inputs"), evaluator.type_input_names());
             }
             if let Some(event) = &evaluator.signal {
                 fields.insert(s("signal"), event.clone());
@@ -285,6 +285,9 @@ impl Vm {
             }
         }
         self.effect_fields(&mut fields);
+        if let Some(evaluator) = self.evaluator.as_ref().filter(|e| !e.type_inputs.is_empty()) {
+            fields.insert(crate::model::string("type_time_inputs"), Value::Array(evaluator.type_inputs.clone().into()));
+        }
         fields.insert(crate::model::string("checking"), Value::Boolean(self.checking));
         fields.insert(
             crate::model::string("errors"),

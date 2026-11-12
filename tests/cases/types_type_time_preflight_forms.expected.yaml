@@ -1,0 +1,17 @@
+error:
+  column: 29
+  data:
+    violations:
+      - at: /port
+        message: "expected integer, got string"
+  kind: type
+  line: 4
+  message: "1 type violation: expected integer, got string"
+  path: "/bad/$call/1"
+  phase: type
+  reference:
+    - bad
+    - "$call"
+    - 1
+phase: type
+status: error

@@ -181,11 +181,24 @@ impl Evaluator {
     }
 
     pub(super) fn resolve(&self, from: NodeId, name: &str) -> Option<Binding> {
+        self.resolve_frame(from, name).map(|(binding, _)| binding)
+    }
+    /// Resolve and, inside an outermost type-time region, record a value read from a frame that
+    /// predates it. Parameters and captured values are the only way run-time data can enter.
+    pub(super) fn resolve_input(&mut self, from: NodeId, name: &str) -> Option<Binding> {
+        let (binding, frame) = self.resolve_frame(from, name)?;
+        if let (Binding::Value(value), Some((function, born))) = (&binding, frame) {
+            self.note_input(function, born, name, value);
+        }
+        Some(binding)
+    }
+    /// The binding and, for a parameter, the frame (function node, birth) it was read from.
+    fn resolve_frame(&self, from: NodeId, name: &str) -> Option<(Binding, Option<(NodeId, usize)>)> {
         if let Some(found) = self.resolve_name(from, name) {
             return Some(found);
         }
         let (head, rest) = name.split_once('.')?;
-        let mut binding = self.resolve_name(from, head)?;
+        let (mut binding, frame) = self.resolve_name(from, head)?;
         for part in rest.split('.') {
             binding = match binding {
                 Binding::Node(node) => {
@@ -199,14 +212,14 @@ impl Evaluator {
                 _ => return None,
             };
         }
-        Some(binding)
+        Some((binding, frame))
     }
-    fn resolve_name(&self, from: NodeId, name: &str) -> Option<Binding> {
+    fn resolve_name(&self, from: NodeId, name: &str) -> Option<(Binding, Option<(NodeId, usize)>)> {
         let entry = |entries: &[(String, NodeId)]| {
             entries
                 .iter()
                 .find(|(k, _)| k == name)
-                .map(|(_, id)| Binding::Node(*id))
+                .map(|(_, id)| (Binding::Node(*id), None))
         };
         let mut child = from;
         while let Some(id) = self.graph().lexical_parent(child) {
@@ -228,7 +241,7 @@ impl Evaluator {
                                         .iter()
                                         .rev()
                                         .find(|f| f.function == id)
-                                        .map(|f| Binding::Value(f.args[i].clone()))
+                                        .map(|f| (Binding::Value(f.args[i].clone()), Some((id, f.born))))
                                 })
                         }
                         (Some("let" | "closure"), Kind::Map(entries)) => entry(entries),

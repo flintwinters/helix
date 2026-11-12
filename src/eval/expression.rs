@@ -23,8 +23,9 @@ impl Evaluator {
                 ),
             ));
         }
-        if let Syntax::Reference(name) = self.graph().syntax(id) {
-            match self.resolve(id, name) {
+        let program = self.program.clone();
+        if let Syntax::Reference(name) = program.graph.syntax(id) {
+            match self.resolve_input(id, name) {
                 Some(Binding::Value(value)) => {
                     self.charge_value(id, &value)?;
                     self.finish(value);
@@ -66,7 +67,7 @@ impl Evaluator {
                 if let Some(name) = self.graph().identifier(head).map(str::to_string) {
                     if builtins::arity(&name).is_some() {
                         self.apply(id, Actor::Builtin(name), items[1..].to_vec())?;
-                    } else if let Some(binding) = self.resolve(id, &name) {
+                    } else if let Some(binding) = self.resolve_input(id, &name) {
                         self.push(Request::Actor(id, items));
                         match binding {
                             Binding::Value(v) => self.finish(v),

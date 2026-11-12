@@ -55,6 +55,8 @@ impl Evaluator {
             pending_effect: None,
             effects: Vec::new().into(),
             type_inputs: Vec::new().into(),
+            region: None,
+            scopes: 0,
             effects_allowed: true,
             signal: None,
             remaining_work: limits.max_work,
@@ -154,6 +156,7 @@ impl Evaluator {
                 self.type_time = previous;
                 if let Some(memo) = memo {
                     self.memo = memo;
+                    self.finish_region()?;
                 }
             }
             Request::Eval(id) => self.evaluate(id)?,

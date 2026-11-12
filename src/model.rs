@@ -47,10 +47,26 @@ pub(crate) struct Program {
     pub(crate) modules: Modules,
     pub(crate) code: Vec<Value>,
 }
-#[derive(Clone, Debug, PartialEq)]
+/// One call frame. `born` orders frames by creation so type time can tell inputs that existed
+/// before a region from frames the region made; it is not part of a frame's identity.
+#[derive(Clone, Debug)]
 pub(crate) struct Scope {
     pub function: NodeId,
     pub args: Vec<Value>,
+    pub born: usize,
+}
+impl PartialEq for Scope {
+    fn eq(&self, other: &Self) -> bool {
+        self.function == other.function && self.args == other.args
+    }
+}
+/// An outermost type-time region in progress: frames older than `mark` are outside the region,
+/// so each value read from one is an input the region's result depends on.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Region {
+    pub(crate) site: NodeId,
+    pub(crate) mark: usize,
+    pub(crate) inputs: Vec<Value>,
 }
 #[derive(Clone, Debug)]
 pub(crate) struct Function {
@@ -204,8 +220,11 @@ pub(crate) struct Evaluator {
     pub(crate) inherited_type_time: bool,
     pub(crate) pending_effect: Option<(NodeId, EffectRequest)>,
     pub(crate) effects: List,
-    /// Outermost type-time entries that followed completed effects, with the outcomes that preceded them.
+    /// Values that outermost type-time regions read from outside themselves, by region.
     pub(crate) type_inputs: List,
+    pub(crate) region: Option<Region>,
+    /// Frames created so far; see `Scope::born`.
+    pub(crate) scopes: usize,
     pub(crate) effects_allowed: bool,
     pub(crate) signal: Option<Value>,
     pub(crate) remaining_work: usize,

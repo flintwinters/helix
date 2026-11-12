@@ -1,0 +1,13 @@
+# Regions in the unconditional operands of forms are hoisted too: a `let` body and the condition of
+# an `if` run before the run-time step, so the earlier effect is never requested.
+"a_read": {"$call": ["effect", "read_file", {"path": "unused"}]}
+"bad": {"$call": ["expect", {"port": "http"}, {"$call": ["record", "port", {"$ref": "integer"}]}]}
+"z_scoped":
+  "$call":
+  - "let"
+  - "n": 1
+  - "$call":
+    - "if"
+    - {"$call": ["type_time", {"$call": ["is", {"$ref": "bad"}, "boolean"]}]}
+    - {"$ref": "n"}
+    - 2

@@ -241,12 +241,12 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Decided and documented: what marks type time (see Open questions)
   - [x] An effect attempted at type time is a structured error naming the effect and the node
   - [x] Bounded: the existing `depth` and `limit` caps apply, so type time ends or fails cleanly
-  - [x] Deterministic: no time, randomness, environment or file contents reach type time unpinned — effects and file imports are blocked inside the phase; preflighted regions run before any outcome exists; a region entered after completed effects is listed in the state's `type_time_inputs` with the outcome ids that preceded it, an over-approximation of what could reach it (`tests/execution.rs`). Value-level taint tracking is not attempted
+  - [x] Deterministic: a region's result is a function of the source and the run-time values it reads. Effects and file imports are blocked inside the phase and its dependencies are recomputed purely, so the only run-time data that can enter is a parameter or captured value from a frame older than the region. An outermost region records each such value (functions by source node) in the machine; the state's `type_time_inputs` names them and inspection shows the values. A region that reads none is closed and leaves no entry; preflighted regions are always closed (`tests/execution.rs`)
   - [x] The same type-time result whether reached by `helix check --evaluate` or by a full run (`type_time` suite); plain `check` does not evaluate type-time regions
 - [x] Type-time errors (`types_type_time_error` golden case) are the same structured errors as run-time ones, with the phase recorded in the state
   - [x] Same shape and kinds (`kind`, `message`, `path`, `line`, `column`), catchable with `try` like any other
   - [x] The saved state records which phase failed
-  - [x] A type-time failure stops before any run-time effect is attempted when its region is unconditional (mapping entries, sequence items, arguments of non-form calls): such regions are evaluated before the first run-time step (`types_type_time_preflight`). Regions under `try`, `if`, `fn`, `let` and iteration keep ordinary order so caught failures and unchosen branches behave as documented (`types_type_time_preflight_caught`)
+  - [x] A type-time failure stops before any run-time effect when its region is on an unconditional path from the root (mapping entries, sequence items, call and iteration arguments, `let` bodies, `finally` operands, the first operand of `if`/`cond`/`and`/`or`): those regions run before the first run-time step (`types_type_time_preflight`, `types_type_time_preflight_forms`). Regions in a branch, `try`, a function body or an unreferenced `let` binding keep ordinary order, so caught failures and unchosen branches behave as documented (`types_type_time_preflight_caught`)
 
 ### Expanding the type algebra
 

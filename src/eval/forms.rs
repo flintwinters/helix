@@ -1,6 +1,6 @@
 //! Special forms choose argument order and schedule work on the shared request engine.
 use crate::builtins::{self, Descriptor, Evaluation, Form};
-use crate::model::{Evaluator, Function, HelixError, Iteration, Kind, NodeId, Request, Value, Vm};
+use crate::model::{Evaluator, Region, Function, HelixError, Iteration, Kind, NodeId, Request, Value, Vm};
 use std::sync::Arc;
 
 impl Evaluator {
@@ -28,7 +28,7 @@ impl Evaluator {
                     Some(std::mem::take(&mut self.memo))
                 };
                 if !previous && !self.inherited_type_time {
-                    self.record_type_inputs(id);
+                    self.region = Some(Region { site: id, mark: self.scopes, inputs: Vec::new() });
                 }
                 self.push(Request::TypeEnd { previous, memo });
                 if let Some(import) = self.program.modules.file_import() {
