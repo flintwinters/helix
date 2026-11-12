@@ -11,6 +11,9 @@ Run commands from the repository root. Tests require Python 3.10+, PyYAML, and R
 ## Testing contracts and known gaps
 
 All checks run through `./manage.py test`; no separate Python launchers are needed.
+Golden and robustness cases use four workers by default; `--jobs N` controls case
+concurrency (`--jobs 1` runs serially). Results retain discovery order. Suites that
+mutate shared harness state remain serial; robustness variants stream per case.
 The default runs every suite. `HELIX_TEST_TIMEOUT` sets the per-interpreter timeout
 in seconds (default 10). Fixtures and failure artifacts stay under this checkout's
 ignored `runtime/` directory. Generated checks report fixed seeds; failures print
@@ -115,5 +118,9 @@ host/environment, sampling settings and workload source keep comparisons relevan
 the fixed early baseline reveals cumulative drift. First runs establish history.
 Flags are observational and do not fail the suite. Normal interpreter timeouts
 still apply. The weekly/manual full CI sweep includes this suite.
+
+Workload epochs in `tests/suites/speed.py` separate fixed historical baselines.
+Advance only the affected epochs after measured improvements, and retain the
+historical reports.
 
 Memory and compiled-mutation artifacts use unique per-run directories. Their root `report.json` files identify the latest run directory; concurrent runs cannot replace each other's inputs, RSS files or compiled binaries. Successful mutation runs remove their build target after retaining source/control logs.

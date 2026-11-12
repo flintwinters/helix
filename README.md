@@ -121,3 +121,22 @@ and needs Git, Node.js, and npm; the command sets it up when needed.
 
 The earlier C++ experiment lives in
 [flintwinters/helixcpp](https://github.com/flintwinters/helixcpp).
+
+### Change workflow
+
+- Keep implementation and regression coverage in the same logical checkpoint.
+  Extend existing suites through `./manage.py`; keep generated fixtures and
+  artifacts in `runtime/`, never `/tmp`. Parallelize independent tests whenever
+  possible; serialize only where shared state requires it.
+- Put pure library laws in dogfood modules, exact output contracts in golden
+  cases, and host/process contracts in Python suites. The [testing guide](tests/README.md)
+  maps coverage and explains suite selection.
+- Keep lint at zero diagnostics without weakening policy or adding suppression
+  baselines. Prefer private or `pub(crate)` implementation and a small public
+  API; reuse shared leaf modules without child-to-parent dependency cycles.
+- Stage explicit paths only, never `git add .` or `git add -A`. Commit every
+  verified logical checkpoint with a detailed message.
+
+Use `./manage.py --help` or `--help-json` for command discovery,
+`./manage.py test --describe` for suite contracts, and `./manage.py std [module]`
+to discover embedded libraries and read their source.
