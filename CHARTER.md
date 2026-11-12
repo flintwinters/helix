@@ -225,9 +225,9 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Build a type by iteration (`map`/`fold` over a list of field names)
   - [x] A constructor given a non-type argument fails with a `type` error blaming that argument
 - [ ] Reflection (`types_reflection`, `types_first_class` golden cases): read a type's fields, defaults and parents as data; ask `{$call: [is, {$ref: value}, {$ref: t}]}` and `{$call: [subtype, {$ref: a}, {$ref: b}]}`
-  - [x] `{$call: [is, {$ref: value}, {$ref: t}]}`
+  - [ ] `{$call: [is, {$ref: value}, {$ref: t}]}`
     - [x] For scalar and collection type names and `any`; an unknown name is a `type` error
-    - [x] For every declared type
+    - [ ] For every declared type — structural records and refinements work, but class membership parses only field declarations (`src/builtins/typing/ty.rs`); fixed values and whole-record constraints are enforced by class realization, not by `is`
   - [x] Read a record type's fields, each field's type, and its defaults as plain lists and maps
   - [x] Read a class's parents and its still-open fields
   - [x] `{$call: [subtype, {$ref: a}, {$ref: b}]}`, with documented rules per type former
@@ -387,9 +387,9 @@ The config is the type; the real machine is the value. "Is this machine configur
   - [ ] All fleet violations are reported in one pass
 - [ ] Realization is a separate, explicit step: compare a resolved config with a machine's observed state and produce a plan as data
   - [ ] Observed state is gathered by effects into a value of a declared type
-  - [ ] The plan is plain YAML: ordered steps, each naming the field of the type it realizes
-  - [ ] An empty plan means the machine inhabits its type
-  - [ ] Planning changes nothing on the machine (dry run is the default, applying is the explicit act)
+  - [x] The plan is plain YAML: ordered steps, each naming the field of the type it realizes (`machine_fleet.plan_web1`; `converge` emits canonical field-ordered `set` steps)
+  - [ ] An empty plan means the machine inhabits its type — `converge` compares configured values and ignores extra observed fields, while structural class membership uses a closed record; equivalence with full class membership is not established
+  - [x] Planning changes nothing on the machine (dry run is the default, applying is the explicit act): `drift` and `converge` only compare supplied data (`machine_fleet`); effectful observation and complete machine application remain separate obligations
 - [ ] Applying a plan uses the effect system (section 3), is idempotent, and suspends/resumes per step (section 2) with the pending step visible in the state
   - [ ] Each step is an explicit effect recorded in the state before it runs
   - [ ] A failed or interrupted apply resumes from the pending step, not from the start
@@ -397,7 +397,7 @@ The config is the type; the real machine is the value. "Is this machine configur
   - [ ] After applying, a fresh plan is empty
 - [ ] Drift report: what the machine has that its type does not say, and the reverse
   - [ ] Both directions reported as data, per field, with the type's provenance for each
-  - [ ] Decided and documented: what counts as unmanaged (ignored) versus drift
+  - [x] Decided and documented: what counts as unmanaged (ignored) versus drift — extra observed fields appear in `drift.extra` but generate no removal steps (`machine_fleet`, `src/builtins/typing/machine.rs`, `LANGUAGE.md#classes-machines-and-drift`)
 - [ ] Secrets are referenced by a typed handle, never inlined into a resolved config or saved state
   - [ ] A secret type whose values cannot be emitted: resolved configs and saved states show the handle only
   - [ ] Secrets are fetched only during realization, by an explicit effect

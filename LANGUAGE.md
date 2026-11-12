@@ -494,7 +494,9 @@ A class is a type that can be extended. `[class, name, record_type, values?]` de
 
 `{$call: [realize, {$ref: class}]}` fills defaults and checks fixed values against the declared types. A class with required fields still unfilled is `abstract`: realizing it raises an `abstract` error whose `data.missing` lists each field and `required_by`. Every class records provenance: for each field, the declaring class (`type`) and where the value came from (`value`, e.g. `default of X`), so "who set this" is answered from state.
 
-Machine state is compared as data. `{$call: [drift, {$ref: class}, {$ref: actual}]}` returns `{missing, changed, extra}`; `{$call: [converge, {$ref: class}, {$ref: actual}]}` returns ordered `set` steps and is empty when the machine conforms. Neither acts: applying a plan is a separate effectful step. The
+Structural membership (`is`, `expect`, and `violations`) checks a class's field schema, including field refinements, but does not enforce its fixed values or whole-record constraints. Those belong to class realization; structural membership is not a complete machine-conformance check.
+
+Machine state is compared as data. `{$call: [drift, {$ref: class}, {$ref: actual}]}` returns `{missing, changed, extra}`; `{$call: [converge, {$ref: class}, {$ref: actual}]}` returns ordered `set` steps and is empty when all configured values match. Extra observed fields are reported in `drift.extra` but never produce removal steps. An empty plan is therefore not equivalent to membership in the closed record schema. Neither acts: applying a plan is a separate effectful step. The
 [`std:provider` contract](#resource-provider-contract) supplies an explicit reviewed
 application lifecycle for provider callbacks; complete declarative machine
 application remains future work. A `{$call: [secret, {$ref: ref}]}` handle (`{type: secret, ref}`) is the only value a `secret`-typed field accepts; inline strings are rejected.
