@@ -78,7 +78,7 @@ def verify(h):
     from tooling.cli import parse
     for name, path in catalog["shortcuts"].items():
         extra = {"run": ["-"], "check": ["-"], "recover": ["-"], "resume": ["-"],
-                 "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
+                 "sandbox": ["-", "-"], "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
                  "lint": ["--format=text"], "test": ["--suite", "cli"]}.get(name, [])
         short, full = parse([name, *extra]), parse([*path, *extra])
         assert {k: v for k, v in vars(short).items() if k != "help_parser"} == {

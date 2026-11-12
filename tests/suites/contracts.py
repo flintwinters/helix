@@ -212,6 +212,8 @@ def run(name, h):
 
 
 def parser(h):
+    from tests.suites.parser_graph import verify
+    verify(h)
     for source, expected in [('"é雪🙂"', "é雪🙂"), ("'a: b'", "a: b"),
                              ("|\n  first\n  second\n", "first\nsecond\n"),
                              (">\n  first\n  second\n", "first second\n"),
