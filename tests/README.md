@@ -146,3 +146,5 @@ historical reports.
 Memory and compiled-mutation artifacts use unique per-run directories. Their root `report.json` files identify the latest run directory; concurrent runs cannot replace each other's inputs, RSS files or compiled binaries. Successful mutation runs remove their build target after retaining source/control logs.
 
 Immutable execution profiles record run/step/checkpoint allocation counts and timings in `runtime/execution-profile.log`. Ordinary-data roots must remain emission fixpoints, including scalars and empty containers. Function and machine values use named object graphs and are checked through inspection and execution contracts rather than source reconstruction.
+
+Resource regressions grow function and machine capture graphs from shallow source until an enforced limit. They must emit structured errors and exit cleanly when releasing the retained graph. Public execution tests also release captured graphs on a small-stack thread and through thread-local teardown, preserving retained machine versions.

@@ -1,8 +1,97 @@
 //! Runtime values. Source syntax and YAML encoding have no execution authority here.
 
+use crate::model::{Evaluator, Function, HelixError, Scope, Vm};
 pub(crate) use crate::model::{Hash, Value};
 use crate::model::{List, MapKey};
+use std::collections::HashMap;
 use std::sync::Arc;
+use std::sync::{Mutex, OnceLock};
+use std::thread::ThreadId;
+
+// Retained execution graphs can be much deeper than source or ordinary data. A
+// per-thread retirement queue bounds the host stack without changing what lives
+// in a closure or moving destruction to another thread. The registry has no TLS
+// destructor, so it also works when a client drops a VM during thread teardown.
+enum Retired {
+    Environment(Vec<Scope>),
+    Machine {
+        evaluator: Option<Arc<Evaluator>>,
+        result: Option<Value>,
+        error: Option<HelixError>,
+        errors: Vec<HelixError>,
+    },
+}
+impl Retired {
+    fn dispose(self) {
+        match self {
+            Self::Environment(environment) => drop(environment),
+            Self::Machine {
+                evaluator,
+                result,
+                error,
+                errors,
+            } => drop((evaluator, result, error, errors)),
+        }
+    }
+}
+fn retire(value: Retired) {
+    static QUEUES: OnceLock<Mutex<HashMap<ThreadId, Vec<Retired>>>> = OnceLock::new();
+    let queues = QUEUES.get_or_init(|| Mutex::new(HashMap::new()));
+    let thread = std::thread::current().id();
+    {
+        let mut pending = queues
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(queue) = pending.get_mut(&thread) {
+            queue.push(value);
+            return;
+        }
+        pending.insert(thread, vec![value]);
+    }
+    loop {
+        let value = {
+            let mut pending = queues
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let queue = pending
+                .get_mut(&thread)
+                .expect("a retirement drain owns its queue");
+            match queue.pop() {
+                Some(value) => Some(value),
+                None => {
+                    pending.remove(&thread);
+                    None
+                }
+            }
+        };
+        let Some(value) = value else { break };
+        // Nested Function/Vm drops append to this queue after the lock is released.
+        value.dispose();
+    }
+}
+impl Drop for Function {
+    fn drop(&mut self) {
+        if !self.environment.is_empty() {
+            retire(Retired::Environment(std::mem::take(&mut self.environment)));
+        }
+    }
+}
+impl Drop for Vm {
+    fn drop(&mut self) {
+        if self.evaluator.is_some()
+            || self.result.is_some()
+            || self.error.is_some()
+            || !self.errors.is_empty()
+        {
+            retire(Retired::Machine {
+                evaluator: self.evaluator.take(),
+                result: self.result.take(),
+                error: self.error.take(),
+                errors: std::mem::take(&mut self.errors),
+            });
+        }
+    }
+}
 impl Hash {
     pub fn new() -> Self {
         Self::default()

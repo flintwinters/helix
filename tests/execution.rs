@@ -313,3 +313,32 @@ fn check_mode_keeps_independent_runtime_and_type_time_failures() {
         1
     );
 }
+
+#[test]
+fn retained_capture_graphs_drop_on_small_stacks_and_thread_teardown() {
+    for body in ["[fn, [], [get, row, 1]]", "[vm, [fn, [], [get, row, 1]]]"] {
+        let source = format!(
+            "[until, [fn, [row], [eq, [get, row, 0], 3000]], [fn, [row], [list, [add, [get, row, 0], 1], {body}]], [list, 0, null]]"
+        );
+        std::thread::Builder::new()
+            .stack_size(512 * 1024)
+            .spawn(move || {
+                thread_local! {
+                    static RETAINED: std::cell::RefCell<Option<Vm>> = const { std::cell::RefCell::new(None) };
+                }
+                let ready = Vm::load(&source);
+                let original = ready.inspect();
+                let mut completed = ready.clone();
+                completed.run();
+                assert_eq!(completed.status(), Status::Finished);
+                let retained = completed.clone();
+                drop(completed);
+                assert_eq!(ready.inspect(), original);
+                RETAINED.with(|slot| *slot.borrow_mut() = Some(retained));
+                // The last deep graph is released by TLS after this closure returns.
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    }
+}

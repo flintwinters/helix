@@ -50,6 +50,16 @@ def verify(h):
     program = h.root_section(grown.stdout)
     reloaded = h.helix("run", "-", stdin=program)
     assert reloaded.returncode == 0 and h.root_section(reloaded.stdout) == program
+    # Function and machine environments can retain growing graphs despite shallow source.
+    for name, wrapper in [("function", "[fn, [], state]"), ("machine", "[vm, [fn, [], state]]")]:
+        source = f'[until, [fn, [state], false], [fn, [state], {wrapper}], 0]'
+        artifact = h.root / "runtime" / f"resource-{name}-capture.yaml"
+        artifact.write_text(source + "\n")
+        result = h.helix("run", str(artifact))
+        why = h.malformed_state(result.stdout, result.returncode)
+        assert why is None, f"{name} capture graph: {why}; replay: ./manage.py run {artifact}; stderr={result.stderr}"
+        state = yaml.safe_load(result.stdout)
+        assert result.returncode == 1 and state["error"]["kind"] in ("depth", "limit"), state
     # A long dependency chain has shallow syntax but a deep evaluator stack.
     source = "".join(f"v{i}: [add, v{i + 1}, 0]\n" for i in range(2000)) + "v2000: 0\n"
     failure(h, source, "depth")
