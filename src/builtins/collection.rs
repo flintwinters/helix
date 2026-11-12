@@ -32,9 +32,9 @@ fn index(args: &[Yaml], at: usize) -> Result<usize, Fault> {
     }
 }
 
-fn key(args: &[Yaml], at: usize) -> Result<Yaml, Fault> {
+fn key(args: &[Yaml], at: usize) -> Result<&Yaml, Fault> {
     match &args[at] {
-        key @ Yaml::String(_) => Ok(key.clone()),
+        key @ Yaml::String(_) => Ok(key),
         other => Err(Fault::expected(at, "string key", other)),
     }
 }
@@ -88,9 +88,8 @@ fn slice(args: &[Yaml]) -> Result<Yaml, Fault> {
     };
     match &args[0] {
         Yaml::String(s) => {
-            let chars: Vec<char> = s.chars().collect();
-            let (start, end) = bounds(chars.len())?;
-            Ok(Yaml::String(chars[start..end].iter().collect()))
+            let (start, end) = bounds(s.chars().count())?;
+            Ok(Yaml::String(s.chars().skip(start).take(end - start).collect()))
         }
         Yaml::Array(v) => {
             let (start, end) = bounds(v.len())?;
@@ -104,7 +103,7 @@ fn slice(args: &[Yaml]) -> Result<Yaml, Fault> {
 fn get(args: &[Yaml]) -> Result<Yaml, Fault> {
     let found = match &args[0] {
         Yaml::Array(v) => v.get(index(args, 1)?),
-        Yaml::Hash(h) => h.get(&key(args, 1)?),
+        Yaml::Hash(h) => h.get(key(args, 1)?),
         other => return Err(Fault::expected(0, "list or map", other)),
     };
     match (found, args.get(2)) {
@@ -131,9 +130,9 @@ fn set(args: &[Yaml]) -> Result<Yaml, Fault> {
             // Replacing an existing key keeps its position; `insert` alone would move it to the end.
             let mut out = h.clone();
             let k = key(args, 1)?;
-            match out.get_mut(&k) {
+            match out.get_mut(k) {
                 Some(slot) => *slot = args[2].clone(),
-                None => drop(out.insert(k, args[2].clone())),
+                None => drop(out.insert(k.clone(), args[2].clone())),
             }
             Ok(Yaml::Hash(out))
         }
@@ -195,7 +194,7 @@ fn dict(args: &[Yaml]) -> Result<Yaml, Fault> {
     let mut out = yaml_rust2::yaml::Hash::new();
     for (i, pair) in args.chunks_exact(2).enumerate() {
         let key = key(args, 2 * i)?;
-        out.insert(key, pair[1].clone());
+        out.insert(key.clone(), pair[1].clone());
     }
     Ok(Yaml::Hash(out))
 }
