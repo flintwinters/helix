@@ -96,8 +96,33 @@ fn host_request_allocations(bytes: usize) -> usize {
     println!("host-request-profile: payload_bytes={bytes} allocated_bytes={allocated}");
     allocated
 }
+fn call_argument_allocations(count: usize) -> usize {
+    let parameters = (0..count)
+        .map(|i| format!("p{i}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let arguments = std::iter::repeat_n("0", count)
+        .collect::<Vec<_>>()
+        .join(", ");
+    let mut vm = Vm::load(&format!("[call, [fn, [{parameters}], 7], {arguments}]"));
+    assert_eq!(vm.status(), Status::Ready);
+    let baseline = TOTAL.load(Ordering::Relaxed);
+    vm.run();
+    let allocated = TOTAL.load(Ordering::Relaxed).saturating_sub(baseline);
+    assert_eq!(vm.status(), Status::Finished);
+    assert_eq!(vm.state()["root"].as_i64(), Some(7));
+    println!("call-argument-profile: arguments={count} allocated_bytes={allocated}");
+    allocated
+}
+
 #[test]
 fn versions_share_code_and_do_not_retain_execution_history() {
+    let small_call = call_argument_allocations(128);
+    let large_call = call_argument_allocations(512);
+    assert!(
+        large_call <= 6 * small_call + 4096,
+        "call argument scheduling allocated quadratically: {small_call} -> {large_call}"
+    );
     let small_request = host_request_allocations(32 * 1024);
     let large_request = host_request_allocations(256 * 1024);
     assert!(
