@@ -1,5 +1,6 @@
 //! Shared immutable syntax and execution state. Algorithms live in sibling modules.
-use crate::span::Span;
+mod span;
+pub(crate) use span::Span;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -295,4 +296,17 @@ pub struct EffectRequest {
     pub id: u64,
     pub operation: String,
     pub payload: Yaml,
+}
+
+impl Default for Limits {
+    fn default() -> Self {
+        Self {
+            max_depth: 200,
+            max_iterations: 100_000,
+            max_work: 2_000_000,
+            max_values: 128_000_000,
+            max_value_size: crate::model::MAX_VALUE_SIZE,
+            max_eval_depth: 512,
+        }
+    }
 }

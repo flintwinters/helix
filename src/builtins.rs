@@ -9,12 +9,11 @@
 use crate::value::Value;
 
 mod collection;
-mod codecs;
+mod data;
 mod fault;
 mod number;
 mod typing;
 mod value;
-mod yaml;
 
 pub use fault::Fault;
 pub use typing::{is_primitive, refine, violations, Violation};
@@ -62,8 +61,7 @@ pub fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Faul
         "not" => boolean(&args[0], 0).map(|b| Value::Boolean(!b)),
         _ if typing::handles(actor) => typing::apply(actor, args, pred),
         "len" | "list" | "dict" | "concat" | "slice" | "get" | "set" | "append" | "keys" | "has" | "values" | "duplicates" => collection::apply(actor, args),
-        "json_parse" | "json_dump" | "csv_parse" | "csv_dump" => codecs::apply(actor, &args[0]),
-        "yaml_parse" | "yaml_dump" => yaml::apply(actor, &args[0]),
+        "json_parse" | "json_dump" | "csv_parse" | "csv_dump" | "yaml_parse" | "yaml_dump" => data::apply(actor, &args[0]),
         "str" => text(&args[0]),
         "type" => Ok(Value::String(type_name(&args[0]).to_string())),
         "assert" => assert(args),

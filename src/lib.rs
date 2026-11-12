@@ -7,7 +7,6 @@ mod eval;
 mod graph;
 mod library;
 mod link;
-mod span;
 mod vm;
 mod value;
 mod model;

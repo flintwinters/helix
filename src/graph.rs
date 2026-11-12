@@ -6,11 +6,11 @@ use yaml_rust2::parser::{Event, MarkedEventReceiver, Parser};
 use yaml_rust2::scanner::{Marker, TScalarStyle};
 
 use crate::error::HelixError;
-use crate::span::Span;
+use crate::model::{Node, Span};
 
 pub type NodeId = usize;
 
-pub(crate) use crate::model::{Graph, Kind, Node, ROOT, MAX_NODES, MAX_NESTING};
+pub(crate) use crate::model::{Graph, Kind, ROOT, MAX_NODES, MAX_NESTING};
 
 impl Graph {
     pub fn parse(src: &str) -> Result<Graph, HelixError> {

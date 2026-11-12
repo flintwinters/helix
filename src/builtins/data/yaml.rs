@@ -7,33 +7,20 @@ use crate::{
     graph::{Graph, Kind, NodeId, ROOT},
 };
 
-use super::fault::Fault;
+use crate::builtins::fault::Fault;
 
-pub(super) fn apply(actor: &str, value: &Value) -> Result<Value, Fault> {
-    match actor {
-        "yaml_parse" => {
-            let Value::String(text) = value else {
-                return Err(Fault::expected(0, "string", value));
-            };
-            let graph = Graph::parse_data(source(text)?).map_err(|error| {
-                Fault::at(
-                    0,
-                    "parse",
-                    format!(
-                        "{} (YAML line {}, column {})",
-                        error.message, error.span.line, error.span.col
-                    ),
-                )
-            })?;
-            Ok(data(&graph, ROOT))
-        }
-        "yaml_dump" => Ok(Value::String(emit::document(
-            &value
-                .plain_yaml()
-                .ok_or_else(|| Fault::expected(0, "ordinary data", value))?,
-        ))),
-        _ => unreachable!("YAML conversion actor"),
-    }
+pub(super) fn parse(text: &str) -> Result<Value, Fault> {
+    let graph = Graph::parse_data(source(text)?).map_err(|error| {
+        Fault::at(
+            0,
+            "parse",
+            format!(
+                "{} (YAML line {}, column {})",
+                error.message, error.span.line, error.span.col
+            ),
+        )
+    })?;
+    Ok(data(&graph, ROOT))
 }
 
 /// Read syntax without resolving symbols, evaluating lists, or linking imports.

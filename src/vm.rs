@@ -313,7 +313,7 @@ impl Vm {
         let mut state = self.state();
         if self.status == Status::Error && self.evaluator.as_ref().is_none_or(|e| e.effects.is_empty()) {
             if let (Some(evaluator), Yaml::Hash(fields)) = (&self.evaluator, &mut state) {
-                fields.insert(text("recovery"), text(&evaluator.recovery_source()));
+                fields.insert(text("recovery"), text(&emit::recovery(&evaluator.program.graph, &evaluator.memo)));
                 if let Some(file) = &self.source_file {
                     fields.insert(text("recovery_file"), text(&file.to_string_lossy()));
                 }
