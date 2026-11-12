@@ -33,12 +33,40 @@ def workloads():
                                            {"mapping": {key: 42}, "key": key}), 1000, 1000
 
 
+def history_comparison(base, environment, name, source_hash, samples):
+    """Compare against the earliest five compatible runs, avoiding a drifting baseline."""
+    medians = []
+    for path in sorted(base.glob("run-*/report.json"), key=lambda p: p.stat().st_mtime):
+        try:
+            previous = json.loads(path.read_text())
+            if previous.get("comparison_environment") != environment:
+                continue
+            for row in previous["measurements"]:
+                if row["workload"] == name and row.get("source_sha256") == source_hash:
+                    medians.append(row["median_seconds"])
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if len(medians) >= 5:
+            break
+    if not medians:
+        return {"status": "no baseline"}
+    baseline = statistics.median(medians)
+    current = statistics.median(samples)
+    # Require both a practical slowdown and separation from observed timing noise.
+    noise = max(statistics.median(abs(x - baseline) for x in medians),
+                statistics.median(abs(x - current) for x in samples))
+    flagged = current > baseline * 1.20 and current - baseline > 3 * noise
+    return {"status": "SLOWDOWN" if flagged else "ok", "baseline_runs": len(medians),
+            "baseline_seconds": baseline, "change_percent": (current / baseline - 1) * 100}
+
+
 def verify(h):
     base = h.ROOT / "runtime" / "speed"
     base.mkdir(parents=True, exist_ok=True)
+    verify_comparison(base)
     artifact = Path(tempfile.mkdtemp(dir=base, prefix="run-"))
     report = {
-        "schema_version": 1,
+        "schema_version": 2,
         "environment": {"platform": platform.platform(), "machine": platform.machine(),
                         "python": platform.python_version(), "profile": "debug",
                         "binary_sha256": hashlib.sha256(h.BIN.read_bytes()).hexdigest()},
@@ -46,6 +74,11 @@ def verify(h):
                    "scope": "CLI process startup, file loading, evaluation and state emission; excludes build and Python YAML decoding",
                    "policy": "correctness and subprocess timeout are enforced; timings are observations, not portable pass/fail thresholds"},
         "run_directory": str(artifact), "measurements": [],
+    }
+    report["comparison_environment"] = {
+        "platform": platform.platform(), "host": platform.node(),
+        "machine": platform.machine(), "processor": platform.processor(),
+        "profile": "debug", "samples": SAMPLES, "warmups": WARMUPS,
     }
     try:
         for name, source, expected, operations in workloads():
@@ -67,6 +100,13 @@ def verify(h):
                 assert state == {"status": "finished", "root": expected}, (name, state)
                 if index >= WARMUPS:
                     samples.append(elapsed)
+            source_hash = hashlib.sha256(source.encode()).hexdigest()
+            comparison = history_comparison(base, report["comparison_environment"], name, source_hash, samples)
+            measurement.update(source_sha256=source_hash, comparison=comparison)
+            detail = comparison["status"]
+            if "change_percent" in comparison:
+                detail += f": {comparison['change_percent']:+.1f}% time vs baseline ({comparison['baseline_runs']} runs)"
+            print(f"speed: {name}: {detail}", flush=True)
             median = statistics.median(samples)
             measurement.update(median_seconds=median, min_seconds=min(samples), max_seconds=max(samples),
                                operations_per_second=operations / median)
@@ -76,3 +116,20 @@ def verify(h):
         (artifact / "report.json").write_text(content)
         (base / "report.json").write_text(content)
         print(f"speed: report and replay inputs/states: {artifact}", flush=True)
+
+
+def verify_comparison(base):
+    """Deterministic policy contracts, using isolated project-local history."""
+    with tempfile.TemporaryDirectory(dir=base, prefix="policy-") as directory:
+        root = Path(directory)
+        assert history_comparison(root, {}, "w", "hash", [1] * 5)["status"] == "no baseline"
+        run = root / "run-baseline"
+        run.mkdir()
+        (run / "report.json").write_text(json.dumps({
+            "comparison_environment": {}, "measurements": [
+                {"workload": "w", "source_sha256": "hash", "median_seconds": 1}]}))
+        for samples, expected in [([1.1] * 5, "ok"), ([1.5] * 5, "SLOWDOWN"),
+                                  ([0.5, 1, 1.5, 2, 2.5], "ok")]:
+            assert history_comparison(root, {}, "w", "hash", samples)["status"] == expected
+        assert history_comparison(root, {"host": "other"}, "w", "hash", [2] * 5)["status"] == "no baseline"
+        assert history_comparison(root, {}, "w", "changed", [2] * 5)["status"] == "no baseline"

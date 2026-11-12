@@ -318,6 +318,9 @@ and five measured runs, checked against its expected result. Arithmetic maps,
 function loops, ASCII/Unicode slicing, and long-key map reads/replacements save
 raw samples, median/range, throughput, platform and binary hash to
 `runtime/speed/report.json`; unique run directories retain inputs and states.
-Compare medians across runs on the same host and build profile; these observations
-do not impose machine-dependent timing thresholds. Normal interpreter timeouts
+Reports flag `SLOWDOWN` when median time exceeds the earliest five compatible runs
+by more than 20% and three median absolute deviations of observed noise. Matching
+host/environment, sampling settings and workload source keep comparisons relevant;
+the fixed early baseline reveals cumulative drift. First runs establish history.
+Flags are observational and do not fail the suite. Normal interpreter timeouts
 still apply. The weekly/manual full CI sweep includes this suite.
