@@ -17,6 +17,7 @@ mod value;
 pub use fault::Fault;
 pub use typing::{is_primitive, refine, violations, Violation};
 use typing::Pred;
+pub use value::is_function;
 use value::{equal, type_name};
 
 /// `(name, minimum, maximum)` argument counts; a `None` maximum is unbounded.
@@ -24,7 +25,7 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("add", 2, None), ("mul", 2, None), ("sub", 2, Some(2)), ("div", 2, Some(2)), ("mod", 2, Some(2)), ("neg", 1, Some(1)),
     ("eq", 2, Some(2)), ("ne", 2, Some(2)), ("lt", 2, Some(2)), ("le", 2, Some(2)), ("gt", 2, Some(2)), ("ge", 2, Some(2)),
     ("not", 1, Some(1)), ("and", 2, None), ("or", 2, None), ("if", 3, Some(3)),
-    ("cond", 3, None), ("let", 2, Some(2)), ("fn", 2, Some(3)),
+    ("call", 1, None), ("closure", 2, Some(2)), ("cond", 3, None), ("let", 2, Some(2)), ("fn", 2, Some(3)),
     ("map", 2, Some(2)), ("filter", 2, Some(2)), ("fold", 3, Some(3)), ("each", 2, Some(2)), ("until", 3, Some(3)),
     ("len", 1, Some(1)), ("concat", 2, None), ("slice", 3, Some(3)), ("get", 2, Some(3)), ("set", 3, Some(3)),
     ("append", 2, None), ("keys", 1, Some(1)), ("has", 2, Some(2)), ("values", 1, Some(1)), ("duplicates", 1, Some(1)),
@@ -44,7 +45,7 @@ pub fn arity(actor: &str) -> Option<(usize, Option<usize>)> {
 
 /// Forms decide which arguments to evaluate (or call user functions), so the evaluator drives them.
 pub fn is_form(actor: &str) -> bool {
-    matches!(actor, "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until" | "try" | "finally" | "refine" | "import")
+    matches!(actor, "call" | "closure" | "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until" | "try" | "finally" | "refine" | "import")
 }
 
 /// Apply a strict (eagerly evaluated) builtin.

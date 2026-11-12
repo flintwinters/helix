@@ -1,7 +1,9 @@
-status: error
-error:
-  kind: type
-  message: "a function is not a value; call it or pass it to a form that takes one"
-  path: /r/1
-  line: 2
-  column: 10
+status: finished
+root:
+  double:
+    - fn
+    - - n
+    - - mul
+      - n
+      - 2
+  r: 3

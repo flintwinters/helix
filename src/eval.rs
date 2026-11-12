@@ -51,13 +51,14 @@ pub struct Evaluator {
     grafts: HashMap<String, NodeId>,
     /// The modules the program imports.
     modules: Modules,
+    closing: HashSet<NodeId>,
 }
 
 impl Evaluator {
     /// Take a parsed program and link its imports; `main` is the program's file, when it has one.
     pub fn new(mut graph: Graph, main: Option<&Path>) -> Result<Evaluator, HelixError> {
         let modules = link::link(&mut graph, main)?;
-        Ok(Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: HashMap::new(), modules })
+        Ok(Evaluator { graph, memo: HashMap::new(), active: HashSet::new(), frames: Vec::new(), grafts: HashMap::new(), modules, closing: HashSet::new() })
     }
 
     fn err(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
@@ -91,7 +92,14 @@ impl Evaluator {
         let shape = match self.graph.kind(id) {
             Kind::Scalar { value, .. } => Shape::Scalar(value.clone()),
             Kind::Map(entries) => Shape::Map(entries.clone()),
-            Kind::Seq(items) => Shape::Seq(items.clone(), self.actor(items)),
+            Kind::Seq(items) => Shape::Seq(items.clone(), None),
+        };
+        let shape = match shape {
+            Shape::Seq(items, _) => {
+                let actor = self.actor(&items)?;
+                Shape::Seq(items, actor)
+            }
+            other => other,
         };
         match shape {
             Shape::Scalar(v) => Ok(v),
@@ -108,26 +116,124 @@ impl Evaluator {
     }
 
     /// A sequence is an expression iff its head names a builtin or a user function.
-    fn actor(&self, items: &[NodeId]) -> Option<Actor> {
-        let head = *items.first()?;
-        let name = self.graph.symbol(head)?;
+    fn actor(&mut self, items: &[NodeId]) -> Result<Option<Actor>, HelixError> {
+        let Some(&head) = items.first() else { return Ok(None) };
+        let Some(name) = self.graph.symbol(head) else { return Ok(None) };
         if builtins::arity(name).is_some() {
-            return Some(Actor::Builtin(name.to_string()));
+            return Ok(Some(Actor::Builtin(name.to_string())));
         }
-        self.function(head).map(Actor::Function)
+        self.function(head).map(|function| function.map(Actor::Function))
     }
 
-    /// The well-formed `[fn, params, body]` that `id` designates: itself, or the one a symbol names.
-    fn function(&self, id: NodeId) -> Option<NodeId> {
+    /// A function designator may be source, a lexical binding, or an expression producing a value.
+    fn function(&mut self, id: NodeId) -> Result<Option<NodeId>, HelixError> {
         let target = match self.graph.symbol(id) {
-            Some(name) => match self.resolve(id, name)? {
-                Binding::Node(target) => target,
-                Binding::Value(_) => return None,
+            Some(name) => match self.resolve(id, name) {
+                Some(Binding::Node(target)) => target,
+                Some(Binding::Value(value)) => return self.function_value(&value, id),
+                None => return Ok(None),
             },
             None => id,
         };
-        let Kind::Seq(items) = self.graph.kind(target) else { return None };
-        (matches!(items.len(), 3 | 4) && self.graph.form(target) == Some("fn")).then_some(target)
+        if self.graph.form(target) == Some("fn") && matches!(self.graph.kind(target), Kind::Seq(items) if matches!(items.len(), 3 | 4)) {
+            return Ok(Some(target));
+        }
+        if self.graph.form(target) == Some("closure") {
+            let Kind::Seq(parts) = self.graph.kind(target) else { unreachable!() };
+            if parts.len() == 3 && matches!(self.graph.kind(parts[1]), Kind::Map(_)) && self.graph.form(parts[2]) == Some("fn") {
+                return Ok(Some(parts[2]));
+            }
+        }
+        let value = self.eval(target)?;
+        self.function_value(&value, id)
+    }
+
+    /// Reconstitute persisted function source with its captured lexical bindings.
+    fn function_value(&mut self, value: &Yaml, blame: NodeId) -> Result<Option<NodeId>, HelixError> {
+        if !builtins::is_function(value) {
+            return Ok(None);
+        }
+        let source = emit::document(value);
+        let root = match self.grafts.get(&source) {
+            Some(&root) => root,
+            None => {
+                let parsed = Graph::parse(&source).map_err(|error| self.err(blame, "type", error.message))?;
+                let root = self.graph.graft(parsed);
+                self.grafts.insert(source, root);
+                root
+            }
+        };
+        if self.graph.form(root) == Some("closure") {
+            let Kind::Seq(parts) = self.graph.kind(root) else { unreachable!() };
+            if parts.len() != 3 || !matches!(self.graph.kind(parts[1]), Kind::Map(_)) || self.graph.form(parts[2]) != Some("fn") {
+                return Err(self.err(blame, "type", "a closure needs bindings and a function".into()));
+            }
+            return Ok(Some(parts[2]));
+        }
+        Ok(Some(root))
+    }
+
+    /// Freeze only free lexical bindings. Function source remains readable; captured values live
+    /// in a `closure` binding map, which is also the scope used after serialization and reloading.
+    fn close(&mut self, function: NodeId) -> Result<Yaml, HelixError> {
+        if self.closing.len() >= MAX_DEPTH {
+            return Err(self.err(function, "depth", format!("closures nested deeper than {MAX_DEPTH}")));
+        }
+        if !self.closing.insert(function) {
+            return self.capture(function, true);
+        }
+        let result = self.capture(function, false);
+        self.closing.remove(&function);
+        result
+    }
+
+    fn capture(&mut self, function: NodeId, recursive: bool) -> Result<Yaml, HelixError> {
+        self.parameters(function)?;
+        let mut bindings = Hash::new();
+        let mut pending = vec![(function, HashSet::<String>::new(), true)];
+        while let Some((node, mut locals, symbolic)) = pending.pop() {
+            match self.graph.kind(node) {
+                Kind::Seq(items) if self.graph.form(node) == Some("fn") => {
+                    for (name, annotation) in self.parameters(node)? {
+                        if let Some(annotation) = annotation { pending.push((annotation, locals.clone(), true)); }
+                        locals.insert(name.to_string());
+                    }
+                    pending.push((items[2], locals, true));
+                    for &annotation in items.get(3..).unwrap_or_default() {
+                        pending.push((annotation, HashSet::new(), true));
+                    }
+                }
+                Kind::Seq(items) => {
+                    let head = items.first().and_then(|&head| self.graph.symbol(head));
+                    let builtin = head.is_some_and(|name| builtins::arity(name).is_some());
+                    let expression = builtin || head.is_some_and(|name| locals.contains(name) || self.resolve(node, name).is_some());
+                    pending.extend(items[usize::from(builtin)..].iter().rev().map(|&child| (child, locals.clone(), expression)));
+                }
+                Kind::Map(entries) => pending.extend(entries.iter().rev().map(|(_, child)| (*child, locals.clone(), false))),
+                Kind::Scalar { .. } => {
+                    if !symbolic { continue; }
+                    let Some(name) = self.graph.symbol(node).map(str::to_string) else { continue };
+                    if locals.contains(&name) || bindings.contains_key(&s(&name)) { continue; }
+                    let Some(binding) = self.resolve(node, &name) else { continue };
+                    let value = match binding {
+                        Binding::Value(value) => value,
+                        Binding::Node(target) => {
+                            let mut ancestor = Some(target);
+                            while ancestor.is_some_and(|id| id != function) { ancestor = self.graph.parent(ancestor.unwrap()); }
+                            if ancestor == Some(function) && target != function { continue; }
+                            if self.graph.form(target) == Some("fn") {
+                                if recursive && self.closing.contains(&target) { continue; }
+                                self.close(target)?
+                            } else { self.eval(target)? }
+                        }
+                    };
+                    bindings.insert(s(&name), value);
+                }
+            }
+        }
+        let source = self.raw(function);
+        if bindings.is_empty() { return Ok(source); }
+        Ok(Yaml::Array(vec![Yaml::Real("closure".into()), Yaml::Hash(bindings), source]))
     }
 
     /// Whether `id` sits inside some `fn` form, so its value depends on a call.
@@ -146,6 +252,9 @@ impl Evaluator {
     /// checked against the argument on every call.
     fn parameters(&self, function: NodeId) -> Result<Vec<(&str, Option<NodeId>)>, HelixError> {
         let Kind::Seq(items) = self.graph.kind(function) else { unreachable!("a function is a sequence") };
+        if !matches!(items.len(), 3 | 4) {
+            return Err(self.err(function, "arity", format!("`fn` takes 2 to 3 arguments, got {}", items.len().saturating_sub(1))));
+        }
         let malformed = || self.err(items[1], "type", "parameters must be a list of names or `[name, type]` pairs".into());
         let Kind::Seq(params) = self.graph.kind(items[1]) else { return Err(malformed()) };
         params
@@ -165,11 +274,15 @@ impl Evaluator {
             return Some(found);
         }
         let (head, rest) = name.split_once('.')?;
-        let Some(Binding::Node(mut node)) = self.resolve_name(from, head) else { return None };
+        let mut binding = self.resolve_name(from, head)?;
         for part in rest.split('.') {
-            node = self.member(node, part)?;
+            binding = match binding {
+                Binding::Node(node) => Binding::Node(self.member(node, part)?),
+                Binding::Value(Yaml::Hash(map)) => Binding::Value(map.get(&s(part))?.clone()),
+                _ => return None,
+            };
         }
-        Some(Binding::Node(node))
+        Some(binding)
     }
 
     /// The entry `key` of the map at `id`, or of the module an import form at `id` loads.
@@ -193,7 +306,7 @@ impl Evaluator {
                         let frame = self.frames.iter().rev().find(|f| f.function == id)?;
                         Some(Binding::Value(frame.args[i].clone()))
                     }),
-                    (Some("let"), Kind::Map(entries)) => entry(entries),
+                    (Some("let" | "closure"), Kind::Map(entries)) => entry(entries),
                     _ => None,
                 },
                 _ => None,
@@ -206,7 +319,7 @@ impl Evaluator {
         // Code grafted in as data (a refinement's predicate) is detached; it sees the document root.
         // A module is detached too, but its names are its own.
         match self.graph.kind(ROOT) {
-            Kind::Map(entries) if child != ROOT && !self.modules.is_root(child) => entry(entries),
+            Kind::Map(entries) if child != ROOT && !self.modules.is_root(child) && !self.grafts.values().any(|&root| root == child) => entry(entries),
             _ => None,
         }
     }
@@ -250,7 +363,7 @@ impl Evaluator {
                 id
             }
         };
-        let function = self.function(id).ok_or("a refinement check must be `[fn, [value], body]`")?;
+        let function = self.function(id).map_err(|error| error.message)?.ok_or("a refinement check must be `[fn, [value], body]`")?;
         if self.parameters(function).map_err(|e| e.message)?.len() != 1 {
             return Err("a refinement check takes exactly 1 parameter".into());
         }
@@ -318,7 +431,7 @@ impl Evaluator {
 
     /// Call the function designated by `designator` (an inline `fn` or a name) with `values`.
     fn call_arg(&mut self, designator: NodeId, values: Vec<Yaml>) -> Result<Yaml, HelixError> {
-        let function = self.function(designator).ok_or_else(|| self.err(designator, "type", "expected a function (`[fn, [params], body]` or its name)".into()))?;
+        let function = self.function(designator)?.ok_or_else(|| self.err(designator, "type", "expected a function (`[fn, [params], body]` or its name)".into()))?;
         self.call(designator, function, values)
     }
 
@@ -351,8 +464,23 @@ impl Evaluator {
                 }
                 Ok(Yaml::Boolean(!stop_on))
             }
+            "call" => {
+                let values = args[1..].iter().map(|&arg| self.value_arg(arg)).collect::<Result<_, _>>()?;
+                self.call_arg(args[0], values)
+            }
+            "closure" => {
+                if !matches!(self.graph.kind(args[0]), Kind::Map(_)) || self.graph.form(args[1]) != Some("fn") {
+                    return Err(self.err(id, "type", "a closure needs bindings and a function".into()));
+                }
+                Ok(self.raw(id))
+            }
             "fn" => {
                 self.parameters(id)?;
+                let mut parent = self.graph.parent(id);
+                while let Some(node) = parent {
+                    if matches!(self.graph.form(node), Some("fn" | "let")) { return self.close(id); }
+                    parent = self.graph.parent(node);
+                }
                 Ok(self.raw(id))
             }
             "let" => {
@@ -395,11 +523,11 @@ impl Evaluator {
             }
             "refine" => {
                 let base = self.value_arg(args[0])?;
-                let function = self.function(args[1]).ok_or_else(|| self.err(args[1], "type", "expected a function (`[fn, [value], body]` or its name)".into()))?;
+                let function = self.function(args[1])?.ok_or_else(|| self.err(args[1], "type", "expected a function (`[fn, [value], body]` or its name)".into()))?;
                 if self.parameters(function)?.len() != 1 {
                     return Err(self.err(args[1], "arity", "a refinement check takes exactly 1 parameter".into()));
                 }
-                builtins::refine(base, self.raw(function)).map_err(|fault| self.from_fault(id, args, fault))
+                builtins::refine(base, self.value_arg(args[1])?).map_err(|fault| self.from_fault(id, args, fault))
             }
             "import" => match self.modules.root_of(id) {
                 Some(root) => self.eval(root),
@@ -444,8 +572,7 @@ impl Evaluator {
         builtins::list(value, 0).map_err(|fault| self.err(id, fault.kind, fault.message))
     }
 
-    /// Evaluate an expression argument: plain strings are symbols. Functions are not values; they
-    /// may only head a call or be passed where a form expects one.
+    /// Evaluate an expression argument: plain strings are symbols; functions capture their free bindings.
     fn value_arg(&mut self, id: NodeId) -> Result<Yaml, HelixError> {
         let target = match self.graph.symbol(id) {
             Some(name) => match self.resolve(id, name) {
@@ -457,7 +584,7 @@ impl Evaluator {
             None => id,
         };
         if self.graph.form(target) == Some("fn") {
-            return Err(self.err(id, "type", "a function is not a value; call it or pass it to a form that takes one".into()));
+            return self.close(target);
         }
         self.eval(target)
     }

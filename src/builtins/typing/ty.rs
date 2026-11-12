@@ -5,14 +5,14 @@
 use yaml_rust2::yaml::Hash;
 use yaml_rust2::Yaml;
 
-use crate::builtins::value::{equal, type_name};
+use crate::builtins::value::{equal, is_function, type_name};
 use crate::error::s;
 
 /// Runs a refinement's `[fn, [value], body]` source on a value. `Err` is a failure inside the
 /// predicate, reported as a violation rather than aborting the check.
 pub type Pred<'a> = dyn FnMut(&Yaml, &Yaml) -> Result<bool, String> + 'a;
 
-const PRIMITIVES: [&str; 10] = ["any", "never", "integer", "float", "string", "boolean", "null", "list", "map", "secret"];
+const PRIMITIVES: [&str; 11] = ["any", "never", "integer", "float", "string", "boolean", "null", "list", "map", "secret", "function"];
 
 /// Whether `name` is a primitive type, which evaluates as a bare symbol when nothing shadows it.
 pub fn is_primitive(name: &str) -> bool {
@@ -29,6 +29,7 @@ pub(super) enum Ty {
     Bool,
     Null,
     Secret,
+    Function,
     List(Box<Ty>),
     Map(Box<Ty>),
     /// Closed: a value may not carry fields the record does not declare.
@@ -96,6 +97,7 @@ impl Ty {
                 "list" => Ty::List(Box::new(Ty::Any)),
                 "map" => Ty::Map(Box::new(Ty::Any)),
                 "secret" => Ty::Secret,
+                "function" => Ty::Function,
                 other => return Err(format!("unknown type `{other}`")),
             }),
             Yaml::Hash(map) => {
@@ -135,6 +137,7 @@ impl Ty {
             Ty::Bool => "boolean".into(),
             Ty::Null => "null".into(),
             Ty::Secret => "secret".into(),
+            Ty::Function => "function".into(),
             Ty::List(of) if **of == Ty::Any => "list".into(),
             Ty::List(of) => format!("list of {}", of.name()),
             Ty::Map(of) if **of == Ty::Any => "map".into(),
@@ -187,6 +190,7 @@ fn check(value: &Yaml, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violati
     let mismatch = |out: &mut Vec<Violation>| out.push(Violation { at: at.into(), message: format!("expected {}, got {}", ty.name(), type_name(value)) });
     match (ty, value) {
         (Ty::Any, _) | (Ty::Int, Yaml::Integer(_)) | (Ty::Float, Yaml::Real(_)) | (Ty::Str, Yaml::String(_)) | (Ty::Bool, Yaml::Boolean(_)) | (Ty::Null, Yaml::Null) => {}
+        (Ty::Function, _) if is_function(value) => {}
         (Ty::Secret, Yaml::Hash(h)) if h.len() == 2 && text(h, "type") == Some("secret") && text(h, "ref").is_some() => {}
         (Ty::Secret, Yaml::String(_)) => out.push(Violation { at: at.into(), message: "a secret is a handle (`[secret, ref]`), not an inline string".into() }),
         (Ty::List(of), Yaml::Array(items)) => items.iter().enumerate().for_each(|(i, item)| check(item, of, &inside(at, &i.to_string()), pred, out)),

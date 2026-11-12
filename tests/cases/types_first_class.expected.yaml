@@ -1,0 +1,271 @@
+status: finished
+root:
+  identity:
+    - fn
+    - - t
+    - t
+  list_type:
+    - fn
+    - - t
+    - - list_of
+      - t
+  optional_record:
+    - fn
+    - - t
+    - - record
+      - "value"
+      - - optional
+        - t
+  stored:
+    - type: union
+      of:
+        - "integer"
+        - string
+    - type: list
+      of: boolean
+  selected:
+    type: union
+    of:
+      - "integer"
+      - string
+  accepts: true
+  rejects: false
+  via_parameter:
+    type: list
+    of: string
+  via_map:
+    - "integer"
+    - type: list
+      of: string
+  at_least:
+    - fn
+    - - minimum
+    - - refine
+      - integer
+      - - fn
+        - - n
+        - - ge
+          - n
+          - minimum
+  positive:
+    type: refine
+    of: integer
+    check:
+      - closure
+      - minimum: 1
+      - - fn
+        - - n
+        - - ge
+          - n
+          - minimum
+  large:
+    type: refine
+    of: integer
+    check:
+      - closure
+      - minimum: 100
+      - - fn
+        - - n
+        - - ge
+          - n
+          - minimum
+  checks:
+    - true
+    - false
+    - false
+  make_adder:
+    - fn
+    - - amount
+    - - fn
+      - - n
+      - - add
+        - amount
+        - n
+  add_two:
+    - closure
+    - amount: 2
+    - - fn
+      - - n
+      - - add
+        - amount
+        - n
+  add_ten:
+    - closure
+    - amount: 10
+    - - fn
+      - - n
+      - - add
+        - amount
+        - n
+  closures:
+    - 5
+    - 13
+    - 10
+  lexical:
+    - closure
+    - offset: 20
+    - - fn
+      - - n
+      - - add
+        - offset
+        - n
+  lexical_result: 22
+  shape:
+    type: record
+    fields:
+      name: string
+      count: integer
+  rebuilt:
+    type: record
+    fields:
+      name: string
+      count: integer
+  equal: true
+  parameter_map: true
+  literal_scope:
+    - fn
+    - []
+    - label: danger
+  literal_result:
+    label: danger
+  left:
+    offset: 4
+    helper:
+      - fn
+      - - n
+      - - add
+        - n
+        - offset
+  right:
+    offset: 100
+    copied:
+      - closure
+      - offset: 4
+      - - fn
+        - - n
+        - - add
+          - n
+          - offset
+    result: 6
+  factorial:
+    - fn
+    - - n
+    - - if
+      - - le
+        - n
+        - 1
+      - 1
+      - - mul
+        - n
+        - - factorial
+          - - sub
+            - n
+            - 1
+  passed_recursive: 120
+  function_kind: function
+  function_fits: true
+  data_is_not_function: false
+  checked_constructor:
+    - fn
+    - - - constructor
+        - function
+      - t
+    - - constructor
+      - t
+  checked_result:
+    type: list
+    of: integer
+  record_factory:
+    - fn
+    - - offset
+    - apply:
+        - fn
+        - - n
+        - - add
+          - n
+          - offset
+  returned_record:
+    apply:
+      - closure
+      - offset: 8
+      - - fn
+        - - n
+        - - add
+          - n
+          - offset
+  record_callback:
+    - 9
+    - 10
+  a:
+    offset: 1
+    f:
+      - fn
+      - - n
+      - - if
+        - - le
+          - n
+          - 0
+        - offset
+        - - b.g
+          - - sub
+            - n
+            - 1
+  b:
+    offset: 10
+    g:
+      - fn
+      - - n
+      - - if
+        - - le
+          - n
+          - 0
+        - offset
+        - - a.f
+          - - sub
+            - n
+            - 1
+  recursive_copy:
+    - closure
+    - offset: 1
+      b.g:
+        - closure
+        - offset: 10
+          a.f:
+            - closure
+            - offset: 1
+            - - fn
+              - - n
+              - - if
+                - - le
+                  - n
+                  - 0
+                - offset
+                - - b.g
+                  - - sub
+                    - n
+                    - 1
+        - - fn
+          - - n
+          - - if
+            - - le
+              - n
+              - 0
+            - offset
+            - - a.f
+              - - sub
+                - n
+                - 1
+    - - fn
+      - - n
+      - - if
+        - - le
+          - n
+          - 0
+        - offset
+        - - b.g
+          - - sub
+            - n
+            - 1
+  recursive_scope:
+    - 1
+    - 10

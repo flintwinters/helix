@@ -24,6 +24,7 @@ pub(super) fn as_f64(value: &Yaml) -> Option<f64> {
 }
 
 pub(super) fn type_name(v: &Yaml) -> &'static str {
+    if is_function(v) { return "function"; }
     match v {
         Yaml::Integer(_) => "integer",
         Yaml::Real(_) => "float",
@@ -34,4 +35,9 @@ pub(super) fn type_name(v: &Yaml) -> &'static str {
         Yaml::Null => "null",
         _ => "invalid value",
     }
+}
+
+/// Executable source carries a verbatim head, unlike a data list with a quoted string head.
+pub fn is_function(value: &Yaml) -> bool {
+    matches!(value, Yaml::Array(items) if matches!(items.first(), Some(Yaml::Real(head)) if matches!(head.as_str(), "fn" | "closure")))
 }

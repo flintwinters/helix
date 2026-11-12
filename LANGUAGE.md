@@ -33,7 +33,9 @@ Values are immutable: `set` and `append` return new values.
 
 `[fn, [params], body]` declares a function; give it a name by putting it in a map: `double: [fn, [n], [mul, n, 2]]`. A list whose head resolves to such a function is a call: `[double, 4]`. Arguments are evaluated first (left to right) and bound to the parameters; a wrong argument count is an `arity` error blamed on the call. A function evaluates to its own source, so it appears unchanged in saved state.
 
-Scope is **lexical**, through parent links: a body sees its parameters, then the maps enclosing the *definition* (not the caller), so a function closes over the object graph it is written in. Recursion works through the function's own name. Calls nested deeper than 200 fail with a `depth` error blamed on the call. Functions are not values: one may only head a call or be passed, by name or as an inline `fn`, where a form expects a function; anywhere else it is a `type` error.
+Scope is **lexical**, through parent links: a body sees its parameters, then the maps enclosing the *definition* (not the caller), so a function closes over the object graph it is written in. Recursion works through the function's own name. Calls nested deeper than 200 fail with a `depth` error blamed on the call. Functions are values: pass or return them, bind them with `let`, and store them in lists and maps. `[call, function_expression, arg, ...]` calls any computed function; a named binding holding a computed function can also head a call. Iteration and `try` accept computed functions too. `[type, f]` reports `function`, and `function` is a primitive type usable in annotations. A quoted data list beginning with `"fn"` is still a list.
+
+When a function travels as a value, its free lexical bindings are captured. Captures serialize as `[closure, {name: value, ...}, [fn, [params], body]]`; the binding map is the function's lexical scope on reload. Only referenced bindings are captured; capturing evaluates those bindings at transfer time. Different constructor calls retain independent environments. Ordinary function declarations retain their source form. Functions and captured bindings compare structurally by source and values; this does not prove that two functions compute the same result. Serialized closure-body errors currently refer to the reconstituted source.
 
 `[try, expr, handler]` evaluates `expr`; if that fails, `handler` (a function name or inline `fn`) is called with the error as a map (`kind`, `message`, `path`, `line`, `column`, as in saved error state) and its result replaces the failure. Without a failure the handler never runs. `[assert, cond]` / `[assert, cond, "message"]` returns `null` when `cond` is `true`, otherwise fails with an `assertion` error carrying the message. `[raise, kind, message]` / `[raise, kind, message, data]` fails with a user-chosen `kind` string (a non-empty string), message and optional plain-value `data` payload, blamed on the `raise` expression; it has the same shape as a builtin error and `data` appears in the error map. `[raise, error]` re-raises a caught error map (so a handler can match the kinds it expects with `cond` and re-raise the rest rather than swallow them).
 
@@ -70,9 +72,27 @@ No implicit conversion, with one exception: **numeric promotion**. `int` op `int
 | `[keys, map]` | list of keys |
 | `[has, x, y]` | map: key present; list: element present (by `eq`); string: substring present |
 
-**Conversion and inspection**: `[str, scalar]`, `[int, x]` (floats truncate toward zero; strings must parse), `[float, x]`, `[type, x]` (`integer`, `float`, `string`, `boolean`, `null`, `list`, `map`). A type is a value: the string `type` returns. `[is, x, t]` tests `x` against type name `t` (or `any`); an unknown name is a `type` error.
+**Conversion and inspection**: `[str, scalar]`, `[int, x]` (floats truncate toward zero; strings must parse), `[float, x]`, `[type, x]` (`integer`, `float`, `string`, `boolean`, `null`, `list`, `map`, `function`). A type is a value: a primitive name or a declaration map. `[is, x, t]` tests `x` against any declared type (or `any`); an unknown name is a `type` error.
+
+## First-class types
 
 `any` is the top type: every value inhabits it. `never` is the bottom type: no value inhabits it, including `null`, and it is a subtype of every type. `null` itself remains inhabited by the null value. A `list_of never` accepts only the empty list; a `map_of never` accepts only the empty map. Adding `never` to a union does not change its accepted values. Subtyping remains conservative: it does not discover every empty type or normalize declarations.
+
+Types use ordinary value evaluation: `let`, function arguments and results, collections, conditionals and iteration all work with primitive names, records, unions, enums, literals and refinements. Constructors validate computed type arguments and blame the offending argument when it is not a type.
+
+```yaml
+list_type: [fn, [t], [list_of, t]]
+strings: [list_type, string]
+at_least: [fn, [minimum], [refine, integer, [fn, [n], [ge, n, minimum]]]]
+positive: [at_least, 1]
+valid: [is, 5, positive]
+```
+
+The pure type constructors are `list_of`, `map_of`, `record` (alternating field names and specs), `optional`, `default`, `union`, `enum`, `literal` and `refine`. Records are closed. `fields` returns a record or class's field specs as a map, including optional/default wrappers; `with_field` adds or replaces a record field. `[subtype, a, b]` checks the existing structural type algebra conservatively: arbitrary predicates are not proved equivalent. `[violations, value, t]` returns every nested violation; `[expect, value, t]` returns the value or raises a structured type error containing those violations.
+
+Subtyping uses identity and `any` as the top type. Lists and maps are covariant in their element type. A union is below a type when every alternative is below it; a type is below a union when one alternative covers it. An enum or literal is below a type when every listed value inhabits it. A refinement is below its base; proving a value belongs to a refinement still runs its predicate. Closed records admit no fields outside the target record, each source field must have a subtype of the corresponding target field, and every required target field must be required in the source. Defaults do not change membership. Unproved relationships return `false`; no theorem prover runs for arbitrary predicates.
+
+`eq` on types is structural equality of their declaration values: record field order is ignored, list order (including union members and enum alternatives) is significant, and defaults and captured predicates participate. This is declaration equality, not equality of the sets of accepted values. Types retain their readable declaration maps in saved state and round-trip through the same evaluator.
 
 ## Libraries and imports
 

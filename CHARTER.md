@@ -249,27 +249,27 @@ A type should read like the value it describes with the specifics left open: som
 
 ### First-class types
 
-"First-class" means there is no type-level language: whatever can be done with a number or a map can be done with a type, using the functions, `let`, iteration and errors that already exist. Abstraction over types is therefore just a function that returns a type, which is how Helix avoids the templating (Jinja in Ansible) and the bespoke module machinery other tools grow. Type time is not a different interpreter; it is ordinary evaluation run under a stricter contract (pure, no effects, bounded), and that contract is what makes a type trustworthy to compute before a machine is involved. Functions themselves are not yet first-class values (see `AGENTS.md`), so that gap has to close on the way here.
+"First-class" means there is no type-level language: whatever can be done with a number or a map can be done with a type, using the functions, `let`, iteration and errors that already exist. Abstraction over types is therefore just a function that returns a type, which is how Helix avoids the templating (Jinja in Ansible) and the bespoke module machinery other tools grow. Type time is not a different interpreter; it is ordinary evaluation run under a stricter contract (pure, no effects, bounded), and that contract is what makes a type trustworthy to compute before a machine is involved. Functions are first-class values, with referenced lexical bindings preserved in readable closures.
 
-- [ ] Types are values: bind them with `let`, pass them to and return them from functions, store them in lists and maps
+- [x] Types are values: bind them with `let`, pass them to and return them from functions, store them in lists and maps
   - [x] Scalar and collection type names
-  - [ ] Declared types (records, unions, refinements and the rest)
-  - [ ] Equality on types is defined and documented (`eq` of two types)
-  - [ ] Functions are first-class values, so a refinement predicate or a type constructor can be stored and passed like a type
+  - [x] Declared types (records, unions, refinements and the rest)
+  - [x] Equality on types is defined and documented (`eq` of two types)
+  - [x] Functions are first-class values, so a refinement predicate or a type constructor can be stored and passed like a type
 - [ ] Type constructors are ordinary functions from types (and values) to types (`[list_of, t]`, `[with_field, t, name, u]`)
-  - [ ] Built-in formers accept computed types as arguments, not only literal names
-  - [ ] A user `fn` that returns a type is usable anywhere a type is expected
+  - [x] Built-in formers accept computed types as arguments, not only literal names
+  - [x] A user `fn` that returns a type is usable anywhere a type is expected
   - [ ] Derive a type from another: add, drop or retype a field; make every field optional
-  - [ ] Build a type by iteration (`map`/`fold` over a list of field names)
-  - [ ] A constructor given a non-type argument fails with a `type` error blaming that argument
+  - [x] Build a type by iteration (`map`/`fold` over a list of field names)
+  - [x] A constructor given a non-type argument fails with a `type` error blaming that argument
 - [ ] Reflection: read a type's fields, defaults and parents as data; ask `[is, value, t]` and `[subtype, a, b]`
   - [ ] `[is, value, t]`
     - [x] For scalar and collection type names and `any`; an unknown name is a `type` error
-    - [ ] For every declared type
-  - [ ] Read a record type's fields, each field's type, and its defaults as plain lists and maps
+    - [x] For every declared type
+  - [x] Read a record type's fields, each field's type, and its defaults as plain lists and maps
   - [ ] Read a class's parents and its still-open fields
-  - [ ] `[subtype, a, b]`, with documented rules per type former
-  - [ ] A value built by reflection re-reads as the same type (reflection and declaration are inverse)
+  - [x] `[subtype, a, b]`, with documented rules per type former
+  - [x] A value built by reflection re-reads as the same type (reflection and declaration are inverse)
 - [ ] Type-time evaluation: a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
   - [ ] Decided and documented: what marks type time (see Open questions)
   - [ ] An effect attempted at type time is a structured error naming the effect and the node

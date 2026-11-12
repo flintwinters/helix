@@ -1,0 +1,6 @@
+# Computed callables and type arguments keep structured failures.
+not_callable: [try, [call, 42, 1], [fn, [e], e]]
+bad_constructor: [try, [list_of, [call, [fn, [], 42]]], [fn, [e], e]]
+bad_callback: [try, [map, [if, true, 3, [fn, [n], n]], [1]], [fn, [e], e]]
+bad_closure: [try, [closure, [], [fn, [n], n]], [fn, [e], e]]
+wrong_type: [try, [call, [fn, [[t, function]], t], integer], [fn, [e], e]]

@@ -1,0 +1,57 @@
+# Types and functions travel through ordinary values and constructors.
+identity: [fn, [t], t]
+list_type: [fn, [t], [list_of, t]]
+optional_record: [fn, [t], [record, "value", [optional, t]]]
+stored: [list, [identity, [union, integer, string]], [list_type, boolean]]
+selected: [get, stored, 0]
+accepts: [is, "ok", selected]
+rejects: [is, false, selected]
+via_parameter: [call, [fn, [constructor, t], [constructor, t]], list_type, string]
+via_map: [map, identity, [list, integer, [list_of, string]]]
+# Escaping predicates retain constructor arguments, independently for each call.
+at_least: [fn, [minimum], [refine, integer, [fn, [n], [ge, n, minimum]]]]
+positive: [at_least, 1]
+large: [at_least, 100]
+checks: [list, [is, 5, positive], [is, 5, large], [is, "5", positive]]
+make_adder: [fn, [amount], [fn, [n], [add, amount, n]]]
+add_two: [make_adder, 2]
+add_ten: [make_adder, 10]
+closures: [list, [add_two, 3], [add_ten, 3], [call, [get, [list, add_two], 0], 8]]
+lexical: [let, {offset: 20}, [fn, [n], [add, offset, n]]]
+lexical_result: [lexical, 2]
+# Reflection can reconstruct a declaration, and equality ignores map field order.
+shape: [record, "name", string, "count", integer]
+rebuilt: [fold, [fn, [t, name], [with_field, t, name, [get, [fields, shape], name]]], [record], [keys, [fields, shape]]]
+equal: [eq, shape, rebuilt]
+parameter_map: [call, [fn, [config], [is, 1, config.type]], {type: integer}]
+# Local literal map contents must not capture unrelated bindings.
+literal_scope: [let, {danger: [div, 1, 0]}, [fn, [], {label: danger}]]
+literal_result: [literal_scope]
+# Capturing another function preserves its own scope across a move.
+left:
+  offset: 4
+  helper: [fn, [n], [add, n, offset]]
+right:
+  offset: 100
+  copied: [identity, left.helper]
+  result: [copied, 2]
+# A self-recursive function remains callable after passing through a value.
+factorial: [fn, [n], [if, [le, n, 1], 1, [mul, n, [factorial, [sub, n, 1]]]]]
+passed_recursive: [call, [identity, factorial], 5]
+function_kind: [type, add_two]
+function_fits: [is, add_two, function]
+data_is_not_function: [is, ["fn", [], 1], function]
+checked_constructor: [fn, [[constructor, function], t], [constructor, t]]
+checked_result: [checked_constructor, list_type, integer]
+record_factory: [fn, [offset], {apply: [fn, [n], [add, n, offset]]}]
+returned_record: [record_factory, 8]
+record_callback: [map, [get, returned_record, "apply"], [1, 2]]
+# Mutually recursive functions retain separate lexical bindings of the same name.
+a:
+  offset: 1
+  f: [fn, [n], [if, [le, n, 0], offset, [b.g, [sub, n, 1]]]]
+b:
+  offset: 10
+  g: [fn, [n], [if, [le, n, 0], offset, [a.f, [sub, n, 1]]]]
+recursive_copy: [identity, a.f]
+recursive_scope: [list, [recursive_copy, 2], [recursive_copy, 3]]
