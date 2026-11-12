@@ -583,10 +583,34 @@ impl Evaluator {
             },
             None => id,
         };
-        if self.graph.form(target) == Some("fn") {
-            return self.close(target);
+        self.argument_value(target)
+    }
+
+    /// Collections passed as values retain the lexical scope of every nested function.
+    /// Plain scalars within a collection remain data, not expression arguments.
+    fn argument_value(&mut self, id: NodeId) -> Result<Yaml, HelixError> {
+        if self.graph.form(id) == Some("fn") {
+            return self.close(id);
         }
-        self.eval(target)
+        match self.graph.kind(id) {
+            Kind::Map(entries) => {
+                let entries = entries.clone();
+                let mut values = Hash::new();
+                for (name, child) in entries {
+                    values.insert(s(&name), self.argument_value(child)?);
+                }
+                Ok(Yaml::Hash(values))
+            }
+            Kind::Seq(items) => {
+                let items = items.clone();
+                if self.actor(&items)?.is_some() {
+                    self.eval(id)
+                } else {
+                    Ok(Yaml::Array(items.into_iter().map(|child| self.argument_value(child)).collect::<Result<_, _>>()?))
+                }
+            }
+            _ => self.eval(id),
+        }
     }
 }
 

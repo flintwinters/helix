@@ -1,0 +1,13 @@
+# Passing functions inside collections must preserve the declaration's lexical environment.
+check: [fn, [actual, expected], [assert, [eq, actual, expected], "values differ"]]
+run: [fn, [spec], [call, [get, spec, "run"]]]
+cases:
+  - {name: fails, run: [fn, [], [check, 1, 2]]}
+  - {name: passes, run: [fn, [], [check, 2, 2]]}
+results: [map, [fn, [spec], [try, [run, spec], [fn, [error], [get, error, "kind"]]]], cases]
+verify: [assert, [eq, results, [list, "assertion", null]], "record callbacks lost lexical scope"]
+# Nested lists and records also retain functions, including imported names.
+m: [import, std:math]
+nested: [list, {callback: [fn, [n], [m.square, n]]}]
+value: [call, [get, [get, nested, 0], "callback"], 4]
+verified_value: [assert, [eq, value, 16]]
