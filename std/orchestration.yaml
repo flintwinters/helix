@@ -1,0 +1,254 @@
+# Compose bounded resource operations using ordinary functions and the effect engine.
+# plan validates every definition before run invokes execute(kind, id). Handlers
+# have resource-only prerequisites and run once after all resources, if notified.
+# Notifications imply prerequisites on every potential notifier, not only changed
+# ones. Callback success means changed/unchanged; this is not a provider contract.
+dependencies: {$call: [import, 'std:dependency']}
+lists: {$call: [import, 'std:list']}
+name: {$call: [refine, {$ref: string}, {$call: [fn, [s], {$call: [gt, {$call: [len, {$ref: s}]}, 0]}]}]}
+names: {$call: [list_of, {$ref: name}]}
+resource: {$call: [record, requires, {$ref: names}, notify, {$ref: names}]}
+handler: {$call: [record, requires, {$ref: names}]}
+document: {$call: [record, version, {$call: [literal, 1]}, resources, {$call: [map_of, {$ref: resource}]}, handlers, {$call: [map_of, {$ref: handler}]}]}
+outcome: {$call: [record, status, {$call: [enum, changed, unchanged, failed, skipped]}, details, {$call: [optional, {$ref: string}]}]}
+require:
+  $call:
+  - fn
+  - [ok, kind, message, data, value]
+  - {$call: [if, {$ref: ok}, {$ref: value}, {$call: [raise, {$ref: kind}, {$ref: message}, {$ref: data}]}]}
+validate_names:
+  $call:
+  - fn
+  - [entries]
+  - {$call: [expect, {$call: [keys, {$ref: entries}]}, {$ref: names}]}
+validate_references:
+  $call:
+  - fn
+  - [owner, field, ids, catalog]
+  - $call:
+    - fold
+    - $call:
+      - fn
+      - [acc, id]
+      - $call:
+        - require
+        - {$call: [has, {$ref: catalog}, {$ref: id}]}
+        - orchestration_missing_reference
+        - Resource composition references an unknown prerequisite or handler
+        - {$call: [dict, owner, {$ref: owner}, field, {$ref: field}, target, {$ref: id}]}
+        - {$call: [append, {$ref: acc}, {$ref: id}]}
+    - []
+    - {$ref: ids}
+resource_graph:
+  $call:
+  - fn
+  - [resources, handlers, ids]
+  - $call:
+    - fold
+    - $call:
+      - fn
+      - [graph, id]
+      - $call:
+        - checked_resource
+        - {$ref: graph}
+        - {$ref: id}
+        - {$call: [validate_references, {$ref: id}, requires, {$call: [get, {$call: [get, {$ref: resources}, {$ref: id}]}, requires]}, {$ref: resources}]}
+        - {$call: [validate_references, {$ref: id}, notify, {$call: [get, {$call: [get, {$ref: resources}, {$ref: id}]}, notify]}, {$ref: handlers}]}
+    - {}
+    - {$ref: ids}
+checked_resource:
+  $call:
+  - fn
+  - [graph, id, requires, notifications]
+  - {$call: [set, {$ref: graph}, {$ref: id}, {$ref: requires}]}
+validate_handlers:
+  $call:
+  - fn
+  - [resources, handlers, ids]
+  - $call:
+    - map
+    - {$call: [fn, [id], {$call: [validate_references, {$ref: id}, requires, {$call: [get, {$call: [get, {$ref: handlers}, {$ref: id}]}, requires]}, {$ref: resources}]}]}
+    - {$ref: ids}
+planned:
+  $call:
+  - fn
+  - [graph, handlers, checked_handlers]
+  - $call:
+    - let
+    - schedule: {$call: [dependencies.plan, {$ref: graph}]}
+    - $call:
+      - require
+      - {$call: [eq, {$call: [get, {$ref: schedule}, status]}, finished]}
+      - orchestration_dependency_cycle
+      - Resource prerequisites contain a cycle
+      - {$ref: schedule}
+      - {$call: [dict, version, 1, status, ready, order, {$call: [get, {$ref: schedule}, order]}, handlers, {$ref: handlers}, diagnostics, []]}
+plan_checked:
+  $call:
+  - fn
+  - [input]
+  - $call:
+    - let
+    - resources: {$call: [get, {$ref: input}, resources]}
+      handlers: {$call: [get, {$ref: input}, handlers]}
+      resource_ids: {$call: [validate_names, {$ref: resources}]}
+      handler_ids: {$call: [validate_names, {$ref: handlers}]}
+    - $call:
+      - planned
+      - {$call: [resource_graph, {$ref: resources}, {$ref: handlers}, {$ref: resource_ids}]}
+      - {$ref: handler_ids}
+      - {$call: [validate_handlers, {$ref: resources}, {$ref: handlers}, {$ref: handler_ids}]}
+plan:
+  $call:
+  - fn
+  - [input]
+  - $call:
+    - try
+    - {$call: [plan_checked, {$call: [expect, {$ref: input}, {$ref: document}]}]}
+    - {$call: [fn, [error], {$call: [dict, version, 1, status, invalid, order, [], handlers, [], diagnostics, {$call: [list, {$ref: error}]}]}]}
+succeeded:
+  $call:
+  - fn
+  - [result]
+  - {$call: [has, [changed, unchanged], {$call: [get, {$ref: result}, status]}]}
+prerequisites_succeeded:
+  $call:
+  - fn
+  - [ids, results]
+  - {$call: [lists.all, {$ref: ids}, {$call: [fn, [id], {$call: [succeeded, {$call: [get, {$ref: results}, {$ref: id}]}]}]}]}
+invoke:
+  $call:
+  - fn
+  - [execute, kind, id]
+  - $call:
+    - try
+    - {$call: [expect, {$call: [call, {$ref: execute}, {$ref: kind}, {$ref: id}]}, {$ref: outcome}]}
+    - {$call: [fn, [error], {$call: [dict, status, failed, error, {$ref: error}]}]}
+run_resources:
+  $call:
+  - fn
+  - [resources, order, execute]
+  - $call:
+    - fold
+    - $call:
+      - fn
+      - [results, id]
+      - $call:
+        - set
+        - {$ref: results}
+        - {$ref: id}
+        - $call:
+          - if
+          - {$call: [prerequisites_succeeded, {$call: [get, {$call: [get, {$ref: resources}, {$ref: id}]}, requires]}, {$ref: results}]}
+          - {$call: [invoke, {$ref: execute}, resource, {$ref: id}]}
+          - {$call: [dict, status, skipped, reason, prerequisite_failed]}
+    - {}
+    - {$ref: order}
+notifiers:
+  $call:
+  - fn
+  - [resources, handler_id]
+  - $call:
+    - filter
+    - {$call: [fn, [id], {$call: [has, {$call: [get, {$call: [get, {$ref: resources}, {$ref: id}]}, notify]}, {$ref: handler_id}]}]}
+    - {$call: [keys, {$ref: resources}]}
+was_changed:
+  $call:
+  - fn
+  - [result]
+  - {$call: [eq, {$call: [get, {$ref: result}, status]}, changed]}
+run_handler:
+  $call:
+  - fn
+  - [id, sources, requires, results, execute]
+  - $call:
+    - if
+    - {$call: [lists.any, {$ref: sources}, {$call: [fn, [source], {$call: [was_changed, {$call: [get, {$ref: results}, {$ref: source}]}]}]}]}
+    - $call:
+      - if
+      - {$call: [prerequisites_succeeded, {$call: [concat, {$ref: sources}, {$ref: requires}]}, {$ref: results}]}
+      - {$call: [invoke, {$ref: execute}, handler, {$ref: id}]}
+      - {$call: [dict, status, skipped, reason, prerequisite_failed]}
+    - {$call: [dict, status, skipped, reason, not_notified]}
+run_handlers:
+  $call:
+  - fn
+  - [resources, handlers, order, results, execute]
+  - $call:
+    - fold
+    - $call:
+      - fn
+      - [acc, id]
+      - $call:
+        - set
+        - {$ref: acc}
+        - {$ref: id}
+        - {$call: [run_handler, {$ref: id}, {$call: [notifiers, {$ref: resources}, {$ref: id}]}, {$call: [get, {$call: [get, {$ref: handlers}, {$ref: id}]}, requires]}, {$ref: results}, {$ref: execute}]}
+    - {}
+    - {$ref: order}
+handler_ok:
+  $call:
+  - fn
+  - [result]
+  - {$call: [or, {$call: [succeeded, {$ref: result}]}, {$call: [eq, {$call: [get, {$ref: result}, reason, '']}, not_notified]}]}
+report:
+  $call:
+  - fn
+  - [resources, handlers]
+  - $call:
+    - let
+    - resource_values: {$call: [values, {$ref: resources}]}
+      handler_values: {$call: [values, {$ref: handlers}]}
+    - $call:
+      - dict
+      - version
+      - 1
+      - status
+      - {$call: [if, {$call: [and, {$call: [lists.all, {$ref: resource_values}, {$ref: succeeded}]}, {$call: [lists.all, {$ref: handler_values}, {$ref: handler_ok}]}]}, finished, failed]}
+      - changed
+      - {$call: [lists.any, {$call: [concat, {$ref: resource_values}, {$ref: handler_values}]}, {$ref: was_changed}]}
+      - resources
+      - {$ref: resources}
+      - handlers
+      - {$ref: handlers}
+      - diagnostics
+      - []
+run_ready:
+  $call:
+  - fn
+  - [input, execute, schedule]
+  - $call:
+    - let
+    - resources: {$call: [get, {$ref: input}, resources]}
+      handlers: {$call: [get, {$ref: input}, handlers]}
+    - $call:
+      - run_after_resources
+      - {$ref: resources}
+      - {$ref: handlers}
+      - {$call: [get, {$ref: schedule}, handlers]}
+      - {$ref: execute}
+      - {$call: [run_resources, {$ref: resources}, {$call: [get, {$ref: schedule}, order]}, {$ref: execute}]}
+# Keep effectful results in an eager parameter: a reused lazy let expression
+# inside a function would execute the resource callbacks again for handlers.
+run_after_resources:
+  $call:
+  - fn
+  - [resources, handlers, order, execute, results]
+  - $call:
+    - report
+    - {$ref: results}
+    - {$call: [run_handlers, {$ref: resources}, {$ref: handlers}, {$ref: order}, {$ref: results}, {$ref: execute}]}
+run_checked:
+  $call:
+  - fn
+  - [input, execute, schedule]
+  - $call:
+    - if
+    - {$call: [eq, {$call: [get, {$ref: schedule}, status]}, ready]}
+    - {$call: [run_ready, {$ref: input}, {$ref: execute}, {$ref: schedule}]}
+    - {$call: [dict, version, 1, status, invalid, changed, false, resources, {}, handlers, {}, diagnostics, {$call: [get, {$ref: schedule}, diagnostics]}]}
+run:
+  $call:
+  - fn
+  - [input, [execute, {$ref: function}]]
+  - {$call: [run_checked, {$ref: input}, {$ref: execute}, {$call: [plan, {$ref: input}]}]}
