@@ -1,0 +1,24 @@
+# Keep the module local so the golden state focuses on the public results.
+results:
+  - let
+  - s: [import, std:set]
+  - empty_disjoint: [s.is_disjoint, [], []]
+    empty_equal: [s.equals, [], []]
+    empty_difference: [s.symmetric_difference, [], []]
+    disjoint: [s.is_disjoint, [1, 1, 2], [3, 4, 3]]
+    overlap: [s.is_disjoint, [1, 2], [2.0, 3]]
+    reordered_duplicates: [s.equals, [2, 1, 2], [1.0, 2.0, 1]]
+    proper_subset: [s.equals, [1], [1, 2]]
+    proper_superset: [s.equals, [1, 2], [1]]
+    structural: [s.equals, [{a: [1, 2]}, null, false], [false, {a: [1.0, 2]}, null, null]]
+    stable: [s.symmetric_difference, [3, 1, 3, 2, 5, 5], [4, 2.0, 4, 6, 1]]
+    structural_difference: [s.symmetric_difference, [{a: 1}, [2], {a: 1}, null], [[2.0], false, false]]
+    left_empty: [s.symmetric_difference, [], [2, 1, 2]]
+    right_empty: [s.symmetric_difference, [2, 1, 2], []]
+    invalid_arguments:
+      - [try, [s.is_disjoint, 1, []], [fn, [e], [get, e, "kind"]]]
+      - [try, [s.is_disjoint, [], null], [fn, [e], [get, e, "kind"]]]
+      - [try, [s.equals, {}, []], [fn, [e], [get, e, "kind"]]]
+      - [try, [s.equals, [], false], [fn, [e], [get, e, "kind"]]]
+      - [try, [s.symmetric_difference, "bad", []], [fn, [e], [get, e, "kind"]]]
+      - [try, [s.symmetric_difference, [], 0], [fn, [e], [get, e, "kind"]]]
