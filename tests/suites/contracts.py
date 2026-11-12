@@ -35,6 +35,8 @@ def harness(h):
     verify_states(h)
     from tests.suites.test_runner import verify as verify_runner
     verify_runner(h)
+    from tests.suites.mutation_generation import verify as verify_mutations
+    verify_mutations(h)
     from tests.suites.test_reports import verify as verify_reports
     verify_reports(h)
     for output, code in [("", 0), ("[", 0), ("status: ready", 0),
@@ -50,6 +52,9 @@ def harness(h):
     for scalar in ("1", "null", "false", "'quoted'", "[]", "{}"):
         assert h.root_section(f"status: finished\nroot: {scalar}\n") == scalar + "\n"
     assert h.root_section("status: finished\nroot: |-\n  first\n  second\n") == "|-\n  first\n  second\n"
+    for separator in ("\x85", "\u2028", "\u2029"):
+        scalar = f'"first{separator}second"'
+        assert h.root_section(f"status: finished\nroot: {scalar}\n") == scalar + "\n"
     assert "" in list(h.mutations("a: 1\nb: 2\n"))
     def timeout(*args, **kwargs):
         raise subprocess.TimeoutExpired(args[0], kwargs["timeout"])
