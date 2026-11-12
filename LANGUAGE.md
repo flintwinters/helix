@@ -181,6 +181,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:diff` | `compare(old, new)` (shallow configuration changes) |
 | `std:validation` | `batch(values, validate)` (indexed validation and transformation reports) |
 | `std:dependency` | `plan(tasks)` (stable dependency batches and blocked-task report) |
+| `std:provider` | `plan(provider, args, before, context)`, `check(provider, args, context)`, `apply(provider, args, context, reviewed)` ([typed resource lifecycle](#resource-provider-contract)) |
 | `std:orchestration` | `plan(document)`, `run(document, execute)` (validated resource dependencies and coalesced, deferred change handlers) |
 | `std:types` | `from_fields(specs)`, `without_field(t,name)`, `optional_field(spec)`, `optional_fields(t)` |
 | `std:math` | `number` (numeric type), `abs(n)`, `sign(n)`, `min(a,b)`, `max(a,b)`, `clamp(n,lo,hi)`, `square(n)` |
@@ -346,6 +347,96 @@ The example simulates changed outcomes without managing a real service.
 effects, checks notification counts and failure gates, and verifies relocation and
 missing dependencies. The pinning convention is described below.
 
+### Resource provider contract
+
+`std:provider` supplies a version 1 lifecycle for one explicitly selected resource.
+It uses ordinary functions and the existing effect engine. `plan(provider, args,
+before, context)` validates supplied observations and returns a pure plan;
+`check(provider, args, context)` obtains observations and plans without calling the
+application callback. Mutation requires a separate
+`apply(provider, args, context, reviewed)` call with the complete reviewed report.
+
+A provider is a record with these required fields:
+
+| Field | Contract |
+|-------|----------|
+| `version`, `id`, `revision` | Interface version `1`, nonempty provider identity and revision strings |
+| `arguments`, `observation`, `result` | Helix types for arguments, observations and application results |
+| `platforms`, `capabilities` | Supported platform names and required capability names |
+| `check`, `diff` | Booleans declaring preview and diff support |
+| `failure` | `stop`: an error stops this resource lifecycle; no automatic retry or rollback |
+| `observe` | Function `(args) -> observation`, responsible for reading actual state |
+| `plan` | Pure function `(args, before) -> steps` |
+| `apply` | Function `(args, steps) -> result`, responsible for performing the changes |
+
+Context contains `platform`, `capabilities` (a list of names), `managed` and
+`allow_remove` (booleans). Platform and capability declarations are checked before
+observation. An unsupported platform, missing declared capability, or unavailable
+check/diff support returns `unsupported` without executing resource callbacks.
+`managed: false` returns `skipped`. These context values are caller policy data;
+they do not grant effects. Actual authority always comes from the host's explicit
+grants. Observation callbacks are trusted provider code and must be read-only;
+checking does not make arbitrary callback code harmless.
+
+Steps are ordinary-data records `{field, op, to}` with optional `from`. Each
+`field` is a nonempty resource field name and appears once; `op` is `set` or
+`remove`. Set steps use the existing `converge` representation; providers may
+reuse `drift` and `converge` for class-based desired state. Their list order is
+execution order. An empty list means the observed resource satisfies the requested
+state. Missing configuration means no requested change,
+never implicit deletion. Providers must preserve unmanaged state and return an
+explicit `remove` step for deletion; such steps require `allow_remove: true` as
+well as management ownership. Providers define the interpretation of values and
+must report unknown or inaccessible observations as failures rather than absence.
+
+Validation, including refinement predicates, and planning run inside `type_time`.
+Arguments, observations and steps must be ordinary serializable data; functions
+and machines cannot be embedded in a reviewed plan. Effects from planning or type
+predicates are rejected by the runtime. The existing phase restriction also
+rejects a linked program containing file imports, even unused ones. This initial
+contract therefore supports inline providers and standard imports; it does not
+yet support vendored file-imported providers through its pure boundary.
+
+Successful plans contain `version`, `provider`, `revision`, `args`, `context`,
+`before`, `steps`, `status` (`changed` or `unchanged`), `phase: plan` and
+`applied: false`. `changed` at this phase means changes are planned, not already
+performed. Application observes and plans again, then requires exact equality
+with the reviewed report before mutation. This detects changed inputs or
+observations; it does not provide a lock against changes between observation and
+mutation. Provider revisions are declarations, not verified content hashes.
+Provider authors must include target identity in arguments and change revisions
+when callback behavior changes; captured callback environments are not recorded
+in plan identity.
+
+After applying, the lifecycle checks the declared result type, obtains fresh
+observations and replans. Only an empty fresh plan establishes success. A successful
+callback exit alone is insufficient. Verification reports retain `before`, the
+complete fresh check report in `after`,
+`result`, the applied `steps`, `phase: verify` and `applied: true`. An invalid
+application result stops before re-observation. `attempted: true` marks entry
+into the application callback; `applied: true` means that callback returned, not
+that its postconditions passed. A callback failure can leave external changes
+even when `applied` is false. Failures are structured reports with `status: failed` and the originating error; partial external
+changes remain possible and are not rolled back. Callers must inspect the report
+status as well as VM completion. A normal returned failure report does not itself
+make the interpreter process fail.
+
+The outcome vocabulary is `unchanged`, `changed`, `failed`, `skipped` and
+`unsupported`. To use a verified provider result with `std:orchestration`, return
+its supported status and optional string `details`; explicitly map `unsupported`
+to `failed` or `skipped` according to caller policy. Do not pass the full provider
+report as an orchestration outcome or notify handlers from a preview's `changed`
+status. This contract supplies no platform resource library, durable recovery,
+secret redaction, rollback or exactly-once external execution guarantee.
+
+Run the [pure planning example](tests/programs/provider_contract.yaml) with
+`./manage.py run tests/programs/provider_contract.yaml`. The routinized
+`./manage.py test --suite provider_contract` suite additionally observes and
+changes real files under its project-local artifacts directory, checks state
+independently, and exercises rejected previews, stale reviews and failed
+postconditions. These are lifecycle conformance tests, not a supported file
+resource implementation.
+
 ### Pinned dependencies
 
 The minimal package model is **vendored paths pinned by the consuming repository**.
@@ -403,7 +494,10 @@ A class is a type that can be extended. `[class, name, record_type, values?]` de
 
 `{$call: [realize, {$ref: class}]}` fills defaults and checks fixed values against the declared types. A class with required fields still unfilled is `abstract`: realizing it raises an `abstract` error whose `data.missing` lists each field and `required_by`. Every class records provenance: for each field, the declaring class (`type`) and where the value came from (`value`, e.g. `default of X`), so "who set this" is answered from state.
 
-Machine state is compared as data. `{$call: [drift, {$ref: class}, {$ref: actual}]}` returns `{missing, changed, extra}`; `{$call: [converge, {$ref: class}, {$ref: actual}]}` returns ordered `set` steps and is empty when the machine conforms. Neither acts: applying a plan is a separate effectful step that does not exist yet. A `{$call: [secret, {$ref: ref}]}` handle (`{type: secret, ref}`) is the only value a `secret`-typed field accepts; inline strings are rejected.
+Machine state is compared as data. `{$call: [drift, {$ref: class}, {$ref: actual}]}` returns `{missing, changed, extra}`; `{$call: [converge, {$ref: class}, {$ref: actual}]}` returns ordered `set` steps and is empty when the machine conforms. Neither acts: applying a plan is a separate effectful step. The
+[`std:provider` contract](#resource-provider-contract) supplies an explicit reviewed
+application lifecycle for provider callbacks; complete declarative machine
+application remains future work. A `{$call: [secret, {$ref: ref}]}` handle (`{type: secret, ref}`) is the only value a `secret`-typed field accepts; inline strings are rejected.
 
 Collection helpers used to build such data: `{$call: [list, ...]}` and `{$call: [dict, {$ref: k}, {$ref: v}, ...]}` evaluate their arguments (plain strings in literal lists and maps are data, not symbols), `values` returns a map's values and `duplicates` returns repeated list members.
 

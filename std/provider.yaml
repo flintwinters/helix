@@ -1,0 +1,174 @@
+# Versioned resource lifecycle through ordinary callbacks and the existing effect engine.
+# Provider code and caller-supplied capability descriptions are not authority.
+# Every plan/type check is enforced in type_time; only observe/apply may request effects.
+lists: {$call: [import, 'std:list']}
+name: {$call: [refine, {$ref: string}, {$call: [fn, [s], {$call: [gt, {$call: [len, {$ref: s}]}, 0]}]}]}
+names: {$call: [list_of, {$ref: name}]}
+step: {$call: [record, field, {$ref: name}, op, {$call: [enum, set, remove]}, to, {$ref: any}, from, {$call: [optional, {$ref: any}]}]}
+steps_type: {$call: [list_of, {$ref: step}]}
+context_type: {$call: [record, platform, {$ref: name}, capabilities, {$ref: names}, managed, {$ref: boolean}, allow_remove, {$ref: boolean}]}
+descriptor: {$call: [record, version, {$call: [literal, 1]}, id, {$ref: name}, revision, {$ref: name}, arguments, {$ref: any}, observation, {$ref: any}, result, {$ref: any}, platforms, {$ref: names}, capabilities, {$ref: names}, check, {$ref: boolean}, diff, {$ref: boolean}, failure, {$call: [literal, stop]}, observe, {$ref: function}, plan, {$ref: function}, apply, {$ref: function}]}
+require:
+  $call:
+  - fn
+  - [ok, kind, message, value]
+  - {$call: [if, {$ref: ok}, {$ref: value}, {$call: [raise, {$ref: kind}, {$ref: message}]}]}
+# Serializing is validation, not execution or reconstruction of runtime objects.
+data:
+  $call:
+  - fn
+  - [value]
+  - {$call: [validated_data, {$ref: value}, {$call: [yaml_dump, {$ref: value}]}]}
+validated_data: {$call: [fn, [value, encoded], {$ref: value}]}
+checked:
+  $call:
+  - fn
+  - [p, args, ctx]
+  - $call:
+    - checked_types
+    - {$call: [expect, {$ref: p}, {$ref: descriptor}]}
+    - {$call: [data, {$call: [expect, {$ref: args}, {$call: [get, {$ref: p}, arguments]}]}]}
+    - {$call: [data, {$call: [expect, {$ref: ctx}, {$ref: context_type}]}]}
+    - {$call: [subtype, {$call: [get, {$ref: p}, observation]}, {$ref: any}]}
+    - {$call: [subtype, {$call: [get, {$ref: p}, result]}, {$ref: any}]}
+checked_types:
+  $call:
+  - fn
+  - [p, args, ctx, observation_valid, result_valid]
+  - $call:
+    - cond
+    - {$call: [not, {$call: [get, {$ref: ctx}, managed]}]}
+    - {$call: [dict, version, 1, status, skipped, phase, preflight, applied, false, steps, [], reason, unmanaged]}
+    - {$call: [not, {$call: [has, {$call: [get, {$ref: p}, platforms]}, {$call: [get, {$ref: ctx}, platform]}]}]}
+    - {$call: [unsupported, platform]}
+    - {$call: [not, {$call: [lists.all, {$call: [get, {$ref: p}, capabilities]}, {$call: [fn, [cap], {$call: [has, {$call: [get, {$ref: ctx}, capabilities]}, {$ref: cap}]}]}]}]}
+    - {$call: [unsupported, capabilities]}
+    - {$call: [not, {$call: [get, {$ref: p}, check]}]}
+    - {$call: [unsupported, check]}
+    - {$call: [not, {$call: [get, {$ref: p}, diff]}]}
+    - {$call: [unsupported, diff]}
+    - {$call: [dict, status, ready]}
+unsupported: {$call: [fn, [reason], {$call: [dict, version, 1, status, unsupported, phase, preflight, applied, false, steps, [], reason, {$ref: reason}]}]}
+failure_report: {$call: [fn, [phase, error], {$call: [dict, version, 1, status, failed, phase, {$ref: phase}, applied, false, steps, [], error, {$ref: error}]}]}
+plan:
+  $call:
+  - fn
+  - [p, args, before, ctx]
+  - $call:
+    - try
+    - {$call: [type_time, {$call: [plan_checked, {$ref: p}, {$ref: args}, {$ref: before}, {$ref: ctx}, {$call: [checked, {$ref: p}, {$ref: args}, {$ref: ctx}]}]}]}
+    - {$call: [fn, [error], {$call: [failure_report, plan, {$ref: error}]}]}
+plan_checked:
+  $call:
+  - fn
+  - [p, args, before, ctx, guard]
+  - $call:
+    - if
+    - {$call: [eq, {$call: [get, {$ref: guard}, status]}, ready]}
+    - {$call: [planned, {$ref: p}, {$ref: args}, {$call: [data, {$call: [expect, {$ref: before}, {$call: [get, {$ref: p}, observation]}]}]}, {$ref: ctx}]}
+    - {$ref: guard}
+planned:
+  $call:
+  - fn
+  - [p, args, before, ctx]
+  - $call:
+    - reviewed
+    - {$ref: p}
+    - {$ref: args}
+    - {$ref: before}
+    - {$ref: ctx}
+    - {$call: [valid_steps, {$call: [data, {$call: [expect, {$call: [call, {$call: [get, {$ref: p}, plan]}, {$ref: args}, {$ref: before}]}, {$ref: steps_type}]}]}, {$ref: ctx}]}
+valid_steps:
+  $call:
+  - fn
+  - [steps, ctx]
+  - $call:
+    - require
+    - {$call: [eq, {$call: [duplicates, {$call: [map, {$call: [fn, [s], {$call: [get, {$ref: s}, field]}]}, {$ref: steps}]}]}, []]}
+    - provider_duplicate_field
+    - A plan must name each managed field at most once
+    - $call:
+      - require
+      - {$call: [or, {$call: [get, {$ref: ctx}, allow_remove]}, {$call: [lists.all, {$ref: steps}, {$call: [fn, [s], {$call: [ne, {$call: [get, {$ref: s}, op]}, remove]}]}]}]}
+      - provider_removal_denied
+      - Removal requires explicit caller consent in addition to managed ownership
+      - {$ref: steps}
+reviewed:
+  $call:
+  - fn
+  - [p, args, before, ctx, steps]
+  - {$call: [dict, version, 1, provider, {$call: [get, {$ref: p}, id]}, revision, {$call: [get, {$ref: p}, revision]}, args, {$ref: args}, context, {$ref: ctx}, before, {$ref: before}, steps, {$ref: steps}, status, {$call: [if, {$call: [eq, {$ref: steps}, []]}, unchanged, changed]}, phase, plan, applied, false]}
+check:
+  $call:
+  - fn
+  - [p, args, ctx]
+  - $call:
+    - try
+    - {$call: [check_guarded, {$ref: p}, {$ref: args}, {$ref: ctx}, {$call: [type_time, {$call: [checked, {$ref: p}, {$ref: args}, {$ref: ctx}]}]}]}
+    - {$call: [fn, [error], {$call: [failure_report, preflight, {$ref: error}]}]}
+check_guarded:
+  $call:
+  - fn
+  - [p, args, ctx, guard]
+  - $call:
+    - if
+    - {$call: [eq, {$call: [get, {$ref: guard}, status]}, ready]}
+    - $call:
+      - try
+      - {$call: [plan, {$ref: p}, {$ref: args}, {$call: [call, {$call: [get, {$ref: p}, observe]}, {$ref: args}]}, {$ref: ctx}]}
+      - {$call: [fn, [error], {$call: [failure_report, observe, {$ref: error}]}]}
+    - {$ref: guard}
+apply:
+  $call:
+  - fn
+  - [p, args, ctx, review]
+  - $call:
+    - try
+    - {$call: [apply_checked, {$ref: p}, {$ref: args}, {$ref: ctx}, {$call: [type_time, {$call: [data, {$ref: review}]}]}, {$call: [check, {$ref: p}, {$ref: args}, {$ref: ctx}]}]}
+    - {$call: [fn, [error], {$call: [failure_report, preflight, {$ref: error}]}]}
+apply_checked:
+  $call:
+  - fn
+  - [p, args, ctx, review, current]
+  - $call:
+    - if
+    - {$call: [has, [changed, unchanged], {$call: [get, {$ref: current}, status]}]}
+    - $call:
+      - if
+      - {$call: [eq, {$ref: review}, {$ref: current}]}
+      - {$call: [if, {$call: [eq, {$call: [get, {$ref: current}, status]}, unchanged]}, {$ref: current}, {$call: [mutate, {$ref: p}, {$ref: args}, {$ref: ctx}, {$call: [set, {$ref: current}, attempted, true]}]}]}
+      - {$call: [raise, provider_stale_plan, The reviewed plan does not match fresh provider state and caller inputs]}
+    - {$ref: current}
+mutate:
+  $call:
+  - fn
+  - [p, args, ctx, review]
+  - $call:
+    - try
+    - {$call: [mutated, {$ref: p}, {$ref: args}, {$ref: ctx}, {$ref: review}, {$call: [call, {$call: [get, {$ref: p}, apply]}, {$ref: args}, {$call: [get, {$ref: review}, steps]}]}]}
+    - {$call: [fn, [error], {$call: [set, {$call: [set, {$call: [set, {$call: [set, {$ref: review}, status, failed]}, phase, apply]}, attempted, true]}, error, {$ref: error}]}]}
+mutated:
+  $call:
+  - fn
+  - [p, args, ctx, review, result]
+  - $call:
+    - try
+    - {$call: [verify_result, {$ref: p}, {$ref: args}, {$ref: ctx}, {$ref: review}, {$call: [type_time, {$call: [data, {$call: [expect, {$ref: result}, {$call: [get, {$ref: p}, result]}]}]}]}]}
+    - {$call: [fn, [error], {$call: [set, {$call: [set, {$call: [set, {$call: [set, {$ref: review}, status, failed]}, phase, verify]}, applied, true]}, error, {$ref: error}]}]}
+verify_result:
+  $call:
+  - fn
+  - [p, args, ctx, review, result]
+  - {$call: [verified, {$ref: review}, {$ref: result}, {$call: [check, {$ref: p}, {$ref: args}, {$ref: ctx}]}]}
+verified:
+  $call:
+  - fn
+  - [review, result, after]
+  - $call:
+    - let
+    - report: {$call: [set, {$call: [set, {$call: [set, {$call: [set, {$ref: review}, phase, verify]}, applied, true]}, result, {$ref: result}]}, after, {$ref: after}]}
+    - $call:
+      - if
+      - {$call: [eq, {$call: [get, {$ref: after}, status]}, unchanged]}
+      - {$ref: report}
+      - {$call: [set, {$call: [set, {$ref: report}, status, failed]}, error, {$call: [dict, kind, provider_postcondition, message, Fresh observation does not produce an empty plan]}]}

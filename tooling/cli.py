@@ -39,6 +39,7 @@ SUITES = {
     "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
     "host_inventory": "Pure typed host inventory, explicit override provenance, validated dynamic inputs and target selection",
     "resource_composition": "Validated resource dependencies, coalesced change handlers, failure gating and typed pinned modules",
+    "provider_contract": "Typed provider lifecycle, pure previews, explicit ownership and independently verified mutations",
     "golden": "Exact YAML states, deterministic evaluation, and finished-root round trips",
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",

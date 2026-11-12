@@ -568,12 +568,24 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
 
 ### Resource providers and change semantics
 
-- [ ] Establish one discoverable provider contract for observation, planning, application and verification
-  - [ ] Providers declare argument/result types, capabilities, supported platforms, check/diff support and failure behavior
-  - [ ] Distinguish unchanged, changed, failed, skipped and unsupported outcomes using structured data
-  - [ ] Pure plan generation shares section 8's semantics; a dry run never silently applies a resource whose preview is unsupported
-  - [ ] Re-observe after mutation and report unmet postconditions instead of trusting a successful command exit alone
-  - [ ] Define ownership and deletion explicitly so absent configuration does not accidentally remove unmanaged resources
+- [x] Establish one discoverable provider contract for observation, planning, application and verification
+  - [x] Providers declare argument/result types, capabilities, supported platforms, check/diff support and failure behavior
+  - [x] Distinguish unchanged, changed, failed, skipped and unsupported outcomes using structured data
+  - [x] Pure plan generation shares section 8's semantics; a dry run never silently applies a resource whose preview is unsupported
+  - [x] Re-observe after mutation and report unmet postconditions instead of trusting a successful command exit alone
+  - [x] Define ownership and deletion explicitly so absent configuration does not accidentally remove unmanaged resources
+  - Evidence: `./manage.py test --suite provider_contract --suite type_algebra --suite library`
+    checks `std:provider` with typed callbacks, pure data-only plans compatible
+    with `converge`, unsupported-preview gates, exact fresh review matching,
+    authorized file changes, no-op reapplication, drift repair and explicit
+    removal. Independent host-state assertions cover preservation of unmanaged
+    files, mutation followed by failure and unmet postconditions. See the
+    [runnable example](tests/programs/provider_contract.yaml) and
+    [provider contract](LANGUAGE.md#resource-provider-contract). Callbacks are
+    trusted provider implementations, capabilities remain caller grants, and
+    revision identity is author-declared. Pure phases currently exclude linked
+    file imports; locking, durable recovery and production resource providers
+    remain separate milestones.
 - [ ] Implement a useful initial resource library behind that contract
   - [ ] Packages and repositories: presence, absence, versions, metadata refresh and package-manager locking
   - [ ] Files, directories and links: content, ownership, permissions, atomic replacement and explicit removal

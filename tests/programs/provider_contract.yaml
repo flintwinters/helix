@@ -1,0 +1,40 @@
+# Review a single managed content field without contacting a machine.
+# Real adapters implement observe/apply using caller-authorized effects; this
+# example supplies an observation directly to the same pure planning boundary.
+$call:
+- let
+- provider: {$call: [import, 'std:provider']}
+  content:
+    version: 1
+    id: example.content
+    revision: '1.0.0'
+    arguments: {$ref: string}
+    observation: {$ref: string}
+    result: {$call: [literal, null]}
+    platforms: [example-linux]
+    capabilities: [file_read, file_write]
+    check: true
+    diff: true
+    failure: stop
+    observe: {$call: [fn, [args], {$call: [raise, example_requires_host, Supply a real observation adapter]}]}
+    plan:
+      $call:
+      - fn
+      - [args, before]
+      - $call:
+        - if
+        - {$call: [eq, {$ref: args}, {$ref: before}]}
+        - []
+        - $call:
+          - list
+          - {$call: [dict, field, content, op, set, from, {$ref: before}, to, {$ref: args}]}
+    apply: {$call: [fn, [args, steps], {$call: [raise, example_requires_host, Supply a real mutation adapter]}]}
+- $call:
+  - provider.plan
+  - {$ref: content}
+  - desired text
+  - observed text
+  - platform: example-linux
+    capabilities: [file_read, file_write]
+    managed: true
+    allow_remove: false
