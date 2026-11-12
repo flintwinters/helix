@@ -64,6 +64,9 @@ separation from membership. `class_collection_overrides` covers whole-value
 replacement and explicit list/map composition; `types_refinement_composition`
 covers stacked predicates across the existing type formers, and
 `types_violation_order` fixes nested diagnostic traversal order.
+`types_refinement_failures` separates rejection from predicates that return
+non-booleans or raise; `class_inheritance_depth` covers deep inheritance, parent
+order independence and classes used as ordinary type values.
 
 ## Testing contracts and known gaps
 

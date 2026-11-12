@@ -1,0 +1,222 @@
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - div
+            - 1
+            - 0
+    environment: []
+    kind: function
+    location:
+      path:
+        - divides_by_zero
+      source: "<root>"
+    program:
+      ref: object3
+  object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$ref": "n"
+    environment: []
+    kind: function
+    location:
+      path:
+        - returns_integer
+      source: "<root>"
+    program:
+      ref: object3
+  object2:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - gt
+            - "$ref": "n"
+            - 0
+    environment: []
+    kind: function
+    location:
+      path:
+        - positive
+      source: "<root>"
+    program:
+      ref: object3
+  object3:
+    kind: program
+    sources:
+      - code:
+          accepted:
+            "$call":
+              - violations
+              - 1
+              - "$ref": rejects
+          base_gates_predicate:
+            "$call":
+              - violations
+              - x
+              - "$ref": raising
+          caught_non_boolean:
+            "$call":
+              - try
+              - "$call":
+                  - expect
+                  - 1
+                  - "$ref": non_boolean
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - data
+          caught_rejection:
+            "$call":
+              - try
+              - "$call":
+                  - expect
+                  - -1
+                  - "$ref": rejects
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - data
+          divides_by_zero:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - div
+                  - 1
+                  - 0
+          element_paths:
+            "$call":
+              - violations
+              - - 1
+                - -2
+                - x
+                - 3
+                - 0
+              - "$call":
+                  - list_of
+                  - "$ref": rejects
+          field_paths:
+            "$call":
+              - violations
+              - high: 2
+                low: 0
+              - "$call":
+                  - record
+                  - high
+                  - "$ref": rejects
+                  - low
+                  - "$ref": rejects
+          non_boolean:
+            "$call":
+              - refine
+              - "$ref": integer
+              - "$ref": returns_integer
+          non_boolean_result:
+            "$call":
+              - violations
+              - 1
+              - "$ref": non_boolean
+          positive:
+            "$call":
+              - fn
+              - - "n"
+              - "$call":
+                  - gt
+                  - "$ref": "n"
+                  - 0
+          raised_error:
+            "$call":
+              - violations
+              - 1
+              - "$ref": raising
+          raising:
+            "$call":
+              - refine
+              - "$ref": integer
+              - "$ref": divides_by_zero
+          rejected:
+            "$call":
+              - violations
+              - -1
+              - "$ref": rejects
+          rejects:
+            "$call":
+              - refine
+              - "$ref": integer
+              - "$ref": positive
+          returns_integer:
+            "$call":
+              - fn
+              - - "n"
+              - "$ref": "n"
+        source: "<root>"
+root:
+  accepted: []
+  base_gates_predicate:
+    - at: /
+      message: "expected integer, got string"
+  caught_non_boolean:
+    violations:
+      - at: /
+        message: "refinement check failed to run: returned integer, expected boolean"
+  caught_rejection:
+    violations:
+      - at: /
+        message: failed its refinement check
+  divides_by_zero:
+    ref: object0
+  element_paths:
+    - at: /1
+      message: failed its refinement check
+    - at: /2
+      message: "expected integer, got string"
+    - at: /4
+      message: failed its refinement check
+  field_paths:
+    - at: /low
+      message: failed its refinement check
+  non_boolean:
+    check:
+      ref: object1
+    of: integer
+    type: refine
+  non_boolean_result:
+    - at: /
+      message: "refinement check failed to run: returned integer, expected boolean"
+  positive:
+    ref: object2
+  raised_error:
+    - at: /
+      message: "refinement check failed to run: divide_by_zero: `div` by zero"
+  raising:
+    check:
+      ref: object0
+    of: integer
+    type: refine
+  rejected:
+    - at: /
+      message: failed its refinement check
+  rejects:
+    check:
+      ref: object2
+    of: integer
+    type: refine
+  returns_integer:
+    ref: object1
+status: finished

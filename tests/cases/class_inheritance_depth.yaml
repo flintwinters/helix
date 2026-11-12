@@ -1,0 +1,33 @@
+# Inheritance composes to any depth into one flattened class, parent order does
+# not change the resolved description, and classes are first-class type values:
+# they are stored in data, passed to functions, reflected on and used as types.
+level0: {$call: [class, level0, {$call: [record, a, {$ref: integer}]}, {a: 1}]}
+level1: {$call: [extend, level1, {$call: [list, {$ref: level0}]}, {$call: [record, b, {$ref: integer}]}, {b: 2}]}
+level2: {$call: [extend, level2, {$call: [list, {$ref: level1}]}, {$call: [record, c, {$ref: integer}]}, {c: 3}]}
+level3: {$call: [extend, level3, {$call: [list, {$ref: level2}]}, {$call: [record, d, {$ref: integer}]}, {d: 4}]}
+level4: {$call: [extend, level4, {$call: [list, {$ref: level3}]}, {$call: [record, e, {$ref: integer}]}, {}]}
+deep: {$call: [inherit, deep, {$call: [list, {$ref: level4}]}, {e: 5}]}
+deep_fields: {$call: [fields, {$ref: deep}]}
+deep_values: {$call: [get, {$ref: deep}, values]}
+deep_source: {$call: [map, {$call: [fn, [k], {$call: [get, {$call: [get, {$call: [get, {$ref: deep}, provenance]}, {$ref: k}]}, type]}]}, {$call: [keys, {$ref: deep_fields}]}]}
+deep_parents: {$call: [parents, {$ref: deep}]}
+deep_missing_leaf: {$call: [try, {$call: [inherit, no_leaf, {$call: [list, {$ref: level4}]}, {}]}, {$call: [fn, [e], {$call: [get, {$ref: e}, data]}]}]}
+host: {$call: [class, host, {$call: [record, hostname, {$ref: string}]}]}
+sized: {$call: [class, sized, {$call: [record, cpus, {$ref: integer}]}, {cpus: 2}]}
+host_then_sized: {$call: [inherit, node, {$call: [list, {$ref: host}, {$ref: sized}]}, {hostname: n1}]}
+sized_then_host: {$call: [inherit, node, {$call: [list, {$ref: sized}, {$ref: host}]}, {hostname: n1}]}
+order_independent:
+  fields: {$call: [eq, {$call: [fields, {$ref: host_then_sized}]}, {$call: [fields, {$ref: sized_then_host}]}]}
+  values: {$call: [eq, {$call: [get, {$ref: host_then_sized}, values]}, {$call: [get, {$ref: sized_then_host}, values]}]}
+  provenance: {$call: [eq, {$call: [get, {$ref: host_then_sized}, provenance]}, {$call: [get, {$ref: sized_then_host}, provenance]}]}
+registry: {first: {$ref: host}, second: {$ref: sized}}
+registry_names:
+  $call:
+    - map
+    - $call: [fn, [k], {$call: [get, {$call: [get, {$ref: registry}, {$ref: k}]}, name]}]
+    - $call: [keys, {$ref: registry}]
+fields_of: {$call: [fn, [t], {$call: [fields, {$ref: t}]}]}
+passed_class: {$call: [fields_of, {$ref: sized}]}
+member: {$call: [is, {hostname: n1}, {$ref: host}]}
+non_member: {$call: [is, {hostname: 1}, {$ref: host}]}
+as_element_type: {$call: [violations, [{hostname: a}, {hostname: 2}], {$call: [list_of, {$ref: host}]}]}
