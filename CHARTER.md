@@ -67,6 +67,10 @@ The minimum for writing a non-trivial program.
 
 If these are not great, there is no reason to use Helix over anything else.
 
+Reversibility is a promise type. A machine that mixes in this promise must expose all of its behavior and complete execution state so it can always be serialized and restored. This includes stack, heap, local bindings, continuations, iteration progress and pending effects wherever they determine execution; hidden host state cannot carry part of the continuation. Suspend/resume follows from satisfying this promise. The runtime representation must serve that contract; its concrete layout and the promise syntax remain undecided.
+
+- [ ] A reversibility promise type enforces complete behavioral and state exposure on machines that mix it in
+- [ ] Serialization captures the whole promised machine, including nested calls and live allocations, without dependence on the original process
 - [ ] **Suspend/resume:** a run can pause, save to YAML, and continue later from that file
 - [ ] Execution position persisted as root-relative paths, never opaque pointers
 - [ ] All five statuses actually occur and round-trip: `ready`, `running`, `finished`, `error`, `signaled`
