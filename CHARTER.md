@@ -140,7 +140,7 @@ The difference between a language and a language I enjoy using.
 - [ ] Watch mode: re-run on change
 - [ ] Editor support: JSON Schema for programs, then an LSP
 - [ ] Shell completion and a helpful `--help`
-- [ ] In-language test runner (assertions plus golden state comparison)
+- [x] In-language test runner (assertions plus semantic golden state comparison in `std:test`; file discovery and byte comparison remain host duties)
 - [ ] Single-command install (prebuilt binary or `cargo install`)
 
 ---
@@ -489,7 +489,7 @@ Implement Helix's own language services and development workflows in Helix. The 
 
 - [x] Standard-library arithmetic and list helpers are Helix source: `std/math.yaml` and `std/list.yaml` already implement min/max/clamp, sum/product/reverse/range, exercised by the standard-library golden cases. Extend these modules rather than adding equivalent Rust builtins.
 - [ ] Collection and text algorithms: sorting, grouping, deduplication, map merge/removal, splitting and joining as imported Helix functions over the existing collection primitives. Reuse the algorithms in the dogfooding cases; document copying costs and iteration limits before treating them as general-purpose library functions.
-  - [x] Stable grouping by a string-valued callback in `std:group.by`, covered by `std_group`; preserves first key occurrence and item order, with documented copying costs and iteration limits. Real tooling caller: `./manage.py inventory` invokes `tooling/inventory.yaml` to group repository files by directory and saves replayable input/state; covered by `dogfood_tooling_inventory` and CLI contracts.
+  - [x] Stable grouping by a string-valued callback in `std:group.by`, covered by `std_group`; preserves first key occurrence and item order, with documented copying costs and iteration limits.
   - [x] Stable comparator sort (`sort_by`) extracted from the work-queue example, plus first-occurrence deduplication (`unique`), in `std:list`; covered by `std_list_algorithms` and `dogfood_work_queue`. Both use quadratic scans/copying and runtime iteration limits; intended for small inputs.
   - [x] `std:list` access/slicing, enumerate/zip, one-level flatten/flat-map, short-circuit searches, quantifiers, count/partition, grouping/frequencies and default sorting; contracts and boundary cases live in `std_list_helpers`.
 - [ ] Configuration diff, dependency ordering and validation reports as reusable Helix modules, extracted from the existing dogfooding cases. Their policies and error recovery belong in Helix; primitive lookup, equality and structured error attribution remain runtime services.
@@ -509,6 +509,7 @@ The working tree contains Rust type, class and callable-value work beyond the es
 - [ ] Canonical formatting and state inspection: implement layout, state summaries and eventually migrations in Helix. Replacing `src/emit.rs` needs lossless scalar/source reflection, scalar-to-text and escaping support, plus a bootstrap output path that does not recursively invoke the formatter. Preserve quoted literals, expression heads, source spans and the existing round-trip fixpoint.
 - [ ] Static checks as Helix graph passes: dependency/cycle diagnostics, annotation discovery and type reports for `helix check`. Requires access to the unevaluated graph, parent links, paths and spans without triggering effects; reuse the authoritative checker. Runtime cycle guards and resource limits remain enforced by the bootstrap.
 - [ ] Test and task orchestration: express case discovery, golden comparison, round-trip checks, mutation generation and build/lint invocation in Helix once file, process, argument and parsing effects exist (section 3). Keep `./manage.py` as the obvious root entrypoint and bootstrap launcher; replace its orchestration behind that interface rather than create a competing workflow. Host-level crash checks must still detect a broken interpreter.
+  - [x] Pure test policy in `std:test`: assertions, expected errors, per-case recovery, table/state fixtures, bounded properties, differential checks and serializable reports. `dogfood_testing` composes selection, failure reruns, fixture factories, shrinking and nested suites; `std_test_failure` proves a failed report becomes a structured VM error. Host filesystem/process orchestration remains pending.
 
 ### Migration bar
 

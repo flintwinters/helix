@@ -1,0 +1,77 @@
+# Pure testing policy. Cases are {name: string, run: zero-argument function}.
+# Reports are values; a failing case never prevents later cases from running.
+# No file/process discovery, clocks, effects, or interpreter crash detection live here.
+capture:
+  - fn
+  - [[thunk, function]]
+  - - try
+    - [dict, "outcome", "passed", "value", [call, thunk]]
+    - [fn, [error], [dict, "outcome", "failed", "error", error]]
+  - map
+equal:
+  - fn
+  - [actual, expected]
+  - - if
+    - [eq, actual, expected]
+    - null
+    - [raise, "assertion", "values differ", [dict, "expected", expected, "actual", actual]]
+# Return the original error so callers can additionally inspect payload and source blame.
+throws:
+  - fn
+  - [[thunk, function], [kind, string]]
+  - - let
+    - result: [capture, thunk]
+    - - if
+      - [eq, [get, result, "outcome"], "passed"]
+      - [raise, "assertion", "expected an error", [dict, "expected_kind", kind, "actual", [get, result, "value"]]]
+      - - let
+        - error: [get, result, "error"]
+        - - if
+          - [eq, [get, error, "kind"], kind]
+          - error
+          - [raise, "assertion", "unexpected error kind", [dict, "expected_kind", kind, "error", error]]
+  - map
+case:
+  - fn
+  - [[spec, map]]
+  - [set, [set, [capture, [get, spec, "run"]], "name", [get, spec, "name"]], "input", [get, spec, "input", null]]
+  - map
+suite:
+  - fn
+  - [[cases, list]]
+  - - let
+    - results: [map, case, cases]
+      failures: [filter, [fn, [result], [eq, [get, result, "outcome"], "failed"]], results]
+    - [dict, "total", [len, results], "passed", [sub, [len, results], [len, failures]], "failed", [len, failures], "results", results]
+  - map
+require_pass:
+  - fn
+  - [[report, map]]
+  - [if, [eq, [get, report, "failed"], 0], report, [raise, "test_failure", "suite contains failures", report]]
+  - map
+# Each row is {name: string, input: value}. Verify returns normally or raises.
+# Each thunk captures its own row; inputs are retained in the result for reproduction.
+table:
+  - fn
+  - [[rows, list], [verify, function]]
+  - - suite
+    - - map
+      - [fn, [row], [dict, "name", [get, row, "name"], "input", [get, row, "input"], "run", [fn, [], [call, verify, [get, row, "input"]]]]]
+      - rows
+  - map
+# Bounded, explicitly supplied samples make runs deterministic; false is an assertion failure.
+property:
+  - fn
+  - [[name, string], [samples, list], [predicate, function]]
+  - - table
+    - [map, [fn, [sample], [dict, "name", name, "input", sample]], samples]
+    - [fn, [sample], [assert, [call, predicate, sample], "property rejected sample"]]
+  - map
+# Both algorithms receive the same sample; equality uses Helix's public value semantics.
+compare:
+  - fn
+  - [[name, string], [samples, list], [left, function], [right, function]]
+  - - table
+    - [map, [fn, [sample], [dict, "name", name, "input", sample]], samples]
+    - [fn, [sample], [equal, [call, left, sample], [call, right, sample]]]
+  - map

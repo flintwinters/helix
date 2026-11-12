@@ -151,3 +151,74 @@ Callbacks are checked as functions even for empty lists. Predicates must return 
 ## Error kinds
 
 `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (call nesting), `limit` (iteration cap), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
+
+## Testing in Helix
+
+Import `t: [import, std:test]`. Testing policy runs as ordinary Helix; reports are
+serializable values and failed cases do not abort the remaining cases.
+
+```yaml
+t: [import, std:test]
+report:
+  - t.suite
+  - - {name: arithmetic, run: [fn, [], [t.equal, [add, 2, 3], 5]]}
+    - {name: expected_failure, run: [fn, [], [t.throws, [fn, [], [div, 1, 0]], "divide_by_zero"]]}
+checked: [t.require_pass, report]
+```
+
+| Function | Contract |
+| --- | --- |
+| `equal(actual, expected)` | Return null on structural/numeric equality; otherwise raise `assertion` with both values in `data`. |
+| `capture(thunk)` | Call a zero-argument function and return `{outcome: passed, value: ...}` or `{outcome: failed, error: ...}`. |
+| `throws(thunk, kind)` | Require an error of that kind and return the original error map. Normal return or a different kind raises `assertion`. |
+| `case(spec)` | Execute `{name, run}`; retain its name and optional `input` alongside the captured result. |
+| `suite(cases)` | Return `{total, passed, failed, results}` in source order. Empty suites pass. Normal return passes, including false or null; assert explicitly to test a condition. |
+| `require_pass(report)` | Return a clean report or raise `test_failure` with the entire report as `data`. |
+| `table(rows, verify)` | Each `{name, input}` row runs `verify(input)` independently; retain the input for reproduction. |
+| `property(name, samples, predicate)` | Check each supplied sample; false raises an assertion, and predicate errors remain failures. |
+| `compare(name, samples, left, right)` | Compare both algorithms on each sample with `equal`; callback errors are failures. |
+
+Use `std:list.range`/`flat_map` to build bounded sample products, `filter` over case
+records for selection, and report results to choose failed names for reruns. Supply
+fixture factories as functions so each case gets its own immutable environment.
+Expected states are ordinary table data compared with `equal`; this is semantic
+value comparison, not byte-for-byte YAML comparison. `tests/cases/dogfood_testing.yaml`
+exercises these flows, runner self-tests, nested reports, cleanup precedence,
+retained counterexamples and deterministic candidate shrinking. `std_test_failure`
+proves a report can produce the usual VM error and exit code 1.
+
+Only supplied samples are tested; these helpers do not prove a property. Work and
+immutable copying grow with the supplied cases and captured fixtures. Keep samples
+small and within runtime call/iteration limits. Pure tests cannot observe process
+crashes, timeouts or side effects. Discovery, file golden comparison, serialization
+fixpoints and crash detection remain in `./manage.py test` until the required
+file/process/parsing services exist. The same golden runner tests this module;
+there is no competing test entrypoint.
+
+
+### Debugging and pure failed-run recovery
+
+Function failures carry an optional `calls` list, ordered from the innermost call outward.
+Each entry records the call-site `path`, `line`, `column`, optional imported `file`,
+and the function declaration's `function` path. This includes callback, parameter-contract,
+and result-contract failures. Errors caught with `try` have the same diagnostic fields.
+Re-raising with `[raise, error]` records the complete supplied error map under `cause`;
+the new error blames the re-raise site and accumulates its own call chain. Repeating this
+preserves each earlier cause, payload and location.
+
+`./manage.py recover program.yaml` runs a pure program and, on evaluation failure,
+adds a `recovery` string containing editable YAML source to the error state.
+Save stdout to a state file, repair that string, then run
+`./manage.py resume state.yaml`. A failed resume emits another recovery checkpoint.
+Completed root-map fields become literal saved values; unfinished fields retain their
+original expressions. Their successful siblings are not computed again. Other root
+shapes restart as a whole. An unfinished function or iteration restarts from its
+beginning: this is a pure recovery boundary, not suspended stack restoration.
+Changes to inputs do not invalidate already completed fields; remove or restore those
+fields' expressions explicitly when they should be computed again.
+
+File-based checkpoints retain the original absolute `recovery_file` for relative
+imports. Imported sources are reloaded and must still be available. Parse/link failures
+have no executable checkpoint. Ordinary `run` and `check` output is unchanged.
+Recovery applies only to the current pure evaluator; effectful retry will require the
+complete continuation and effect-state contract in charter section 2.
