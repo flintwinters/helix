@@ -17,7 +17,7 @@ def check(ctx):
 
 
 def verify_repl(ctx):
-    source = '[add, 20, 22]\n[div, 1, 0]\n:begin\nanswer: [mul, 6, 7]\n:end\n:quit\n'
+    source = '{$call: [add, 20, 22]}\n{$call: [div, 1, 0]}\n:begin\nanswer: {$call: [mul, 6, 7]}\n:end\n:quit\n'
     result = ctx.helix('repl', stdin=source)
     states = list(yaml.safe_load_all(result.stdout))
     assert result.returncode == 1 and not result.stderr, result
@@ -38,8 +38,8 @@ def verify_watch(ctx):
     directory = ctx.root / 'runtime/interactive'
     directory.mkdir(parents=True, exist_ok=True)
     main, middle, leaf = [directory / name for name in ('main.yaml', 'middle.yaml', 'leaf.yaml')]
-    main.write_text('[import, middle.yaml]\n')
-    middle.write_text('[import, leaf.yaml]\n')
+    main.write_text('{"$call": ["import", "middle.yaml"]}')
+    middle.write_text('{"$call": ["import", "leaf.yaml"]}')
     leaf.write_text('1\n')
     process = subprocess.Popen([str(ctx.binary), 'watch', str(main), '--interval-ms', '20', '--iterations', '7'],
                                cwd=ctx.root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -77,7 +77,7 @@ def verify_watch(ctx):
         # A changed import path refreshes the dependency set.
         alternate = directory / 'alternate.yaml'
         alternate.write_text('4\n')
-        middle.write_text('[import, alternate.yaml]\n')
+        middle.write_text('{"$call": ["import", "alternate.yaml"]}')
         assert documents.get(timeout=ctx.timeout)['root'] == 4
         main.write_bytes(b'\xff')
         assert 'cannot read' in errors.get(timeout=ctx.timeout)

@@ -37,7 +37,7 @@ def check(ctx):
         if status == "running":
             assert summary["location"] == active["location"] and summary["continuations"] > 0
     # Effect requests stop traversal without execution and remain visible in saved views.
-    effect_source = '[effect, "file_read", "must-not-be-read"]'
+    effect_source = '{"$call": ["effect", "file_read", "must-not-be-read"]}'
     effect_trace = ctx.helix("trace", "-", stdin=effect_source)
     assert effect_trace.returncode == 0 and not effect_trace.stderr, effect_trace
     effect_versions = list(yaml.safe_load_all(effect_trace.stdout))
@@ -55,11 +55,11 @@ def check(ctx):
         assert inspected_effect.returncode == 0 and not inspected_effect.stderr, inspected_effect
         summary = yaml.safe_load(inspected_effect.stdout)
         assert summary["status"] == "signaled" and summary["pending_effect"] == request
-    # Saved lists resembling expressions and missing imports must remain inert data.
-    inert = 'status: finished\nroot: [import, "does-not-exist.yaml"]\n'
+    # Saved reserved call maps and missing imports must remain inert data.
+    inert = '{"status": "finished", "root": {"$call": ["import", "does-not-exist.yaml"]}}'
     result = ctx.helix("inspect", "-", stdin=inert)
-    assert result.returncode == 0 and yaml.safe_load(result.stdout)["root"] == {"kind": "list", "size": 2}
-    failed = ctx.helix("trace", "-", stdin="answer: [div, 1, 0]")
+    assert result.returncode == 0 and yaml.safe_load(result.stdout)["root"] == {"kind": "map", "size": 1}
+    failed = ctx.helix("trace", "-", stdin='{"answer": {"$call": ["div", 1, 0]}}')
     assert failed.returncode == 1
     failure = list(yaml.safe_load_all(failed.stdout))[-1]
     assert failure["state"]["error"]["kind"] == "divide_by_zero"

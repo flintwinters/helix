@@ -14,7 +14,7 @@ How to use this file: tick a box only when the feature works end to end *and* ha
 
 ## 0. Foundation — complete
 
-YAML source graphs retain parent links, source spans and root-relative paths. Actor-first expressions use lexical lookup; execution detects cycles and emits structured diagnostics. Finished ordinary-data roots round-trip through YAML. `./manage.py` owns golden testing and structural linting through the hyperlinter submodule.
+YAML representation graphs retain parent links, source spans and root-relative paths. Explicit `$call` and `$ref` forms use lexical lookup; `$literal` protects arbitrary data. Scalar style and mapping presentation order do not affect execution; execution detects cycles and emits structured diagnostics. Finished ordinary-data roots round-trip through YAML. `./manage.py` owns golden testing and structural linting through the hyperlinter submodule.
 
 ## 1. Core language — complete
 
@@ -150,9 +150,9 @@ Principles that hold for the whole section, and that settle most design question
 The sketch below shows the intended feel only; the syntax is undecided (see Open questions) and must not be treated as a spec.
 
 ```yaml
-has_ssh:    [class, {ssh_port: {type: port, default: 22}}]
-server:     [class, {hostname: string, packages: [list_of, string]}]
-web01:      [inherit, [server, has_ssh], {hostname: web01, packages: [nginx]}]
+has_ssh: {$call: [class, {ssh_port: {type: port, default: 22}}]}
+server: {$call: [class, {hostname: string, packages: {$call: [list_of, {$ref: string}]}}]}
+web01: {$call: [inherit, {$call: [server, {$ref: has_ssh}]}, {hostname: web01, packages: [nginx]}]}
 ```
 
 ### Declarative types
@@ -195,7 +195,7 @@ A type should read like the value it describes with the specifics left open: som
   - [ ] All annotation failures of a whole program are reported in one run
 - [ ] Types survive in the saved state and round-trip: emitted `root` re-read yields the same types
   - [ ] A type emits as the declaration that was written, not an expanded or internal form
-  - [x] Re-running an emitted `root` that contains types is a fixpoint (covered by the existing round-trip check)
+  - [x] Re-running an emitted `root` under `$literal` is a data fixpoint, including type descriptions (covered by the existing round-trip check)
   - [ ] Annotations survive too: the saved state shows which type governed which value
 - [ ] `helix check` type-checks a program without running it or performing effects
   - [ ] Checks every annotation whose value is computable at type time and reports the rest as unchecked, never as passed
@@ -211,19 +211,19 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Declared types (records, unions, refinements and the rest)
   - [x] Equality on types is defined and documented (`eq` of two types)
   - [x] Functions are first-class values, so a refinement predicate or a type constructor can be stored and passed like a type
-- [x] Type constructors are ordinary functions from types (and values) to types (`[list_of, t]`, `[with_field, t, name, u]`)
+- [x] Type constructors are ordinary functions from types (and values) to types (`{$call: [list_of, {$ref: t}]}`, `{$call: [with_field, {$ref: t}, {$ref: name}, {$ref: u}]}`)
   - [x] Built-in formers accept computed types as arguments, not only literal names
   - [x] A user `fn` that returns a type is usable anywhere a type is expected
   - [x] Derive a type from another: add, drop or retype a field; make every field optional
   - [x] Build a type by iteration (`map`/`fold` over a list of field names)
   - [x] A constructor given a non-type argument fails with a `type` error blaming that argument
-- [x] Reflection (`types_reflection`, `types_first_class` golden cases): read a type's fields, defaults and parents as data; ask `[is, value, t]` and `[subtype, a, b]`
-  - [x] `[is, value, t]`
+- [x] Reflection (`types_reflection`, `types_first_class` golden cases): read a type's fields, defaults and parents as data; ask `{$call: [is, {$ref: value}, {$ref: t}]}` and `{$call: [subtype, {$ref: a}, {$ref: b}]}`
+  - [x] `{$call: [is, {$ref: value}, {$ref: t}]}`
     - [x] For scalar and collection type names and `any`; an unknown name is a `type` error
     - [x] For every declared type
   - [x] Read a record type's fields, each field's type, and its defaults as plain lists and maps
   - [x] Read a class's parents and its still-open fields
-  - [x] `[subtype, a, b]`, with documented rules per type former
+  - [x] `{$call: [subtype, {$ref: a}, {$ref: b}]}`, with documented rules per type former
   - [x] A value built by reflection re-reads as the same type (reflection and declaration are inverse)
 - [x] Type-time evaluation (`types_type_time`, `types_type_time_effect`; `type_time` suite): a well-defined phase that runs pure Helix to compute types, with a guarantee it performs no effects and terminates or fails cleanly
   - [x] Decided and documented: what marks type time (see Open questions)
@@ -418,7 +418,7 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 
 - `dogfood_classics`: FizzBuzz through 20, primes below 30, and word frequencies over inline text, including empty inputs, prime boundaries, repeated spaces and Unicode words. Friction: no string split builtin; tokenization folds over character slices and explicitly handles delimiters. Trial division is suitable only for small inputs. These are executable examples; the real-use milestone remains open.
 
-- `dogfood_config_diff`: added/removed/changed keys, nested value changes, null versus absence, unchanged and empty snapshots. Friction: building report records requires nested `set` calls because symbols in ordinary map values are literal data; nested changes are reported at the top-level key.
+- `dogfood_config_diff`: added/removed/changed keys, nested value changes, null versus absence, unchanged and empty snapshots. Explicit references now allow direct report maps; nested changes are still reported at the top-level key.
 
 - `dogfood_project_inventory`: missing required fields, duplicate names and dangling dependencies, plus valid and empty inventories. A declared record type now supplies required fields and collected nested violations; malformed rows retain their diagnostics without aborting duplicate and reference reporting.
 
@@ -510,7 +510,7 @@ The working tree contains Rust type, class and callable-value work beyond the es
 
 ### With a few explicit runtime services
 
-- [ ] Canonical formatting and state inspection: implement layout, state summaries and eventually migrations in Helix. Replacing `src/emit.rs` needs lossless scalar/source reflection, scalar-to-text and escaping support, plus a bootstrap output path that does not recursively invoke the formatter. Preserve quoted literals, expression heads, source spans and the existing round-trip fixpoint.
+- [ ] Canonical formatting and state inspection: implement layout, state summaries and eventually migrations in Helix. Replacing `src/emit.rs` needs lossless scalar/source reflection, scalar-to-text and escaping support, plus a bootstrap output path that does not recursively invoke the formatter. Preserve explicit literal boundaries, call/reference forms, source spans and the existing round-trip fixpoint.
 - [ ] Static checks as Helix graph passes: dependency/cycle diagnostics, annotation discovery and type reports for `helix check`. Requires access to the unevaluated graph, parent links, paths and spans without triggering effects; reuse the authoritative checker. Runtime cycle guards and resource limits remain enforced by the bootstrap.
 - [ ] Test and task orchestration: express case discovery, golden comparison, round-trip checks, mutation generation and build/lint invocation in Helix once file, process, argument and parsing effects exist (section 3). Keep `./manage.py` as the obvious root entrypoint and bootstrap launcher; replace its orchestration behind that interface rather than create a competing workflow. Host-level crash checks must still detect a broken interpreter.
   - [x] Pure test policy in `std:test`: assertions, expected errors, per-case recovery, table/state fixtures, bounded properties, differential checks and serializable reports. `dogfood_testing` composes selection, failure reruns, fixture factories, shrinking and nested suites; `std_test_failure` proves a failed report becomes a structured VM error. Host filesystem/process orchestration remains pending.
@@ -526,12 +526,12 @@ Move one complete responsibility at a time: a Helix module becomes the authorita
 
 Decide these before the features that depend on them.
 
-- [x] How are user-defined actors declared in YAML so they stay readable? `name: [fn, [params], body]`; called as `[name, args...]`
-- [x] What is the evaluation model for effects: pull, push, or explicit yield? Explicit yield: `[effect, operation, payload]` suspends until a caller-authorized host resolves the request.
+- [x] How are user-defined actors declared in YAML so they stay readable? `{name: {$call: [fn, [params], {$ref: body}]}}`; called as `{$call: [name, ...]}`
+- [x] What is the evaluation model for effects: pull, push, or explicit yield? Explicit yield: `{$call: [effect, {$ref: operation}, {$ref: payload}]}` suspends until a caller-authorized host resolves the request.
 - [ ] Does a suspended state embed the source, reference it, or both?
 - [x] Types are opt-in outside configs: unannotated code retains its behavior; `expect` and function parameter/result contracts enforce declared types (`types_annotations`; `LANGUAGE.md`).
 - [ ] Is inheritance nominal (declared parents) or structural (anything with the right fields satisfies a class), or both?
-- [x] Type time is an explicit `[type_time, expression]` region, with `phase: type` on failures; `check` collects diagnostics with the same evaluator (see `LANGUAGE.md`).
+- [x] Type time is an explicit `{$call: [type_time, {$ref: expression}]}` region, with `phase: type` on failures; `check` collects diagnostics with the same evaluator (see `LANGUAGE.md`).
 - [ ] How do parent classes merge: Nix-module-style priorities and merge functions, CUE-style unification, or linearized inheritance?
 - [ ] What is the story for secrets in persisted state?
 - [ ] Which parts of `flintwinters/helixcpp` are worth carrying over, and which are better left behind?

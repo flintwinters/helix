@@ -16,19 +16,19 @@ def check(ctx):
 
 
 def verify_checks(ctx):
-    for source in ('[div, 1, 0]', '[import, "does-not-exist.yaml"]',
-                   '[until, [fn, [x], false], [fn, [x], x], 0]',
-                   '[fn, [add], 42]', '["add", 1]'):
+    for source in ('{"$call": ["div", 1, 0]}', '{"$call": ["import", "does-not-exist.yaml"]}',
+                   '{"$call": ["until", {"$call": ["fn", ["x"], false]}, {"$call": ["fn", ["x"], {"$ref": "x"}]}, 0]}',
+                   '{"$call": ["fn", ["add"], 42]}', '["add", 1]'):
         result = ctx.helix('check', '-', stdin=source)
         report = yaml.safe_load(result.stdout)
         assert result.returncode == 0 and report['mode'] == 'static' and report['diagnostics'] == [], result
-    result = ctx.helix('check', '-', stdin='unused: [fn, [], [add, 1]]\nlazy: [if, true, 42, [sub, 1]]\n')
+    result = ctx.helix('check', '-', stdin='{"unused": {"$call": ["fn", [], {"$call": ["add", 1]}]}, "lazy": {"$call": ["if", true, 42, {"$call": ["sub", 1]}]}}')
     report = yaml.safe_load(result.stdout)
-    assert result.returncode == 1 and [d['path'] for d in report['diagnostics']] == ['/unused/2', '/lazy/3'], result
+    assert result.returncode == 1 and [d['path'] for d in report['diagnostics']] == ['/lazy/$call/3', '/unused/$call/2'], result
     for source in ('[', 'x: 1\nx: 2\n'):
         result = ctx.helix('check', '-', stdin=source)
         assert result.returncode == 1 and yaml.safe_load(result.stdout)['diagnostics'][0]['kind'] == 'parse', result
-    result = ctx.helix('check', '--evaluate', '-', stdin='[div, 1, 0]')
+    result = ctx.helix('check', '--evaluate', '-', stdin='{"$call": ["div", 1, 0]}')
     assert result.returncode == 1 and yaml.safe_load(result.stdout)['status'] == 'error', result
     schema = ctx.helix('schema')
     assert schema.returncode == 0 and json.loads(schema.stdout) == json.loads((ctx.root / 'editor/helix.schema.json').read_text()), schema
@@ -51,7 +51,7 @@ def verify_format(ctx):
         assert (again.returncode, again.stdout) == (0, formatted.stdout), (case.name, again)
     source = (ctx.root / 'tests/cases/tooling_source.yaml').read_text()
     formatted = ctx.helix('fmt', '-', stdin=source)
-    assert formatted.returncode == 0 and '"add"' in formatted.stdout, formatted
+    assert formatted.returncode == 0, formatted
     original = yaml.safe_load(ctx.helix('run', '-', stdin=source).stdout)
     after = yaml.safe_load(ctx.helix('run', '-', stdin=formatted.stdout).stdout)
     assert original['status'] == after['status'] == 'finished' and original['root'] == after['root'], (original, after)
@@ -79,8 +79,8 @@ def verify_lsp(ctx):
         {'id': 0, 'method': 'textDocument/formatting'},
         {'id': 1, 'method': 'initialize', 'params': {}},
         {'method': 'initialized', 'params': {}},
-        {'method': 'textDocument/didOpen', 'params': {'textDocument': {'uri': uri, 'version': 1, 'text': '"😀": [add, 1]'}}},
-        {'method': 'textDocument/didChange', 'params': {'textDocument': {'uri': uri, 'version': 2}, 'contentChanges': [{'text': '[add, 20, 22]'}]}},
+        {'method': 'textDocument/didOpen', 'params': {'textDocument': {'uri': uri, 'version': 1, 'text': '{"😀": {"$call": ["add", 1]}}'}}},
+        {'method': 'textDocument/didChange', 'params': {'textDocument': {'uri': uri, 'version': 2}, 'contentChanges': [{'text': '{"$call": ["add", 20, 22]}'}]}},
         {'id': 2, 'method': 'textDocument/formatting', 'params': {'textDocument': {'uri': uri}, 'options': {}}},
         {'id': 3, 'method': 'unknown'},
         {'method': 'textDocument/didClose', 'params': {'textDocument': {'uri': uri}}},
@@ -93,7 +93,7 @@ def verify_lsp(ctx):
     assert replies[0]['error']['code'] == -32002, replies
     assert replies[1]['result']['capabilities']['textDocumentSync']['change'] == 1, replies
     diagnostic = replies[2]['params']['diagnostics'][0]
-    assert diagnostic['code'] == 'arity' and diagnostic['range']['start']['character'] == 6, diagnostic
+    assert diagnostic['code'] == 'arity' and diagnostic['range']['start']['character'] == 7, diagnostic
     assert replies[3]['params']['diagnostics'] == [], replies
     formatted = replies[4]['result'][0]['newText']
     assert ctx.helix('exec', formatted).stdout == '42\n', formatted

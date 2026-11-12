@@ -1,5 +1,4 @@
 """Host observation and invocation for the auxiliary Helix inventory report."""
-import json
 import subprocess
 import sys
 from pathlib import Path
@@ -9,9 +8,11 @@ import yaml
 
 def report(helix, records):
     """Run the same pure shim used by golden cases; retain replayable source and state."""
-    source = (f'shim: [import, {json.dumps(str(Path(__file__).with_suffix(".yaml").resolve()))}]\n'
-              + yaml.safe_dump({"files": records}, allow_unicode=True, sort_keys=False, default_style='"')
-              + 'report: [shim.report, files]\n')
+    source = yaml.safe_dump({
+        "shim": {"$call": ["import", str(Path(__file__).with_suffix(".yaml").resolve())]},
+        "files": {"$literal": records},
+        "report": {"$call": ["shim.report", {"$ref": "files"}]},
+    }, allow_unicode=True, sort_keys=False)
     result = helix("run", "-", stdin=source)
     return source, result
 

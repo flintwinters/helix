@@ -1,18 +1,138 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Helix program",
-  "description": "A Helix program is a YAML value. Plain actor-first vectors are expressions; quoted heads are data. JSON Schema cannot distinguish YAML quoting or statically determine computed types. Use helix lsp for source diagnostics.",
+  "description": "Helix uses explicit singleton $call, $ref and $literal maps over YAML representation values. Strings are literal, sequences are data, and mapping presentation order has no execution meaning. Schema checks structural forms; helix lsp supplies source diagnostics.",
   "$ref": "#/$defs/value",
   "$defs": {
+    "data": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/data"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/data"
+          }
+        }
+      ]
+    },
     "value": {
       "oneOf": [
-        {"type": "null"},
-        {"type": "boolean"},
-        {"type": "number"},
-        {"type": "string"},
-        {"type": "array", "items": {"$ref": "#/$defs/value"}, "description": "Actor-first expression or ordinary list; quote the head to force data."},
-        {"type": "object", "additionalProperties": {"$ref": "#/$defs/value"}, "description": "Ordered named fields; names form lexical bindings."}
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/value"
+          },
+          "description": "Ordered data sequence with evaluated elements."
+        },
+        {
+          "$ref": "#/$defs/call"
+        },
+        {
+          "$ref": "#/$defs/reference"
+        },
+        {
+          "$ref": "#/$defs/literal"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/value"
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "$call"
+                ],
+                "maxProperties": 1
+              },
+              {
+                "required": [
+                  "$ref"
+                ],
+                "maxProperties": 1
+              },
+              {
+                "required": [
+                  "$literal"
+                ],
+                "maxProperties": 1
+              }
+            ]
+          },
+          "description": "Lexical fields evaluated in canonical string-key order."
+        }
       ]
+    },
+    "call": {
+      "type": "object",
+      "required": [
+        "$call"
+      ],
+      "properties": {
+        "$call": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/value"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "reference": {
+      "type": "object",
+      "required": [
+        "$ref"
+      ],
+      "properties": {
+        "$ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "literal": {
+      "type": "object",
+      "required": [
+        "$literal"
+      ],
+      "properties": {
+        "$literal": {
+          "$ref": "#/$defs/data"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

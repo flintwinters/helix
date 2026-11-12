@@ -27,11 +27,11 @@ This builds the runtime and runs:
 
 ```yaml
 x: 2
-y: [add, x, 1]
-z: [mul, [sub, y, 1], 5]
+y: {$call: [add, {$ref: x}, 1]}
+z: {$call: [mul, {$call: [sub, {$ref: y}, 1]}, 5]}
 ```
 
-An expression starts with an actor: `[add, x, 1]` adds one to `x`. The result is:
+An explicit call `{$call: [add, {$ref: x}, 1]}` adds one to `x`. The result is:
 
 ```yaml
 status: finished
@@ -42,12 +42,12 @@ root:
 ```
 
 The emitter quotes strings where YAML could otherwise change their meaning.
-An ordinary-data `root` can be run again and produces the same values. Functions and machines use named object inspection graphs; these are not executable snapshots.
+Wrap an ordinary-data `root` in `{$literal: ...}` to run it again without interpreting reserved maps as code. Functions and machines use named object inspection graphs; these are not executable snapshots.
 
 For a result without the state envelope:
 
 ```sh
-./manage.py runtime exec '[add, 20, 22]'
+./manage.py runtime exec '{$call: [add, 20, 22]}'
 # 42
 ```
 
@@ -60,12 +60,12 @@ For [jq](https://jqlang.org/manual/) and [yq](https://mikefarah.gitbook.io/yq/co
 pipelines, select an explicit output format so string results remain quoted data:
 
 ```sh
-helix exec --json '{answer: [add, 20, 22]}' | jq '.answer'
-helix exec --yaml '{answer: [add, 20, 22]}' | yq '.answer'
+helix exec --json '{answer: {$call: [add, 20, 22]}}' | jq '.answer'
+helix exec --yaml '{answer: {$call: [add, 20, 22]}}' | yq '.answer'
 ```
 
 Both flags work with `./manage.py runtime exec` and stdin. JSON input is accepted
-as YAML source; expression-shaped arrays still follow Helix evaluation rules.
+as YAML source with the same explicit call/reference forms. Arrays are data sequences.
 Use `set -o pipefail` to detect failures anywhere in a shell pipeline.
 The `pipeline` suite checks encodings and actual consumers when installed;
 CI requires `jq` and `yq` via `HELIX_REQUIRE_PIPELINE_TOOLS=1`.
@@ -74,17 +74,17 @@ CI requires `jq` and `yq` via `HELIX_REQUIRE_PIPELINE_TOOLS=1`.
 
 Helix has immutable values, lexical scope, functions, recursion, collections,
 imports, first-class types, and structured errors with source locations.
-Inside expressions, unquoted strings refer to names; quoted strings are literals.
+Strings are always literal; `{$ref: name}` looks up a name. `{$call: [actor, args...]}` calls an actor. Ordinary sequences are data, and `{$literal: data}` suppresses evaluation of its entire payload. Quoting style and map field order do not select behavior.
 
 This example is in [tests/cases/tutorial.yaml](tests/cases/tutorial.yaml):
 
 ```yaml
-math: [import, std:math]
-prices: [list, 3, 5, 8]
-square_price: [fn, [price], [math.square, price]]
-squared: [map, square_price, prices]
-valid: [assert, [eq, squared, [list, 9, 25, 64]], "unexpected squared prices"]
-recovered: [try, [div, 1, 0], [fn, [error], [get, error, "kind"]]]
+math: {$call: [import, 'std:math']}
+prices: {$call: [list, 3, 5, 8]}
+square_price: {$call: [fn, [price], {$call: [math.square, {$ref: price}]}]}
+squared: {$call: [map, {$ref: square_price}, {$ref: prices}]}
+valid: {$call: [assert, {$call: [eq, {$ref: squared}, {$call: [list, 9, 25, 64]}]}, unexpected squared prices]}
+recovered: {$call: [try, {$call: [div, 1, 0]}, {$call: [fn, [error], {$call: [get, {$ref: error}, kind]}]}]}
 ```
 
 Run it with `./manage.py run tests/cases/tutorial.yaml`. `squared` becomes
@@ -92,14 +92,24 @@ Run it with `./manage.py run tests/cases/tutorial.yaml`. `squared` becomes
 error as `divide_by_zero`. Change a price without updating the assertion to see
 a failure and its source location.
 
+Legacy actor-first arrays are no longer executable syntax. Convert old source
+explicitly with `./manage.py runtime migrate-syntax --write FILE` and review the
+result. Without `--write`, the command reports files that would change; expected outputs and malformed or unsupported negative fixtures are excluded. Run
+`./manage.py quality migration-audit --baseline REV` to compare migrated outcomes
+with prior golden expectations. Review data and diagnostic changes in
+`runtime/migration-audit/report.json` before blessing new expectations. The
+runtime never guesses legacy syntax. JSON/YAML formatting tools may change
+quoting, flow/block style or mapping presentation order without changing meaning.
+Acyclic aliases and standard YAML tags are supported. Cyclic aliases, custom tags and non-string mapping keys remain unsupported.
+
 See the [language reference](LANGUAGE.md) for syntax, builtins, types, imports,
 and recovery.
 
 ## Immutable execution
 
 Rust callers use `Vm::step(&self) -> Vm`, `run(&mut self)` and `inspect()`.
-Helix programs create ready children with `[vm, function]`, advance versions
-with `[step, child]`, and read state with `[inspect, child]`. Earlier versions
+Helix programs create ready children with `{$call: [vm, {$ref: function}]}`, advance versions
+with `{$call: [step, {$ref: child}]}`, and read state with `{$call: [inspect, {$ref: child}]}`. Earlier versions
 keep their meaning when another branch advances. See
 [`vm_parent_child.yaml`](tests/cases/vm_parent_child.yaml) for a complete example.
 Functions retain direct code and lexical environments. Calls, iterations,
@@ -185,7 +195,7 @@ exit 1, and invalid arguments or unreadable input exit 2.
 - `helix repl` evaluates independent YAML documents, one per line. Use `:begin`
   and `:end` for multiline input, `:cancel` to discard it, and `:quit` to leave.
 - `helix fmt program.yaml` writes canonical source to stdout. It preserves
-  executable quoting and verifies graph equivalence; comments and presentation
+  the YAML representation and verifies graph equivalence; comments and presentation
   are normalized. Save to a separate file before replacing the original.
 - `helix check program.yaml` parses and checks statically known builtin arities,
   including uncalled function bodies. It neither evaluates nor reads imports.
