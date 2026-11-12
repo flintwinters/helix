@@ -310,18 +310,48 @@ A type should read like the value it describes with the specifics left open: som
 
 Grow a coherent algebra of descriptions, with a stated meaning for each operation before choosing its syntax. Membership, subtyping and equivalence are different questions: checking one value must not be mistaken for proving a relationship between types. Every new former must compose with existing types, reflection, diagnostics and the YAML round trip.
 
-- [x] Define types by the values they admit, with explicit top (`any`) and bottom (`never`, no inhabitants), and distinguish bottom from the literal `null` type (`types_bottom` golden case)
-- [ ] Add intersections alongside unions; document their interaction with refinements, optional fields and open/closed records
-- [ ] Define the subtyping order and type equivalence; decide when equivalent declarations compare equal and how that relates to ordinary `eq`
-- [ ] Define union as least upper bound and intersection as greatest lower bound wherever the supported fragment can represent them; specify any approximation explicitly
-- [ ] Expand collection descriptions with fixed-length tuples, heterogeneous positions, typed map keys and record row constraints; state width/depth subtyping rules
-- [ ] Add function types with parameter/result variance and explicit effect contracts, including the purity required of type-time functions
-- [ ] Support named recursive types with explicit rules for guardedness, unfolding, equality and termination of checking; distinguish recursive descriptions from erroneous evaluation cycles
-- [ ] Explore type difference, complement and negation only with a defined universe and a documented decidable fragment; do not promise closure where the implementation cannot provide it
-- [ ] Specify refinement implication and constraint composition: which facts are decidable, which require evidence, and which remain unknown
-- [ ] Normalize types without losing their original declarations or provenance; document whether normalization is canonical and when it preserves meaning
-- [ ] Connect inheritance to the algebra: inherited constraints combine by intersection, while default selection and explicit overrides have separately stated rules
-- [ ] For each former, document membership, subtyping, equivalence, reflection, serialization and failure behavior, with positive, negative and boundary golden cases
+- [ ] Complete the value-set algebra
+  - [x] Define types by the values they admit, with explicit top (`any`) and bottom (`never`, no inhabitants), distinct from the literal `null` type (`types_bottom` golden case)
+  - [ ] Add intersections alongside unions; document their interaction with refinements, optional fields and open/closed records
+  - [ ] Define union as least upper bound and intersection as greatest lower bound wherever the supported fragment can represent them; specify approximations explicitly
+  - [ ] Explore difference, complement and negation only within a defined universe and documented decidable fragment
+- [ ] Extend structured collection types
+  - [ ] Fixed-length tuples and heterogeneous positions
+  - [ ] Typed map keys
+  - [ ] Record row constraints and explicit width/depth subtyping rules
+- [ ] Add function-signature types beyond the current coarse `function` membership check and per-call annotations
+  - [ ] Describe parameter and result types, including higher-order functions
+  - [ ] Define parameter/result variance and callable compatibility
+  - [ ] Express effect contracts, including the purity required of type-time functions
+- [ ] Support named recursive types
+  - [ ] Define guardedness, unfolding, equality and termination of checking
+  - [ ] Distinguish recursive descriptions from erroneous evaluation cycles
+- [ ] Make type relationships and equivalence explicit
+  - [ ] Define the subtyping order and semantic equivalence separately from structural declaration `eq`
+  - [ ] Specify refinement implication and constraint composition: which facts are decidable, require evidence or remain unknown
+  - [ ] Normalize types without losing original declarations or provenance; state when normalization is canonical and preserves meaning
+- [ ] Connect inheritance to the algebra
+  - [ ] Combine inherited constraints by intersection
+  - [ ] State default selection and explicit override rules separately from membership
+- [ ] Integrate every new former with the existing type system
+  - [ ] Document membership, subtyping, equivalence, reflection, serialization and failure behavior
+  - [ ] Cover positive, negative and boundary behavior with golden cases
+
+### Static checking and inference
+
+Current annotations and refinements enforce contracts during evaluation. `type_time` explicitly evaluates pure code; it does not infer types or prove unexecuted code safe. The non-executing `check` command provides conservative diagnostics, while `check --evaluate` collects evaluation failures. The goals below extend those boundaries; the formal guarantees belong under "Strengthening and proving the type system."
+
+- [ ] Define a statically checkable fragment and the guarantees a successful check provides
+  - [ ] Check annotated function bodies without calling them
+  - [ ] Check both conditional branches without executing their effects
+  - [ ] Report dynamic or value-dependent obligations as unchecked rather than passed
+- [ ] Decide the scope of type inference
+  - [ ] Infer supported expression and binding types using the authoritative type algebra
+  - [ ] Specify where annotations are required and how inferred types interact with unannotated code
+- [ ] Connect static results to runtime contracts
+  - [ ] Reuse the authoritative membership and subtype rules instead of maintaining competing semantics
+  - [ ] Retain runtime checks for obligations outside the supported static fragment
+  - [ ] Produce structured diagnostics with source blame and explicit unknown/resource-exhausted outcomes
 
 ### Strengthening and proving the type system
 
