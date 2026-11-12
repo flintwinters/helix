@@ -1,0 +1,28 @@
+# Pure review only: explicit host observations and caller command grants are
+# required for check/apply. The guard is also the postcondition, not a claim
+# that arbitrary commands are inherently idempotent or reversible.
+$call:
+- let
+- command: {$call: [import, 'std:command']}
+  migration:
+    $call:
+    - command.make
+    - id: example.schema-migration
+      revision: '1.0.0'
+      platforms: [example-linux]
+      capabilities: [command]
+      observation: {$ref: string}
+      observe: {$call: [fn, [args], {$call: [raise, example_requires_host, Supply an authorized schema-version observer]}]}
+      guard: {$call: [fn, [args, before], {$call: [ne, {$ref: before}, v2]}]}
+      failed: {$call: [fn, [args, reply], {$call: [ne, {$call: [get, {$ref: reply}, code]}, 0]}]}
+      changed: {$call: [fn, [args, reply], {$call: [eq, {$call: [get, {$ref: reply}, stdout]}, "migrated\n"]}]}
+- $call:
+  - command.plan
+  - {$ref: migration}
+  - program: /usr/local/bin/migrate-schema
+    args: [--target, v2]
+  - v1
+  - platform: example-linux
+    capabilities: [command]
+    managed: true
+    allow_remove: false

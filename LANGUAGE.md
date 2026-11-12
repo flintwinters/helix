@@ -182,6 +182,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:validation` | `batch(values, validate)` (indexed validation and transformation reports) |
 | `std:dependency` | `plan(tasks)` (stable dependency batches and blocked-task report) |
 | `std:provider` | `plan(provider, args, before, context)`, `check(provider, args, context)`, `apply(provider, args, context, reviewed)` ([typed resource lifecycle](#resource-provider-contract)) |
+| `std:command` | `make(config)`, `plan`, `check`, `apply` ([guarded command resources](#guarded-command-resources)) |
 | `std:orchestration` | `plan(document)`, `run(document, execute)` (validated resource dependencies and coalesced, deferred change handlers) |
 | `std:types` | `from_fields(specs)`, `without_field(t,name)`, `optional_field(spec)`, `optional_fields(t)` |
 | `std:math` | `number` (numeric type), `abs(n)`, `sign(n)`, `min(a,b)`, `max(a,b)`, `clamp(n,lo,hi)`, `square(n)` |
@@ -426,7 +427,7 @@ The outcome vocabulary is `unchanged`, `changed`, `failed`, `skipped` and
 its supported status and optional string `details`; explicitly map `unsupported`
 to `failed` or `skipped` according to caller policy. Do not pass the full provider
 report as an orchestration outcome or notify handlers from a preview's `changed`
-status. This contract supplies no platform resource library, durable recovery,
+status. This lifecycle contract itself supplies no platform resource library, durable recovery,
 secret redaction, rollback or exactly-once external execution guarantee.
 
 Run the [pure planning example](tests/programs/provider_contract.yaml) with
@@ -436,6 +437,57 @@ changes real files under its project-local artifacts directory, checks state
 independently, and exercises rejected previews, stale reviews and failed
 postconditions. These are lifecycle conformance tests, not a supported file
 resource implementation.
+
+### Guarded command resources
+
+`std:command` adapts arbitrary local commands to the [provider lifecycle](#resource-provider-contract).
+It requires an explicit observation function, execution guard, change predicate
+and failure predicate. There is no default exit-code policy, inferred idempotence
+or reversibility. Use `make(config)` to construct a provider and the module's
+`plan(provider, args, before, context)`, `check(provider, args, context)` and
+`apply(provider, args, context, reviewed)` functions to operate it.
+
+Configuration supplies `id`, `revision`, `platforms`, `capabilities`, the
+`observation` type, and these callbacks:
+
+| Callback | Contract |
+| --- | --- |
+| `observe(args)` | Read-only trusted callback returning ordinary observation data; unknown or inaccessible state must fail |
+| `guard(args, before)` | Pure boolean: `true` requests execution; `false` means the postcondition already holds |
+| `failed(args, reply)` | Pure boolean: `true` rejects the command result |
+| `changed(args, reply)` | Pure boolean classifying a successful command's actual change |
+
+`capabilities` must include `command` and any capabilities needed by observation.
+Command replies contain `code`, `stdout` and `stderr`; successful application
+results contain `{reply, changed}`. Predicate rejection returns a structured
+`command_failed` error with the reply attached.
+
+Arguments are the existing command payload, `{program: string, args: [string, ...]}`.
+The host executes the program directly with that argument vector; shell expansion
+requires explicitly selecting a shell. Host executable grants, time/output limits,
+cancellation and retry policy remain those of the existing command adapter.
+Capability names in configuration and context confer no authority.
+
+Planning evaluates the guard without running the command. Application requires
+an exact fresh review match, executes once through the effect boundary, and
+re-observes: the guard must then be false. A successful command exit or a false
+change predicate cannot bypass this postcondition. Failure takes precedence over
+change classification. Predicates execute in `type_time` and must return booleans.
+
+Use `std:command.apply` for the final outcome: after successful verification it
+reports `changed` or `unchanged` according to the change predicate. Calling the
+generic `std:provider.apply` directly retains its planned-change status instead.
+A preview's `changed` means execution is proposed; it does not predict whether
+the command will report an actual change. Raw command output is not a content
+diff, and this adapter does not redact secrets. The existing provider caveats
+about trusted callbacks, declared revisions, file-import purity, races between
+observation and mutation, partial failures and lack of rollback all apply.
+
+The [pure example](tests/programs/command_provider.yaml) demonstrates the explicit
+policy. `./manage.py test --suite command_provider` exercises real subprocesses
+and independently inspects project-local files. This supports the bundled local
+adapter; it does not supply SSH transport or qualify arbitrary programs as safe,
+idempotent resource implementations.
 
 ### Pinned dependencies
 

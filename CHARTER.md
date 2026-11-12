@@ -600,7 +600,17 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Services: enabled/running state, reload/restart policy and readiness checks
   - [ ] Users and groups: membership, ownership implications and authorized keys with explicit removal semantics
   - [ ] Artifacts: authenticated retrieval where needed, pinned versions and integrity verification before use
-  - [ ] Arbitrary commands: explicit guards and change/failure predicates; no implied idempotence or reversibility
+  - [x] Arbitrary commands: explicit guards and change/failure predicates; no implied idempotence or reversibility
+    - Evidence: `./manage.py test --suite command_provider` exercises 31 scenarios
+      for `std:command` through the existing provider lifecycle and bundled local
+      command host. Independent process logs and file assertions cover previews,
+      guarded no-ops, drift repair, stale reviews, argument boundaries, authority
+      denial, explicit failure/change classification and unmet postconditions.
+      Predicates are pure and boolean-checked; verification requires a fresh
+      satisfied guard. See the [example](tests/programs/command_provider.yaml)
+      and [contract](LANGUAGE.md#guarded-command-resources). Preview describes
+      proposed execution, not predicted content changes. SSH, secret redaction,
+      locking, rollback and durable recovery remain separate obligations.
 - [ ] Compose resources and reusable configurations without a second execution model
   - [ ] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
   - [ ] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
