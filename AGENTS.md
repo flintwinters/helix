@@ -84,4 +84,4 @@ The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items 
 
 - Trust verification: `semantics` maintains an actor/result/arity/type-failure census; `type_algebra` owns independent structural membership oracles; `memory` samples Linux peak RSS; `mutants` compiles isolated faults under `runtime/`. Keep witnesses current when adding actors, and preserve future suspension/effect/versioning obligations in Charter section 7.
 
-- Speed benchmarks: `./manage.py test --suite speed` measures repeated debug CLI workloads with warmup and semantic checks; replay inputs, raw timings and environment metadata live in `runtime/speed/`. Timing reports are observational; interpreter timeouts remain enforced.
+- Speed benchmarks: `./manage.py test --suite speed` measures repeated debug CLI workloads with warmup and semantic checks; replay inputs, raw timings and environment metadata live in `runtime/speed/`. Timing reports are observational; interpreter timeouts remain enforced. Fixed historical baselines are scoped by workload epochs in `tests/suites/speed.py`; advance affected epochs only after measured improvements, retaining historical reports.

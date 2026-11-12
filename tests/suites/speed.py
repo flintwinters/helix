@@ -14,6 +14,9 @@ import yaml
 
 SAMPLES = 5
 WARMUPS = 1
+# Advance only after a verified optimization warrants a new fixed reference.
+# Missing epochs in historical reports belong to the original baseline.
+BASELINE_EPOCHS = {"slice-ascii": 3, "slice-unicode": 3}
 
 
 def repeated(expression, expected, count, bindings):
@@ -25,6 +28,10 @@ def repeated(expression, expected, count, bindings):
 def workloads():
     yield "arithmetic-map", "".join(f"v{i}: [add, {i}, 1]\n" for i in range(1000)), {f"v{i}": i + 1 for i in range(1000)}, 1000
     yield "function-loop", repeated("[sub, [add, n, 1], n]", "1", 2000, {}), 2000, 2000
+    values = {f"value{i}": i for i in range(100)}
+    emitted = "".join(f"value{i}: {i}\n" for i in range(100))
+    yield "yaml-dump-map", repeated("[len, [yaml_dump, value]]", str(len(emitted)), 200,
+                                     {"value": values}), 200, 200
     for name, text in (("slice-ascii", "abcdefgh" * 1000), ("slice-unicode", "é雪🙂a" * 2000)):
         yield name, repeated("[slice, text, 3999, 4003]", json.dumps(text[3999:4003], ensure_ascii=False), 200, {"text": text}), 200, 200
     key = "lookup-key-" * 400
@@ -42,7 +49,8 @@ def history_comparison(base, environment, name, source_hash, samples):
             if previous.get("comparison_environment") != environment:
                 continue
             for row in previous["measurements"]:
-                if row["workload"] == name and row.get("source_sha256") == source_hash:
+                if (row["workload"] == name and row.get("source_sha256") == source_hash
+                        and row.get("baseline_epoch", 1) == BASELINE_EPOCHS.get(name, 1)):
                     medians.append(row["median_seconds"])
         except (OSError, ValueError, KeyError, TypeError):
             continue
@@ -85,7 +93,8 @@ def verify(h):
             program = artifact / f"{name}.yaml"
             program.write_text(source)
             samples = []
-            measurement = {"workload": name, "operations_per_run": operations, "seconds": samples}
+            measurement = {"workload": name, "baseline_epoch": BASELINE_EPOCHS.get(name, 1),
+                           "operations_per_run": operations, "seconds": samples}
             report["measurements"].append(measurement)
             for index in range(WARMUPS + SAMPLES):
                 started = time.perf_counter_ns()
@@ -133,3 +142,12 @@ def verify_comparison(base):
             assert history_comparison(root, {}, "w", "hash", samples)["status"] == expected
         assert history_comparison(root, {"host": "other"}, "w", "hash", [2] * 5)["status"] == "no baseline"
         assert history_comparison(root, {}, "w", "changed", [2] * 5)["status"] == "no baseline"
+        # Old slice reports remain readable but cannot hide a post-optimization regression.
+        report = {"comparison_environment": {}, "measurements": [
+            {"workload": "slice-ascii", "source_sha256": "hash", "median_seconds": 1}]}
+        path = run / "report.json"
+        path.write_text(json.dumps(report))
+        assert history_comparison(root, {}, "slice-ascii", "hash", [2] * 5)["status"] == "no baseline"
+        report["measurements"][0]["baseline_epoch"] = BASELINE_EPOCHS["slice-ascii"]
+        path.write_text(json.dumps(report))
+        assert history_comparison(root, {}, "slice-ascii", "hash", [2] * 5)["status"] == "SLOWDOWN"
