@@ -29,5 +29,5 @@ The ultimate application is declarative machine configuration through first-clas
 
 1. Expand production dogfooding through test and task orchestration: move complete policy responsibilities into Helix while retaining independent bootstrap and host failure detection. Preserve immutable execution, effect boundaries and structural diagnostics; fix underlying design problems instead of suppressing findings.
 2. Design validated, versioned disk snapshots and reversibility-promise syntax, preserving complete explicit continuation state and readable execution references.
-3. Build declarative machine application on capability-controlled effects; extend replay and interruption guarantees alongside validated disk snapshots, then extend CLI stepping and inspection into an interactive debugger.
+3. Build declarative machine application on capability-controlled effects, using the scoped Ansible replacement roadmap in `CHARTER.md` section 11; extend replay and interruption guarantees alongside validated disk snapshots, then extend CLI stepping and inspection into an interactive debugger.
 4. Preserve evaluated-value source locations beyond errors/inspection, and maintain the explicit YAML representation model as syntax and tooling evolve.

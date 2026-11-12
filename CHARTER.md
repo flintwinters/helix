@@ -523,6 +523,113 @@ Move one complete responsibility at a time: a Helix module becomes the authorita
 
 ---
 
+## 11. Replacing Ansible
+
+Replacement means operating real machines reliably within a declared support scope, not merely invoking shell commands from YAML. Start with Linux hosts reached locally or over SSH; expand the supported platforms and resources from demonstrated needs. Playbook syntax compatibility and parity with every Ansible collection are not initial requirements. A scoped replacement must state what it cannot manage.
+
+Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependency` and the existing effect engine. Section 8 owns configuration resolution, pure planning and realization semantics; sections 2–3 own snapshots and host effects. This section owns the operational capabilities and acceptance evidence needed to turn those foundations into an Ansible replacement. Existing data comparison and in-memory effect records are foundations, not completed machine management.
+
+### First useful replacement: one Linux host
+
+- [ ] Replace one real configuration playbook with an end-to-end Helix configuration
+  - [ ] Declare a package, a managed configuration file and a service using the existing machine vocabulary
+  - [ ] Observe their actual state through authorized effects and produce a plan using section 8's realization contract
+  - [ ] Review and explicitly apply that plan, then verify the resulting state independently
+  - [ ] A second run performs no mutations; deliberately introduced drift produces only the necessary repair
+  - [ ] Demonstrate both local execution and SSH execution on a disposable host
+  - [ ] Record the supported distribution, resource semantics and remaining limitations alongside the example
+
+### Inventory, connections and observed state
+
+- [ ] Select and describe hosts without implicit configuration precedence
+  - [ ] Typed inventory supports stable host identities, groups, connection settings and explicit overrides with provenance
+  - [ ] Host/group selection and exclusions resolve to a reviewable target list before mutation
+  - [ ] Dynamic inventory is an explicit host input with validation; discovery never runs inside pure configuration resolution
+  - [ ] Missing hosts, duplicate identities and incompatible settings produce structured diagnostics
+- [ ] Supply dependable local and SSH host adapters through the existing effect boundary
+  - [ ] SSH supports host-key verification, existing key/agent authentication, connection reuse and jump-host configuration
+  - [ ] Privilege escalation is explicitly authorized and distinguishes connection identity from execution identity
+  - [ ] Remote argument transport and file transfer preserve bytes and prevent accidental shell interpretation
+  - [ ] Connection, authentication, privilege, transport and remote-command failures remain distinguishable
+  - [ ] Document and check managed-host prerequisites; bootstrap missing prerequisites through an explicit supported path
+- [ ] Gather typed facts and resource observations for realization
+  - [ ] Detect supported operating systems, package managers and service managers before selecting adapters
+  - [ ] Observations carry host identity and freshness information; unknown or inaccessible state is never treated as absence
+  - [ ] Cached facts have explicit invalidation rules; relevant state is refreshed before applying a potentially stale plan
+
+### Resource providers and change semantics
+
+- [ ] Establish one discoverable provider contract for observation, planning, application and verification
+  - [ ] Providers declare argument/result types, capabilities, supported platforms, check/diff support and failure behavior
+  - [ ] Distinguish unchanged, changed, failed, skipped and unsupported outcomes using structured data
+  - [ ] Pure plan generation shares section 8's semantics; a dry run never silently applies a resource whose preview is unsupported
+  - [ ] Re-observe after mutation and report unmet postconditions instead of trusting a successful command exit alone
+  - [ ] Define ownership and deletion explicitly so absent configuration does not accidentally remove unmanaged resources
+- [ ] Implement a useful initial resource library behind that contract
+  - [ ] Packages and repositories: presence, absence, versions, metadata refresh and package-manager locking
+  - [ ] Files, directories and links: content, ownership, permissions, atomic replacement and explicit removal
+  - [ ] Configuration rendering: deterministic templates, validation before installation and reviewable content diffs
+  - [ ] Services: enabled/running state, reload/restart policy and readiness checks
+  - [ ] Users and groups: membership, ownership implications and authorized keys with explicit removal semantics
+  - [ ] Artifacts: authenticated retrieval where needed, pinned versions and integrity verification before use
+  - [ ] Arbitrary commands: explicit guards and change/failure predicates; no implied idempotence or reversibility
+- [ ] Compose resources and reusable configurations without a second execution model
+  - [ ] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
+  - [ ] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
+  - [ ] Reusable configuration modules expose typed inputs, outputs and versioned dependencies using existing imports and functions
+
+### Fleet orchestration and failure recovery
+
+- [ ] Run across a fleet with bounded, observable scheduling
+  - [ ] Support concurrency limits, serial batches, canaries and explicit failure thresholds
+  - [ ] Express cross-host dependencies and controller/delegated tasks with unambiguous execution targets and authority
+  - [ ] Gate rolling changes on health checks and stop subsequent batches when the declared policy fails
+  - [ ] Support reboot, disconnect and reconnect workflows with bounded readiness waits
+- [ ] Make long-running operations practical
+  - [ ] Replace the bundled host's fixed 10-second command deadline with caller-controlled bounded timeouts
+  - [ ] Support bounded output capture and progress reporting for package installs and deployments
+  - [ ] Define cancellation and descendant-process cleanup so a timed-out controller does not silently leave mutations running
+  - [ ] Retry only explicitly classified transient failures with bounded attempts and delays
+- [ ] Recover safely from partial application, building on section 2's durable snapshots
+  - [ ] Persist plan identity, target identity, provider versions and step outcomes; resumed runs obtain fresh caller grants
+  - [ ] Distinguish not started, completed, failed and uncertain outcomes when a controller or connection dies during a mutation
+  - [ ] Resolve uncertain outcomes by observation or provider-supported deduplication before replay; branch-local effect IDs do not establish exactly-once external execution
+  - [ ] Detect stale plans and conflicting concurrent controllers through preconditions and suitable locking
+  - [ ] Expose partial success and pending work; recovery never reports an entire fleet successful because some hosts completed
+  - [ ] Declare compensations and irreversible operations explicitly; external rollback is not implied by immutable VM state
+
+### Credentials, operator workflows and extensibility
+
+- [ ] Complete section 8's secret-reference contract throughout the operational stack
+  - [ ] Resolve credentials only at authorized host boundaries and support external secret providers
+  - [ ] Prevent secret disclosure through command arguments, captured output, errors, diffs, logs and persisted state
+  - [ ] Separate inventory data from authority; remote credentials, escalation and provider capabilities remain caller grants
+- [ ] Provide discoverable configuration-management commands and reports
+  - [ ] Expose resolve, observe, plan, apply and verify workflows with target selection and explicit apply authorization
+  - [ ] Report per-host/per-resource outcomes, source paths, changes and failure causes as concise text and versioned machine-readable data
+  - [ ] Document exit statuses for clean runs, drift, partial failure and invalid configuration for CI use
+  - [ ] Provide a supported installation and upgrade path with clear controller/managed-host compatibility requirements
+- [ ] Grow provider coverage without coupling the interpreter to every managed system
+  - [ ] Publish a versioned provider interface with capability checks, dependency pinning and compatibility diagnostics
+  - [ ] Add conformance tests that third-party providers can run through the same project tooling
+  - [ ] Publish a support matrix; qualify additional operating systems, cloud APIs and network devices separately as demand requires
+  - [ ] Document migration of representative inventories, reusable roles, handlers and playbooks, including unsupported semantics
+
+### Evidence required before calling it a replacement
+
+- [ ] Maintain repeatable infrastructure tests behind `./manage.py`, using disposable hosts and explicit test capabilities
+  - [ ] Exercise each supported provider/platform combination against actual host state, not only mocked command output
+  - [ ] Verify clean installation, repeated no-op application, drift repair, preview accuracy and preservation of unmanaged state
+  - [ ] Inject authentication failures, permission denial, stale observations, network loss and controller death at mutation boundaries
+  - [ ] Verify recovery, secret redaction, target selection, concurrency limits and failure thresholds independently of Helix's own reports
+  - [ ] Measure realistic fleet sizes, slow operations and retained execution history against declared resource budgets
+- [ ] Retire Ansible for a declared real workload after a documented migration trial
+  - [ ] Establish equivalent intended host state and operator-visible failures without requiring identical task syntax
+  - [ ] Operate routine changes and recover from a deliberately interrupted deployment using Helix alone
+  - [ ] Keep examples, provider support claims and operational limitations aligned with the tested implementation
+
+---
+
 ## Open questions
 
 Decide these before the features that depend on them.
