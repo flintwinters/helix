@@ -8,6 +8,8 @@ Make execution as readable and explicit as source. Prioritize structured, agent-
 
 The ultimate application is declarative machine configuration through first-class types: resolve a machine description purely before applying effects (`CHARTER.md`). The type/class algebra, pure regions, constraints, state comparison and explicit host effects exist. Declarative machine application and the reversibility promise remain future work. Keep the build bootstrap independent of Helix execution.
 
+Complexity must earn its place through concrete workloads. `CHARTER.md` section 12 governs feature admission and consolidation; roadmap entries alone do not justify expansion. Prefer completing a defining workload and reducing semantic interactions over adding surface or moving code merely to increase dogfooding.
+
 ## Architecture
 
 - Project tooling defaults to concise, scoped text with actionable failures; complete versioned JSON is explicit. Optimize agent output for decision-relevant information and progressive discovery, not serialization alone. Wrappers preserve language and pipeline wire contracts.
@@ -32,6 +34,8 @@ The ultimate application is declarative machine configuration through first-clas
 - Tests combine golden source/error contracts, ordinary-data fixpoints, dogfooded laws, public execution APIs, retained-state and pause checks, capability/resource boundaries, mutation sensitivity, and time/memory observations. `manage.py` is the authoritative tooling entrypoint; command discovery lives in `tooling/cli.py`, and `tooling/test_runner.py` owns explicit per-run test contexts. Operational guidance belongs in `README.md`, `LANGUAGE.md` and `tests/README.md`.
 
 ## Current Big Tasks
+
+Consolidation takes priority under `CHARTER.md` section 12: select one defining workload, audit the semantics it needs and defer unrelated expansion. The target selection remains open.
 
 1. Expand production dogfooding through test and task orchestration: move complete policy responsibilities into Helix while retaining independent bootstrap and host failure detection. Preserve immutable execution, effect boundaries and structural diagnostics; fix underlying design problems instead of suppressing findings.
 2. Design validated, versioned disk snapshots and reversibility-promise syntax, preserving complete explicit continuation state and readable execution references.

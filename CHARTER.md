@@ -20,6 +20,8 @@ a whole; the individual argument-source-blame obligation also remains open.
 
 **Where we are:** a resource-bounded expression language with a pure core, first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. Caller-authorized host effects, in-memory interruption, file imports and pure error recovery work; disk suspend/resume and declarative machine application remain ahead.
 
+**Admission rule:** unchecked items are possibilities, not authorization to expand the language. Section 12 governs additions across this charter. Prefer completing a defining workload and simplifying existing semantics over opening another feature family.
+
 ---
 
 ## 0. Foundation — complete
@@ -701,6 +703,45 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Establish equivalent intended host state and operator-visible failures without requiring identical task syntax
   - [ ] Operate routine changes and recover from a deliberately interrupted deployment using Helix alone
   - [ ] Keep examples, provider support claims and operational limitations aligned with the tested implementation
+
+---
+
+## 12. Complexity backpressure and consolidation
+
+Helix earns its complexity through readable programs, understandable execution and completed real workloads. Small syntax, fewer Rust lines, more Helix code and more checked boxes do not establish simplicity. Count the concepts a user must learn, the interactions an implementer must preserve and the obligations an operator must meet. Library APIs and data protocols also carry these costs.
+
+### Admission and stopping rules
+
+These rules apply continuously, including to features already listed above. Record the reasoning in the change description and existing reference documentation; do not create a parallel approval system or feature ledger.
+
+- Every new public concept, builtin, evaluation rule or protocol must name a concrete failing workload, show the closest solution using existing facilities, and explain why that solution is insufficient. Hypothetical extensibility and parity with another language are insufficient reasons.
+- Prefer ordinary functions and explicit composition. A new runtime mechanism must identify the semantic or measured resource requirement that existing modules and functions cannot meet. Moving an implementation into Helix does not by itself simplify its public contract.
+- Explain the added obligations: user-visible rules, affected interactions, diagnostics, resource costs and compatibility. State what existing mechanism is removed or consolidated, or why a net increase is necessary for the workload. Do not force unrelated removals to satisfy a feature-count quota.
+- Evaluation changes must account for their affected interactions with lexical scope, laziness, memoization, error handling, effects, stepping and retained machines. Use focused regressions through `./manage.py` to demonstrate observable behavior; avoid a second evaluator or an exhaustive combinatorial test project.
+- When supporting machinery expands beyond the chosen workload, narrow or defer the feature. Correctness, security and diagnostic repairs remain necessary; a repair that introduces new semantics still needs the same justification.
+- Simplification must preserve required behavior or explicitly migrate it. Do not hide complexity by dropping independent failure detection, weakening tests, suppressing diagnostics or omitting limitations.
+
+### Finish one defining workload before broadening
+
+- [ ] Select and record one active consolidation target here: either fresh-process restoration of a paused execution from section 2, or the first real-machine configuration from section 11. Define its smallest useful end-to-end acceptance case and the facilities it actually requires. Selection remains open; neither target is complete.
+- [ ] Complete that target using the existing architecture wherever possible, with repeatable acceptance evidence through `./manage.py`, an example a user can follow and explicit remaining limitations. Supporting frameworks alone do not close this item.
+- [ ] Until that evidence exists, defer unrelated language expansion, provider/platform breadth and dogfooding migrations pursued only to increase the amount of Helix code. Keep the independent bootstrap and host failure detection. Replacing the active target requires recording why it failed to provide useful evidence and what work is being deferred.
+- [ ] After completion, review which mechanisms the workload used, which complicated it and which remain speculative. Remove, consolidate or explicitly defer unnecessary surface before selecting the next expansion. Completion does not automatically authorize the rest of the roadmap.
+
+### Consolidate the existing semantic surface
+
+The audit must produce decisions and executable examples, not just an inventory. Retaining a mechanism is a valid result when its distinct purpose and cost are demonstrated. Any behavior change needs a documented migration and regression coverage.
+
+- [ ] Audit `type_time` and preflight as one evaluation contract: explain when work runs, what inputs it may depend on and how failures are caught. Exercise placement under bindings, calls, branches and handlers, and dependencies on effects. Prefer a uniform rule; justify each remaining context-sensitive exception with a required workload.
+- [ ] Audit the type/class/configuration boundaries: membership, realization, subtyping, fixed values, constraints and drift/convergence. Demonstrate which questions genuinely differ and consolidate overlapping mechanisms without conflating those questions.
+- [ ] Audit builtin and standard-library responsibilities against actual callers. Remove redundant convenience paths where ordinary composition is clear; retain primitives where semantics or measured costs require them. Namespacing or relocating code alone does not close this item.
+- [ ] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
+- [ ] Separate the core language reference from library catalogs and host-operation manuals, retaining discoverable links and one authoritative description per contract. A basic program should not require learning provider lifecycles or command retry policy.
+
+### Evidence that consolidation helped
+
+- [ ] For each completed consolidation, show the same required workload before and after, identify the rules or competing paths removed and run the relevant existing acceptance checks. Include realistic resource observations when the change affects cost. Report remaining complexity plainly; line counts and builtin counts are supporting observations, never success criteria by themselves.
+- [ ] Reconcile this charter and `AGENTS.md` after consolidation: remove superseded ambitions and duplicate obligations, preserve unresolved promises and make the next active target obvious. Keep operational detail in the tooling and reference documentation.
 
 ---
 
