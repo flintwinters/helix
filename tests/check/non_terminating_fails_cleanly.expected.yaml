@@ -1,5 +1,5 @@
 status: error
-phase: type
+mode: check
 errors:
   - kind: limit
     message: "`until` did not finish within 100000 steps"

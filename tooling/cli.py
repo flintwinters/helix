@@ -107,6 +107,8 @@ def parser():
                       ["quality", "test"], "quality test --suite golden --suite cli")
     testing.add_argument("--bless", action="store_true", help="rewrite golden expectations; requires only golden or default suite selection")
     testing.add_argument("--suite", action="append", choices=SUITES, help="repeat to select suites; default: all")
+    testing.add_argument("--case", action="append", metavar="GLOB",
+                         help="filter fixture stems or repository-relative paths; repeat for a union; requires golden/robustness suites only")
     testing.add_argument("--jobs", type=int, default=DEFAULT_TEST_JOBS, metavar="N",
                          help="golden/robustness case workers (default: %(default)s; 1 runs serially)")
     testing.add_argument("--list", action="store_true", help="list suite names without building")
@@ -167,6 +169,8 @@ def parse(argv):
         return None
     if args.command == "test" and args.jobs < 1:
         args.help_parser.error("--jobs must be positive")
+    if args.command == "test" and args.case and (not args.suite or set(args.suite) - {"golden", "robustness"}):
+        args.help_parser.error("--case requires explicit --suite golden and/or --suite robustness")
     if args.command == "test" and args.bless and args.suite and set(args.suite) != {"golden"}:
         args.help_parser.error("--bless requires --suite golden (or no suite selection)")
     return args

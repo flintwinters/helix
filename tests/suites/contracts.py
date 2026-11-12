@@ -44,6 +44,9 @@ def harness(h):
     assert h.root_section("status: finished\nroot:\n  a: 1\n") == "a: 1\n"
     assert h.root_section("status: finished\nroot:\n  a: 1\nphase: type\n") == "a: 1\n"
     assert h.root_section("status: error\n") is None
+    for scalar in ("1", "null", "false", "'quoted'", "[]", "{}"):
+        assert h.root_section(f"status: finished\nroot: {scalar}\n") == scalar + "\n"
+    assert h.root_section("status: finished\nroot: |-\n  first\n  second\n") == "|-\n  first\n  second\n"
     assert "" in list(h.mutations("a: 1\nb: 2\n"))
     with patch.object(h.subprocess, "run", side_effect=subprocess.TimeoutExpired("helix", 1)):
         result = h.helix("run", "-", stdin="1")
@@ -52,7 +55,8 @@ def harness(h):
     with patch.object(h, "BIN", Path(sys.executable)), patch.dict("os.environ", {"HELIX_TEST_TIMEOUT": "0.05"}):
         assert h.helix("-c", "import time; time.sleep(5)").returncode == 124
         assert h.malformed_state("", h.helix("-c", "raise SystemExit(7)").returncode)
-    cases = [c for directory in h.COMMANDS for c in directory.glob("*.yaml") if not c.name.endswith(".expected.yaml")]
+    from tooling.test_runner import discover_cases
+    cases = discover_cases(h.COMMANDS, h.ROOT)
     assert cases
     assert all(c.with_suffix(".expected.yaml").is_file() for c in cases)
     assert all(p.with_name(p.name.replace(".expected.yaml", ".yaml")).is_file()

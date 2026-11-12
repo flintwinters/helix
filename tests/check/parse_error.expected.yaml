@@ -1,5 +1,5 @@
 status: error
-phase: type
+mode: check
 errors:
   - kind: parse
     message: "while parsing a flow sequence, expected ',' or ']' at byte 9 line 2 column 1"

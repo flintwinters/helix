@@ -1,5 +1,5 @@
 status: error
-phase: type
+mode: check
 errors:
   - kind: type
     message: "1 type violation: failed its refinement check"

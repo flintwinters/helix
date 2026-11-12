@@ -38,7 +38,7 @@ fn check_collects_errors_and_preserves_success() {
     let mut checked = Vm::load("a: [div, 1, 0]\nb: [add, missing, 1]");
     checked.check();
     assert_eq!(checked.status(), Status::Error);
-    assert_eq!(checked.state()["phase"].as_str(), Some("type"));
+    assert_eq!(checked.state()["mode"].as_str(), Some("check"));
     assert_eq!(checked.state()["errors"].as_vec().unwrap().len(), 2);
     let mut clean = Vm::load("answer: [add, 1, 2]");
     clean.check();
@@ -59,7 +59,7 @@ fn terminal_execution_survives_check_and_repeated_checks() {
         let mut vm = Vm::load(source);
         vm.check();
         let saved = vm.state_string();
-        assert_eq!(vm.state()["phase"].as_str(), Some("type"));
+        assert_eq!(vm.state()["mode"].as_str(), Some("check"));
         vm.check();
         vm.run();
         assert_eq!(vm.state_string(), saved);
@@ -70,14 +70,18 @@ fn terminal_execution_survives_check_and_repeated_checks() {
 fn resource_guards_apply_to_library_callers() {
     for (source, kind) in [
         ("[".repeat(65) + "0" + &"]".repeat(65), "depth"),
-        ("[until, [fn, [s], false], [fn, [s], [concat, s, s]], \"x\"]".into(), "limit"),
+        (
+            "[until, [fn, [s], false], [fn, [s], [concat, s, s]], \"x\"]".into(),
+            "limit",
+        ),
     ] {
         let mut vm = Vm::load(&source);
         vm.run();
         assert_eq!(vm.status(), Status::Error);
         assert_eq!(vm.state()["error"]["kind"].as_str(), Some(kind));
     }
-    let mut recursion = Vm::load("f: [fn, [n], [if, [eq, n, 0], 0, [f, [sub, n, 1]]]]\nr: [f, 200]");
+    let mut recursion =
+        Vm::load("f: [fn, [n], [if, [eq, n, 0], 0, [f, [sub, n, 1]]]]\nr: [f, 200]");
     recursion.run();
     assert_eq!(recursion.status(), Status::Error);
     assert_eq!(recursion.state()["error"]["kind"].as_str(), Some("depth"));

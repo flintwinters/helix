@@ -295,3 +295,21 @@ fn inspection_keeps_distinct_source_locations_for_equal_functions() {
         Some("second")
     );
 }
+
+#[test]
+fn check_mode_keeps_independent_runtime_and_type_time_failures() {
+    let mut vm = Vm::load("bad: [div, 1, 0]\ntyped: [type_time, bad]\nother: [add, missing, 1]");
+    vm.check();
+    let state = vm.state();
+    assert_eq!(state["mode"].as_str(), Some("check"));
+    assert!(state["phase"].is_badvalue());
+    let errors = state["errors"].as_vec().unwrap();
+    assert_eq!(errors.len(), 3);
+    assert_eq!(
+        errors
+            .iter()
+            .filter(|e| e["phase"].as_str() == Some("type"))
+            .count(),
+        1
+    );
+}

@@ -141,7 +141,11 @@ impl Vm {
             }
             if let Some(error) = machine.error {
                 if !self.errors.iter().any(|e| {
-                    e.path == error.path && e.kind == error.kind && e.message == error.message
+                    e.path == error.path
+                        && e.kind == error.kind
+                        && e.message == error.message
+                        && e.phase == error.phase
+                        && e.file == error.file
                 }) {
                     self.errors.push(error)
                 }
@@ -163,7 +167,7 @@ impl Vm {
             fields.insert(s("root"), result.clone());
         }
         if self.checking {
-            fields.insert(s("phase"), s("type"));
+            fields.insert(s("mode"), s("check"));
             let errors = if self.errors.is_empty() {
                 self.error.iter().collect::<Vec<_>>()
             } else {

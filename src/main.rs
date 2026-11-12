@@ -4,7 +4,7 @@ use std::process::ExitCode;
 use helix::{Status, Vm, json_document, yaml_document};
 use yaml_rust2::Yaml;
 
-const USAGE: &str = "usage: helix exec [--json | --yaml] [PROGRAM | -]    inline source or stdin; default raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check <file.yaml | ->    type phase: report every error, run nothing further\n       helix std [module]    list the standard modules, or print one's source\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
+const USAGE: &str = "usage: helix exec [--json | --yaml] [PROGRAM | -]    inline source or stdin; default raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check <file.yaml | ->    collect independent evaluation failures\n       helix std [module]    list the standard modules, or print one's source\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
