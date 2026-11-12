@@ -390,6 +390,8 @@ Real programs, in order of ambition, grouped by what unlocks them. Each one is a
 
 Golden coverage is evidence of executable examples, not evidence of real-world adoption; the usage milestones above remain open.
 
+- `dogfood_classics`: FizzBuzz through 20, primes below 30, and word frequencies over inline text, including empty inputs, prime boundaries, repeated spaces and Unicode words. Friction: no string split builtin; tokenization folds over character slices and explicitly handles delimiters. Trial division is suitable only for small inputs. These are executable examples; the real-use milestone remains open.
+
 - `dogfood_config_diff`: added/removed/changed keys, nested value changes, null versus absence, unchanged and empty snapshots. Friction: building report records requires nested `set` calls because symbols in ordinary map values are literal data; nested changes are reported at the top-level key.
 
 - `dogfood_project_inventory`: missing required fields, duplicate names and dangling dependencies, plus valid and empty inventories. Friction: presence checks do not validate field types; this example assumes string names and list dependencies. Schema validation remains separate work.

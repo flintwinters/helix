@@ -1,0 +1,244 @@
+status: finished
+root:
+  l:
+    sum:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - add
+            - acc
+            - x
+        - 0
+        - xs
+    product:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - mul
+            - acc
+            - x
+        - 1
+        - xs
+    reverse:
+      - fn
+      - - xs
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - concat
+            - - list
+              - x
+            - acc
+        - - list
+        - xs
+    range:
+      - fn
+      - - n
+      - - let
+        - done:
+            - fn
+            - - xs
+            - - ge
+              - - len
+                - xs
+              - n
+          step:
+            - fn
+            - - xs
+            - - append
+              - xs
+              - - len
+                - xs
+        - - until
+          - done
+          - step
+          - - list
+  fizzbuzz:
+    - fn
+    - - n
+    - - cond
+      - - eq
+        - - mod
+          - n
+          - 15
+        - 0
+      - "FizzBuzz"
+      - - eq
+        - - mod
+          - n
+          - 3
+        - 0
+      - "Fizz"
+      - - eq
+        - - mod
+          - n
+          - 5
+        - 0
+      - "Buzz"
+      - - str
+        - n
+  fizzbuzz_1_to_20:
+    - "1"
+    - "2"
+    - Fizz
+    - "4"
+    - Buzz
+    - Fizz
+    - "7"
+    - "8"
+    - Fizz
+    - Buzz
+    - "11"
+    - Fizz
+    - "13"
+    - "14"
+    - FizzBuzz
+    - "16"
+    - "17"
+    - Fizz
+    - "19"
+    - Buzz
+  fizzbuzz_empty: []
+  prime:
+    - fn
+    - - n
+    - - and
+      - - ge
+        - n
+        - 2
+      - - eq
+        - - len
+          - - filter
+            - - fn
+              - - d
+              - - eq
+                - - mod
+                  - n
+                  - d
+                - 0
+            - - filter
+              - - fn
+                - - d
+                - - ge
+                  - d
+                  - 2
+              - - l.range
+                - - if
+                  - - ge
+                    - n
+                    - 0
+                  - n
+                  - 0
+        - 0
+  primes_under_30:
+    - 2
+    - 3
+    - 5
+    - 7
+    - 11
+    - 13
+    - 17
+    - 19
+    - 23
+    - 29
+  prime_boundaries:
+    - false
+    - false
+    - false
+    - true
+    - true
+    - false
+  primes_empty: []
+  words:
+    - fn
+    - - text
+    - - get
+      - - fold
+        - - fn
+          - - state
+            - i
+          - - let
+            - token:
+                - get
+                - state
+                - "token"
+              found:
+                - get
+                - state
+                - "words"
+              char:
+                - slice
+                - text
+                - i
+                - - add
+                  - i
+                  - 1
+            - - if
+              - - eq
+                - char
+                - " "
+              - - dict
+                - "token"
+                - ""
+                - "words"
+                - - if
+                  - - eq
+                    - token
+                    - ""
+                  - found
+                  - - append
+                    - found
+                    - token
+              - - dict
+                - "token"
+                - - concat
+                  - token
+                  - char
+                - "words"
+                - found
+        - - dict
+          - "token"
+          - ""
+          - "words"
+          - - list
+        - - l.range
+          - - len
+            - text
+      - "words"
+  frequency:
+    - fn
+    - - text
+    - - fold
+      - - fn
+        - - counts
+          - word
+        - - set
+          - counts
+          - word
+          - - add
+            - - get
+              - counts
+              - word
+              - 0
+            - 1
+      - - dict
+      - - words
+        - - concat
+          - text
+          - " "
+  word_frequency:
+    red: 3
+    blue: 2
+    green: 1
+  word_frequency_empty: {}
+  word_frequency_spaces: {}
+  word_frequency_unicode:
+    "猫": 2
+    "café": 1
