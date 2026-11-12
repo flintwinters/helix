@@ -1,10 +1,11 @@
 """Replayable diagnostics for golden-state and robustness contracts."""
-import difflib
-import shlex
 
 
 def failure(root, case, stage, reason, command, result, *, source=None, expected=None):
     """Keep complete evidence on disk and a focused, navigable report in stderr."""
+    import difflib
+    import shlex
+
     relative = case.relative_to(root)
     directory = root / "runtime" / "test-failures" / relative.parent / case.stem / stage
     directory.mkdir(parents=True, exist_ok=True)

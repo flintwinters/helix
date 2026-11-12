@@ -60,6 +60,7 @@ The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items 
 - `hx [PROGRAM | -]` is the pipeline executable: inline source or stdin, raw string results (no added newline), other results through the shared YAML emitter. Evaluation failures emit VM state only on stderr and exit 1; usage/read failures exit 2. `helix run` retains its state envelope. Verify with `./manage.py test --suite pipeline`.
 
 - `./manage.py` shows the command tree: `build`, `runtime` (execution/recovery), `inspect` (modules/inventory), `quality` (test/lint). Append `--help` at any level; flat commands remain equivalent shortcuts.
+- `./manage.py test --suite startup` checks discovery import boundaries without compiling or running Helix.
 - `./manage.py --help-json` emits the versioned command/argument tree and suite contracts without builds or third-party dependencies. `quality test --describe` explains suites; `--list` preserves name-only discovery. Parser definitions and suite descriptions live in `tooling/cli.py`; keep that authoritative.
 - `./manage.py runtime eval '[add, 20, 22]'` builds and emits ordinary VM state; `eval --check SOURCE` collects independent errors. Runtime exit codes are 0/1/2 for success/evaluation failure/usage or unreadable input.
 - `runtime cli ARGS...` builds and forwards Rust CLI arguments; `quality lint ARGS...` forwards hyperlinter arguments. Wrapper `--help` is local; `-- --help` forwards help. Commands resolve files/imports from the repository root.

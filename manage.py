@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """Single entrypoint for Helix; use --help or --help-json to discover commands."""
-import subprocess
 import sys
 import os
-import shutil
-import tempfile
 from pathlib import Path
 
 from tooling.cli import SUITES, parse
@@ -31,7 +28,7 @@ def lint(extra: list[str]) -> int:
     return subprocess.call([str(tsx), str(HYPERLINTER / "src" / "cli.ts"), *extra], cwd=ROOT)
 
 
-def helix(*args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
+def helix(*args: str, stdin: str | None = None) -> "subprocess.CompletedProcess":
     try:
         return subprocess.run([str(BIN), *args], input=stdin, capture_output=True, text=True, cwd=ROOT,
                               timeout=float(os.environ.get("HELIX_TEST_TIMEOUT", "10")))
@@ -105,6 +102,12 @@ def robustness(cases: list[Path]) -> list[str]:
 
 
 def test(bless: bool, suites: list[str] | None = None) -> int:
+    if suites and set(suites) == {"startup"}:
+        return regression(bless, suites)
+
+    import shutil
+    import tempfile
+
     global BIN
     if (code := build()) != 0:
         return code
@@ -185,6 +188,14 @@ def main() -> int:
     if args is None:
         return 0
     command = args.command
+    if command == "test" and (args.list or args.describe):
+        for name, description in SUITES.items():
+            print(f"{name}: {description}" if args.describe else name)
+        return 0
+    # Discovery must respond before loading process execution and test machinery.
+    global subprocess
+    import subprocess
+
     if command == "lint":
         return lint(args.extra)
     if command == "cli":
@@ -203,10 +214,6 @@ def main() -> int:
         return build() or subprocess.call([str(BIN), command, args.file], cwd=ROOT)
     if command == "std":
         return build() or subprocess.call([str(BIN), "std", *([args.module] if args.module else [])], cwd=ROOT)
-    if args.list or args.describe:
-        for name, description in SUITES.items():
-            print(f"{name}: {description}" if args.describe else name)
-        return 0
     return test(args.bless, args.suite)
 
 
