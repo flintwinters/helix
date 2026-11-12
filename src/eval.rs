@@ -1,5 +1,5 @@
 //! Explicit execution requests and continuations. No transition invokes another interpreter.
-use crate::builtins::{self, Fault};
+use crate::builtins;
 use yaml_rust2::Yaml;
 use crate::error::{HelixError, s};
 use crate::graph::{Graph, Kind, NodeId, ROOT};
@@ -12,11 +12,12 @@ use std::sync::Arc;
 mod lexical;
 mod forms;
 mod iteration;
+mod atomic;
 
 use crate::model::Limits;
 use crate::model::{Outcome, Vm};
 
-use crate::model::{Actor, Atomic, Binding, Mode, Operation, Program, Request, Scope};
+use crate::model::{Actor, Binding, Mode, Program, Request, Scope};
 pub(crate) use crate::model::{Evaluator, Function};
 impl Evaluator {
     pub fn new(
@@ -221,12 +222,7 @@ impl Evaluator {
                     };
                     self.finish(crate::inspect::machine(child));
                 }
-                Actor::Builtin(name) => self.push(Request::Atomic(Atomic {
-                    site,
-                    nodes,
-                    operation: Operation::Builtin(name, values),
-                    answers: Vec::new(),
-                })),
+                Actor::Builtin(name) => self.schedule_builtin(site, nodes, name, values),
             },
             Request::Call(site, function, args) => {
                 self.push(Request::CallTrace(site, function.clone()));
@@ -304,31 +300,15 @@ impl Evaluator {
                     index,
                     found,
                 });
-                self.push(Request::Atomic(Atomic {
-                    site: annotation,
-                    nodes: Vec::new(),
-                    operation: Operation::Violations(value, ty),
-                    answers: Vec::new(),
-                }));
+                self.schedule_check(annotation, value, ty);
             }
             Request::ParameterChecked {
                 site,
                 function,
                 args,
                 index,
-                mut found,
-            } => {
-                let Value::Array(violations) = self.value() else {
-                    unreachable!()
-                };
-                let params = self.parameters(&function)?;
-                found.extend(
-                    violations
-                        .into_iter()
-                        .map(|v| tagged("argument", &params[index].0, v)),
-                );
-                self.parameters_next(site, function, args, index + 1, found)?;
-            }
+                found,
+            } => self.parameter_checked(site, function, args, index, found)?,
             Request::CallEnd {
                 environment,
                 program,
@@ -372,12 +352,7 @@ impl Evaluator {
             Request::ResultAnnotation(body, value) => {
                 let ty = self.value();
                 self.push(Request::ResultChecked(body, value.clone()));
-                self.push(Request::Atomic(Atomic {
-                    site: body,
-                    nodes: Vec::new(),
-                    operation: Operation::Violations(value, ty),
-                    answers: Vec::new(),
-                }));
+                self.schedule_check(body, value, ty);
             }
             Request::ResultChecked(body, value) => {
                 let Value::Array(found) = self.value() else {
@@ -423,44 +398,14 @@ impl Evaluator {
                 iteration.count += 1;
                 self.push(Request::Iterate(iteration));
             }
-            Request::Refine(site, args, base) => {
-                let check = self.value();
-                let Value::Function(function) = &check else {
-                    return Err(self.err(
-                        args[1],
-                        "type",
-                        "expected a function (`[fn, [value], body]` or its name)",
-                    ));
-                };
-                if self.parameters(function)?.len() != 1 {
-                    return Err(self.err(
-                        args[1],
-                        "arity",
-                        "a refinement check takes exactly 1 parameter",
-                    ));
-                }
-                self.finish(
-                    builtins::refine(base, check).map_err(|f| self.from_fault(site, &args, f))?,
-                );
-            }
+            Request::Refine(site, args, base) => self.refine(site, &args, base)?,
             Request::Refined(site, args, _) => {
                 let base = self.value();
                 self.push(Request::Refine(site, args.clone(), base));
                 self.eval(args[1], true);
             }
             Request::Atomic(operation) => self.atomic(operation)?,
-            Request::PredicateEnd(mut operation) => {
-                let verdict = match self.take() {
-                    Ok(Value::Boolean(v)) => Ok(v),
-                    Ok(other) => Err(format!(
-                        "returned {}, expected boolean",
-                        builtins::type_of(&other)
-                    )),
-                    Err(error) => Err(format!("{}: {}", error.kind, error.message)),
-                };
-                operation.answers.push(verdict);
-                self.push(Request::Atomic(operation));
-            }
+            Request::PredicateEnd(operation) => self.predicate_end(operation),
             Request::AdvanceChild => {
                 unreachable!("child advancement is dispatched by the VM scheduler")
             }
@@ -613,139 +558,8 @@ impl Evaluator {
         self.collect(id, Some(actor), args, None, true);
         Ok(())
     }
-    fn parameters_next(
-        &mut self,
-        site: NodeId,
-        function: Arc<Function>,
-        args: Vec<Value>,
-        mut index: usize,
-        found: Vec<Value>,
-    ) -> Result<(), HelixError> {
-        let params = self.parameters(&function)?;
-        while index < params.len() {
-            if let Some(annotation) = params[index].1 {
-                self.push(Request::ParameterType {
-                    site,
-                    function,
-                    args,
-                    index,
-                    found,
-                    annotation,
-                });
-                self.eval(annotation, true);
-                return Ok(());
-            }
-            index += 1;
-        }
-        if !found.is_empty() {
-            return Err(self.violation_error(
-                site,
-                &format!(
-                    "the arguments of `{}`",
-                    function.program.graph.path(function.node)
-                ),
-                found,
-            ));
-        }
-        let Kind::Seq(items) = function.program.graph.kind(function.node) else {
-            unreachable!()
-        };
-        let body = items[2];
-        let result_type = items.get(3).copied();
-        self.environment.push(Scope {
-            function: function.node,
-            args,
-        });
-        self.push(Request::BodyEnd { result_type, body });
-        self.eval(body, true);
-        Ok(())
-    }
     fn truth(&self, value: &Value, blame: NodeId) -> Result<bool, HelixError> {
         builtins::boolean(value, 0).map_err(|f| self.err(blame, &f.kind, f.message))
-    }
-    fn from_fault(&self, site: NodeId, args: &[NodeId], fault: Fault) -> HelixError {
-        HelixError {
-            cause: fault.cause,
-            data: fault.data,
-            ..self.err(
-                fault.arg.and_then(|i| args.get(i).copied()).unwrap_or(site),
-                &fault.kind,
-                fault.message,
-            )
-        }
-    }
-    fn violation_error(&self, blame: NodeId, what: &str, found: Vec<Value>) -> HelixError {
-        let first = found
-            .iter()
-            .find_map(|v| {
-                if let Value::Hash(h) = v {
-                    h.get(&s("message")).and_then(Value::as_str)
-                } else {
-                    None
-                }
-            })
-            .unwrap_or_default();
-        let plural = if found.len() == 1 { "" } else { "s" };
-        let mut error = self.err(
-            blame,
-            "type",
-            format!("{} type violation{plural} in {what}: {first}", found.len()),
-        );
-        error.data = Some(Value::Hash(
-            [(s("violations"), Value::Array(found.into()))]
-                .into_iter()
-                .collect(),
-        ));
-        error
-    }
-    fn atomic(&mut self, operation: Atomic) -> Result<(), HelixError> {
-        let mut cursor = 0;
-        let mut pending = None;
-        let mut pred = |check: &Value, value: &Value| {
-            let index = cursor;
-            cursor += 1;
-            if let Some(answer) = operation.answers.get(index) {
-                return answer.clone();
-            }
-            if pending.is_none() {
-                pending = Some((check.clone(), value.clone()));
-            }
-            Err("pending predicate".into())
-        };
-        let result = match &operation.operation {
-            Operation::Builtin(name, args) => builtins::apply(name, args, &mut pred)
-                .map_err(|f| self.from_fault(operation.site, &operation.nodes, f)),
-            Operation::Violations(value, ty) => builtins::violations(value, ty, &mut pred)
-                .map(|found| {
-                    Value::Array(found.iter().map(builtins::Violation::to_value).collect())
-                })
-                .map_err(|why| self.err(operation.site, "type", why)),
-        };
-        if let Some((check, value)) = pending {
-            let site = operation.site;
-            self.push(Request::PredicateEnd(operation));
-            match check {
-                Value::Function(function) => {
-                    if self.parameters(&function)?.len() != 1 {
-                        self.fail(self.err(
-                            site,
-                            "type",
-                            "a refinement check takes exactly 1 parameter",
-                        ));
-                    } else {
-                        self.push(Request::Call(site, function, vec![value]));
-                    }
-                }
-                _ => self.fail(self.err(
-                    site,
-                    "type",
-                    "a refinement check must be `[fn, [value], body]`",
-                )),
-            }
-        } else {
-            self.answer = Some(result);
-        }
-        Ok(())
     }
     pub fn resolve_effect(&mut self, result: Result<Yaml, (String, String)>) {
         let Some((site, request)) = self.pending_effect.take() else { return; };
@@ -878,12 +692,4 @@ fn arguments(n: usize) -> String {
     } else {
         format!("{n} arguments")
     }
-}
-fn tagged(label: &str, name: &str, violation: Value) -> Value {
-    let mut h = Hash::new();
-    h.insert(s(label), s(name));
-    if let Value::Hash(fields) = violation {
-        h.extend(fields)
-    }
-    Value::Hash(h)
 }
