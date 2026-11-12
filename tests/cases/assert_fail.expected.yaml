@@ -3,5 +3,7 @@ error:
   kind: assertion
   message: total must be 4
   path: /check
+  reference:
+    - "check"
   line: 2
   column: 8

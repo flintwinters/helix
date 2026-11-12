@@ -1,0 +1,11 @@
+status: finished
+root:
+  original_status: ready
+  advanced_status: running
+  versions_differ: true
+  left_status: finished
+  left_result: 42
+  right_status: finished
+  right_result: 42
+  branches_equal: true
+  original_still_ready: true

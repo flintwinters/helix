@@ -1,16 +1,7 @@
 status: finished
 root:
   safe_div:
-    - fn
-    - - a
-      - b
-    - - try
-      - - div
-        - a
-        - b
-      - - fn
-        - - e
-        - 0
+    ref: object0
   ok: 5
   recovered: 0
   first_kind: divide_by_zero
@@ -18,3 +9,106 @@ root:
   unhandled_branch: 5
   nested: missing
   checked: one is not two
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: a
+        - symbol: b
+      - - symbol: try
+        - - symbol: div
+          - symbol: a
+          - symbol: b
+        - - symbol: fn
+          - - symbol: e
+          - 0
+    location:
+      source: "<root>"
+      path:
+        - "safe_div"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          safe_div:
+            - symbol: fn
+            - - symbol: a
+              - symbol: b
+            - - symbol: try
+              - - symbol: div
+                - symbol: a
+                - symbol: b
+              - - symbol: fn
+                - - symbol: e
+                - 0
+          ok:
+            - symbol: safe_div
+            - 10
+            - 2
+          recovered:
+            - symbol: safe_div
+            - 10
+            - 0
+          first_kind:
+            - symbol: try
+            - - symbol: div
+              - 1
+              - 0
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          detail:
+            - symbol: try
+            - - symbol: get
+              - - 1
+                - 2
+              - 9
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - message
+          unhandled_branch:
+            - symbol: try
+            - 5
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: div
+                - 1
+                - 0
+          nested:
+            - symbol: try
+            - - symbol: try
+              - - symbol: div
+                - 1
+                - 0
+              - - symbol: fn
+                - - symbol: e
+                - - symbol: get
+                  - []
+                  - 0
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          checked:
+            - symbol: try
+            - - symbol: assert
+              - - symbol: eq
+                - 1
+                - 2
+              - one is not two
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - message

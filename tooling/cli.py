@@ -11,6 +11,7 @@ SUITES = {
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
     "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",
     "imports": "Module resolution, isolation, cycles, and source blame",
+    "execution": "Immutable stepping, retained branches, nested machines and explicit continuations",
     "library": "Rust public VM API contracts via cargo test",
     "parser": "YAML syntax, unsupported constructs, paths, and source locations",
     "fuzz": "Bounded fixed-seed token mutations and failure minimization",

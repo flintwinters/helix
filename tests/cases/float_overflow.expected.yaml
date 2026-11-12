@@ -3,5 +3,7 @@ error:
   kind: overflow
   message: "`mul` produced a non-finite float"
   path: /x
+  reference:
+    - "x"
   line: 1
   column: 4

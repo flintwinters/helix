@@ -1,20 +1,7 @@
 status: finished
 root:
   web_server:
-    - fn
-    - - - p
-        - integer
-    - - class
-      - - concat
-        - "web_"
-        - - str
-          - p
-      - - record
-        - "listen"
-        - integer
-      - - dict
-        - "listen"
-        - p
+    ref: object0
   w80:
     type: class
     name: web_80
@@ -60,3 +47,74 @@ root:
     sources:
       - "web_80"
       - web_8080
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - - symbol: p
+          - symbol: integer
+      - - symbol: class
+        - - symbol: concat
+          - web_
+          - - symbol: str
+            - symbol: p
+        - - symbol: record
+          - listen
+          - symbol: integer
+        - - symbol: dict
+          - listen
+          - symbol: p
+    location:
+      source: "<root>"
+      path:
+        - "web_server"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          web_server:
+            - symbol: fn
+            - - - symbol: p
+                - symbol: integer
+            - - symbol: class
+              - - symbol: concat
+                - web_
+                - - symbol: str
+                  - symbol: p
+              - - symbol: record
+                - listen
+                - symbol: integer
+              - - symbol: dict
+                - listen
+                - symbol: p
+          w80:
+            - symbol: web_server
+            - 80
+          w8080:
+            - symbol: web_server
+            - 8080
+          front:
+            - symbol: inherit
+            - front
+            - - symbol: list
+              - symbol: w80
+            - {}
+          both:
+            - symbol: try
+            - - symbol: inherit
+              - both
+              - - symbol: list
+                - symbol: w80
+                - symbol: w8080
+              - {}
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - data

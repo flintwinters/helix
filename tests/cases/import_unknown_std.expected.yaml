@@ -3,5 +3,8 @@ error:
   kind: import
   message: "unknown standard module `nope`; available: math, list, group, types, test"
   path: /a/1
+  reference:
+    - "a"
+    - 1
   line: 1
   column: 13

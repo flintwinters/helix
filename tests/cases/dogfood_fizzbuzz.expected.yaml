@@ -1,50 +1,9 @@
 status: finished
 root:
   range:
-    - fn
-    - - lo
-      - hi
-    - - until
-      - - fn
-        - - xs
-        - - eq
-          - - len
-            - xs
-          - - sub
-            - hi
-            - lo
-      - - fn
-        - - xs
-        - - append
-          - xs
-          - - add
-            - lo
-            - - len
-              - xs
-      - []
+    ref: object0
   fizzbuzz:
-    - fn
-    - - n
-    - - cond
-      - - eq
-        - - mod
-          - n
-          - 15
-        - 0
-      - "FizzBuzz"
-      - - eq
-        - - mod
-          - n
-          - 3
-        - 0
-      - "Fizz"
-      - - eq
-        - - mod
-          - n
-          - 5
-        - 0
-      - "Buzz"
-      - n
+    ref: object1
   out:
     - 1
     - 2
@@ -61,3 +20,125 @@ root:
     - 13
     - 14
     - FizzBuzz
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - symbol: lo
+        - symbol: hi
+      - - symbol: until
+        - - symbol: fn
+          - - symbol: xs
+          - - symbol: eq
+            - - symbol: len
+              - symbol: xs
+            - - symbol: sub
+              - symbol: hi
+              - symbol: lo
+        - - symbol: fn
+          - - symbol: xs
+          - - symbol: append
+            - symbol: xs
+            - - symbol: add
+              - symbol: lo
+              - - symbol: len
+                - symbol: xs
+        - []
+    location:
+      source: "<root>"
+      path:
+        - "range"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: cond
+        - - symbol: eq
+          - - symbol: mod
+            - symbol: "n"
+            - 15
+          - 0
+        - FizzBuzz
+        - - symbol: eq
+          - - symbol: mod
+            - symbol: "n"
+            - 3
+          - 0
+        - Fizz
+        - - symbol: eq
+          - - symbol: mod
+            - symbol: "n"
+            - 5
+          - 0
+        - Buzz
+        - symbol: "n"
+    location:
+      source: "<root>"
+      path:
+        - "fizzbuzz"
+    environment: []
+    bindings: {}
+  object2:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          range:
+            - symbol: fn
+            - - symbol: lo
+              - symbol: hi
+            - - symbol: until
+              - - symbol: fn
+                - - symbol: xs
+                - - symbol: eq
+                  - - symbol: len
+                    - symbol: xs
+                  - - symbol: sub
+                    - symbol: hi
+                    - symbol: lo
+              - - symbol: fn
+                - - symbol: xs
+                - - symbol: append
+                  - symbol: xs
+                  - - symbol: add
+                    - symbol: lo
+                    - - symbol: len
+                      - symbol: xs
+              - []
+          fizzbuzz:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: cond
+              - - symbol: eq
+                - - symbol: mod
+                  - symbol: "n"
+                  - 15
+                - 0
+              - FizzBuzz
+              - - symbol: eq
+                - - symbol: mod
+                  - symbol: "n"
+                  - 3
+                - 0
+              - Fizz
+              - - symbol: eq
+                - - symbol: mod
+                  - symbol: "n"
+                  - 5
+                - 0
+              - Buzz
+              - symbol: "n"
+          out:
+            - symbol: map
+            - symbol: fizzbuzz
+            - - symbol: range
+              - 1
+              - 16

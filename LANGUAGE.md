@@ -7,7 +7,7 @@ status: finished        # ready | running | finished | error | signaled
 root: { ... }           # every value, evaluated
 ```
 
-On failure `status: error` and an `error:` block replaces `root:` with `kind`, `message`, `path` (root-relative, e.g. `/inner/y/1`), `line` and `column` (both 1-indexed).
+On failure `status: error` and an `error:` block replaces `root:` with `kind`, `message`, `path` (root-relative, e.g. `/inner/y/1`), `line` and `column` (both 1-indexed). Errors within source also carry an unambiguous `reference`: a list of string keys and integer list indices. The root is `[]`; an empty key is `[""]`, and a slash in a key stays inside that string.
 
 ## Values
 
@@ -20,10 +20,12 @@ On failure `status: error` and an `error:` block replaces `root:` with `kind`, `
 | null    | `null`, `~`                | |
 | list    | `[1, 2, 3]`, block `- x`   | elements are evaluated |
 | map     | `{a: 1}`, block `k: v`     | string keys, insertion order kept; values are evaluated |
+| function | `[fn, [x], [add, x, 1]]` | direct code and lexical environment; distinct from list data |
+| vm | `[vm, [fn, [], 42]]` | immutable execution state; created ready without running its body |
 
 ## Expressions
 
-A list is an **expression** when its first element is an *unquoted* builtin name or the name of a user function (the actor). Everything else is a plain list. To write a list that merely starts with a builtin's name, quote the head: `["add", 1, 2]` is the data `[add, 1, 2]`. Emitted state quotes every string at the head of a data list for you (`- "a"`), so saved state round-trips whatever functions are in scope.
+A list is an **expression** when its first element is an *unquoted* builtin name or the name of a user function (the actor). Everything else is a plain list. To write a list that merely starts with a builtin's name, quote the head: `["add", 1, 2]` is the data `[add, 1, 2]`. Emitted state quotes every string at the head of a data list for you (`- "a"`), so ordinary data round-trips whatever functions are in scope. Function and machine inspection graphs are not executable serialization.
 
 Inside an expression, an unquoted string argument is a **symbol**. It resolves to the nearest enclosing map that defines that key, walking up parent links, so inner definitions shadow outer ones. Function parameters and `let` bindings are in scope inside their bodies (see below). A value that depends on itself is a `cycle` error.
 
@@ -31,11 +33,11 @@ Values are immutable: `set` and `append` return new values.
 
 ## Functions and local names
 
-`[fn, [params], body]` declares a function; give it a name by putting it in a map: `double: [fn, [n], [mul, n, 2]]`. A list whose head resolves to such a function is a call: `[double, 4]`. Arguments are evaluated first (left to right) and bound to the parameters; a wrong argument count is an `arity` error blamed on the call. A function evaluates to its own source, so it appears unchanged in saved state.
+`[fn, [params], body]` declares a function; give it a name by putting it in a map: `double: [fn, [n], [mul, n, 2]]`. A list whose head resolves to such a function is a call: `[double, 4]`. Arguments are evaluated first (left to right) and bound to the parameters; a wrong argument count is an `arity` error blamed on the call. A function evaluates to a dedicated function value; inspecting or printing it does not turn its code into a data list.
 
 Scope is **lexical**, through parent links: a body sees its parameters, then the maps enclosing the *definition* (not the caller), so a function closes over the object graph it is written in. Recursion works through the function's own name. Calls nested deeper than 200 fail with a `depth` error blamed on the call. Functions are values: pass or return them, bind them with `let`, and store them in lists and maps. `[call, function_expression, arg, ...]` calls any computed function; a named binding holding a computed function can also head a call. Iteration and `try` accept computed functions too. `[type, f]` reports `function`, and `function` is a primitive type usable in annotations. A quoted data list beginning with `"fn"` is still a list.
 
-When a function travels as a value, its free lexical bindings are captured. Captures serialize as `[closure, {name: value, ...}, [fn, [params], body]]`; the binding map is the function's lexical scope on reload. Only referenced bindings are captured; capturing evaluates those bindings at transfer time. Different constructor calls retain independent environments. Ordinary function declarations retain their source form. Functions and captured bindings compare structurally by source and values; this does not prove that two functions compute the same result. Serialized closure-body errors currently refer to the reconstituted source.
+Functions retain their original immutable code and lexical environment, including lazy source bindings. Passing a function never emits or reparses source, and creating one does not execute its free bindings. Different constructor calls retain independent environments. Functions compare structurally by code and captured lexical bindings; recursive bindings are compared with cycle detection. This is not a proof that two functions compute the same result. Function errors retain their original source spans and module identity.
 
 `[try, expr, handler]` evaluates `expr`; if that fails, `handler` (a function name or inline `fn`) is called with the error as a map (`kind`, `message`, `path`, `line`, `column`, as in saved error state) and its result replaces the failure. Without a failure the handler never runs. `[assert, cond]` / `[assert, cond, "message"]` returns `null` when `cond` is `true`, otherwise fails with an `assertion` error carrying the message. `[raise, kind, message]` / `[raise, kind, message, data]` fails with a user-chosen `kind` string (a non-empty string), message and optional plain-value `data` payload, blamed on the `raise` expression; it has the same shape as a builtin error and `data` appears in the error map. `[raise, error]` re-raises a caught error map (so a handler can match the kinds it expects with `cond` and re-raise the rest rather than swallow them).
 
@@ -47,7 +49,30 @@ When a function travels as a value, its free lexical bindings are captured. Capt
 
 `[finally, expr, cleanup]` evaluates `expr`, then evaluates `cleanup` whether `expr` succeeds or fails. A successful cleanup discards its own value and preserves the original result or error. A failing cleanup replaces the original result or error. Cleanup is an expression, not a callback; use a function call when needed. This applies to evaluation errors; parse and import failures happen before evaluation.
 
+## Immutable machines and inspection
+
+`[vm, function]` requires a zero-argument function and returns a **ready** child without executing its body. The child retains the function's lexical environment and has independent memoization, limits and cycle guards. `[step, child]` returns a new version after one engine transition. Retaining `child` preserves its original meaning; advancing two branches is independent. Stepping a finished, failed or signaled machine returns the same logical state. `[type, child]` reports `vm`, also a primitive type for annotations and membership checks.
+
+`[inspect, child]` returns ordinary read-only data with `status`, current `location`, `continuations`, `environments`, `intermediate`, `active` cycle guards, `memoized` results, `limits`, `outcome` and a named `objects` table for code, functions and child machines. Source references contain `source` and a `path` list whose segments are string keys or integer indices. `[]`, `[""]`, `["a/b"]`, `["0"]` and `[0]` are distinct paths. Inspection performs no child execution. The named program object includes immutable source code; unquoted symbols are represented as `{symbol: name}` data so quoting is preserved without executable serialization tricks.
+
+A result containing functions or machines is printed as an inspection graph:
+
+```yaml
+status: finished
+root: {ref: object0}
+objects:
+  object0: # named function or machine, with readable references to other objects
+    kind: function
+    # code, lexical environment, program and location follow
+```
+
+Ordinary data retains its compact representation. An inspection graph keeps the normal `root` or `error` projection and places its named `objects` table beside it in the state envelope, so recursive lexical references stay finite and ordinary user keys cannot collide with metadata. It is **not a resumable file format**; loading this output yields ordinary data, not reconstructed functions or machines. Machines compare by logical execution state rather than allocation identity. Transition counts and continuation details are implementation details: wait for a status or observable condition rather than counting steps.
+
+The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Disk snapshots, restoration validation, reversibility-promise syntax, external effects and debugger UI are separate future work.
+
 ## Type rules
+
+Mixed integer/float equality and ordering compare exactly, including integers beyond the exact integer range of floating-point numbers. Arithmetic promotion still rounds to floating-point precision.
 
 No implicit conversion, with one exception: **numeric promotion**. `int` op `int` is an `int`; if either operand is a `float` the result is a `float`. Everything else needs an explicit `str`, `int` or `float`.
 
@@ -108,7 +133,7 @@ answer: [math.square, 6]
 
 Dotted symbols select map members (`helpers.constant`, `helpers.nested.function`); an exact lexical binding containing dots takes precedence. Use imported functions as call heads or iteration callbacks, such as `[map, math.square, [1, 2, 3]]`. Missing members in argument position are `unbound` errors; an unresolved call head remains a data list, following ordinary expression detection. Module errors include `file`; their `path`, `line`, and `column` refer to that file.
 
-Imports evaluate to their document's value. Finished output embeds the evaluated library map, retaining function source, so ordinary imported functions can still be resolved on re-reading. Function source containing relative imports still requires those files; output is not a standalone package or a closure snapshot.
+Imports evaluate to their document's value. Finished output embeds the evaluated library value through the same named object graph used for other functions. Imported functions keep direct references to their original module code and scope. This output is inspection data; keep the original sources and dependencies to run the program again.
 
 Standard libraries are Helix source embedded in the executable:
 
@@ -171,7 +196,7 @@ Callbacks are checked as functions even for empty lists. Predicates must return 
 
 `std:group` exports `by(xs, key)`: group a list into a map using a function returning a string key. Empty and Unicode keys are valid. Keys follow first occurrence order, and each group's items retain input order. The key function runs once per item; callback failures propagate. List and function arguments are checked even for empty input. Immutable map/list copying can take quadratic time and total allocations; use small inputs within the runtime iteration limit.
 
-`./manage.py check FILE` (or `helix check FILE`) evaluates the current pure language and collects independent errors across container entries in source order, deduplicating failures reached through multiple dependents. It uses the same annotations and evaluator as `run`; it is not static analysis of uncalled function bodies or unchosen branches. Output includes `phase: type`, with `root` on success or an `errors` list on failure; exit codes are 0 for success, 1 for program errors and 2 for usage or input-file failures. Successful roots retain the usual YAML round-trip contract.
+`./manage.py check FILE` (or `helix check FILE`) evaluates the current pure language and collects independent errors across container entries in source order, deduplicating failures reached through multiple dependents. It uses the same annotations and evaluator as `run`; it is not static analysis of uncalled function bodies or unchosen branches. Output includes `phase: type`, with `root` on success or an `errors` list on failure; exit codes are 0 for success, 1 for program errors and 2 for usage or input-file failures. Successful ordinary-data roots retain the YAML round-trip contract; function/machine roots use the inspection contract.
 
 ## Error kinds
 
@@ -235,8 +260,7 @@ preserves each earlier cause, payload and location.
 adds a `recovery` string containing editable YAML source to the error state.
 Save stdout to a state file, repair that string, then run
 `./manage.py resume state.yaml`. A failed resume emits another recovery checkpoint.
-Completed root-map fields become literal saved values; unfinished fields retain their
-original expressions. Their successful siblings are not computed again. Other root
+Completed ordinary-data root-map fields become literal saved values; unfinished fields and fields containing functions or machines retain their original expressions. Completed ordinary-data siblings are not computed again. Other root
 shapes restart as a whole. An unfinished function or iteration restarts from its
 beginning: this is a pure recovery boundary, not suspended stack restoration.
 Changes to inputs do not invalidate already completed fields; remove or restore those
@@ -244,6 +268,6 @@ fields' expressions explicitly when they should be computed again.
 
 File-based checkpoints retain the original absolute `recovery_file` for relative
 imports. Imported sources are reloaded and must still be available. Parse/link failures
-have no executable checkpoint. Ordinary `run` and `check` output is unchanged.
+have no executable checkpoint. Recovery uses the same result/error and object-inspection contracts as `run` and `check`.
 Recovery applies only to the current pure evaluator; effectful retry will require the
 complete continuation and effect-state contract in charter section 2.

@@ -14,96 +14,7 @@ root:
     - owner: docs
       dependencies: []
   validate:
-    - fn
-    - - records
-    - - let
-      - names:
-          - map
-          - - fn
-            - - record
-            - - get
-              - record
-              - "name"
-              - ~
-          - records
-        counts:
-          - fold
-          - - fn
-            - - acc
-              - name
-            - - if
-              - - eq
-                - name
-                - ~
-              - acc
-              - - set
-                - acc
-                - name
-                - - add
-                  - - get
-                    - acc
-                    - name
-                    - 0
-                  - 1
-          - {}
-          - names
-      - - map
-        - - fn
-          - - record
-          - - let
-            - missing:
-                - filter
-                - - fn
-                  - - field
-                  - - not
-                    - - has
-                      - record
-                      - field
-                - - "name"
-                  - "owner"
-                  - "dependencies"
-              name:
-                - get
-                - record
-                - "name"
-                - ~
-              broken:
-                - filter
-                - - fn
-                  - - dep
-                  - - not
-                    - - has
-                      - names
-                      - dep
-                - - get
-                  - record
-                  - "dependencies"
-                  - []
-              duplicate:
-                - and
-                - - ne
-                  - name
-                  - ~
-                - - gt
-                  - - get
-                    - counts
-                    - name
-                    - 0
-                  - 1
-            - - set
-              - - set
-                - - set
-                  - - set
-                    - {}
-                    - "name"
-                    - name
-                  - "missing"
-                  - missing
-                - "duplicate"
-                - duplicate
-              - "broken"
-              - broken
-        - records
+    ref: object0
   report:
     - name: core
       missing: []
@@ -134,3 +45,239 @@ root:
       duplicate: false
       broken: []
   empty: []
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: records
+      - - symbol: let
+        - names:
+            - symbol: map
+            - - symbol: fn
+              - - symbol: record
+              - - symbol: get
+                - symbol: record
+                - name
+                - ~
+            - symbol: records
+          counts:
+            - symbol: fold
+            - - symbol: fn
+              - - symbol: acc
+                - symbol: name
+              - - symbol: if
+                - - symbol: eq
+                  - symbol: name
+                  - ~
+                - symbol: acc
+                - - symbol: set
+                  - symbol: acc
+                  - symbol: name
+                  - - symbol: add
+                    - - symbol: get
+                      - symbol: acc
+                      - symbol: name
+                      - 0
+                    - 1
+            - {}
+            - symbol: names
+        - - symbol: map
+          - - symbol: fn
+            - - symbol: record
+            - - symbol: let
+              - missing:
+                  - symbol: filter
+                  - - symbol: fn
+                    - - symbol: field
+                    - - symbol: not
+                      - - symbol: has
+                        - symbol: record
+                        - symbol: field
+                  - - "name"
+                    - owner
+                    - dependencies
+                name:
+                  - symbol: get
+                  - symbol: record
+                  - name
+                  - ~
+                broken:
+                  - symbol: filter
+                  - - symbol: fn
+                    - - symbol: dep
+                    - - symbol: not
+                      - - symbol: has
+                        - symbol: names
+                        - symbol: dep
+                  - - symbol: get
+                    - symbol: record
+                    - dependencies
+                    - []
+                duplicate:
+                  - symbol: and
+                  - - symbol: ne
+                    - symbol: name
+                    - ~
+                  - - symbol: gt
+                    - - symbol: get
+                      - symbol: counts
+                      - symbol: name
+                      - 0
+                    - 1
+              - - symbol: set
+                - - symbol: set
+                  - - symbol: set
+                    - - symbol: set
+                      - {}
+                      - name
+                      - symbol: name
+                    - missing
+                    - symbol: missing
+                  - duplicate
+                  - symbol: duplicate
+                - broken
+                - symbol: broken
+          - symbol: records
+    location:
+      source: "<root>"
+      path:
+        - "validate"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          projects:
+            - name:
+                symbol: core
+              owner:
+                symbol: runtime
+              dependencies: []
+            - name:
+                symbol: cli
+              owner:
+                symbol: tools
+              dependencies:
+                - "core"
+            - name:
+                symbol: cli
+              dependencies:
+                - "ghost"
+            - owner:
+                symbol: docs
+              dependencies: []
+          validate:
+            - symbol: fn
+            - - symbol: records
+            - - symbol: let
+              - names:
+                  - symbol: map
+                  - - symbol: fn
+                    - - symbol: record
+                    - - symbol: get
+                      - symbol: record
+                      - name
+                      - ~
+                  - symbol: records
+                counts:
+                  - symbol: fold
+                  - - symbol: fn
+                    - - symbol: acc
+                      - symbol: name
+                    - - symbol: if
+                      - - symbol: eq
+                        - symbol: name
+                        - ~
+                      - symbol: acc
+                      - - symbol: set
+                        - symbol: acc
+                        - symbol: name
+                        - - symbol: add
+                          - - symbol: get
+                            - symbol: acc
+                            - symbol: name
+                            - 0
+                          - 1
+                  - {}
+                  - symbol: names
+              - - symbol: map
+                - - symbol: fn
+                  - - symbol: record
+                  - - symbol: let
+                    - missing:
+                        - symbol: filter
+                        - - symbol: fn
+                          - - symbol: field
+                          - - symbol: not
+                            - - symbol: has
+                              - symbol: record
+                              - symbol: field
+                        - - "name"
+                          - owner
+                          - dependencies
+                      name:
+                        - symbol: get
+                        - symbol: record
+                        - name
+                        - ~
+                      broken:
+                        - symbol: filter
+                        - - symbol: fn
+                          - - symbol: dep
+                          - - symbol: not
+                            - - symbol: has
+                              - symbol: names
+                              - symbol: dep
+                        - - symbol: get
+                          - symbol: record
+                          - dependencies
+                          - []
+                      duplicate:
+                        - symbol: and
+                        - - symbol: ne
+                          - symbol: name
+                          - ~
+                        - - symbol: gt
+                          - - symbol: get
+                            - symbol: counts
+                            - symbol: name
+                            - 0
+                          - 1
+                    - - symbol: set
+                      - - symbol: set
+                        - - symbol: set
+                          - - symbol: set
+                            - {}
+                            - name
+                            - symbol: name
+                          - missing
+                          - symbol: missing
+                        - duplicate
+                        - symbol: duplicate
+                      - broken
+                      - symbol: broken
+                - symbol: records
+          report:
+            - symbol: validate
+            - symbol: projects
+          valid:
+            - symbol: validate
+            - - name:
+                  symbol: core
+                owner:
+                  symbol: runtime
+                dependencies: []
+              - name:
+                  symbol: cli
+                owner:
+                  symbol: tools
+                dependencies:
+                  - "core"
+          empty:
+            - symbol: validate
+            - []

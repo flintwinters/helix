@@ -2,17 +2,17 @@
 //! violation), and subtyping. Nothing here converts or repairs a value; it only reports where a
 //! value does not fit.
 
-use yaml_rust2::yaml::Hash;
-use yaml_rust2::Yaml;
+use crate::value::Hash;
+use crate::value::Value;
 
 use crate::builtins::value::{equal, is_function, type_name};
 use crate::error::s;
 
 /// Runs a refinement's `[fn, [value], body]` source on a value. `Err` is a failure inside the
 /// predicate, reported as a violation rather than aborting the check.
-pub type Pred<'a> = dyn FnMut(&Yaml, &Yaml) -> Result<bool, String> + 'a;
+pub type Pred<'a> = dyn FnMut(&Value, &Value) -> Result<bool, String> + 'a;
 
-const PRIMITIVES: [&str; 11] = ["any", "never", "integer", "float", "string", "boolean", "null", "list", "map", "secret", "function"];
+const PRIMITIVES: [&str; 12] = ["any", "never", "integer", "float", "string", "boolean", "null", "list", "map", "secret", "function", "vm"];
 
 /// Whether `name` is a primitive type, which evaluates as a bare symbol when nothing shadows it.
 pub fn is_primitive(name: &str) -> bool {
@@ -30,21 +30,22 @@ pub(super) enum Ty {
     Null,
     Secret,
     Function,
+    Vm,
     List(Box<Ty>),
     Map(Box<Ty>),
     /// Closed: a value may not carry fields the record does not declare.
     Record(Vec<(String, Field)>),
     Union(Vec<Ty>),
-    Enum(Vec<Yaml>),
+    Enum(Vec<Value>),
     /// A base type plus the raw source of a predicate.
-    Refine(Box<Ty>, Yaml),
+    Refine(Box<Ty>, Value),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct Field {
     pub ty: Ty,
     pub required: bool,
-    pub default: Option<Yaml>,
+    pub default: Option<Value>,
 }
 
 /// A place where a value does not fit its type: `at` is the path inside the checked value.
@@ -53,8 +54,8 @@ pub struct Violation {
     message: String,
 }
 
-pub(super) fn mapping<const N: usize>(entries: [(&str, Yaml); N]) -> Yaml {
-    Yaml::Hash(entries.into_iter().map(|(k, v)| (s(k), v)).collect())
+pub(super) fn mapping<const N: usize>(entries: [(&str, Value); N]) -> Value {
+    Value::Hash(entries.into_iter().map(|(k, v)| (s(k), v)).collect())
 }
 
 impl Violation {
@@ -66,7 +67,7 @@ impl Violation {
         &self.message
     }
 
-    pub fn to_yaml(&self) -> Yaml {
+    pub fn to_value(&self) -> Value {
         mapping([("at", s(&self.at)), ("message", s(&self.message))])
     }
 }
@@ -74,19 +75,19 @@ impl Violation {
 
 pub(super) fn text<'a>(map: &'a Hash, key: &str) -> Option<&'a str> {
     match map.get(&s(key)) {
-        Some(Yaml::String(t)) => Some(t),
+        Some(Value::String(t)) => Some(t),
         _ => None,
     }
 }
 
-fn member<'a>(map: &'a Hash, key: &str) -> Result<&'a Yaml, String> {
+fn member<'a>(map: &'a Hash, key: &str) -> Result<&'a Value, String> {
     map.get(&s(key)).ok_or_else(|| format!("a `{}` type needs `{key}`", text(map, "type").unwrap_or("?")))
 }
 
 impl Ty {
-    pub(super) fn parse(ty: &Yaml) -> Result<Ty, String> {
+    pub(super) fn parse(ty: &Value) -> Result<Ty, String> {
         match ty {
-            Yaml::String(name) => Ok(match name.as_str() {
+            Value::String(name) => Ok(match name.as_str() {
                 "any" => Ty::Any,
                 "never" => Ty::Never,
                 "integer" => Ty::Int,
@@ -98,25 +99,26 @@ impl Ty {
                 "map" => Ty::Map(Box::new(Ty::Any)),
                 "secret" => Ty::Secret,
                 "function" => Ty::Function,
+                "vm" => Ty::Vm,
                 other => return Err(format!("unknown type `{other}`")),
             }),
-            Yaml::Hash(map) => {
+            Value::Hash(map) => {
                 let kind = text(map, "type").ok_or("a type map needs a string `type`")?;
                 match kind {
                     "list" => Ok(Ty::List(Box::new(Ty::parse(member(map, "of")?)?))),
                     "map" => Ok(Ty::Map(Box::new(Ty::parse(member(map, "of")?)?))),
                     "union" => match member(map, "of")? {
-                        Yaml::Array(members) if !members.is_empty() => Ok(Ty::Union(members.iter().map(Ty::parse).collect::<Result<_, _>>()?)),
+                        Value::Array(members) if !members.is_empty() => Ok(Ty::Union(members.iter().map(Ty::parse).collect::<Result<_, _>>()?)),
                         _ => Err("a `union` needs a non-empty list `of` types".into()),
                     },
                     "enum" => match member(map, "values")? {
-                        Yaml::Array(values) if !values.is_empty() => Ok(Ty::Enum(values.clone())),
+                        Value::Array(values) if !values.is_empty() => Ok(Ty::Enum(values.to_vec())),
                         _ => Err("an `enum` needs a non-empty list of `values`".into()),
                     },
                     "literal" => Ok(Ty::Enum(vec![member(map, "value")?.clone()])),
                     "refine" => Ok(Ty::Refine(Box::new(Ty::parse(member(map, "of")?)?), member(map, "check")?.clone())),
                     "record" | "class" => match member(map, "fields")? {
-                        Yaml::Hash(fields) => fields.iter().map(|(name, spec)| Ok((key(name)?, Field::parse(spec)?))).collect::<Result<_, String>>().map(Ty::Record),
+                        Value::Hash(fields) => fields.iter().map(|(name, spec)| Ok((key(name)?, Field::parse(spec)?))).collect::<Result<_, String>>().map(Ty::Record),
                         _ => Err(format!("a `{kind}` needs a map of `fields`")),
                     },
                     other => Err(format!("`{other}` is not a type constructor")),
@@ -138,6 +140,7 @@ impl Ty {
             Ty::Null => "null".into(),
             Ty::Secret => "secret".into(),
             Ty::Function => "function".into(),
+            Ty::Vm => "vm".into(),
             Ty::List(of) if **of == Ty::Any => "list".into(),
             Ty::List(of) => format!("list of {}", of.name()),
             Ty::Map(of) if **of == Ty::Any => "map".into(),
@@ -150,17 +153,17 @@ impl Ty {
     }
 }
 
-fn key(name: &Yaml) -> Result<String, String> {
+fn key(name: &Value) -> Result<String, String> {
     match name {
-        Yaml::String(k) => Ok(k.clone()),
+        Value::String(k) => Ok(k.clone()),
         _ => Err("field names must be strings".into()),
     }
 }
 
 impl Field {
     /// A field spec: a bare type (required), `[optional, T]` or `[default, T, v]`.
-    pub(super) fn parse(spec: &Yaml) -> Result<Field, String> {
-        if let Yaml::Hash(map) = spec {
+    pub(super) fn parse(spec: &Value) -> Result<Field, String> {
+        if let Value::Hash(map) = spec {
             match text(map, "type") {
                 Some("optional") => return Ok(Field { ty: Ty::parse(member(map, "of")?)?, required: false, default: None }),
                 Some("default") => return Ok(Field { ty: Ty::parse(member(map, "of")?)?, required: false, default: Some(member(map, "default")?.clone()) }),
@@ -172,12 +175,13 @@ impl Field {
 }
 
 /// A scalar rendered for messages.
-fn show(value: &Yaml) -> String {
+fn show(value: &Value) -> String {
     match value {
-        Yaml::String(t) | Yaml::Real(t) => t.clone(),
-        Yaml::Integer(i) => i.to_string(),
-        Yaml::Boolean(b) => b.to_string(),
-        Yaml::Null => "null".into(),
+        Value::String(t) => t.clone(),
+        Value::Float(t) => format!("{t:?}"),
+        Value::Integer(i) => i.to_string(),
+        Value::Boolean(b) => b.to_string(),
+        Value::Null => "null".into(),
         other => type_name(other).into(),
     }
 }
@@ -186,16 +190,17 @@ fn inside(at: &str, key: &str) -> String {
     if at == "/" { format!("/{key}") } else { format!("{at}/{key}") }
 }
 
-fn check(value: &Yaml, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violation>) {
+fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violation>) {
     let mismatch = |out: &mut Vec<Violation>| out.push(Violation { at: at.into(), message: format!("expected {}, got {}", ty.name(), type_name(value)) });
     match (ty, value) {
-        (Ty::Any, _) | (Ty::Int, Yaml::Integer(_)) | (Ty::Float, Yaml::Real(_)) | (Ty::Str, Yaml::String(_)) | (Ty::Bool, Yaml::Boolean(_)) | (Ty::Null, Yaml::Null) => {}
+        (Ty::Any, _) | (Ty::Int, Value::Integer(_)) | (Ty::Float, Value::Float(_)) | (Ty::Str, Value::String(_)) | (Ty::Bool, Value::Boolean(_)) | (Ty::Null, Value::Null) => {}
         (Ty::Function, _) if is_function(value) => {}
-        (Ty::Secret, Yaml::Hash(h)) if h.len() == 2 && text(h, "type") == Some("secret") && text(h, "ref").is_some() => {}
-        (Ty::Secret, Yaml::String(_)) => out.push(Violation { at: at.into(), message: "a secret is a handle (`[secret, ref]`), not an inline string".into() }),
-        (Ty::List(of), Yaml::Array(items)) => items.iter().enumerate().for_each(|(i, item)| check(item, of, &inside(at, &i.to_string()), pred, out)),
-        (Ty::Map(of), Yaml::Hash(h)) => h.iter().for_each(|(k, v)| check(v, of, &inside(at, &show(k)), pred, out)),
-        (Ty::Record(fields), Yaml::Hash(h)) => {
+        (Ty::Vm, Value::Machine(_)) => {}
+        (Ty::Secret, Value::Hash(h)) if h.len() == 2 && text(h, "type") == Some("secret") && text(h, "ref").is_some() => {}
+        (Ty::Secret, Value::String(_)) => out.push(Violation { at: at.into(), message: "a secret is a handle (`[secret, ref]`), not an inline string".into() }),
+        (Ty::List(of), Value::Array(items)) => items.iter().enumerate().for_each(|(i, item)| check(item, of, &inside(at, &i.to_string()), pred, out)),
+        (Ty::Map(of), Value::Hash(h)) => h.iter().for_each(|(k, v)| check(v, of, &inside(at, &show(k)), pred, out)),
+        (Ty::Record(fields), Value::Hash(h)) => {
             for (name, field) in fields {
                 match h.get(&s(name)) {
                     Some(v) => check(v, &field.ty, &inside(at, name), pred, out),
@@ -224,21 +229,21 @@ fn check(value: &Yaml, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violati
     }
 }
 
-pub(super) fn holds(value: &Yaml, ty: &Ty, pred: &mut Pred) -> bool {
+pub(super) fn holds(value: &Value, ty: &Ty, pred: &mut Pred) -> bool {
     let mut out = Vec::new();
     check(value, ty, "/", pred, &mut out);
     out.is_empty()
 }
 
 /// Every place `value` does not fit the parsed type.
-pub(super) fn check_ty(value: &Yaml, ty: &Ty, pred: &mut Pred) -> Vec<Violation> {
+pub(super) fn check_ty(value: &Value, ty: &Ty, pred: &mut Pred) -> Vec<Violation> {
     let mut out = Vec::new();
     check(value, ty, "/", pred, &mut out);
     out
 }
 
 /// Every place `value` does not fit `ty`; `Err` when `ty` is not a type at all.
-pub fn violations(value: &Yaml, ty: &Yaml, pred: &mut Pred) -> Result<Vec<Violation>, String> {
+pub fn violations(value: &Value, ty: &Value, pred: &mut Pred) -> Result<Vec<Violation>, String> {
     let mut out = Vec::new();
     check(value, &Ty::parse(ty)?, "/", pred, &mut out);
     Ok(out)

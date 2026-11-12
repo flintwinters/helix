@@ -3,5 +3,6 @@ error:
   kind: arity
   message: "`import` takes 1 argument, got 0"
   path: /
+  reference: []
   line: 1
   column: 1

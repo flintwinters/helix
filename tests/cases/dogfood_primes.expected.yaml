@@ -1,56 +1,11 @@
 status: finished
 root:
   range:
-    - fn
-    - - lo
-      - hi
-    - - until
-      - - fn
-        - - xs
-        - - eq
-          - - len
-            - xs
-          - - sub
-            - hi
-            - lo
-      - - fn
-        - - xs
-        - - append
-          - xs
-          - - add
-            - lo
-            - - len
-              - xs
-      - []
+    ref: object0
   divisible:
-    - fn
-    - - n
-      - d
-    - - cond
-      - - gt
-        - - mul
-          - d
-          - d
-        - n
-      - false
-      - - eq
-        - - mod
-          - n
-          - d
-        - 0
-      - true
-      - - divisible
-        - n
-        - - add
-          - d
-          - 1
+    ref: object1
   prime:
-    - fn
-    - - n
-    - - not
-      - - divisible
-        - n
-        - 2
+    ref: object2
   primes:
     - 2
     - 3
@@ -68,3 +23,160 @@ root:
     - 43
     - 47
   count: 15
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object3
+    code:
+      - symbol: fn
+      - - symbol: lo
+        - symbol: hi
+      - - symbol: until
+        - - symbol: fn
+          - - symbol: xs
+          - - symbol: eq
+            - - symbol: len
+              - symbol: xs
+            - - symbol: sub
+              - symbol: hi
+              - symbol: lo
+        - - symbol: fn
+          - - symbol: xs
+          - - symbol: append
+            - symbol: xs
+            - - symbol: add
+              - symbol: lo
+              - - symbol: len
+                - symbol: xs
+        - []
+    location:
+      source: "<root>"
+      path:
+        - "range"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object3
+    code:
+      - symbol: fn
+      - - symbol: "n"
+        - symbol: d
+      - - symbol: cond
+        - - symbol: gt
+          - - symbol: mul
+            - symbol: d
+            - symbol: d
+          - symbol: "n"
+        - false
+        - - symbol: eq
+          - - symbol: mod
+            - symbol: "n"
+            - symbol: d
+          - 0
+        - true
+        - - symbol: divisible
+          - symbol: "n"
+          - - symbol: add
+            - symbol: d
+            - 1
+    location:
+      source: "<root>"
+      path:
+        - "divisible"
+    environment: []
+    bindings:
+      divisible:
+        code:
+          source: "<root>"
+          path:
+            - "divisible"
+  object2:
+    kind: function
+    program:
+      ref: object3
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: not
+        - - symbol: divisible
+          - symbol: "n"
+          - 2
+    location:
+      source: "<root>"
+      path:
+        - "prime"
+    environment: []
+    bindings:
+      divisible:
+        code:
+          source: "<root>"
+          path:
+            - "divisible"
+  object3:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          range:
+            - symbol: fn
+            - - symbol: lo
+              - symbol: hi
+            - - symbol: until
+              - - symbol: fn
+                - - symbol: xs
+                - - symbol: eq
+                  - - symbol: len
+                    - symbol: xs
+                  - - symbol: sub
+                    - symbol: hi
+                    - symbol: lo
+              - - symbol: fn
+                - - symbol: xs
+                - - symbol: append
+                  - symbol: xs
+                  - - symbol: add
+                    - symbol: lo
+                    - - symbol: len
+                      - symbol: xs
+              - []
+          divisible:
+            - symbol: fn
+            - - symbol: "n"
+              - symbol: d
+            - - symbol: cond
+              - - symbol: gt
+                - - symbol: mul
+                  - symbol: d
+                  - symbol: d
+                - symbol: "n"
+              - false
+              - - symbol: eq
+                - - symbol: mod
+                  - symbol: "n"
+                  - symbol: d
+                - 0
+              - true
+              - - symbol: divisible
+                - symbol: "n"
+                - - symbol: add
+                  - symbol: d
+                  - 1
+          prime:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: not
+              - - symbol: divisible
+                - symbol: "n"
+                - 2
+          primes:
+            - symbol: filter
+            - symbol: prime
+            - - symbol: range
+              - 2
+              - 50
+          count:
+            - symbol: len
+            - symbol: primes

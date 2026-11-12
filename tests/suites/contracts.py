@@ -1,4 +1,6 @@
 """Bounded contract suites, orchestrated only by manage.py test."""
+import contextlib
+import io
 import json
 import random
 import subprocess
@@ -22,7 +24,8 @@ def checked(h, source):
 def harness(h):
     # Regression orchestration must keep failures from every selected suite.
     with patch.object(h, "SUITES", {"first": "probe", "second": "probe"}), \
-         patch.object(sys.modules[__name__], "run", side_effect=[["probe failure"], []]) as dispatch:
+         patch.object(sys.modules[__name__], "run", side_effect=[["probe failure"], []]) as dispatch, \
+         contextlib.redirect_stderr(io.StringIO()):
         assert h.regression(False, ["first", "second"]) == 1
         assert [call.args[0] for call in dispatch.call_args_list] == ["first", "second"]
     for output, code in [("", 0), ("[", 0), ("status: ready", 0),
@@ -34,6 +37,9 @@ def harness(h):
     assert h.root_section("status: finished\nroot:\n  a: 1\n") == "a: 1\n"
     assert h.root_section("status: finished\nroot:\n  a: 1\nphase: type\n") == "a: 1\n"
     assert h.root_section("status: error\n") is None
+    assert h.root_section("status: finished\nroot: 42\n") is None
+    assert h.root_section("status: finished\nroot:\n  ref: object0\nobjects: {}\n") is None
+    assert h.root_section("status: finished\nroot:\n  representation: object_graph\n") == "representation: object_graph\n"
     assert "" in list(h.mutations("a: 1\nb: 2\n"))
     with patch.object(h.subprocess, "run", side_effect=subprocess.TimeoutExpired("helix", 1)):
         result = h.helix("run", "-", stdin="1")
@@ -49,8 +55,6 @@ def harness(h):
                for d in h.COMMANDS for p in d.glob("*.expected.yaml"))
 
 
-    import contextlib
-    import io
     with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="harness-") as directory:
         case = Path(directory) / "probe.yaml"
         case.write_text("value: 42")
@@ -144,7 +148,7 @@ def generated(h):
         assert root["s"] == root["p"] == sum(xs), f"seed={seed} sample={i}"
         assert root["r"] == xs[::-1] and root["rr"] == xs
     literals = [None, True, False, 0, 0.5, -1.25, -9223372036854775808, 9223372036854775807,
-                "add", "true", "null", "1", "é雪🙂", "line\nbreak", "", "a: b", "'quoted'", "\\"]
+                "add", "fn", "vm", "step", "inspect", "ref", "objects", "true", "null", "1", "é雪🙂", "line\nbreak", "", "a: b", "'quoted'", "\\"]
     for _ in range(30):
         value = {"value": [rng.choice(literals) for _ in range(rng.randrange(8))], "nested": {"text": rng.choice(literals)}}
         # Quote all strings so generated source cannot introduce symbols or expressions.
@@ -266,3 +270,21 @@ def scale(h):
         assert len(root) == count and root[f"v{count - 1}"] == count
         print(f"scale: {1 + 4 * count} nodes, {elapsed:.3f}s (debug CLI + Python decode)")
         assert elapsed < (1 if count == 2500 else 10), "scale workload exceeded its time budget"
+
+
+def execution(h):
+    import os
+    import signal
+    # Kill the whole Cargo/test process group on timeout, including a stuck test binary.
+    with subprocess.Popen(["cargo", "test", "--quiet", "--test", "execution", "--test", "execution_memory", "--", "--nocapture"],
+                          cwd=h.ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                          text=True, start_new_session=True) as process:
+        try:
+            output, _ = process.communicate(timeout=120)
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGKILL)
+            output, _ = process.communicate()
+            raise AssertionError(f"execution contracts timed out; {output}")
+    (h.ROOT / "runtime" / "execution-profile.log").write_text(output)
+    print(output, end="")
+    assert process.returncode == 0, "execution contracts failed"

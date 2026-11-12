@@ -47,6 +47,10 @@ root:
     kind: conflict
     message: "field `port` has different declarations from both `a` and `b`; resolve it in `ab`"
     path: /type_clash/1/2
+    reference:
+      - "type_clash"
+      - 1
+      - 2
     line: 4
     column: 34
     data:
@@ -102,9 +106,152 @@ root:
     port: 5
     mode: fast
   positive:
-    - fn
-    - - n
-    - - gt
-      - n
-      - 0
+    ref: object0
   widening: "`w` redeclares field `port` in a way that does not fit the declaration from `a`"
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: gt
+        - symbol: "n"
+        - 0
+    location:
+      source: "<root>"
+      path:
+        - "positive"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          a:
+            - symbol: class
+            - a
+            - - symbol: record
+              - port
+              - symbol: integer
+              - mode
+              - symbol: string
+            - mode: fast
+          b:
+            - symbol: class
+            - b
+            - - symbol: record
+              - port
+              - symbol: string
+              - mode
+              - symbol: string
+            - mode: slow
+          b2:
+            - symbol: class
+            - b2
+            - - symbol: record
+              - port
+              - symbol: integer
+            - {}
+          type_clash:
+            - symbol: try
+            - - symbol: extend
+              - ab
+              - - symbol: list
+                - symbol: a
+                - symbol: b
+              - - symbol: record
+              - {}
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          compatible_parents:
+            - symbol: try
+            - - symbol: extend
+              - ab2
+              - - symbol: list
+                - symbol: a
+                - symbol: b2
+              - - symbol: record
+              - {}
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          mode_clash:
+            - symbol: try
+            - - symbol: extend
+              - m
+              - - symbol: list
+                - symbol: a
+                - - symbol: class
+                  - c
+                  - - symbol: record
+                    - mode
+                    - symbol: string
+                  - mode: slow
+              - - symbol: record
+              - {}
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - data
+          resolved:
+            - symbol: extend
+            - m2
+            - - symbol: list
+              - symbol: a
+              - - symbol: class
+                - c
+                - - symbol: record
+                  - mode
+                  - symbol: string
+                - mode: slow
+            - - symbol: record
+            - mode: fast
+          same_declaration_ok:
+            - symbol: get
+            - - symbol: extend
+              - ok
+              - - symbol: list
+                - symbol: a
+                - symbol: b2
+              - - symbol: record
+              - port: 1
+            - values
+          narrowing:
+            - symbol: get
+            - - symbol: extend
+              - "n"
+              - - symbol: list
+                - symbol: a
+              - - symbol: record
+                - port
+                - - symbol: refine
+                  - symbol: integer
+                  - symbol: positive
+              - port: 5
+            - values
+          positive:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: gt
+              - symbol: "n"
+              - 0
+          widening:
+            - symbol: try
+            - - symbol: extend
+              - w
+              - - symbol: list
+                - symbol: a
+              - - symbol: record
+                - port
+                - symbol: any
+              - {}
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - message

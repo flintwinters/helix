@@ -32,7 +32,7 @@ root:
   z: 10
 ```
 
-The emitter quotes strings where needed to preserve their meaning when read again. The evaluated `root` can itself be run as a program; the test suite checks that finished roots remain stable across this round trip.
+The emitter quotes strings where needed to preserve their meaning when read again. An ordinary-data `root` can itself be run as a program; the test suite checks that those roots remain stable across this round trip. Function and machine values instead use finite named inspection graphs, which are not executable snapshots.
 
 Use `./manage.py run -` to read a program from stdin. After building, the executable is also available as `target/debug/helix run FILE`.
 
@@ -47,7 +47,7 @@ double: [fn, [n], [mul, n, 2]]
 results: [map, double, [1, 2, 3]]
 ```
 
-Execution currently runs to completion or error. Suspend/resume remains a design goal: a machine promising reversibility must expose all state needed to restore its execution, including calls, locals, continuations, and pending effects. That promise is not implemented yet.
+Execution uses explicit immutable machine versions. Rust callers can retain a `Vm`, call `step()` and independently run either branch; Helix programs use `[vm, function]`, `[step, child]` and `[inspect, child]`. Calls, scopes, iterations, type predicates and cleanup have inspectable continuations. See [`vm_parent_child.yaml`](tests/cases/vm_parent_child.yaml) for a complete parent/child demonstration. Disk save/restore, the reversibility promise, effects and debugger UI remain separate work.
 
 The longer-term direction is declarative machine configuration through first-class types: describe and validate a machine before applying changes to it. See the [charter](CHARTER.md) for the roadmap and the [language reference](LANGUAGE.md) for documented syntax and semantics.
 
@@ -101,9 +101,11 @@ The Rust crate exposes a library and a CLI. The source is organized around:
 | Path | Responsibility |
 | --- | --- |
 | `src/graph.rs` | YAML parsing, object graph, parent links, and source spans |
-| `src/eval.rs` | Evaluation, lexical scope, calls, and control flow |
+| `src/model.rs` | Immutable syntax, runtime values and explicit execution-state definitions |
+| `src/eval.rs` | One iterative request/continuation dispatcher, lexical scope, calls and type predicates |
 | `src/builtins.rs`, `src/builtins/` | Builtin operations and shared value/error helpers |
-| `src/vm.rs` | VM lifecycle and serialized state |
+| `src/vm.rs` | Immutable stepping, lifecycle and iterative nested-machine scheduling |
+| `src/value.rs`, `src/inspect.rs` | Exact equality, shared values and named object-graph inspection |
 | `src/link.rs`, `src/library.rs`, `std/` | File imports and embedded Helix libraries |
 | `src/emit.rs`, `src/error.rs` | Round-trippable YAML output and structured diagnostics |
 | `tests/` | Programs paired with expected YAML states |
@@ -152,17 +154,18 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 
 | Contract and exercised failure paths | Suite / authoritative fixtures | Known gaps |
 | --- | --- | --- |
-| Language results, structured errors, deterministic output, saved-root fixpoints | `golden`; `tests/cases/`, `tests/check/` when present | Not every builtin/type/arity combination has a case |
+| Language results, structured errors, deterministic output, ordinary-data fixpoints and object inspection | `golden`; `tests/cases/`, `tests/check/` when present | Not every builtin/type/arity combination has a case |
 | Truncations and deletions produce structured states, no crashes | `robustness`; every golden source | Finite mutations are not a proof of panic freedom |
 | Discovery pairs, invalid states, timeout/crash detection, wrong golden results, broken reload comparison | `harness`; synthetic fixtures and subprocess faults | Production mutation testing remains open |
 | Usage errors, inaccessible files, run/check files versus stdin, stream and exit contracts | `cli` | No successful `--help` or shell completion yet |
 | Integer expression trees versus Python, list sums/reversal laws, Unicode/nested literal save cycles | `generated`; seed 714209 | Bounded integers and exact binary fractions; general float/callable generation remains open |
 | Helix assertions, bounded collection laws, nested reports, runner failures | `dogfood`; `tests/dogfood/` | Explicit finite samples; no automatic random generation or shrinking |
 | Shared import dependencies, cycles, missing/malformed files, isolation and imported blame | `imports`; generated file trees | Symlink/path-platform combinations not exhaustive |
-| Independent VMs, repeated run, terminal failures, successful and failing check | `library`; `tests/vm.rs` | Ready states cannot be restored; suspension unavailable |
+| Independent VMs, repeated run, terminal failures, successful and failing check | `library`; `tests/vm.rs` | Disk restoration is not implemented |
+| Stepping versus run, arbitrary pauses, retained versions, nested children, captures, recursion, iteration, predicates and cleanup | `execution`; `tests/execution.rs`, `tests/execution_memory.rs` | Allocation accounting covers representative bounded workloads, not all programs |
 | Quoted/block scalars, nested lookup, duplicate-key rejection, unsupported YAML constructs, precise source blame | `parser` | Direct internal parent-link/path coverage remains open |
 | Token mutations across parsing/linking/evaluation/emission, deletion minimization | `fuzz`; seed 901723 | Bounded 200 samples; not coverage-guided fuzzing |
-| 1,001 / 4,001 / 10,001-node flat arithmetic maps | `scale` | No memory sampling or scaling regression baseline yet |
+| 1,001 / 4,001 / 10,001-node flat arithmetic maps | `scale` | Flat-map timing; versioned-execution allocation accounting lives in `execution` |
 
 These are executable branch scenarios and failure-path contracts, not compiler
 branch-coverage percentages. No instrumented Rust branch report exists yet; do not
@@ -172,7 +175,15 @@ The suite requires the largest workload to finish within one second, in addition
 to the subprocess timeout. The measurement is evidence for this
 workload, not a universal runtime guarantee.
 
-CI runs fast suites on pushes and pull requests; a weekly schedule and manual runs
+`./manage.py test --suite execution` records representative execution profiles in
+`runtime/execution-profile.log`. A local debug run of 2,000 iterations took about
+0.06 seconds uninterrupted and 0.29 seconds with repeated immutable steps. Live
+allocations stayed near 22 KiB when increasing from 200 to 2,000 iterations; retaining
+16 checkpoints used about 58 KiB. These are allocation-accounted workload measurements,
+not process RSS or a general performance guarantee. Tests bound retained-history growth
+and transient copying without freezing transition counts.
+
+CI runs fast suites, including execution contracts, on pushes and pull requests; a weekly schedule and manual runs
 include robustness, fuzz and scale checks. Failed runs upload `runtime/` artifacts.
 The workflow itself needs a first hosted run to establish its environment timings.
 
@@ -226,7 +237,7 @@ suite cover the shared shim and host bridge.
 
 Helix is experimental, before a stable language or persisted-state format release.
 The current behavioral contracts are readable YAML, structured errors with source
-blame, lexical scope, deterministic pure evaluation and finished-root round trips.
+blame, lexical scope, deterministic pure evaluation, immutable execution versions and ordinary-data root round trips. Function and machine output is inspection data, not a disk restoration contract.
 Changes to these contracts require regression cases and documentation. Golden
 fixtures freeze the currently expected behavior for development; they do not
 promise cross-version resume compatibility.
@@ -241,6 +252,7 @@ suspended execution format or effect permissions are promised by this release.
 
 ### Unreleased
 
+- Replaced recursive evaluation with explicit immutable execution, first-class child machines, retained branches and named inspection graphs. Function values retain direct code and lexical environments; numeric comparisons are exact across integer/float boundaries.
 - Added selectable contract suites, subprocess timeouts, harness self-tests and
   direct public VM tests behind `./manage.py test`.
 - Added fixed-seed integer/library oracles, repeated literal serialization checks,

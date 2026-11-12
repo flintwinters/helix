@@ -3,5 +3,7 @@ error:
   kind: arity
   message: "`add` takes at least 2 arguments, got 1"
   path: /b
+  reference:
+    - "b"
   line: 2
   column: 4

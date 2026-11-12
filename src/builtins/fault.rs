@@ -1,6 +1,6 @@
 //! The failure value builtins return; the VM maps it onto the blamed argument node.
 
-use yaml_rust2::Yaml;
+use crate::value::Value;
 
 use super::value::type_name;
 
@@ -10,9 +10,9 @@ pub struct Fault {
     pub message: String,
     pub arg: Option<usize>,
     /// Payload of a user `raise`; builtins never set it.
-    pub data: Option<Yaml>,
+    pub data: Option<Value>,
     /// The original error map when user code re-raises it.
-    pub cause: Option<Yaml>,
+    pub cause: Option<Value>,
 }
 
 impl Fault {
@@ -24,7 +24,7 @@ impl Fault {
         Fault { kind: kind.into(), message, arg: None, data: None, cause: None }
     }
 
-    pub(super) fn expected(arg: usize, wanted: &str, got: &Yaml) -> Fault {
+    pub(super) fn expected(arg: usize, wanted: &str, got: &Value) -> Fault {
         Fault::at(arg, "type", format!("expected {wanted}, got {}", type_name(got)))
     }
 }

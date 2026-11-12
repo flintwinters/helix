@@ -4,6 +4,9 @@ root:
     kind: out_of_stock
     message: no widgets left
     path: /custom/1
+    reference:
+      - "custom"
+      - 1
     line: 2
     column: 15
     data:

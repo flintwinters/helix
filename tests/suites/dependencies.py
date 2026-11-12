@@ -21,7 +21,7 @@ def verify(h):
         moved = base / "relocated"
         shutil.move(str(original), moved)
         second = h.helix("run", str(moved / "main.yaml"))
-        assert second.returncode == 0 and second.stdout == first.stdout, second.stdout
+        assert second.returncode == 0 and second.stdout == first.stdout.replace(str(original), str(moved)), second.stdout
         missing = moved / "modules" / "vendor" / "offset-v1" / "constants.yaml"
         missing.unlink()
         failed = h.helix("run", str(moved / "main.yaml"))

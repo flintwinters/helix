@@ -3,5 +3,7 @@ error:
   kind: arity
   message: "`cond` takes condition/value pairs followed by a default"
   path: /r
+  reference:
+    - "r"
   line: 1
   column: 4

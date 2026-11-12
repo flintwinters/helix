@@ -3,5 +3,8 @@ error:
   kind: range
   message: index -1 is negative
   path: /x/2
+  reference:
+    - "x"
+    - 2
   line: 1
   column: 18

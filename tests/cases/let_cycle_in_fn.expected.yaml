@@ -3,6 +3,11 @@ error:
   kind: cycle
   message: value depends on itself
   path: /f/2/1/a
+  reference:
+    - "f"
+    - 2
+    - 1
+    - a
   line: 1
   column: 24
   calls:

@@ -3,5 +3,8 @@ error:
   kind: type
   message: "expected boolean, got integer"
   path: /r/1
+  reference:
+    - "r"
+    - 1
   line: 1
   column: 13

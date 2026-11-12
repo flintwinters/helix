@@ -7,92 +7,344 @@ root:
         - "integer"
         - float
     abs:
-      - fn
-      - - - n
-          - number
-      - - if
-        - - lt
-          - n
-          - 0
-        - - neg
-          - n
-        - n
-      - number
+      ref: object0
     sign:
-      - fn
-      - - - n
-          - number
-      - - cond
-        - - lt
-          - n
-          - 0
-        - -1
-        - - gt
-          - n
-          - 0
-        - 1
-        - 0
-      - integer
+      ref: object1
     min:
-      - fn
-      - - - a
-          - number
-        - - b
-          - number
-      - - if
-        - - lt
-          - a
-          - b
-        - a
-        - b
-      - number
+      ref: object2
     max:
-      - fn
-      - - - a
-          - number
-        - - b
-          - number
-      - - if
-        - - gt
-          - a
-          - b
-        - a
-        - b
-      - number
+      ref: object3
     clamp:
-      - fn
-      - - - n
-          - number
-        - - lo
-          - number
-        - - hi
-          - number
-      - - max
-        - lo
-        - - min
-          - n
-          - hi
-      - number
+      ref: object4
     square:
-      - fn
-      - - - n
-          - number
-      - - mul
-        - n
-        - n
-      - number
+      ref: object5
   prices:
     - 3
     - 5
     - 8
   square_price:
-    - fn
-    - - price
-    - - math.square
-      - price
+    ref: object6
   squared:
     - 9
     - 25
     - 64
   valid: ~
   recovered: divide_by_zero
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object7
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+      - - symbol: if
+        - - symbol: lt
+          - symbol: "n"
+          - 0
+        - - symbol: neg
+          - symbol: "n"
+        - symbol: "n"
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "abs"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object1:
+    kind: function
+    program:
+      ref: object7
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+      - - symbol: cond
+        - - symbol: lt
+          - symbol: "n"
+          - 0
+        - -1
+        - - symbol: gt
+          - symbol: "n"
+          - 0
+        - 1
+        - 0
+      - symbol: integer
+    location:
+      source: "std:math"
+      path:
+        - "sign"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object2:
+    kind: function
+    program:
+      ref: object7
+    code:
+      - symbol: fn
+      - - - symbol: a
+          - symbol: number
+        - - symbol: b
+          - symbol: number
+      - - symbol: if
+        - - symbol: lt
+          - symbol: a
+          - symbol: b
+        - symbol: a
+        - symbol: b
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "min"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object3:
+    kind: function
+    program:
+      ref: object7
+    code:
+      - symbol: fn
+      - - - symbol: a
+          - symbol: number
+        - - symbol: b
+          - symbol: number
+      - - symbol: if
+        - - symbol: gt
+          - symbol: a
+          - symbol: b
+        - symbol: a
+        - symbol: b
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "max"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object4:
+    kind: function
+    program:
+      ref: object7
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+        - - symbol: lo
+          - symbol: number
+        - - symbol: hi
+          - symbol: number
+      - - symbol: max
+        - symbol: lo
+        - - symbol: min
+          - symbol: "n"
+          - symbol: hi
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "clamp"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+      max:
+        code:
+          source: "std:math"
+          path:
+            - "max"
+      min:
+        code:
+          source: "std:math"
+          path:
+            - "min"
+  object5:
+    kind: function
+    program:
+      ref: object7
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+      - - symbol: mul
+        - symbol: "n"
+        - symbol: "n"
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "square"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object6:
+    kind: function
+    program:
+      ref: object7
+    code:
+      - symbol: fn
+      - - symbol: price
+      - - symbol: math.square
+        - symbol: price
+    location:
+      source: "<root>"
+      path:
+        - "square_price"
+    environment: []
+    bindings:
+      math.square:
+        code:
+          source: "std:math"
+          path:
+            - "square"
+  object7:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          math:
+            - symbol: import
+            - symbol: "std:math"
+          prices:
+            - symbol: list
+            - 3
+            - 5
+            - 8
+          square_price:
+            - symbol: fn
+            - - symbol: price
+            - - symbol: math.square
+              - symbol: price
+          squared:
+            - symbol: map
+            - symbol: square_price
+            - symbol: prices
+          valid:
+            - symbol: assert
+            - - symbol: eq
+              - symbol: squared
+              - - symbol: list
+                - 9
+                - 25
+                - 64
+            - unexpected squared prices
+          recovered:
+            - symbol: try
+            - - symbol: div
+              - 1
+              - 0
+            - - symbol: fn
+              - - symbol: error
+              - - symbol: get
+                - symbol: error
+                - kind
+      - source: "std:math"
+        code:
+          number:
+            - symbol: union
+            - symbol: integer
+            - symbol: float
+          abs:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+            - - symbol: if
+              - - symbol: lt
+                - symbol: "n"
+                - 0
+              - - symbol: neg
+                - symbol: "n"
+              - symbol: "n"
+            - symbol: number
+          sign:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+            - - symbol: cond
+              - - symbol: lt
+                - symbol: "n"
+                - 0
+              - -1
+              - - symbol: gt
+                - symbol: "n"
+                - 0
+              - 1
+              - 0
+            - symbol: integer
+          min:
+            - symbol: fn
+            - - - symbol: a
+                - symbol: number
+              - - symbol: b
+                - symbol: number
+            - - symbol: if
+              - - symbol: lt
+                - symbol: a
+                - symbol: b
+              - symbol: a
+              - symbol: b
+            - symbol: number
+          max:
+            - symbol: fn
+            - - - symbol: a
+                - symbol: number
+              - - symbol: b
+                - symbol: number
+            - - symbol: if
+              - - symbol: gt
+                - symbol: a
+                - symbol: b
+              - symbol: a
+              - symbol: b
+            - symbol: number
+          clamp:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+              - - symbol: lo
+                - symbol: number
+              - - symbol: hi
+                - symbol: number
+            - - symbol: max
+              - symbol: lo
+              - - symbol: min
+                - symbol: "n"
+                - symbol: hi
+            - symbol: number
+          square:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+            - - symbol: mul
+              - symbol: "n"
+              - symbol: "n"
+            - symbol: number

@@ -8,11 +8,7 @@ root:
     - 5
     - 6
   double:
-    - fn
-    - - n
-    - - mul
-      - n
-      - 2
+    ref: object0
   doubled:
     - 2
     - 4
@@ -35,3 +31,85 @@ root:
     - 105
     - 106
   done: ~
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: mul
+        - symbol: "n"
+        - 2
+    location:
+      source: "<root>"
+      path:
+        - "double"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          xs:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+          double:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: mul
+              - symbol: "n"
+              - 2
+          doubled:
+            - symbol: map
+            - symbol: double
+            - symbol: xs
+          evens:
+            - symbol: filter
+            - - symbol: fn
+              - - symbol: "n"
+              - - symbol: eq
+                - - symbol: mod
+                  - symbol: "n"
+                  - 2
+                - 0
+            - symbol: xs
+          total:
+            - symbol: fold
+            - - symbol: fn
+              - - symbol: acc
+                - symbol: "n"
+              - - symbol: add
+                - symbol: acc
+                - symbol: "n"
+            - 0
+            - symbol: xs
+          empty_fold:
+            - symbol: fold
+            - - symbol: fn
+              - - symbol: acc
+                - symbol: "n"
+              - - symbol: add
+                - symbol: acc
+                - symbol: "n"
+            - 7
+            - []
+          shift: 100
+          shifted:
+            - symbol: map
+            - - symbol: fn
+              - - symbol: "n"
+              - - symbol: add
+                - symbol: "n"
+                - symbol: shift
+            - symbol: xs
+          done:
+            - symbol: each
+            - symbol: double
+            - symbol: xs

@@ -3,5 +3,7 @@ error:
   kind: divide_by_zero
   message: "`mod` by zero"
   path: /a
+  reference:
+    - "a"
   line: 1
   column: 4

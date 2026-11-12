@@ -1,35 +1,112 @@
 status: finished
 root:
   fact:
-    - fn
-    - - n
-    - - if
-      - - le
-        - n
-        - 1
-      - 1
-      - - mul
-        - n
-        - - fact
-          - - sub
-            - n
-            - 1
+    ref: object0
   fib:
-    - fn
-    - - n
-    - - if
-      - - lt
-        - n
-        - 2
-      - n
-      - - add
-        - - fib
-          - - sub
-            - n
-            - 1
-        - - fib
-          - - sub
-            - n
-            - 2
+    ref: object1
   f10: 3628800
   fib15: 610
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: if
+        - - symbol: le
+          - symbol: "n"
+          - 1
+        - 1
+        - - symbol: mul
+          - symbol: "n"
+          - - symbol: fact
+            - - symbol: sub
+              - symbol: "n"
+              - 1
+    location:
+      source: "<root>"
+      path:
+        - "fact"
+    environment: []
+    bindings:
+      fact:
+        code:
+          source: "<root>"
+          path:
+            - "fact"
+  object1:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: if
+        - - symbol: lt
+          - symbol: "n"
+          - 2
+        - symbol: "n"
+        - - symbol: add
+          - - symbol: fib
+            - - symbol: sub
+              - symbol: "n"
+              - 1
+          - - symbol: fib
+            - - symbol: sub
+              - symbol: "n"
+              - 2
+    location:
+      source: "<root>"
+      path:
+        - "fib"
+    environment: []
+    bindings:
+      fib:
+        code:
+          source: "<root>"
+          path:
+            - "fib"
+  object2:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          fact:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: if
+              - - symbol: le
+                - symbol: "n"
+                - 1
+              - 1
+              - - symbol: mul
+                - symbol: "n"
+                - - symbol: fact
+                  - - symbol: sub
+                    - symbol: "n"
+                    - 1
+          fib:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: if
+              - - symbol: lt
+                - symbol: "n"
+                - 2
+              - symbol: "n"
+              - - symbol: add
+                - - symbol: fib
+                  - - symbol: sub
+                    - symbol: "n"
+                    - 1
+                - - symbol: fib
+                  - - symbol: sub
+                    - symbol: "n"
+                    - 2
+          f10:
+            - symbol: fact
+            - 10
+          fib15:
+            - symbol: fib
+            - 15

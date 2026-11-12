@@ -4,5 +4,7 @@ error:
   message: "`div` by zero"
   file: tests/cases/modules/fails.yaml
   path: /boom
+  reference:
+    - "boom"
   line: 1
   column: 7

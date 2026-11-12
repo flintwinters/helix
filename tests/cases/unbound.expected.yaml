@@ -3,5 +3,8 @@ error:
   kind: unbound
   message: "unbound symbol `nope`"
   path: /b/2
+  reference:
+    - "b"
+    - 2
   line: 2
   column: 13

@@ -3,6 +3,8 @@ error:
   kind: invalid_order
   message: quantity must be positive
   path: /check
+  reference:
+    - "check"
   line: 1
   column: 8
   data:

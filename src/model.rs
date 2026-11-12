@@ -1,0 +1,261 @@
+//! Shared immutable syntax and execution state. Algorithms live in sibling modules.
+use crate::span::Span;
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+use std::sync::Arc;
+use yaml_rust2::Yaml;
+pub(crate) type NodeId = usize;
+pub(crate) const ROOT: NodeId = 0;
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum Segment {
+    Key(String),
+    Index(usize),
+}
+pub(crate) type Outcome = Result<Value, HelixError>;
+
+#[derive(Clone, Debug)]
+pub(crate) enum Value {
+    Null,
+    Boolean(bool),
+    Integer(i64),
+    Float(f64),
+    String(String),
+    Array(List),
+    Hash(Hash),
+    Function(Arc<Function>),
+    Machine(Arc<Vm>),
+}
+
+/// Ordered, string-keyed objects. The language never permits arbitrary value keys.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub(crate) struct Hash(pub(crate) Arc<hashlink::LinkedHashMap<MapKey, Value>>);
+
+#[derive(Clone, Debug)]
+pub(crate) struct MapKey(pub(crate) Value);
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub(crate) struct List(pub(crate) Arc<Vec<Value>>);
+
+#[derive(Clone, Debug)]
+pub(crate) struct Program {
+    pub graph: Graph,
+    pub(crate) modules: Modules,
+    pub(crate) code: Vec<Value>,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Scope {
+    pub function: NodeId,
+    pub args: Vec<Value>,
+}
+#[derive(Clone, Debug)]
+pub(crate) struct Function {
+    pub program: Arc<Program>,
+    pub node: NodeId,
+    pub environment: Vec<Scope>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum Binding {
+    Node(NodeId),
+    Value(Value),
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum Actor {
+    Builtin(String),
+    Function(Arc<Function>),
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum Mode {
+    Node,
+    Argument,
+}
+
+/// Each pending operation is plain, owned state; error handlers are continuations too.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum Request {
+    Eval(NodeId, Mode),
+    Finish(NodeId, usize, bool),
+    Actor(NodeId, Vec<NodeId>),
+    Collect {
+        site: NodeId,
+        actor: Option<Actor>,
+        nodes: Vec<NodeId>,
+        keys: Option<Vec<String>>,
+        values: Vec<Value>,
+        argument: bool,
+    },
+    Apply(NodeId, Actor, Vec<NodeId>, Vec<Value>),
+    Call(NodeId, Arc<Function>, Vec<Value>),
+    CallTrace(NodeId, Arc<Function>),
+    CallArgument(NodeId, Vec<Value>),
+    CallResolved(NodeId, Vec<Value>),
+    CallEnd {
+        environment: Vec<Scope>,
+        program: Arc<Program>,
+    },
+    BodyEnd {
+        result_type: Option<NodeId>,
+        body: NodeId,
+    },
+    ResultAnnotation(NodeId, Value),
+    ResultChecked(NodeId, Value),
+    Parameters {
+        site: NodeId,
+        function: Arc<Function>,
+        args: Vec<Value>,
+        index: usize,
+        found: Vec<Value>,
+    },
+    ParameterType {
+        site: NodeId,
+        function: Arc<Function>,
+        args: Vec<Value>,
+        index: usize,
+        found: Vec<Value>,
+        annotation: NodeId,
+    },
+    ParameterChecked {
+        site: NodeId,
+        function: Arc<Function>,
+        args: Vec<Value>,
+        index: usize,
+        found: Vec<Value>,
+    },
+    Branch {
+        name: String,
+        args: Vec<NodeId>,
+        index: usize,
+    },
+    Try(NodeId),
+    Finally(NodeId),
+    Cleanup(Outcome),
+    Iterate {
+        site: NodeId,
+        name: String,
+        args: Vec<NodeId>,
+        values: Vec<Value>,
+        index: usize,
+        output: Vec<Value>,
+        state: Value,
+        count: usize,
+    },
+    Iterated {
+        iteration: Box<Request>,
+        item: Value,
+    },
+    UntilTest(Box<Request>),
+    UntilNext(Box<Request>),
+    FormValue {
+        site: NodeId,
+        name: String,
+        args: Vec<NodeId>,
+        values: Vec<Value>,
+        index: usize,
+    },
+    Refine(NodeId, Vec<NodeId>, Value),
+    Refined(NodeId, Vec<NodeId>, Value),
+    Atomic(Atomic),
+    PredicateEnd(Atomic),
+    AdvanceChild,
+}
+
+/// A pure host operation can request a predicate. Completed answers are part of its continuation.
+/// Replaying the deterministic host computation never re-executes a completed Helix predicate.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Atomic {
+    pub(crate) site: NodeId,
+    pub(crate) nodes: Vec<NodeId>,
+    pub(crate) operation: Operation,
+    pub(crate) answers: Vec<Result<bool, String>>,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum Operation {
+    Builtin(String, Vec<Value>),
+    Violations(Value, Value),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Evaluator {
+    pub program: Arc<Program>,
+    pub environment: Vec<Scope>,
+    pub(crate) memo: HashMap<NodeId, Value>,
+    pub(crate) active: HashSet<(NodeId, usize)>,
+    pub(crate) requests: Vec<Request>,
+    pub(crate) answer: Option<Outcome>,
+    pub(crate) depth: usize,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum Kind {
+    /// `plain` is true for unquoted strings, which are symbols when they appear as expression arguments.
+    Scalar {
+        value: Yaml,
+        plain: bool,
+    },
+    Seq(Vec<NodeId>),
+    Map(Vec<(String, NodeId)>),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Node {
+    pub(crate) kind: Kind,
+    pub(crate) parent: Option<NodeId>,
+    pub(crate) span: Span,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub(crate) struct Graph {
+    pub(crate) nodes: Vec<Node>,
+    /// Imported files by the root of the subtree they were grafted as.
+    pub(crate) sources: HashMap<NodeId, String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct HelixError {
+    /// Stable machine-readable category; the full list is in `LANGUAGE.md`.
+    pub kind: String,
+    pub message: String,
+    /// The imported file the error lies in; absent for the program itself. `path`, `line` and
+    /// `column` are relative to that file.
+    pub file: Option<String>,
+    /// Root-relative object path of the offending node; absent for parse errors.
+    pub path: Option<String>,
+    pub(crate) reference: Option<Vec<Segment>>,
+    pub span: Span,
+    /// Plain-value payload attached by user code via `raise`.
+    pub data: Option<Value>,
+    /// Call sites ordered from the innermost invocation outward.
+    pub(crate) calls: Vec<Value>,
+    /// Complete original error supplied to a map-form re-raise.
+    pub(crate) cause: Option<Value>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub(crate) struct Modules {
+    pub(crate) linked: HashMap<NodeId, NodeId>,
+    pub(crate) roots: HashSet<NodeId>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Status {
+    Ready,
+    Running,
+    Finished,
+    Error,
+    Signaled,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Vm {
+    pub(crate) evaluator: Option<Arc<Evaluator>>,
+    pub(crate) source_file: Option<PathBuf>,
+    pub(crate) status: Status,
+    pub(crate) result: Option<Value>,
+    pub(crate) error: Option<HelixError>,
+    pub(crate) checking: bool,
+    pub(crate) errors: Vec<HelixError>,
+}
+
+pub(crate) fn string(text: &str) -> Value {
+    Value::String(text.into())
+}

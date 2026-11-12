@@ -1,23 +1,83 @@
 status: finished
 root:
   handle:
-    - fn
-    - - e
-    - - cond
-      - - eq
-        - - get
-          - e
-          - "kind"
-        - "transient"
-      - "retry"
-      - - eq
-        - - get
-          - e
-          - "kind"
-        - "divide_by_zero"
-      - "zero"
-      - - raise
-        - e
+    ref: object0
   transient: retry
   builtin: zero
   reraised: fatal
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: e
+      - - symbol: cond
+        - - symbol: eq
+          - - symbol: get
+            - symbol: e
+            - kind
+          - transient
+        - retry
+        - - symbol: eq
+          - - symbol: get
+            - symbol: e
+            - kind
+          - divide_by_zero
+        - zero
+        - - symbol: raise
+          - symbol: e
+    location:
+      source: "<root>"
+      path:
+        - "handle"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          handle:
+            - symbol: fn
+            - - symbol: e
+            - - symbol: cond
+              - - symbol: eq
+                - - symbol: get
+                  - symbol: e
+                  - kind
+                - transient
+              - retry
+              - - symbol: eq
+                - - symbol: get
+                  - symbol: e
+                  - kind
+                - divide_by_zero
+              - zero
+              - - symbol: raise
+                - symbol: e
+          transient:
+            - symbol: try
+            - - symbol: raise
+              - transient
+              - try again
+            - symbol: handle
+          builtin:
+            - symbol: try
+            - - symbol: div
+              - 1
+              - 0
+            - symbol: handle
+          reraised:
+            - symbol: try
+            - - symbol: try
+              - - symbol: raise
+                - fatal
+                - disk gone
+              - symbol: handle
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind

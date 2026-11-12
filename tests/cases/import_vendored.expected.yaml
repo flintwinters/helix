@@ -4,19 +4,99 @@ root:
     constants:
       offset: 1
     apply:
-      - fn
-      - - x
-      - - add
-        - x
-        - constants.offset
+      ref: object0
   new:
     constants:
       offset: 2
     apply:
-      - fn
-      - - x
-      - - add
-        - x
-        - constants.offset
+      ref: object1
   old_result: 41
   new_result: 42
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - symbol: x
+      - - symbol: add
+        - symbol: x
+        - symbol: constants.offset
+    location:
+      source: tests/cases/modules/vendor/offset-v1/main.yaml
+      path:
+        - "apply"
+    environment: []
+    bindings:
+      constants.offset:
+        code:
+          source: tests/cases/modules/vendor/offset-v1/constants.yaml
+          path:
+            - "offset"
+  object1:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - symbol: x
+      - - symbol: add
+        - symbol: x
+        - symbol: constants.offset
+    location:
+      source: tests/cases/modules/vendor/offset-v2/main.yaml
+      path:
+        - "apply"
+    environment: []
+    bindings:
+      constants.offset:
+        code:
+          source: tests/cases/modules/vendor/offset-v2/constants.yaml
+          path:
+            - "offset"
+  object2:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          old:
+            - symbol: import
+            - symbol: modules/vendor/offset-v1/main.yaml
+          new:
+            - symbol: import
+            - symbol: modules/vendor/offset-v2/main.yaml
+          old_result:
+            - symbol: old.apply
+            - 40
+          new_result:
+            - symbol: new.apply
+            - 40
+      - source: tests/cases/modules/vendor/offset-v1/main.yaml
+        code:
+          constants:
+            - symbol: import
+            - symbol: constants.yaml
+          apply:
+            - symbol: fn
+            - - symbol: x
+            - - symbol: add
+              - symbol: x
+              - symbol: constants.offset
+      - source: tests/cases/modules/vendor/offset-v1/constants.yaml
+        code:
+          offset: 1
+      - source: tests/cases/modules/vendor/offset-v2/main.yaml
+        code:
+          constants:
+            - symbol: import
+            - symbol: constants.yaml
+          apply:
+            - symbol: fn
+            - - symbol: x
+            - - symbol: add
+              - symbol: x
+              - symbol: constants.offset
+      - source: tests/cases/modules/vendor/offset-v2/constants.yaml
+        code:
+          offset: 2

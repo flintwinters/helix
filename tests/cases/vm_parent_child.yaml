@@ -1,0 +1,30 @@
+# A parent retains a ready child while two independent versions finish.
+# Observe status and outcome, never an implementation-specific transition count.
+- let
+- make: [fn, [captured], [vm, [fn, [], [add, captured, 2]]]]
+  done: [fn, [child], [eq, [get, [inspect, child], "status"], "finished"]]
+  advance: [fn, [child], [step, child]]
+  finish: [fn, [child], [until, done, advance, child]]
+  original: [make, 40]
+  advanced: [step, original]
+  left: [finish, original]
+  right: [finish, advanced]
+- - dict
+  - "original_status"
+  - [get, [inspect, original], "status"]
+  - "advanced_status"
+  - [get, [inspect, advanced], "status"]
+  - "versions_differ"
+  - [ne, original, advanced]
+  - "left_status"
+  - [get, [inspect, left], "status"]
+  - "left_result"
+  - [get, [inspect, left], "outcome"]
+  - "right_status"
+  - [get, [inspect, right], "status"]
+  - "right_result"
+  - [get, [inspect, right], "outcome"]
+  - "branches_equal"
+  - [eq, left, right]
+  - "original_still_ready"
+  - [eq, [get, [inspect, original], "status"], "ready"]

@@ -3,69 +3,9 @@ root:
   shim:
     group:
       by:
-        - fn
-        - - - xs
-            - list
-          - - key
-            - function
-        - - fold
-          - - fn
-            - - groups
-              - item
-            - - let
-              - name:
-                  - key
-                  - item
-              - - set
-                - groups
-                - name
-                - - append
-                  - - get
-                    - groups
-                    - name
-                    - []
-                  - item
-          - {}
-          - xs
-        - map
+        ref: object0
     report:
-      - fn
-      - - - files
-          - list
-      - - let
-        - groups:
-            - group.by
-            - files
-            - - fn
-              - - file
-              - - get
-                - file
-                - "directory"
-        - - map
-          - - fn
-            - - directory
-            - - let
-              - members:
-                  - get
-                  - groups
-                  - directory
-              - - dict
-                - "directory"
-                - directory
-                - "count"
-                - - len
-                  - members
-                - "files"
-                - - map
-                  - - fn
-                    - - file
-                    - - get
-                      - file
-                      - "path"
-                  - members
-          - - keys
-            - groups
-      - list
+      ref: object1
   files:
     - path: src/vm.rs
       directory: src
@@ -91,3 +31,200 @@ root:
         - "README.md"
   empty: []
   order: ~
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: key
+          - symbol: function
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: groups
+            - symbol: item
+          - - symbol: let
+            - name:
+                - symbol: key
+                - symbol: item
+            - - symbol: set
+              - symbol: groups
+              - symbol: name
+              - - symbol: append
+                - - symbol: get
+                  - symbol: groups
+                  - symbol: name
+                  - []
+                - symbol: item
+        - {}
+        - symbol: xs
+      - symbol: map
+    location:
+      source: "std:group"
+      path:
+        - "by"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - - symbol: files
+          - symbol: list
+      - - symbol: let
+        - groups:
+            - symbol: group.by
+            - symbol: files
+            - - symbol: fn
+              - - symbol: file
+              - - symbol: get
+                - symbol: file
+                - directory
+        - - symbol: map
+          - - symbol: fn
+            - - symbol: directory
+            - - symbol: let
+              - members:
+                  - symbol: get
+                  - symbol: groups
+                  - symbol: directory
+              - - symbol: dict
+                - directory
+                - symbol: directory
+                - count
+                - - symbol: len
+                  - symbol: members
+                - files
+                - - symbol: map
+                  - - symbol: fn
+                    - - symbol: file
+                    - - symbol: get
+                      - symbol: file
+                      - path
+                  - symbol: members
+          - - symbol: keys
+            - symbol: groups
+      - symbol: list
+    location:
+      source: tests/cases/../../tooling/inventory.yaml
+      path:
+        - "report"
+    environment: []
+    bindings:
+      group.by:
+        code:
+          source: "std:group"
+          path:
+            - "by"
+  object2:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          shim:
+            - symbol: import
+            - "../../tooling/inventory.yaml"
+          files:
+            - path: src/vm.rs
+              directory: src
+            - path: std/group.yaml
+              directory: std
+            - path: "src/雪.rs"
+              directory: src
+            - path: README.md
+              directory: "."
+          report:
+            - symbol: shim.report
+            - symbol: files
+          empty:
+            - symbol: shim.report
+            - []
+          order:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: map
+                - - symbol: fn
+                  - - symbol: row
+                  - - symbol: get
+                    - symbol: row
+                    - directory
+                - symbol: report
+              - - "src"
+                - std
+                - "."
+      - source: tests/cases/../../tooling/inventory.yaml
+        code:
+          group:
+            - symbol: import
+            - symbol: "std:group"
+          report:
+            - symbol: fn
+            - - - symbol: files
+                - symbol: list
+            - - symbol: let
+              - groups:
+                  - symbol: group.by
+                  - symbol: files
+                  - - symbol: fn
+                    - - symbol: file
+                    - - symbol: get
+                      - symbol: file
+                      - directory
+              - - symbol: map
+                - - symbol: fn
+                  - - symbol: directory
+                  - - symbol: let
+                    - members:
+                        - symbol: get
+                        - symbol: groups
+                        - symbol: directory
+                    - - symbol: dict
+                      - directory
+                      - symbol: directory
+                      - count
+                      - - symbol: len
+                        - symbol: members
+                      - files
+                      - - symbol: map
+                        - - symbol: fn
+                          - - symbol: file
+                          - - symbol: get
+                            - symbol: file
+                            - path
+                        - symbol: members
+                - - symbol: keys
+                  - symbol: groups
+            - symbol: list
+      - source: "std:group"
+        code:
+          by:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: key
+                - symbol: function
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: groups
+                  - symbol: item
+                - - symbol: let
+                  - name:
+                      - symbol: key
+                      - symbol: item
+                  - - symbol: set
+                    - symbol: groups
+                    - symbol: name
+                    - - symbol: append
+                      - - symbol: get
+                        - symbol: groups
+                        - symbol: name
+                        - []
+                      - symbol: item
+              - {}
+              - symbol: xs
+            - symbol: map

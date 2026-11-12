@@ -8,12 +8,7 @@ root:
     port: integer
     name: string
   check:
-    - fn
-    - - v
-      - t
-    - - is
-      - v
-      - t
+    ref: object0
   bound: true
   via_fn: true
   mismatch: false
@@ -23,3 +18,73 @@ root:
     - true
     - false
     - false
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: v
+        - symbol: t
+      - - symbol: is
+        - symbol: v
+        - symbol: t
+    location:
+      source: "<root>"
+      path:
+        - "check"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          kinds:
+            - "integer"
+            - string
+            - list
+          by_map:
+            port: integer
+            name: string
+          check:
+            - symbol: fn
+            - - symbol: v
+              - symbol: t
+            - - symbol: is
+              - symbol: v
+              - symbol: t
+          bound:
+            - symbol: let
+            - t: integer
+            - - symbol: is
+              - 3
+              - symbol: t
+          via_fn:
+            - symbol: check
+            - x
+            - string
+          mismatch:
+            - symbol: check
+            - 1.5
+            - integer
+          from_type:
+            - symbol: is
+            - - symbol: type
+              - - 1
+            - - symbol: get
+              - symbol: by_map
+              - name
+          anything:
+            - symbol: is
+            - ~
+            - any
+          stored:
+            - symbol: map
+            - - symbol: fn
+              - - symbol: t
+              - - symbol: is
+                - 1
+                - symbol: t
+            - symbol: kinds

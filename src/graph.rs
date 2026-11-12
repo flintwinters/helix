@@ -1,7 +1,7 @@
 //! The object graph: YAML parsed into an arena of nodes with parent links and source spans.
 //! Parent links define lexical/object resolution; paths are always root-relative.
 
-use std::collections::HashMap;
+
 
 use yaml_rust2::parser::{Event, MarkedEventReceiver, Parser};
 use yaml_rust2::scanner::{Marker, TScalarStyle};
@@ -12,27 +12,8 @@ use crate::span::Span;
 
 pub type NodeId = usize;
 
-pub enum Kind {
-    /// `plain` is true for unquoted strings, which are symbols when they appear as expression arguments.
-    Scalar { value: Yaml, plain: bool },
-    Seq(Vec<NodeId>),
-    Map(Vec<(String, NodeId)>),
-}
-
-struct Node {
-    kind: Kind,
-    parent: Option<NodeId>,
-    span: Span,
-}
-
-#[derive(Default)]
-pub struct Graph {
-    nodes: Vec<Node>,
-    /// Imported files by the root of the subtree they were grafted as.
-    sources: HashMap<NodeId, String>,
-}
-
-pub const ROOT: NodeId = 0;
+pub(crate) use crate::model::{Kind,Graph,Node};
+pub(crate) use crate::model::ROOT;
 
 impl Graph {
     pub fn parse(src: &str) -> Result<Graph, HelixError> {
@@ -43,7 +24,7 @@ impl Graph {
                 kind: "parse".into(),
                 message: e.to_string(),
                 file: None,
-                path: None,
+                path: None, reference:None,
                 span: span(e.marker()),
                 data: None, calls: Vec::new(), cause: None,
             })?;
@@ -55,7 +36,7 @@ impl Graph {
                 kind: "parse".into(),
                 message: "empty document".into(),
                 file: None,
-                path: None,
+                path: None, reference:None,
                 span: Span { line: 1, col: 1 },
                 data: None, calls: Vec::new(), cause: None,
             });
@@ -86,6 +67,38 @@ impl Graph {
         }
         parts.reverse();
         format!("/{}", parts.join("/"))
+    }
+
+    /// String keys and integer indices are distinct even for empty, numeric or slash keys.
+    pub fn segments(&self,id:NodeId)->Vec<crate::model::Segment> {
+        use crate::model::Segment;
+        let mut parts=Vec::new();let mut cur=id;
+        while let Some(parent)=self.parent(cur) {
+            parts.push(match self.kind(parent) {
+                Kind::Map(entries)=>Segment::Key(entries.iter().find(|(_,c)|*c==cur).unwrap().0.clone()),
+                Kind::Seq(items)=>Segment::Index(items.iter().position(|c|*c==cur).unwrap()),_=>unreachable!(),
+            });cur=parent;
+        }
+        parts.reverse();parts
+    }
+    pub fn reference(&self,id:NodeId)->crate::value::Value {
+        use crate::value::Value as V;
+        use crate::model::{Segment,string as s};
+        V::Hash([(s("source"),s(self.source(id).unwrap_or("<root>"))),(s("path"),V::Array(self.segments(id).into_iter().map(|segment|match segment {Segment::Key(key)=>V::String(key),Segment::Index(index)=>V::Integer(index as i64)}).collect()))].into_iter().collect())
+    }
+
+    /// Shared code views are built once, bottom-up, over the immutable linked source arena.
+    pub fn code_views(&self)->Vec<crate::value::Value> {
+        use crate::value::Value as V;
+        let mut code=vec![V::Null;self.nodes.len()];
+        for id in (0..self.nodes.len()).rev() {
+            code[id]=match self.kind(id) {
+                Kind::Scalar {value:Yaml::String(text),plain:true}=>V::Hash([(V::String("symbol".into()),V::String(text.clone()))].into_iter().collect()),
+                Kind::Scalar {value,..}=>V::from_yaml(value),
+                Kind::Seq(items)=>V::Array(items.iter().map(|&c|code[c].clone()).collect()),
+                Kind::Map(entries)=>V::Hash(entries.iter().map(|(k,c)|(V::String(k.clone()),code[*c].clone())).collect()),
+            };
+        }code
     }
 
     /// Append another graph as a detached subtree (its root has no parent) and return its root id.
@@ -120,7 +133,7 @@ impl Graph {
 
     /// An error of `kind` blamed on node `id`, with its path, span and file.
     pub fn error(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
-        HelixError { kind: kind.into(), message, file: self.source(id).map(str::to_string), path: Some(self.path(id)), span: self.span(id), data: None, calls: Vec::new(), cause: None }
+        HelixError { kind: kind.into(), message, file: self.source(id).map(str::to_string), path: Some(self.path(id)), reference:Some(self.segments(id)), span: self.span(id), data: None, calls: Vec::new(), cause: None }
     }
 
     /// A plain (unquoted) string, which is a symbol in expression position.
@@ -159,7 +172,7 @@ struct Builder {
 impl Builder {
     /// Record the first error; `on_event` ignores everything after it.
     fn fail(&mut self, kind: &'static str, message: &str, at: Marker) {
-        self.error = Some(HelixError { kind: kind.into(), message: message.into(), file: None, path: None, span: span(&at), data: None, calls: Vec::new(), cause: None });
+        self.error = Some(HelixError { kind: kind.into(), message: message.into(), file: None, path: None, reference:None, span: span(&at), data: None, calls: Vec::new(), cause: None });
     }
 
     /// Attach a new node to the open container (or make it the root) and return its id.

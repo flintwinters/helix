@@ -23,118 +23,9 @@ root:
     - account: new_zero
       cents: 0
   total_by_account:
-    - fn
-    - - rows
-    - - fold
-      - - fn
-        - - acc
-          - row
-        - - let
-          - account:
-              - get
-              - row
-              - "account"
-          - - set
-            - acc
-            - account
-            - - add
-              - - get
-                - acc
-                - account
-                - 0
-              - - get
-                - row
-                - "cents"
-      - {}
-      - rows
+    ref: object0
   reconcile:
-    - fn
-    - - expected_rows
-      - actual_rows
-    - - let
-      - expected:
-          - total_by_account
-          - expected_rows
-        actual:
-          - total_by_account
-          - actual_rows
-        accounts:
-          - concat
-          - - keys
-            - expected
-          - - filter
-            - - fn
-              - - account
-              - - not
-                - - has
-                  - expected
-                  - account
-            - - keys
-              - actual
-        differences:
-          - filter
-          - - fn
-            - - account
-            - - or
-              - - not
-                - - has
-                  - expected
-                  - account
-              - - not
-                - - has
-                  - actual
-                  - account
-              - - ne
-                - - get
-                  - expected
-                  - account
-                  - 0
-                - - get
-                  - actual
-                  - account
-                  - 0
-          - accounts
-      - - map
-        - - fn
-          - - account
-          - - set
-            - - set
-              - - set
-                - - set
-                  - - set
-                    - - set
-                      - {}
-                      - "account"
-                      - account
-                    - "in_ledger"
-                    - - has
-                      - expected
-                      - account
-                  - "in_statement"
-                  - - has
-                    - actual
-                    - account
-                - "expected_cents"
-                - - get
-                  - expected
-                  - account
-                  - 0
-              - "actual_cents"
-              - - get
-                - actual
-                - account
-                - 0
-            - "delta_cents"
-            - - sub
-              - - get
-                - actual
-                - account
-                - 0
-              - - get
-                - expected
-                - account
-                - 0
-        - differences
+    ref: object1
   discrepancies:
     - account: travel
       in_ledger: true
@@ -168,3 +59,304 @@ root:
       delta_cents: 0
   balanced: []
   empty: []
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - symbol: rows
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: acc
+            - symbol: row
+          - - symbol: let
+            - account:
+                - symbol: get
+                - symbol: row
+                - account
+            - - symbol: set
+              - symbol: acc
+              - symbol: account
+              - - symbol: add
+                - - symbol: get
+                  - symbol: acc
+                  - symbol: account
+                  - 0
+                - - symbol: get
+                  - symbol: row
+                  - cents
+        - {}
+        - symbol: rows
+    location:
+      source: "<root>"
+      path:
+        - "total_by_account"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - symbol: expected_rows
+        - symbol: actual_rows
+      - - symbol: let
+        - expected:
+            - symbol: total_by_account
+            - symbol: expected_rows
+          actual:
+            - symbol: total_by_account
+            - symbol: actual_rows
+          accounts:
+            - symbol: concat
+            - - symbol: keys
+              - symbol: expected
+            - - symbol: filter
+              - - symbol: fn
+                - - symbol: account
+                - - symbol: not
+                  - - symbol: has
+                    - symbol: expected
+                    - symbol: account
+              - - symbol: keys
+                - symbol: actual
+          differences:
+            - symbol: filter
+            - - symbol: fn
+              - - symbol: account
+              - - symbol: or
+                - - symbol: not
+                  - - symbol: has
+                    - symbol: expected
+                    - symbol: account
+                - - symbol: not
+                  - - symbol: has
+                    - symbol: actual
+                    - symbol: account
+                - - symbol: ne
+                  - - symbol: get
+                    - symbol: expected
+                    - symbol: account
+                    - 0
+                  - - symbol: get
+                    - symbol: actual
+                    - symbol: account
+                    - 0
+            - symbol: accounts
+        - - symbol: map
+          - - symbol: fn
+            - - symbol: account
+            - - symbol: set
+              - - symbol: set
+                - - symbol: set
+                  - - symbol: set
+                    - - symbol: set
+                      - - symbol: set
+                        - {}
+                        - account
+                        - symbol: account
+                      - in_ledger
+                      - - symbol: has
+                        - symbol: expected
+                        - symbol: account
+                    - in_statement
+                    - - symbol: has
+                      - symbol: actual
+                      - symbol: account
+                  - expected_cents
+                  - - symbol: get
+                    - symbol: expected
+                    - symbol: account
+                    - 0
+                - actual_cents
+                - - symbol: get
+                  - symbol: actual
+                  - symbol: account
+                  - 0
+              - delta_cents
+              - - symbol: sub
+                - - symbol: get
+                  - symbol: actual
+                  - symbol: account
+                  - 0
+                - - symbol: get
+                  - symbol: expected
+                  - symbol: account
+                  - 0
+          - symbol: differences
+    location:
+      source: "<root>"
+      path:
+        - "reconcile"
+    environment: []
+    bindings:
+      total_by_account:
+        code:
+          source: "<root>"
+          path:
+            - "total_by_account"
+  object2:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          ledger:
+            - account:
+                symbol: hosting
+              cents: 1200
+            - account:
+                symbol: hosting
+              cents: 800
+            - account:
+                symbol: travel
+              cents: 5000
+            - account:
+                symbol: travel
+              cents: -1000
+            - account:
+                symbol: domain
+              cents: 1500
+            - account:
+                symbol: placeholder
+              cents: 0
+          statement:
+            - account:
+                symbol: hosting
+              cents: 2000
+            - account:
+                symbol: travel
+              cents: 4500
+            - account:
+                symbol: equipment
+              cents: 3000
+            - account:
+                symbol: new_zero
+              cents: 0
+          total_by_account:
+            - symbol: fn
+            - - symbol: rows
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: acc
+                  - symbol: row
+                - - symbol: let
+                  - account:
+                      - symbol: get
+                      - symbol: row
+                      - account
+                  - - symbol: set
+                    - symbol: acc
+                    - symbol: account
+                    - - symbol: add
+                      - - symbol: get
+                        - symbol: acc
+                        - symbol: account
+                        - 0
+                      - - symbol: get
+                        - symbol: row
+                        - cents
+              - {}
+              - symbol: rows
+          reconcile:
+            - symbol: fn
+            - - symbol: expected_rows
+              - symbol: actual_rows
+            - - symbol: let
+              - expected:
+                  - symbol: total_by_account
+                  - symbol: expected_rows
+                actual:
+                  - symbol: total_by_account
+                  - symbol: actual_rows
+                accounts:
+                  - symbol: concat
+                  - - symbol: keys
+                    - symbol: expected
+                  - - symbol: filter
+                    - - symbol: fn
+                      - - symbol: account
+                      - - symbol: not
+                        - - symbol: has
+                          - symbol: expected
+                          - symbol: account
+                    - - symbol: keys
+                      - symbol: actual
+                differences:
+                  - symbol: filter
+                  - - symbol: fn
+                    - - symbol: account
+                    - - symbol: or
+                      - - symbol: not
+                        - - symbol: has
+                          - symbol: expected
+                          - symbol: account
+                      - - symbol: not
+                        - - symbol: has
+                          - symbol: actual
+                          - symbol: account
+                      - - symbol: ne
+                        - - symbol: get
+                          - symbol: expected
+                          - symbol: account
+                          - 0
+                        - - symbol: get
+                          - symbol: actual
+                          - symbol: account
+                          - 0
+                  - symbol: accounts
+              - - symbol: map
+                - - symbol: fn
+                  - - symbol: account
+                  - - symbol: set
+                    - - symbol: set
+                      - - symbol: set
+                        - - symbol: set
+                          - - symbol: set
+                            - - symbol: set
+                              - {}
+                              - account
+                              - symbol: account
+                            - in_ledger
+                            - - symbol: has
+                              - symbol: expected
+                              - symbol: account
+                          - in_statement
+                          - - symbol: has
+                            - symbol: actual
+                            - symbol: account
+                        - expected_cents
+                        - - symbol: get
+                          - symbol: expected
+                          - symbol: account
+                          - 0
+                      - actual_cents
+                      - - symbol: get
+                        - symbol: actual
+                        - symbol: account
+                        - 0
+                    - delta_cents
+                    - - symbol: sub
+                      - - symbol: get
+                        - symbol: actual
+                        - symbol: account
+                        - 0
+                      - - symbol: get
+                        - symbol: expected
+                        - symbol: account
+                        - 0
+                - symbol: differences
+          discrepancies:
+            - symbol: reconcile
+            - symbol: ledger
+            - symbol: statement
+          balanced:
+            - symbol: reconcile
+            - symbol: ledger
+            - symbol: ledger
+          empty:
+            - symbol: reconcile
+            - []
+            - []

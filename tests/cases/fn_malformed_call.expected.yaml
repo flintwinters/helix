@@ -3,5 +3,7 @@ error:
   kind: arity
   message: "`fn` takes 2 to 3 arguments, got 1"
   path: /f
+  reference:
+    - "f"
   line: 2
   column: 4

@@ -7,7 +7,7 @@ mod construct;
 mod machine;
 mod ty;
 
-use yaml_rust2::Yaml;
+use crate::value::Value;
 
 use super::fault::Fault;
 pub use construct::refine;
@@ -22,7 +22,7 @@ pub(super) fn handles(actor: &str) -> bool {
     )
 }
 
-pub(super) fn apply(actor: &str, args: &[Yaml], pred: &mut Pred) -> Result<Yaml, Fault> {
+pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault> {
     match actor {
         "class" | "extend" | "inherit" | "realize" | "parents" => class::apply(actor, args, pred),
         "drift" | "converge" => machine::apply(actor, args),

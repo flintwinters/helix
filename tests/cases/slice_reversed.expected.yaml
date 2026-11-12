@@ -3,5 +3,8 @@ error:
   kind: range
   message: slice 2..1 is out of range for length 3
   path: /x/2
+  reference:
+    - "x"
+    - 2
   line: 1
   column: 23

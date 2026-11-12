@@ -1,148 +1,13 @@
 status: finished
 root:
   ready:
-    - fn
-    - - pending
-      - order
-    - - filter
-      - - fn
-        - - task
-        - - fold
-          - - fn
-            - - ok
-              - dep
-            - - and
-              - ok
-              - - has
-                - order
-                - dep
-          - true
-          - - get
-            - pending
-            - task
-      - - keys
-        - pending
+    ref: object0
   done:
-    - fn
-    - - state
-    - - eq
-      - - len
-        - - ready
-          - - get
-            - state
-            - "pending"
-          - - get
-            - state
-            - "order"
-      - 0
+    ref: object1
   step:
-    - fn
-    - - state
-    - - let
-      - pending:
-          - get
-          - state
-          - "pending"
-        order:
-          - get
-          - state
-          - "order"
-        batch:
-          - ready
-          - pending
-          - order
-        remaining:
-          - filter
-          - - fn
-            - - task
-            - - not
-              - - has
-                - batch
-                - task
-          - - keys
-            - pending
-      - - set
-        - - set
-          - {}
-          - "order"
-          - - concat
-            - order
-            - batch
-        - "pending"
-        - - fold
-          - - fn
-            - - acc
-              - task
-            - - set
-              - acc
-              - task
-              - - get
-                - pending
-                - task
-          - {}
-          - remaining
+    ref: object2
   plan:
-    - fn
-    - - tasks
-    - - let
-      - initial:
-          - set
-          - - set
-            - {}
-            - "pending"
-            - tasks
-          - "order"
-          - []
-        final:
-          - until
-          - done
-          - step
-          - initial
-        missing:
-          - fold
-          - - fn
-            - - acc
-              - task
-            - - concat
-              - acc
-              - - map
-                - - fn
-                  - - dep
-                  - - set
-                    - - set
-                      - {}
-                      - "task"
-                      - task
-                    - "dependency"
-                    - dep
-                - - filter
-                  - - fn
-                    - - dep
-                    - - not
-                      - - has
-                        - tasks
-                        - dep
-                  - - get
-                    - tasks
-                    - task
-          - []
-          - - keys
-            - tasks
-      - - set
-        - - set
-          - final
-          - "missing"
-          - missing
-        - "status"
-        - - if
-          - - eq
-            - - len
-              - - get
-                - final
-                - "pending"
-            - 0
-          - "finished"
-          - "blocked"
+    ref: object3
   checks:
     order:
       - "build"
@@ -186,3 +51,386 @@ root:
     order: []
     missing: []
     status: finished
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - symbol: pending
+        - symbol: order
+      - - symbol: filter
+        - - symbol: fn
+          - - symbol: task
+          - - symbol: fold
+            - - symbol: fn
+              - - symbol: ok
+                - symbol: dep
+              - - symbol: and
+                - symbol: ok
+                - - symbol: has
+                  - symbol: order
+                  - symbol: dep
+            - true
+            - - symbol: get
+              - symbol: pending
+              - symbol: task
+        - - symbol: keys
+          - symbol: pending
+    location:
+      source: "<root>"
+      path:
+        - "ready"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - symbol: state
+      - - symbol: eq
+        - - symbol: len
+          - - symbol: ready
+            - - symbol: get
+              - symbol: state
+              - pending
+            - - symbol: get
+              - symbol: state
+              - order
+        - 0
+    location:
+      source: "<root>"
+      path:
+        - "done"
+    environment: []
+    bindings:
+      ready:
+        code:
+          source: "<root>"
+          path:
+            - "ready"
+  object2:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - symbol: state
+      - - symbol: let
+        - pending:
+            - symbol: get
+            - symbol: state
+            - pending
+          order:
+            - symbol: get
+            - symbol: state
+            - order
+          batch:
+            - symbol: ready
+            - symbol: pending
+            - symbol: order
+          remaining:
+            - symbol: filter
+            - - symbol: fn
+              - - symbol: task
+              - - symbol: not
+                - - symbol: has
+                  - symbol: batch
+                  - symbol: task
+            - - symbol: keys
+              - symbol: pending
+        - - symbol: set
+          - - symbol: set
+            - {}
+            - order
+            - - symbol: concat
+              - symbol: order
+              - symbol: batch
+          - pending
+          - - symbol: fold
+            - - symbol: fn
+              - - symbol: acc
+                - symbol: task
+              - - symbol: set
+                - symbol: acc
+                - symbol: task
+                - - symbol: get
+                  - symbol: pending
+                  - symbol: task
+            - {}
+            - symbol: remaining
+    location:
+      source: "<root>"
+      path:
+        - "step"
+    environment: []
+    bindings:
+      ready:
+        code:
+          source: "<root>"
+          path:
+            - "ready"
+  object3:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - symbol: tasks
+      - - symbol: let
+        - initial:
+            - symbol: set
+            - - symbol: set
+              - {}
+              - pending
+              - symbol: tasks
+            - order
+            - []
+          final:
+            - symbol: until
+            - symbol: done
+            - symbol: step
+            - symbol: initial
+          missing:
+            - symbol: fold
+            - - symbol: fn
+              - - symbol: acc
+                - symbol: task
+              - - symbol: concat
+                - symbol: acc
+                - - symbol: map
+                  - - symbol: fn
+                    - - symbol: dep
+                    - - symbol: set
+                      - - symbol: set
+                        - {}
+                        - task
+                        - symbol: task
+                      - dependency
+                      - symbol: dep
+                  - - symbol: filter
+                    - - symbol: fn
+                      - - symbol: dep
+                      - - symbol: not
+                        - - symbol: has
+                          - symbol: tasks
+                          - symbol: dep
+                    - - symbol: get
+                      - symbol: tasks
+                      - symbol: task
+            - []
+            - - symbol: keys
+              - symbol: tasks
+        - - symbol: set
+          - - symbol: set
+            - symbol: final
+            - missing
+            - symbol: missing
+          - status
+          - - symbol: if
+            - - symbol: eq
+              - - symbol: len
+                - - symbol: get
+                  - symbol: final
+                  - pending
+              - 0
+            - finished
+            - blocked
+    location:
+      source: "<root>"
+      path:
+        - "plan"
+    environment: []
+    bindings:
+      done:
+        code:
+          source: "<root>"
+          path:
+            - "done"
+      step:
+        code:
+          source: "<root>"
+          path:
+            - "step"
+  object4:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          ready:
+            - symbol: fn
+            - - symbol: pending
+              - symbol: order
+            - - symbol: filter
+              - - symbol: fn
+                - - symbol: task
+                - - symbol: fold
+                  - - symbol: fn
+                    - - symbol: ok
+                      - symbol: dep
+                    - - symbol: and
+                      - symbol: ok
+                      - - symbol: has
+                        - symbol: order
+                        - symbol: dep
+                  - true
+                  - - symbol: get
+                    - symbol: pending
+                    - symbol: task
+              - - symbol: keys
+                - symbol: pending
+          done:
+            - symbol: fn
+            - - symbol: state
+            - - symbol: eq
+              - - symbol: len
+                - - symbol: ready
+                  - - symbol: get
+                    - symbol: state
+                    - pending
+                  - - symbol: get
+                    - symbol: state
+                    - order
+              - 0
+          step:
+            - symbol: fn
+            - - symbol: state
+            - - symbol: let
+              - pending:
+                  - symbol: get
+                  - symbol: state
+                  - pending
+                order:
+                  - symbol: get
+                  - symbol: state
+                  - order
+                batch:
+                  - symbol: ready
+                  - symbol: pending
+                  - symbol: order
+                remaining:
+                  - symbol: filter
+                  - - symbol: fn
+                    - - symbol: task
+                    - - symbol: not
+                      - - symbol: has
+                        - symbol: batch
+                        - symbol: task
+                  - - symbol: keys
+                    - symbol: pending
+              - - symbol: set
+                - - symbol: set
+                  - {}
+                  - order
+                  - - symbol: concat
+                    - symbol: order
+                    - symbol: batch
+                - pending
+                - - symbol: fold
+                  - - symbol: fn
+                    - - symbol: acc
+                      - symbol: task
+                    - - symbol: set
+                      - symbol: acc
+                      - symbol: task
+                      - - symbol: get
+                        - symbol: pending
+                        - symbol: task
+                  - {}
+                  - symbol: remaining
+          plan:
+            - symbol: fn
+            - - symbol: tasks
+            - - symbol: let
+              - initial:
+                  - symbol: set
+                  - - symbol: set
+                    - {}
+                    - pending
+                    - symbol: tasks
+                  - order
+                  - []
+                final:
+                  - symbol: until
+                  - symbol: done
+                  - symbol: step
+                  - symbol: initial
+                missing:
+                  - symbol: fold
+                  - - symbol: fn
+                    - - symbol: acc
+                      - symbol: task
+                    - - symbol: concat
+                      - symbol: acc
+                      - - symbol: map
+                        - - symbol: fn
+                          - - symbol: dep
+                          - - symbol: set
+                            - - symbol: set
+                              - {}
+                              - task
+                              - symbol: task
+                            - dependency
+                            - symbol: dep
+                        - - symbol: filter
+                          - - symbol: fn
+                            - - symbol: dep
+                            - - symbol: not
+                              - - symbol: has
+                                - symbol: tasks
+                                - symbol: dep
+                          - - symbol: get
+                            - symbol: tasks
+                            - symbol: task
+                  - []
+                  - - symbol: keys
+                    - symbol: tasks
+              - - symbol: set
+                - - symbol: set
+                  - symbol: final
+                  - missing
+                  - symbol: missing
+                - status
+                - - symbol: if
+                  - - symbol: eq
+                    - - symbol: len
+                      - - symbol: get
+                        - symbol: final
+                        - pending
+                    - 0
+                  - finished
+                  - blocked
+          checks:
+            - symbol: plan
+            - test:
+                - "build"
+              lint:
+                - "build"
+              review:
+                - "test"
+                - lint
+              build: []
+          missing:
+            - symbol: plan
+            - test:
+                - "compile"
+              docs: []
+          cycle:
+            - symbol: plan
+            - a:
+                - "b"
+              b:
+                - "a"
+              downstream:
+                - "a"
+              independent: []
+          self_cycle:
+            - symbol: plan
+            - self:
+                - "self"
+          empty:
+            - symbol: plan
+            - {}

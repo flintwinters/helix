@@ -3,5 +3,6 @@ error:
   kind: arity
   message: "`finally` takes 2 arguments, got 1"
   path: /
+  reference: []
   line: 1
   column: 1

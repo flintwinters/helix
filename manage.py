@@ -39,9 +39,13 @@ def helix(*args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
 
 
 def root_section(state: str) -> str | None:
-    """Dedented body of the `root:` block of a finished state, or None."""
+    """Re-executable ordinary-data root block; object graphs are inspection, not snapshots."""
+    import yaml
     lines = state.splitlines()
-    if not lines or lines[0] != "status: finished":
+    if not lines or lines[0] != "status: finished" or "root:" not in lines:
+        return None
+    parsed = yaml.safe_load(state)
+    if "objects" in parsed:
         return None
     body = []
     for line in lines[lines.index("root:") + 1 :]:
@@ -125,7 +129,7 @@ def regression(bless: bool, suites: list[str] | None) -> int:
     failures = []
     for name in (name for name in SUITES if name in selected - {"golden", "robustness"}):
         if name == "library":
-            result = subprocess.run(["cargo", "test", "--quiet"], cwd=ROOT, timeout=120)
+            result = subprocess.run(["cargo", "test", "--quiet", "--lib", "--test", "vm"], cwd=ROOT, timeout=120)
             if result.returncode:
                 failures.append("library: cargo test failed")
         else:

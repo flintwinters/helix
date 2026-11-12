@@ -1,19 +1,16 @@
 status: finished
 root:
   leaf:
-    - fn
-    - []
-    - - div
-      - 1
-      - 0
+    ref: object0
   middle:
-    - fn
-    - []
-    - - leaf
+    ref: object1
   caught:
     kind: divide_by_zero
     message: "`div` by zero"
     path: /leaf/2
+    reference:
+      - "leaf"
+      - 2
     line: 1
     column: 16
     calls:
@@ -29,6 +26,11 @@ root:
     kind: divide_by_zero
     message: "`div` by zero"
     path: /reraised/1/2/2
+    reference:
+      - "reraised"
+      - 1
+      - 2
+      - 2
     line: 4
     column: 43
     calls:
@@ -40,6 +42,9 @@ root:
       kind: divide_by_zero
       message: "`div` by zero"
       path: /leaf/2
+      reference:
+        - "leaf"
+        - 2
       line: 1
       column: 16
       calls:
@@ -55,6 +60,11 @@ root:
     kind: original
     message: failure
     path: /nested/1/2/2
+    reference:
+      - "nested"
+      - 1
+      - 2
+      - 2
     line: 5
     column: 104
     data:
@@ -68,6 +78,12 @@ root:
       kind: original
       message: failure
       path: /nested/1/1/2/2
+      reference:
+        - "nested"
+        - 1
+        - 1
+        - 2
+        - 2
       line: 5
       column: 80
       data:
@@ -81,7 +97,99 @@ root:
         kind: original
         message: failure
         path: /nested/1/1/1
+        reference:
+          - "nested"
+          - 1
+          - 1
+          - 1
         line: 5
         column: 27
         data:
           step: 3
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - []
+      - - symbol: div
+        - 1
+        - 0
+    location:
+      source: "<root>"
+      path:
+        - "leaf"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - []
+      - - symbol: leaf
+    location:
+      source: "<root>"
+      path:
+        - "middle"
+    environment: []
+    bindings:
+      leaf:
+        code:
+          source: "<root>"
+          path:
+            - "leaf"
+  object2:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          leaf:
+            - symbol: fn
+            - []
+            - - symbol: div
+              - 1
+              - 0
+          middle:
+            - symbol: fn
+            - []
+            - - symbol: leaf
+          caught:
+            - symbol: try
+            - - symbol: middle
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          reraised:
+            - symbol: try
+            - - symbol: try
+              - - symbol: middle
+              - - symbol: fn
+                - - symbol: e
+                - - symbol: raise
+                  - symbol: e
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          nested:
+            - symbol: try
+            - - symbol: try
+              - - symbol: try
+                - - symbol: raise
+                  - original
+                  - failure
+                  - step: 3
+                - - symbol: fn
+                  - - symbol: e
+                  - - symbol: raise
+                    - symbol: e
+              - - symbol: fn
+                - - symbol: e
+                - - symbol: raise
+                  - symbol: e
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e

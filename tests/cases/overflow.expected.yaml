@@ -3,5 +3,7 @@ error:
   kind: overflow
   message: "`add` overflowed i64"
   path: /b
+  reference:
+    - "b"
   line: 2
   column: 4

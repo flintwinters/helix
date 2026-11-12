@@ -1,28 +1,12 @@
 status: finished
 root:
   in_port:
-    - fn
-    - - n
-    - - and
-      - - ge
-        - n
-        - 1
-      - - le
-        - n
-        - 65535
+    ref: object0
   port:
     type: refine
     of: integer
     check:
-      - fn
-      - - n
-      - - and
-        - - ge
-          - n
-          - 1
-        - - le
-          - n
-          - 65535
+      ref: object0
   level:
     type: enum
     values:
@@ -37,15 +21,7 @@ root:
         type: refine
         of: integer
         check:
-          - fn
-          - - n
-          - - and
-            - - ge
-              - n
-              - 1
-            - - le
-              - n
-              - 65535
+          ref: object0
       tls:
         type: default
         of: boolean
@@ -59,15 +35,7 @@ root:
       type: refine
       of: integer
       check:
-        - fn
-        - - n
-        - - and
-          - - ge
-            - n
-            - 1
-          - - le
-            - n
-            - 65535
+        ref: object0
   tags:
     type: map
     of: string
@@ -107,3 +75,177 @@ root:
     - at: /1/0
       message: "expected integer, got string"
   no_type: "unknown type `nonsense`"
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: and
+        - - symbol: ge
+          - symbol: "n"
+          - 1
+        - - symbol: le
+          - symbol: "n"
+          - 65535
+    location:
+      source: "<root>"
+      path:
+        - "in_port"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          in_port:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: and
+              - - symbol: ge
+                - symbol: "n"
+                - 1
+              - - symbol: le
+                - symbol: "n"
+                - 65535
+          port:
+            - symbol: refine
+            - symbol: integer
+            - symbol: in_port
+          level:
+            - symbol: enum
+            - debug
+            - info
+            - warn
+          endpoint:
+            - symbol: record
+            - host
+            - symbol: string
+            - port
+            - symbol: port
+            - tls
+            - - symbol: default
+              - symbol: boolean
+              - true
+            - note
+            - - symbol: optional
+              - symbol: string
+          ports:
+            - symbol: list_of
+            - symbol: port
+          tags:
+            - symbol: map_of
+            - symbol: string
+          id:
+            - symbol: union
+            - symbol: integer
+            - symbol: string
+          fits:
+            scalar:
+              - symbol: is
+              - 3
+              - symbol: integer
+            float_is_not_integer:
+              - symbol: is
+              - 3.0
+              - symbol: integer
+            enum_member:
+              - symbol: is
+              - info
+              - symbol: level
+            enum_other:
+              - symbol: is
+              - trace
+              - symbol: level
+            literal:
+              - symbol: is
+              - 80
+              - - symbol: literal
+                - 80
+            union_string:
+              - symbol: is
+              - abc
+              - symbol: id
+            union_null:
+              - symbol: is
+              - ~
+              - symbol: id
+            top:
+              - symbol: is
+              - - 1
+                - x
+              - symbol: any
+            port_ok:
+              - symbol: is
+              - 8080
+              - symbol: port
+            port_bad:
+              - symbol: is
+              - 70000
+              - symbol: port
+            endpoint_minimal:
+              - symbol: is
+              - host: a
+                port: 22
+              - symbol: endpoint
+            endpoint_full:
+              - symbol: is
+              - host: a
+                port: 22
+                tls: false
+                note: x
+              - symbol: endpoint
+            endpoint_open_field:
+              - symbol: is
+              - host: a
+                port: 22
+                extra: 1
+              - symbol: endpoint
+            list_ok:
+              - symbol: is
+              - - 1
+                - 2
+                - 3
+              - symbol: ports
+            list_bad:
+              - symbol: is
+              - - 1
+                - 0
+                - x
+              - symbol: ports
+            map_ok:
+              - symbol: is
+              - env: prod
+              - symbol: tags
+            map_bad:
+              - symbol: is
+              - env: 1
+              - symbol: tags
+          all_at_once:
+            - symbol: violations
+            - host: 5
+              port: 0
+              extra: 1
+            - symbol: endpoint
+          nested:
+            - symbol: violations
+            - - - 1
+                - a
+              - - "b"
+                - 2
+            - - symbol: list_of
+              - - symbol: list_of
+                - symbol: integer
+          no_type:
+            - symbol: try
+            - - symbol: is
+              - 1
+              - nonsense
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - message

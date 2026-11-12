@@ -1,33 +1,7 @@
 status: finished
 root:
   check:
-    - fn
-    - - row
-    - - try
-      - - let
-        - ok:
-            - assert
-            - - gt
-              - - get
-                - row
-                - "qty"
-              - 0
-            - "qty must be positive"
-        - - if
-          - - eq
-            - - get
-              - row
-              - "name"
-            - ""
-          - - raise
-            - "invalid"
-            - "name is empty"
-          - ok
-      - - fn
-        - - e
-        - - get
-          - e
-          - "message"
+    ref: object0
   rows:
     - name: a
       qty: 1
@@ -45,3 +19,99 @@ root:
   problems:
     - "name is empty"
     - qty must be positive
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: row
+      - - symbol: try
+        - - symbol: let
+          - ok:
+              - symbol: assert
+              - - symbol: gt
+                - - symbol: get
+                  - symbol: row
+                  - qty
+                - 0
+              - qty must be positive
+          - - symbol: if
+            - - symbol: eq
+              - - symbol: get
+                - symbol: row
+                - name
+              - ""
+            - - symbol: raise
+              - invalid
+              - name is empty
+            - symbol: ok
+        - - symbol: fn
+          - - symbol: e
+          - - symbol: get
+            - symbol: e
+            - message
+    location:
+      source: "<root>"
+      path:
+        - "check"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          check:
+            - symbol: fn
+            - - symbol: row
+            - - symbol: try
+              - - symbol: let
+                - ok:
+                    - symbol: assert
+                    - - symbol: gt
+                      - - symbol: get
+                        - symbol: row
+                        - qty
+                      - 0
+                    - qty must be positive
+                - - symbol: if
+                  - - symbol: eq
+                    - - symbol: get
+                      - symbol: row
+                      - name
+                    - ""
+                  - - symbol: raise
+                    - invalid
+                    - name is empty
+                  - symbol: ok
+              - - symbol: fn
+                - - symbol: e
+                - - symbol: get
+                  - symbol: e
+                  - message
+          rows:
+            - name:
+                symbol: a
+              qty: 1
+            - name: ""
+              qty: 2
+            - name:
+                symbol: c
+              qty: 0
+            - name:
+                symbol: d
+              qty: 4
+          results:
+            - symbol: map
+            - symbol: check
+            - symbol: rows
+          problems:
+            - symbol: filter
+            - - symbol: fn
+              - - symbol: r
+              - - symbol: ne
+                - symbol: r
+                - ~
+            - symbol: results

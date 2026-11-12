@@ -1,19 +1,68 @@
 status: finished
 root:
   grade:
-    - fn
-    - - n
-    - - cond
-      - - ge
-        - n
-        - 90
-      - "A"
-      - - ge
-        - n
-        - 80
-      - "B"
-      - "C"
+    ref: object0
   a: A
   b: B
   c: C
   lazy: ok
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: cond
+        - - symbol: ge
+          - symbol: "n"
+          - 90
+        - A
+        - - symbol: ge
+          - symbol: "n"
+          - 80
+        - B
+        - C
+    location:
+      source: "<root>"
+      path:
+        - "grade"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          grade:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: cond
+              - - symbol: ge
+                - symbol: "n"
+                - 90
+              - A
+              - - symbol: ge
+                - symbol: "n"
+                - 80
+              - B
+              - C
+          a:
+            - symbol: grade
+            - 95
+          b:
+            - symbol: grade
+            - 85
+          c:
+            - symbol: grade
+            - 10
+          lazy:
+            - symbol: cond
+            - true
+            - ok
+            - - symbol: div
+              - 1
+              - 0
+            - never
+            - fallback

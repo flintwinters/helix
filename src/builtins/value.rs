@@ -1,43 +1,35 @@
 //! Value inspection shared by every builtin family: type names, numeric views and equality.
 
-use yaml_rust2::Yaml;
+use crate::value::Value;
 
 /// Structural equality; numbers compare by value across `int` and `float`.
-pub(super) fn equal(a: &Yaml, b: &Yaml) -> bool {
-    match (a, b) {
-        (Yaml::Integer(x), Yaml::Integer(y)) => x == y,
-        (Yaml::Array(x), Yaml::Array(y)) => x.len() == y.len() && x.iter().zip(y).all(|(p, q)| equal(p, q)),
-        (Yaml::Hash(x), Yaml::Hash(y)) => x.len() == y.len() && x.iter().all(|(k, v)| y.get(k).is_some_and(|w| equal(v, w))),
-        _ => match (as_f64(a), as_f64(b)) {
-            (Some(x), Some(y)) => x == y,
-            _ => a == b,
-        },
-    }
+pub(super) fn equal(a: &Value, b: &Value) -> bool {
+    a == b
 }
 
-pub(super) fn as_f64(value: &Yaml) -> Option<f64> {
+pub(super) fn as_f64(value: &Value) -> Option<f64> {
     match value {
-        Yaml::Integer(i) => Some(*i as f64),
-        Yaml::Real(text) => text.parse().ok(),
+        Value::Integer(i) => Some(*i as f64),
+        Value::Float(value) => Some(*value),
         _ => None,
     }
 }
 
-pub(super) fn type_name(v: &Yaml) -> &'static str {
-    if is_function(v) { return "function"; }
+pub(super) fn type_name(v: &Value) -> &'static str {
     match v {
-        Yaml::Integer(_) => "integer",
-        Yaml::Real(_) => "float",
-        Yaml::String(_) => "string",
-        Yaml::Boolean(_) => "boolean",
-        Yaml::Array(_) => "list",
-        Yaml::Hash(_) => "map",
-        Yaml::Null => "null",
-        _ => "invalid value",
+        Value::Integer(_) => "integer",
+        Value::Float(_) => "float",
+        Value::String(_) => "string",
+        Value::Boolean(_) => "boolean",
+        Value::Array(_) => "list",
+        Value::Hash(_) => "map",
+        Value::Null => "null",
+        Value::Machine(_) => "vm",
+        Value::Function(_) => "function",
     }
 }
 
-/// Executable source carries a verbatim head, unlike a data list with a quoted string head.
-pub fn is_function(value: &Yaml) -> bool {
-    matches!(value, Yaml::Array(items) if matches!(items.first(), Some(Yaml::Real(head)) if matches!(head.as_str(), "fn" | "closure")))
+/// Runtime functions are a distinct variant; data can never forge one by its list shape.
+pub fn is_function(value: &Value) -> bool {
+    matches!(value, Value::Function(_))
 }

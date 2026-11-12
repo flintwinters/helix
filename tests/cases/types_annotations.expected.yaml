@@ -1,28 +1,12 @@
 status: finished
 root:
   in_port:
-    - fn
-    - - n
-    - - and
-      - - ge
-        - n
-        - 1
-      - - le
-        - n
-        - 65535
+    ref: object0
   port:
     type: refine
     of: integer
     check:
-      - fn
-      - - n
-      - - and
-        - - ge
-          - n
-          - 1
-        - - le
-          - n
-          - 65535
+      ref: object0
   endpoint:
     type: record
     fields:
@@ -31,32 +15,17 @@ root:
         type: refine
         of: integer
         check:
-          - fn
-          - - n
-          - - and
-            - - ge
-              - n
-              - 1
-            - - le
-              - n
-              - 65535
+          ref: object0
   url:
-    - fn
-    - - - host
-        - string
-      - - p
-        - port
-    - - concat
-      - host
-      - ":"
-      - - str
-        - p
-    - string
+    ref: object1
   good: "a:80"
   bad_args:
     kind: type
     message: "2 type violations in the arguments of `/url`: expected string, got integer"
     path: /bad_args/1
+    reference:
+      - "bad_args"
+      - 1
     line: 6
     column: 17
     data:
@@ -73,18 +42,10 @@ root:
         column: 17
         function: /url
   ident:
-    - fn
-    - - x
-    - x
-    - string
+    ref: object2
   wrong_result: "1 type violation in the result: expected string, got integer"
   describe:
-    - fn
-    - - - e
-        - endpoint
-    - - get
-      - e
-      - "host"
+    ref: object3
   good_record: h
   bad_record:
     violations:
@@ -106,3 +67,211 @@ root:
     - 2
     - 3
   typed_map_bad: "1 type violation in the arguments of `/typed_map_bad/1/1`: failed its refinement check"
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: and
+        - - symbol: ge
+          - symbol: "n"
+          - 1
+        - - symbol: le
+          - symbol: "n"
+          - 65535
+    location:
+      source: "<root>"
+      path:
+        - "in_port"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - - symbol: host
+          - symbol: string
+        - - symbol: p
+          - symbol: port
+      - - symbol: concat
+        - symbol: host
+        - ":"
+        - - symbol: str
+          - symbol: p
+      - symbol: string
+    location:
+      source: "<root>"
+      path:
+        - "url"
+    environment: []
+    bindings:
+      port:
+        code:
+          source: "<root>"
+          path:
+            - "port"
+  object2:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - symbol: x
+      - symbol: x
+      - symbol: string
+    location:
+      source: "<root>"
+      path:
+        - "ident"
+    environment: []
+    bindings: {}
+  object3:
+    kind: function
+    program:
+      ref: object4
+    code:
+      - symbol: fn
+      - - - symbol: e
+          - symbol: endpoint
+      - - symbol: get
+        - symbol: e
+        - host
+    location:
+      source: "<root>"
+      path:
+        - "describe"
+    environment: []
+    bindings:
+      endpoint:
+        code:
+          source: "<root>"
+          path:
+            - "endpoint"
+  object4:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          in_port:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: and
+              - - symbol: ge
+                - symbol: "n"
+                - 1
+              - - symbol: le
+                - symbol: "n"
+                - 65535
+          port:
+            - symbol: refine
+            - symbol: integer
+            - symbol: in_port
+          endpoint:
+            - symbol: record
+            - host
+            - symbol: string
+            - port
+            - symbol: port
+          url:
+            - symbol: fn
+            - - - symbol: host
+                - symbol: string
+              - - symbol: p
+                - symbol: port
+            - - symbol: concat
+              - symbol: host
+              - ":"
+              - - symbol: str
+                - symbol: p
+            - symbol: string
+          good:
+            - symbol: url
+            - a
+            - 80
+          bad_args:
+            - symbol: try
+            - - symbol: url
+              - 1
+              - 0
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          ident:
+            - symbol: fn
+            - - symbol: x
+            - symbol: x
+            - symbol: string
+          wrong_result:
+            - symbol: try
+            - - symbol: ident
+              - 5
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - message
+          describe:
+            - symbol: fn
+            - - - symbol: e
+                - symbol: endpoint
+            - - symbol: get
+              - symbol: e
+              - host
+          good_record:
+            - symbol: describe
+            - host: h
+              port: 1
+          bad_record:
+            - symbol: try
+            - - symbol: describe
+              - host: 1
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - data
+          checked_value:
+            - symbol: expect
+            - host: h
+              port: 22
+            - symbol: endpoint
+          unchecked_value:
+            - symbol: try
+            - - symbol: expect
+              - host: h
+                port: 0
+              - symbol: endpoint
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - data
+          typed_map:
+            - symbol: map
+            - - symbol: fn
+              - - - symbol: "n"
+                  - symbol: port
+              - symbol: "n"
+            - - 1
+              - 2
+              - 3
+          typed_map_bad:
+            - symbol: try
+            - - symbol: map
+              - - symbol: fn
+                - - - symbol: "n"
+                    - symbol: port
+                - symbol: "n"
+              - - 1
+                - 0
+                - 70000
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - message

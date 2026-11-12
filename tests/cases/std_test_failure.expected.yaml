@@ -4,6 +4,10 @@ error:
   message: suite contains failures
   file: "std:test"
   path: /require_pass/2/3
+  reference:
+    - "require_pass"
+    - 2
+    - 3
   line: 50
   column: 52
   data:
@@ -15,9 +19,14 @@ error:
         error:
           kind: assertion
           message: values differ
-          path: /1/t.equal/2/3
-          line: 11
-          column: 9
+          file: "std:test"
+          path: /equal/2/3
+          reference:
+            - "equal"
+            - 2
+            - 3
+          line: 17
+          column: 7
           data:
             expected:
               - 1
@@ -26,15 +35,15 @@ error:
               - 1
               - 2
           calls:
-            - path: /2/2
-              line: 21
-              column: 5
-              function: /1/t.equal
+            - path: /result/1/1/0/run/2
+              line: 6
+              column: 51
+              function: /equal
             - file: "std:test"
               path: /capture/2/1/4/1
               line: 8
               column: 51
-              function: /2
+              function: /result/1/1/0/run
         name: deliberate_mismatch
         input: ~
       - outcome: passed

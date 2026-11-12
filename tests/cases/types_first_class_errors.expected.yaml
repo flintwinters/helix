@@ -4,30 +4,49 @@ root:
     kind: type
     message: "expected a function (`[fn, [params], body]` or its name)"
     path: /not_callable/1/1
+    reference:
+      - "not_callable"
+      - 1
+      - 1
     line: 2
     column: 28
   bad_constructor:
     kind: type
     message: "expected a type, got integer"
     path: /bad_constructor/1/1
+    reference:
+      - "bad_constructor"
+      - 1
+      - 1
     line: 3
     column: 34
   bad_callback:
     kind: type
     message: "expected a function (`[fn, [params], body]` or its name)"
     path: /bad_callback/1/1
+    reference:
+      - "bad_callback"
+      - 1
+      - 1
     line: 4
     column: 27
   bad_closure:
     kind: type
     message: a closure needs bindings and a function
     path: /bad_closure/1
+    reference:
+      - "bad_closure"
+      - 1
     line: 5
     column: 20
   wrong_type:
     kind: type
     message: "1 type violation in the arguments of `/wrong_type/1/1`: expected function, got string"
     path: /wrong_type/1/1
+    reference:
+      - "wrong_type"
+      - 1
+      - 1
     line: 6
     column: 26
     data:

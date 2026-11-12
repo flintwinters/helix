@@ -3,5 +3,7 @@ error:
   kind: assertion
   message: assertion failed
   path: /check
+  reference:
+    - "check"
   line: 1
   column: 8

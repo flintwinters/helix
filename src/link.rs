@@ -7,7 +7,7 @@
 //! `SPEC` is `std:NAME` for an embedded standard module, otherwise a path relative to the
 //! importing file (or to the working directory for the main program when it is not a file).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use yaml_rust2::Yaml;
@@ -17,22 +17,14 @@ use crate::graph::{Graph, Kind, NodeId, ROOT};
 use crate::library;
 
 /// The modules a program imports: each import form's module root, and which nodes are such roots.
-#[derive(Default)]
-pub struct Modules {
-    linked: HashMap<NodeId, NodeId>,
-    roots: HashSet<NodeId>,
-}
-
+pub(crate) use crate::model::Modules;
 impl Modules {
     /// The root of the module the `[import, ...]` node `import` loads.
     pub fn root_of(&self, import: NodeId) -> Option<NodeId> {
         self.linked.get(&import).copied()
     }
 
-    /// Whether `id` is a module root. A module's names are its own: it never sees its importer's.
-    pub fn is_root(&self, id: NodeId) -> bool {
-        self.roots.contains(&id)
-    }
+
 }
 
 /// Where relative imports resolve from.

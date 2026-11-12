@@ -3,5 +3,7 @@ error:
   kind: divide_by_zero
   message: "`div` by zero"
   path: /1
+  reference:
+    - 1
   line: 1
   column: 11

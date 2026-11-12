@@ -5,14 +5,67 @@ root:
     w: 100
     v: 2
   in_fn:
-    - fn
-    - - n
-    - - let
-      - sq:
-          - mul
-          - n
-          - n
-      - - add
-        - sq
-        - 1
+    ref: object0
   r: 26
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: let
+        - sq:
+            - symbol: mul
+            - symbol: "n"
+            - symbol: "n"
+        - - symbol: add
+          - symbol: sq
+          - 1
+    location:
+      source: "<root>"
+      path:
+        - "in_fn"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          area:
+            - symbol: let
+            - w: 3
+              h: 4
+              half:
+                - symbol: div
+                - - symbol: mul
+                  - symbol: w
+                  - symbol: h
+                - 2
+            - - symbol: add
+              - symbol: half
+              - symbol: w
+          shadow:
+            w: 100
+            v:
+              - symbol: let
+              - w: 1
+              - - symbol: add
+                - symbol: w
+                - 1
+          in_fn:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: let
+              - sq:
+                  - symbol: mul
+                  - symbol: "n"
+                  - symbol: "n"
+              - - symbol: add
+                - symbol: sq
+                - 1
+          r:
+            - symbol: in_fn
+            - 5

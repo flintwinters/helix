@@ -5,6 +5,10 @@ root:
     kind: original
     message: body failed
     path: /original_error/1/1
+    reference:
+      - "original_error"
+      - 1
+      - 1
     line: 3
     column: 33
     data:
@@ -13,30 +17,144 @@ root:
     kind: cleanup
     message: cleanup ran
     path: /cleanup_after_success/1/2
+    reference:
+      - "cleanup_after_success"
+      - 1
+      - 2
     line: 4
     column: 44
   cleanup_after_failure:
     kind: cleanup
     message: cleanup ran
     path: /cleanup_after_failure/1/2
+    reference:
+      - "cleanup_after_failure"
+      - 1
+      - 2
     line: 5
     column: 76
   cleanup_value_ignored: ~
   function:
-    - fn
-    - - n
-    - - finally
-      - - div
-        - 12
-        - n
-      - - assert
-        - - ne
-          - n
-          - -1
-        - "cleanup rejected argument"
+    ref: object0
   calls:
     - 6
     - divide_by_zero
     - assertion
     - 4
   nested: outer
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: finally
+        - - symbol: div
+          - 12
+          - symbol: "n"
+        - - symbol: assert
+          - - symbol: ne
+            - symbol: "n"
+            - -1
+          - cleanup rejected argument
+    location:
+      source: "<root>"
+      path:
+        - "function"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          success:
+            - symbol: finally
+            - - symbol: add
+              - 2
+              - 3
+            - - symbol: assert
+              - true
+          original_error:
+            - symbol: try
+            - - symbol: finally
+              - - symbol: raise
+                - original
+                - body failed
+                - step: 2
+              - ~
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          cleanup_after_success:
+            - symbol: try
+            - - symbol: finally
+              - 42
+              - - symbol: raise
+                - cleanup
+                - cleanup ran
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          cleanup_after_failure:
+            - symbol: try
+            - - symbol: finally
+              - - symbol: raise
+                - original
+                - body failed
+              - - symbol: raise
+                - cleanup
+                - cleanup ran
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          cleanup_value_ignored:
+            - symbol: finally
+            - ~
+            - 99
+          function:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: finally
+              - - symbol: div
+                - 12
+                - symbol: "n"
+              - - symbol: assert
+                - - symbol: ne
+                  - symbol: "n"
+                  - -1
+                - cleanup rejected argument
+          calls:
+            - symbol: map
+            - - symbol: fn
+              - - symbol: "n"
+              - - symbol: try
+                - - symbol: function
+                  - symbol: "n"
+                - - symbol: fn
+                  - - symbol: e
+                  - - symbol: get
+                    - symbol: e
+                    - kind
+            - - 2
+              - 0
+              - -1
+              - 3
+          nested:
+            - symbol: try
+            - - symbol: finally
+              - - symbol: finally
+                - 1
+                - - symbol: raise
+                  - inner
+                  - inner cleanup
+              - - symbol: raise
+                - outer
+                - outer cleanup
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind

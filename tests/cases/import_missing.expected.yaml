@@ -3,5 +3,8 @@ error:
   kind: import
   message: "cannot read `tests/cases/modules/nope.yaml`: No such file or directory (os error 2)"
   path: /a/1
+  reference:
+    - "a"
+    - 1
   line: 1
   column: 13

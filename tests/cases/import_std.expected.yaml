@@ -7,80 +7,17 @@ root:
         - "integer"
         - float
     abs:
-      - fn
-      - - - n
-          - number
-      - - if
-        - - lt
-          - n
-          - 0
-        - - neg
-          - n
-        - n
-      - number
+      ref: object0
     sign:
-      - fn
-      - - - n
-          - number
-      - - cond
-        - - lt
-          - n
-          - 0
-        - -1
-        - - gt
-          - n
-          - 0
-        - 1
-        - 0
-      - integer
+      ref: object1
     min:
-      - fn
-      - - - a
-          - number
-        - - b
-          - number
-      - - if
-        - - lt
-          - a
-          - b
-        - a
-        - b
-      - number
+      ref: object2
     max:
-      - fn
-      - - - a
-          - number
-        - - b
-          - number
-      - - if
-        - - gt
-          - a
-          - b
-        - a
-        - b
-      - number
+      ref: object3
     clamp:
-      - fn
-      - - - n
-          - number
-        - - lo
-          - number
-        - - hi
-          - number
-      - - max
-        - lo
-        - - min
-          - n
-          - hi
-      - number
+      ref: object4
     square:
-      - fn
-      - - - n
-          - number
-      - - mul
-        - n
-        - n
-      - number
+      ref: object5
   lists:
     math:
       number:
@@ -89,80 +26,17 @@ root:
           - "integer"
           - float
       abs:
-        - fn
-        - - - n
-            - number
-        - - if
-          - - lt
-            - n
-            - 0
-          - - neg
-            - n
-          - n
-        - number
+        ref: object0
       sign:
-        - fn
-        - - - n
-            - number
-        - - cond
-          - - lt
-            - n
-            - 0
-          - -1
-          - - gt
-            - n
-            - 0
-          - 1
-          - 0
-        - integer
+        ref: object1
       min:
-        - fn
-        - - - a
-            - number
-          - - b
-            - number
-        - - if
-          - - lt
-            - a
-            - b
-          - a
-          - b
-        - number
+        ref: object2
       max:
-        - fn
-        - - - a
-            - number
-          - - b
-            - number
-        - - if
-          - - gt
-            - a
-            - b
-          - a
-          - b
-        - number
+        ref: object3
       clamp:
-        - fn
-        - - - n
-            - number
-          - - lo
-            - number
-          - - hi
-            - number
-        - - max
-          - lo
-          - - min
-            - n
-            - hi
-        - number
+        ref: object4
       square:
-        - fn
-        - - - n
-            - number
-        - - mul
-          - n
-          - n
-        - number
+        ref: object5
     numbers:
       type: list
       of:
@@ -171,465 +45,54 @@ root:
           - "integer"
           - float
     sum:
-      - fn
-      - - - xs
-          - numbers
-      - - fold
-        - - fn
-          - - acc
-            - x
-          - - add
-            - acc
-            - x
-        - 0
-        - xs
-      - math.number
+      ref: object6
     product:
-      - fn
-      - - - xs
-          - numbers
-      - - fold
-        - - fn
-          - - acc
-            - x
-          - - mul
-            - acc
-            - x
-        - 1
-        - xs
-      - math.number
+      ref: object7
     reverse:
-      - fn
-      - - - xs
-          - list
-      - - fold
-        - - fn
-          - - acc
-            - x
-          - - concat
-            - - list
-              - x
-            - acc
-        - - list
-        - xs
-      - list
+      ref: object8
     range:
-      - fn
-      - - - n
-          - integer
-      - - let
-        - done:
-            - fn
-            - - xs
-            - - ge
-              - - len
-                - xs
-              - n
-          step:
-            - fn
-            - - xs
-            - - append
-              - xs
-              - - len
-                - xs
-        - - until
-          - done
-          - step
-          - - list
-      - - list_of
-        - integer
+      ref: object9
     unique:
-      - fn
-      - - - xs
-          - list
-      - - fold
-        - - fn
-          - - seen
-            - item
-          - - if
-            - - has
-              - seen
-              - item
-            - seen
-            - - append
-              - seen
-              - item
-        - []
-        - xs
-      - list
+      ref: object10
     sort_by:
-      - fn
-      - - - xs
-          - list
-        - - before
-          - function
-      - - fold
-        - - fn
-          - - ordered
-            - item
-          - - let
-            - position:
-                - until
-                - - fn
-                  - - index
-                  - - or
-                    - - ge
-                      - index
-                      - - len
-                        - ordered
-                    - - before
-                      - item
-                      - - get
-                        - ordered
-                        - index
-                - - fn
-                  - - index
-                  - - add
-                    - index
-                    - 1
-                - 0
-            - - concat
-              - - slice
-                - ordered
-                - 0
-                - position
-              - - list
-                - item
-              - - slice
-                - ordered
-                - position
-                - - len
-                  - ordered
-        - []
-        - xs
-      - list
+      ref: object11
     first:
-      - fn
-      - - - xs
-          - list
-        - fallback
-      - - get
-        - xs
-        - 0
-        - fallback
+      ref: object12
     last:
-      - fn
-      - - - xs
-          - list
-        - fallback
-      - - if
-        - - eq
-          - - len
-            - xs
-          - 0
-        - fallback
-        - - get
-          - xs
-          - - sub
-            - - len
-              - xs
-            - 1
+      ref: object13
     take:
-      - fn
-      - - - xs
-          - list
-        - - n
-          - integer
-      - - if
-        - - lt
-          - n
-          - 0
-        - - raise
-          - "range"
-          - "take count must be non-negative"
-        - - slice
-          - xs
-          - 0
-          - - math.min
-            - n
-            - - len
-              - xs
-      - list
+      ref: object14
     drop:
-      - fn
-      - - - xs
-          - list
-        - - n
-          - integer
-      - - if
-        - - lt
-          - n
-          - 0
-        - - raise
-          - "range"
-          - "drop count must be non-negative"
-        - - slice
-          - xs
-          - - math.min
-            - n
-            - - len
-              - xs
-          - - len
-            - xs
-      - list
+      ref: object15
     enumerate:
-      - fn
-      - - - xs
-          - list
-      - - map
-        - - fn
-          - - i
-          - - list
-            - i
-            - - get
-              - xs
-              - i
-        - - range
-          - - len
-            - xs
-      - list
+      ref: object16
     zip:
-      - fn
-      - - - xs
-          - list
-        - - ys
-          - list
-      - - map
-        - - fn
-          - - i
-          - - list
-            - - get
-              - xs
-              - i
-            - - get
-              - ys
-              - i
-        - - range
-          - - math.min
-            - - len
-              - xs
-            - - len
-              - ys
-      - list
+      ref: object17
     flatten:
-      - fn
-      - - - xss
-          - - list_of
-            - list
-      - - fold
-        - - fn
-          - - acc
-            - xs
-          - - concat
-            - acc
-            - xs
-        - []
-        - xss
-      - list
+      ref: object18
     flat_map:
-      - fn
-      - - - xs
-          - list
-        - - transform
-          - function
-      - - flatten
-        - - map
-          - transform
-          - xs
-      - list
+      ref: object19
     find_index:
-      - fn
-      - - - xs
-          - list
-        - - predicate
-          - function
-      - - let
-        - position:
-            - until
-            - - fn
-              - - i
-              - - or
-                - - ge
-                  - i
-                  - - len
-                    - xs
-                - - predicate
-                  - - get
-                    - xs
-                    - i
-            - - fn
-              - - i
-              - - add
-                - i
-                - 1
-            - 0
-        - - if
-          - - lt
-            - position
-            - - len
-              - xs
-          - position
-          - -1
-      - integer
+      ref: object20
     find:
-      - fn
-      - - - xs
-          - list
-        - - predicate
-          - function
-        - fallback
-      - - let
-        - i:
-            - find_index
-            - xs
-            - predicate
-        - - if
-          - - lt
-            - i
-            - 0
-          - fallback
-          - - get
-            - xs
-            - i
+      ref: object21
     any:
-      - fn
-      - - - xs
-          - list
-        - - predicate
-          - function
-      - - ge
-        - - find_index
-          - xs
-          - predicate
-        - 0
-      - boolean
+      ref: object22
     all:
-      - fn
-      - - - xs
-          - list
-        - - predicate
-          - function
-      - - lt
-        - - find_index
-          - xs
-          - - fn
-            - - x
-            - - not
-              - - predicate
-                - x
-        - 0
-      - boolean
+      ref: object23
     count:
-      - fn
-      - - - xs
-          - list
-        - - predicate
-          - function
-      - - len
-        - - filter
-          - predicate
-          - xs
-      - integer
+      ref: object24
     partition:
-      - fn
-      - - - xs
-          - list
-        - - predicate
-          - function
-      - - fold
-        - - fn
-          - - parts
-            - x
-          - - let
-            - side:
-                - if
-                - - predicate
-                  - x
-                - 0
-                - 1
-            - - set
-              - parts
-              - side
-              - - append
-                - - get
-                  - parts
-                  - side
-                - x
-        - - []
-          - []
-        - xs
-      - list
+      ref: object25
     grouping:
       by:
-        - fn
-        - - - xs
-            - list
-          - - key
-            - function
-        - - fold
-          - - fn
-            - - groups
-              - item
-            - - let
-              - name:
-                  - key
-                  - item
-              - - set
-                - groups
-                - name
-                - - append
-                  - - get
-                    - groups
-                    - name
-                    - []
-                  - item
-          - {}
-          - xs
-        - map
+        ref: object26
     group_by:
-      - fn
-      - - - xs
-          - list
-        - - key_for
-          - function
-      - - grouping.by
-        - xs
-        - key_for
-      - map
+      ref: object27
     frequencies:
-      - fn
-      - - - xs
-          - - list_of
-            - string
-      - - fold
-        - - fn
-          - - counts
-            - x
-          - - set
-            - counts
-            - x
-            - - add
-              - - get
-                - counts
-                - x
-                - 0
-              - 1
-        - {}
-        - xs
-      - map
+      ref: object28
     sort:
-      - fn
-      - - - xs
-          - list
-      - - sort_by
-        - xs
-        - - fn
-          - - a
-            - b
-          - - lt
-            - a
-            - b
-      - list
+      ref: object29
   biggest: 9
   clipped: 10
   absolute: 4
@@ -651,3 +114,1562 @@ root:
     - 9
   negative_sign: -1
   minimum: 2
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+      - - symbol: if
+        - - symbol: lt
+          - symbol: "n"
+          - 0
+        - - symbol: neg
+          - symbol: "n"
+        - symbol: "n"
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "abs"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object1:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+      - - symbol: cond
+        - - symbol: lt
+          - symbol: "n"
+          - 0
+        - -1
+        - - symbol: gt
+          - symbol: "n"
+          - 0
+        - 1
+        - 0
+      - symbol: integer
+    location:
+      source: "std:math"
+      path:
+        - "sign"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object2:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: a
+          - symbol: number
+        - - symbol: b
+          - symbol: number
+      - - symbol: if
+        - - symbol: lt
+          - symbol: a
+          - symbol: b
+        - symbol: a
+        - symbol: b
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "min"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object3:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: a
+          - symbol: number
+        - - symbol: b
+          - symbol: number
+      - - symbol: if
+        - - symbol: gt
+          - symbol: a
+          - symbol: b
+        - symbol: a
+        - symbol: b
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "max"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object4:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+        - - symbol: lo
+          - symbol: number
+        - - symbol: hi
+          - symbol: number
+      - - symbol: max
+        - symbol: lo
+        - - symbol: min
+          - symbol: "n"
+          - symbol: hi
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "clamp"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+      max:
+        code:
+          source: "std:math"
+          path:
+            - "max"
+      min:
+        code:
+          source: "std:math"
+          path:
+            - "min"
+  object5:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: number
+      - - symbol: mul
+        - symbol: "n"
+        - symbol: "n"
+      - symbol: number
+    location:
+      source: "std:math"
+      path:
+        - "square"
+    environment: []
+    bindings:
+      number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+  object6:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: numbers
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: acc
+            - symbol: x
+          - - symbol: add
+            - symbol: acc
+            - symbol: x
+        - 0
+        - symbol: xs
+      - symbol: math.number
+    location:
+      source: "std:list"
+      path:
+        - "sum"
+    environment: []
+    bindings:
+      math.number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+      numbers:
+        code:
+          source: "std:list"
+          path:
+            - "numbers"
+  object7:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: numbers
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: acc
+            - symbol: x
+          - - symbol: mul
+            - symbol: acc
+            - symbol: x
+        - 1
+        - symbol: xs
+      - symbol: math.number
+    location:
+      source: "std:list"
+      path:
+        - "product"
+    environment: []
+    bindings:
+      math.number:
+        code:
+          source: "std:math"
+          path:
+            - "number"
+      numbers:
+        code:
+          source: "std:list"
+          path:
+            - "numbers"
+  object8:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: acc
+            - symbol: x
+          - - symbol: concat
+            - - symbol: list
+              - symbol: x
+            - symbol: acc
+        - - symbol: list
+        - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "reverse"
+    environment: []
+    bindings: {}
+  object9:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: "n"
+          - symbol: integer
+      - - symbol: let
+        - done:
+            - symbol: fn
+            - - symbol: xs
+            - - symbol: ge
+              - - symbol: len
+                - symbol: xs
+              - symbol: "n"
+          step:
+            - symbol: fn
+            - - symbol: xs
+            - - symbol: append
+              - symbol: xs
+              - - symbol: len
+                - symbol: xs
+        - - symbol: until
+          - symbol: done
+          - symbol: step
+          - - symbol: list
+      - - symbol: list_of
+        - symbol: integer
+    location:
+      source: "std:list"
+      path:
+        - "range"
+    environment: []
+    bindings: {}
+  object10:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: seen
+            - symbol: item
+          - - symbol: if
+            - - symbol: has
+              - symbol: seen
+              - symbol: item
+            - symbol: seen
+            - - symbol: append
+              - symbol: seen
+              - symbol: item
+        - []
+        - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "unique"
+    environment: []
+    bindings: {}
+  object11:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: before
+          - symbol: function
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: ordered
+            - symbol: item
+          - - symbol: let
+            - position:
+                - symbol: until
+                - - symbol: fn
+                  - - symbol: index
+                  - - symbol: or
+                    - - symbol: ge
+                      - symbol: index
+                      - - symbol: len
+                        - symbol: ordered
+                    - - symbol: before
+                      - symbol: item
+                      - - symbol: get
+                        - symbol: ordered
+                        - symbol: index
+                - - symbol: fn
+                  - - symbol: index
+                  - - symbol: add
+                    - symbol: index
+                    - 1
+                - 0
+            - - symbol: concat
+              - - symbol: slice
+                - symbol: ordered
+                - 0
+                - symbol: position
+              - - symbol: list
+                - symbol: item
+              - - symbol: slice
+                - symbol: ordered
+                - symbol: position
+                - - symbol: len
+                  - symbol: ordered
+        - []
+        - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "sort_by"
+    environment: []
+    bindings: {}
+  object12:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - symbol: fallback
+      - - symbol: get
+        - symbol: xs
+        - 0
+        - symbol: fallback
+    location:
+      source: "std:list"
+      path:
+        - "first"
+    environment: []
+    bindings: {}
+  object13:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - symbol: fallback
+      - - symbol: if
+        - - symbol: eq
+          - - symbol: len
+            - symbol: xs
+          - 0
+        - symbol: fallback
+        - - symbol: get
+          - symbol: xs
+          - - symbol: sub
+            - - symbol: len
+              - symbol: xs
+            - 1
+    location:
+      source: "std:list"
+      path:
+        - "last"
+    environment: []
+    bindings: {}
+  object14:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: "n"
+          - symbol: integer
+      - - symbol: if
+        - - symbol: lt
+          - symbol: "n"
+          - 0
+        - - symbol: raise
+          - range
+          - take count must be non-negative
+        - - symbol: slice
+          - symbol: xs
+          - 0
+          - - symbol: math.min
+            - symbol: "n"
+            - - symbol: len
+              - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "take"
+    environment: []
+    bindings:
+      math.min:
+        code:
+          source: "std:math"
+          path:
+            - "min"
+  object15:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: "n"
+          - symbol: integer
+      - - symbol: if
+        - - symbol: lt
+          - symbol: "n"
+          - 0
+        - - symbol: raise
+          - range
+          - drop count must be non-negative
+        - - symbol: slice
+          - symbol: xs
+          - - symbol: math.min
+            - symbol: "n"
+            - - symbol: len
+              - symbol: xs
+          - - symbol: len
+            - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "drop"
+    environment: []
+    bindings:
+      math.min:
+        code:
+          source: "std:math"
+          path:
+            - "min"
+  object16:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+      - - symbol: map
+        - - symbol: fn
+          - - symbol: i
+          - - symbol: list
+            - symbol: i
+            - - symbol: get
+              - symbol: xs
+              - symbol: i
+        - - symbol: range
+          - - symbol: len
+            - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "enumerate"
+    environment: []
+    bindings:
+      range:
+        code:
+          source: "std:list"
+          path:
+            - "range"
+  object17:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: ys
+          - symbol: list
+      - - symbol: map
+        - - symbol: fn
+          - - symbol: i
+          - - symbol: list
+            - - symbol: get
+              - symbol: xs
+              - symbol: i
+            - - symbol: get
+              - symbol: ys
+              - symbol: i
+        - - symbol: range
+          - - symbol: math.min
+            - - symbol: len
+              - symbol: xs
+            - - symbol: len
+              - symbol: ys
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "zip"
+    environment: []
+    bindings:
+      range:
+        code:
+          source: "std:list"
+          path:
+            - "range"
+      math.min:
+        code:
+          source: "std:math"
+          path:
+            - "min"
+  object18:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xss
+          - - symbol: list_of
+            - symbol: list
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: acc
+            - symbol: xs
+          - - symbol: concat
+            - symbol: acc
+            - symbol: xs
+        - []
+        - symbol: xss
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "flatten"
+    environment: []
+    bindings: {}
+  object19:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: transform
+          - symbol: function
+      - - symbol: flatten
+        - - symbol: map
+          - symbol: transform
+          - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "flat_map"
+    environment: []
+    bindings:
+      flatten:
+        code:
+          source: "std:list"
+          path:
+            - "flatten"
+  object20:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+      - - symbol: let
+        - position:
+            - symbol: until
+            - - symbol: fn
+              - - symbol: i
+              - - symbol: or
+                - - symbol: ge
+                  - symbol: i
+                  - - symbol: len
+                    - symbol: xs
+                - - symbol: predicate
+                  - - symbol: get
+                    - symbol: xs
+                    - symbol: i
+            - - symbol: fn
+              - - symbol: i
+              - - symbol: add
+                - symbol: i
+                - 1
+            - 0
+        - - symbol: if
+          - - symbol: lt
+            - symbol: position
+            - - symbol: len
+              - symbol: xs
+          - symbol: position
+          - -1
+      - symbol: integer
+    location:
+      source: "std:list"
+      path:
+        - "find_index"
+    environment: []
+    bindings: {}
+  object21:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+        - symbol: fallback
+      - - symbol: let
+        - i:
+            - symbol: find_index
+            - symbol: xs
+            - symbol: predicate
+        - - symbol: if
+          - - symbol: lt
+            - symbol: i
+            - 0
+          - symbol: fallback
+          - - symbol: get
+            - symbol: xs
+            - symbol: i
+    location:
+      source: "std:list"
+      path:
+        - "find"
+    environment: []
+    bindings:
+      find_index:
+        code:
+          source: "std:list"
+          path:
+            - "find_index"
+  object22:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+      - - symbol: ge
+        - - symbol: find_index
+          - symbol: xs
+          - symbol: predicate
+        - 0
+      - symbol: boolean
+    location:
+      source: "std:list"
+      path:
+        - "any"
+    environment: []
+    bindings:
+      find_index:
+        code:
+          source: "std:list"
+          path:
+            - "find_index"
+  object23:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+      - - symbol: lt
+        - - symbol: find_index
+          - symbol: xs
+          - - symbol: fn
+            - - symbol: x
+            - - symbol: not
+              - - symbol: predicate
+                - symbol: x
+        - 0
+      - symbol: boolean
+    location:
+      source: "std:list"
+      path:
+        - "all"
+    environment: []
+    bindings:
+      find_index:
+        code:
+          source: "std:list"
+          path:
+            - "find_index"
+  object24:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+      - - symbol: len
+        - - symbol: filter
+          - symbol: predicate
+          - symbol: xs
+      - symbol: integer
+    location:
+      source: "std:list"
+      path:
+        - "count"
+    environment: []
+    bindings: {}
+  object25:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: predicate
+          - symbol: function
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: parts
+            - symbol: x
+          - - symbol: let
+            - side:
+                - symbol: if
+                - - symbol: predicate
+                  - symbol: x
+                - 0
+                - 1
+            - - symbol: set
+              - symbol: parts
+              - symbol: side
+              - - symbol: append
+                - - symbol: get
+                  - symbol: parts
+                  - symbol: side
+                - symbol: x
+        - - []
+          - []
+        - symbol: xs
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "partition"
+    environment: []
+    bindings: {}
+  object26:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: key
+          - symbol: function
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: groups
+            - symbol: item
+          - - symbol: let
+            - name:
+                - symbol: key
+                - symbol: item
+            - - symbol: set
+              - symbol: groups
+              - symbol: name
+              - - symbol: append
+                - - symbol: get
+                  - symbol: groups
+                  - symbol: name
+                  - []
+                - symbol: item
+        - {}
+        - symbol: xs
+      - symbol: map
+    location:
+      source: "std:group"
+      path:
+        - "by"
+    environment: []
+    bindings: {}
+  object27:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: key_for
+          - symbol: function
+      - - symbol: grouping.by
+        - symbol: xs
+        - symbol: key_for
+      - symbol: map
+    location:
+      source: "std:list"
+      path:
+        - "group_by"
+    environment: []
+    bindings:
+      grouping.by:
+        code:
+          source: "std:group"
+          path:
+            - "by"
+  object28:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - - symbol: list_of
+            - symbol: string
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: counts
+            - symbol: x
+          - - symbol: set
+            - symbol: counts
+            - symbol: x
+            - - symbol: add
+              - - symbol: get
+                - symbol: counts
+                - symbol: x
+                - 0
+              - 1
+        - {}
+        - symbol: xs
+      - symbol: map
+    location:
+      source: "std:list"
+      path:
+        - "frequencies"
+    environment: []
+    bindings: {}
+  object29:
+    kind: function
+    program:
+      ref: object30
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+      - - symbol: sort_by
+        - symbol: xs
+        - - symbol: fn
+          - - symbol: a
+            - symbol: b
+          - - symbol: lt
+            - symbol: a
+            - symbol: b
+      - symbol: list
+    location:
+      source: "std:list"
+      path:
+        - "sort"
+    environment: []
+    bindings:
+      sort_by:
+        code:
+          source: "std:list"
+          path:
+            - "sort_by"
+  object30:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          math:
+            - symbol: import
+            - symbol: "std:math"
+          lists:
+            - symbol: import
+            - symbol: "std:list"
+          biggest:
+            - symbol: math.max
+            - 3
+            - 9
+          clipped:
+            - symbol: math.clamp
+            - 15
+            - 0
+            - 10
+          absolute:
+            - symbol: math.abs
+            - -4
+          total:
+            - symbol: lists.sum
+            - - 1
+              - 2
+              - 3
+              - 4
+          product:
+            - symbol: lists.product
+            - - 1
+              - 2
+              - 3
+              - 4
+          reversed:
+            - symbol: lists.reverse
+            - - 1
+              - 2
+              - 3
+          first_five:
+            - symbol: lists.range
+            - 5
+          squares:
+            - symbol: map
+            - symbol: math.square
+            - - 1
+              - 2
+              - 3
+          negative_sign:
+            - symbol: math.sign
+            - -8
+          minimum:
+            - symbol: math.min
+            - 7
+            - 2
+      - source: "std:math"
+        code:
+          number:
+            - symbol: union
+            - symbol: integer
+            - symbol: float
+          abs:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+            - - symbol: if
+              - - symbol: lt
+                - symbol: "n"
+                - 0
+              - - symbol: neg
+                - symbol: "n"
+              - symbol: "n"
+            - symbol: number
+          sign:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+            - - symbol: cond
+              - - symbol: lt
+                - symbol: "n"
+                - 0
+              - -1
+              - - symbol: gt
+                - symbol: "n"
+                - 0
+              - 1
+              - 0
+            - symbol: integer
+          min:
+            - symbol: fn
+            - - - symbol: a
+                - symbol: number
+              - - symbol: b
+                - symbol: number
+            - - symbol: if
+              - - symbol: lt
+                - symbol: a
+                - symbol: b
+              - symbol: a
+              - symbol: b
+            - symbol: number
+          max:
+            - symbol: fn
+            - - - symbol: a
+                - symbol: number
+              - - symbol: b
+                - symbol: number
+            - - symbol: if
+              - - symbol: gt
+                - symbol: a
+                - symbol: b
+              - symbol: a
+              - symbol: b
+            - symbol: number
+          clamp:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+              - - symbol: lo
+                - symbol: number
+              - - symbol: hi
+                - symbol: number
+            - - symbol: max
+              - symbol: lo
+              - - symbol: min
+                - symbol: "n"
+                - symbol: hi
+            - symbol: number
+          square:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: number
+            - - symbol: mul
+              - symbol: "n"
+              - symbol: "n"
+            - symbol: number
+      - source: "std:list"
+        code:
+          math:
+            - symbol: import
+            - symbol: "std:math"
+          numbers:
+            - symbol: list_of
+            - symbol: math.number
+          sum:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: numbers
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: acc
+                  - symbol: x
+                - - symbol: add
+                  - symbol: acc
+                  - symbol: x
+              - 0
+              - symbol: xs
+            - symbol: math.number
+          product:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: numbers
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: acc
+                  - symbol: x
+                - - symbol: mul
+                  - symbol: acc
+                  - symbol: x
+              - 1
+              - symbol: xs
+            - symbol: math.number
+          reverse:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: acc
+                  - symbol: x
+                - - symbol: concat
+                  - - symbol: list
+                    - symbol: x
+                  - symbol: acc
+              - - symbol: list
+              - symbol: xs
+            - symbol: list
+          range:
+            - symbol: fn
+            - - - symbol: "n"
+                - symbol: integer
+            - - symbol: let
+              - done:
+                  - symbol: fn
+                  - - symbol: xs
+                  - - symbol: ge
+                    - - symbol: len
+                      - symbol: xs
+                    - symbol: "n"
+                step:
+                  - symbol: fn
+                  - - symbol: xs
+                  - - symbol: append
+                    - symbol: xs
+                    - - symbol: len
+                      - symbol: xs
+              - - symbol: until
+                - symbol: done
+                - symbol: step
+                - - symbol: list
+            - - symbol: list_of
+              - symbol: integer
+          unique:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: seen
+                  - symbol: item
+                - - symbol: if
+                  - - symbol: has
+                    - symbol: seen
+                    - symbol: item
+                  - symbol: seen
+                  - - symbol: append
+                    - symbol: seen
+                    - symbol: item
+              - []
+              - symbol: xs
+            - symbol: list
+          sort_by:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: before
+                - symbol: function
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: ordered
+                  - symbol: item
+                - - symbol: let
+                  - position:
+                      - symbol: until
+                      - - symbol: fn
+                        - - symbol: index
+                        - - symbol: or
+                          - - symbol: ge
+                            - symbol: index
+                            - - symbol: len
+                              - symbol: ordered
+                          - - symbol: before
+                            - symbol: item
+                            - - symbol: get
+                              - symbol: ordered
+                              - symbol: index
+                      - - symbol: fn
+                        - - symbol: index
+                        - - symbol: add
+                          - symbol: index
+                          - 1
+                      - 0
+                  - - symbol: concat
+                    - - symbol: slice
+                      - symbol: ordered
+                      - 0
+                      - symbol: position
+                    - - symbol: list
+                      - symbol: item
+                    - - symbol: slice
+                      - symbol: ordered
+                      - symbol: position
+                      - - symbol: len
+                        - symbol: ordered
+              - []
+              - symbol: xs
+            - symbol: list
+          first:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - symbol: fallback
+            - - symbol: get
+              - symbol: xs
+              - 0
+              - symbol: fallback
+          last:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - symbol: fallback
+            - - symbol: if
+              - - symbol: eq
+                - - symbol: len
+                  - symbol: xs
+                - 0
+              - symbol: fallback
+              - - symbol: get
+                - symbol: xs
+                - - symbol: sub
+                  - - symbol: len
+                    - symbol: xs
+                  - 1
+          take:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: "n"
+                - symbol: integer
+            - - symbol: if
+              - - symbol: lt
+                - symbol: "n"
+                - 0
+              - - symbol: raise
+                - range
+                - take count must be non-negative
+              - - symbol: slice
+                - symbol: xs
+                - 0
+                - - symbol: math.min
+                  - symbol: "n"
+                  - - symbol: len
+                    - symbol: xs
+            - symbol: list
+          drop:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: "n"
+                - symbol: integer
+            - - symbol: if
+              - - symbol: lt
+                - symbol: "n"
+                - 0
+              - - symbol: raise
+                - range
+                - drop count must be non-negative
+              - - symbol: slice
+                - symbol: xs
+                - - symbol: math.min
+                  - symbol: "n"
+                  - - symbol: len
+                    - symbol: xs
+                - - symbol: len
+                  - symbol: xs
+            - symbol: list
+          enumerate:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+            - - symbol: map
+              - - symbol: fn
+                - - symbol: i
+                - - symbol: list
+                  - symbol: i
+                  - - symbol: get
+                    - symbol: xs
+                    - symbol: i
+              - - symbol: range
+                - - symbol: len
+                  - symbol: xs
+            - symbol: list
+          zip:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: ys
+                - symbol: list
+            - - symbol: map
+              - - symbol: fn
+                - - symbol: i
+                - - symbol: list
+                  - - symbol: get
+                    - symbol: xs
+                    - symbol: i
+                  - - symbol: get
+                    - symbol: ys
+                    - symbol: i
+              - - symbol: range
+                - - symbol: math.min
+                  - - symbol: len
+                    - symbol: xs
+                  - - symbol: len
+                    - symbol: ys
+            - symbol: list
+          flatten:
+            - symbol: fn
+            - - - symbol: xss
+                - - symbol: list_of
+                  - symbol: list
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: acc
+                  - symbol: xs
+                - - symbol: concat
+                  - symbol: acc
+                  - symbol: xs
+              - []
+              - symbol: xss
+            - symbol: list
+          flat_map:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: transform
+                - symbol: function
+            - - symbol: flatten
+              - - symbol: map
+                - symbol: transform
+                - symbol: xs
+            - symbol: list
+          find_index:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+            - - symbol: let
+              - position:
+                  - symbol: until
+                  - - symbol: fn
+                    - - symbol: i
+                    - - symbol: or
+                      - - symbol: ge
+                        - symbol: i
+                        - - symbol: len
+                          - symbol: xs
+                      - - symbol: predicate
+                        - - symbol: get
+                          - symbol: xs
+                          - symbol: i
+                  - - symbol: fn
+                    - - symbol: i
+                    - - symbol: add
+                      - symbol: i
+                      - 1
+                  - 0
+              - - symbol: if
+                - - symbol: lt
+                  - symbol: position
+                  - - symbol: len
+                    - symbol: xs
+                - symbol: position
+                - -1
+            - symbol: integer
+          find:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+              - symbol: fallback
+            - - symbol: let
+              - i:
+                  - symbol: find_index
+                  - symbol: xs
+                  - symbol: predicate
+              - - symbol: if
+                - - symbol: lt
+                  - symbol: i
+                  - 0
+                - symbol: fallback
+                - - symbol: get
+                  - symbol: xs
+                  - symbol: i
+          any:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+            - - symbol: ge
+              - - symbol: find_index
+                - symbol: xs
+                - symbol: predicate
+              - 0
+            - symbol: boolean
+          all:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+            - - symbol: lt
+              - - symbol: find_index
+                - symbol: xs
+                - - symbol: fn
+                  - - symbol: x
+                  - - symbol: not
+                    - - symbol: predicate
+                      - symbol: x
+              - 0
+            - symbol: boolean
+          count:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+            - - symbol: len
+              - - symbol: filter
+                - symbol: predicate
+                - symbol: xs
+            - symbol: integer
+          partition:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: predicate
+                - symbol: function
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: parts
+                  - symbol: x
+                - - symbol: let
+                  - side:
+                      - symbol: if
+                      - - symbol: predicate
+                        - symbol: x
+                      - 0
+                      - 1
+                  - - symbol: set
+                    - symbol: parts
+                    - symbol: side
+                    - - symbol: append
+                      - - symbol: get
+                        - symbol: parts
+                        - symbol: side
+                      - symbol: x
+              - - []
+                - []
+              - symbol: xs
+            - symbol: list
+          grouping:
+            - symbol: import
+            - symbol: "std:group"
+          group_by:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: key_for
+                - symbol: function
+            - - symbol: grouping.by
+              - symbol: xs
+              - symbol: key_for
+            - symbol: map
+          frequencies:
+            - symbol: fn
+            - - - symbol: xs
+                - - symbol: list_of
+                  - symbol: string
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: counts
+                  - symbol: x
+                - - symbol: set
+                  - symbol: counts
+                  - symbol: x
+                  - - symbol: add
+                    - - symbol: get
+                      - symbol: counts
+                      - symbol: x
+                      - 0
+                    - 1
+              - {}
+              - symbol: xs
+            - symbol: map
+          sort:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+            - - symbol: sort_by
+              - symbol: xs
+              - - symbol: fn
+                - - symbol: a
+                  - symbol: b
+                - - symbol: lt
+                  - symbol: a
+                  - symbol: b
+            - symbol: list
+      - source: "std:group"
+        code:
+          by:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: key
+                - symbol: function
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: groups
+                  - symbol: item
+                - - symbol: let
+                  - name:
+                      - symbol: key
+                      - symbol: item
+                  - - symbol: set
+                    - symbol: groups
+                    - symbol: name
+                    - - symbol: append
+                      - - symbol: get
+                        - symbol: groups
+                        - symbol: name
+                        - []
+                      - symbol: item
+              - {}
+              - symbol: xs
+            - symbol: map

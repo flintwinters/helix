@@ -3,5 +3,8 @@ error:
   kind: range
   message: index 2 is out of range for length 2
   path: /x/2
+  reference:
+    - "x"
+    - 2
   line: 1
   column: 18

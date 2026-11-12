@@ -2,92 +2,15 @@ status: finished
 root:
   text: the cat and the hat and the bat sat on the mat
   range:
-    - fn
-    - - lo
-      - hi
-    - - until
-      - - fn
-        - - xs
-        - - eq
-          - - len
-            - xs
-          - - sub
-            - hi
-            - lo
-      - - fn
-        - - xs
-        - - append
-          - xs
-          - - add
-            - lo
-            - - len
-              - xs
-      - []
+    ref: object0
   chars:
-    - fn
-    - - s
-    - - map
-      - - fn
-        - - i
-        - - slice
-          - s
-          - i
-          - - add
-            - i
-            - 1
-      - - range
-        - 0
-        - - len
-          - s
+    ref: object1
   flush:
-    - fn
-    - - acc
-    - - if
-      - - eq
-        - - get
-          - acc
-          - "word"
-        - ""
-      - acc
-      - words:
-          - append
-          - - get
-            - acc
-            - "words"
-          - - get
-            - acc
-            - "word"
-        word: ""
+    ref: object2
   step:
-    - fn
-    - - acc
-      - c
-    - - if
-      - - eq
-        - c
-        - " "
-      - - flush
-        - acc
-      - - set
-        - acc
-        - "word"
-        - - concat
-          - - get
-            - acc
-            - "word"
-          - c
+    ref: object3
   split:
-    - fn
-    - - s
-    - - get
-      - - flush
-        - - fold
-          - step
-          - words: []
-            word: ""
-          - - chars
-            - s
-      - "words"
+    ref: object4
   words:
     - "the"
     - cat
@@ -111,3 +34,282 @@ root:
     "on": 1
     mat: 1
   distinct: 8
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object5
+    code:
+      - symbol: fn
+      - - symbol: lo
+        - symbol: hi
+      - - symbol: until
+        - - symbol: fn
+          - - symbol: xs
+          - - symbol: eq
+            - - symbol: len
+              - symbol: xs
+            - - symbol: sub
+              - symbol: hi
+              - symbol: lo
+        - - symbol: fn
+          - - symbol: xs
+          - - symbol: append
+            - symbol: xs
+            - - symbol: add
+              - symbol: lo
+              - - symbol: len
+                - symbol: xs
+        - []
+    location:
+      source: "<root>"
+      path:
+        - "range"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object5
+    code:
+      - symbol: fn
+      - - symbol: s
+      - - symbol: map
+        - - symbol: fn
+          - - symbol: i
+          - - symbol: slice
+            - symbol: s
+            - symbol: i
+            - - symbol: add
+              - symbol: i
+              - 1
+        - - symbol: range
+          - 0
+          - - symbol: len
+            - symbol: s
+    location:
+      source: "<root>"
+      path:
+        - "chars"
+    environment: []
+    bindings:
+      range:
+        code:
+          source: "<root>"
+          path:
+            - "range"
+  object2:
+    kind: function
+    program:
+      ref: object5
+    code:
+      - symbol: fn
+      - - symbol: acc
+      - - symbol: if
+        - - symbol: eq
+          - - symbol: get
+            - symbol: acc
+            - word
+          - ""
+        - symbol: acc
+        - words:
+            - symbol: append
+            - - symbol: get
+              - symbol: acc
+              - words
+            - - symbol: get
+              - symbol: acc
+              - word
+          word: ""
+    location:
+      source: "<root>"
+      path:
+        - "flush"
+    environment: []
+    bindings: {}
+  object3:
+    kind: function
+    program:
+      ref: object5
+    code:
+      - symbol: fn
+      - - symbol: acc
+        - symbol: c
+      - - symbol: if
+        - - symbol: eq
+          - symbol: c
+          - " "
+        - - symbol: flush
+          - symbol: acc
+        - - symbol: set
+          - symbol: acc
+          - word
+          - - symbol: concat
+            - - symbol: get
+              - symbol: acc
+              - word
+            - symbol: c
+    location:
+      source: "<root>"
+      path:
+        - "step"
+    environment: []
+    bindings:
+      flush:
+        code:
+          source: "<root>"
+          path:
+            - "flush"
+  object4:
+    kind: function
+    program:
+      ref: object5
+    code:
+      - symbol: fn
+      - - symbol: s
+      - - symbol: get
+        - - symbol: flush
+          - - symbol: fold
+            - symbol: step
+            - words: []
+              word: ""
+            - - symbol: chars
+              - symbol: s
+        - words
+    location:
+      source: "<root>"
+      path:
+        - "split"
+    environment: []
+    bindings:
+      flush:
+        code:
+          source: "<root>"
+          path:
+            - "flush"
+      step:
+        code:
+          source: "<root>"
+          path:
+            - "step"
+      chars:
+        code:
+          source: "<root>"
+          path:
+            - "chars"
+  object5:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          text: the cat and the hat and the bat sat on the mat
+          range:
+            - symbol: fn
+            - - symbol: lo
+              - symbol: hi
+            - - symbol: until
+              - - symbol: fn
+                - - symbol: xs
+                - - symbol: eq
+                  - - symbol: len
+                    - symbol: xs
+                  - - symbol: sub
+                    - symbol: hi
+                    - symbol: lo
+              - - symbol: fn
+                - - symbol: xs
+                - - symbol: append
+                  - symbol: xs
+                  - - symbol: add
+                    - symbol: lo
+                    - - symbol: len
+                      - symbol: xs
+              - []
+          chars:
+            - symbol: fn
+            - - symbol: s
+            - - symbol: map
+              - - symbol: fn
+                - - symbol: i
+                - - symbol: slice
+                  - symbol: s
+                  - symbol: i
+                  - - symbol: add
+                    - symbol: i
+                    - 1
+              - - symbol: range
+                - 0
+                - - symbol: len
+                  - symbol: s
+          flush:
+            - symbol: fn
+            - - symbol: acc
+            - - symbol: if
+              - - symbol: eq
+                - - symbol: get
+                  - symbol: acc
+                  - word
+                - ""
+              - symbol: acc
+              - words:
+                  - symbol: append
+                  - - symbol: get
+                    - symbol: acc
+                    - words
+                  - - symbol: get
+                    - symbol: acc
+                    - word
+                word: ""
+          step:
+            - symbol: fn
+            - - symbol: acc
+              - symbol: c
+            - - symbol: if
+              - - symbol: eq
+                - symbol: c
+                - " "
+              - - symbol: flush
+                - symbol: acc
+              - - symbol: set
+                - symbol: acc
+                - word
+                - - symbol: concat
+                  - - symbol: get
+                    - symbol: acc
+                    - word
+                  - symbol: c
+          split:
+            - symbol: fn
+            - - symbol: s
+            - - symbol: get
+              - - symbol: flush
+                - - symbol: fold
+                  - symbol: step
+                  - words: []
+                    word: ""
+                  - - symbol: chars
+                    - symbol: s
+              - words
+          words:
+            - symbol: split
+            - symbol: text
+          counts:
+            - symbol: fold
+            - - symbol: fn
+              - - symbol: acc
+                - symbol: w
+              - - symbol: set
+                - symbol: acc
+                - symbol: w
+                - - symbol: add
+                  - - symbol: get
+                    - symbol: acc
+                    - symbol: w
+                    - 0
+                  - 1
+            - {}
+            - symbol: words
+          distinct:
+            - symbol: len
+            - - symbol: keys
+              - symbol: counts

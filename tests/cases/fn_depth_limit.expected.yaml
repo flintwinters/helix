@@ -3,6 +3,9 @@ error:
   kind: depth
   message: calls nested deeper than 200
   path: /spin/2
+  reference:
+    - "spin"
+    - 2
   line: 1
   column: 17
   calls:

@@ -2,31 +2,7 @@ status: finished
 root:
   g:
     by:
-      - fn
-      - - - xs
-          - list
-        - - key
-          - function
-      - - fold
-        - - fn
-          - - groups
-            - item
-          - - let
-            - name:
-                - key
-                - item
-            - - set
-              - groups
-              - name
-              - - append
-                - - get
-                  - groups
-                  - name
-                  - []
-                - item
-        - {}
-        - xs
-      - map
+      ref: object0
   items:
     - team: b
       "n": 1
@@ -76,3 +52,205 @@ root:
   wrong_key: type
   callback_error: group_key
   wrong_arity: arity
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - - symbol: xs
+          - symbol: list
+        - - symbol: key
+          - symbol: function
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: groups
+            - symbol: item
+          - - symbol: let
+            - name:
+                - symbol: key
+                - symbol: item
+            - - symbol: set
+              - symbol: groups
+              - symbol: name
+              - - symbol: append
+                - - symbol: get
+                  - symbol: groups
+                  - symbol: name
+                  - []
+                - symbol: item
+        - {}
+        - symbol: xs
+      - symbol: map
+    location:
+      source: "std:group"
+      path:
+        - "by"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          g:
+            - symbol: import
+            - symbol: "std:group"
+          items:
+            - team: b
+              "n": 1
+            - team: a
+              "n": 2
+            - team: b
+              "n": 3
+          groups:
+            - symbol: g.by
+            - symbol: items
+            - - symbol: fn
+              - - symbol: item
+              - - symbol: get
+                - symbol: item
+                - team
+          order_ok:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: keys
+                - symbol: groups
+              - - "b"
+                - a
+          items_ok:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: get
+                - symbol: groups
+                - b
+              - - team: b
+                  "n": 1
+                - team: b
+                  "n": 3
+          empty:
+            - symbol: g.by
+            - []
+            - - symbol: fn
+              - - symbol: item
+              - - symbol: raise
+                - unused
+                - must not run
+          keys:
+            - symbol: g.by
+            - - ""
+              - "é"
+              - ""
+              - "🙂"
+              - "é"
+            - - symbol: fn
+              - - symbol: item
+              - symbol: item
+          constant:
+            - symbol: g.by
+            - - ~
+              - false
+              - - 1
+                - 2
+              - x: 1
+            - - symbol: fn
+              - - symbol: item
+              - all
+          closure:
+            - symbol: let
+            - prefix: "team:"
+            - - symbol: g.by
+              - symbol: items
+              - - symbol: fn
+                - - symbol: item
+                - - symbol: concat
+                  - symbol: prefix
+                  - - symbol: get
+                    - symbol: item
+                    - team
+          wrong_list:
+            - symbol: try
+            - - symbol: g.by
+              - 1
+              - - symbol: fn
+                - - symbol: x
+                - x
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_callback:
+            - symbol: try
+            - - symbol: g.by
+              - []
+              - 1
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_key:
+            - symbol: try
+            - - symbol: g.by
+              - - 1
+              - - symbol: fn
+                - - symbol: x
+                - symbol: x
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          callback_error:
+            - symbol: try
+            - - symbol: g.by
+              - - 1
+              - - symbol: fn
+                - - symbol: x
+                - - symbol: raise
+                  - group_key
+                  - failed
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_arity:
+            - symbol: try
+            - - symbol: g.by
+              - []
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+      - source: "std:group"
+        code:
+          by:
+            - symbol: fn
+            - - - symbol: xs
+                - symbol: list
+              - - symbol: key
+                - symbol: function
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: groups
+                  - symbol: item
+                - - symbol: let
+                  - name:
+                      - symbol: key
+                      - symbol: item
+                  - - symbol: set
+                    - symbol: groups
+                    - symbol: name
+                    - - symbol: append
+                      - - symbol: get
+                        - symbol: groups
+                        - symbol: name
+                        - []
+                      - symbol: item
+              - {}
+              - symbol: xs
+            - symbol: map

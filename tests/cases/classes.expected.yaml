@@ -1,28 +1,12 @@
 status: finished
 root:
   in_port:
-    - fn
-    - - n
-    - - and
-      - - ge
-        - n
-        - 1
-      - - le
-        - n
-        - 65535
+    ref: object0
   port:
     type: refine
     of: integer
     check:
-      - fn
-      - - n
-      - - and
-        - - ge
-          - n
-          - 1
-        - - le
-          - n
-          - 65535
+      ref: object0
   machine:
     type: class
     name: machine
@@ -45,15 +29,7 @@ root:
           type: refine
           of: integer
           check:
-            - fn
-            - - n
-            - - and
-              - - ge
-                - n
-                - 1
-              - - le
-                - n
-                - 65535
+            ref: object0
         default: 22
     values: {}
     provenance:
@@ -94,15 +70,7 @@ root:
           type: refine
           of: integer
           check:
-            - fn
-            - - n
-            - - and
-              - - ge
-                - n
-                - 1
-              - - le
-                - n
-                - 65535
+            ref: object0
         default: 22
     values:
       hostname: web01
@@ -137,15 +105,7 @@ root:
           type: refine
           of: integer
           check:
-            - fn
-            - - n
-            - - and
-              - - ge
-                - n
-                - 1
-              - - le
-                - n
-                - 65535
+            ref: object0
         default: 22
     values:
       hostname: web02
@@ -174,6 +134,9 @@ root:
     kind: abstract
     message: "class `bare` is abstract: missing `packages` (required by server)"
     path: /not_yet/1
+    reference:
+      - "not_yet"
+      - 1
     line: 10
     column: 16
     data:
@@ -184,6 +147,9 @@ root:
     kind: type
     message: "1 misfit in the values of `bad`: /hostname: expected string, got integer"
     path: /wrong_value/1
+    reference:
+      - "wrong_value"
+      - 1
     line: 11
     column: 20
     data:
@@ -193,3 +159,132 @@ root:
   undeclared: "`typo` sets `hostnam`, which no parent or field declares"
   realized_twice: true
   abstract_stays: false
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: and
+        - - symbol: ge
+          - symbol: "n"
+          - 1
+        - - symbol: le
+          - symbol: "n"
+          - 65535
+    location:
+      source: "<root>"
+      path:
+        - "in_port"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          in_port:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: and
+              - - symbol: ge
+                - symbol: "n"
+                - 1
+              - - symbol: le
+                - symbol: "n"
+                - 65535
+          port:
+            - symbol: refine
+            - symbol: integer
+            - symbol: in_port
+          machine:
+            - symbol: class
+            - machine
+            - - symbol: record
+              - hostname
+              - symbol: string
+          has_ssh:
+            - symbol: class
+            - has_ssh
+            - - symbol: record
+              - ssh_port
+              - - symbol: default
+                - symbol: port
+                - 22
+          server:
+            - symbol: extend
+            - server
+            - - symbol: list
+              - symbol: machine
+            - - symbol: record
+              - packages
+              - - symbol: list_of
+                - symbol: string
+            - {}
+          web01:
+            - symbol: inherit
+            - web01
+            - - symbol: list
+              - symbol: server
+              - symbol: has_ssh
+            - hostname: web01
+              packages:
+                - "nginx"
+          web02:
+            - symbol: inherit
+            - web02
+            - - symbol: list
+              - symbol: server
+              - symbol: has_ssh
+            - hostname: web02
+              packages: []
+              ssh_port: 2222
+          parents_of:
+            - symbol: parents
+            - symbol: web01
+          server_fields:
+            - symbol: fields
+            - symbol: server
+          not_yet:
+            - symbol: try
+            - - symbol: inherit
+              - bare
+              - - symbol: list
+                - symbol: server
+              - hostname: bare
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          wrong_value:
+            - symbol: try
+            - - symbol: inherit
+              - bad
+              - - symbol: list
+                - symbol: machine
+              - hostname: 5
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+          undeclared:
+            - symbol: try
+            - - symbol: inherit
+              - typo
+              - - symbol: list
+                - symbol: machine
+              - hostnam: x
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - message
+          realized_twice:
+            - symbol: eq
+            - - symbol: realize
+              - symbol: web01
+            - symbol: web01
+          abstract_stays:
+            - symbol: get
+            - symbol: server
+            - concrete

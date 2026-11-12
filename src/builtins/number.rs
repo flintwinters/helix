@@ -2,7 +2,7 @@
 
 use std::cmp::Ordering;
 
-use yaml_rust2::Yaml;
+use crate::value::Value;
 
 use super::fault::Fault;
 use super::value::as_f64;
@@ -22,7 +22,7 @@ impl Num {
     }
 }
 
-pub(super) fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
+pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
     match actor {
         "lt" | "le" | "gt" | "ge" => ordering(actor, args),
         "int" => to_int(&args[0]),
@@ -31,25 +31,25 @@ pub(super) fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
     }
 }
 
-fn number(args: &[Yaml], index: usize) -> Result<Num, Fault> {
+fn number(args: &[Value], index: usize) -> Result<Num, Fault> {
     match &args[index] {
-        Yaml::Integer(i) => Ok(Num::Int(*i)),
-        Yaml::Real(text) => text.parse().map(Num::Float).map_err(|_| Fault::at(index, "type", format!("malformed float `{text}`"))),
+        Value::Integer(i) => Ok(Num::Int(*i)),
+        Value::Float(value) => Ok(Num::Float(*value)),
         other => Err(Fault::expected(index, "number", other)),
     }
 }
 
 /// Floats render with a decimal point or exponent so they re-read as floats.
-fn float_yaml(f: f64) -> Yaml {
-    Yaml::Real(format!("{f:?}"))
+fn float_value(f: f64) -> Value {
+    Value::Float(f)
 }
 
 /// Integer-only operands stay integers; any float promotes the whole operation to floats.
-fn arithmetic(actor: &str, operands: &[Num]) -> Result<Yaml, Fault> {
+fn arithmetic(actor: &str, operands: &[Num]) -> Result<Value, Fault> {
     let ints: Option<Vec<i64>> = operands.iter().map(|n| if let Num::Int(i) = n { Some(*i) } else { None }).collect();
     match ints {
-        Some(ints) => integer_fold(actor, &ints).map(Yaml::Integer),
-        None => float_fold(actor, &operands.iter().map(|n| n.float()).collect::<Vec<_>>()).map(float_yaml),
+        Some(ints) => integer_fold(actor, &ints).map(Value::Integer),
+        None => float_fold(actor, &operands.iter().map(|n| n.float()).collect::<Vec<_>>()).map(float_value),
     }
 }
 
@@ -86,13 +86,15 @@ fn float_fold(actor: &str, operands: &[f64]) -> Result<f64, Fault> {
 }
 
 /// Two numbers (mixed int/float compare as floats) or two strings.
-fn ordering(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
+fn ordering(actor: &str, args: &[Value]) -> Result<Value, Fault> {
     let order = match (&args[0], &args[1]) {
-        (Yaml::String(a), Yaml::String(b)) => a.cmp(b),
-        (Yaml::Integer(a), Yaml::Integer(b)) => a.cmp(b),
+        (Value::String(a), Value::String(b)) => a.cmp(b),
+        (Value::Integer(a), Value::Integer(b)) => a.cmp(b),
+        (Value::Integer(a), Value::Float(b)) => crate::value::mixed(*a,*b),
+        (Value::Float(a), Value::Integer(b)) => crate::value::mixed(*b,*a).reverse(),
         _ => number(args, 0)?.float().partial_cmp(&number(args, 1)?.float()).unwrap_or(Ordering::Equal),
     };
-    Ok(Yaml::Boolean(match actor {
+    Ok(Value::Boolean(match actor {
         "lt" => order.is_lt(),
         "le" => order.is_le(),
         "gt" => order.is_gt(),
@@ -101,29 +103,29 @@ fn ordering(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
 }
 
 /// `int`: floats truncate toward zero; strings must parse as integers.
-fn to_int(value: &Yaml) -> Result<Yaml, Fault> {
+fn to_int(value: &Value) -> Result<Value, Fault> {
     match value {
-        Yaml::Integer(_) => Ok(value.clone()),
-        Yaml::Real(_) => {
+        Value::Integer(_) => Ok(value.clone()),
+        Value::Float(_) => {
             let truncated = as_f64(value).unwrap_or(f64::NAN).trunc();
             if (i64::MIN as f64..-(i64::MIN as f64)).contains(&truncated) {
-                Ok(Yaml::Integer(truncated as i64))
+                Ok(Value::Integer(truncated as i64))
             } else {
                 Err(Fault::at(0, "overflow", "float is outside the i64 range".to_string()))
             }
         }
-        Yaml::String(s) => s.trim().parse().map(Yaml::Integer).map_err(|_| Fault::at(0, "conversion", format!("cannot parse `{s}` as an integer"))),
+        Value::String(s) => s.trim().parse().map(Value::Integer).map_err(|_| Fault::at(0, "conversion", format!("cannot parse `{s}` as an integer"))),
         other => Err(Fault::expected(0, "number or string", other)),
     }
 }
 
 /// `float`: integers widen; strings must parse as finite floats.
-fn to_float(value: &Yaml) -> Result<Yaml, Fault> {
+fn to_float(value: &Value) -> Result<Value, Fault> {
     match value {
-        Yaml::Integer(i) => Ok(float_yaml(*i as f64)),
-        Yaml::Real(_) => Ok(value.clone()),
-        Yaml::String(s) => match s.trim().parse::<f64>() {
-            Ok(f) if f.is_finite() => Ok(float_yaml(f)),
+        Value::Integer(i) => Ok(float_value(*i as f64)),
+        Value::Float(_) => Ok(value.clone()),
+        Value::String(s) => match s.trim().parse::<f64>() {
+            Ok(f) if f.is_finite() => Ok(float_value(f)),
             _ => Err(Fault::at(0, "conversion", format!("cannot parse `{s}` as a float"))),
         },
         other => Err(Fault::expected(0, "number or string", other)),

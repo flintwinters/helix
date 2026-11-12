@@ -3,6 +3,8 @@ error:
   kind: arity
   message: "function `/double` takes 1 argument, got 2"
   path: /bad
+  reference:
+    - "bad"
   line: 2
   column: 6
   calls:

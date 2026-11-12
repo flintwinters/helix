@@ -3,6 +3,10 @@ error:
   kind: divide_by_zero
   message: "`div` by zero"
   path: /r/1/2
+  reference:
+    - "r"
+    - 1
+    - 2
   line: 1
   column: 21
   calls:

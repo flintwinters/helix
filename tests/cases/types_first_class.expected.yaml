@@ -1,21 +1,11 @@
 status: finished
 root:
   identity:
-    - fn
-    - - t
-    - t
+    ref: object0
   list_type:
-    - fn
-    - - t
-    - - list_of
-      - t
+    ref: object1
   optional_record:
-    - fn
-    - - t
-    - - record
-      - "value"
-      - - optional
-        - t
+    ref: object2
   stored:
     - type: union
       of:
@@ -38,77 +28,33 @@ root:
     - type: list
       of: string
   at_least:
-    - fn
-    - - minimum
-    - - refine
-      - integer
-      - - fn
-        - - n
-        - - ge
-          - n
-          - minimum
+    ref: object3
   positive:
     type: refine
     of: integer
     check:
-      - closure
-      - minimum: 1
-      - - fn
-        - - n
-        - - ge
-          - n
-          - minimum
+      ref: object4
   large:
     type: refine
     of: integer
     check:
-      - closure
-      - minimum: 100
-      - - fn
-        - - n
-        - - ge
-          - n
-          - minimum
+      ref: object5
   checks:
     - true
     - false
     - false
   make_adder:
-    - fn
-    - - amount
-    - - fn
-      - - n
-      - - add
-        - amount
-        - n
+    ref: object6
   add_two:
-    - closure
-    - amount: 2
-    - - fn
-      - - n
-      - - add
-        - amount
-        - n
+    ref: object7
   add_ten:
-    - closure
-    - amount: 10
-    - - fn
-      - - n
-      - - add
-        - amount
-        - n
+    ref: object8
   closures:
     - 5
     - 13
     - 10
   lexical:
-    - closure
-    - offset: 20
-    - - fn
-      - - n
-      - - add
-        - offset
-        - n
+    ref: object9
   lexical_result: 22
   shape:
     type: record
@@ -123,149 +69,736 @@ root:
   equal: true
   parameter_map: true
   literal_scope:
-    - fn
-    - []
-    - label: danger
+    ref: object10
   literal_result:
     label: danger
   left:
     offset: 4
     helper:
-      - fn
-      - - n
-      - - add
-        - n
-        - offset
+      ref: object11
   right:
     offset: 100
     copied:
-      - closure
-      - offset: 4
-      - - fn
-        - - n
-        - - add
-          - n
-          - offset
+      ref: object11
     result: 6
   factorial:
-    - fn
-    - - n
-    - - if
-      - - le
-        - n
-        - 1
-      - 1
-      - - mul
-        - n
-        - - factorial
-          - - sub
-            - n
-            - 1
+    ref: object12
   passed_recursive: 120
   function_kind: function
   function_fits: true
   data_is_not_function: false
   checked_constructor:
-    - fn
-    - - - constructor
-        - function
-      - t
-    - - constructor
-      - t
+    ref: object13
   checked_result:
     type: list
     of: integer
   record_factory:
-    - fn
-    - - offset
-    - apply:
-        - fn
-        - - n
-        - - add
-          - n
-          - offset
+    ref: object14
   returned_record:
     apply:
-      - closure
-      - offset: 8
-      - - fn
-        - - n
-        - - add
-          - n
-          - offset
+      ref: object15
   record_callback:
     - 9
     - 10
   a:
     offset: 1
     f:
-      - fn
-      - - n
-      - - if
-        - - le
-          - n
-          - 0
-        - offset
-        - - b.g
-          - - sub
-            - n
-            - 1
+      ref: object16
   b:
     offset: 10
     g:
-      - fn
-      - - n
-      - - if
-        - - le
-          - n
-          - 0
-        - offset
-        - - a.f
-          - - sub
-            - n
-            - 1
+      ref: object17
   recursive_copy:
-    - closure
-    - offset: 1
-      b.g:
-        - closure
-        - offset: 10
-          a.f:
-            - closure
-            - offset: 1
-            - - fn
-              - - n
-              - - if
-                - - le
-                  - n
-                  - 0
-                - offset
-                - - b.g
-                  - - sub
-                    - n
-                    - 1
-        - - fn
-          - - n
-          - - if
-            - - le
-              - n
-              - 0
-            - offset
-            - - a.f
-              - - sub
-                - n
-                - 1
-    - - fn
-      - - n
-      - - if
-        - - le
-          - n
-          - 0
-        - offset
-        - - b.g
-          - - sub
-            - n
-            - 1
+    ref: object16
   recursive_scope:
     - 1
     - 10
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: t
+      - symbol: t
+    location:
+      source: "<root>"
+      path:
+        - "identity"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: t
+      - - symbol: list_of
+        - symbol: t
+    location:
+      source: "<root>"
+      path:
+        - "list_type"
+    environment: []
+    bindings: {}
+  object2:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: t
+      - - symbol: record
+        - value
+        - - symbol: optional
+          - symbol: t
+    location:
+      source: "<root>"
+      path:
+        - "optional_record"
+    environment: []
+    bindings: {}
+  object3:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: minimum
+      - - symbol: refine
+        - symbol: integer
+        - - symbol: fn
+          - - symbol: "n"
+          - - symbol: ge
+            - symbol: "n"
+            - symbol: minimum
+    location:
+      source: "<root>"
+      path:
+        - "at_least"
+    environment: []
+    bindings: {}
+  object4:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: ge
+        - symbol: "n"
+        - symbol: minimum
+    location:
+      source: "<root>"
+      path:
+        - "at_least"
+        - 2
+        - 2
+    environment:
+      - function:
+          source: "<root>"
+          path:
+            - "at_least"
+        arguments:
+          - 1
+    bindings:
+      minimum: 1
+  object5:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: ge
+        - symbol: "n"
+        - symbol: minimum
+    location:
+      source: "<root>"
+      path:
+        - "at_least"
+        - 2
+        - 2
+    environment:
+      - function:
+          source: "<root>"
+          path:
+            - "at_least"
+        arguments:
+          - 100
+    bindings:
+      minimum: 100
+  object6:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: amount
+      - - symbol: fn
+        - - symbol: "n"
+        - - symbol: add
+          - symbol: amount
+          - symbol: "n"
+    location:
+      source: "<root>"
+      path:
+        - "make_adder"
+    environment: []
+    bindings: {}
+  object7:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: add
+        - symbol: amount
+        - symbol: "n"
+    location:
+      source: "<root>"
+      path:
+        - "make_adder"
+        - 2
+    environment:
+      - function:
+          source: "<root>"
+          path:
+            - "make_adder"
+        arguments:
+          - 2
+    bindings:
+      amount: 2
+  object8:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: add
+        - symbol: amount
+        - symbol: "n"
+    location:
+      source: "<root>"
+      path:
+        - "make_adder"
+        - 2
+    environment:
+      - function:
+          source: "<root>"
+          path:
+            - "make_adder"
+        arguments:
+          - 10
+    bindings:
+      amount: 10
+  object9:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: add
+        - symbol: offset
+        - symbol: "n"
+    location:
+      source: "<root>"
+      path:
+        - "lexical"
+        - 2
+    environment: []
+    bindings:
+      offset:
+        code:
+          source: "<root>"
+          path:
+            - "lexical"
+            - 1
+            - offset
+  object10:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - []
+      - label:
+          symbol: danger
+    location:
+      source: "<root>"
+      path:
+        - "literal_scope"
+        - 2
+    environment: []
+    bindings: {}
+  object11:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: add
+        - symbol: "n"
+        - symbol: offset
+    location:
+      source: "<root>"
+      path:
+        - "left"
+        - helper
+    environment: []
+    bindings:
+      offset:
+        code:
+          source: "<root>"
+          path:
+            - "left"
+            - offset
+  object12:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: if
+        - - symbol: le
+          - symbol: "n"
+          - 1
+        - 1
+        - - symbol: mul
+          - symbol: "n"
+          - - symbol: factorial
+            - - symbol: sub
+              - symbol: "n"
+              - 1
+    location:
+      source: "<root>"
+      path:
+        - "factorial"
+    environment: []
+    bindings:
+      factorial:
+        code:
+          source: "<root>"
+          path:
+            - "factorial"
+  object13:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - - symbol: constructor
+          - symbol: function
+        - symbol: t
+      - - symbol: constructor
+        - symbol: t
+    location:
+      source: "<root>"
+      path:
+        - "checked_constructor"
+    environment: []
+    bindings: {}
+  object14:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: offset
+      - apply:
+          - symbol: fn
+          - - symbol: "n"
+          - - symbol: add
+            - symbol: "n"
+            - symbol: offset
+    location:
+      source: "<root>"
+      path:
+        - "record_factory"
+    environment: []
+    bindings: {}
+  object15:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: add
+        - symbol: "n"
+        - symbol: offset
+    location:
+      source: "<root>"
+      path:
+        - "record_factory"
+        - 2
+        - apply
+    environment:
+      - function:
+          source: "<root>"
+          path:
+            - "record_factory"
+        arguments:
+          - 8
+    bindings:
+      offset: 8
+  object16:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: if
+        - - symbol: le
+          - symbol: "n"
+          - 0
+        - symbol: offset
+        - - symbol: b.g
+          - - symbol: sub
+            - symbol: "n"
+            - 1
+    location:
+      source: "<root>"
+      path:
+        - "a"
+        - f
+    environment: []
+    bindings:
+      offset:
+        code:
+          source: "<root>"
+          path:
+            - "a"
+            - offset
+      b.g:
+        code:
+          source: "<root>"
+          path:
+            - "b"
+            - g
+  object17:
+    kind: function
+    program:
+      ref: object18
+    code:
+      - symbol: fn
+      - - symbol: "n"
+      - - symbol: if
+        - - symbol: le
+          - symbol: "n"
+          - 0
+        - symbol: offset
+        - - symbol: a.f
+          - - symbol: sub
+            - symbol: "n"
+            - 1
+    location:
+      source: "<root>"
+      path:
+        - "b"
+        - g
+    environment: []
+    bindings:
+      offset:
+        code:
+          source: "<root>"
+          path:
+            - "b"
+            - offset
+      a.f:
+        code:
+          source: "<root>"
+          path:
+            - "a"
+            - f
+  object18:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          identity:
+            - symbol: fn
+            - - symbol: t
+            - symbol: t
+          list_type:
+            - symbol: fn
+            - - symbol: t
+            - - symbol: list_of
+              - symbol: t
+          optional_record:
+            - symbol: fn
+            - - symbol: t
+            - - symbol: record
+              - value
+              - - symbol: optional
+                - symbol: t
+          stored:
+            - symbol: list
+            - - symbol: identity
+              - - symbol: union
+                - symbol: integer
+                - symbol: string
+            - - symbol: list_type
+              - symbol: boolean
+          selected:
+            - symbol: get
+            - symbol: stored
+            - 0
+          accepts:
+            - symbol: is
+            - ok
+            - symbol: selected
+          rejects:
+            - symbol: is
+            - false
+            - symbol: selected
+          via_parameter:
+            - symbol: call
+            - - symbol: fn
+              - - symbol: constructor
+                - symbol: t
+              - - symbol: constructor
+                - symbol: t
+            - symbol: list_type
+            - symbol: string
+          via_map:
+            - symbol: map
+            - symbol: identity
+            - - symbol: list
+              - symbol: integer
+              - - symbol: list_of
+                - symbol: string
+          at_least:
+            - symbol: fn
+            - - symbol: minimum
+            - - symbol: refine
+              - symbol: integer
+              - - symbol: fn
+                - - symbol: "n"
+                - - symbol: ge
+                  - symbol: "n"
+                  - symbol: minimum
+          positive:
+            - symbol: at_least
+            - 1
+          large:
+            - symbol: at_least
+            - 100
+          checks:
+            - symbol: list
+            - - symbol: is
+              - 5
+              - symbol: positive
+            - - symbol: is
+              - 5
+              - symbol: large
+            - - symbol: is
+              - "5"
+              - symbol: positive
+          make_adder:
+            - symbol: fn
+            - - symbol: amount
+            - - symbol: fn
+              - - symbol: "n"
+              - - symbol: add
+                - symbol: amount
+                - symbol: "n"
+          add_two:
+            - symbol: make_adder
+            - 2
+          add_ten:
+            - symbol: make_adder
+            - 10
+          closures:
+            - symbol: list
+            - - symbol: add_two
+              - 3
+            - - symbol: add_ten
+              - 3
+            - - symbol: call
+              - - symbol: get
+                - - symbol: list
+                  - symbol: add_two
+                - 0
+              - 8
+          lexical:
+            - symbol: let
+            - offset: 20
+            - - symbol: fn
+              - - symbol: "n"
+              - - symbol: add
+                - symbol: offset
+                - symbol: "n"
+          lexical_result:
+            - symbol: lexical
+            - 2
+          shape:
+            - symbol: record
+            - name
+            - symbol: string
+            - count
+            - symbol: integer
+          rebuilt:
+            - symbol: fold
+            - - symbol: fn
+              - - symbol: t
+                - symbol: name
+              - - symbol: with_field
+                - symbol: t
+                - symbol: name
+                - - symbol: get
+                  - - symbol: fields
+                    - symbol: shape
+                  - symbol: name
+            - - symbol: record
+            - - symbol: keys
+              - - symbol: fields
+                - symbol: shape
+          equal:
+            - symbol: eq
+            - symbol: shape
+            - symbol: rebuilt
+          parameter_map:
+            - symbol: call
+            - - symbol: fn
+              - - symbol: config
+              - - symbol: is
+                - 1
+                - symbol: config.type
+            - type:
+                symbol: integer
+          literal_scope:
+            - symbol: let
+            - danger:
+                - symbol: div
+                - 1
+                - 0
+            - - symbol: fn
+              - []
+              - label:
+                  symbol: danger
+          literal_result:
+            - symbol: literal_scope
+          left:
+            offset: 4
+            helper:
+              - symbol: fn
+              - - symbol: "n"
+              - - symbol: add
+                - symbol: "n"
+                - symbol: offset
+          right:
+            offset: 100
+            copied:
+              - symbol: identity
+              - symbol: left.helper
+            result:
+              - symbol: copied
+              - 2
+          factorial:
+            - symbol: fn
+            - - symbol: "n"
+            - - symbol: if
+              - - symbol: le
+                - symbol: "n"
+                - 1
+              - 1
+              - - symbol: mul
+                - symbol: "n"
+                - - symbol: factorial
+                  - - symbol: sub
+                    - symbol: "n"
+                    - 1
+          passed_recursive:
+            - symbol: call
+            - - symbol: identity
+              - symbol: factorial
+            - 5
+          function_kind:
+            - symbol: type
+            - symbol: add_two
+          function_fits:
+            - symbol: is
+            - symbol: add_two
+            - symbol: function
+          data_is_not_function:
+            - symbol: is
+            - - "fn"
+              - []
+              - 1
+            - symbol: function
+          checked_constructor:
+            - symbol: fn
+            - - - symbol: constructor
+                - symbol: function
+              - symbol: t
+            - - symbol: constructor
+              - symbol: t
+          checked_result:
+            - symbol: checked_constructor
+            - symbol: list_type
+            - symbol: integer
+          record_factory:
+            - symbol: fn
+            - - symbol: offset
+            - apply:
+                - symbol: fn
+                - - symbol: "n"
+                - - symbol: add
+                  - symbol: "n"
+                  - symbol: offset
+          returned_record:
+            - symbol: record_factory
+            - 8
+          record_callback:
+            - symbol: map
+            - - symbol: get
+              - symbol: returned_record
+              - apply
+            - - 1
+              - 2
+          a:
+            offset: 1
+            f:
+              - symbol: fn
+              - - symbol: "n"
+              - - symbol: if
+                - - symbol: le
+                  - symbol: "n"
+                  - 0
+                - symbol: offset
+                - - symbol: b.g
+                  - - symbol: sub
+                    - symbol: "n"
+                    - 1
+          b:
+            offset: 10
+            g:
+              - symbol: fn
+              - - symbol: "n"
+              - - symbol: if
+                - - symbol: le
+                  - symbol: "n"
+                  - 0
+                - symbol: offset
+                - - symbol: a.f
+                  - - symbol: sub
+                    - symbol: "n"
+                    - 1
+          recursive_copy:
+            - symbol: identity
+            - symbol: a.f
+          recursive_scope:
+            - symbol: list
+            - - symbol: recursive_copy
+              - 2
+            - - symbol: recursive_copy
+              - 3

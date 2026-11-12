@@ -9,6 +9,9 @@ mod library;
 mod link;
 mod span;
 mod vm;
+mod value;
+mod model;
+mod inspect;
 
 pub use library::names as std_modules;
 pub use library::source as std_source;

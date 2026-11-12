@@ -19,74 +19,7 @@ root:
     added_null: ~
     empty: 0
   compare:
-    - fn
-    - - old
-      - new
-    - - let
-      - added:
-          - filter
-          - - fn
-            - - key
-            - - not
-              - - has
-                - old
-                - key
-          - - keys
-            - new
-        removed:
-          - filter
-          - - fn
-            - - key
-            - - not
-              - - has
-                - new
-                - key
-          - - keys
-            - old
-        changed:
-          - filter
-          - - fn
-            - - key
-            - - and
-              - - has
-                - new
-                - key
-              - - ne
-                - - get
-                  - old
-                  - key
-                - - get
-                  - new
-                  - key
-          - - keys
-            - old
-      - - set
-        - - set
-          - - set
-            - {}
-            - "added"
-            - added
-          - "removed"
-          - removed
-        - "changed"
-        - - map
-          - - fn
-            - - key
-            - - set
-              - - set
-                - - set
-                  - {}
-                  - "key"
-                  - key
-                - "before"
-                - - get
-                  - old
-                  - key
-              - "after"
-              - - get
-                - new
-                - key
-          - changed
+    ref: object0
   report:
     added:
       - "added_null"
@@ -112,3 +45,187 @@ root:
     added: []
     removed: []
     changed: []
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: old
+        - symbol: new
+      - - symbol: let
+        - added:
+            - symbol: filter
+            - - symbol: fn
+              - - symbol: key
+              - - symbol: not
+                - - symbol: has
+                  - symbol: old
+                  - symbol: key
+            - - symbol: keys
+              - symbol: new
+          removed:
+            - symbol: filter
+            - - symbol: fn
+              - - symbol: key
+              - - symbol: not
+                - - symbol: has
+                  - symbol: new
+                  - symbol: key
+            - - symbol: keys
+              - symbol: old
+          changed:
+            - symbol: filter
+            - - symbol: fn
+              - - symbol: key
+              - - symbol: and
+                - - symbol: has
+                  - symbol: new
+                  - symbol: key
+                - - symbol: ne
+                  - - symbol: get
+                    - symbol: old
+                    - symbol: key
+                  - - symbol: get
+                    - symbol: new
+                    - symbol: key
+            - - symbol: keys
+              - symbol: old
+        - - symbol: set
+          - - symbol: set
+            - - symbol: set
+              - {}
+              - added
+              - symbol: added
+            - removed
+            - symbol: removed
+          - changed
+          - - symbol: map
+            - - symbol: fn
+              - - symbol: key
+              - - symbol: set
+                - - symbol: set
+                  - - symbol: set
+                    - {}
+                    - key
+                    - symbol: key
+                  - before
+                  - - symbol: get
+                    - symbol: old
+                    - symbol: key
+                - after
+                - - symbol: get
+                  - symbol: new
+                  - symbol: key
+            - symbol: changed
+    location:
+      source: "<root>"
+      path:
+        - "compare"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          before:
+            workers: 2
+            legacy: true
+            nullable: ~
+            enabled: false
+            port: 8000
+            nested:
+              timeout: 30
+            empty: 0
+          after:
+            workers: 4
+            nullable: ~
+            enabled: true
+            port: 8000
+            nested:
+              timeout: 60
+            added_null: ~
+            empty: 0
+          compare:
+            - symbol: fn
+            - - symbol: old
+              - symbol: new
+            - - symbol: let
+              - added:
+                  - symbol: filter
+                  - - symbol: fn
+                    - - symbol: key
+                    - - symbol: not
+                      - - symbol: has
+                        - symbol: old
+                        - symbol: key
+                  - - symbol: keys
+                    - symbol: new
+                removed:
+                  - symbol: filter
+                  - - symbol: fn
+                    - - symbol: key
+                    - - symbol: not
+                      - - symbol: has
+                        - symbol: new
+                        - symbol: key
+                  - - symbol: keys
+                    - symbol: old
+                changed:
+                  - symbol: filter
+                  - - symbol: fn
+                    - - symbol: key
+                    - - symbol: and
+                      - - symbol: has
+                        - symbol: new
+                        - symbol: key
+                      - - symbol: ne
+                        - - symbol: get
+                          - symbol: old
+                          - symbol: key
+                        - - symbol: get
+                          - symbol: new
+                          - symbol: key
+                  - - symbol: keys
+                    - symbol: old
+              - - symbol: set
+                - - symbol: set
+                  - - symbol: set
+                    - {}
+                    - added
+                    - symbol: added
+                  - removed
+                  - symbol: removed
+                - changed
+                - - symbol: map
+                  - - symbol: fn
+                    - - symbol: key
+                    - - symbol: set
+                      - - symbol: set
+                        - - symbol: set
+                          - {}
+                          - key
+                          - symbol: key
+                        - before
+                        - - symbol: get
+                          - symbol: old
+                          - symbol: key
+                      - after
+                      - - symbol: get
+                        - symbol: new
+                        - symbol: key
+                  - symbol: changed
+          report:
+            - symbol: compare
+            - symbol: before
+            - symbol: after
+          unchanged:
+            - symbol: compare
+            - symbol: before
+            - symbol: before
+          empty:
+            - symbol: compare
+            - {}
+            - {}

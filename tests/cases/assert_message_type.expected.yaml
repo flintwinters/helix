@@ -3,5 +3,8 @@ error:
   kind: type
   message: "expected string message, got integer"
   path: /check/2
+  reference:
+    - "check"
+    - 2
   line: 1
   column: 24

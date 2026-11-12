@@ -1,69 +1,47 @@
 # Helix
 
-Helix is an experimental runtime in which readable YAML is both program source and persisted VM state. Programs are object graphs, vector forms such as `[add, x, 1]` are executable expressions (actor first), and completed or suspended execution serializes back to YAML.
-Outputs and syntax should be agent-first and agent-friendly, and all APIs and tooling should be discoverable.
-
-The previous C++ implementation lives in `flintwinters/helixcpp`.
-
-Fix bugs without asking.
+Helix is an experimental Rust runtime: readable YAML is program source, ordinary data round-trips through YAML, and immutable machine values expose execution for inspection and branching. Syntax, output, APIs and tooling should be discoverable by agents and people. The previous C++ implementation lives in `flintwinters/helixcpp`. Fix bugs without asking.
 
 ## Motivation
 
-Program and machine state share one human-readable representation, so a suspended run can be read, diffed, edited, and resumed as plainly as source. Every design choice should keep that round trip lossless and legible.
+Keep programs and execution state readable, inspectable and explicit. A retained machine must preserve its meaning when another version advances. Disk restoration remains a separate design problem: inspection output is not an executable snapshot format.
 
-The ultimate niche is declarative machine configuration (where Nix and Ansible sit), reached through declarative, first-class types: a machine config is a type resolved entirely at type time, inheriting from abstract machine type classes, and applying it is a separate effectful step (`CHARTER.md` section 8). The pure type/class algebra and state comparison exist; effectful machine application does not.
+The ultimate niche is declarative machine configuration through first-class types (`CHARTER.md` section 8): resolve a machine type purely before applying effects. The type/class algebra and state comparison exist; effectful application does not.
 
 ## Architecture
 
-Rust crate `helix` (lib + `helix run <file|->` CLI); `./manage.py` is the single entrypoint (`build`, `run`, `test [--bless]`).
+Rust crate `helix` (library and CLI); `./manage.py` is the single tooling entrypoint.
 
-- `src/graph.rs`: YAML (via `yaml-rust2` events) into an arena of nodes with parent links and 1-indexed line/column spans; root-relative paths (`/inner/y/1`); lexical `lookup` walks parent links through enclosing maps.
-- `src/vm.rs`: `Vm` with the five statuses and `state()` serialization (`status` plus `root` or `error`), around an `Evaluator`. `Vm::check` / `helix check` collect independent errors with the same pure evaluator, emitting `phase: type` and `errors`; `tests/check/` holds check-command golden cases. This is evaluation, not static checking of uncalled bodies.
-- `src/eval.rs`: `Evaluator` owns the graph, memoized evaluation with cycle detection, lexical symbol resolution (`resolve`: enclosing maps, `fn` parameters read from the call `Frame` stack, `let` bindings), and the forms with their own evaluation order (`builtins::is_form`: `if`/`cond`/`and`/`or`/`let`/`fn`/`try`/`finally` and the iteration forms). A sequence is an expression iff its head is a plain scalar naming a builtin or resolving to a user `[fn, [params], body]`; plain-string arguments are symbols, quoted strings are literals. Nodes inside a `fn` are never memoized and are cycle-checked per call depth; recursion is bounded by `MAX_DEPTH`. A `fn` declaration retains raw source (`Evaluator::raw`, emitted verbatim via `Yaml::Real`); when passed or returned, free lexical bindings serialize in a `closure` binding map. Computed functions work as call heads, through `call`, and in callback forms.
-- `src/builtins.rs` (+ `builtins/{number,collection,fault,value}.rs`): pure builtins over evaluated values, with the arity table. `fault` and `value` are the shared leaf modules (children must not import their parent: hyperlinter treats that as a cycle). Failures are `Fault`s the VM maps onto the blamed argument node. The user-facing semantics live in `LANGUAGE.md`; keep it in sync when builtins change.
-- `src/builtins/typing/`: type parsing, membership/subtyping, constructors/reflection, class inheritance, and pure machine-state comparison. Types are primitive names or ordinary declaration maps; refinements use the evaluator’s function machinery. `std:types` implements reflection-based record derivation in Helix over the existing checked constructors.
-- `src/link.rs` links literal imports at load time into detached graph subtrees, deduplicated by canonical file path or standard module name, with cycle detection. Module scope is isolated; dotted symbols traverse map/module members. `src/library.rs` embeds `std/` Helix sources; `./manage.py std [module]` discovers them. Imported errors carry `file` with file-relative paths and spans.
-- `std/math.yaml` and `std/list.yaml` exercise function parameter/result annotations in library code. Numeric contracts share `std:math.number`; library contract regressions cover imports and emitted-state round trips.
-- `std/test.yaml` owns pure testing policy (case capture, assertions, error expectations, tables, bounded properties, differential checks and report aggregation). `dogfood_testing` self-tests failures, selection/reruns, fixture closures and nested reports; `manage.py` retains host process/crash and filesystem duties.
-- `tests/dogfood/**/*.yaml` exports `std:test` reports; `./manage.py test --suite dogfood` discovers modules and enforces `require_pass`, saving replay inputs/states in `runtime/dogfood/`. Add pure library laws here without golden snapshots; retain host/process contracts in Python.
-- `src/emit.rs`: Helix's own block-YAML emitter. It exists so output stays re-readable: it quotes strings that would re-read as another type or, as the first item of a list, as an expression head.
-- Pure error recovery: `./manage.py recover FILE` emits editable recovery source on evaluation failure; `resume STATE` preserves completed root-map fields and retries unfinished fields. It does not restore active calls or iterations. Ordinary run/check state output stays unchanged. Error `calls` records innermost-first call sites; map re-raise preserves `cause`.
-- `src/error.rs`: `HelixError` with stable `kind`, message, root-relative `path`, and `line`/`column`; serialized under `error:`.
-- Tests: golden cases in `tests/cases/NAME.yaml` + `NAME.expected.yaml`; finished states are also checked to round-trip (emitted `root` re-run is a fixpoint).
-  A robustness sweep re-runs damaged variants of every case (line prefixes, line deletions, char prefixes) and requires a well-formed state: exit 0/1, valid YAML, errors with `kind`/`message`/`line`/`column`.
-  Discover suites with `./manage.py test --list`; repeat `--suite NAME` to select. Python contracts in `tests/suites/` cover the harness, CLI, generated oracles/serialization, imports, parser, fixed-seed fuzzing and scale; `library` invokes Rust public-VM tests. Subprocesses have a 10-second timeout (`HELIX_TEST_TIMEOUT` override). Generated files and minimized failures belong in `runtime/`. README maps contracts to suites and records coverage gaps; CI runs fast checks on changes and the full sweep weekly.
+- `src/model.rs` holds shared syntax, runtime-value and execution-state definitions. Source graphs are immutable after load-time linking. Runtime values distinguish functions and machines from ordinary data; lists/maps, code and machines share immutable allocations with copy-on-write updates.
+- `src/graph.rs` parses YAML events into source nodes with lexical parent links, scalar quoting and source spans. Arena indices are private accelerators. Inspectable references carry a source identity and typed root-relative path segments: string keys and integer indices. Errors retain a human-readable `path` and an unambiguous typed `reference`.
+- `src/eval.rs` is the sole execution dispatcher. Owned requests represent evaluation, argument/actor resolution, calls, annotations, lazy forms, iterations, returns and error unwinding. Environments, memoized results, cycle guards, intermediate outcomes and limits belong to the machine. Functions retain direct code and lexical-environment references; execution never emits/reparses function source. Recursive lexical-binding equality uses a visited-pair traversal.
+- `src/vm.rs` supplies pure `Vm::step(&self) -> Vm`, terminal-state stability and `run(&mut self)` over the same transitions. Its iterative scheduler descends into child advancement with an explicit parent vector, without recursive interpreter calls. `[vm, function]` creates a ready zero-argument child; `[step, child]` advances a version; `[inspect, child]` exposes read-only data without running it. `check` collects independent errors using the same engine; it does not statically check uncalled bodies.
+- `src/builtins.rs` and `src/builtins/` own pure host operations, arities, value inspection, type/class algebra and machine-state comparison. Type operations journal completed predicate answers and replay their deterministic host traversal when requesting another predicate. The dispatcher executes each requested predicate; host callbacks never execute Helix. A failing `finally` cleanup replaces the original outcome. Keep `LANGUAGE.md` synchronized with semantics.
+- `src/link.rs` links literal imports once at load time, deduplicating canonical file/module identities and detecting cycles. Modules have isolated lexical scope. `src/library.rs` embeds `std/`; discover modules with `./manage.py inspect std`.
+- `src/value.rs`, `src/inspect.rs` and `src/emit.rs` own equality, finite named object views and YAML boundary rendering. Mixed integer/float equality and ordering are exact. Function/machine-bearing results keep their ordinary `root` or `error` projection and add an `objects` table to the state envelope; these views are not supported restoration input. User data cannot collide with envelope metadata. Ordinary data stays compact and round-trippable.
+- Pure failed-run recovery (`recover`/`resume`) freezes completed ordinary-data root fields and retries other fields from original source, including runtime objects. It does not restore active execution. Source recovery preserves scalar styles without encoding executable strings as YAML floats. Errors preserve source blame, innermost-first call sites and map re-raise causes.
+- `std/test.yaml` owns pure assertions, cases, tables, bounded properties and report aggregation. `tests/dogfood/**/*.yaml` exports reports; Python owns process/filesystem boundaries. Prefer dogfood laws for pure library behavior and host contracts for process behavior.
 
-- Lint: `hyperlinter/` is a submodule (`flintwinters/hyperlinter`); `./manage.py lint [--format=text]` runs it from the repo root (it loads Cargo.toml and `.git/hyperlinter/` baselines there). Its append-only ledger lives beside baselines in private Git metadata (`hyperlinter/hyperlint.sqlite`); legacy runtime ledgers migrate without copying when safe, removing only empty directories. Keep the tree at zero diagnostics; do not weaken policy or write a baseline to silence findings. The Rust adapter models each `mod` file as its own module and leaves encapsulation to rustc (entrypoint rules HL108/HL109 do not apply; HL117 bounds `mod` fan-out). Function cycles, dead implementation, and clone rules are still TypeScript-only. Rust style here: private `mod`s with a small `pub use` surface in `src/lib.rs` where it reads well, otherwise ordinary `pub mod` paths; prefer `pub(crate)`/private over `pub` for items no other crate needs.
+## Validation and tooling
+
+- `./manage.py` shows `build`, `runtime`, `inspect` and `quality`; flat shortcuts remain equivalent. Append `--help` at any level. `--help-json` emits the versioned command/argument/suite tree without builds or dependencies. `tooling/cli.py` is authoritative for discovery.
+- Run all tests through `./manage.py test`; use `--list`, `--describe`, or repeated `--suite NAME`. Golden cases live in `tests/cases/` and `tests/check/`. `--bless` deliberately updates expectations. Ordinary-data roots are checked as emission fixpoints; function/machine output is inspected rather than treated as executable source.
+- `execution` exercises stepping, pauses, retained-state immutability, child machines, recursion, iteration, refinements and unwinding through Rust integration tests. Allocation-accounted workloads record execution time and live/peak bytes in `runtime/execution-profile.log`. `library` owns basic public-VM contracts. The harness, CLI, generated, imports, parser, dogfood, fuzz, scale and robustness suites cover the remaining boundaries.
+- Interpreter subprocesses have a 10-second timeout (`HELIX_TEST_TIMEOUT` override). Generated/replay/minimized inputs and profiling artifacts belong in `runtime/`, never `/tmp`. Execution-suite timeouts kill the complete Cargo/test process group.
+- `hyperlinter/` is the pinned `flintwinters/hyperlinter` submodule. `./manage.py lint [--format=text]` runs it from this repository root; private Git metadata holds baselines and its append-only ledger. Never weaken policy or baseline away findings. Structural-lint cleanup for the execution migration is explicitly deferred by the user; do not let it block behavioral integration.
 
 ## Current Big Tasks
 
-The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items there only when they work end to end with a golden case. The list below is the immediate agent queue.
+1. Integrate and exercise the immutable execution engine; then address the deferred structural-linter findings without changing its policies.
+2. Design validated, versioned disk snapshots and the reversibility promise type. All behavior and continuation state must remain explicit; inspection output alone is not a restoration contract.
+3. Add effect requests and declarative machine application through an explicit outcome boundary, then build debugger interfaces over inspection. External effects, adapters and debugger UI are not implemented.
+4. Preserve source locations for evaluated values, beyond errors and execution inspection; decide the fate of YAML anchors/aliases and non-scalar keys (currently rejected).
 
-1. Suspend/resume through a reversibility promise type: a machine mixing in that promise must expose all behavior and complete execution state for serialization, including stack, heap, locals, continuations and pending effects as needed. Execution references remain root-relative paths. The promise and suspend/resume are not implemented; today the VM runs to completion or error in one `run`.
-2. Grow the language past the pure core (done: values, operators, control flow, functions, iteration): side effects/signals (done: file/standard imports, `try`/errors-as-data, `assert`). Functions and declared types are first-class values.
-3. Preserve source locations in the output for evaluated values, not only for errors.
-4. Exercise hyperlinter as the Rust code grows and feed general (non-Helix-specific) gaps back upstream: Rust function-cycle/dead-code coverage.
-5. Decide the fate of YAML anchors/aliases and non-scalar keys (currently rejected as `unsupported`).
+## Invariants and change discipline
 
-## Invariants
-
-- YAML shape is a public behavioral contract: preserve source locations, structured error details, and round-trippable state.
-- Reversibility is a promise type: a machine mixing it in must expose all behavior and complete state so serialization can always capture and restore its execution. Hidden host state cannot determine its continuation.
-- Persist resumable execution references as root-relative object paths, never opaque pointers.
-- VM statuses are `ready`, `running`, `finished`, `error`, or `signaled`.
-- Parent links define lexical/object resolution.
-
-## CLI Quick Reference
-
-- `./manage.py` shows the command tree: `build`, `runtime` (execution/recovery), `inspect` (modules/inventory), `quality` (test/lint). Append `--help` at any level; flat commands remain equivalent shortcuts.
-- `./manage.py --help-json` emits the versioned command/argument tree and suite contracts without builds or third-party dependencies. `quality test --describe` explains suites; `--list` preserves name-only discovery. Parser definitions and suite descriptions live in `tooling/cli.py`; keep that authoritative.
-- `./manage.py runtime eval '[add, 20, 22]'` builds and emits ordinary VM state; `eval --check SOURCE` collects independent errors. Runtime exit codes are 0/1/2 for success/evaluation failure/usage or unreadable input.
-- `runtime cli ARGS...` builds and forwards Rust CLI arguments; `quality lint ARGS...` forwards hyperlinter arguments. Wrapper `--help` is local; `-- --help` forwards help. Commands resolve files/imports from the repository root.
-
-## Change Discipline
-
-- Inspect declarations before naming or changing anything; never guess symbols.
-- Reuse and extend existing helpers; avoid parallel implementations.
-- Keep production code and tests in the same logical checkpoint, and add or tighten the nearest test when semantics change.
-- Stage explicit paths only (never `git add .` or `git add -A`) and commit each verified checkpoint with a detailed message.
-- Update this file when architecture, invariants, or workflows materially change.
+- Immutable versions never share mutable execution state. Host pointers and allocation identities have no language meaning. Persist execution references as source-qualified typed root-relative paths, never pointers or arena indices.
+- Statuses are `ready`, `running`, `finished`, `error`, and `signaled`. Terminal stepping is unchanged; the same dispatcher drives run, step, callbacks and nested machines.
+- YAML shape, structured blame, deterministic output and ordinary-data round trips are public contracts. Object-graph inspection does not promise disk compatibility or executable function reconstruction.
+- Inspect declarations and search for reusable code before implementing. Keep authoritative concepts and invariants DRY; avoid abstractions coupling independently changing concepts.
+- Keep production changes and relevant tests in each verified checkpoint. Stage explicit paths only; never `git add .` or `git add -A`. Commit each verified checkpoint with a detailed message.
+- Keep this file concise and current when architecture, invariants or workflows change. Track broad work here; re-infer small tasks from source.

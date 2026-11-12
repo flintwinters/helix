@@ -1,12 +1,42 @@
 status: finished
 root:
   f:
-    - fn
-    - - x
-    - - add
-      - x
-      - 1
+    ref: object0
   call: 2
   data:
     - "f"
     - 1
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object1
+    code:
+      - symbol: fn
+      - - symbol: x
+      - - symbol: add
+        - symbol: x
+        - 1
+    location:
+      source: "<root>"
+      path:
+        - "f"
+    environment: []
+    bindings: {}
+  object1:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          f:
+            - symbol: fn
+            - - symbol: x
+            - - symbol: add
+              - symbol: x
+              - 1
+          call:
+            - symbol: f
+            - 1
+          data:
+            - "f"
+            - 1

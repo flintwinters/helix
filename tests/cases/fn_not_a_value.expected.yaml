@@ -1,9 +1,10 @@
-status: finished
-root:
-  double:
-    - fn
-    - - n
-    - - mul
-      - n
-      - 2
-  r: 3
+status: error
+error:
+  kind: type
+  message: "expected string, list or map, got function"
+  path: /r/1
+  reference:
+    - "r"
+    - 1
+  line: 2
+  column: 10

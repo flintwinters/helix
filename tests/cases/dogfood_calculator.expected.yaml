@@ -19,75 +19,213 @@ root:
               - 5
           - 1
   apply_op:
-    - fn
-    - - op
-      - xs
-    - - cond
-      - - eq
-        - op
-        - "add"
-      - - fold
-        - - fn
-          - - a
-            - b
-          - - add
-            - a
-            - b
-        - 0
-        - xs
-      - - eq
-        - op
-        - "mul"
-      - - fold
-        - - fn
-          - - a
-            - b
-          - - mul
-            - a
-            - b
-        - 1
-        - xs
-      - - eq
-        - op
-        - "max"
-      - - fold
-        - - fn
-          - - a
-            - b
-          - - if
-            - - gt
-              - a
-              - b
-            - a
-            - b
-        - - get
-          - xs
-          - 0
-        - xs
-      - - eq
-        - op
-        - "neg"
-      - - neg
-        - - get
-          - xs
-          - 0
-      - ~
+    ref: object0
   calc:
-    - fn
-    - - node
-    - - if
-      - - eq
-        - - type
-          - node
-        - "integer"
-      - node
-      - - apply_op
-        - - get
-          - node
-          - "op"
-        - - map
-          - calc
-          - - get
-            - node
-            - "args"
+    ref: object1
   result: 12
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - symbol: op
+        - symbol: xs
+      - - symbol: cond
+        - - symbol: eq
+          - symbol: op
+          - add
+        - - symbol: fold
+          - - symbol: fn
+            - - symbol: a
+              - symbol: b
+            - - symbol: add
+              - symbol: a
+              - symbol: b
+          - 0
+          - symbol: xs
+        - - symbol: eq
+          - symbol: op
+          - mul
+        - - symbol: fold
+          - - symbol: fn
+            - - symbol: a
+              - symbol: b
+            - - symbol: mul
+              - symbol: a
+              - symbol: b
+          - 1
+          - symbol: xs
+        - - symbol: eq
+          - symbol: op
+          - max
+        - - symbol: fold
+          - - symbol: fn
+            - - symbol: a
+              - symbol: b
+            - - symbol: if
+              - - symbol: gt
+                - symbol: a
+                - symbol: b
+              - symbol: a
+              - symbol: b
+          - - symbol: get
+            - symbol: xs
+            - 0
+          - symbol: xs
+        - - symbol: eq
+          - symbol: op
+          - neg
+        - - symbol: neg
+          - - symbol: get
+            - symbol: xs
+            - 0
+        - ~
+    location:
+      source: "<root>"
+      path:
+        - "apply_op"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - symbol: node
+      - - symbol: if
+        - - symbol: eq
+          - - symbol: type
+            - symbol: node
+          - integer
+        - symbol: node
+        - - symbol: apply_op
+          - - symbol: get
+            - symbol: node
+            - op
+          - - symbol: map
+            - symbol: calc
+            - - symbol: get
+              - symbol: node
+              - args
+    location:
+      source: "<root>"
+      path:
+        - "calc"
+    environment: []
+    bindings:
+      apply_op:
+        code:
+          source: "<root>"
+          path:
+            - "apply_op"
+      calc:
+        code:
+          source: "<root>"
+          path:
+            - "calc"
+  object2:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          program:
+            op:
+              symbol: add
+            args:
+              - op:
+                  symbol: mul
+                args:
+                  - 2
+                  - 3
+              - op:
+                  symbol: neg
+                args:
+                  - 4
+              - op:
+                  symbol: max
+                args:
+                  - 7
+                  - op:
+                      symbol: mul
+                    args:
+                      - 2
+                      - 5
+                  - 1
+          apply_op:
+            - symbol: fn
+            - - symbol: op
+              - symbol: xs
+            - - symbol: cond
+              - - symbol: eq
+                - symbol: op
+                - add
+              - - symbol: fold
+                - - symbol: fn
+                  - - symbol: a
+                    - symbol: b
+                  - - symbol: add
+                    - symbol: a
+                    - symbol: b
+                - 0
+                - symbol: xs
+              - - symbol: eq
+                - symbol: op
+                - mul
+              - - symbol: fold
+                - - symbol: fn
+                  - - symbol: a
+                    - symbol: b
+                  - - symbol: mul
+                    - symbol: a
+                    - symbol: b
+                - 1
+                - symbol: xs
+              - - symbol: eq
+                - symbol: op
+                - max
+              - - symbol: fold
+                - - symbol: fn
+                  - - symbol: a
+                    - symbol: b
+                  - - symbol: if
+                    - - symbol: gt
+                      - symbol: a
+                      - symbol: b
+                    - symbol: a
+                    - symbol: b
+                - - symbol: get
+                  - symbol: xs
+                  - 0
+                - symbol: xs
+              - - symbol: eq
+                - symbol: op
+                - neg
+              - - symbol: neg
+                - - symbol: get
+                  - symbol: xs
+                  - 0
+              - ~
+          calc:
+            - symbol: fn
+            - - symbol: node
+            - - symbol: if
+              - - symbol: eq
+                - - symbol: type
+                  - symbol: node
+                - integer
+              - symbol: node
+              - - symbol: apply_op
+                - - symbol: get
+                  - symbol: node
+                  - op
+                - - symbol: map
+                  - symbol: calc
+                  - - symbol: get
+                    - symbol: node
+                    - args
+          result:
+            - symbol: calc
+            - symbol: program

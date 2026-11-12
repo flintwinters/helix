@@ -1,8 +1,8 @@
 //! Realization as data: comparing a realized class (the intended machine) with an observed map
 //! and describing what differs. Nothing here touches a machine; observed state is an argument.
 
-use yaml_rust2::yaml::Hash;
-use yaml_rust2::Yaml;
+use crate::value::Hash;
+use crate::value::Value;
 
 use super::class::concrete_values;
 use super::ty::mapping;
@@ -10,12 +10,12 @@ use crate::builtins::fault::Fault;
 use crate::builtins::value::equal;
 use crate::error::s;
 
-pub(super) fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
+pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
     let wanted = concrete_values(&args[0], 0)?;
-    let Yaml::Hash(observed) = &args[1] else { return Err(Fault::expected(1, "map of observed state", &args[1])) };
+    let Value::Hash(observed) = &args[1] else { return Err(Fault::expected(1, "map of observed state", &args[1])) };
     let drift = Drift::between(&wanted, observed);
     Ok(match actor {
-        "drift" => drift.to_yaml(),
+        "drift" => drift.to_value(),
         "converge" => drift.plan(),
         _ => unreachable!("`{actor}` is not a machine builtin"),
     })
@@ -24,7 +24,7 @@ pub(super) fn apply(actor: &str, args: &[Yaml]) -> Result<Yaml, Fault> {
 /// What the machine lacks, has wrong, and has beyond what its type says.
 struct Drift {
     /// `(field, wanted, observed)`; `observed` is `None` when the machine lacks the field.
-    unmet: Vec<(Yaml, Yaml, Option<Yaml>)>,
+    unmet: Vec<(Value, Value, Option<Value>)>,
     extra: Hash,
 }
 
@@ -40,7 +40,7 @@ impl Drift {
     }
 
     /// `{missing: {field: wanted}, changed: {field: {want, have}}, extra: {field: have}}`.
-    fn to_yaml(&self) -> Yaml {
+    fn to_value(&self) -> Value {
         let (mut missing, mut changed) = (Hash::new(), Hash::new());
         for (field, want, have) in &self.unmet {
             match have {
@@ -48,13 +48,13 @@ impl Drift {
                 Some(have) => drop(changed.insert(field.clone(), mapping([("want", want.clone()), ("have", have.clone())]))),
             }
         }
-        mapping([("missing", Yaml::Hash(missing)), ("changed", Yaml::Hash(changed)), ("extra", Yaml::Hash(self.extra.clone()))])
+        mapping([("missing", Value::Hash(missing)), ("changed", Value::Hash(changed)), ("extra", Value::Hash(self.extra.clone()))])
     }
 
     /// Ordered steps that make the machine match: one `set` per unmet field. Extra state is only
     /// reported, never removed, so a plan against a conforming machine is empty (idempotent).
-    fn plan(&self) -> Yaml {
-        Yaml::Array(
+    fn plan(&self) -> Value {
+        Value::Array(
             self.unmet
                 .iter()
                 .map(|(field, want, have)| match have {

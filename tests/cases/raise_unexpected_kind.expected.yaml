@@ -3,6 +3,10 @@ error:
   kind: fatal
   message: disk gone
   path: /guard/2/3
+  reference:
+    - "guard"
+    - 2
+    - 3
   line: 2
   column: 71
   calls:
@@ -14,5 +18,8 @@ error:
     kind: fatal
     message: disk gone
     path: /unexpected/1
+    reference:
+      - "unexpected"
+      - 1
     line: 3
     column: 19
