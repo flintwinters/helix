@@ -118,8 +118,16 @@ def verify(h):
             def __exit__(self, *args):
                 assert_locked(True)
 
+        # Resolve the real policy before installing a fake executable/process
+        # host. This contract observes Cargo lock ownership; policy supervision
+        # and damaged responses are exercised independently by test_orchestration.
+        from tooling import test_policy
+        planned = test_policy.plan(h, ["library"], ["library"], False)
+        reported = test_policy.report(h, [{"suite": "library", "failures": [], "stdout": "", "stderr": ""}])
         with patch.object(manage, 'ROOT', root), patch.object(subprocess, 'run', side_effect=run), \
-             patch.object(subprocess, 'Popen', Process):
+             patch.object(subprocess, 'Popen', Process), \
+             patch.object(test_policy, 'plan', return_value=planned), \
+             patch.object(test_policy, 'report', return_value=reported):
             assert context.regression(False, ['library']) == 0
             execution(context)
             verify_install(context)

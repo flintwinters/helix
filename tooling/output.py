@@ -9,13 +9,22 @@ def emit(report, *, stream=None):
 
 
 def test_report(results, *, output_format=DEFAULT_FORMAT):
-    import sys
+    """Bootstrap/emergency reporting when no trustworthy Helix policy is available."""
 
     failures = [failure for result in results for failure in result["failures"]]
     code = int(bool(failures))
+    return render_test_report({"command": "test", "status": "failed" if code else "passed", "exit_code": code,
+                               "failure_count": len(failures), "results": results}, output_format=output_format)
+
+
+def render_test_report(report, *, output_format=DEFAULT_FORMAT):
+    """Render an already decided report; production aggregation belongs to Helix."""
+    import sys
+
+    results = report["results"]
+    code = report["exit_code"]
     if output_format == "json":
-        emit({"command": "test", "status": "failed" if code else "passed", "exit_code": code,
-              "failure_count": len(failures), "results": results})
+        emit(report)
     else:
         for result in results:
             details = [f"{result['cases']} cases"] if "cases" in result else []
@@ -34,5 +43,5 @@ def test_report(results, *, output_format=DEFAULT_FORMAT):
                 print("FAIL", failure, file=sys.stderr)
         skipped = sum(result["status"] == "skipped" for result in results)
         print(f"test: {'failed' if code else 'passed'} ({len(results)} suites, "
-              f"{skipped} skipped, {len(failures)} failures)")
+              f"{skipped} skipped, {report['failure_count']} failures)")
     return code

@@ -274,8 +274,18 @@ class TestContext:
         import io
         from tooling.output import test_report
 
-        selected = set(suites or SUITES)
+        from tooling import test_policy
+        from tooling.output import render_test_report
+
+        # This one bootstrap contract must run without a built interpreter.
+        bootstrap = bool(suites) and set(suites) == {"startup"}
         results = []
+        try:
+            plan = ([{"suite": "startup", "action": "run"}] if bootstrap else
+                    test_policy.plan(self, SUITES, suites, bless))
+        except test_policy.PolicyError as error:
+            return test_report([{"suite": "orchestration", "status": "failed", "failures": [str(error)]}],
+                               output_format=output_format)
 
         def record(name, check, **details):
             stdout, stderr = io.StringIO(), io.StringIO()
@@ -285,8 +295,7 @@ class TestContext:
                 except (Exception, SystemExit):
                     import traceback
                     failures = [traceback.format_exc()]
-            results.append({"suite": name, "status": "failed" if failures else "passed",
-                            "failures": failures, "stdout": stdout.getvalue(), "stderr": stderr.getvalue(),
+            results.append({"suite": name, "failures": failures, "stdout": stdout.getvalue(), "stderr": stderr.getvalue(),
                             **details})
 
         def library():
@@ -298,29 +307,39 @@ class TestContext:
             print(result.stderr, end="", file=sys.stderr)
             return ["library: cargo test failed"] if result.returncode else []
 
-        for name in (name for name in SUITES if name in selected - {"golden", "robustness"}):
-            if name == "library":
+        for task in plan:
+            name = task["suite"]
+            if task["action"] == "skip":
+                results.append({"suite": name, "failures": [], "reason": task["reason"]})
+            elif name == "library":
                 record(name, library)
+            elif name == "standard_library":
+                record(name, self.check_standard_library)
+            elif name in {"golden", "robustness"}:
+                if cases is None:
+                    cases = discover_cases(self.commands, self.root)
+                if name == "golden":
+                    from functools import partial
+                    record(name, lambda: collect_cases(partial(self.golden_case, bless=bless), cases, jobs),
+                           cases=len(cases), jobs=jobs, blessed=bless)
+                else:
+                    record(name, lambda: self.robustness(cases, jobs), cases=len(cases), jobs=jobs)
             else:
                 from tests.suites import contracts
                 record(name, lambda: contracts.run(name, self))
-        if not selected & {"golden", "robustness"}:
-            return test_report(results, output_format=output_format)
-        if cases is None:
-            cases = discover_cases(self.commands, self.root)
-        record("standard_library", self.check_standard_library)
-        if "golden" in selected:
-            from functools import partial
-
-            record("golden", lambda: collect_cases(partial(self.golden_case, bless=bless), cases, jobs),
-                   cases=len(cases), jobs=jobs, blessed=bless)
-        if "robustness" in selected:
-            if bless:
-                results.append({"suite": "robustness", "status": "skipped", "failures": [],
-                                "reason": "disabled while blessing expectations"})
-            else:
-                record("robustness", lambda: self.robustness(cases, jobs), cases=len(cases), jobs=jobs)
-        return test_report(results, output_format=output_format)
+        if bootstrap:
+            return test_report([{**row, "status": "failed" if row["failures"] else "passed"}
+                                for row in results], output_format=output_format)
+        try:
+            report = test_policy.report(self, results)
+        except test_policy.PolicyError as error:
+            # Host emergency reporting retains all observations even when the
+            # interpreter responsible for aggregation crashes or lies about them.
+            fallback = [{**row, "status": "failed" if row["failures"] else
+                         "skipped" if "reason" in row else "passed"} for row in results]
+            fallback.append({"suite": "orchestration", "status": "failed", "failures": [str(error)]})
+            return test_report(fallback, output_format=output_format)
+        return render_test_report(report, output_format=output_format)
 
     def check_standard_library(self) -> list[str]:
         failures = []

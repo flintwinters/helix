@@ -1,0 +1,10 @@
+$call:
+- let
+- policy: {$call: [import, '../../tooling/test_policy.yaml']}
+- ordinary: {$call: [policy.plan, [first, golden, second, robustness], [second, first, first], false]}
+  default: {$call: [policy.plan, [first, golden, second, robustness], [], false]}
+  blessing: {$call: [policy.plan, [golden, robustness], [robustness, golden], true]}
+  empty: {$call: [policy.plan, [], [], false]}
+  passed: {$call: [policy.report, [{suite: first, failures: []}]]}
+  failed: {$call: [policy.report, [{suite: first, failures: [one, two]}, {suite: second, failures: []}]]}
+  skipped: {$call: [policy.report, [{suite: robustness, failures: [], reason: disabled while blessing expectations}]]}
