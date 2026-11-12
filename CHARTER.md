@@ -191,7 +191,7 @@ A type should read like the value it describes with the specifics left open: som
   - [x] The predicate is a named or inline `fn` from the value to a boolean, run only after the base type passes (`types_declarative`, `types_first_class`; the shared checker gates predicates on base membership)
   - [ ] A predicate that fails or returns a non-boolean is an error blamed on the predicate, distinct from "value rejected"
   - [ ] A rejected value's violation names the refinement, so the report says which rule failed and not only that one did
-  - [x] Refinements stack (a refinement of a refinement) and compose with every other implemented type former (`types_refinement_composition`: base gating, collection elements, optional/defaulted fields, unions, enums, literals and class fields; class membership retains its separate limits below)
+  - [x] Refinements stack (a refinement of a refinement) and compose with every other implemented type former (`types_refinement_composition`: base gating, collection elements, optional/defaulted fields, unions, enums, literals and class fields; class membership additionally enforces fixed values and constraints, `types_class_membership`)
 - [ ] Annotate a value or a `fn` parameter/result with a type; a mismatch is a structured `type` error blaming the offending node with path and line
   - [x] Annotate a value in a map; the annotated value is still read by other expressions as the plain value
   - [ ] Annotate `fn` parameters; a bad argument blames the argument at the call site — annotations work, but `types_annotations.bad_args` records the call's path/span and parameter names, not each offending argument's path/span (`src/eval/atomic.rs`)
@@ -230,7 +230,7 @@ A type should read like the value it describes with the specifics left open: som
 - [ ] Reflection (`types_reflection`, `types_first_class` golden cases): read a type's fields, defaults and parents as data; ask `{$call: [is, {$ref: value}, {$ref: t}]}` and `{$call: [subtype, {$ref: a}, {$ref: b}]}`
   - [ ] `{$call: [is, {$ref: value}, {$ref: t}]}`
     - [x] For scalar and collection type names and `any`; an unknown name is a `type` error
-    - [ ] For every declared type — structural records and refinements work, but class membership parses only field declarations (`src/builtins/typing/ty.rs`); fixed values and whole-record constraints are enforced by class realization, not by `is`
+    - [x] For every declared type, including classes: field schemas, explicitly fixed values and whole-record constraints (`types_class_membership`; defaults realization filled in are not pinned)
   - [x] Read a record type's fields, each field's type, and its defaults as plain lists and maps
   - [x] Read a class's parents and its still-open fields
   - [x] `{$call: [subtype, {$ref: a}, {$ref: b}]}`, with documented rules per type former
@@ -391,7 +391,7 @@ The config is the type; the real machine is the value. "Is this machine configur
 - [ ] Realization is a separate, explicit step: compare a resolved config with a machine's observed state and produce a plan as data
   - [ ] Observed state is gathered by effects into a value of a declared type
   - [x] The plan is plain YAML: ordered steps, each naming the field of the type it realizes (`machine_fleet.plan_web1`; `converge` emits canonical field-ordered `set` steps)
-  - [ ] An empty plan means the machine inhabits its type — `converge` compares configured values and ignores extra observed fields, while structural class membership uses a closed record; equivalence with full class membership is not established
+  - [ ] An empty plan means the machine inhabits its type — `converge` compares configured values and ignores extra observed fields, while class membership uses a closed record (and now also checks constraints); equivalence is not established
   - [x] Planning changes nothing on the machine (dry run is the default, applying is the explicit act): `drift` and `converge` only compare supplied data (`machine_fleet`); effectful observation and complete machine application remain separate obligations
 - [ ] Applying a plan uses the effect system (section 3), is idempotent, and suspends/resumes per step (section 2) with the pending step visible in the state
   - [ ] Each step is an explicit effect recorded in the state before it runs

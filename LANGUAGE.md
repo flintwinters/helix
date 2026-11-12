@@ -141,8 +141,8 @@ declaration order, rather than concatenating each alternative's violations.
 Refinements check the base first and only run their predicate if the base passes;
 this also applies when the base is another refinement. Refinements can wrap the
 existing type constructors and serve as collection elements or required,
-optional and defaulted fields. Class structural membership retains the limits
-described below. `types_violation_order` and `types_refinement_composition` fix
+optional and defaulted fields. Class membership also enforces fixed values and
+constraints, as described below. `types_violation_order` and `types_refinement_composition` fix
 these ordering and composition contracts.
 
 `eq` on types is structural equality of their declaration values: record field order is ignored, list order (including union members and enum alternatives) is significant, and defaults and captured predicates participate. This is declaration equality, not equality of the sets of accepted values. Types retain their readable declaration maps in saved state and round-trip through the same evaluator.
@@ -569,7 +569,7 @@ it. `class_defaults` covers this distinction. For collection overrides, use
 before supplying the child value. Map merge is shallow and right-biased; neither
 operation happens implicitly during inheritance (`class_collection_overrides`).
 
-Structural membership (`is`, `expect`, and `violations`) checks a class's field schema, including field refinements, but does not enforce its fixed values or whole-record constraints. Those belong to class realization; structural membership is not a complete machine-conformance check.
+Class membership (`is`, `expect`, and `violations`) checks the closed field schema (including field refinements), then every explicitly fixed value (the field must be present and equal; values realization filled from a default are not pinned), then each whole-record constraint on the checked map; constraints run only when the earlier checks pass. A realized class's `values` are members of it (`types_class_membership`). As a subtype, a class is below a record with fitting fields, and below another class only when it also pins every value and carries every constraint of the other.
 
 Machine state is compared as data. `{$call: [drift, {$ref: class}, {$ref: actual}]}` returns `{missing, changed, extra}`; `{$call: [converge, {$ref: class}, {$ref: actual}]}` returns ordered `set` steps and is empty when all configured values match. Extra observed fields are reported in `drift.extra` but never produce removal steps. An empty plan is therefore not equivalent to membership in the closed record schema. Neither acts: applying a plan is a separate effectful step. The
 [`std:provider` contract](#resource-provider-contract) supplies an explicit reviewed
