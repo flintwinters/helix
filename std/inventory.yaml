@@ -1,0 +1,689 @@
+# Pure, versioned host inventory. No discovery, authentication or effects occur here.
+# resolve(document, dynamic, selection) validates every input before returning targets.
+# Groups provide membership only. Ordered connection patches are explicit; history
+# retains the base and every applicable patch. Empty selectors select no hosts.
+# Invalid input returns the first structured error and no targets. Runtime budgets
+# apply; immutable scans/copies target small inventories, not unbounded fleet scale.
+maps:
+  $call: [import, 'std:map']
+machine:
+  $call: [import, 'std:machine']
+name:
+  $call:
+  - refine
+  - {$ref: string}
+  - $call:
+    - fn
+    - [s]
+    - $call:
+      - gt
+      - $call:
+        - len
+        - {$ref: s}
+      - 0
+connection:
+  $call:
+  - union
+  - $call:
+    - record
+    - transport
+    - $call: [literal, local]
+  - $call:
+    - record
+    - transport
+    - $call: [literal, ssh]
+    - address
+    - {$ref: name}
+    - port
+    - $call:
+      - optional
+      - {$ref: machine.port}
+    - user
+    - $call:
+      - optional
+      - {$ref: name}
+    - jump_host
+    - $call:
+      - optional
+      - {$ref: name}
+connection_patch:
+  $call:
+  - record
+  - transport
+  - $call:
+    - optional
+    - $call: [enum, local, ssh]
+  - address
+  - $call:
+    - optional
+    - {$ref: name}
+  - port
+  - $call:
+    - optional
+    - {$ref: machine.port}
+  - user
+  - $call:
+    - optional
+    - {$ref: name}
+  - jump_host
+  - $call:
+    - optional
+    - {$ref: name}
+host:
+  $call:
+  - record
+  - id
+  - {$ref: name}
+  - connection
+  - {$ref: connection}
+override:
+  $call:
+  - record
+  - source
+  - {$ref: name}
+  - hosts
+  - &id001
+    $call:
+    - list_of
+    - {$ref: name}
+  - groups
+  - *id001
+  - connection
+  - {$ref: connection_patch}
+document:
+  $call:
+  - record
+  - version
+  - $call: [literal, 1]
+  - hosts
+  - $call:
+    - list_of
+    - {$ref: host}
+  - groups
+  - $call:
+    - map_of
+    - *id001
+  - overrides
+  - $call:
+    - list_of
+    - {$ref: override}
+dynamic_input:
+  $call:
+  - list_of
+  - $call:
+    - record
+    - source
+    - {$ref: name}
+    - hosts
+    - $call:
+      - list_of
+      - {$ref: host}
+selection:
+  $call:
+  - record
+  - all
+  - $call:
+    - optional
+    - {$ref: boolean}
+  - hosts
+  - $call:
+    - optional
+    - *id001
+  - groups
+  - $call:
+    - optional
+    - *id001
+  - exclude_hosts
+  - $call:
+    - optional
+    - *id001
+  - exclude_groups
+  - $call:
+    - optional
+    - *id001
+require:
+  $call:
+  - fn
+  - [ok, kind, message, details, value]
+  - $call:
+    - if
+    - {$ref: ok}
+    - {$ref: value}
+    - $call:
+      - raise
+      - {$ref: kind}
+      - {$ref: message}
+      - {$ref: details}
+add_hosts:
+  $call:
+  - fn
+  - [catalog, source, hosts]
+  - $call:
+    - fold
+    - $call:
+      - fn
+      - [acc, item]
+      - $call:
+        - let
+        - id:
+            $call:
+            - get
+            - {$ref: item}
+            - id
+        - $call:
+          - require
+          - $call:
+            - not
+            - $call:
+              - has
+              - {$ref: acc}
+              - {$ref: id}
+          - inventory_duplicate_host
+          - Host identities must be unique across all inventory inputs
+          - $call:
+            - dict
+            - host
+            - {$ref: id}
+            - source
+            - {$ref: source}
+          - $call:
+            - set
+            - {$ref: acc}
+            - {$ref: id}
+            - $call:
+              - dict
+              - id
+              - {$ref: id}
+              - connection
+              - $call:
+                - get
+                - {$ref: item}
+                - connection
+              - provenance
+              - $call:
+                - list
+                - $call:
+                  - dict
+                  - source
+                  - {$ref: source}
+                  - connection
+                  - $call:
+                    - get
+                    - {$ref: item}
+                    - connection
+    - {$ref: catalog}
+    - {$ref: hosts}
+validate_sources:
+  $call:
+  - fn
+  - [dynamic]
+  - $call:
+    - let
+    - sources:
+        $call:
+        - map
+        - $call:
+          - fn
+          - [entry]
+          - $call:
+            - get
+            - {$ref: entry}
+            - source
+        - {$ref: dynamic}
+    - $call:
+      - require
+      - $call:
+        - not
+        - $call:
+          - has
+          - {$ref: sources}
+          - static
+      - inventory_invalid_source
+      - Dynamic source labels must not use the reserved static label
+      - $call: [dict, source, static]
+      - $call:
+        - require
+        - $call:
+          - eq
+          - $call:
+            - duplicates
+            - {$ref: sources}
+          - []
+        - inventory_duplicate_source
+        - Dynamic source labels must be unique
+        - $call:
+          - dict
+          - sources
+          - $call:
+            - duplicates
+            - {$ref: sources}
+        - {$ref: dynamic}
+validate_hosts:
+  $call:
+  - fn
+  - [ids, catalog]
+  - $call:
+    - fold
+    - $call:
+      - fn
+      - [acc, id]
+      - $call:
+        - require
+        - $call:
+          - has
+          - {$ref: catalog}
+          - {$ref: id}
+        - inventory_missing_host
+        - Inventory references an unknown host
+        - $call:
+          - dict
+          - host
+          - {$ref: id}
+        - $call:
+          - append
+          - {$ref: acc}
+          - {$ref: id}
+    - []
+    - {$ref: ids}
+validate_groups:
+  $call:
+  - fn
+  - [groups, catalog]
+  - $call:
+    - fold
+    - $call:
+      - fn
+      - [acc, group]
+      - $call:
+        - require
+        - $call:
+          - gt
+          - $call:
+            - len
+            - {$ref: group}
+          - 0
+        - inventory_invalid_group
+        - Group names must not be empty
+        - $call:
+          - dict
+          - group
+          - {$ref: group}
+        - $call:
+          - set
+          - {$ref: acc}
+          - {$ref: group}
+          - $call:
+            - validate_hosts
+            - $call:
+              - get
+              - {$ref: groups}
+              - {$ref: group}
+            - {$ref: catalog}
+    - {}
+    - $call:
+      - keys
+      - {$ref: groups}
+group_hosts:
+  $call:
+  - fn
+  - [names, groups]
+  - $call:
+    - fold
+    - $call:
+      - fn
+      - [acc, group]
+      - $call:
+        - if
+        - $call:
+          - has
+          - {$ref: groups}
+          - {$ref: group}
+        - $call:
+          - concat
+          - {$ref: acc}
+          - $call:
+            - get
+            - {$ref: groups}
+            - {$ref: group}
+        - $call:
+          - raise
+          - inventory_missing_group
+          - Inventory references an unknown group
+          - $call:
+            - dict
+            - group
+            - {$ref: group}
+    - []
+    - {$ref: names}
+requested:
+  $call:
+  - fn
+  - [hosts, names, catalog, groups]
+  - $call:
+    - concat
+    - $call:
+      - validate_hosts
+      - {$ref: hosts}
+      - {$ref: catalog}
+    - $call:
+      - group_hosts
+      - {$ref: names}
+      - {$ref: groups}
+apply_override:
+  $call:
+  - fn
+  - [catalog, groups, override, index]
+  - $call:
+    - let
+    - ids:
+        $call:
+        - requested
+        - $call:
+          - get
+          - {$ref: override}
+          - hosts
+        - $call:
+          - get
+          - {$ref: override}
+          - groups
+        - {$ref: catalog}
+        - {$ref: groups}
+      patch:
+        $call:
+        - get
+        - {$ref: override}
+        - connection
+    - $call:
+      - apply_override_checked
+      - {$ref: catalog}
+      - {$ref: override}
+      - {$ref: ids}
+      - {$ref: patch}
+      - {$ref: index}
+select_targets:
+  $call:
+  - fn
+  - [catalog, groups, selection]
+  - $call:
+    - let
+    - included:
+        $call:
+        - requested
+        - $call:
+          - get
+          - {$ref: selection}
+          - hosts
+          - []
+        - $call:
+          - get
+          - {$ref: selection}
+          - groups
+          - []
+        - {$ref: catalog}
+        - {$ref: groups}
+      excluded:
+        $call:
+        - requested
+        - $call:
+          - get
+          - {$ref: selection}
+          - exclude_hosts
+          - []
+        - $call:
+          - get
+          - {$ref: selection}
+          - exclude_groups
+          - []
+        - {$ref: catalog}
+        - {$ref: groups}
+    - $call:
+      - select_checked
+      - {$ref: catalog}
+      - {$ref: groups}
+      - $call:
+        - get
+        - {$ref: selection}
+        - all
+        - false
+      - {$ref: included}
+      - {$ref: excluded}
+select_checked:
+  $call:
+  - fn
+  - [catalog, groups, all, included, excluded]
+  - $call:
+    - map
+    - $call:
+      - fn
+      - [id]
+      - $call:
+        - set
+        - $call:
+          - get
+          - {$ref: catalog}
+          - {$ref: id}
+        - groups
+        - $call:
+          - filter
+          - $call:
+            - fn
+            - [group]
+            - $call:
+              - has
+              - $call:
+                - get
+                - {$ref: groups}
+                - {$ref: group}
+              - {$ref: id}
+          - $call:
+            - keys
+            - {$ref: groups}
+    - $call:
+      - filter
+      - $call:
+        - fn
+        - [id]
+        - $call:
+          - and
+          - $call:
+            - or
+            - {$ref: all}
+            - $call:
+              - has
+              - {$ref: included}
+              - {$ref: id}
+          - $call:
+            - not
+            - $call:
+              - has
+              - {$ref: excluded}
+              - {$ref: id}
+      - $call:
+        - keys
+        - {$ref: catalog}
+resolve_checked:
+  $call:
+  - fn
+  - [document, dynamic, selection]
+  - $call:
+    - let
+    - initial:
+        $call:
+        - add_hosts
+        - {}
+        - static
+        - $call:
+          - get
+          - {$ref: document}
+          - hosts
+      catalog:
+        $call:
+        - fold
+        - $call:
+          - fn
+          - [acc, entry]
+          - $call:
+            - add_hosts
+            - {$ref: acc}
+            - $call:
+              - get
+              - {$ref: entry}
+              - source
+            - $call:
+              - get
+              - {$ref: entry}
+              - hosts
+        - {$ref: initial}
+        - $call:
+          - validate_sources
+          - {$ref: dynamic}
+      groups:
+        $call:
+        - validate_groups
+        - $call:
+          - get
+          - {$ref: document}
+          - groups
+        - {$ref: catalog}
+      patched:
+        $call:
+        - fold
+        - $call:
+          - fn
+          - [acc, pair]
+          - $call:
+            - apply_override
+            - {$ref: acc}
+            - {$ref: groups}
+            - $call:
+              - get
+              - {$ref: pair}
+              - 1
+            - $call:
+              - get
+              - {$ref: pair}
+              - 0
+        - {$ref: catalog}
+        - $call:
+          - sequences.enumerate
+          - $call:
+            - get
+            - {$ref: document}
+            - overrides
+    - $call:
+      - dict
+      - version
+      - 1
+      - status
+      - ready
+      - targets
+      - $call:
+        - select_targets
+        - {$ref: patched}
+        - {$ref: groups}
+        - {$ref: selection}
+      - diagnostics
+      - []
+resolve:
+  $call:
+  - fn
+  - [input, dynamic, selectors]
+  - $call:
+    - try
+    - $call:
+      - resolve_checked
+      - $call:
+        - expect
+        - {$ref: input}
+        - {$ref: document}
+      - $call:
+        - expect
+        - {$ref: dynamic}
+        - {$ref: dynamic_input}
+      - $call:
+        - expect
+        - {$ref: selectors}
+        - {$ref: selection}
+    - $call:
+      - fn
+      - [error]
+      - $call:
+        - dict
+        - version
+        - 1
+        - status
+        - invalid
+        - targets
+        - []
+        - diagnostics
+        - $call:
+          - list
+          - {$ref: error}
+apply_override_checked:
+  $call:
+  - fn
+  - [catalog, override, ids, patch, index]
+  - $call:
+    - fold
+    - $call:
+      - fn
+      - [acc, id]
+      - $call:
+        - if
+        - $call:
+          - has
+          - {$ref: ids}
+          - {$ref: id}
+        - $call:
+          - let
+          - old:
+              $call:
+              - get
+              - {$ref: acc}
+              - {$ref: id}
+            resolved_connection:
+              $call:
+              - expect
+              - $call:
+                - maps.merge
+                - $call:
+                  - get
+                  - {$ref: old}
+                  - connection
+                - {$ref: patch}
+              - {$ref: connection}
+          - $call:
+            - set
+            - {$ref: acc}
+            - {$ref: id}
+            - $call:
+              - dict
+              - id
+              - {$ref: id}
+              - connection
+              - {$ref: resolved_connection}
+              - provenance
+              - $call:
+                - append
+                - $call:
+                  - get
+                  - {$ref: old}
+                  - provenance
+                - $call:
+                  - dict
+                  - source
+                  - $call:
+                    - get
+                    - {$ref: override}
+                    - source
+                  - connection
+                  - {$ref: patch}
+                  - index
+                  - {$ref: index}
+        - {$ref: acc}
+    - {$ref: catalog}
+    - $call:
+      - keys
+      - {$ref: catalog}
+sequences:
+  $call: [import, 'std:list']
