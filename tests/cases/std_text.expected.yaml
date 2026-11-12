@@ -1,0 +1,460 @@
+status: finished
+root:
+  t:
+    split:
+      ref: object0
+    join:
+      ref: object1
+  basic:
+    - "one"
+    - two
+    - three
+  empty_fields:
+    - ""
+    - a
+    - ""
+    - ""
+  empty_source:
+    - ""
+  no_match:
+    - "abc"
+  overlap:
+    - ""
+    - ""
+    - a
+  unicode:
+    - ""
+    - "é"
+    - "世界"
+    - ""
+  combining:
+    - "é"
+    - "é"
+  joined: "one::two::three"
+  empty_join: ""
+  single: hello
+  empty_separator: "🙂世界"
+  leading_empty: ":a:"
+  roundtrip: ~
+  empty_split_separator: range
+  wrong_source: type
+  wrong_separator: type
+  wrong_parts: type
+  wrong_element: type
+  wrong_empty_join_separator: type
+  wrong_arity: arity
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - - symbol: source
+          - symbol: string
+        - - symbol: separator
+          - symbol: string
+      - - symbol: if
+        - - symbol: eq
+          - - symbol: len
+            - symbol: separator
+          - 0
+        - - symbol: raise
+          - range
+          - split separator must not be empty
+        - - symbol: let
+          - width:
+              - symbol: len
+              - symbol: separator
+            size:
+              - symbol: len
+              - symbol: source
+            result:
+              - symbol: until
+              - - symbol: fn
+                - - symbol: state
+                - - symbol: gt
+                  - - symbol: get
+                    - symbol: state
+                    - index
+                  - - symbol: sub
+                    - symbol: size
+                    - symbol: width
+              - - symbol: fn
+                - - symbol: state
+                - - symbol: if
+                  - - symbol: eq
+                    - - symbol: slice
+                      - symbol: source
+                      - - symbol: get
+                        - symbol: state
+                        - index
+                      - - symbol: add
+                        - - symbol: get
+                          - symbol: state
+                          - index
+                        - symbol: width
+                    - symbol: separator
+                  - - symbol: dict
+                    - index
+                    - - symbol: add
+                      - - symbol: get
+                        - symbol: state
+                        - index
+                      - symbol: width
+                    - start
+                    - - symbol: add
+                      - - symbol: get
+                        - symbol: state
+                        - index
+                      - symbol: width
+                    - parts
+                    - - symbol: append
+                      - - symbol: get
+                        - symbol: state
+                        - parts
+                      - - symbol: slice
+                        - symbol: source
+                        - - symbol: get
+                          - symbol: state
+                          - start
+                        - - symbol: get
+                          - symbol: state
+                          - index
+                  - - symbol: set
+                    - symbol: state
+                    - index
+                    - - symbol: add
+                      - - symbol: get
+                        - symbol: state
+                        - index
+                      - 1
+              - index: 0
+                start: 0
+                parts: []
+          - - symbol: append
+            - - symbol: get
+              - symbol: result
+              - parts
+            - - symbol: slice
+              - symbol: source
+              - - symbol: get
+                - symbol: result
+                - start
+              - symbol: size
+      - - symbol: list_of
+        - symbol: string
+    location:
+      source: "std:text"
+      path:
+        - "split"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - - symbol: parts
+          - - symbol: list_of
+            - symbol: string
+        - - symbol: separator
+          - symbol: string
+      - - symbol: get
+        - - symbol: fold
+          - - symbol: fn
+            - - symbol: state
+              - symbol: part
+            - - symbol: dict
+              - text
+              - - symbol: concat
+                - - symbol: get
+                  - symbol: state
+                  - text
+                - - symbol: if
+                  - - symbol: get
+                    - symbol: state
+                    - first
+                  - ""
+                  - symbol: separator
+                - symbol: part
+              - first
+              - false
+          - text: ""
+            first: true
+          - symbol: parts
+        - text
+      - symbol: string
+    location:
+      source: "std:text"
+      path:
+        - "join"
+    environment: []
+    bindings: {}
+  object2:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          t:
+            - symbol: import
+            - symbol: "std:text"
+          basic:
+            - symbol: t.split
+            - "one::two::three"
+            - "::"
+          empty_fields:
+            - symbol: t.split
+            - "::a::::"
+            - "::"
+          empty_source:
+            - symbol: t.split
+            - ""
+            - ","
+          no_match:
+            - symbol: t.split
+            - abc
+            - abcd
+          overlap:
+            - symbol: t.split
+            - aaaaa
+            - aa
+          unicode:
+            - symbol: t.split
+            - "🙂é🙂世界🙂"
+            - "🙂"
+          combining:
+            - symbol: t.split
+            - "é/é"
+            - /
+          joined:
+            - symbol: t.join
+            - symbol: basic
+            - "::"
+          empty_join:
+            - symbol: t.join
+            - []
+            - "|"
+          single:
+            - symbol: t.join
+            - - "hello"
+            - "|"
+          empty_separator:
+            - symbol: t.join
+            - - "🙂"
+              - "世界"
+            - ""
+          leading_empty:
+            - symbol: t.join
+            - - ""
+              - a
+              - ""
+            - ":"
+          roundtrip:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: t.join
+                - symbol: empty_fields
+                - "::"
+              - "::a::::"
+          empty_split_separator:
+            - symbol: try
+            - - symbol: t.split
+              - abc
+              - ""
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_source:
+            - symbol: try
+            - - symbol: t.split
+              - []
+              - ","
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_separator:
+            - symbol: try
+            - - symbol: t.split
+              - abc
+              - 1
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_parts:
+            - symbol: try
+            - - symbol: t.join
+              - abc
+              - ","
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_element:
+            - symbol: try
+            - - symbol: t.join
+              - - "a"
+                - 1
+              - ","
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_empty_join_separator:
+            - symbol: try
+            - - symbol: t.join
+              - []
+              - ~
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+          wrong_arity:
+            - symbol: try
+            - - symbol: t.split
+              - abc
+            - - symbol: fn
+              - - symbol: e
+              - - symbol: get
+                - symbol: e
+                - kind
+      - source: "std:text"
+        code:
+          split:
+            - symbol: fn
+            - - - symbol: source
+                - symbol: string
+              - - symbol: separator
+                - symbol: string
+            - - symbol: if
+              - - symbol: eq
+                - - symbol: len
+                  - symbol: separator
+                - 0
+              - - symbol: raise
+                - range
+                - split separator must not be empty
+              - - symbol: let
+                - width:
+                    - symbol: len
+                    - symbol: separator
+                  size:
+                    - symbol: len
+                    - symbol: source
+                  result:
+                    - symbol: until
+                    - - symbol: fn
+                      - - symbol: state
+                      - - symbol: gt
+                        - - symbol: get
+                          - symbol: state
+                          - index
+                        - - symbol: sub
+                          - symbol: size
+                          - symbol: width
+                    - - symbol: fn
+                      - - symbol: state
+                      - - symbol: if
+                        - - symbol: eq
+                          - - symbol: slice
+                            - symbol: source
+                            - - symbol: get
+                              - symbol: state
+                              - index
+                            - - symbol: add
+                              - - symbol: get
+                                - symbol: state
+                                - index
+                              - symbol: width
+                          - symbol: separator
+                        - - symbol: dict
+                          - index
+                          - - symbol: add
+                            - - symbol: get
+                              - symbol: state
+                              - index
+                            - symbol: width
+                          - start
+                          - - symbol: add
+                            - - symbol: get
+                              - symbol: state
+                              - index
+                            - symbol: width
+                          - parts
+                          - - symbol: append
+                            - - symbol: get
+                              - symbol: state
+                              - parts
+                            - - symbol: slice
+                              - symbol: source
+                              - - symbol: get
+                                - symbol: state
+                                - start
+                              - - symbol: get
+                                - symbol: state
+                                - index
+                        - - symbol: set
+                          - symbol: state
+                          - index
+                          - - symbol: add
+                            - - symbol: get
+                              - symbol: state
+                              - index
+                            - 1
+                    - index: 0
+                      start: 0
+                      parts: []
+                - - symbol: append
+                  - - symbol: get
+                    - symbol: result
+                    - parts
+                  - - symbol: slice
+                    - symbol: source
+                    - - symbol: get
+                      - symbol: result
+                      - start
+                    - symbol: size
+            - - symbol: list_of
+              - symbol: string
+          join:
+            - symbol: fn
+            - - - symbol: parts
+                - - symbol: list_of
+                  - symbol: string
+              - - symbol: separator
+                - symbol: string
+            - - symbol: get
+              - - symbol: fold
+                - - symbol: fn
+                  - - symbol: state
+                    - symbol: part
+                  - - symbol: dict
+                    - text
+                    - - symbol: concat
+                      - - symbol: get
+                        - symbol: state
+                        - text
+                      - - symbol: if
+                        - - symbol: get
+                          - symbol: state
+                          - first
+                        - ""
+                        - symbol: separator
+                      - symbol: part
+                    - first
+                    - false
+                - text: ""
+                  first: true
+                - symbol: parts
+              - text
+            - symbol: string

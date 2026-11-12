@@ -1,7 +1,7 @@
 status: error
 error:
   kind: import
-  message: "unknown standard module `nope`; available: json, csv, set, stack, queue, yaml, math, list, group, map, types, test, machine"
+  message: "unknown standard module `nope`; available: dependency, text, diff, json, csv, set, stack, queue, yaml, math, list, group, map, types, test, machine"
   path: /a/1
   reference:
     - "a"
