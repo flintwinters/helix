@@ -1,5 +1,13 @@
 status: finished
 root:
+  project:
+    type: record
+    fields:
+      name: string
+      owner: string
+      dependencies:
+        type: list
+        of: string
   projects:
     - name: core
       owner: runtime
@@ -13,55 +21,130 @@ root:
         - "ghost"
     - owner: docs
       dependencies: []
-  validate:
+  name_of:
     ref: object0
+  validate:
+    ref: object1
   report:
     - name: core
       missing: []
       duplicate: false
       broken: []
+      violations: []
     - name: cli
       missing: []
       duplicate: true
       broken: []
+      violations: []
     - name: cli
       missing:
         - "owner"
       duplicate: true
       broken:
         - "ghost"
+      violations:
+        - at: /owner
+          message: "missing field `owner`"
     - name: ~
       missing:
         - "name"
       duplicate: false
       broken: []
+      violations:
+        - at: /name
+          message: "missing field `name`"
   valid:
     - name: core
       missing: []
       duplicate: false
       broken: []
+      violations: []
     - name: cli
       missing: []
       duplicate: false
       broken: []
+      violations: []
   empty: []
+  malformed:
+    - name: ~
+      missing: []
+      duplicate: false
+      broken:
+        - "ghost"
+      violations:
+        - at: /name
+          message: "expected string, got integer"
+        - at: /owner
+          message: "expected string, got boolean"
+        - at: /dependencies/1
+          message: "expected string, got integer"
+        - at: /dependencies/2
+          message: "expected string, got null"
+    - name: ok
+      missing: []
+      duplicate: false
+      broken: []
+      violations:
+        - at: /dependencies
+          message: "expected list of string, got null"
+    - name: ~
+      missing:
+        - "name"
+        - owner
+        - dependencies
+      duplicate: false
+      broken: []
+      violations:
+        - at: /
+          message: "expected record, got null"
+  nested_errors: ~
+  broken_survives: ~
+  duplicate_survives: ~
+  required_survives: ~
+  valid_clean: ~
 objects:
   object0:
     kind: function
     program:
-      ref: object1
+      ref: object2
     code:
       - symbol: fn
-      - - symbol: records
+      - - symbol: row
+      - - symbol: if
+        - - symbol: is
+          - symbol: row
+          - symbol: map
+        - - symbol: let
+          - name:
+              - symbol: get
+              - symbol: row
+              - name
+              - ~
+          - - symbol: if
+            - - symbol: is
+              - symbol: name
+              - symbol: string
+            - symbol: name
+            - ~
+        - ~
+    location:
+      source: "<root>"
+      path:
+        - "name_of"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object2
+    code:
+      - symbol: fn
+      - - - symbol: records
+          - symbol: list
       - - symbol: let
         - names:
             - symbol: map
-            - - symbol: fn
-              - - symbol: record
-              - - symbol: get
-                - symbol: record
-                - name
-                - ~
+            - symbol: name_of
             - symbol: records
           counts:
             - symbol: fold
@@ -86,36 +169,52 @@ objects:
             - symbol: names
         - - symbol: map
           - - symbol: fn
-            - - symbol: record
+            - - symbol: row
             - - symbol: let
-              - missing:
+              - value:
+                  - symbol: if
+                  - - symbol: is
+                    - symbol: row
+                    - symbol: map
+                  - symbol: row
+                  - {}
+                missing:
                   - symbol: filter
                   - - symbol: fn
                     - - symbol: field
                     - - symbol: not
                       - - symbol: has
-                        - symbol: record
+                        - symbol: value
                         - symbol: field
-                  - - "name"
-                    - owner
-                    - dependencies
+                  - - symbol: keys
+                    - - symbol: fields
+                      - symbol: project
                 name:
+                  - symbol: name_of
+                  - symbol: row
+                deps:
                   - symbol: get
-                  - symbol: record
-                  - name
-                  - ~
+                  - symbol: value
+                  - dependencies
+                  - []
                 broken:
-                  - symbol: filter
-                  - - symbol: fn
-                    - - symbol: dep
-                    - - symbol: not
-                      - - symbol: has
-                        - symbol: names
-                        - symbol: dep
-                  - - symbol: get
-                    - symbol: record
-                    - dependencies
-                    - []
+                  - symbol: if
+                  - - symbol: is
+                    - symbol: deps
+                    - symbol: list
+                  - - symbol: filter
+                    - - symbol: fn
+                      - - symbol: dep
+                      - - symbol: and
+                        - - symbol: is
+                          - symbol: dep
+                          - symbol: string
+                        - - symbol: not
+                          - - symbol: has
+                            - symbol: names
+                            - symbol: dep
+                    - symbol: deps
+                  - []
                 duplicate:
                   - symbol: and
                   - - symbol: ne
@@ -131,27 +230,51 @@ objects:
                 - - symbol: set
                   - - symbol: set
                     - - symbol: set
-                      - {}
-                      - name
-                      - symbol: name
-                    - missing
-                    - symbol: missing
-                  - duplicate
-                  - symbol: duplicate
-                - broken
-                - symbol: broken
+                      - - symbol: set
+                        - {}
+                        - name
+                        - symbol: name
+                      - missing
+                      - symbol: missing
+                    - duplicate
+                    - symbol: duplicate
+                  - broken
+                  - symbol: broken
+                - violations
+                - - symbol: violations
+                  - symbol: row
+                  - symbol: project
           - symbol: records
     location:
       source: "<root>"
       path:
         - "validate"
     environment: []
-    bindings: {}
-  object1:
+    bindings:
+      name_of:
+        code:
+          source: "<root>"
+          path:
+            - "name_of"
+      project:
+        code:
+          source: "<root>"
+          path:
+            - "project"
+  object2:
     kind: program
     sources:
       - source: "<root>"
         code:
+          project:
+            - symbol: record
+            - name
+            - symbol: string
+            - owner
+            - symbol: string
+            - dependencies
+            - - symbol: list_of
+              - symbol: string
           projects:
             - name:
                 symbol: core
@@ -171,18 +294,34 @@ objects:
             - owner:
                 symbol: docs
               dependencies: []
+          name_of:
+            - symbol: fn
+            - - symbol: row
+            - - symbol: if
+              - - symbol: is
+                - symbol: row
+                - symbol: map
+              - - symbol: let
+                - name:
+                    - symbol: get
+                    - symbol: row
+                    - name
+                    - ~
+                - - symbol: if
+                  - - symbol: is
+                    - symbol: name
+                    - symbol: string
+                  - symbol: name
+                  - ~
+              - ~
           validate:
             - symbol: fn
-            - - symbol: records
+            - - - symbol: records
+                - symbol: list
             - - symbol: let
               - names:
                   - symbol: map
-                  - - symbol: fn
-                    - - symbol: record
-                    - - symbol: get
-                      - symbol: record
-                      - name
-                      - ~
+                  - symbol: name_of
                   - symbol: records
                 counts:
                   - symbol: fold
@@ -207,36 +346,52 @@ objects:
                   - symbol: names
               - - symbol: map
                 - - symbol: fn
-                  - - symbol: record
+                  - - symbol: row
                   - - symbol: let
-                    - missing:
+                    - value:
+                        - symbol: if
+                        - - symbol: is
+                          - symbol: row
+                          - symbol: map
+                        - symbol: row
+                        - {}
+                      missing:
                         - symbol: filter
                         - - symbol: fn
                           - - symbol: field
                           - - symbol: not
                             - - symbol: has
-                              - symbol: record
+                              - symbol: value
                               - symbol: field
-                        - - "name"
-                          - owner
-                          - dependencies
+                        - - symbol: keys
+                          - - symbol: fields
+                            - symbol: project
                       name:
+                        - symbol: name_of
+                        - symbol: row
+                      deps:
                         - symbol: get
-                        - symbol: record
-                        - name
-                        - ~
+                        - symbol: value
+                        - dependencies
+                        - []
                       broken:
-                        - symbol: filter
-                        - - symbol: fn
-                          - - symbol: dep
-                          - - symbol: not
-                            - - symbol: has
-                              - symbol: names
-                              - symbol: dep
-                        - - symbol: get
-                          - symbol: record
-                          - dependencies
-                          - []
+                        - symbol: if
+                        - - symbol: is
+                          - symbol: deps
+                          - symbol: list
+                        - - symbol: filter
+                          - - symbol: fn
+                            - - symbol: dep
+                            - - symbol: and
+                              - - symbol: is
+                                - symbol: dep
+                                - symbol: string
+                              - - symbol: not
+                                - - symbol: has
+                                  - symbol: names
+                                  - symbol: dep
+                          - symbol: deps
+                        - []
                       duplicate:
                         - symbol: and
                         - - symbol: ne
@@ -252,15 +407,20 @@ objects:
                       - - symbol: set
                         - - symbol: set
                           - - symbol: set
-                            - {}
-                            - name
-                            - symbol: name
-                          - missing
-                          - symbol: missing
-                        - duplicate
-                        - symbol: duplicate
-                      - broken
-                      - symbol: broken
+                            - - symbol: set
+                              - {}
+                              - name
+                              - symbol: name
+                            - missing
+                            - symbol: missing
+                          - duplicate
+                          - symbol: duplicate
+                        - broken
+                        - symbol: broken
+                      - violations
+                      - - symbol: violations
+                        - symbol: row
+                        - symbol: project
                 - symbol: records
           report:
             - symbol: validate
@@ -281,3 +441,68 @@ objects:
           empty:
             - symbol: validate
             - []
+          malformed:
+            - symbol: validate
+            - - name: 9
+                owner: false
+                dependencies:
+                  - "ghost"
+                  - 7
+                  - ~
+              - name: ok
+                owner: tools
+                dependencies: ~
+              - ~
+          nested_errors:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: get
+                - - symbol: get
+                  - symbol: malformed
+                  - 0
+                - violations
+              - - at: /name
+                  message: "expected string, got integer"
+                - at: /owner
+                  message: "expected string, got boolean"
+                - at: /dependencies/1
+                  message: "expected string, got integer"
+                - at: /dependencies/2
+                  message: "expected string, got null"
+          broken_survives:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: get
+                - - symbol: get
+                  - symbol: malformed
+                  - 0
+                - broken
+              - - "ghost"
+          duplicate_survives:
+            - symbol: assert
+            - - symbol: get
+              - - symbol: get
+                - symbol: report
+                - 2
+              - duplicate
+          required_survives:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: get
+                - - symbol: get
+                  - symbol: report
+                  - 2
+                - missing
+              - - "owner"
+          valid_clean:
+            - symbol: assert
+            - - symbol: eq
+              - - symbol: map
+                - - symbol: fn
+                  - - symbol: row
+                  - - symbol: get
+                    - symbol: row
+                    - violations
+                - symbol: valid
+              - - []
+                - []
