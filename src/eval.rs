@@ -405,6 +405,11 @@ impl Evaluator {
                 Some(root) => self.eval(root),
                 None => Err(self.err(id, "import", "an import must be a literal `[import, SPEC]` in the program or a module it imports".into())),
             },
+            "finally" => {
+                let result = self.value_arg(args[0]);
+                self.value_arg(args[1])?;
+                result
+            }
             "try" => match self.value_arg(args[0]) {
                 Ok(value) => Ok(value),
                 Err(error) => self.call_arg(args[1], vec![error.to_yaml()]),

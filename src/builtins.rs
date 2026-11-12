@@ -34,7 +34,7 @@ const ARITIES: &[(&str, usize, Option<usize>)] = &[
     ("violations", 2, Some(2)), ("expect", 2, Some(2)), ("subtype", 2, Some(2)), ("secret", 1, Some(1)),
     ("class", 2, Some(3)), ("extend", 4, Some(4)), ("inherit", 3, Some(3)), ("realize", 1, Some(1)), ("parents", 1, Some(1)),
     ("drift", 2, Some(2)), ("converge", 2, Some(2)),
-    ("import", 1, Some(1)), ("assert", 1, Some(2)), ("raise", 1, Some(3)), ("try", 2, Some(2)),
+    ("import", 1, Some(1)), ("assert", 1, Some(2)), ("raise", 1, Some(3)), ("try", 2, Some(2)), ("finally", 2, Some(2)),
 ];
 
 /// `(minimum, maximum)` argument counts; `None` overall means not a builtin.
@@ -44,7 +44,7 @@ pub fn arity(actor: &str) -> Option<(usize, Option<usize>)> {
 
 /// Forms decide which arguments to evaluate (or call user functions), so the evaluator drives them.
 pub fn is_form(actor: &str) -> bool {
-    matches!(actor, "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until" | "try" | "refine" | "import")
+    matches!(actor, "if" | "and" | "or" | "cond" | "let" | "fn" | "map" | "filter" | "fold" | "each" | "until" | "try" | "finally" | "refine" | "import")
 }
 
 /// Apply a strict (eagerly evaluated) builtin.

@@ -1,0 +1,9 @@
+# Cleanup runs on both outcomes, and its failure takes precedence.
+success: [finally, [add, 2, 3], [assert, true]]
+original_error: [try, [finally, [raise, "original", "body failed", {step: 2}], null], [fn, [e], e]]
+cleanup_after_success: [try, [finally, 42, [raise, "cleanup", "cleanup ran"]], [fn, [e], e]]
+cleanup_after_failure: [try, [finally, [raise, "original", "body failed"], [raise, "cleanup", "cleanup ran"]], [fn, [e], e]]
+cleanup_value_ignored: [finally, null, 99]
+function: [fn, [n], [finally, [div, 12, n], [assert, [ne, n, -1], "cleanup rejected argument"]]]
+calls: [map, [fn, [n], [try, [function, n], [fn, [e], [get, e, "kind"]]]], [2, 0, -1, 3]]
+nested: [try, [finally, [finally, 1, [raise, "inner", "inner cleanup"]], [raise, "outer", "outer cleanup"]], [fn, [e], [get, e, "kind"]]]

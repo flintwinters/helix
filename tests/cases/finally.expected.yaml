@@ -1,0 +1,42 @@
+status: finished
+root:
+  success: 5
+  original_error:
+    kind: original
+    message: body failed
+    path: /original_error/1/1
+    line: 3
+    column: 33
+    data:
+      step: 2
+  cleanup_after_success:
+    kind: cleanup
+    message: cleanup ran
+    path: /cleanup_after_success/1/2
+    line: 4
+    column: 44
+  cleanup_after_failure:
+    kind: cleanup
+    message: cleanup ran
+    path: /cleanup_after_failure/1/2
+    line: 5
+    column: 76
+  cleanup_value_ignored: ~
+  function:
+    - fn
+    - - n
+    - - finally
+      - - div
+        - 12
+        - n
+      - - assert
+        - - ne
+          - n
+          - -1
+        - "cleanup rejected argument"
+  calls:
+    - 6
+    - divide_by_zero
+    - assertion
+    - 4
+  nested: outer

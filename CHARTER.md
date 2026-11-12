@@ -111,7 +111,7 @@ A daily driver has to do things.
 - [x] `raise`: user code raises its own error with a user-chosen `kind`, message and data payload
 - [ ] Re-raise from a handler, preserving the original error as a `cause` chain
 - [x] Match handlers on error `kind`, so an unexpected kind is not swallowed
-- [ ] `finally` / cleanup that runs on both success and failure (needed before effects)
+- [x] `finally` / cleanup that runs on both success and failure (needed before effects)
 - [x] Errors are values in the saved state: a caught error stays readable in `root`, and the state diff shows it appear
 - [x] Validation can collect every problem in one run instead of stopping at the first
 
