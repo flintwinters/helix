@@ -25,7 +25,6 @@ pub const COMMANDS: &[&str] = &[
     "schema",
     "lsp",
     "completion",
-    "perform",
 ];
 
 const REPL_HELP: &str = "Enter one YAML program per line. Each program has its own lexical scope.\n:begin starts a multiline program; :end evaluates it; :cancel discards it.\n:help shows this help; :quit exits. Results are YAML state documents.";
@@ -133,7 +132,15 @@ pub fn watch(path: &str, interval_ms: u64, iterations: Option<usize>) -> ExitCod
                 continue;
             }
         }
-        let source = std::fs::read_to_string(path);
+        let bytes = std::fs::read(path);
+        let source = bytes
+            .as_ref()
+            .map_err(|error| error.to_string())
+            .and_then(|bytes| {
+                std::str::from_utf8(bytes)
+                    .map(str::to_owned)
+                    .map_err(|error| error.to_string())
+            });
         let dependencies = source.as_ref().map_or_else(
             |_| vec![path.to_path_buf()],
             |source| crate::link::dependencies(source, path),
@@ -141,10 +148,7 @@ pub fn watch(path: &str, interval_ms: u64, iterations: Option<usize>) -> ExitCod
         let mut observed = snapshot(dependencies);
         // Keep the root bytes actually evaluated: a save between read and snapshot must
         // trigger another run, rather than silently recording an unevaluated version.
-        observed.insert(
-            path.to_path_buf(),
-            source.as_ref().ok().map(|text| text.as_bytes().to_vec()),
-        );
+        observed.insert(path.to_path_buf(), bytes.ok());
         previous = Some(observed);
         let status = match source {
             Ok(source) => {

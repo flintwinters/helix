@@ -41,9 +41,10 @@ def verify_watch(ctx):
     main.write_text('[import, middle.yaml]\n')
     middle.write_text('[import, leaf.yaml]\n')
     leaf.write_text('1\n')
-    process = subprocess.Popen([str(ctx.binary), 'watch', str(main), '--interval-ms', '20', '--iterations', '5'],
+    process = subprocess.Popen([str(ctx.binary), 'watch', str(main), '--interval-ms', '20', '--iterations', '7'],
                                cwd=ctx.root, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     documents = queue.Queue()
+    errors = queue.Queue()
 
     def read_documents():
         lines = []
@@ -54,7 +55,9 @@ def verify_watch(ctx):
                 lines = []
 
     reader = threading.Thread(target=read_documents, daemon=True)
+    error_reader = threading.Thread(target=lambda: [errors.put(line) for line in process.stderr], daemon=True)
     reader.start()
+    error_reader.start()
     try:
         assert documents.get(timeout=ctx.timeout)['root'] == 1
         # Same-byte rewrites do not rerun; mtime alone is not a source change.
@@ -76,12 +79,23 @@ def verify_watch(ctx):
         alternate.write_text('4\n')
         middle.write_text('[import, alternate.yaml]\n')
         assert documents.get(timeout=ctx.timeout)['root'] == 4
-        assert process.wait(timeout=ctx.timeout) == 0, process.stderr.read()
+        main.write_bytes(b'\xff')
+        assert 'cannot read' in errors.get(timeout=ctx.timeout)
+        try:
+            repeated = errors.get(timeout=0.15)
+        except queue.Empty:
+            pass
+        else:
+            raise AssertionError(f'unchanged invalid UTF-8 reran: {repeated}')
+        main.write_text('5\n')
+        assert documents.get(timeout=ctx.timeout)['root'] == 5
+        assert process.wait(timeout=ctx.timeout) == 0
     finally:
         if process.poll() is None:
             process.kill()
         process.communicate(timeout=ctx.timeout)
         reader.join(timeout=ctx.timeout)
+        error_reader.join(timeout=ctx.timeout)
     for args in [('watch', '-'), ('watch', str(main), '--iterations', '0'),
                  ('watch', str(main), '--interval-ms', '0'), ('watch', str(main), '--iterations', 'bad')]:
         assert ctx.helix(*args).returncode == 2, args
