@@ -18,13 +18,13 @@ def verify(h):
             cwd=h.root, input="", capture_output=True, text=True, timeout=120,
         )
 
-    for source, code in [("[add, 20, 22]", 0), ("[div, 1, 0]", 1), ("[", 1)]:
+    for source, code in [('{"$call": ["add", 20, 22]}', 0), ('{"$call": ["div", 1, 0]}', 1), ("[", 1)]:
         inline = invoke("eval", source)
         direct = h.helix("run", "-", stdin=source)
         assert inline.returncode == direct.returncode == code
         assert inline.stdout == direct.stdout and not inline.stderr
-    assert yaml.safe_load(invoke("eval", "[add, 20, 22]").stdout)["root"] == 42
-    source = "a: [add, missing, 1]\nb: [div, 1, 0]"
+    assert yaml.safe_load(invoke("eval", '{"$call": ["add", 20, 22]}').stdout)["root"] == 42
+    source = '{"a": {"$call": ["add", {"$ref": "missing"}, 1]}, "b": {"$call": ["div", 1, 0]}}'
     checked = invoke("eval", "--check", source)
     direct = h.helix("check", "--evaluate", "-", stdin=source)
     assert checked.returncode == direct.returncode == 1
@@ -117,7 +117,7 @@ def verify(h):
         extra = {"run": ["-"], "check": ["-"], "recover": ["-"], "resume": ["-"],
                  "fmt": ["-"], "step": ["-"], "trace": ["-"], "watch": ["example.yaml"],
                  "state": ["-"], "completion": ["bash"], "sandbox": ["-", "-"], "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
-                 "lint": ["--format=text"], "test": ["--suite", "cli"]}.get(name, [])
+                 "lint": ["--format=text"], "test": ["--suite", "cli"], "migrate-syntax": ["tests/cases"]}.get(name, [])
         short, full = parse([name, *extra]), parse([*path, *extra])
         assert {k: v for k, v in vars(short).items() if k != "help_parser"} == {
             k: v for k, v in vars(full).items() if k != "help_parser"
