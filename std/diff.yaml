@@ -1,0 +1,14 @@
+# Shallow configuration comparison; nested values are compared structurally as units.
+# Added keys follow new-map order; removed and changed keys follow old-map order.
+# Presence is checked separately from values: missing is distinct from null.
+# Immutable list copies and key lookups can be quadratic for large inputs.
+# Bounded map/filter iteration applies; intended for small configuration maps.
+compare:
+  - fn
+  - [[old, map], [new, map]]
+  - - let
+    - added: [filter, [fn, [key], [not, [has, old, key]]], [keys, new]]
+      removed: [filter, [fn, [key], [not, [has, new, key]]], [keys, old]]
+      changed: [filter, [fn, [key], [and, [has, new, key], [ne, [get, old, key], [get, new, key]]]], [keys, old]]
+    - [dict, "added", added, "removed", removed, "changed", [map, [fn, [key], [dict, "key", key, "before", [get, old, key], "after", [get, new, key]]], changed]]
+  - map

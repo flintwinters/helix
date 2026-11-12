@@ -18,8 +18,9 @@ root:
       timeout: 60
     added_null: ~
     empty: 0
-  compare:
-    ref: object0
+  diff:
+    compare:
+      ref: object0
   report:
     added:
       - "added_null"
@@ -52,8 +53,10 @@ objects:
       ref: object1
     code:
       - symbol: fn
-      - - symbol: old
-        - symbol: new
+      - - - symbol: old
+          - symbol: map
+        - - symbol: new
+          - symbol: map
       - - symbol: let
         - added:
             - symbol: filter
@@ -92,35 +95,30 @@ objects:
                     - symbol: key
             - - symbol: keys
               - symbol: old
-        - - symbol: set
-          - - symbol: set
-            - - symbol: set
-              - {}
-              - added
-              - symbol: added
-            - removed
-            - symbol: removed
+        - - symbol: dict
+          - added
+          - symbol: added
+          - removed
+          - symbol: removed
           - changed
           - - symbol: map
             - - symbol: fn
               - - symbol: key
-              - - symbol: set
-                - - symbol: set
-                  - - symbol: set
-                    - {}
-                    - key
-                    - symbol: key
-                  - before
-                  - - symbol: get
-                    - symbol: old
-                    - symbol: key
+              - - symbol: dict
+                - key
+                - symbol: key
+                - before
+                - - symbol: get
+                  - symbol: old
+                  - symbol: key
                 - after
                 - - symbol: get
                   - symbol: new
                   - symbol: key
             - symbol: changed
+      - symbol: map
     location:
-      source: "<root>"
+      source: "std:diff"
       path:
         - "compare"
     environment: []
@@ -148,10 +146,29 @@ objects:
               timeout: 60
             added_null: ~
             empty: 0
+          diff:
+            - symbol: import
+            - symbol: "std:diff"
+          report:
+            - symbol: diff.compare
+            - symbol: before
+            - symbol: after
+          unchanged:
+            - symbol: diff.compare
+            - symbol: before
+            - symbol: before
+          empty:
+            - symbol: diff.compare
+            - {}
+            - {}
+      - source: "std:diff"
+        code:
           compare:
             - symbol: fn
-            - - symbol: old
-              - symbol: new
+            - - - symbol: old
+                - symbol: map
+              - - symbol: new
+                - symbol: map
             - - symbol: let
               - added:
                   - symbol: filter
@@ -190,42 +207,25 @@ objects:
                           - symbol: key
                   - - symbol: keys
                     - symbol: old
-              - - symbol: set
-                - - symbol: set
-                  - - symbol: set
-                    - {}
-                    - added
-                    - symbol: added
-                  - removed
-                  - symbol: removed
+              - - symbol: dict
+                - added
+                - symbol: added
+                - removed
+                - symbol: removed
                 - changed
                 - - symbol: map
                   - - symbol: fn
                     - - symbol: key
-                    - - symbol: set
-                      - - symbol: set
-                        - - symbol: set
-                          - {}
-                          - key
-                          - symbol: key
-                        - before
-                        - - symbol: get
-                          - symbol: old
-                          - symbol: key
+                    - - symbol: dict
+                      - key
+                      - symbol: key
+                      - before
+                      - - symbol: get
+                        - symbol: old
+                        - symbol: key
                       - after
                       - - symbol: get
                         - symbol: new
                         - symbol: key
                   - symbol: changed
-          report:
-            - symbol: compare
-            - symbol: before
-            - symbol: after
-          unchanged:
-            - symbol: compare
-            - symbol: before
-            - symbol: before
-          empty:
-            - symbol: compare
-            - {}
-            - {}
+            - symbol: map

@@ -1,0 +1,15 @@
+d: [import, std:diff]
+t: [import, std:test]
+empty: [t.equal, [d.compare, {}, {}], {added: [], removed: [], changed: []}]
+old: {z: null, gone: null, "": false, nested: {x: 1}, same: [null, false, 0]}
+new: {"": 0, "🙂": null, nested: {x: 2}, z: null, same: [null, false, 0], a: false}
+report: [d.compare, old, new]
+ordered: [t.equal, report, {added: ["🙂", "a"], removed: ["gone"], changed: [{key: "", before: false, after: 0}, {key: "nested", before: {x: 1}, after: {x: 2}}]}]
+identity: [t.equal, [d.compare, old, old], {added: [], removed: [], changed: []}]
+add_null: [t.equal, [d.compare, {}, {n: null}], {added: ["n"], removed: [], changed: []}]
+remove_null: [t.equal, [d.compare, {n: null}, {}], {added: [], removed: ["n"], changed: []}]
+numeric_equality: [t.equal, [d.compare, {n: 1}, {n: 1.0}], {added: [], removed: [], changed: []}]
+reordered: [t.equal, [d.compare, {a: 1, b: 2}, {b: 2, a: 1}], {added: [], removed: [], changed: []}]
+wrong_old: [try, [d.compare, [], {}], [fn, [e], [get, e, "kind"]]]
+wrong_new: [try, [d.compare, {}, null], [fn, [e], [get, e, "kind"]]]
+wrong_arity: [try, [d.compare, {}], [fn, [e], [get, e, "kind"]]]
