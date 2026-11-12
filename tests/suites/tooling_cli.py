@@ -87,6 +87,13 @@ def verify(h):
     text_error = invoke("--format=text", "runtime", "unknown")
     assert text_error.returncode == 2 and "error:" in text_error.stderr
     assert json.loads(unmatched.stderr)["error"]["kind"] == "selection"
+    missing_cargo = subprocess.run(
+        [sys.executable, str(h.root / "manage.py"), "build"], cwd=h.root,
+        env={**os.environ, "PATH": ""}, capture_output=True, text=True, timeout=10,
+    )
+    assert missing_cargo.returncode == 2 and not missing_cargo.stderr
+    build_error = json.loads(missing_cargo.stdout)
+    assert build_error["exit_code"] == 2 and build_error["status"] == "failed"
     for args in [("test", "--suite", "startup"), ("build",), ("std",)]:
         result = invoke(*args)
         report = json.loads(result.stdout)
@@ -113,5 +120,6 @@ def verify(h):
             k: v for k, v in vars(full).items() if k != "help_parser"
         }, name
     assert parse(["cli", "--", "--help"]).extra == ["--help"]
+    assert parse(["--format=text", "cli", "--", "--format=json"]).extra == ["--format=json"]
     with contextlib.redirect_stdout(io.StringIO()):
         assert parse(["lint", "--help"]) is None

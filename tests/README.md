@@ -16,6 +16,14 @@ input; typos fail before building. Filters require explicit golden/robustness
 suite selection and also restrict `--bless` to the selected golden expectations.
 Selected cases retain discovery order and use the existing `--jobs` workers.
 
+Test runs emit one JSON document on stdout, with `version`, `status`, `exit_code`,
+`failure_count`, and a `results` array. Each result identifies its suite, status,
+failures, and captured diagnostics. Golden/robustness results also record selected
+case counts and worker counts. Failure messages retain replay commands and artifact
+paths. Suite discovery is JSON too; request the old line-oriented list or readable
+reports with `./manage.py --format=text test ...`. Usage/selection errors emit JSON
+on stderr and exit 2. Compilation failures report the build phase before tests run.
+
 ## Test execution context
 
 `manage.py` builds and snapshots the interpreter before running contracts.

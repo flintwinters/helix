@@ -115,12 +115,21 @@ unfinished fields after an error, but cannot restore active calls or iterations.
 `./manage.py` is the project tooling entrypoint. Run it without arguments to
 browse commands, or append `--help` at any level.
 
+Project help, suite/module discovery, builds, and test reports default to versioned
+JSON. Test reports contain per-suite status, failure arrays, and captured diagnostics;
+usage errors are JSON on stderr with exit code 2. Use `./manage.py --format=text`
+before a command for readable project reports. `--help-json` remains an alias for
+the full JSON command catalog. Language execution, module source, inventory, and
+forwarded tools keep their own output contracts (YAML, raw pipeline data, or the
+tool's chosen format).
+
 ```sh
 python3 -m pip install PyYAML                # needed for tests and inventory
 ./manage.py test --describe                 # available suites and what they check
 ./manage.py test --suite golden --suite cli # a focused test run
 ./manage.py test                            # all suites
-./manage.py lint --format=text
+./manage.py lint                            # JSON lint report
+./manage.py --format=text test --suite golden # explicit readable test report
 ```
 
 Lint uses the [hyperlinter](https://github.com/flintwinters/hyperlinter) submodule

@@ -8,6 +8,7 @@ from tooling.test_reports import failure
 
 
 def verify(h):
+    verify_structured_results(h)
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="reports-") as temporary:
         root = Path(temporary)
         case = root / "tests" / "check" / "with spaces.yaml"
@@ -34,3 +35,34 @@ def verify(h):
         assert "diff truncated" in report
         assert len(report.splitlines()) < 150
         assert case.read_text() == "original"
+
+
+def verify_structured_results(h):
+    import contextlib
+    import io
+    import json
+    from unittest.mock import patch
+
+    from tests.suites import contracts
+
+    def failing(name, context):
+        print("diagnostic with unicode: 雪")
+        return ["intentional failure"]
+
+    stdout, stderr = io.StringIO(), io.StringIO()
+    with patch.object(contracts, "run", side_effect=failing), \
+         contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+        assert h.regression(False, ["startup"]) == 1
+    report = json.loads(stdout.getvalue())
+    assert not stderr.getvalue()
+    assert report["version"] == 1 and report["exit_code"] == report["failure_count"] == 1
+    assert report["status"] == "failed"
+    result = report["results"][0]
+    assert result["suite"] == "startup" and result["failures"] == ["intentional failure"]
+    assert "雪" in result["stdout"]
+
+    stdout = io.StringIO()
+    with patch.object(contracts, "run", side_effect=RuntimeError("unexpected crash")), \
+         contextlib.redirect_stdout(stdout):
+        assert h.regression(False, ["startup"]) == 1
+    assert "unexpected crash" in json.loads(stdout.getvalue())["results"][0]["failures"][0]
