@@ -15,7 +15,9 @@ MUTATIONS = [
     ("arithmetic", "src/builtins/number.rs", '"add" => acc.checked_add(x)',
      '"add" => acc.checked_sub(x)', "generated"),
     ("source-blame", "src/graph.rs", 'col: m.col() + 1', 'col: m.col() + 2', "parser"),
-    ("serialization", "src/emit.rs", 'Self::value(v, i == 0)', 'Self::value(v, false)', "golden"),
+    ("serialization", "src/emit.rs", r"""'\n' => quoted.push_str("\\n")""",
+     r"""'\n' => quoted.push_str(" ")""", "golden"),
+    ("call-syntax", "src/graph/syntax.rs", '"$call" =>', '"$ca11" =>', "yaml_model"),
 ]
 
 
