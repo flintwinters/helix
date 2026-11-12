@@ -1,0 +1,1139 @@
+status: finished
+root:
+  yaml:
+    parse:
+      - fn
+      - - - source
+          - string
+      - - yaml_parse
+        - source
+    dump:
+      - fn
+      - - value
+      - - yaml_dump
+        - value
+      - string
+    valid:
+      - fn
+      - - - source
+          - string
+      - - try
+        - - let
+          - value:
+              - yaml_parse
+              - source
+          - - eq
+            - value
+            - value
+        - - fn
+          - - error
+          - false
+      - boolean
+    get_in:
+      - fn
+      - - value
+        - - path
+          - list
+      - - fold
+        - - fn
+          - - current
+            - key
+          - - get
+            - current
+            - key
+        - value
+        - path
+    set_in:
+      - fn
+      - - value
+        - - path
+          - list
+        - replacement
+      - - if
+        - - eq
+          - - len
+            - path
+          - 0
+        - replacement
+        - - let
+          - key:
+              - get
+              - path
+              - 0
+            tail:
+              - slice
+              - path
+              - 1
+              - - len
+                - path
+          - - set
+            - value
+            - key
+            - - if
+              - - eq
+                - - len
+                  - tail
+                - 0
+              - replacement
+              - - set_in
+                - - get
+                  - value
+                  - key
+                - tail
+                - replacement
+  l:
+    math:
+      number:
+        type: union
+        of:
+          - "integer"
+          - float
+      abs:
+        - fn
+        - - - n
+            - number
+        - - if
+          - - lt
+            - n
+            - 0
+          - - neg
+            - n
+          - n
+        - number
+      sign:
+        - fn
+        - - - n
+            - number
+        - - cond
+          - - lt
+            - n
+            - 0
+          - -1
+          - - gt
+            - n
+            - 0
+          - 1
+          - 0
+        - integer
+      min:
+        - fn
+        - - - a
+            - number
+          - - b
+            - number
+        - - if
+          - - lt
+            - a
+            - b
+          - a
+          - b
+        - number
+      max:
+        - fn
+        - - - a
+            - number
+          - - b
+            - number
+        - - if
+          - - gt
+            - a
+            - b
+          - a
+          - b
+        - number
+      clamp:
+        - fn
+        - - - n
+            - number
+          - - lo
+            - number
+          - - hi
+            - number
+        - - max
+          - lo
+          - - min
+            - n
+            - hi
+        - number
+      square:
+        - fn
+        - - - n
+            - number
+        - - mul
+          - n
+          - n
+        - number
+    numbers:
+      type: list
+      of:
+        type: union
+        of:
+          - "integer"
+          - float
+    sum:
+      - fn
+      - - - xs
+          - numbers
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - add
+            - acc
+            - x
+        - 0
+        - xs
+      - math.number
+    product:
+      - fn
+      - - - xs
+          - numbers
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - mul
+            - acc
+            - x
+        - 1
+        - xs
+      - math.number
+    reverse:
+      - fn
+      - - - xs
+          - list
+      - - fold
+        - - fn
+          - - acc
+            - x
+          - - concat
+            - - list
+              - x
+            - acc
+        - - list
+        - xs
+      - list
+    range:
+      - fn
+      - - - n
+          - integer
+      - - let
+        - done:
+            - fn
+            - - xs
+            - - ge
+              - - len
+                - xs
+              - n
+          step:
+            - fn
+            - - xs
+            - - append
+              - xs
+              - - len
+                - xs
+        - - until
+          - done
+          - step
+          - - list
+      - - list_of
+        - integer
+    unique:
+      - fn
+      - - - xs
+          - list
+      - - fold
+        - - fn
+          - - seen
+            - item
+          - - if
+            - - has
+              - seen
+              - item
+            - seen
+            - - append
+              - seen
+              - item
+        - []
+        - xs
+      - list
+    sort_by:
+      - fn
+      - - - xs
+          - list
+        - - before
+          - function
+      - - fold
+        - - fn
+          - - ordered
+            - item
+          - - let
+            - position:
+                - until
+                - - fn
+                  - - index
+                  - - or
+                    - - ge
+                      - index
+                      - - len
+                        - ordered
+                    - - before
+                      - item
+                      - - get
+                        - ordered
+                        - index
+                - - fn
+                  - - index
+                  - - add
+                    - index
+                    - 1
+                - 0
+            - - concat
+              - - slice
+                - ordered
+                - 0
+                - position
+              - - list
+                - item
+              - - slice
+                - ordered
+                - position
+                - - len
+                  - ordered
+        - []
+        - xs
+      - list
+    first:
+      - fn
+      - - - xs
+          - list
+        - fallback
+      - - get
+        - xs
+        - 0
+        - fallback
+    last:
+      - fn
+      - - - xs
+          - list
+        - fallback
+      - - if
+        - - eq
+          - - len
+            - xs
+          - 0
+        - fallback
+        - - get
+          - xs
+          - - sub
+            - - len
+              - xs
+            - 1
+    take:
+      - fn
+      - - - xs
+          - list
+        - - n
+          - integer
+      - - if
+        - - lt
+          - n
+          - 0
+        - - raise
+          - "range"
+          - "take count must be non-negative"
+        - - slice
+          - xs
+          - 0
+          - - math.min
+            - n
+            - - len
+              - xs
+      - list
+    drop:
+      - fn
+      - - - xs
+          - list
+        - - n
+          - integer
+      - - if
+        - - lt
+          - n
+          - 0
+        - - raise
+          - "range"
+          - "drop count must be non-negative"
+        - - slice
+          - xs
+          - - math.min
+            - n
+            - - len
+              - xs
+          - - len
+            - xs
+      - list
+    enumerate:
+      - fn
+      - - - xs
+          - list
+      - - map
+        - - fn
+          - - i
+          - - list
+            - i
+            - - get
+              - xs
+              - i
+        - - range
+          - - len
+            - xs
+      - list
+    zip:
+      - fn
+      - - - xs
+          - list
+        - - ys
+          - list
+      - - map
+        - - fn
+          - - i
+          - - list
+            - - get
+              - xs
+              - i
+            - - get
+              - ys
+              - i
+        - - range
+          - - math.min
+            - - len
+              - xs
+            - - len
+              - ys
+      - list
+    flatten:
+      - fn
+      - - - xss
+          - - list_of
+            - list
+      - - fold
+        - - fn
+          - - acc
+            - xs
+          - - concat
+            - acc
+            - xs
+        - []
+        - xss
+      - list
+    flat_map:
+      - fn
+      - - - xs
+          - list
+        - - transform
+          - function
+      - - flatten
+        - - map
+          - transform
+          - xs
+      - list
+    find_index:
+      - fn
+      - - - xs
+          - list
+        - - predicate
+          - function
+      - - let
+        - position:
+            - until
+            - - fn
+              - - i
+              - - or
+                - - ge
+                  - i
+                  - - len
+                    - xs
+                - - predicate
+                  - - get
+                    - xs
+                    - i
+            - - fn
+              - - i
+              - - add
+                - i
+                - 1
+            - 0
+        - - if
+          - - lt
+            - position
+            - - len
+              - xs
+          - position
+          - -1
+      - integer
+    find:
+      - fn
+      - - - xs
+          - list
+        - - predicate
+          - function
+        - fallback
+      - - let
+        - i:
+            - find_index
+            - xs
+            - predicate
+        - - if
+          - - lt
+            - i
+            - 0
+          - fallback
+          - - get
+            - xs
+            - i
+    any:
+      - fn
+      - - - xs
+          - list
+        - - predicate
+          - function
+      - - ge
+        - - find_index
+          - xs
+          - predicate
+        - 0
+      - boolean
+    all:
+      - fn
+      - - - xs
+          - list
+        - - predicate
+          - function
+      - - lt
+        - - find_index
+          - xs
+          - - fn
+            - - x
+            - - not
+              - - predicate
+                - x
+        - 0
+      - boolean
+    count:
+      - fn
+      - - - xs
+          - list
+        - - predicate
+          - function
+      - - len
+        - - filter
+          - predicate
+          - xs
+      - integer
+    partition:
+      - fn
+      - - - xs
+          - list
+        - - predicate
+          - function
+      - - fold
+        - - fn
+          - - parts
+            - x
+          - - let
+            - side:
+                - if
+                - - predicate
+                  - x
+                - 0
+                - 1
+            - - set
+              - parts
+              - side
+              - - append
+                - - get
+                  - parts
+                  - side
+                - x
+        - - []
+          - []
+        - xs
+      - list
+    grouping:
+      by:
+        - fn
+        - - - xs
+            - list
+          - - key
+            - function
+        - - fold
+          - - fn
+            - - groups
+              - item
+            - - let
+              - name:
+                  - key
+                  - item
+              - - set
+                - groups
+                - name
+                - - append
+                  - - get
+                    - groups
+                    - name
+                    - []
+                  - item
+          - {}
+          - xs
+        - map
+    group_by:
+      - fn
+      - - - xs
+          - list
+        - - key_for
+          - function
+      - - grouping.by
+        - xs
+        - key_for
+      - map
+    frequencies:
+      - fn
+      - - - xs
+          - - list_of
+            - string
+      - - fold
+        - - fn
+          - - counts
+            - x
+          - - set
+            - counts
+            - x
+            - - add
+              - - get
+                - counts
+                - x
+                - 0
+              - 1
+        - {}
+        - xs
+      - map
+    sort:
+      - fn
+      - - - xs
+          - list
+      - - sort_by
+        - xs
+        - - fn
+          - - a
+            - b
+          - - lt
+            - a
+            - b
+      - list
+  rows:
+    - "{name: core, stock: 3}"
+    - "{name: broken"
+    - "{name: debt, stock: -2}"
+    - "{stock: 1}"
+    - "{name: cli, stock: 2}"
+  validate:
+    - fn
+    - - row
+    - - let
+      - name:
+          - get
+          - row
+          - "name"
+        stock:
+          - get
+          - row
+          - "stock"
+      - - if
+        - - eq
+          - - assert
+            - - ge
+              - stock
+              - 0
+            - "stock must be nonnegative"
+          - ~
+        - name
+        - ~
+  batch:
+    - "core"
+    - row: 1
+      source: "{name: broken"
+      error:
+        kind: parse
+        message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
+        file: "std:yaml"
+        path: /parse/2/1
+        line: 2
+        column: 46
+        calls:
+          - path: /batch/1/2/2/1/1
+            line: 6
+            column: 81
+            function: /parse
+            function_file: "std:yaml"
+            function_line: 2
+            function_column: 8
+    - row: 2
+      source: "{name: debt, stock: -2}"
+      error:
+        kind: assertion
+        message: stock must be nonnegative
+        path: /validate/2/2/1/1
+        line: 5
+        column: 95
+        calls:
+          - path: /batch/1/2/2/1
+            line: 6
+            column: 70
+            function: /validate
+            function_line: 5
+            function_column: 11
+    - row: 3
+      source: "{stock: 1}"
+      error:
+        kind: missing
+        message: "no key `name`"
+        path: /validate/2/1/name/2
+        line: 5
+        column: 47
+        calls:
+          - path: /batch/1/2/2/1
+            line: 6
+            column: 70
+            function: /validate
+            function_line: 5
+            function_column: 11
+    - cli
+  calculate:
+    - fn
+    - - source
+    - - let
+      - form:
+          - yaml.parse
+          - source
+      - - if
+        - - ne
+          - - type
+            - form
+          - "list"
+        - - raise
+          - "syntax"
+          - "expected [operator, left, right]"
+          - form
+        - - if
+          - - ne
+            - - len
+              - form
+            - 3
+          - - raise
+            - "arity"
+            - "calculator needs exactly two operands"
+            - form
+          - - let
+            - op:
+                - get
+                - form
+                - 0
+              left:
+                - get
+                - form
+                - 1
+              right:
+                - get
+                - form
+                - 2
+            - - cond
+              - - eq
+                - op
+                - "+"
+              - - add
+                - left
+                - right
+              - - eq
+                - op
+                - "/"
+              - - div
+                - left
+                - right
+              - - raise
+                - "syntax"
+                - "unknown calculator operator"
+                - op
+  calculations:
+    - 8
+    - kind: arity
+      message: calculator needs exactly two operands
+      path: /calculate/2/2/3/2
+      line: 12
+      column: 36
+      data:
+        - "+"
+        - 1
+      calls:
+        - path: /calculations/1/2/1
+          line: 15
+          column: 42
+          function: /calculate
+          function_line: 9
+          function_column: 3
+    - kind: syntax
+      message: unknown calculator operator
+      path: /calculate/2/2/3/3/2/5
+      line: 14
+      column: 90
+      data: wat
+      calls:
+        - path: /calculations/1/2/1
+          line: 15
+          column: 42
+          function: /calculate
+          function_line: 9
+          function_column: 3
+    - kind: syntax
+      message: "expected [operator, left, right]"
+      path: /calculate/2/2/2
+      line: 11
+      column: 40
+      data: 42
+      calls:
+        - path: /calculations/1/2/1
+          line: 15
+          column: 42
+          function: /calculate
+          function_line: 9
+          function_column: 3
+    - kind: divide_by_zero
+      message: "`div` by zero"
+      path: /calculate/2/2/3/3/2/4
+      line: 14
+      column: 70
+      calls:
+        - path: /calculations/1/2/1
+          line: 15
+          column: 42
+          function: /calculate
+          function_line: 9
+          function_column: 3
+    - 9
+  attempt:
+    - fn
+    - - kinds
+      - index
+    - - let
+      - kind:
+          - get
+          - kinds
+          - index
+      - - if
+        - - eq
+          - kind
+          - "ok"
+        - 42
+        - - raise
+          - kind
+          - "step failed"
+          - index
+  retry:
+    - fn
+    - - kinds
+      - index
+      - history
+    - - let
+      - outcome:
+          - try
+          - - set
+            - {}
+            - "value"
+            - - attempt
+              - kinds
+              - index
+          - - fn
+            - - error
+            - - set
+              - {}
+              - "error"
+              - error
+      - - let
+        - next:
+            - concat
+            - history
+            - - list
+              - outcome
+        - - if
+          - - and
+            - - has
+              - outcome
+              - "error"
+            - - eq
+              - - get
+                - - get
+                  - outcome
+                  - "error"
+                - "kind"
+              - "transient"
+            - - lt
+              - - add
+                - index
+                - 1
+              - - len
+                - kinds
+          - - retry
+            - kinds
+            - - add
+              - index
+              - 1
+            - next
+          - - set
+            - - set
+              - {}
+              - "outcome"
+              - outcome
+            - "history"
+            - next
+  retried:
+    outcome:
+      value: 42
+    history:
+      - error:
+          kind: transient
+          message: step failed
+          path: /attempt/2/2/3
+          line: 17
+          column: 93
+          data: 0
+          calls:
+            - path: /retry/2/1/outcome/1/3
+              line: 20
+              column: 46
+              function: /attempt
+              function_line: 17
+              function_column: 10
+      - error:
+          kind: transient
+          message: step failed
+          path: /attempt/2/2/3
+          line: 17
+          column: 93
+          data: 1
+          calls:
+            - path: /retry/2/1/outcome/1/3
+              line: 20
+              column: 46
+              function: /attempt
+              function_line: 17
+              function_column: 10
+      - value: 42
+  fatal:
+    outcome:
+      error:
+        kind: fatal
+        message: step failed
+        path: /attempt/2/2/3
+        line: 17
+        column: 93
+        data: 0
+        calls:
+          - path: /retry/2/1/outcome/1/3
+            line: 20
+            column: 46
+            function: /attempt
+            function_line: 17
+            function_column: 10
+    history:
+      - error:
+          kind: fatal
+          message: step failed
+          path: /attempt/2/2/3
+          line: 17
+          column: 93
+          data: 0
+          calls:
+            - path: /retry/2/1/outcome/1/3
+              line: 20
+              column: 46
+              function: /attempt
+              function_line: 17
+              function_column: 10
+  exhausted:
+    outcome:
+      error:
+        kind: transient
+        message: step failed
+        path: /attempt/2/2/3
+        line: 17
+        column: 93
+        data: 1
+        calls:
+          - path: /retry/2/1/outcome/1/3
+            line: 20
+            column: 46
+            function: /attempt
+            function_line: 17
+            function_column: 10
+    history:
+      - error:
+          kind: transient
+          message: step failed
+          path: /attempt/2/2/3
+          line: 17
+          column: 93
+          data: 0
+          calls:
+            - path: /retry/2/1/outcome/1/3
+              line: 20
+              column: 46
+              function: /attempt
+              function_line: 17
+              function_column: 10
+      - error:
+          kind: transient
+          message: step failed
+          path: /attempt/2/2/3
+          line: 17
+          column: 93
+          data: 1
+          calls:
+            - path: /retry/2/1/outcome/1/3
+              line: 20
+              column: 46
+              function: /attempt
+              function_line: 17
+              function_column: 10
+  load_config:
+    - fn
+    - []
+    - - try
+      - - yaml.parse
+        - "{broken"
+      - - fn
+        - - error
+        - - raise
+          - - dict
+            - "kind"
+            - "configuration"
+            - "message"
+            - "cannot load deployment configuration"
+            - "cause"
+            - error
+  wrapped:
+    kind: configuration
+    message: cannot load deployment configuration
+    path: /load_config/2/2/2
+    line: 29
+    column: 68
+    calls:
+      - path: /load_config/2/2
+        line: 29
+        column: 54
+        function: /load_config/2/2
+        function_line: 29
+        function_column: 54
+      - path: /wrapped/1
+        line: 30
+        column: 16
+        function: /load_config
+        function_line: 29
+        function_column: 14
+    cause:
+      kind: configuration
+      message: cannot load deployment configuration
+      cause:
+        kind: parse
+        message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 7 line 2 column 1 (YAML line 2, column 1)"
+        file: "std:yaml"
+        path: /parse/2/1
+        line: 2
+        column: 46
+        calls:
+          - path: /load_config/2/1
+            line: 29
+            column: 29
+            function: /parse
+            function_file: "std:yaml"
+            function_line: 2
+            function_column: 8
+  allocate:
+    - fn
+    - - count
+    - - if
+      - - eq
+        - - assert
+          - - gt
+            - count
+            - 0
+          - "allocate count must be positive; pass at least 1"
+        - ~
+      - - mul
+        - count
+        - 2
+      - ~
+  wrong_call:
+    kind: assertion
+    message: "allocate count must be positive; pass at least 1"
+    path: /allocate/2/1/1
+    line: 32
+    column: 35
+    calls:
+      - path: /wrong_call/1
+        line: 33
+        column: 19
+        function: /allocate
+        function_line: 32
+        function_column: 11
+  fixed_call: 2
+  job:
+    - fn
+    - - divisor
+    - - let
+      - prepared:
+          - add
+          - 1
+          - 1
+      - - finally
+        - - let
+          - middle:
+              - div
+              - prepared
+              - divisor
+          - - add
+            - middle
+            - 1
+        - - raise
+          - "cleanup"
+          - "release job lease"
+  cleanup_after_middle_failure:
+    kind: cleanup
+    message: release job lease
+    path: /job/2/2/2
+    line: 36
+    column: 124
+    calls:
+      - path: /cleanup_after_middle_failure/1
+        line: 37
+        column: 37
+        function: /job
+        function_line: 36
+        function_column: 6
+  cleanup_after_success:
+    kind: cleanup
+    message: release job lease
+    path: /job/2/2/2
+    line: 36
+    column: 124
+    calls:
+      - path: /cleanup_after_success/1
+        line: 38
+        column: 30
+        function: /job
+        function_line: 36
+        function_column: 6
+  preserved:
+    kind: divide_by_zero
+    message: "`div` by zero"
+    path: /preserved/1/1
+    line: 40
+    column: 28

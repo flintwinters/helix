@@ -1,0 +1,19 @@
+status: finished
+root:
+  count: 1
+  allocate:
+    - fn
+    - - count
+    - - if
+      - - eq
+        - - assert
+          - - gt
+            - count
+            - 0
+          - "allocate count must be positive; pass at least 1"
+        - ~
+      - - mul
+        - count
+        - 2
+      - ~
+  result: 2

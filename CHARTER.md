@@ -448,14 +448,20 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 - `dogfood_work_queue`: stable priority sorting and dispatch through `std:list.sort_by`, with negative priorities, equal-priority payloads, sorted/reversed/empty/singleton inputs, independent calls, idempotence and source-order preservation. The original 100+ line example now shares its sort implementation with the standard library. Friction: insertion sort repeatedly copies lists and is suitable only for small queues.
 
 ### Errors as a first-class feature (section 4)
-- [ ] Parse and validate a messy inline dataset where every row may be malformed; `try` turns each failure into a record, and the report lists all of them with path and line
-- [ ] A calculator or expression evaluator that raises its own `syntax`/`arity` errors and recovers per input line, never aborting the batch
-- [ ] A retry loop: attempt a failing step, inspect the error's `kind`, retry on transient kinds, give up on the rest, and keep the attempt history in the state
-- [ ] Wrap a low-level error in a domain error with `cause`, then read the full chain from the saved state without a debugger
-- [ ] A function whose `assert` preconditions document its contract; call it wrongly and fix the caller from the assertion message alone
-- [ ] Turn a failed run's saved error into a regression golden case in under a minute (error, expected state, fix)
-- [ ] Cleanup with `finally` around a multi-step job, proven by a golden case where a middle step fails
-- [ ] Diff two runs of one program, one passing and one failing, and explain the failure from the state diff alone
+- [x] Parse and validate a messy inline dataset where every row may be malformed; `try` turns each failure into a record, and the report lists all of them with path and line
+- [x] A calculator or expression evaluator that raises its own `syntax`/`arity` errors and recovers per input line, never aborting the batch
+- [x] A retry loop: attempt a failing step, inspect the error's `kind`, retry on transient kinds, give up on the rest, and keep the attempt history in the state
+- [x] Wrap a low-level error in a domain error with `cause`, then read the full chain from the saved state without a debugger
+- [x] A function whose `assert` preconditions document its contract; call it wrongly and fix the caller from the assertion message alone
+- [x] Turn a failed run's saved error into a regression golden case in under a minute (error, expected state, fix)
+- [x] Cleanup with `finally` around a multi-step job, proven by a golden case where a middle step fails
+- [x] Diff two runs of one program, one passing and one failing, and explain the failure from the state diff alone
+
+Evidence: `dogfood_errors` and the paired `dogfood_errors_regression` / `dogfood_errors_fixed` golden cases exercise these workflows without host effects. The batch retains each failed row's index, source and full error (path, line, column and calls); valid rows after failures still finish. Calculator inputs recover independently. Retry histories cover eventual success, immediate fatal failure and exhausted transient attempts. `wrapped.cause.cause` retains the original parser failure under the domain wrapper.
+
+The saved `wrong_call` assertion says to pass at least 1. The minimized regression keeps `count: 0`; its corrected companion changes only that input to `count: 1`. Comparing their expected states explains the failure directly: the assertion and caller spans in `error` become a finished `root` with `count: 1` and `result: 2`. To repeat the regression workflow, copy the minimized source, run `./manage.py test --suite golden --bless`, inspect its expected state, change the caller input and rerun `./manage.py test --suite golden`. No new harness is needed.
+
+Friction: `let` bindings are lazy, so an unused assertion does not enforce a contract; these examples put assertions in the result's dependency chain. Domain wrapping must retain the original map explicitly under `cause` before re-raising. Pure cleanup has no observable resource release, so a deliberately raised cleanup error witnesses execution on both outcomes; a successful cleanup separately proves preservation of the middle-step error. These are pure workflow exercises, not claims of external retries or resource management. Parser-document coordinates appear in the message; structured spans point to the parsing actor, so row index and source are retained alongside them.
 
 ### With suspend/resume (section 2)
 - [ ] A long computation stopped midway, its state read in `git diff`, resumed to the same result as an uninterrupted run

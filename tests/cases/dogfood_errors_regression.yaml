@@ -1,0 +1,4 @@
+# Minimized from wrong_call in dogfood_errors: keep failure and corrected caller.
+count: 0
+allocate: [fn, [count], [if, [eq, [assert, [gt, count, 0], "allocate count must be positive; pass at least 1"], null], [mul, count, 2], null]]
+result: [allocate, count]

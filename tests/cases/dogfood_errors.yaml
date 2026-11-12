@@ -1,0 +1,40 @@
+# Batch rows are independent YAML documents; keep source and index with each error.
+yaml: [import, 'std:yaml']
+l: [import, 'std:list']
+rows: ['{name: core, stock: 3}', '{name: broken', '{name: debt, stock: -2}', '{stock: 1}', '{name: cli, stock: 2}']
+validate: [fn, [row], [let, {name: [get, row, "name"], stock: [get, row, "stock"]}, [if, [eq, [assert, [ge, stock, 0], "stock must be nonnegative"], null], name, null]]]
+batch: [map, [fn, [index], [let, {source: [get, rows, index]}, [try, [validate, [yaml.parse, source]], [fn, [error], [set, [set, [set, {}, "row", index], "source", source], "error", error]]]]], [l.range, [len, rows]]]
+# A tiny data-only calculator: operator and two operands, parsed per input line.
+calculate:
+  [fn, [source],
+    [let, {form: [yaml.parse, source]},
+      [if, [ne, [type, form], "list"], [raise, "syntax", "expected [operator, left, right]", form],
+        [if, [ne, [len, form], 3], [raise, "arity", "calculator needs exactly two operands", form],
+          [let, {op: [get, form, 0], left: [get, form, 1], right: [get, form, 2]},
+            [cond, [eq, op, "+"], [add, left, right], [eq, op, "/"], [div, left, right], [raise, "syntax", "unknown calculator operator", op]]]]]]]
+calculations: [map, [fn, [source], [try, [calculate, source], [fn, [error], error]]], ['[+, 6, 2]', '[+, 1]', '[wat, 1, 2]', '42', '[/, 1, 0]', '[+, 8, 1]']]
+# Deterministic attempts model an unreliable step without host effects.
+attempt: [fn, [kinds, index], [let, {kind: [get, kinds, index]}, [if, [eq, kind, "ok"], 42, [raise, kind, "step failed", index]]]]
+retry:
+  [fn, [kinds, index, history],
+    [let, {outcome: [try, [set, {}, "value", [attempt, kinds, index]], [fn, [error], [set, {}, "error", error]]]},
+      [let, {next: [concat, history, [list, outcome]]},
+        [if, [and, [has, outcome, "error"], [eq, [get, [get, outcome, "error"], "kind"], "transient"], [lt, [add, index, 1], [len, kinds]]],
+          [retry, kinds, [add, index, 1], next],
+          [set, [set, {}, "outcome", outcome], "history", next]]]]]
+retried: [retry, ["transient", "transient", "ok"], 0, []]
+fatal: [retry, ["fatal", "ok"], 0, []]
+exhausted: [retry, ["transient", "transient"], 0, []]
+# Re-raising an enriched map retains the complete low-level map as cause.
+load_config: [fn, [], [try, [yaml.parse, "{broken"], [fn, [error], [raise, [dict, "kind", "configuration", "message", "cannot load deployment configuration", "cause", error]]]]]
+wrapped: [try, [load_config], [fn, [error], error]]
+# The message alone identifies the caller correction; the next call applies it.
+allocate: [fn, [count], [if, [eq, [assert, [gt, count, 0], "allocate count must be positive; pass at least 1"], null], [mul, count, 2], null]]
+wrong_call: [try, [allocate, 0], [fn, [error], error]]
+fixed_call: [allocate, 1]
+# A cleanup failure is an observable witness that finally reached cleanup.
+job: [fn, [divisor], [let, {prepared: [add, 1, 1]}, [finally, [let, {middle: [div, prepared, divisor]}, [add, middle, 1]], [raise, "cleanup", "release job lease"]]]]
+cleanup_after_middle_failure: [try, [job, 0], [fn, [error], error]]
+cleanup_after_success: [try, [job, 1], [fn, [error], error]]
+# Successful cleanup preserves the original middle-step error.
+preserved: [try, [finally, [div, 2, 0], [assert, true]], [fn, [error], error]]
