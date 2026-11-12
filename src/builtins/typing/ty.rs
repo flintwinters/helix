@@ -12,6 +12,10 @@ use crate::model::string as s;
 /// predicate, reported as a violation rather than aborting the check.
 pub type Pred<'a> = dyn FnMut(&Value, &Value) -> Result<bool, String> + 'a;
 
+/// Provenance prefix of a value that realization filled from a field default; such a value is not
+/// pinned by class membership, which neither fills nor demands defaults.
+pub(super) const DEFAULT_SOURCE: &str = "default of ";
+
 const PRIMITIVES: [&str; 12] = ["any", "never", "integer", "float", "string", "boolean", "null", "list", "map", "secret", "function", "vm"];
 
 /// Whether `name` is a primitive type, which evaluates as a bare symbol when nothing shadows it.
@@ -35,6 +39,9 @@ pub(super) enum Ty {
     Map(Box<Ty>),
     /// Closed: a value may not carry fields the record does not declare.
     Record(Vec<(String, Field)>),
+    /// A closed record that also pins the fixed values a class set explicitly and must satisfy its
+    /// whole-record constraints; defaults filled in by realization are not pinned.
+    Class(Vec<(String, Field)>, Vec<(String, Value)>, Vec<Value>),
     Union(Vec<Ty>),
     Enum(Vec<Value>),
     /// A base type plus the raw source of a predicate.
@@ -124,10 +131,14 @@ impl Ty {
                         }
                         Ok(Ty::Refine(Box::new(base), predicate.clone()))
                     }
-                    "record" | "class" => match member(map, "fields")? {
-                        Value::Hash(fields) => fields.iter().map(|(name, spec)| Ok((key(name)?, Field::parse(spec)?))).collect::<Result<_, String>>().map(Ty::Record),
-                        _ => Err(format!("a `{kind}` needs a map of `fields`")),
-                    },
+                    "record" | "class" => {
+                        let Value::Hash(fields) = member(map, "fields")? else { return Err(format!("a `{kind}` needs a map of `fields`")) };
+                        let fields = fields.iter().map(|(name, spec)| Ok((key(name)?, Field::parse(spec)?))).collect::<Result<Vec<_>, String>>()?;
+                        if kind == "record" {
+                            return Ok(Ty::Record(fields));
+                        }
+                        Ok(Ty::Class(fields, fixed_values(map), constraints(map)))
+                    }
                     other => Err(format!("`{other}` is not a type constructor")),
                 }
             }
@@ -153,10 +164,28 @@ impl Ty {
             Ty::Map(of) if **of == Ty::Any => "map".into(),
             Ty::Map(of) => format!("map of {}", of.name()),
             Ty::Record(_) => "record".into(),
+            Ty::Class(..) => "class".into(),
             Ty::Union(members) => members.iter().map(Ty::name).collect::<Vec<_>>().join(" | "),
             Ty::Enum(values) => format!("one of [{}]", values.iter().map(show).collect::<Vec<_>>().join(", ")),
             Ty::Refine(base, _) => format!("refined {}", base.name()),
         }
+    }
+}
+
+/// The values a class pins: those set explicitly rather than filled from a default.
+fn fixed_values(class: &Hash) -> Vec<(String, Value)> {
+    let (Some(Value::Hash(values)), Some(Value::Hash(provenance))) = (class.get(&s("values")), class.get(&s("provenance"))) else { return Vec::new() };
+    let defaulted = |name: &Value| match provenance.get(name) {
+        Some(Value::Hash(origin)) => text(origin, "value").is_some_and(|by| by.starts_with(DEFAULT_SOURCE)),
+        _ => false,
+    };
+    values.iter().filter(|(name, _)| !defaulted(name)).filter_map(|(name, value)| key(name).ok().map(|name| (name, value.clone()))).collect()
+}
+
+fn constraints(class: &Hash) -> Vec<Value> {
+    match class.get(&s("constraints")) {
+        Some(Value::Array(items)) => items.to_vec(),
+        _ => Vec::new(),
     }
 }
 
@@ -207,16 +236,24 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
         (Ty::Secret, Value::String(_)) => out.push(Violation { at: at.into(), message: "a secret is a handle (`[secret, ref]`), not an inline string".into() }),
         (Ty::List(of), Value::Array(items)) => items.iter().enumerate().for_each(|(i, item)| check(item, of, &inside(at, &i.to_string()), pred, out)),
         (Ty::Map(of), Value::Hash(h)) => h.iter().for_each(|(k, v)| check(v, of, &inside(at, &show(k)), pred, out)),
-        (Ty::Record(fields), Value::Hash(h)) => {
-            for (name, field) in fields {
-                match h.get(&s(name)) {
-                    Some(v) => check(v, &field.ty, &inside(at, name), pred, out),
-                    None if field.required => out.push(Violation { at: inside(at, name), message: format!("missing field `{name}`") }),
-                    None => {}
+        (Ty::Record(fields), Value::Hash(h)) => check_record(fields, h, at, pred, out),
+        (Ty::Class(fields, fixed, constraints), Value::Hash(h)) => {
+            let before = out.len();
+            check_record(fields, h, at, pred, out);
+            for (name, pinned) in fixed {
+                let (here, reported) = (inside(at, name), out.iter().any(|v| v.at == inside(at, name)));
+                if !reported && !h.get(&s(name)).is_some_and(|v| equal(v, pinned)) {
+                    out.push(Violation { at: here, message: format!("field `{name}` must equal {}", show(pinned)) });
                 }
             }
-            for k in h.keys().filter(|k| !fields.iter().any(|(name, _)| s(name) == **k)) {
-                out.push(Violation { at: inside(at, &show(k)), message: format!("unexpected field `{}`", show(k)) });
+            if out.len() == before {
+                for (i, constraint) in constraints.iter().enumerate() {
+                    match pred(constraint, value) {
+                        Ok(true) => {}
+                        Ok(false) => out.push(Violation { at: at.into(), message: format!("constraint {i} does not hold") }),
+                        Err(why) => out.push(Violation { at: at.into(), message: format!("constraint {i} failed to run: {why}") }),
+                    }
+                }
             }
         }
         (Ty::Union(members), _) if members.iter().any(|m| holds(value, m, pred)) => {}
@@ -233,6 +270,19 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
             }
         }
         _ => mismatch(out),
+    }
+}
+
+fn check_record(fields: &[(String, Field)], h: &Hash, at: &str, pred: &mut Pred, out: &mut Vec<Violation>) {
+    for (name, field) in fields {
+        match h.get(&s(name)) {
+            Some(v) => check(v, &field.ty, &inside(at, name), pred, out),
+            None if field.required => out.push(Violation { at: inside(at, name), message: format!("missing field `{name}`") }),
+            None => {}
+        }
+    }
+    for k in h.keys().filter(|k| !fields.iter().any(|(name, _)| s(name) == **k)) {
+        out.push(Violation { at: inside(at, &show(k)), message: format!("unexpected field `{}`", show(k)) });
     }
 }
 
@@ -268,10 +318,15 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
         (Ty::Enum(values), _) => values.iter().all(|v| holds(v, b, pred)),
         (Ty::Refine(base, _), _) => subtype(base, b, pred),
         (Ty::List(x), Ty::List(y)) | (Ty::Map(x), Ty::Map(y)) => subtype(x, y, pred),
-        (Ty::Record(fa), Ty::Record(fb)) => {
-            let fits = |(name, f): &(String, Field)| fb.iter().find(|(n, _)| n == name).is_some_and(|(_, g)| subtype(&f.ty, &g.ty, pred) && (f.required || !g.required));
-            fa.iter().all(fits) && fb.iter().filter(|(_, g)| g.required).all(|(n, _)| fa.iter().any(|(m, f)| m == n && f.required))
+        (Ty::Record(fa) | Ty::Class(fa, ..), Ty::Record(fb)) => record_subtype(fa, fb, pred),
+        (Ty::Class(fa, xa, ca), Ty::Class(fb, xb, cb)) => {
+            record_subtype(fa, fb, pred) && xb.iter().all(|(n, v)| xa.iter().any(|(m, w)| m == n && equal(v, w))) && cb.iter().all(|c| ca.contains(c))
         }
         _ => false,
     }
+}
+
+fn record_subtype(fa: &[(String, Field)], fb: &[(String, Field)], pred: &mut Pred) -> bool {
+    let fits = |(name, f): &(String, Field)| fb.iter().find(|(n, _)| n == name).is_some_and(|(_, g)| subtype(&f.ty, &g.ty, pred) && (f.required || !g.required));
+    fa.iter().all(fits) && fb.iter().filter(|(_, g)| g.required).all(|(n, _)| fa.iter().any(|(m, f)| m == n && f.required))
 }

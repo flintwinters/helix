@@ -1,0 +1,22 @@
+# Class membership (`is`, `violations`) enforces fixed values and whole-record constraints, not only
+# field schemas; defaults realization filled in are not pinned.
+"machine": {"$call": ["class", "machine", {"$call": ["record", "min", {"$ref": "integer"}, "max", {"$ref": "integer"}, "role", {"$call": ["default", {"$ref": "string"}, "web"]}]}]}
+"ordered":
+  "$call":
+  - "fn"
+  - - "v"
+  - {"$call": ["le", {"$call": ["get", {"$ref": "v"}, "min"]}, {"$call": ["get", {"$ref": "v"}, "max"]}]}
+"sane": {"$call": ["constrain", {"$ref": "machine"}, {"$ref": "ordered"}]}
+"pinned": {"$call": ["extend", "pinned", {"$call": ["list", {"$ref": "sane"}]}, {"$call": ["record"]}, {"max": 5}]}
+"realized": {"$call": ["inherit", "realized", {"$call": ["list", {"$ref": "pinned"}]}, {"min": 1}]}
+"fits_fixed": {"$call": ["is", {"min": 1, "max": 5}, {"$ref": "pinned"}]}
+"wrong_fixed": {"$call": ["violations", {"min": 1, "max": 6}, {"$ref": "pinned"}]}
+"absent_fixed": {"$call": ["violations", {"min": 1}, {"$ref": "pinned"}]}
+"violates_constraint": {"$call": ["violations", {"min": 9, "max": 5}, {"$ref": "sane"}]}
+"unconstrained_ok": {"$call": ["is", {"min": 9, "max": 5}, {"$ref": "machine"}]}
+"defaults_not_demanded": {"$call": ["is", {"min": 1, "max": 5}, {"$ref": "realized"}]}
+"realized_values_member": {"$call": ["is", {"$call": ["get", {"$ref": "realized"}, "values"]}, {"$ref": "realized"}]}
+"class_below_record": {"$call": ["subtype", {"$ref": "sane"}, {"$call": ["record", "min", {"$ref": "integer"}, "max", {"$ref": "integer"}, "role", {"$call": ["optional", {"$ref": "string"}]}]}]}
+"record_not_below_class": {"$call": ["subtype", {"$call": ["record", "min", {"$ref": "integer"}, "max", {"$ref": "integer"}]}, {"$ref": "sane"}]}
+"pinned_below_parent": {"$call": ["subtype", {"$ref": "pinned"}, {"$ref": "sane"}]}
+"parent_not_below_pinned": {"$call": ["subtype", {"$ref": "sane"}, {"$ref": "pinned"}]}

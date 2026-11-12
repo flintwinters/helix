@@ -15,7 +15,7 @@ use crate::value::Hash;
 use crate::value::Value;
 
 use super::construct::{descriptor, reflect};
-use super::ty::{check_ty, mapping, subtype, Field, Pred, Ty};
+use super::ty::{check_ty, mapping, subtype, Field, Pred, Ty, DEFAULT_SOURCE};
 use crate::builtins::fault::Fault;
 use crate::builtins::value::equal;
 use crate::model::string as s;
@@ -305,7 +305,7 @@ fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Clas
         }
         let field = Field::parse(&slot.spec).map_err(|why| Fault { arg, ..Fault::whole("type", why) })?;
         match field.default {
-            Some(default) => slot.value = Some((default, format!("default of {}", slot.declared_by))),
+            Some(default) => slot.value = Some((default, format!("{DEFAULT_SOURCE}{}", slot.declared_by))),
             None if field.required => missing.push(slot.clone()),
             None => {}
         }

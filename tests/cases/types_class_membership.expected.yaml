@@ -1,0 +1,276 @@
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - v
+        - "$call":
+            - le
+            - "$call":
+                - get
+                - "$ref": v
+                - min
+            - "$call":
+                - get
+                - "$ref": v
+                - max
+    environment: []
+    kind: function
+    location:
+      path:
+        - ordered
+      source: "<root>"
+    program:
+      ref: object1
+  object1:
+    kind: program
+    sources:
+      - code:
+          absent_fixed:
+            "$call":
+              - violations
+              - min: 1
+              - "$ref": pinned
+          class_below_record:
+            "$call":
+              - subtype
+              - "$ref": sane
+              - "$call":
+                  - record
+                  - min
+                  - "$ref": integer
+                  - max
+                  - "$ref": integer
+                  - role
+                  - "$call":
+                      - optional
+                      - "$ref": string
+          defaults_not_demanded:
+            "$call":
+              - is
+              - max: 5
+                min: 1
+              - "$ref": realized
+          fits_fixed:
+            "$call":
+              - is
+              - max: 5
+                min: 1
+              - "$ref": pinned
+          machine:
+            "$call":
+              - class
+              - machine
+              - "$call":
+                  - record
+                  - min
+                  - "$ref": integer
+                  - max
+                  - "$ref": integer
+                  - role
+                  - "$call":
+                      - default
+                      - "$ref": string
+                      - web
+          ordered:
+            "$call":
+              - fn
+              - - v
+              - "$call":
+                  - le
+                  - "$call":
+                      - get
+                      - "$ref": v
+                      - min
+                  - "$call":
+                      - get
+                      - "$ref": v
+                      - max
+          parent_not_below_pinned:
+            "$call":
+              - subtype
+              - "$ref": sane
+              - "$ref": pinned
+          pinned:
+            "$call":
+              - extend
+              - pinned
+              - "$call":
+                  - list
+                  - "$ref": sane
+              - "$call":
+                  - record
+              - max: 5
+          pinned_below_parent:
+            "$call":
+              - subtype
+              - "$ref": pinned
+              - "$ref": sane
+          realized:
+            "$call":
+              - inherit
+              - realized
+              - "$call":
+                  - list
+                  - "$ref": pinned
+              - min: 1
+          realized_values_member:
+            "$call":
+              - is
+              - "$call":
+                  - get
+                  - "$ref": realized
+                  - values
+              - "$ref": realized
+          record_not_below_class:
+            "$call":
+              - subtype
+              - "$call":
+                  - record
+                  - min
+                  - "$ref": integer
+                  - max
+                  - "$ref": integer
+              - "$ref": sane
+          sane:
+            "$call":
+              - constrain
+              - "$ref": machine
+              - "$ref": ordered
+          unconstrained_ok:
+            "$call":
+              - is
+              - max: 5
+                min: 9
+              - "$ref": machine
+          violates_constraint:
+            "$call":
+              - violations
+              - max: 5
+                min: 9
+              - "$ref": sane
+          wrong_fixed:
+            "$call":
+              - violations
+              - max: 6
+                min: 1
+              - "$ref": pinned
+        source: "<root>"
+root:
+  absent_fixed:
+    - at: /max
+      message: "missing field `max`"
+  class_below_record: true
+  defaults_not_demanded: true
+  fits_fixed: true
+  machine:
+    concrete: false
+    fields:
+      max: integer
+      min: integer
+      role:
+        default: web
+        of: string
+        type: default
+    name: machine
+    parents: []
+    provenance:
+      max:
+        type: machine
+      min:
+        type: machine
+      role:
+        type: machine
+    type: class
+    values: {}
+  ordered:
+    ref: object0
+  parent_not_below_pinned: false
+  pinned:
+    concrete: false
+    constraints:
+      - ref: object0
+    fields:
+      max: integer
+      min: integer
+      role:
+        default: web
+        of: string
+        type: default
+    name: pinned
+    parents:
+      - machine
+    provenance:
+      max:
+        type: machine
+        value: pinned
+      min:
+        type: machine
+      role:
+        type: machine
+    type: class
+    values:
+      max: 5
+  pinned_below_parent: true
+  realized:
+    concrete: true
+    constraints:
+      - ref: object0
+    fields:
+      max: integer
+      min: integer
+      role:
+        default: web
+        of: string
+        type: default
+    name: realized
+    parents:
+      - pinned
+    provenance:
+      max:
+        type: machine
+        value: pinned
+      min:
+        type: machine
+        value: realized
+      role:
+        type: machine
+        value: default of machine
+    type: class
+    values:
+      max: 5
+      min: 1
+      role: web
+  realized_values_member: true
+  record_not_below_class: false
+  sane:
+    concrete: false
+    constraints:
+      - ref: object0
+    fields:
+      max: integer
+      min: integer
+      role:
+        default: web
+        of: string
+        type: default
+    name: machine
+    parents: []
+    provenance:
+      max:
+        type: machine
+      min:
+        type: machine
+      role:
+        type: machine
+    type: class
+    values: {}
+  unconstrained_ok: true
+  violates_constraint:
+    - at: /
+      message: constraint 0 does not hold
+  wrong_fixed:
+    - at: /max
+      message: "field `max` must equal 5"
+status: finished
