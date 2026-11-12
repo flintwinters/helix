@@ -1,10 +1,10 @@
 use std::path::Path;
 use std::process::ExitCode;
 
-use helix::{Status, Vm, yaml_document};
+use helix::{Status, Vm, json_document, yaml_document};
 use yaml_rust2::Yaml;
 
-const USAGE: &str = "usage: helix exec [PROGRAM | -]    inline source or stdin; raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check <file.yaml | ->    type phase: report every error, run nothing further\n       helix std [module]    list the standard modules, or print one's source\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
+const USAGE: &str = "usage: helix exec [--json | --yaml] [PROGRAM | -]    inline source or stdin; default raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check <file.yaml | ->    type phase: report every error, run nothing further\n       helix std [module]    list the standard modules, or print one's source\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -18,13 +18,25 @@ fn main() -> ExitCode {
             println!("{USAGE}");
             ExitCode::SUCCESS
         }
+        ["exec", format] if matches!(*format, "--json" | "--yaml") => {
+            execute("-", "exec", None, format)
+        }
+        ["exec", format, "--", source] if matches!(*format, "--json" | "--yaml") => {
+            execute(source, "exec", None, format)
+        }
+        ["exec", format, source]
+            if matches!(*format, "--json" | "--yaml") && !source.starts_with("--") =>
+        {
+            execute(source, "exec", None, format)
+        }
         ["exec"] => run("-", "exec"),
-        ["exec", "--", source] | ["exec", source] => run(source, "exec"),
+        ["exec", "--", source] => run(source, "exec"),
+        ["exec", source] if !source.starts_with("--") => run(source, "exec"),
         ["run", path] => run(path, "run"),
         ["recover", path] => run(path, "recover"),
         ["resume", path] => run(path, "resume"),
         ["check", path] => run(path, "check"),
-        ["sandbox", root, path] => execute(path, "run", Some(root)),
+        ["sandbox", root, path] => execute(path, "run", Some(root), "raw"),
         ["std"] => {
             helix::std_modules().for_each(|name| println!("std:{name}"));
             ExitCode::SUCCESS
@@ -59,10 +71,10 @@ fn main() -> ExitCode {
 }
 
 fn run(path: &str, mode: &str) -> ExitCode {
-    execute(path, mode, None)
+    execute(path, mode, None, "raw")
 }
 
-fn execute(path: &str, mode: &str, allowed_root: Option<&str>) -> ExitCode {
+fn execute(path: &str, mode: &str, allowed_root: Option<&str>, format: &str) -> ExitCode {
     let read = if path == "-" {
         std::io::read_to_string(std::io::stdin())
     } else if mode == "exec" {
@@ -102,15 +114,30 @@ fn execute(path: &str, mode: &str, allowed_root: Option<&str>) -> ExitCode {
             return ExitCode::FAILURE;
         }
         let state = vm.state();
-        if state["objects"].as_hash().is_some() {
-            let mut view = yaml_rust2::yaml::Hash::new();
-            view.insert(Yaml::String("value".into()), state["root"].clone());
-            view.insert(Yaml::String("objects".into()), state["objects"].clone());
-            print!("{}", yaml_document(&Yaml::Hash(view)));
+        let value = if state["objects"].as_hash().is_some() {
+            Yaml::Hash(
+                [
+                    (Yaml::String("value".into()), state["root"].clone()),
+                    (Yaml::String("objects".into()), state["objects"].clone()),
+                ]
+                .into_iter()
+                .collect(),
+            )
+        } else {
+            state["root"].clone()
+        };
+        if format == "--json" {
+            match json_document(&value) {
+                Ok(text) => print!("{text}"),
+                Err(message) => {
+                    eprintln!("cannot encode result as JSON: {message}");
+                    return ExitCode::FAILURE;
+                }
+            }
             return ExitCode::SUCCESS;
         }
-        match &state["root"] {
-            Yaml::String(text) => print!("{text}"),
+        match &value {
+            Yaml::String(text) if format == "raw" => print!("{text}"),
             value => print!("{}", yaml_document(value)),
         }
         return ExitCode::SUCCESS;

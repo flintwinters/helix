@@ -87,9 +87,13 @@ fn slice(args: &[Value]) -> Result<Value, Fault> {
         }
     };
     match &args[0] {
-        Value::String(s) => {
-            let (start, end) = bounds(s.chars().count())?;
-            Ok(Value::String(s.chars().skip(start).take(end - start).collect()))
+        Value::String(s)=>{
+            if s.is_ascii() {let (start,end)=bounds(s.len())?;return Ok(Value::String(s[start..end].to_owned()));}
+            let (start,end)=bounds(s.chars().count())?;
+            let mut offsets=s.char_indices().map(|(byte,_)|byte).chain(std::iter::once(s.len()));
+            let first=offsets.nth(start).expect("validated character boundary");
+            let last=if start==end {first} else {offsets.nth(end-start-1).expect("validated character boundary")};
+            Ok(Value::String(s[first..last].to_owned()))
         }
         Value::Array(v) => {
             let (start, end) = bounds(v.len())?;

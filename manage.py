@@ -229,7 +229,7 @@ def main() -> int:
         return subprocess.run([str(BIN), "check" if args.check else "run", "-"],
                               input=args.source, text=True, cwd=ROOT).returncode
     if command == "exec":
-        return build() or subprocess.call([str(BIN), "exec", "--", args.source], cwd=ROOT)
+        return build() or subprocess.call([str(BIN), "exec", *([args.output_format] if args.output_format else []), "--", args.source], cwd=ROOT)
     if command == "inventory":
         from tooling.inventory import inventory
         return build() or inventory(helix, ROOT)

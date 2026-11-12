@@ -1,0 +1,8 @@
+status: finished
+root:
+  ascii: bcde
+  unicode: "é雪🙂"
+  tail: "🙂z"
+  empty_end: ""
+  empty_middle: ""
+  empty: ""

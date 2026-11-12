@@ -1271,9 +1271,10 @@ impl Evaluator {
         Ok(())
     }
     fn charge_value(&mut self, id: NodeId, value: &Value) -> Result<(), HelixError> {
-        let mut pending = vec![(value, 0)];
+        let mut pending = vec![(value, 0, true)];
+        let mut nodes = 0;
         let mut produced = 0;
-        while let Some((value, depth)) = pending.pop() {
+        while let Some((value, depth, graph_node)) = pending.pop() {
             if depth > crate::graph::MAX_NESTING {
                 return Err(self.err(
                     id,
@@ -1282,6 +1283,14 @@ impl Evaluator {
                         "value nested deeper than {} containers",
                         crate::graph::MAX_NESTING
                     ),
+                ));
+            }
+            nodes += usize::from(graph_node);
+            if nodes > crate::graph::MAX_NODES {
+                return Err(self.err(
+                    id,
+                    "limit",
+                    format!("value exceeds {} nodes", crate::graph::MAX_NODES),
                 ));
             }
             let size = match value {
@@ -1307,11 +1316,11 @@ impl Evaluator {
                 )
             })?;
             match value {
-                Value::Array(items) => pending.extend(items.iter().map(|v| (v, depth + 1))),
+                Value::Array(items) => pending.extend(items.iter().map(|v| (v, depth + 1, true))),
                 Value::Hash(entries) => pending.extend(
                     entries
                         .iter()
-                        .flat_map(|(k, v)| [(k, depth + 1), (v, depth + 1)]),
+                        .flat_map(|(k, v)| [(k, depth + 1, false), (v, depth + 1, true)]),
                 ),
                 _ => {}
             }
