@@ -181,6 +181,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:diff` | `compare(old, new)` (shallow configuration changes) |
 | `std:validation` | `batch(values, validate)` (indexed validation and transformation reports) |
 | `std:dependency` | `plan(tasks)` (stable dependency batches and blocked-task report) |
+| `std:orchestration` | `plan(document)`, `run(document, execute)` (validated resource dependencies and coalesced, deferred change handlers) |
 | `std:types` | `from_fields(specs)`, `without_field(t,name)`, `optional_field(spec)`, `optional_fields(t)` |
 | `std:math` | `number` (numeric type), `abs(n)`, `sign(n)`, `min(a,b)`, `max(a,b)`, `clamp(n,lo,hi)`, `square(n)` |
 | `std:list` | `numbers` (numeric list type), `sum(xs)`, `product(xs)`, `reverse(xs)`, `range(n)` (integers from zero while less than `n`, bounded by the iteration limit), `unique(xs)` (first occurrence, structural/numeric equality), `sort_by(xs, before)` (stable; strict ordering predicate), plus [access, traversal and grouping helpers](#list-helpers) |
@@ -272,6 +273,78 @@ reachability, gather facts, cache discovery, or resolve secrets. A host ID is no
 proof that two different IDs refer to different physical machines. Connection
 adapters must separately validate their supported settings and obtain caller
 authority before use.
+
+### Resource composition
+
+`std:orchestration.plan(document)` validates a complete resource graph without
+executing resource callbacks. `run(document, execute)` validates the graph again
+before invoking `execute(kind, id)` through ordinary Helix function calls. The
+callback may use the existing effect engine with caller-supplied grants; the
+orchestrator neither creates authority nor introduces another evaluator.
+
+The version 1 document contains `version: 1`, `resources` and `handlers`. Both
+collections are maps keyed by nonempty IDs, in separate namespaces. Each resource
+has `requires: [resource IDs]` and `notify: [handler IDs]`; each handler has
+`requires: [resource IDs]`. All fields are explicit. Unknown fields, missing
+references and resource dependency cycles invalidate the complete graph, including
+unused handlers and otherwise runnable independent resources. Dependencies reuse
+`std:dependency` and its deterministic ordering. Handlers cannot depend on other
+handlers, notify handlers, or be prerequisites of resources.
+
+Resources run sequentially in dependency order. A callback receives `kind`
+(`resource` or `handler`) and its `id`, and returns a record with `status`
+(`changed`, `unchanged`, `failed` or `skipped`) and optional string `details`.
+Only `changed` and `unchanged` satisfy prerequisites. A callback error or invalid
+result becomes a failed outcome; dependent resources are skipped while independent
+resources continue. Successful earlier changes remain visible in the report.
+Callbacks must classify their outcomes truthfully: this contract does not infer
+idempotence, validate a real resource's postconditions or roll back mutations.
+
+After resources finish, handlers run in canonical handler-ID order. Any changed
+resource can notify a handler; duplicate notifications coalesce into one execution.
+Unchanged resources do not notify. An activated handler requires successful outcomes
+from every resource that declares it as a notification target, plus its explicit
+prerequisites. A failed or skipped potential notifier therefore suppresses the
+shared handler even if another resource changed successfully. Unnotified handlers
+are skipped. There is one deferred handler phase, with no handler chaining or
+mid-run flush.
+
+The plan report contains `version: 1`, `status` (`ready` or `invalid`), `order`
+(resource IDs), `handlers` (handler IDs), and `diagnostics`. Invalid plans return
+empty orders and the first structured error. The run report contains `version: 1`,
+`status` (`finished`, `failed` or `invalid`), `changed`, per-ID `resources` and
+`handlers` outcome maps, and `diagnostics`. Preflight failure returns no outcomes
+and `changed: false`. Otherwise `changed` retains any reported change even when
+the run failed. Automatically skipped outcomes distinguish `reason: not_notified`
+from `reason: prerequisite_failed`. Unnotified handlers do not fail the run;
+other failed or skipped outcomes do. Thrown or malformed callback results retain
+the structured `error` alongside `status: failed`. A non-function executor is
+an API type error even for an empty graph.
+
+Planning is pure and suitable for `type_time` when supplied ordinary graph data.
+The preflight guarantee covers callbacks invoked by `run`: ordinary evaluation of
+the caller's argument expressions happens before the function call. Resolve module
+inputs and assemble the graph purely before execution. Callback effects suspend
+and resume through the same VM continuations as any other Helix function. These
+are in-memory execution guarantees, not durable recovery or exactly-once external
+mutation guarantees. Caught error data can contain function or machine values;
+their emitted inspection graphs do not promise executable restoration. Resource
+limits can terminate evaluation; callers must inspect both VM and report status.
+
+The dependency planner and immutable folds target bounded configurations and retain
+the normal iteration, work and data limits. This module composes callbacks; resource
+providers, real service-manager semantics, fleet scheduling and durable recovery
+remain separate contracts.
+
+The [resource composition example](tests/programs/resource_composition.yaml)
+imports a versioned, vendored configuration module with typed input and output.
+That module imports its own pinned service-policy dependency and returns an
+`orchestration.document`; execution remains an ordinary callback supplied by its
+caller. Run it with `./manage.py run tests/programs/resource_composition.yaml`.
+The example simulates changed outcomes without managing a real service.
+`./manage.py test --suite resource_composition` additionally observes real file
+effects, checks notification counts and failure gates, and verifies relocation and
+missing dependencies. The pinning convention is described below.
 
 ### Pinned dependencies
 

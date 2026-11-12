@@ -582,10 +582,20 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Users and groups: membership, ownership implications and authorized keys with explicit removal semantics
   - [ ] Artifacts: authenticated retrieval where needed, pinned versions and integrity verification before use
   - [ ] Arbitrary commands: explicit guards and change/failure predicates; no implied idempotence or reversibility
-- [ ] Compose resources and reusable configurations without a second execution model
-  - [ ] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
-  - [ ] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
-  - [ ] Reusable configuration modules expose typed inputs, outputs and versioned dependencies using existing imports and functions
+- [x] Compose resources and reusable configurations without a second execution model
+  - [x] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
+  - [x] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
+  - [x] Reusable configuration modules expose typed inputs, outputs and versioned dependencies using existing imports and functions
+  - Evidence: `./manage.py test --suite resource_composition --suite library`
+    checks `std:orchestration` against an independent dependency-order oracle,
+    observable callback/file effects, failure gates, coalesced handlers and retained
+    VM continuations. Full graph validation precedes executor callbacks; handlers
+    run once after resources and require successful prerequisites and notifiers.
+    The [typed module example](tests/programs/resource_composition.yaml) includes
+    relocatable, vendored dependencies with explicit provenance. See the
+    [composition contract](LANGUAGE.md#resource-composition) for sequential ordering,
+    resource-only handler prerequisites and partial-failure reports. Real service
+    providers, durable recovery and rollback remain separate milestones.
 
 ### Fleet orchestration and failure recovery
 
