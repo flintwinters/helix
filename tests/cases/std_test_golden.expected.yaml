@@ -1,0 +1,74 @@
+root:
+  bless_missing:
+    bless: true
+    replay: true
+    stage: passed
+  bless_no_replay:
+    bless: true
+    replay: false
+    stage: passed
+  blessed_replay_failed:
+    bless: true
+    replay: false
+    stage: roundtrip
+  different_exit:
+    bless: false
+    replay: false
+    stage: determinism
+  different_expected:
+    bless: false
+    replay: false
+    stage: golden
+  different_stderr:
+    bless: false
+    replay: false
+    stage: determinism
+  different_stdout:
+    bless: false
+    replay: false
+    stage: determinism
+  empty_missing:
+    bless: false
+    replay: false
+    stage: golden
+  empty_present:
+    bless: false
+    replay: false
+    stage: passed
+  golden_before_replay:
+    bless: false
+    replay: false
+    stage: golden
+  literal_text:
+    bless: false
+    replay: false
+    stage: passed
+  missing_expected:
+    bless: false
+    replay: false
+    stage: golden
+  no_replay:
+    bless: false
+    replay: false
+    stage: passed
+  pending:
+    bless: false
+    replay: true
+    stage: passed
+  replay_different:
+    bless: false
+    replay: false
+    stage: roundtrip
+  replay_failed:
+    bless: false
+    replay: false
+    stage: roundtrip
+  replay_missing:
+    bless: false
+    replay: false
+    stage: roundtrip
+  replayed:
+    bless: false
+    replay: false
+    stage: passed
+status: finished

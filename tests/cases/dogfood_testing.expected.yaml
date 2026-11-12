@@ -25,7 +25,7 @@ objects:
         - 2
       source: "<root>"
     program:
-      ref: object55
+      ref: object56
   object1:
     bindings:
       offset: 2
@@ -52,7 +52,7 @@ objects:
         - 2
       source: "<root>"
     program:
-      ref: object55
+      ref: object56
   object10:
     bindings: {}
     code:
@@ -73,7 +73,7 @@ objects:
         - first
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object11:
     bindings:
       flatten:
@@ -102,7 +102,7 @@ objects:
         - flat_map
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object12:
     bindings: {}
     code:
@@ -132,7 +132,7 @@ objects:
         - flatten
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object13:
     bindings: {}
     code:
@@ -170,7 +170,7 @@ objects:
         - frequencies
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object14:
     bindings:
       grouping.by:
@@ -197,7 +197,7 @@ objects:
         - group_by
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object15:
     bindings: {}
     code:
@@ -241,7 +241,7 @@ objects:
         - by
       source: "std:group"
     program:
-      ref: object55
+      ref: object56
   object16:
     bindings: {}
     code:
@@ -275,7 +275,7 @@ objects:
         - last
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object17:
     bindings:
       number:
@@ -306,7 +306,7 @@ objects:
         - abs
       source: "std:math"
     program:
-      ref: object55
+      ref: object56
   object18:
     bindings:
       max:
@@ -348,7 +348,7 @@ objects:
         - clamp
       source: "std:math"
     program:
-      ref: object55
+      ref: object56
   object19:
     bindings:
       number:
@@ -379,7 +379,7 @@ objects:
         - max
       source: "std:math"
     program:
-      ref: object55
+      ref: object56
   object2:
     bindings: {}
     code:
@@ -400,7 +400,7 @@ objects:
         - fixture
       source: "<root>"
     program:
-      ref: object55
+      ref: object56
   object20:
     bindings:
       number:
@@ -431,7 +431,7 @@ objects:
         - min
       source: "std:math"
     program:
-      ref: object55
+      ref: object56
   object21:
     bindings:
       number:
@@ -465,7 +465,7 @@ objects:
         - sign
       source: "std:math"
     program:
-      ref: object55
+      ref: object56
   object22:
     bindings:
       number:
@@ -490,7 +490,7 @@ objects:
         - square
       source: "std:math"
     program:
-      ref: object55
+      ref: object56
   object23:
     bindings: {}
     code:
@@ -538,7 +538,7 @@ objects:
         - partition
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object24:
     bindings:
       math.number:
@@ -576,7 +576,7 @@ objects:
         - product
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object25:
     bindings: {}
     code:
@@ -622,7 +622,7 @@ objects:
         - range
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object26:
     bindings: {}
     code:
@@ -653,7 +653,7 @@ objects:
         - reverse
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object27:
     bindings:
       sort_by:
@@ -685,7 +685,7 @@ objects:
         - sort
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object28:
     bindings: {}
     code:
@@ -759,7 +759,7 @@ objects:
         - sort_by
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object29:
     bindings:
       math.number:
@@ -797,7 +797,7 @@ objects:
         - sum
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object3:
     bindings:
       find_index:
@@ -834,7 +834,7 @@ objects:
         - all
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object30:
     bindings:
       math.min:
@@ -877,7 +877,7 @@ objects:
         - take
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object31:
     bindings: {}
     code:
@@ -912,7 +912,7 @@ objects:
         - unique
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object32:
     bindings:
       math.min:
@@ -965,7 +965,7 @@ objects:
         - zip
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object33:
     bindings: {}
     code:
@@ -983,7 +983,7 @@ objects:
         - positive
       source: "<root>"
     program:
-      ref: object55
+      ref: object56
   object34:
     bindings:
       t.equal:
@@ -1011,7 +1011,7 @@ objects:
         - run
       source: "<root>"
     program:
-      ref: object55
+      ref: object56
   object35:
     bindings:
       t.equal:
@@ -1036,7 +1036,7 @@ objects:
         - run
       source: "<root>"
     program:
-      ref: object55
+      ref: object56
   object36:
     bindings:
       t.equal:
@@ -1061,7 +1061,7 @@ objects:
         - run
       source: "<root>"
     program:
-      ref: object55
+      ref: object56
   object37:
     bindings: {}
     code:
@@ -1096,7 +1096,7 @@ objects:
         - capture
       source: "std:test"
     program:
-      ref: object55
+      ref: object56
   object38:
     bindings:
       capture:
@@ -1138,7 +1138,7 @@ objects:
         - case
       source: "std:test"
     program:
-      ref: object55
+      ref: object56
   object39:
     bindings: {}
     code:
@@ -1211,7 +1211,7 @@ objects:
         - combine
       source: "std:test"
     program:
-      ref: object55
+      ref: object56
   object4:
     bindings:
       find_index:
@@ -1241,7 +1241,7 @@ objects:
         - any
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object40:
     bindings:
       equal:
@@ -1300,7 +1300,7 @@ objects:
         - compare
       source: "std:test"
     program:
-      ref: object55
+      ref: object56
   object41:
     bindings: {}
     code:
@@ -1332,7 +1332,7 @@ objects:
         - equal
       source: "std:test"
     program:
-      ref: object55
+      ref: object56
   object42:
     bindings:
       is_failure:
@@ -1360,7 +1360,7 @@ objects:
         - failures
       source: "std:test"
     program:
-      ref: object55
+      ref: object56
   object43:
     bindings: {}
     code:
@@ -1417,8 +1417,134 @@ objects:
         - fields_equal
       source: "std:test"
     program:
-      ref: object55
+      ref: object56
   object44:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - observation
+            - "$ref": map
+        - "$call":
+            - let
+            - accepted:
+                "$call":
+                  - and
+                  - "$ref": deterministic
+                  - "$call":
+                      - or
+                      - "$ref": bless
+                      - "$ref": matches
+              bless:
+                "$call":
+                  - get
+                  - "$ref": observation
+                  - bless
+              deterministic:
+                "$call":
+                  - eq
+                  - "$ref": run
+                  - "$ref": repeated
+              expected:
+                "$call":
+                  - get
+                  - "$ref": observation
+                  - expected
+              matches:
+                "$call":
+                  - eq
+                  - "$call":
+                      - get
+                      - "$ref": run
+                      - stdout
+                  - "$ref": expected
+              needs_replay:
+                "$call":
+                  - ne
+                  - "$ref": root
+                  - ~
+              repeated:
+                "$call":
+                  - get
+                  - "$ref": observation
+                  - repeated
+              replay:
+                "$call":
+                  - get
+                  - "$ref": observation
+                  - replay
+              root:
+                "$call":
+                  - get
+                  - "$ref": observation
+                  - root
+              run:
+                "$call":
+                  - get
+                  - "$ref": observation
+                  - run
+            - "$call":
+                - dict
+                - stage
+                - "$call":
+                    - cond
+                    - "$call":
+                        - not
+                        - "$ref": deterministic
+                    - determinism
+                    - "$call":
+                        - not
+                        - "$ref": accepted
+                    - golden
+                    - "$call":
+                        - and
+                        - "$ref": needs_replay
+                        - "$call":
+                            - ne
+                            - "$ref": replay
+                            - ~
+                        - "$call":
+                            - or
+                            - "$call":
+                                - ne
+                                - "$call":
+                                    - get
+                                    - "$ref": replay
+                                    - returncode
+                                - 0
+                            - "$call":
+                                - ne
+                                - "$call":
+                                    - get
+                                    - "$ref": replay
+                                    - root
+                                - "$ref": root
+                    - roundtrip
+                    - passed
+                - bless
+                - "$call":
+                    - and
+                    - "$ref": deterministic
+                    - "$ref": bless
+                - replay
+                - "$call":
+                    - and
+                    - "$ref": accepted
+                    - "$ref": needs_replay
+                    - "$call":
+                        - eq
+                        - "$ref": replay
+                        - ~
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - golden_plan
+      source: "std:test"
+    program:
+      ref: object56
+  object45:
     bindings: {}
     code:
       "$call":
@@ -1440,8 +1566,8 @@ objects:
         - is_failure
       source: "std:test"
     program:
-      ref: object55
-  object45:
+      ref: object56
+  object46:
     bindings:
       product:
         code:
@@ -1505,8 +1631,8 @@ objects:
         - lists
       source: "std:test"
     program:
-      ref: object55
-  object46:
+      ref: object56
+  object47:
     bindings:
       sequences.flat_map:
         code:
@@ -1554,8 +1680,8 @@ objects:
         - product
       source: "std:test"
     program:
-      ref: object55
-  object47:
+      ref: object56
+  object48:
     bindings:
       table:
         code:
@@ -1603,8 +1729,8 @@ objects:
         - property
       source: "std:test"
     program:
-      ref: object55
-  object48:
+      ref: object56
+  object49:
     bindings: {}
     code:
       "$call":
@@ -1634,8 +1760,32 @@ objects:
         - require_pass
       source: "std:test"
     program:
-      ref: object55
-  object49:
+      ref: object56
+  object5:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - xs
+            - "$ref": list
+          - - predicate
+            - "$ref": function
+        - "$call":
+            - len
+            - "$call":
+                - filter
+                - "$ref": predicate
+                - "$ref": xs
+        - "$ref": integer
+    environment: []
+    kind: function
+    location:
+      path:
+        - count
+      source: "std:list"
+    program:
+      ref: object56
+  object50:
     bindings:
       failures:
         code:
@@ -1692,32 +1842,8 @@ objects:
         - rerun
       source: "std:test"
     program:
-      ref: object55
-  object5:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - predicate
-            - "$ref": function
-        - "$call":
-            - len
-            - "$call":
-                - filter
-                - "$ref": predicate
-                - "$ref": xs
-        - "$ref": integer
-    environment: []
-    kind: function
-    location:
-      path:
-        - count
-      source: "std:list"
-    program:
-      ref: object55
-  object50:
+      ref: object56
+  object51:
     bindings:
       case:
         code:
@@ -1775,8 +1901,8 @@ objects:
         - suite
       source: "std:test"
     program:
-      ref: object55
-  object51:
+      ref: object56
+  object52:
     bindings:
       suite:
         code:
@@ -1829,8 +1955,8 @@ objects:
         - table
       source: "std:test"
     program:
-      ref: object55
-  object52:
+      ref: object56
+  object53:
     bindings: {}
     code:
       "$call":
@@ -1861,8 +1987,8 @@ objects:
         - tagged
       source: "std:test"
     program:
-      ref: object55
-  object53:
+      ref: object56
+  object54:
     bindings:
       capture:
         code:
@@ -1939,8 +2065,8 @@ objects:
         - throws
       source: "std:test"
     program:
-      ref: object55
-  object54:
+      ref: object56
+  object55:
     bindings:
       fields_equal:
         code:
@@ -1984,8 +2110,8 @@ objects:
         - throws_matching
       source: "std:test"
     program:
-      ref: object55
-  object55:
+      ref: object56
+  object56:
     kind: program
     sources:
       - code:
@@ -3724,6 +3850,122 @@ objects:
                           - "$ref": expected
                           - actual
                           - "$ref": actual
+          golden_plan:
+            "$call":
+              - fn
+              - - - observation
+                  - "$ref": map
+              - "$call":
+                  - let
+                  - accepted:
+                      "$call":
+                        - and
+                        - "$ref": deterministic
+                        - "$call":
+                            - or
+                            - "$ref": bless
+                            - "$ref": matches
+                    bless:
+                      "$call":
+                        - get
+                        - "$ref": observation
+                        - bless
+                    deterministic:
+                      "$call":
+                        - eq
+                        - "$ref": run
+                        - "$ref": repeated
+                    expected:
+                      "$call":
+                        - get
+                        - "$ref": observation
+                        - expected
+                    matches:
+                      "$call":
+                        - eq
+                        - "$call":
+                            - get
+                            - "$ref": run
+                            - stdout
+                        - "$ref": expected
+                    needs_replay:
+                      "$call":
+                        - ne
+                        - "$ref": root
+                        - ~
+                    repeated:
+                      "$call":
+                        - get
+                        - "$ref": observation
+                        - repeated
+                    replay:
+                      "$call":
+                        - get
+                        - "$ref": observation
+                        - replay
+                    root:
+                      "$call":
+                        - get
+                        - "$ref": observation
+                        - root
+                    run:
+                      "$call":
+                        - get
+                        - "$ref": observation
+                        - run
+                  - "$call":
+                      - dict
+                      - stage
+                      - "$call":
+                          - cond
+                          - "$call":
+                              - not
+                              - "$ref": deterministic
+                          - determinism
+                          - "$call":
+                              - not
+                              - "$ref": accepted
+                          - golden
+                          - "$call":
+                              - and
+                              - "$ref": needs_replay
+                              - "$call":
+                                  - ne
+                                  - "$ref": replay
+                                  - ~
+                              - "$call":
+                                  - or
+                                  - "$call":
+                                      - ne
+                                      - "$call":
+                                          - get
+                                          - "$ref": replay
+                                          - returncode
+                                      - 0
+                                  - "$call":
+                                      - ne
+                                      - "$call":
+                                          - get
+                                          - "$ref": replay
+                                          - root
+                                      - "$ref": root
+                          - roundtrip
+                          - passed
+                      - bless
+                      - "$call":
+                          - and
+                          - "$ref": deterministic
+                          - "$ref": bless
+                      - replay
+                      - "$call":
+                          - and
+                          - "$ref": accepted
+                          - "$ref": needs_replay
+                          - "$call":
+                              - eq
+                              - "$ref": replay
+                              - ~
+              - "$ref": map
           is_failure:
             "$call":
               - fn
@@ -4141,7 +4383,7 @@ objects:
         - drop
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object7:
     bindings:
       range:
@@ -4179,7 +4421,7 @@ objects:
         - enumerate
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object8:
     bindings:
       find_index:
@@ -4220,7 +4462,7 @@ objects:
         - find
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
   object9:
     bindings: {}
     code:
@@ -4278,7 +4520,7 @@ objects:
         - find_index
       source: "std:list"
     program:
-      ref: object55
+      ref: object56
 root:
   add_ten:
     ref: object0
@@ -6639,18 +6881,20 @@ root:
       ref: object42
     fields_equal:
       ref: object43
-    is_failure:
+    golden_plan:
       ref: object44
-    lists:
+    is_failure:
       ref: object45
-    product:
+    lists:
       ref: object46
-    property:
+    product:
       ref: object47
-    require_pass:
+    property:
       ref: object48
-    rerun:
+    require_pass:
       ref: object49
+    rerun:
+      ref: object50
     sequences:
       all:
         ref: object3
@@ -6727,13 +6971,13 @@ root:
       zip:
         ref: object32
     suite:
-      ref: object50
-    table:
       ref: object51
-    tagged:
+    table:
       ref: object52
-    throws:
+    tagged:
       ref: object53
-    throws_matching:
+    throws:
       ref: object54
+    throws_matching:
+      ref: object55
 status: finished

@@ -1,0 +1,315 @@
+# Golden orchestration decisions over opaque host observations.
+$call:
+- let
+- t:
+    $call:
+    - import
+    - std:test
+- pending:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: &id001
+          returncode: 0
+          stdout: 'status: finished
+
+            root: 42
+
+            '
+          stderr: ''
+        repeated: *id001
+        expected: 'status: finished
+
+          root: 42
+
+          '
+        bless: false
+        root: '42
+
+          '
+        replay: null
+  replayed:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: 'status: finished
+
+          root: 42
+
+          '
+        bless: false
+        root: '42
+
+          '
+        replay:
+          returncode: 0
+          root: '42
+
+            '
+  no_replay:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: 'status: finished
+
+          root: 42
+
+          '
+        bless: false
+        root: null
+        replay: null
+  missing_expected:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: null
+        bless: false
+        root: '42
+
+          '
+        replay: null
+  different_expected:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: 'status: finished
+
+          root: 43
+
+          '
+        bless: false
+        root: '42
+
+          '
+        replay: null
+  bless_missing:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: null
+        bless: true
+        root: '42
+
+          '
+        replay: null
+  bless_no_replay:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: null
+        bless: true
+        root: null
+        replay: null
+  different_stdout:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated:
+          returncode: 0
+          stdout: other
+          stderr: ''
+        expected: null
+        bless: true
+        root: '42
+
+          '
+        replay: null
+  different_stderr:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated:
+          returncode: 0
+          stdout: 'status: finished
+
+            root: 42
+
+            '
+          stderr: warning
+        expected: 'status: finished
+
+          root: 42
+
+          '
+        bless: false
+        root: '42
+
+          '
+        replay: null
+  different_exit:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated:
+          returncode: 1
+          stdout: 'status: finished
+
+            root: 42
+
+            '
+          stderr: ''
+        expected: 'status: finished
+
+          root: 42
+
+          '
+        bless: false
+        root: '42
+
+          '
+        replay: null
+  replay_different:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: 'status: finished
+
+          root: 42
+
+          '
+        bless: false
+        root: '42
+
+          '
+        replay:
+          returncode: 0
+          root: '43
+
+            '
+  replay_failed:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: 'status: finished
+
+          root: 42
+
+          '
+        bless: false
+        root: '42
+
+          '
+        replay:
+          returncode: 1
+          root: '42
+
+            '
+  replay_missing:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: 'status: finished
+
+          root: 42
+
+          '
+        bless: false
+        root: '42
+
+          '
+        replay:
+          returncode: 0
+          root: null
+  blessed_replay_failed:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: null
+        bless: true
+        root: '42
+
+          '
+        replay:
+          returncode: 1
+          root: null
+  golden_before_replay:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run: *id001
+        repeated: *id001
+        expected: null
+        bless: false
+        root: '42
+
+          '
+        replay:
+          returncode: 1
+          root: null
+  literal_text:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run:
+          returncode: 0
+          stdout: '{$call: [raise, hostile]}雪
+
+            '
+          stderr: ''
+        repeated:
+          returncode: 0
+          stdout: '{$call: [raise, hostile]}雪
+
+            '
+          stderr: ''
+        expected: '{$call: [raise, hostile]}雪
+
+          '
+        bless: false
+        root: null
+        replay: null
+  empty_missing:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run:
+          returncode: 0
+          stdout: ''
+          stderr: ''
+        repeated:
+          returncode: 0
+          stdout: ''
+          stderr: ''
+        expected: null
+        bless: false
+        root: null
+        replay: null
+  empty_present:
+    $call:
+    - t.golden_plan
+    - $literal:
+        run:
+          returncode: 0
+          stdout: ''
+          stderr: ''
+        repeated:
+          returncode: 0
+          stdout: ''
+          stderr: ''
+        expected: ''
+        bless: false
+        root: null
+        replay: null
