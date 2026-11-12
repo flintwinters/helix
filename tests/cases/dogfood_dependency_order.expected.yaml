@@ -1,13 +1,23 @@
 status: finished
 root:
-  ready:
-    ref: object0
-  done:
-    ref: object1
-  step:
-    ref: object2
-  plan:
-    ref: object3
+  deps:
+    maps:
+      merge:
+        ref: object0
+      remove:
+        ref: object1
+      select:
+        ref: object2
+      omit:
+        ref: object3
+    ready:
+      ref: object4
+    done:
+      ref: object5
+    step:
+      ref: object6
+    plan:
+      ref: object7
   checks:
     order:
       - "build"
@@ -55,7 +65,142 @@ objects:
   object0:
     kind: function
     program:
-      ref: object4
+      ref: object8
+    code:
+      - symbol: fn
+      - - - symbol: left
+          - symbol: map
+        - - symbol: right
+          - symbol: map
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: result
+            - symbol: key
+          - - symbol: set
+            - symbol: result
+            - symbol: key
+            - - symbol: get
+              - symbol: right
+              - symbol: key
+        - symbol: left
+        - - symbol: keys
+          - symbol: right
+      - symbol: map
+    location:
+      source: "std:map"
+      path:
+        - "merge"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object8
+    code:
+      - symbol: fn
+      - - - symbol: source
+          - symbol: map
+        - - symbol: key
+          - symbol: string
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: result
+            - symbol: name
+          - - symbol: if
+            - - symbol: eq
+              - symbol: name
+              - symbol: key
+            - symbol: result
+            - - symbol: set
+              - symbol: result
+              - symbol: name
+              - - symbol: get
+                - symbol: source
+                - symbol: name
+        - {}
+        - - symbol: keys
+          - symbol: source
+      - symbol: map
+    location:
+      source: "std:map"
+      path:
+        - "remove"
+    environment: []
+    bindings: {}
+  object2:
+    kind: function
+    program:
+      ref: object8
+    code:
+      - symbol: fn
+      - - - symbol: source
+          - symbol: map
+        - - symbol: requested
+          - - symbol: list_of
+            - symbol: string
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: result
+            - symbol: name
+          - - symbol: if
+            - - symbol: has
+              - symbol: requested
+              - symbol: name
+            - - symbol: set
+              - symbol: result
+              - symbol: name
+              - - symbol: get
+                - symbol: source
+                - symbol: name
+            - symbol: result
+        - {}
+        - - symbol: keys
+          - symbol: source
+      - symbol: map
+    location:
+      source: "std:map"
+      path:
+        - "select"
+    environment: []
+    bindings: {}
+  object3:
+    kind: function
+    program:
+      ref: object8
+    code:
+      - symbol: fn
+      - - - symbol: source
+          - symbol: map
+        - - symbol: requested
+          - - symbol: list_of
+            - symbol: string
+      - - symbol: select
+        - symbol: source
+        - - symbol: filter
+          - - symbol: fn
+            - - symbol: name
+            - - symbol: not
+              - - symbol: has
+                - symbol: requested
+                - symbol: name
+          - - symbol: keys
+            - symbol: source
+      - symbol: map
+    location:
+      source: "std:map"
+      path:
+        - "omit"
+    environment: []
+    bindings:
+      select:
+        code:
+          source: "std:map"
+          path:
+            - "select"
+  object4:
+    kind: function
+    program:
+      ref: object8
     code:
       - symbol: fn
       - - symbol: pending
@@ -79,15 +224,15 @@ objects:
         - - symbol: keys
           - symbol: pending
     location:
-      source: "<root>"
+      source: "std:dependency"
       path:
         - "ready"
     environment: []
     bindings: {}
-  object1:
+  object5:
     kind: function
     program:
-      ref: object4
+      ref: object8
     code:
       - symbol: fn
       - - symbol: state
@@ -102,20 +247,20 @@ objects:
               - order
         - 0
     location:
-      source: "<root>"
+      source: "std:dependency"
       path:
         - "done"
     environment: []
     bindings:
       ready:
         code:
-          source: "<root>"
+          source: "std:dependency"
           path:
             - "ready"
-  object2:
+  object6:
     kind: function
     program:
-      ref: object4
+      ref: object8
     code:
       - symbol: fn
       - - symbol: state
@@ -132,16 +277,6 @@ objects:
             - symbol: ready
             - symbol: pending
             - symbol: order
-          remaining:
-            - symbol: filter
-            - - symbol: fn
-              - - symbol: task
-              - - symbol: not
-                - - symbol: has
-                  - symbol: batch
-                  - symbol: task
-            - - symbol: keys
-              - symbol: pending
         - - symbol: set
           - - symbol: set
             - {}
@@ -150,36 +285,35 @@ objects:
               - symbol: order
               - symbol: batch
           - pending
-          - - symbol: fold
-            - - symbol: fn
-              - - symbol: acc
-                - symbol: task
-              - - symbol: set
-                - symbol: acc
-                - symbol: task
-                - - symbol: get
-                  - symbol: pending
-                  - symbol: task
-            - {}
-            - symbol: remaining
+          - - symbol: maps.omit
+            - symbol: pending
+            - symbol: batch
     location:
-      source: "<root>"
+      source: "std:dependency"
       path:
         - "step"
     environment: []
     bindings:
       ready:
         code:
-          source: "<root>"
+          source: "std:dependency"
           path:
             - "ready"
-  object3:
+      maps.omit:
+        code:
+          source: "std:map"
+          path:
+            - "omit"
+  object7:
     kind: function
     program:
-      ref: object4
+      ref: object8
     code:
       - symbol: fn
-      - - symbol: tasks
+      - - - symbol: tasks
+          - - symbol: map_of
+            - - symbol: list_of
+              - symbol: string
       - - symbol: let
         - initial:
             - symbol: set
@@ -240,26 +374,65 @@ objects:
             - finished
             - blocked
     location:
-      source: "<root>"
+      source: "std:dependency"
       path:
         - "plan"
     environment: []
     bindings:
       done:
         code:
-          source: "<root>"
+          source: "std:dependency"
           path:
             - "done"
       step:
         code:
-          source: "<root>"
+          source: "std:dependency"
           path:
             - "step"
-  object4:
+  object8:
     kind: program
     sources:
       - source: "<root>"
         code:
+          deps:
+            - symbol: import
+            - symbol: "std:dependency"
+          checks:
+            - symbol: deps.plan
+            - test:
+                - "build"
+              lint:
+                - "build"
+              review:
+                - "test"
+                - lint
+              build: []
+          missing:
+            - symbol: deps.plan
+            - test:
+                - "compile"
+              docs: []
+          cycle:
+            - symbol: deps.plan
+            - a:
+                - "b"
+              b:
+                - "a"
+              downstream:
+                - "a"
+              independent: []
+          self_cycle:
+            - symbol: deps.plan
+            - self:
+                - "self"
+          empty:
+            - symbol: deps.plan
+            - {}
+      - source: "std:dependency"
+        code:
+          maps:
+            - symbol: import
+            - symbol: "std:map"
           ready:
             - symbol: fn
             - - symbol: pending
@@ -311,16 +484,6 @@ objects:
                   - symbol: ready
                   - symbol: pending
                   - symbol: order
-                remaining:
-                  - symbol: filter
-                  - - symbol: fn
-                    - - symbol: task
-                    - - symbol: not
-                      - - symbol: has
-                        - symbol: batch
-                        - symbol: task
-                  - - symbol: keys
-                    - symbol: pending
               - - symbol: set
                 - - symbol: set
                   - {}
@@ -329,21 +492,15 @@ objects:
                     - symbol: order
                     - symbol: batch
                 - pending
-                - - symbol: fold
-                  - - symbol: fn
-                    - - symbol: acc
-                      - symbol: task
-                    - - symbol: set
-                      - symbol: acc
-                      - symbol: task
-                      - - symbol: get
-                        - symbol: pending
-                        - symbol: task
-                  - {}
-                  - symbol: remaining
+                - - symbol: maps.omit
+                  - symbol: pending
+                  - symbol: batch
           plan:
             - symbol: fn
-            - - symbol: tasks
+            - - - symbol: tasks
+                - - symbol: map_of
+                  - - symbol: list_of
+                    - symbol: string
             - - symbol: let
               - initial:
                   - symbol: set
@@ -403,34 +560,95 @@ objects:
                     - 0
                   - finished
                   - blocked
-          checks:
-            - symbol: plan
-            - test:
-                - "build"
-              lint:
-                - "build"
-              review:
-                - "test"
-                - lint
-              build: []
-          missing:
-            - symbol: plan
-            - test:
-                - "compile"
-              docs: []
-          cycle:
-            - symbol: plan
-            - a:
-                - "b"
-              b:
-                - "a"
-              downstream:
-                - "a"
-              independent: []
-          self_cycle:
-            - symbol: plan
-            - self:
-                - "self"
-          empty:
-            - symbol: plan
-            - {}
+      - source: "std:map"
+        code:
+          merge:
+            - symbol: fn
+            - - - symbol: left
+                - symbol: map
+              - - symbol: right
+                - symbol: map
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: result
+                  - symbol: key
+                - - symbol: set
+                  - symbol: result
+                  - symbol: key
+                  - - symbol: get
+                    - symbol: right
+                    - symbol: key
+              - symbol: left
+              - - symbol: keys
+                - symbol: right
+            - symbol: map
+          remove:
+            - symbol: fn
+            - - - symbol: source
+                - symbol: map
+              - - symbol: key
+                - symbol: string
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: result
+                  - symbol: name
+                - - symbol: if
+                  - - symbol: eq
+                    - symbol: name
+                    - symbol: key
+                  - symbol: result
+                  - - symbol: set
+                    - symbol: result
+                    - symbol: name
+                    - - symbol: get
+                      - symbol: source
+                      - symbol: name
+              - {}
+              - - symbol: keys
+                - symbol: source
+            - symbol: map
+          select:
+            - symbol: fn
+            - - - symbol: source
+                - symbol: map
+              - - symbol: requested
+                - - symbol: list_of
+                  - symbol: string
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: result
+                  - symbol: name
+                - - symbol: if
+                  - - symbol: has
+                    - symbol: requested
+                    - symbol: name
+                  - - symbol: set
+                    - symbol: result
+                    - symbol: name
+                    - - symbol: get
+                      - symbol: source
+                      - symbol: name
+                  - symbol: result
+              - {}
+              - - symbol: keys
+                - symbol: source
+            - symbol: map
+          omit:
+            - symbol: fn
+            - - - symbol: source
+                - symbol: map
+              - - symbol: requested
+                - - symbol: list_of
+                  - symbol: string
+            - - symbol: select
+              - symbol: source
+              - - symbol: filter
+                - - symbol: fn
+                  - - symbol: name
+                  - - symbol: not
+                    - - symbol: has
+                      - symbol: requested
+                      - symbol: name
+                - - symbol: keys
+                  - symbol: source
+            - symbol: map

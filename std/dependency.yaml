@@ -1,0 +1,38 @@
+# Stable dependency batches for small task maps. Import as std:dependency.
+# plan(tasks) accepts a map of task names to lists of prerequisite names.
+# Ready tasks retain input key order; blocked results preserve pending tasks
+# and enumerate missing references, including duplicates, in declaration order.
+# A blocked result without missing references indicates cycles (and dependents).
+# Repeated scans and immutable copies can be cubic on long chains; runtime
+# work/data budgets and until/fold iteration limits apply. No recursive calls.
+maps: [import, std:map]
+ready:
+  [fn, [pending, order],
+    [filter,
+      [fn, [task], [fold, [fn, [ok, dep], [and, ok, [has, order, dep]]], true, [get, pending, task]]],
+      [keys, pending]]]
+done:
+  [fn, [state],
+    [eq, [len, [ready, [get, state, "pending"], [get, state, "order"]]], 0]]
+step:
+  [fn, [state],
+    [let,
+      {pending: [get, state, "pending"],
+       order: [get, state, "order"],
+       batch: [ready, pending, order]},
+      [set,
+        [set, {}, "order", [concat, order, batch]],
+        "pending", [maps.omit, pending, batch]]]]
+plan:
+  [fn, [[tasks, [map_of, [list_of, string]]]],
+    [let,
+      {initial: [set, [set, {}, "pending", tasks], "order", []],
+       final: [until, done, step, initial],
+       missing: [fold,
+         [fn, [acc, task],
+           [concat, acc,
+             [map, [fn, [dep], [set, [set, {}, "task", task], "dependency", dep]],
+               [filter, [fn, [dep], [not, [has, tasks, dep]]], [get, tasks, task]]]]],
+         [], [keys, tasks]]},
+      [set, [set, final, "missing", missing], "status",
+        [if, [eq, [len, [get, final, "pending"]], 0], "finished", "blocked"]]]]
