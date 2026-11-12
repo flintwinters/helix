@@ -12,54 +12,16 @@ How to use this file: tick a box only when the feature works end to end *and* ha
 
 ---
 
-## 0. What exists today
+## 0. Foundation — complete
 
-- [x] Parse YAML source into an object graph with parent links and source spans
-- [x] Root-relative node paths (`/inner/y/1`)
-- [x] Vector-form expressions, actor first: `[add, x, 1]`
-- [x] Lexical symbol lookup through parent links, nearest definition wins
-- [x] Integer `add`, `sub`, `mul` with overflow checking
-- [x] Structured errors with kind, message, path, line and column
-- [x] Cycle detection for self-referential values
-- [x] Finished state serializes to YAML and re-running its `root` is a fixpoint
-- [x] `./manage.py` entrypoint with golden-case tests
-- [x] Structural linting through the hyperlinter submodule
+YAML source graphs retain parent links, source spans and root-relative paths. Actor-first expressions use lexical lookup; execution detects cycles and emits structured diagnostics. Finished ordinary-data roots round-trip through YAML. `./manage.py` owns golden testing and structural linting through the hyperlinter submodule.
 
----
+## 1. Core language — complete
 
-## 1. Core language: enough to compute things
-
-The minimum for writing a non-trivial program.
-
-### Values
-- [x] Strings (literal, concatenation, length, slicing)
-- [x] Floats
-- [x] Booleans and null as first-class values in expressions
-- [x] Lists with index, length, append, concat
-- [x] Maps with get, set, keys, has
-- [x] Clear, documented type rules (no silent coercion) — see `LANGUAGE.md`
-
-### Operators
-- [x] Comparison: `eq`, `ne`, `lt`, `le`, `gt`, `ge`
-- [x] `not`
-- [x] Short-circuiting `and`, `or`
-- [x] Integer `div` and `mod` (truncating; divide-by-zero is a structured error)
-- [x] `neg` and float math
-- [x] Variadic `add` and `mul` (`[add, 1, 2, 3]`)
-
-### Control flow
-- [x] `if` (lazy: only the chosen branch runs)
-- [x] `cond` for multi-way branches
-- [x] Local bindings (`let`)
-- [x] Iteration: `map`, `filter`, `fold`, `each`
-- [x] A way to loop until a condition without unbounded recursion
-
-### Functions
-- [x] User-defined actors (functions) declared in YAML
-- [x] Parameters and return values
-- [x] Closures over the enclosing object graph
-- [x] Recursion, with a stack-depth limit that fails cleanly
-- [x] Documented evaluation order (and what is lazy)
+- Values: strings with concatenation/length/slicing, integers, floats, booleans, null, lists and maps; explicit type rules without silent coercion (`LANGUAGE.md`).
+- Operators: checked integer arithmetic, float math, variadic `add`/`mul`, truncating `div`/`mod`, comparisons and short-circuit boolean operations.
+- Control: lazy `if`/`cond`, `let`, collection iteration and bounded looping without recursive calls.
+- Functions: YAML declarations, parameters/results, lexical closures and recursion with a clean depth-limit error; evaluation order and laziness are documented.
 
 ---
 
@@ -85,18 +47,7 @@ Reversibility is a promise type. A machine that mixes in this promise must expos
 
 ## 3. Talking to the world
 
-A daily driver has to do things.
-
-- [x] Read and write files
-- [x] Command-line arguments and exit codes
-- [x] Environment variables
-- [x] Stdin and stdout
-- [x] Run external commands and capture output
-- [x] HTTP requests
-- [x] Time and randomness, with a deterministic mode for tests and replay
-- [x] JSON, YAML and CSV parsing and emitting as library functions
-- [x] Effects are explicit in the state: a suspended run shows *which* effect it is waiting on
-- [x] Signals: external events can interrupt or resume a run (`signaled` status)
+Completed: caller-authorized file I/O, arguments/exit codes, environment, standard streams, command capture, HTTP, time/randomness and JSON/YAML/CSV codecs. Pending effects are explicit in machine state; host events can interrupt and resume in-memory execution.
 
 Evidence: `effects_world` is a golden pending-request case and an end-to-end
 `effects` suite program that writes/reads a file, consumes arguments/environment/
@@ -117,49 +68,21 @@ These limits leave section 2's restoration and replay obligations open.
 
 ---
 
-## 4. Errors I can actually debug
+## 4. Errors I can actually debug — complete
 
-- [x] `try` / recover form, with the error available as data
-- [x] Error values carry a call chain with paths and source spans
-- [x] Error output is readable by a human *and* machine-parseable
-- [x] Asserts, with messages
-- [x] Failed runs are resumable after fixing the cause, where it makes sense — opt-in pure recovery checkpoints preserve completed root fields; unfinished calls restart (full continuation restoration remains section 2)
-- [x] Nothing panics: malformed input always yields a structured error (`manage.py test` mutation sweep: truncated and line-deleted variants of every case)
-- [x] `raise`: user code raises its own error with a user-chosen `kind`, message and data payload
-- [x] Re-raise from a handler, preserving the original error as a `cause` chain
-- [x] Match handlers on error `kind`, so an unexpected kind is not swallowed
-- [x] `finally` / cleanup that runs on both success and failure (needed before effects)
-- [x] Errors are values in the saved state: a caught error stays readable in `root`, and the state diff shows it appear
-- [x] Validation can collect every problem in one run instead of stopping at the first
+Structured errors are readable data with paths, spans, call chains and retained causes. `try`, kind-matched recovery, `raise`, assertions and `finally` support independent validation and cleanup on either outcome. Caught errors remain visible in saved roots. Malformed-input mutation sweeps check structured failures rather than panics.
 
----
+Pure recovery checkpoints preserve completed root fields and restart unfinished calls after correction. Full continuation restoration remains in section 2.
 
-## 5. Reuse: programs bigger than one file
+## 5. Reuse — complete
 
-- [x] Import another Helix file
-- [x] Namespacing and visibility rules
-- [x] A standard library with a documented, small, stable core
-- [x] Package or dependency story: repository-pinned vendored paths, with provenance/update guidance in `LANGUAGE.md`; `import_vendored` golden case and `imports` relocation/version-isolation contracts.
-- [x] Circular import detection with a useful error
+File imports provide isolated namespaces, documented visibility and circular-import diagnostics. The standard library has a documented core. Dependencies use repository-pinned vendored paths with provenance/update guidance in `LANGUAGE.md`; `import_vendored` and the `imports` suite cover relocation and version isolation.
 
 ---
 
 ## 6. Daily tooling
 
-The difference between a language and a language I enjoy using.
-
-- [x] `helix run` with sensible exit codes (exists, extend as features land)
-- [x] REPL
-- [x] Formatter with canonical output
-- [x] `helix check`: parse and static checks without running
-- [x] Step/trace mode: watch evaluation move through the graph
-- [x] Inspect a state file: status, current position, pending effect, summary
-- [x] Watch mode: re-run on change
-- [x] Editor support: JSON Schema for programs, then an LSP
-- [x] Shell completion and a helpful `--help`
-- [x] In-language test runner (assertions plus semantic golden state comparison in `std:test`; file discovery and byte comparison remain host duties)
-- [x] Single-command install (prebuilt binary or `cargo install`)
-
+Completed: `run` and exit codes, REPL, canonical formatter, non-executing `check`, step/trace, saved-state inspection, content-based watch, JSON Schema/LSP, shell completion/help and `cargo install`. `std:test` supplies in-language assertions and semantic state comparison; file discovery and byte comparison remain host duties.
 
 Evidence: `daily_interactive`, `daily_inspection` and `tooling_source` golden
 cases accompany the `interactive`, `inspection` and `static` suites. The CLI
@@ -192,25 +115,15 @@ leave section 2's complete suspend/resume promise unchanged.
 
 The current-runtime trust milestone is implemented. The coverage map and limits are in `tests/README.md`; suites and their contracts are discoverable with `./manage.py test --describe`. Actor scenarios are measured in `runtime/coverage/actors.json`, peak RSS and timing in `runtime/memory/report.json`, and compiled mutation sensitivity in `runtime/mutants/report.json`. Scenario counts are not compiler branch-coverage percentages or proofs of exhaustive correctness.
 
-Treat testing as a substantial engineering responsibility. The Rust/Python size ratio is a prompt to inspect gaps, not a coverage metric or a target to pad toward. Build on the existing golden, determinism, round-trip and damaged-input checks; every new suite must be reproducible through the root `./manage.py` entrypoint, with Python orchestration and fixtures kept inside the project. Testing goals below are complete when their automated checks run and demonstrate the claimed contract; golden cases remain required for language features.
+Treat testing as a substantial engineering responsibility. The Rust/Python size ratio is a prompt to inspect gaps, not a coverage metric or a target to pad toward. Build on the existing golden, determinism, round-trip and damaged-input checks; every new suite must be reproducible through the root `./manage.py` entrypoint, with Python orchestration and fixtures kept inside the project. Completion requires automated checks demonstrating the claimed contract; golden cases remain required for language features.
 
-- [x] Maintain a discoverable coverage map from language contracts and runtime invariants to suites, including known gaps; measure exercised branches and failure paths rather than counting test lines
-- [x] Cover every builtin and form across valid inputs, wrong arity and types, empty collections, numeric boundaries, Unicode and nested values; include precise error blame
-- [x] Exercise feature interactions systematically: lexical shadowing, closures, recursion, iteration, lazy branches, memoization and error recovery composed in the same programs
-- [x] Test parser and graph contracts across YAML scalar styles, nesting, duplicate keys, unsupported constructs, parent links, lexical lookup and source spans
-- [x] Generate ordinary-data values and programs to check serialization preserves meaning, literal/expression distinctions and stable output across repeated save/reload cycles; verify function and machine values through named inspection and execution contracts
-- [x] Add property-based and metamorphic tests for semantic laws and equivalent program transformations, respecting overflow, float behavior and documented evaluation order
-- [x] Compare a bounded language subset against a small independent Python reference evaluator, and library algorithms against independent host-language oracles
-- [x] Extend damaged-input testing into reproducible fuzzing of parsing, linking, evaluation and emission; retain seeds, minimize failures and promote them into regression cases
-- [x] Test the tests with deliberate implementation faults: establish that semantic regressions, incorrect error locations and broken serialization make the relevant suites fail
-- [x] Cover imports and module isolation with generated file trees: shared dependencies, cycles, missing or malformed files, path resolution and errors originating in imported source
-- [x] Exercise the CLI as a subprocess: files versus stdin, arguments, help, exit codes, stdout/stderr contracts and failed input access
-- [x] Test public library and VM contracts directly, including independent VM instances and repeated use, alongside CLI golden coverage; invoke these checks through `./manage.py`
-- [x] Verify resource limits at their boundaries: deep syntax, recursion, long iteration and large graphs terminate or fail cleanly under enforced timeouts without host stack overflow
-- [x] Maintain repeatable performance and memory workloads across growing input sizes; detect pathological scaling and regressions with documented environments and tolerances
-- [x] Expand type and class tests across nested combinations, invalid declarations, collected violations, inheritance conflicts and deterministic provenance; connect these to section 8's algebra and proof obligations
-- [x] Run fast regression suites on every change and bounded generated, fuzz and scale suites on a regular automated schedule; report seeds, reproduction commands and artifacts on failure
-- [x] Keep the harness trustworthy: test discovery, golden comparison, timeout/crash detection and failure reporting; provide discoverable suite selection without creating competing entrypoints
+Completed coverage spans:
+
+- Builtins, forms and feature interactions; arity/types, empty inputs, numeric boundaries, Unicode and precise blame.
+- Parser/source graphs, imports/module isolation, ordinary-data fixpoints and function/machine inspection contracts.
+- Generated properties, metamorphic laws, independent reference oracles, reproducible fuzzing and deliberate implementation mutations.
+- CLI subprocesses and public VM APIs; resource boundaries, stack safety, performance/memory scaling and type/class algebra.
+- Harness discovery, comparison, timeout/crash detection and actionable failure artifacts; fast regressions plus scheduled bounded generated/fuzz/scale runs.
 
 ### Obligations activated by later milestones
 
@@ -515,21 +428,13 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 
 - `dogfood_work_queue`: stable priority sorting and dispatch through `std:list.sort_by`, with negative priorities, equal-priority payloads, sorted/reversed/empty/singleton inputs, independent calls, idempotence and source-order preservation. The original 100+ line example now shares its sort implementation with the standard library. Friction: insertion sort repeatedly copies lists and is suitable only for small queues.
 
-### Errors as a first-class feature (section 4)
-- [x] Parse and validate a messy inline dataset where every row may be malformed; `try` turns each failure into a record, and the report lists all of them with path and line
-- [x] A calculator or expression evaluator that raises its own `syntax`/`arity` errors and recovers per input line, never aborting the batch
-- [x] A retry loop: attempt a failing step, inspect the error's `kind`, retry on transient kinds, give up on the rest, and keep the attempt history in the state
-- [x] Wrap a low-level error in a domain error with `cause`, then read the full chain from the saved state without a debugger
-- [x] A function whose `assert` preconditions document its contract; call it wrongly and fix the caller from the assertion message alone
-- [x] Turn a failed run's saved error into a regression golden case in under a minute (error, expected state, fix)
-- [x] Cleanup with `finally` around a multi-step job, proven by a golden case where a middle step fails
-- [x] Diff two runs of one program, one passing and one failing, and explain the failure from the state diff alone
+### Errors as a first-class feature (section 4) — complete
 
-Evidence: `dogfood_errors` and the paired `dogfood_errors_regression` / `dogfood_errors_fixed` golden cases exercise these workflows without host effects. The batch retains each failed row's index, source and full error (path, line, column and calls); valid rows after failures still finish. Calculator inputs recover independently. Retry histories cover eventual success, immediate fatal failure and exhausted transient attempts. `wrapped.cause.cause` retains the original parser failure under the domain wrapper.
+`dogfood_errors` covers independent malformed-row validation, a calculator with per-input recovery, kind-based retry histories, domain wrapping with retained causes, assertion-led caller repair and cleanup on success/failure. Reports retain input positions and full errors; later valid rows still finish.
 
-The saved `wrong_call` assertion says to pass at least 1. The minimized regression keeps `count: 0`; its corrected companion changes only that input to `count: 1`. Comparing their expected states explains the failure directly: the assertion and caller spans in `error` become a finished `root` with `count: 1` and `result: 2`. To repeat the regression workflow, copy the minimized source, run `./manage.py test --suite golden --bless`, inspect its expected state, change the caller input and rerun `./manage.py test --suite golden`. No new harness is needed.
+The paired `dogfood_errors_regression` / `dogfood_errors_fixed` cases preserve a minimized failure and its one-input correction (`count: 0` to `count: 1`). Their saved-state diff explains the assertion failure and corrected result, using the existing golden regression workflow.
 
-Friction: `let` bindings are lazy, so an unused assertion does not enforce a contract; these examples put assertions in the result's dependency chain. Domain wrapping must retain the original map explicitly under `cause` before re-raising. Pure cleanup has no observable resource release, so a deliberately raised cleanup error witnesses execution on both outcomes; a successful cleanup separately proves preservation of the middle-step error. These are pure workflow exercises, not claims of external retries or resource management. Parser-document coordinates appear in the message; structured spans point to the parsing actor, so row index and source are retained alongside them.
+Friction: lazy bindings require assertions in the result dependency chain; wrapping retains the original error explicitly under `cause`. Pure cleanup uses a raised error to witness execution, with a separate successful-cleanup case preserving the original failure. These examples do not establish external retry or resource-management guarantees. Parser-document coordinates appear in messages; structured spans identify the parsing actor, so reports retain source and index.
 
 ### With suspend/resume (section 2)
 - [ ] A long computation stopped midway, its state read in `git diff`, resumed to the same result as an uninterrupted run
