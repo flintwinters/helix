@@ -1,0 +1,6 @@
+ascii: [slice, "abcdef", 1, 5]
+unicode: [slice, "aé雪🙂z", 1, 4]
+tail: [slice, "aé雪🙂z", 3, 5]
+empty_end: [slice, "é雪🙂", 3, 3]
+empty_middle: [slice, "é雪🙂", 1, 1]
+empty: [slice, "", 0, 0]

@@ -88,8 +88,17 @@ fn slice(args: &[Yaml]) -> Result<Yaml, Fault> {
     };
     match &args[0] {
         Yaml::String(s) => {
+            if s.is_ascii() {
+                let (start, end) = bounds(s.len())?;
+                return Ok(Yaml::String(s[start..end].to_owned()));
+            }
             let (start, end) = bounds(s.chars().count())?;
-            Ok(Yaml::String(s.chars().skip(start).take(end - start).collect()))
+            let mut offsets = s.char_indices().map(|(byte, _)| byte).chain(std::iter::once(s.len()));
+            let first = offsets.nth(start).expect("validated character boundary");
+            let last = if start == end { first } else {
+                offsets.nth(end - start - 1).expect("validated character boundary")
+            };
+            Ok(Yaml::String(s[first..last].to_owned()))
         }
         Yaml::Array(v) => {
             let (start, end) = bounds(v.len())?;
