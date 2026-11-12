@@ -12,7 +12,7 @@ use crate::error::s;
 /// predicate, reported as a violation rather than aborting the check.
 pub type Pred<'a> = dyn FnMut(&Yaml, &Yaml) -> Result<bool, String> + 'a;
 
-const PRIMITIVES: [&str; 9] = ["any", "integer", "float", "string", "boolean", "null", "list", "map", "secret"];
+const PRIMITIVES: [&str; 10] = ["any", "never", "integer", "float", "string", "boolean", "null", "list", "map", "secret"];
 
 /// Whether `name` is a primitive type, which evaluates as a bare symbol when nothing shadows it.
 pub fn is_primitive(name: &str) -> bool {
@@ -22,6 +22,7 @@ pub fn is_primitive(name: &str) -> bool {
 #[derive(Clone, Debug, PartialEq)]
 pub(super) enum Ty {
     Any,
+    Never,
     Int,
     Float,
     Str,
@@ -86,6 +87,7 @@ impl Ty {
         match ty {
             Yaml::String(name) => Ok(match name.as_str() {
                 "any" => Ty::Any,
+                "never" => Ty::Never,
                 "integer" => Ty::Int,
                 "float" => Ty::Float,
                 "string" => Ty::Str,
@@ -126,6 +128,7 @@ impl Ty {
     pub(super) fn name(&self) -> String {
         match self {
             Ty::Any => "any".into(),
+            Ty::Never => "never".into(),
             Ty::Int => "integer".into(),
             Ty::Float => "float".into(),
             Ty::Str => "string".into(),
@@ -240,7 +243,7 @@ pub fn violations(value: &Yaml, ty: &Yaml, pred: &mut Pred) -> Result<Vec<Violat
 /// Whether every value of `a` is a value of `b`. Sound but incomplete: a refinement of `b` is only
 /// provable from `a` being that same refinement (or a refinement of it).
 pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
-    if a == b || *b == Ty::Any {
+    if a == b || *a == Ty::Never || *b == Ty::Any {
         return true;
     }
     match (a, b) {

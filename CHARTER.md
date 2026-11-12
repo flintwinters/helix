@@ -285,7 +285,7 @@ A type should read like the value it describes with the specifics left open: som
 
 Grow a coherent algebra of descriptions, with a stated meaning for each operation before choosing its syntax. Membership, subtyping and equivalence are different questions: checking one value must not be mistaken for proving a relationship between types. Every new former must compose with existing types, reflection, diagnostics and the YAML round trip.
 
-- [ ] Define types by the values they admit, with explicit top (`any`) and bottom (no inhabitants), and distinguish bottom from the literal `null` type
+- [x] Define types by the values they admit, with explicit top (`any`) and bottom (`never`, no inhabitants), and distinguish bottom from the literal `null` type (`types_bottom` golden case)
 - [ ] Add intersections alongside unions; document their interaction with refinements, optional fields and open/closed records
 - [ ] Define the subtyping order and type equivalence; decide when equivalent declarations compare equal and how that relates to ordinary `eq`
 - [ ] Define union as least upper bound and intersection as greatest lower bound wherever the supported fragment can represent them; specify any approximation explicitly

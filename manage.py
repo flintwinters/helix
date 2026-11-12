@@ -14,12 +14,14 @@ program must reproduce the same `root`.
 import argparse
 import subprocess
 import sys
+import os
 from pathlib import Path
 
 import yaml
 
 ROOT = Path(__file__).resolve().parent
 CASES = ROOT / "tests" / "cases"
+COMMANDS = {CASES: "run"}
 BIN = ROOT / "target" / "debug" / "helix"
 HYPERLINTER = ROOT / "hyperlinter"
 
@@ -38,7 +40,11 @@ def lint(extra: list[str]) -> int:
 
 
 def helix(*args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
-    return subprocess.run([str(BIN), *args], input=stdin, capture_output=True, text=True, cwd=ROOT)
+    try:
+        return subprocess.run([str(BIN), *args], input=stdin, capture_output=True, text=True, cwd=ROOT,
+                              timeout=float(os.environ.get("HELIX_TEST_TIMEOUT", "10")))
+    except subprocess.TimeoutExpired as error:
+        return subprocess.CompletedProcess([str(BIN), *args], 124, "", f"timed out: {error}")
 
 
 def root_section(state: str) -> str | None:
@@ -64,6 +70,12 @@ def malformed_state(out: str, returncode: int) -> str | None:
         return f"state is not valid YAML: {e}"
     if not isinstance(state, dict) or "status" not in state:
         return "state has no `status`"
+    if state["status"] not in ("finished", "error"):
+        return f"unexpected terminal status {state['status']!r}"
+    if (state["status"] == "error") != (returncode == 1):
+        return "exit code disagrees with status"
+    if state["status"] == "finished" and "root" not in state:
+        return "finished state has no root"
     if state["status"] == "error" and not (isinstance(state.get("error"), dict) and ERROR_FIELDS <= state["error"].keys()):
         return f"error lacks fields {sorted(ERROR_FIELDS)}"
     return None
@@ -91,11 +103,10 @@ def robustness(cases: list[Path]) -> list[str]:
     return failures
 
 
-def test(bless: bool) -> int:
+def test(bless: bool, suites: list[str] | None = None) -> int:
     if (code := build()) != 0:
         return code
     cases = [c for c in sorted(CASES.glob("*.yaml")) if not c.name.endswith(".expected.yaml")]
-    failures = []
     modules = helix("std")
     if modules.returncode != 0 or modules.stdout.splitlines() != ["std:math", "std:list"]:
         failures.append("standard library discovery failed")
@@ -105,7 +116,7 @@ def test(bless: bool) -> int:
             failures.append(f"{source.name}: standard library source differs")
     if helix("std", "unknown").returncode != 2:
         failures.append("unknown standard library must exit with usage error")
-    for case in cases:
+    for case in cases if "golden" in selected else []:
         expected_path = case.with_suffix(".expected.yaml")
         out = helix("run", str(case.relative_to(ROOT))).stdout
         if bless:
@@ -117,12 +128,15 @@ def test(bless: bool) -> int:
             again = helix("run", "-", stdin=program).stdout
             if root_section(again) != program:
                 failures.append(f"{case.name}: round trip is not stable\n--- first\n{program}--- second\n{again}")
-    if not bless:
+    if not bless and "robustness" in selected:
         failures += robustness(cases)
     for f in failures:
         print("FAIL", f, file=sys.stderr)
     print(f"{len(cases) - len(failures)}/{len(cases)} cases passed")
     return 1 if failures else 0
+
+
+SUITES = ("golden", "robustness", "harness", "cli", "generated", "imports", "library")
 
 
 def main() -> int:
@@ -132,7 +146,10 @@ def main() -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("build")
     sub.add_parser("run").add_argument("file")
-    sub.add_parser("test").add_argument("--bless", action="store_true")
+    testing = sub.add_parser("test")
+    testing.add_argument("--bless", action="store_true")
+    testing.add_argument("--suite", action="append", choices=SUITES, help="repeat to select suites; default: all")
+    testing.add_argument("--list", action="store_true", help="list available suites")
     sub.add_parser("std").add_argument("module", nargs="?")
     sub.add_parser("lint", help="forwards all remaining args to hyperlinter")
     args = ap.parse_args()
@@ -142,7 +159,12 @@ def main() -> int:
         return build() or subprocess.call([str(BIN), "run", args.file], cwd=ROOT)
     if args.cmd == "std":
         return build() or subprocess.call([str(BIN), "std", *([args.module] if args.module else [])], cwd=ROOT)
-    return test(args.bless)
+    if args.list:
+        print("\n".join(SUITES))
+        return 0
+    if args.bless and args.suite and args.suite != ["golden"]:
+        ap.error("--bless requires --suite golden (or no suite selection)")
+    return test(args.bless, args.suite)
 
 
 if __name__ == "__main__":
