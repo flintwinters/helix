@@ -1,7 +1,7 @@
 status: error
 error:
   kind: import
-  message: "unknown standard module `nope`; available: math, list, group, map, types, test"
+  message: "unknown standard module `nope`; available: set, stack, queue, math, list, group, map, types, test"
   path: /a/1
   line: 1
   column: 13
