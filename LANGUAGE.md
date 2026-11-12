@@ -175,6 +175,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:queue` | `enqueue(xs, value)`, `peek(xs, fallback)`, `dequeue(xs)`; front at index zero |
 | `std:map` | `merge(left, right)` (shallow, right wins), `remove(source, key)` (one string key; missing is harmless), `select(source, keys)`, `omit(source, keys)` |
 | `std:machine` | Abstract machine classes `host`, `packages`, `files`, `services`, `users`, their combination `machine`, the `port` refinement, and fleet checks `hostnames(fleet)` / `unique_hostnames(fleet)` over realized configs |
+| `std:inventory` | `resolve(document, dynamic, selection)` (validated host inventory, explicit connection overrides with provenance, and a reviewable target list) |
 | `std:fuzz` | `plan(source)` (ordered damaged-source slice plans) |
 | `std:text` | `split(source, separator)` (literal, non-overlapping), `join(parts, separator)` |
 | `std:diff` | `compare(old, new)` (shallow configuration changes) |
@@ -205,6 +206,72 @@ Standard modules dogfood ordinary function annotations. `std:math` exports `numb
 `std:map.select(source, keys)` retains requested keys; `omit(source, keys)` excludes them. Both use canonical string-key order, ignore missing and repeated requested keys, and preserve values including null and false. The source must be a map and keys must be a list of strings, even for empty inputs. Membership scans and immutable copies suit small inputs.
 
 `std:set.is_disjoint(left, right)` tests whether the inputs share no values. `equals(left, right)` compares set membership, ignoring order and duplicates. `symmetric_difference(left, right)` returns unique left-only values followed by unique right-only values, preserving encounter order within each side. These helpers use the same structural/numeric equality, list contracts and resource limits as the existing set operations.
+
+### Host inventory
+
+`std:inventory.resolve(document, dynamic, selection)` resolves ordinary data into
+a reviewable host target list. It is pure and can run inside `type_time`.
+Dynamic discovery belongs to the caller: pass its results as `dynamic`, never a
+discovery callback. Neither inventory data nor a successful resolution grants
+permission to connect, escalate privileges or mutate a host.
+
+The version 1 document contains `version: 1`, a `hosts` list, a `groups` map from
+group names to host-ID lists, and an ordered `overrides` list. Each host has a
+stable, nonempty `id` and a `connection`. IDs identify inventory entries rather
+than network addresses; static and dynamic entries share one identity namespace.
+Dynamic input is a list of `{source, hosts}` batches supplied explicitly by the
+caller. Their source labels must be nonempty and unique; `static` is reserved
+for the document's own hosts. Groups may refer to hosts from either input.
+
+Connection settings describe `transport: local` or `transport: ssh`. SSH requires
+an `address` and accepts `port`, `user` and `jump_host`; local connections reject
+SSH-only settings. These are connection descriptions, not an SSH implementation
+or credential store. Unknown fields are errors, including attempted credential
+or authority fields.
+
+Group names must be nonempty. Groups have no settings and impose no configuration
+precedence. Each override contains a nonempty `source`, host and group selector lists (`hosts`, `groups`),
+and a `connection` patch. Overrides apply in list order; fields replace earlier
+values explicitly. Resolution retains provenance so the original connection and
+each subsequent override can be inspected. The first provenance entry is
+`{source, connection}` with the complete base connection; subsequent entries are
+`{source, index, connection}`, where `index` is the zero-based document override
+position and `connection` is the applied patch. Override source labels may repeat;
+indices identify their declarations. A patch cannot implicitly delete a
+field: changing SSH to local while retaining SSH fields is invalid.
+Base connections and each intermediate patched connection must be valid; later
+overrides cannot repair an invalid earlier definition.
+
+Selection uses `all`, `hosts`, `groups`, `exclude_hosts` and `exclude_groups`.
+Host and group inclusions form a union; exclusions win. Selecting nothing never
+implicitly selects the entire inventory. Targets follow canonical host-ID order,
+independent of input ordering. Missing references and malformed entries remain
+errors even when they would not be selected: validation precedes selection, and
+an invalid result contains no actionable targets. Selection fields are optional:
+`all` defaults to false and selector lists default to empty.
+
+The versioned report is `{version: 1, status, targets, diagnostics}`. A `ready`
+report has no diagnostics. Each target contains `id`, `connection`, its sorted
+`groups` and ordered `provenance`. An `invalid` report has an empty target list
+and the first structured Helix error in `diagnostics`, including its `kind`,
+`message`, source location and available error `data`. Schema violations use
+the existing type diagnostics; inventory-specific errors distinguish duplicate
+hosts, invalid or duplicate dynamic sources, and missing hosts or groups.
+Resource-limit failures can still terminate evaluation; callers must require a
+finished evaluation and `status: ready` before consuming targets.
+
+Run the [complete example](tests/programs/host_inventory.yaml) with
+`./manage.py run tests/programs/host_inventory.yaml`. It combines static and
+supplied dynamic hosts, patches a group's SSH port explicitly, and excludes a
+host from the resulting review list. `./manage.py test --suite host_inventory`
+checks the contract with an independent selection oracle and invalid-input cases.
+
+This module supports bounded in-memory inventories using the existing immutable
+collection operations and runtime budgets. It does not contact hosts, establish
+reachability, gather facts, cache discovery, or resolve secrets. A host ID is not
+proof that two different IDs refer to different physical machines. Connection
+adapters must separately validate their supported settings and obtain caller
+authority before use.
 
 ### Pinned dependencies
 

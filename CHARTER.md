@@ -541,11 +541,20 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
 
 ### Inventory, connections and observed state
 
-- [ ] Select and describe hosts without implicit configuration precedence
-  - [ ] Typed inventory supports stable host identities, groups, connection settings and explicit overrides with provenance
-  - [ ] Host/group selection and exclusions resolve to a reviewable target list before mutation
-  - [ ] Dynamic inventory is an explicit host input with validation; discovery never runs inside pure configuration resolution
-  - [ ] Missing hosts, duplicate identities and incompatible settings produce structured diagnostics
+- [x] Select and describe hosts without implicit configuration precedence
+  - [x] Typed inventory supports stable host identities, groups, connection settings and explicit overrides with provenance
+  - [x] Host/group selection and exclusions resolve to a reviewable target list before mutation
+  - [x] Dynamic inventory is an explicit host input with validation; discovery never runs inside pure configuration resolution
+  - [x] Missing hosts, duplicate identities and incompatible settings produce structured diagnostics
+  - Evidence: `./manage.py test --suite host_inventory` exercises the pure
+    `std:inventory` module with static and supplied dynamic data, an independent
+    selection oracle, ordered override histories and invalid-input diagnostics.
+    Validation includes unselected hosts and empty inventories; failures return
+    no targets. The [runnable example](tests/programs/host_inventory.yaml) and
+    [inventory contract](LANGUAGE.md#host-inventory) document the versioned schema,
+    first-error reporting and bounded in-memory support. Connection descriptions
+    confer no authority; discovery, SSH adapters and resource application remain
+    separate milestones below.
 - [ ] Supply dependable local and SSH host adapters through the existing effect boundary
   - [ ] SSH supports host-key verification, existing key/agent authentication, connection reuse and jump-host configuration
   - [ ] Privilege escalation is explicitly authorized and distinguishes connection identity from execution identity
