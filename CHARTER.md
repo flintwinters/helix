@@ -155,6 +155,31 @@ The difference between a language and a language I enjoy using.
 - [ ] Language reference (started: `LANGUAGE.md`) and a tutorial that a stranger could follow
 - [ ] A changelog
 
+### Testing depth and breadth
+
+Treat testing as a substantial engineering responsibility. The Rust/Python size ratio is a prompt to inspect gaps, not a coverage metric or a target to pad toward. Build on the existing golden, determinism, round-trip and damaged-input checks; every new suite must be reproducible through the root `./manage.py` entrypoint, with Python orchestration and fixtures kept inside the project. Testing goals below are complete when their automated checks run and demonstrate the claimed contract; golden cases remain required for language features.
+
+- [ ] Maintain a discoverable coverage map from language contracts and runtime invariants to suites, including known gaps; measure exercised branches and failure paths rather than counting test lines
+- [ ] Cover every builtin and form across valid inputs, wrong arity and types, empty collections, numeric boundaries, Unicode and nested values; include precise error blame
+- [ ] Exercise feature interactions systematically: lexical shadowing, closures, recursion, iteration, lazy branches, memoization and error recovery composed in the same programs
+- [ ] Test parser and graph contracts across YAML scalar styles, nesting, duplicate keys, unsupported constructs, parent links, lexical lookup and source spans
+- [ ] Generate values and programs to check serialization preserves meaning, literal/expression distinctions and stable output across repeated save/reload cycles
+- [ ] Add property-based and metamorphic tests for semantic laws and equivalent program transformations, respecting overflow, float behavior and documented evaluation order
+- [ ] Compare a bounded language subset against a small independent Python reference evaluator, and library algorithms against independent host-language oracles
+- [ ] Extend damaged-input testing into reproducible fuzzing of parsing, linking, evaluation and emission; retain seeds, minimize failures and promote them into regression cases
+- [ ] Test the tests with deliberate implementation faults: establish that semantic regressions, incorrect error locations and broken serialization make the relevant suites fail
+- [ ] Cover imports and module isolation with generated file trees: shared dependencies, cycles, missing or malformed files, path resolution and errors originating in imported source
+- [ ] Exercise the CLI as a subprocess: files versus stdin, arguments, help, exit codes, stdout/stderr contracts and failed input access
+- [ ] Test public library and VM contracts directly, including independent VM instances and repeated use, alongside CLI golden coverage; invoke these checks through `./manage.py`
+- [ ] Verify resource limits at their boundaries: deep syntax, recursion, long iteration and large graphs terminate or fail cleanly under enforced timeouts without host stack overflow
+- [ ] Maintain repeatable performance and memory workloads across growing input sizes; detect pathological scaling and regressions with documented environments and tolerances
+- [ ] Expand type and class tests across nested combinations, invalid declarations, collected violations, inheritance conflicts and deterministic provenance; connect these to section 8's algebra and proof obligations
+- [ ] When suspension lands, compare uninterrupted execution with save/resume at every supported boundary, including nested calls, live locals, hand-edited states and fresh-process restoration
+- [ ] When effects land, use controlled adapters to test failure, retry, cleanup, permissions and interruption; prove completed effects are not accidentally repeated after resume
+- [ ] Keep compatibility fixtures for persisted states and public errors; test supported upgrades and explicit rejection of unsupported versions as versioning lands
+- [ ] Run fast regression suites on every change and bounded generated, fuzz and scale suites on a regular automated schedule; report seeds, reproduction commands and artifacts on failure
+- [ ] Keep the harness trustworthy: test discovery, golden comparison, timeout/crash detection and failure reporting; provide discoverable suite selection without creating competing entrypoints
+
 ---
 
 ## 8. Types: declarative, first-class, and the machine-config niche
