@@ -1,0 +1,23 @@
+# Version is pinned by this directory and the consuming repository revision.
+orchestration: {$call: [import, 'std:orchestration']}
+policy: {$call: [import, '../service-policy-v1/main.yaml']}
+input: {$call: [record, service, {$ref: string}]}
+build:
+  $call:
+    - fn
+    - [[settings, {$ref: input}]]
+    - $call:
+        - let
+        - notification: {$call: [policy.notification, {$call: [get, {$ref: settings}, service]}]}
+        - version: 1
+          resources:
+            package: {requires: [], notify: []}
+            configuration:
+              requires: [package]
+              notify: {$call: [list, {$ref: notification}]}
+          handlers:
+            $call:
+              - dict
+              - {$ref: notification}
+              - {requires: [package]}
+    - {$ref: orchestration.document}

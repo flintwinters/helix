@@ -1,0 +1,14 @@
+# Pinned reusable configuration with typed inputs and output. This example only
+# reports callback outcomes; host adapters and their authority remain separate.
+$call:
+  - let
+  - orchestration: {$call: [import, 'std:orchestration']}
+    config: {$call: [import, 'vendor/web-config-v1/main.yaml']}
+  - $call:
+      - orchestration.run
+      - {$call: [config.build, {service: web}]}
+      - $call:
+          - fn
+          - [[kind, {$ref: string}], [id, {$ref: string}]]
+          - {status: changed}
+          - {$ref: orchestration.outcome}

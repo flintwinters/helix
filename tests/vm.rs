@@ -2,6 +2,39 @@
 use helix::{Status, Vm};
 
 #[test]
+fn resource_composition_resumes_each_callback_without_replay() {
+    let original = Vm::load(include_str!("programs/resource_composition_effects.yaml"));
+    let mut current = original.clone();
+    let mut requests = Vec::new();
+    for expected in ["resource:package", "resource:config_a", "resource:config_b", "handler:restart"] {
+        current.run();
+        assert_eq!(current.status(), Status::Signaled);
+        let request = current.pending_effect().unwrap().clone();
+        assert_eq!(request.operation, "stdout");
+        assert_eq!(request.payload.as_str(), Some(expected));
+        assert!(!requests.contains(&request.id));
+        requests.push(request.id);
+        let retained = current.clone();
+        let stepped = retained.step();
+        assert_eq!(stepped.status(), Status::Signaled);
+        assert_eq!(stepped.pending_effect().unwrap().id, request.id);
+        current = current.resolve_effect(Ok(yaml_rust2::Yaml::Null));
+        assert_eq!(retained.status(), Status::Signaled);
+        assert_eq!(retained.pending_effect().unwrap().payload.as_str(), Some(expected));
+    }
+    current.run();
+    assert_eq!(current.status(), Status::Finished);
+    assert_eq!(original.status(), Status::Ready);
+    let finished = current.state();
+    assert_eq!(finished["effects"].as_vec().unwrap().len(), 4);
+    assert_eq!(finished["root"]["status"].as_str(), Some("finished"));
+    assert_eq!(finished["root"]["handlers"]["restart"]["status"].as_str(), Some("changed"));
+    current.run();
+    assert_eq!(current.state(), finished);
+    assert_eq!(current.resolve_effect(Ok(yaml_rust2::Yaml::Null)).state(), finished);
+}
+
+#[test]
 fn independent_instances_and_repeated_runs() {
     let mut first = Vm::load(r##"{"answer": {"$call": ["add", 20, 22]}}"##);
     let mut second = Vm::load(r##"{"answer": {"$call": ["mul", 6, 7]}}"##);

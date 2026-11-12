@@ -1,0 +1,7 @@
+# Small separately pinned dependency, reused through ordinary imports/functions.
+notification:
+  $call:
+    - fn
+    - [[service, {$ref: string}]]
+    - {$call: [concat, 'restart:', {$ref: service}]}
+    - {$ref: string}
