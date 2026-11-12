@@ -29,4 +29,4 @@ def verify(h):
         assert h.malformed_state(failed.stdout, failed.returncode) is None
         error = yaml.safe_load(failed.stdout)["error"]
         assert error["kind"] == "import" and error["file"].endswith("offset-v1/main.yaml"), error
-        assert error["path"] == "/constants/1", error
+        assert error["path"] == "/constants/$call/1", error

@@ -226,7 +226,7 @@ def imports(h):
         (base / "shared.yaml").write_text('{"value": {"$call": ["add", {"$ref": "private"}, 1]}}')
         main.write_text('{"private": 9, "s": {"$call": ["import", "shared.yaml"]}}')
         error = yaml.safe_load(h.helix("run", str(main)).stdout)["error"]
-        assert error["kind"] == "unbound" and error["path"] == "/value/1", error
+        assert error["kind"] == "unbound" and error["path"] == "/value/$call/1", error
 
 
 def run(name, h):
