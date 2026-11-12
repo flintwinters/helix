@@ -1,0 +1,513 @@
+status: finished
+root:
+  types:
+    from_fields:
+      ref: object0
+    without_field:
+      ref: object1
+    optional_field:
+      ref: object2
+    optional_fields:
+      ref: object3
+  file_resource:
+    type: record
+    fields:
+      path: string
+      content: string
+      mode: integer
+  service_resource:
+    type: record
+    fields:
+      name: string
+      enabled: boolean
+      arguments:
+        type: list
+        of: string
+  audited_change:
+    ref: object4
+  file_change:
+    type: record
+    fields:
+      ticket: string
+      revision: integer
+      changes:
+        type: record
+        fields:
+          path:
+            type: optional
+            of: string
+          content:
+            type: optional
+            of: string
+          mode:
+            type: optional
+            of: integer
+  service_change:
+    type: record
+    fields:
+      ticket: string
+      revision: integer
+      changes:
+        type: record
+        fields:
+          name:
+            type: optional
+            of: string
+          enabled:
+            type: optional
+            of: boolean
+          arguments:
+            type: optional
+            of:
+              type: list
+              of: string
+  file_proposal:
+    ticket: OPS-42
+    revision: 3
+    changes:
+      content: "listen: 8080\n"
+      mode: 420
+  service_proposal:
+    ticket: OPS-42
+    revision: 8
+    changes:
+      enabled: true
+      arguments:
+        - "--reload"
+  file_valid:
+    ticket: OPS-42
+    revision: 3
+    changes:
+      content: "listen: 8080\n"
+      mode: 420
+  service_valid:
+    ticket: OPS-42
+    revision: 8
+    changes:
+      enabled: true
+      arguments:
+        - "--reload"
+  empty_patch:
+    ticket: OPS-43
+    revision: 0
+    changes: {}
+  source_unchanged: ~
+  service_source_unchanged: ~
+  missing_audit:
+    - at: /ticket
+      message: "missing field `ticket`"
+  wrong_nested:
+    - at: /changes/content
+      message: "expected string, got boolean"
+    - at: /changes/mode
+      message: "expected integer, got string"
+  foreign_field:
+    - at: /changes/mode
+      message: "unexpected field `mode`"
+  null_patch:
+    - at: /changes
+      message: "expected record, got null"
+  wrong_audit:
+    - at: /ticket
+      message: "expected string, got integer"
+    - at: /revision
+      message: "expected integer, got string"
+  invalid_type:
+    kind: type
+    message: "expected a record or class type, got string"
+    phase: type
+    file: "std:types"
+    path: /optional_fields/2/1/specs/1
+    reference:
+      - "optional_fields"
+      - 2
+      - 1
+      - specs
+      - 1
+    line: 35
+    column: 23
+    calls:
+      - path: /audited_change/2/6
+        line: 10
+        column: 64
+        function: /optional_fields
+        function_file: "std:types"
+        function_line: 32
+        function_column: 3
+      - path: /invalid_type/1/1
+        line: 26
+        column: 33
+        function: /audited_change
+        function_line: 8
+        function_column: 3
+objects:
+  object0:
+    kind: function
+    program:
+      ref: object5
+    code:
+      - symbol: fn
+      - - - symbol: specs
+          - symbol: map
+      - - symbol: fold
+        - - symbol: fn
+          - - symbol: result
+            - symbol: name
+          - - symbol: with_field
+            - symbol: result
+            - symbol: name
+            - - symbol: get
+              - symbol: specs
+              - symbol: name
+        - - symbol: record
+        - - symbol: keys
+          - symbol: specs
+      - symbol: map
+    location:
+      source: "std:types"
+      path:
+        - "from_fields"
+    environment: []
+    bindings: {}
+  object1:
+    kind: function
+    program:
+      ref: object5
+    code:
+      - symbol: fn
+      - - symbol: t
+        - - symbol: name
+          - symbol: string
+      - - symbol: let
+        - specs:
+            - symbol: fields
+            - symbol: t
+        - - symbol: fold
+          - - symbol: fn
+            - - symbol: result
+              - symbol: field
+            - - symbol: if
+              - - symbol: eq
+                - symbol: field
+                - symbol: name
+              - symbol: result
+              - - symbol: with_field
+                - symbol: result
+                - symbol: field
+                - - symbol: get
+                  - symbol: specs
+                  - symbol: field
+          - - symbol: record
+          - - symbol: keys
+            - symbol: specs
+      - symbol: map
+    location:
+      source: "std:types"
+      path:
+        - "without_field"
+    environment: []
+    bindings: {}
+  object2:
+    kind: function
+    program:
+      ref: object5
+    code:
+      - symbol: fn
+      - - symbol: spec
+      - - symbol: if
+        - - symbol: and
+          - - symbol: eq
+            - - symbol: type
+              - symbol: spec
+            - map
+          - - symbol: has
+            - - "optional"
+              - default
+            - - symbol: get
+              - symbol: spec
+              - type
+              - ""
+        - symbol: spec
+        - - symbol: optional
+          - symbol: spec
+    location:
+      source: "std:types"
+      path:
+        - "optional_field"
+    environment: []
+    bindings: {}
+  object3:
+    kind: function
+    program:
+      ref: object5
+    code:
+      - symbol: fn
+      - - symbol: t
+      - - symbol: let
+        - specs:
+            - symbol: fields
+            - symbol: t
+        - - symbol: fold
+          - - symbol: fn
+            - - symbol: result
+              - symbol: name
+            - - symbol: with_field
+              - symbol: result
+              - symbol: name
+              - - symbol: optional_field
+                - - symbol: get
+                  - symbol: specs
+                  - symbol: name
+          - - symbol: record
+          - - symbol: keys
+            - symbol: specs
+      - symbol: map
+    location:
+      source: "std:types"
+      path:
+        - "optional_fields"
+    environment: []
+    bindings:
+      optional_field:
+        code:
+          source: "std:types"
+          path:
+            - "optional_field"
+  object4:
+    kind: function
+    program:
+      ref: object5
+    code:
+      - symbol: fn
+      - - symbol: resource_type
+      - - symbol: record
+        - ticket
+        - symbol: string
+        - revision
+        - symbol: integer
+        - changes
+        - - symbol: types.optional_fields
+          - symbol: resource_type
+    location:
+      source: "<root>"
+      path:
+        - "audited_change"
+    environment: []
+    bindings:
+      types.optional_fields:
+        code:
+          source: "std:types"
+          path:
+            - "optional_fields"
+  object5:
+    kind: program
+    sources:
+      - source: "<root>"
+        code:
+          types:
+            - symbol: import
+            - symbol: "std:types"
+          file_resource:
+            - symbol: record
+            - path
+            - symbol: string
+            - content
+            - symbol: string
+            - mode
+            - symbol: integer
+          service_resource:
+            - symbol: record
+            - name
+            - symbol: string
+            - enabled
+            - symbol: boolean
+            - arguments
+            - - symbol: list_of
+              - symbol: string
+          audited_change:
+            - symbol: fn
+            - - symbol: resource_type
+            - - symbol: record
+              - ticket
+              - symbol: string
+              - revision
+              - symbol: integer
+              - changes
+              - - symbol: types.optional_fields
+                - symbol: resource_type
+          file_change:
+            - symbol: type_time
+            - - symbol: audited_change
+              - symbol: file_resource
+          service_change:
+            - symbol: type_time
+            - - symbol: audited_change
+              - symbol: service_resource
+          file_proposal:
+            ticket: OPS-42
+            revision: 3
+            changes:
+              content: "listen: 8080\n"
+              mode: 420
+          service_proposal:
+            ticket: OPS-42
+            revision: 8
+            changes:
+              enabled: true
+              arguments:
+                - "--reload"
+          file_valid:
+            - symbol: expect
+            - symbol: file_proposal
+            - symbol: file_change
+          service_valid:
+            - symbol: expect
+            - symbol: service_proposal
+            - symbol: service_change
+          empty_patch:
+            - symbol: expect
+            - ticket: OPS-43
+              revision: 0
+              changes: {}
+            - symbol: file_change
+          source_unchanged:
+            - symbol: assert
+            - - symbol: not
+              - - symbol: is
+                - {}
+                - symbol: file_resource
+          service_source_unchanged:
+            - symbol: assert
+            - - symbol: not
+              - - symbol: is
+                - {}
+                - symbol: service_resource
+          missing_audit:
+            - symbol: violations
+            - revision: 3
+              changes: {}
+            - symbol: file_change
+          wrong_nested:
+            - symbol: violations
+            - ticket: OPS-44
+              revision: 4
+              changes:
+                mode: "0644"
+                content: false
+            - symbol: file_change
+          foreign_field:
+            - symbol: violations
+            - ticket: OPS-45
+              revision: 9
+              changes:
+                mode: 420
+            - symbol: service_change
+          null_patch:
+            - symbol: violations
+            - ticket: OPS-46
+              revision: 10
+              changes: ~
+            - symbol: service_change
+          wrong_audit:
+            - symbol: violations
+            - ticket: 42
+              revision: next
+              changes: {}
+            - symbol: file_change
+          invalid_type:
+            - symbol: try
+            - - symbol: type_time
+              - - symbol: audited_change
+                - symbol: integer
+            - - symbol: fn
+              - - symbol: e
+              - symbol: e
+      - source: "std:types"
+        code:
+          from_fields:
+            - symbol: fn
+            - - - symbol: specs
+                - symbol: map
+            - - symbol: fold
+              - - symbol: fn
+                - - symbol: result
+                  - symbol: name
+                - - symbol: with_field
+                  - symbol: result
+                  - symbol: name
+                  - - symbol: get
+                    - symbol: specs
+                    - symbol: name
+              - - symbol: record
+              - - symbol: keys
+                - symbol: specs
+            - symbol: map
+          without_field:
+            - symbol: fn
+            - - symbol: t
+              - - symbol: name
+                - symbol: string
+            - - symbol: let
+              - specs:
+                  - symbol: fields
+                  - symbol: t
+              - - symbol: fold
+                - - symbol: fn
+                  - - symbol: result
+                    - symbol: field
+                  - - symbol: if
+                    - - symbol: eq
+                      - symbol: field
+                      - symbol: name
+                    - symbol: result
+                    - - symbol: with_field
+                      - symbol: result
+                      - symbol: field
+                      - - symbol: get
+                        - symbol: specs
+                        - symbol: field
+                - - symbol: record
+                - - symbol: keys
+                  - symbol: specs
+            - symbol: map
+          optional_field:
+            - symbol: fn
+            - - symbol: spec
+            - - symbol: if
+              - - symbol: and
+                - - symbol: eq
+                  - - symbol: type
+                    - symbol: spec
+                  - map
+                - - symbol: has
+                  - - "optional"
+                    - default
+                  - - symbol: get
+                    - symbol: spec
+                    - type
+                    - ""
+              - symbol: spec
+              - - symbol: optional
+                - symbol: spec
+          optional_fields:
+            - symbol: fn
+            - - symbol: t
+            - - symbol: let
+              - specs:
+                  - symbol: fields
+                  - symbol: t
+              - - symbol: fold
+                - - symbol: fn
+                  - - symbol: result
+                    - symbol: name
+                  - - symbol: with_field
+                    - symbol: result
+                    - symbol: name
+                    - - symbol: optional_field
+                      - - symbol: get
+                        - symbol: specs
+                        - symbol: name
+                - - symbol: record
+                - - symbol: keys
+                  - symbol: specs
+            - symbol: map

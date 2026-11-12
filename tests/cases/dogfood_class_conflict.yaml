@@ -1,0 +1,6 @@
+# A deployment inherits contradictory restart policies. The type-time diagnostic
+# must identify the conflicting field and both parents before any application.
+base: [record, "restart", string, "enabled", boolean]
+interactive: [class, "interactive", base, {restart: "on-failure", enabled: true}]
+unattended: [class, "unattended", base, {restart: "always", enabled: true}]
+resolved: [type_time, [extend, "worker", [list, interactive, unattended], [record], {}]]

@@ -1,0 +1,7 @@
+# Same deployment, resolved explicitly using the diagnostic's restart field.
+base: [record, "restart", string, "enabled", boolean]
+interactive: [class, "interactive", base, {restart: "on-failure", enabled: true}]
+unattended: [class, "unattended", base, {restart: "always", enabled: true}]
+resolved: [type_time, [extend, "worker", [list, interactive, unattended], [record], {restart: "on-failure"}]]
+values: [get, resolved, "values"]
+explicit_choice: [assert, [eq, values, {restart: "on-failure", enabled: true}]]

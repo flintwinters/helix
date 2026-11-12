@@ -1,0 +1,67 @@
+status: finished
+root:
+  base:
+    type: record
+    fields:
+      restart: string
+      enabled: boolean
+  interactive:
+    type: class
+    name: interactive
+    parents: []
+    fields:
+      restart: string
+      enabled: boolean
+    values:
+      restart: on-failure
+      enabled: true
+    provenance:
+      restart:
+        type: interactive
+        value: interactive
+      enabled:
+        type: interactive
+        value: interactive
+    concrete: false
+  unattended:
+    type: class
+    name: unattended
+    parents: []
+    fields:
+      restart: string
+      enabled: boolean
+    values:
+      restart: always
+      enabled: true
+    provenance:
+      restart:
+        type: unattended
+        value: unattended
+      enabled:
+        type: unattended
+        value: unattended
+    concrete: false
+  resolved:
+    type: class
+    name: worker
+    parents:
+      - "interactive"
+      - unattended
+    fields:
+      restart: string
+      enabled: boolean
+    values:
+      restart: on-failure
+      enabled: true
+    provenance:
+      restart:
+        type: interactive
+        value: worker
+      enabled:
+        type: interactive
+        value: interactive
+    concrete: false
+  values:
+    restart: on-failure
+    enabled: true
+  explicit_choice: ~

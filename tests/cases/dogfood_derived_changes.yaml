@@ -1,0 +1,26 @@
+# File and service change requests share audit metadata and partial-update policy.
+# Keep that policy in one function; their independently evolving resource fields
+# stay separate. These are validated proposals, not effects or an apply engine.
+types: [import, std:types]
+file_resource: [record, "path", string, "content", string, "mode", integer]
+service_resource: [record, "name", string, "enabled", boolean, "arguments", [list_of, string]]
+audited_change:
+  - fn
+  - [resource_type]
+  - [record, "ticket", string, "revision", integer, "changes", [types.optional_fields, resource_type]]
+file_change: [type_time, [audited_change, file_resource]]
+service_change: [type_time, [audited_change, service_resource]]
+file_proposal: {ticket: "OPS-42", revision: 3, changes: {content: "listen: 8080\n", mode: 420}}
+service_proposal: {ticket: "OPS-42", revision: 8, changes: {enabled: true, arguments: ["--reload"]}}
+file_valid: [expect, file_proposal, file_change]
+service_valid: [expect, service_proposal, service_change]
+empty_patch: [expect, {ticket: "OPS-43", revision: 0, changes: {}}, file_change]
+# Neither derivation mutates the required fields of its input type.
+source_unchanged: [assert, [not, [is, {}, file_resource]]]
+service_source_unchanged: [assert, [not, [is, {}, service_resource]]]
+missing_audit: [violations, {revision: 3, changes: {}}, file_change]
+wrong_nested: [violations, {ticket: "OPS-44", revision: 4, changes: {mode: "0644", content: false}}, file_change]
+foreign_field: [violations, {ticket: "OPS-45", revision: 9, changes: {mode: 420}}, service_change]
+null_patch: [violations, {ticket: "OPS-46", revision: 10, changes: null}, service_change]
+wrong_audit: [violations, {ticket: 42, revision: "next", changes: {}}, file_change]
+invalid_type: [try, [type_time, [audited_change, integer]], [fn, [e], e]]
