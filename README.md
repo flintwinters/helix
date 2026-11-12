@@ -136,6 +136,8 @@ Save command output to inspect it later: `./manage.py run tutorial.yaml > state.
 The output is a state envelope; to rerun a finished result, use its `root` value as
 the program. Loading the whole envelope does not resume execution. Imports resolve
 relative to the source file; stdin imports resolve relative to the working directory.
+For reproducible dependencies, commit library sources under `vendor/` and import
+their entry files by relative path; see [pinned dependencies](LANGUAGE.md#pinned-dependencies).
 
 ## Testing contracts and known gaps
 
@@ -153,6 +155,7 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | Discovery pairs, invalid states, timeout/crash detection, wrong golden results, broken reload comparison | `harness`; synthetic fixtures and subprocess faults | Production mutation testing remains open |
 | Usage errors, inaccessible files, run/check files versus stdin, stream and exit contracts | `cli` | No successful `--help` or shell completion yet |
 | Integer expression trees versus Python, list sums/reversal laws, Unicode/nested literal save cycles | `generated`; seed 714209 | Bounded integers and exact binary fractions; general float/callable generation remains open |
+| Helix assertions, bounded collection laws, nested reports, runner failures | `dogfood`; `tests/dogfood/` | Explicit finite samples; no automatic random generation or shrinking |
 | Shared import dependencies, cycles, missing/malformed files, isolation and imported blame | `imports`; generated file trees | Symlink/path-platform combinations not exhaustive |
 | Independent VMs, repeated run, terminal failures, successful and failing check | `library`; `tests/vm.rs` | Ready states cannot be restored; suspension unavailable |
 | Quoted/block scalars, nested lookup, duplicate-key rejection, unsupported YAML constructs, precise source blame | `parser` | Direct internal parent-link/path coverage remains open |
@@ -170,6 +173,33 @@ workload, not a universal runtime guarantee.
 CI runs fast suites on pushes and pull requests; a weekly schedule and manual runs
 include robustness, fuzz and scale checks. Failed runs upload `runtime/` artifacts.
 The workflow itself needs a first hosted run to establish its environment timings.
+
+## Dogfooded test modules
+
+`./manage.py test --suite dogfood` discovers `tests/dogfood/**/*.yaml`.
+Each module exports a `report` built with `std:test`. Assertions, tables,
+properties, and nested failure aggregation run inside Helix; Python discovers
+files, checks process/state integrity, and saves replayable inputs and states
+under `runtime/dogfood/`. This suite runs in fast CI and the default test run.
+
+Start a new module with this scaffold (no expected-state file is needed):
+
+```yaml
+t: [import, std:test]
+report:
+  - t.suite
+  - - {name: addition, run: [fn, [], [t.equal, [add, 2, 3], 5]]}
+    - {name: division_error, run: [fn, [], [t.throws, [fn, [], [div, 1, 0]], "divide_by_zero"]]}
+```
+
+The runner applies `t.require_pass` to the exported report, so captured failures
+fail the command while retaining later case results and nested error data.
+See `tests/dogfood/collections.yaml` for bounded property samples and composition
+of child reports. Use `[dict, "input", variable]` to put evaluated values into
+case records; a plain scalar map value is literal data. Keep host-specific tests
+in the Python contract suites and exact serialization contracts in golden cases.
+The bridge self-tests failing assertions, continued execution, missing reports,
+and malformed modules on every dogfood run.
 
 ## Repository inventory dogfood
 

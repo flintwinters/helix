@@ -9,6 +9,7 @@ SUITES = {
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",
     "cli": "Runtime and project CLI contracts, imports, inventory, and recovery",
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
+    "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",
     "imports": "Module resolution, isolation, cycles, and source blame",
     "library": "Rust public VM API contracts via cargo test",
     "parser": "YAML syntax, unsupported constructs, paths, and source locations",

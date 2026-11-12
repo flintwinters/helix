@@ -1,0 +1,17 @@
+# Export a std:test report. The host discovers modules; all test policy stays here.
+t: [import, std:test]
+l: [import, std:list]
+samples: [list, [], [list, 0], [list, 3, -1, 3, 0], [list, -2, -1, 0, 1, 2]]
+counts: [list, 0, 1, 3, 10]
+splits: [l.flat_map, samples, [fn, [xs], [map, [fn, [n], [list, xs, n]], counts]]]
+split_law: [t.property, "take/drop reconstruct input", splits, [fn, [row], [let, {xs: [get, row, 0], n: [get, row, 1]}, [eq, [concat, [l.take, xs, n], [l.drop, xs, n]], xs]]]]
+unique_law: [t.property, "unique is idempotent", samples, [fn, [xs], [eq, [l.unique, [l.unique, xs]], [l.unique, xs]]]]
+sort_law: [t.property, "sorting ignores input reversal", samples, [fn, [xs], [eq, [l.sort, xs], [l.sort, [l.reverse, xs]]]]]
+flatten_law: [t.compare, "flat_map identity equals flatten", [list, [], samples, [list, [], [list, 1], []]], [fn, [xs], [l.flat_map, xs, [fn, [x], x]]], [fn, [xs], [l.flatten, xs]]]
+edges:
+  - t.suite
+  - - {name: negative_take, run: [fn, [], [t.throws, [fn, [], [l.take, [], -1]], "range"]]}
+    - {name: negative_drop, run: [fn, [], [t.throws, [fn, [], [l.drop, [], -1]], "range"]]}
+    - {name: find_stops, run: [fn, [], [t.equal, [l.find, [list, 1, 0], [fn, [n], [eq, [div, 1, n], 1]], null], 1]]}
+    - {name: stable_sort, run: [fn, [], [t.equal, [l.sort_by, [list, {key: 1, id: first}, {key: 0, id: middle}, {key: 1, id: last}], [fn, [a, b], [lt, [get, a, "key"], [get, b, "key"]]]], [list, {key: 0, id: middle}, {key: 1, id: first}, {key: 1, id: last}]]]}
+report: [t.table, [list, [dict, "name", "splits", "input", split_law], [dict, "name", "unique", "input", unique_law], [dict, "name", "sort", "input", sort_law], [dict, "name", "flatten", "input", flatten_law], [dict, "name", "edges", "input", edges]], [fn, [report], [t.require_pass, report]]]

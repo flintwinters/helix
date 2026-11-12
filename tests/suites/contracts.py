@@ -154,6 +154,11 @@ def generated(h):
             source = next_source
 
 
+def dogfood(h):
+    from tests.suites.dogfood import verify
+    verify(h)
+
+
 def imports(h):
     with tempfile.TemporaryDirectory(dir=h.ROOT / "runtime", prefix="imports-") as directory:
         base = Path(directory)
