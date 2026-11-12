@@ -73,6 +73,8 @@ def harness(h):
 
 
 def cli(h):
+    from tests.suites.inventory import verify
+    verify(h)
     for args in [(), ("unknown",), ("--help",), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
         result = h.helix(*args)
         assert result.returncode == 2 and not result.stdout and result.stderr, (args, result)

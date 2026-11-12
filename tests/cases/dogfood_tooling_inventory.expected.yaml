@@ -1,0 +1,93 @@
+status: finished
+root:
+  shim:
+    group:
+      by:
+        - fn
+        - - - xs
+            - list
+          - - key
+            - function
+        - - fold
+          - - fn
+            - - groups
+              - item
+            - - let
+              - name:
+                  - key
+                  - item
+              - - set
+                - groups
+                - name
+                - - append
+                  - - get
+                    - groups
+                    - name
+                    - []
+                  - item
+          - {}
+          - xs
+        - map
+    report:
+      - fn
+      - - - files
+          - list
+      - - let
+        - groups:
+            - group.by
+            - files
+            - - fn
+              - - file
+              - - get
+                - file
+                - "directory"
+        - - map
+          - - fn
+            - - directory
+            - - let
+              - members:
+                  - get
+                  - groups
+                  - directory
+              - - dict
+                - "directory"
+                - directory
+                - "count"
+                - - len
+                  - members
+                - "files"
+                - - map
+                  - - fn
+                    - - file
+                    - - get
+                      - file
+                      - "path"
+                  - members
+          - - keys
+            - groups
+      - list
+  files:
+    - path: src/vm.rs
+      directory: src
+    - path: std/group.yaml
+      directory: std
+    - path: "src/雪.rs"
+      directory: src
+    - path: README.md
+      directory: "."
+  report:
+    - directory: src
+      count: 2
+      files:
+        - "src/vm.rs"
+        - "src/雪.rs"
+    - directory: std
+      count: 1
+      files:
+        - "std/group.yaml"
+    - directory: "."
+      count: 1
+      files:
+        - "README.md"
+  empty: []
+  order: ~

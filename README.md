@@ -144,6 +144,19 @@ CI runs fast suites on pushes and pull requests; a weekly schedule and manual ru
 include robustness, fuzz and scale checks. Failed runs upload `runtime/` artifacts.
 The workflow itself needs a first hosted run to establish its environment timings.
 
+## Repository inventory dogfood
+
+Run `./manage.py inventory` to list runtime, library, and tooling source files grouped by directory, with counts.
+It includes tracked and unignored untracked files under `src/`, `std/`, and `tooling/`,
+excluding submodule contents. The scope stays small for the current copying-based grouping algorithm. Python observes paths; `tooling/inventory.yaml` builds the report using
+`std:group.by`. Grouping policy runs in Helix and failures fail the command.
+This auxiliary command does not participate in building the interpreter.
+
+The command saves `runtime/inventory.input.yaml` and `runtime/inventory.state.yaml`.
+Replay the observation with `./manage.py run runtime/inventory.input.yaml` from
+this checkout. The golden `dogfood_tooling_inventory` case and the `cli` contract
+suite cover the shared shim and host bridge.
+
 ## Stability and compatibility
 
 Helix is experimental, before a stable language or persisted-state format release.

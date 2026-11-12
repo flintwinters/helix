@@ -1,0 +1,9 @@
+shim: [import, "../../tooling/inventory.yaml"]
+files:
+  - {path: "src/vm.rs", directory: "src"}
+  - {path: "std/group.yaml", directory: "std"}
+  - {path: "src/雪.rs", directory: "src"}
+  - {path: "README.md", directory: "."}
+report: [shim.report, files]
+empty: [shim.report, []]
+order: [assert, [eq, [map, [fn, [row], [get, row, "directory"]], report], ["src", "std", "."]]]

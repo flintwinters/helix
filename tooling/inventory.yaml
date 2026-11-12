@@ -1,0 +1,16 @@
+# Pure repository-report policy; Python supplies file-system observations.
+# Keep grouping authoritative in std:group rather than duplicating it in Python.
+group: [import, std:group]
+report:
+  - fn
+  - [[files, list]]
+  - - let
+    - groups: [group.by, files, [fn, [file], [get, file, "directory"]]]
+    - - map
+      - - fn
+        - [directory]
+        - - let
+          - members: [get, groups, directory]
+          - [dict, "directory", directory, "count", [len, members], "files", [map, [fn, [file], [get, file, "path"]], members]]
+      - [keys, groups]
+  - list

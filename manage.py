@@ -5,6 +5,7 @@
     ./manage.py run FILE            run a program, print its serialized VM state
     ./manage.py check FILE          type phase: print the state with every error found (`phase: type`, `errors:`)
     ./manage.py std [MODULE]        list standard modules or print module source
+    ./manage.py inventory           group source files by directory through a Helix shim
     ./manage.py lint [ARGS...]      structural lint via the hyperlinter submodule (JSON; pass --format=text for people)
     ./manage.py test [--suite NAME] [--bless]   regression suites (--list discovers names)
 
@@ -197,6 +198,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("build")
+    sub.add_parser("inventory", help="Helix-powered source inventory by directory")
     sub.add_parser("run").add_argument("file")
     sub.add_parser("check").add_argument("file")
     testing = sub.add_parser("test")
@@ -206,6 +208,9 @@ def main() -> int:
     sub.add_parser("std").add_argument("module", nargs="?")
     sub.add_parser("lint", help="forwards all remaining args to hyperlinter")
     args = ap.parse_args()
+    if args.cmd == "inventory":
+        from tooling.inventory import inventory
+        return build() or inventory(helix, ROOT)
     if args.cmd == "build":
         return build()
     if args.cmd == "run":
