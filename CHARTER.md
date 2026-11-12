@@ -585,11 +585,22 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Express cross-host dependencies and controller/delegated tasks with unambiguous execution targets and authority
   - [ ] Gate rolling changes on health checks and stop subsequent batches when the declared policy fails
   - [ ] Support reboot, disconnect and reconnect workflows with bounded readiness waits
-- [ ] Make long-running operations practical
-  - [ ] Replace the bundled host's fixed 10-second command deadline with caller-controlled bounded timeouts
-  - [ ] Support bounded output capture and progress reporting for package installs and deployments
-  - [ ] Define cancellation and descendant-process cleanup so a timed-out controller does not silently leave mutations running
-  - [ ] Retry only explicitly classified transient failures with bounded attempts and delays
+- [x] Make long-running operations practical — bundled local synchronous command adapter
+  - [x] Replace the bundled host's fixed 10-second command deadline with caller-controlled bounded timeouts
+  - [x] Support bounded output capture and progress reporting for package installs and deployments
+  - [x] Define cancellation and descendant-process cleanup so a timed-out controller does not silently leave mutations running
+  - [x] Retry only explicitly classified transient failures with bounded attempts and delays
+  - Evidence: `./manage.py test --suite long_commands --suite effects --suite library`
+    exercises real subprocesses, extended deadlines, cumulative capture budgets,
+    metadata progress, classified retries, cancellation through both the interpreter
+    and project wrapper, descendant liveness, and callback failure/panic cleanup.
+    The caller owns all policy; time and output budgets span attempts and delays.
+    Unix process groups provide local cleanup, not rollback or containment of
+    deliberately detached descendants. SIGKILL/controller crashes and uncertain
+    remote mutations remain obligations of connection adapters and durable recovery.
+    See [bounded command operations](LANGUAGE.md#bounded-command-operations) for
+    supported semantics and limits; this does not complete resource providers or
+    qualify a real Ansible workload.
 - [ ] Recover safely from partial application, building on section 2's durable snapshots
   - [ ] Persist plan identity, target identity, provider versions and step outcomes; resumed runs obtain fresh caller grants
   - [ ] Distinguish not started, completed, failed and uncertain outcomes when a controller or connection dies during a mutation
