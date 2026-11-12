@@ -310,3 +310,14 @@ Run `./manage.py runtime sandbox - program.yaml` to allow embedded modules only,
 `semantics` records successful scenario counts per actor and rejects missing witnesses when the builtin registry changes. `type_algebra` checks independent membership judgments over nested descriptions and mixed values, plus ordered violations and class diamonds. This is evidence for the implemented structural fragment; section 8 retains normalization, recursive types and formal proof obligations.
 
 `memory` requires Linux and GNU `/usr/bin/time`. It measures only interpreter peak RSS (KiB), records platform/Python/debug-profile metadata, and saves exact sources and states. Workloads use 1,001/4,001/10,001-node arithmetic maps (each under two seconds and 192 MiB), with a broad 12x-plus-16-MiB scaling allowance, and compare 999 versus 99,999 constant-state iterations (at most 8 MiB extra RSS). The existing `scale` suite retains its one-second 10k-node bound. These tolerances catch large regressions while allowing allocator and host noise; they are not a historical statistical baseline. Linux CI runs these measurements and compiled mutation checks in the weekly/manual full sweep and uploads the reports even on success.
+
+Speed benchmarks run through `./manage.py test --suite speed` and the default full
+suite. They measure the debug CLI (startup, loading, evaluation and emission),
+excluding compilation and Python YAML decoding. Each workload gets one warmup
+and five measured runs, checked against its expected result. Arithmetic maps,
+function loops, ASCII/Unicode slicing, and long-key map reads/replacements save
+raw samples, median/range, throughput, platform and binary hash to
+`runtime/speed/report.json`; unique run directories retain inputs and states.
+Compare medians across runs on the same host and build profile; these observations
+do not impose machine-dependent timing thresholds. Normal interpreter timeouts
+still apply. The weekly/manual full CI sweep includes this suite.

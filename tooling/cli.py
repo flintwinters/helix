@@ -21,6 +21,7 @@ SUITES = {
     "parser": "YAML syntax, unsupported constructs, paths, and source locations",
     "fuzz": "Bounded fixed-seed token mutations and failure minimization",
     "scale": "Large arithmetic maps with execution-time bounds",
+    "speed": "Repeated CLI speed benchmarks with warmup, correctness checks and runtime/speed reports",
 }
 
 CONTRACT = (

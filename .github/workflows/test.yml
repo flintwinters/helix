@@ -31,3 +31,10 @@ jobs:
           name: runtime-failures
           path: runtime/
           if-no-files-found: ignore
+      - name: Retain speed benchmark reports
+        uses: actions/upload-artifact@v4
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        with:
+          name: speed-benchmarks
+          path: runtime/speed/
+          if-no-files-found: ignore

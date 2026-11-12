@@ -83,3 +83,5 @@ The human-facing roadmap and daily-driver checklist is `CHARTER.md`; tick items 
 - `Vm::load_sandboxed` and `runtime sandbox ROOT FILE` confine transitive file imports to caller-authorized canonical roots; empty roots permit embedded modules only. Program and recovery data never grant host permissions. This is path-based import confinement, not OS isolation; future effects require explicit capabilities.
 
 - Trust verification: `semantics` maintains an actor/result/arity/type-failure census; `type_algebra` owns independent structural membership oracles; `memory` samples Linux peak RSS; `mutants` compiles isolated faults under `runtime/`. Keep witnesses current when adding actors, and preserve future suspension/effect/versioning obligations in Charter section 7.
+
+- Speed benchmarks: `./manage.py test --suite speed` measures repeated debug CLI workloads with warmup and semantic checks; replay inputs, raw timings and environment metadata live in `runtime/speed/`. Timing reports are observational; interpreter timeouts remain enforced.
