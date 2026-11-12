@@ -181,7 +181,7 @@ Treat testing as a substantial engineering responsibility. The Rust/Python size 
 - [x] Cover every builtin and form across valid inputs, wrong arity and types, empty collections, numeric boundaries, Unicode and nested values; include precise error blame
 - [x] Exercise feature interactions systematically: lexical shadowing, closures, recursion, iteration, lazy branches, memoization and error recovery composed in the same programs
 - [x] Test parser and graph contracts across YAML scalar styles, nesting, duplicate keys, unsupported constructs, parent links, lexical lookup and source spans
-- [x] Generate values and programs to check serialization preserves meaning, literal/expression distinctions and stable output across repeated save/reload cycles
+- [x] Generate ordinary-data values and programs to check serialization preserves meaning, literal/expression distinctions and stable output across repeated save/reload cycles; verify function and machine values through named inspection and execution contracts
 - [x] Add property-based and metamorphic tests for semantic laws and equivalent program transformations, respecting overflow, float behavior and documented evaluation order
 - [x] Compare a bounded language subset against a small independent Python reference evaluator, and library algorithms against independent host-language oracles
 - [x] Extend damaged-input testing into reproducible fuzzing of parsing, linking, evaluation and emission; retain seeds, minimize failures and promote them into regression cases
@@ -197,7 +197,7 @@ Treat testing as a substantial engineering responsibility. The Rust/Python size 
 
 ### Obligations activated by later milestones
 
-These require features from sections 2–3 and a versioned state format. They remain explicit obligations, not claims that suspension, effect replay or state migration already works. Today's pure recovery and finished-root fixpoints are covered separately.
+These require features from sections 2–3 and a versioned state format. They remain explicit obligations, not claims that disk restoration, effect replay or state migration already works. Today's immutable in-memory pause points, pure recovery and ordinary-data finished-root fixpoints are covered separately; named function and machine inspection graphs are not executable disk snapshots.
 
 - [ ] When suspension lands, compare uninterrupted execution with save/resume at every supported boundary, including nested calls, live locals, hand-edited states and fresh-process restoration
 - [ ] When effects land, use controlled adapters to test failure, retry, cleanup, permissions and interruption; prove completed effects are not accidentally repeated after resume

@@ -25,7 +25,8 @@ def verify(h):
     run_directory = Path(tempfile.mkdtemp(dir=base, prefix="run-"))
     workspace = run_directory / "workspace"
     workspace.mkdir()
-    for name in ("src", "std"):
+    # Include compile-time assets as well as Rust and standard-library sources.
+    for name in ("src", "std", "editor", "completions"):
         shutil.copytree(h.root / name, workspace / name)
     for name in ("Cargo.toml", "Cargo.lock"):
         shutil.copy2(h.root / name, workspace / name)
