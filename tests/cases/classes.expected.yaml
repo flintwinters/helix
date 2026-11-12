@@ -1,0 +1,195 @@
+status: finished
+root:
+  in_port:
+    - fn
+    - - n
+    - - and
+      - - ge
+        - n
+        - 1
+      - - le
+        - n
+        - 65535
+  port:
+    type: refine
+    of: integer
+    check:
+      - fn
+      - - n
+      - - and
+        - - ge
+          - n
+          - 1
+        - - le
+          - n
+          - 65535
+  machine:
+    type: class
+    name: machine
+    parents: []
+    fields:
+      hostname: string
+    values: {}
+    provenance:
+      hostname:
+        type: machine
+    concrete: false
+  has_ssh:
+    type: class
+    name: has_ssh
+    parents: []
+    fields:
+      ssh_port:
+        type: default
+        of:
+          type: refine
+          of: integer
+          check:
+            - fn
+            - - n
+            - - and
+              - - ge
+                - n
+                - 1
+              - - le
+                - n
+                - 65535
+        default: 22
+    values: {}
+    provenance:
+      ssh_port:
+        type: has_ssh
+    concrete: false
+  server:
+    type: class
+    name: server
+    parents:
+      - "machine"
+    fields:
+      hostname: string
+      packages:
+        type: list
+        of: string
+    values: {}
+    provenance:
+      hostname:
+        type: machine
+      packages:
+        type: server
+    concrete: false
+  web01:
+    type: class
+    name: web01
+    parents:
+      - "server"
+      - has_ssh
+    fields:
+      hostname: string
+      packages:
+        type: list
+        of: string
+      ssh_port:
+        type: default
+        of:
+          type: refine
+          of: integer
+          check:
+            - fn
+            - - n
+            - - and
+              - - ge
+                - n
+                - 1
+              - - le
+                - n
+                - 65535
+        default: 22
+    values:
+      hostname: web01
+      packages:
+        - "nginx"
+      ssh_port: 22
+    provenance:
+      hostname:
+        type: machine
+        value: web01
+      packages:
+        type: server
+        value: web01
+      ssh_port:
+        type: has_ssh
+        value: default of has_ssh
+    concrete: true
+  web02:
+    type: class
+    name: web02
+    parents:
+      - "server"
+      - has_ssh
+    fields:
+      hostname: string
+      packages:
+        type: list
+        of: string
+      ssh_port:
+        type: default
+        of:
+          type: refine
+          of: integer
+          check:
+            - fn
+            - - n
+            - - and
+              - - ge
+                - n
+                - 1
+              - - le
+                - n
+                - 65535
+        default: 22
+    values:
+      hostname: web02
+      packages: []
+      ssh_port: 2222
+    provenance:
+      hostname:
+        type: machine
+        value: web02
+      packages:
+        type: server
+        value: web02
+      ssh_port:
+        type: has_ssh
+        value: web02
+    concrete: true
+  parents_of:
+    - "server"
+    - has_ssh
+  server_fields:
+    hostname: string
+    packages:
+      type: list
+      of: string
+  not_yet:
+    kind: abstract
+    message: "class `bare` is abstract: missing `packages` (required by server)"
+    path: /not_yet/1
+    line: 10
+    column: 16
+    data:
+      missing:
+        - field: packages
+          required_by: server
+  wrong_value:
+    kind: type
+    message: "1 misfit in the values of `bad`: /hostname: expected string, got integer"
+    path: /wrong_value/1
+    line: 11
+    column: 20
+    data:
+      violations:
+        - at: /hostname
+          message: "expected string, got integer"
+  undeclared: "`typo` sets `hostnam`, which no parent or field declares"
+  realized_twice: true
+  abstract_stays: false

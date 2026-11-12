@@ -52,9 +52,9 @@ pub(super) fn apply(actor: &str, args: &[Yaml], pred: &mut Pred) -> Result<Yaml,
         "extend" => Ok(extend(name_arg(args, 0)?, &parents_arg(args, 1)?, fields_arg(args, 2)?, hash_arg(args, 3)?, Where { fields: 2, values: 3 }, pred)?.to_yaml()),
         "inherit" => {
             let class = extend(name_arg(args, 0)?, &parents_arg(args, 1)?, &Hash::new(), hash_arg(args, 2)?, Where { fields: 1, values: 2 }, pred)?;
-            Ok(realize(class, 0, pred)?.to_yaml())
+            Ok(realize(class, None, pred)?.to_yaml())
         }
-        "realize" => Ok(realize(Class::from_yaml(&args[0], 0)?, 0, pred)?.to_yaml()),
+        "realize" => Ok(realize(Class::from_yaml(&args[0], 0)?, Some(0), pred)?.to_yaml()),
         "parents" => reflect_parents(&args[0]),
         _ => unreachable!("`{actor}` is not a class builtin"),
     }
@@ -228,7 +228,7 @@ fn validate(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
     if found.is_empty() {
         return Ok(());
     }
-    let message = format!("{} value{} of `{}` do not fit their types: {}", found.len(), if found.len() == 1 { "" } else { "s" }, class.name, found[0].1);
+    let message = format!("{} misfit{} in the values of `{}`: {}", found.len(), if found.len() == 1 { "" } else { "s" }, class.name, found[0].1);
     Err(Fault { kind: "type".into(), message, arg: None, data: Some(mapping([("violations", Yaml::Array(found.into_iter().map(|f| f.0).collect()))])) })
 }
 
@@ -243,13 +243,13 @@ fn check_slot(field: &str, value: &Yaml, ty: &Ty, pred: &mut Pred) -> Vec<(Yaml,
 }
 
 /// Fill defaults and mark the class concrete, or fail listing every required field still open.
-fn realize(mut class: Class, arg: usize, pred: &mut Pred) -> Result<Class, Fault> {
+fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Class, Fault> {
     let mut missing = Vec::new();
     for slot in &mut class.slots {
         if slot.value.is_some() {
             continue;
         }
-        let field = Field::parse(&slot.spec).map_err(|why| Fault::at(arg, "type", why))?;
+        let field = Field::parse(&slot.spec).map_err(|why| Fault { arg, ..Fault::whole("type", why) })?;
         match field.default {
             Some(default) => slot.value = Some((default, format!("default of {}", slot.declared_by))),
             None if field.required => missing.push(slot.clone()),
@@ -260,7 +260,7 @@ fn realize(mut class: Class, arg: usize, pred: &mut Pred) -> Result<Class, Fault
         let list = missing.iter().map(|m| format!("`{}` (required by {})", m.name, m.declared_by)).collect::<Vec<_>>().join(", ");
         let entries = missing.iter().map(|m| mapping([("field", s(&m.name)), ("required_by", s(&m.declared_by))])).collect();
         let message = format!("class `{}` is abstract: missing {list}", class.name);
-        return Err(Fault { kind: "abstract".into(), message, arg: Some(arg), data: Some(mapping([("missing", Yaml::Array(entries))])) });
+        return Err(Fault { kind: "abstract".into(), message, arg, data: Some(mapping([("missing", Yaml::Array(entries))])) });
     }
     validate(&class, pred)?;
     class.concrete = true;
