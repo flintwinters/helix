@@ -7,7 +7,7 @@ use yaml_rust2::Yaml;
 pub fn document(value: &Yaml) -> String {
     let mut out = String::new();
     if is_container(value) {
-        block(value, 0, &mut out);
+        block(value, 0, &mut out, false);
     } else {
         out.push_str(&scalar(value));
         out.push('\n');
@@ -15,29 +15,33 @@ pub fn document(value: &Yaml) -> String {
     out
 }
 
-/// Lines of a non-empty container at `indent`; sequence items start with `- `.
-fn block(value: &Yaml, indent: usize, out: &mut String) {
+/// Lines of a non-empty container at `indent`; `inline` omits the first line's
+/// padding when it follows a parent sequence dash.
+fn block(value: &Yaml, indent: usize, out: &mut String, inline: bool) {
     let pad = " ".repeat(indent);
     match value {
         Yaml::Hash(entries) => {
-            for (key, entry) in entries {
-                out.push_str(&format!("{pad}{}:", scalar(key)));
+            for (position, (key, entry)) in entries.iter().enumerate() {
+                if !inline || position != 0 { out.push_str(&pad); }
+                out.push_str(&scalar(key));
+                out.push(':');
                 nested(entry, indent + 2, out);
             }
         }
         Yaml::Array(items) => {
             for (position, item) in items.iter().enumerate() {
+                if !inline || position != 0 { out.push_str(&pad); }
+                out.push_str("- ");
                 if is_container(item) {
-                    let mut child = String::new();
-                    block(item, indent + 2, &mut child);
                     // The first child line shares the dash: `- a: 1` / `- - 2`.
-                    out.push_str(&format!("{pad}- {}", &child[indent + 2..]));
+                    block(item, indent + 2, out, true);
                 } else {
                     let text = match item {
                         Yaml::String(s) => string(s, position == 0),
                         other => scalar(other),
                     };
-                    out.push_str(&format!("{pad}- {text}\n"));
+                    out.push_str(&text);
+                    out.push('\n');
                 }
             }
         }
@@ -49,9 +53,11 @@ fn block(value: &Yaml, indent: usize, out: &mut String) {
 fn nested(value: &Yaml, indent: usize, out: &mut String) {
     if is_container(value) {
         out.push('\n');
-        block(value, indent, out);
+        block(value, indent, out, false);
     } else {
-        out.push_str(&format!(" {}\n", scalar(value)));
+        out.push(' ');
+        out.push_str(&scalar(value));
+        out.push('\n');
     }
 }
 
@@ -78,7 +84,7 @@ fn string(text: &str, head: bool) -> String {
     const KEYWORDS: [&str; 10] = ["true", "false", "null", "yes", "no", "on", "off", "y", "n", "~"];
     let plain_start = text.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_' || c == '/');
     let plain_rest = text.chars().all(|c| c.is_ascii_alphanumeric() || " _./@()+=-".contains(c));
-    let reserved = head || KEYWORDS.contains(&text.to_ascii_lowercase().as_str());
+    let reserved = head || KEYWORDS.iter().any(|keyword| text.eq_ignore_ascii_case(keyword));
     if plain_start && plain_rest && !text.ends_with(' ') && !reserved {
         return text.to_string();
     }
@@ -95,10 +101,16 @@ pub(crate) fn quoted(text: &str) -> String {
             '\n' => quoted.push_str("\\n"),
             '\t' => quoted.push_str("\\t"),
             '\r' => quoted.push_str("\\r"),
-            c if c.is_control() => quoted.push_str(&format!("\\u{:04x}", c as u32)),
+            c if c.is_control() || !is_printable(c) => quoted.push_str(&format!("\\u{:04x}", c as u32)),
             c => quoted.push(c),
         }
     }
     quoted.push('"');
     quoted
+}
+
+/// YAML 1.2 printable source characters; other scalar values need escapes.
+/// https://yaml.org/spec/1.2.2/#51-character-set
+pub(crate) fn is_printable(ch: char) -> bool {
+    matches!(ch, '\t' | '\n' | '\r' | ' '..='~' | '\u{85}' | '\u{a0}'..='\u{d7ff}' | '\u{e000}'..='\u{fffd}' | '\u{10000}'..='\u{10ffff}')
 }
