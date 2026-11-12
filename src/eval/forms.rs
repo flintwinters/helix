@@ -4,6 +4,10 @@ use crate::model::{Evaluator, Function, HelixError, Iteration, Kind, NodeId, Req
 use std::sync::Arc;
 
 impl Evaluator {
+    pub(super) fn truth(&self, value: &Value, blame: NodeId) -> Result<bool, HelixError> {
+        builtins::boolean(value, 0).map_err(|f| self.err(blame, &f.kind, f.message))
+    }
+
     pub(super) fn form(
         &mut self,
         id: NodeId,

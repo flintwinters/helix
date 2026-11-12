@@ -1,7 +1,6 @@
 //! Explicit execution requests and continuations. No transition invokes another interpreter.
-use crate::builtins;
 use crate::error::{HelixError, s};
-use crate::graph::{Graph, Kind, NodeId, ROOT};
+use crate::graph::{Graph, NodeId, ROOT};
 use crate::link;
 use crate::value::{Hash, Value};
 use std::collections::{HashMap, HashSet};
@@ -13,11 +12,12 @@ mod forms;
 mod iteration;
 mod atomic;
 mod effects;
+mod expression;
 
 use crate::model::Limits;
 use crate::model::{Outcome, Vm};
 
-use crate::model::{Actor, Binding, Mode, Program, Request, Scope};
+use crate::model::{Actor, Mode, Program, Request, Scope};
 pub(crate) use crate::model::{Evaluator, Function};
 impl Evaluator {
     pub fn new(
@@ -395,155 +395,6 @@ impl Evaluator {
         }
         Ok(())
     }
-    fn evaluate(&mut self, id: NodeId, mode: Mode) -> Result<(), HelixError> {
-        self.remaining_work = self.remaining_work.checked_sub(1).ok_or_else(|| {
-            self.err(
-                id,
-                "limit",
-                format!("evaluation exceeds {} node visits", self.limits.max_work),
-            )
-        })?;
-        if self.active.len() >= self.limits.max_eval_depth {
-            return Err(self.err(
-                id,
-                "depth",
-                format!(
-                    "evaluation nested deeper than {} nodes",
-                    self.limits.max_eval_depth
-                ),
-            ));
-        }
-        if mode == Mode::Argument {
-            if let Some(name) = self.graph().symbol(id) {
-                match self.resolve(id, name) {
-                    Some(Binding::Value(value)) => {
-                        self.charge_value(id, &value)?;
-                        self.finish(value);
-                        return Ok(());
-                    }
-                    Some(Binding::Node(target)) => {
-                        self.eval(target, false);
-                        return Ok(());
-                    }
-                    None if builtins::is_primitive(name) => {
-                        self.finish(s(name));
-                        return Ok(());
-                    }
-                    None => {
-                        return Err(self.err(id, "unbound", format!("unbound symbol `{name}`")));
-                    }
-                }
-            }
-        }
-        if let Some(value) = self.memo.get(&id).cloned() {
-            self.charge_value(id, &value)?;
-            self.finish(value);
-            return Ok(());
-        }
-        let local = self.in_function(id);
-        let depth = if local { self.depth } else { 0 };
-        if !self.active.insert((id, depth)) {
-            return Err(self.err(id, "cycle", "value depends on itself"));
-        }
-        self.push(Request::Finish(id, depth, local));
-        match self.graph().kind(id).clone() {
-            Kind::Scalar { value, .. } => self.finish(Value::from_yaml(&value)),
-            Kind::Map(entries) => {
-                let (keys, nodes) = entries.into_iter().unzip();
-                self.collect(id, None, nodes, Some(keys), false);
-            }
-            Kind::Seq(items) => {
-                let head = items.first().copied();
-                if let Some(name) = head
-                    .and_then(|h| self.graph().symbol(h))
-                    .map(str::to_string)
-                {
-                    if builtins::arity(&name).is_some() {
-                        self.apply(id, Actor::Builtin(name), items[1..].to_vec())?;
-                    } else if let Some(binding) = self.resolve(head.unwrap(), &name) {
-                        self.push(Request::Actor(id, items));
-                        match binding {
-                            Binding::Value(v) => self.finish(v),
-                            Binding::Node(n) => self.eval(n, false),
-                        }
-                    } else {
-                        self.collect(id, None, items, None, false);
-                    }
-                } else if head.is_some_and(|h| matches!(self.graph().kind(h), Kind::Seq(_))) {
-                    self.push(Request::Actor(id, items.clone()));
-                    self.eval(head.unwrap(), true);
-                } else {
-                    self.collect(id, None, items, None, false);
-                }
-            }
-        }
-        Ok(())
-    }
-    fn collect(
-        &mut self,
-        site: NodeId,
-        actor: Option<Actor>,
-        nodes: Vec<NodeId>,
-        keys: Option<Vec<String>>,
-        argument: bool,
-    ) {
-        self.collect_next(site, actor, nodes, keys, Vec::new(), argument);
-    }
-    fn collect_next(
-        &mut self,
-        site: NodeId,
-        actor: Option<Actor>,
-        nodes: Vec<NodeId>,
-        keys: Option<Vec<String>>,
-        values: Vec<Value>,
-        argument: bool,
-    ) {
-        let index = values.len();
-        if let Some(&node) = nodes.get(index) {
-            self.push(Request::Collect {
-                site,
-                actor,
-                nodes,
-                keys,
-                values,
-                argument,
-            });
-            self.eval(node, argument);
-        } else if let Some(actor) = actor {
-            self.push(Request::Apply(site, actor, nodes, values));
-        } else if let Some(keys) = keys {
-            self.finish(Value::Hash(
-                keys.into_iter().map(|k| s(&k)).zip(values).collect(),
-            ));
-        } else {
-            self.finish(Value::Array(values.into()));
-        }
-    }
-    fn apply(&mut self, id: NodeId, actor: Actor, args: Vec<NodeId>) -> Result<(), HelixError> {
-        if let Actor::Builtin(name) = &actor {
-            let (min, max) = builtins::arity(name).unwrap();
-            if args.len() < min || max.is_some_and(|max| args.len() > max) {
-                let expected = match max {
-                    Some(m) if m == min => arguments(m),
-                    Some(m) => format!("{min} to {}", arguments(m)),
-                    None => format!("at least {}", arguments(min)),
-                };
-                return Err(self.err(
-                    id,
-                    "arity",
-                    format!("`{name}` takes {expected}, got {}", args.len()),
-                ));
-            }
-            if builtins::is_form(name) {
-                return self.form(id, name, args);
-            }
-        }
-        self.collect(id, Some(actor), args, None, true);
-        Ok(())
-    }
-    fn truth(&self, value: &Value, blame: NodeId) -> Result<bool, HelixError> {
-        builtins::boolean(value, 0).map_err(|f| self.err(blame, &f.kind, f.message))
-    }
     fn charge_value(&mut self, id: NodeId, value: &Value) -> Result<(), HelixError> {
         let mut pending = vec![(value, 0, true)];
         let mut nodes = 0;
@@ -602,24 +453,6 @@ impl Evaluator {
         Ok(())
     }
 
-    pub fn check_nodes(&self) -> Vec<NodeId> {
-        let mut pending = vec![ROOT];
-        let mut nodes = Vec::new();
-        while let Some(id) = pending.pop() {
-            match self.graph().kind(id) {
-                Kind::Map(entries) => pending.extend(entries.iter().rev().map(|(_, child)| *child)),
-                Kind::Seq(items)
-                    if self.graph().form(id).is_none_or(|name| {
-                        builtins::arity(name).is_none() && self.resolve(id, name).is_none()
-                    }) =>
-                {
-                    pending.extend(items.iter().rev())
-                }
-                _ => nodes.push(id),
-            }
-        }
-        nodes
-    }
     pub fn for_node(&self, node: NodeId) -> Self {
         let mut state = Self::start(
             self.program.clone(),

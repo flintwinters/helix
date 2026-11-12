@@ -1,5 +1,6 @@
 //! Parameter declarations and lexical environments, including free-binding discovery.
 use crate::builtins;
+use crate::graph::ROOT;
 use crate::model::{
     Binding, Evaluator, Function, HelixError, Kind, Mode, NodeId, Request, Scope, Value,
     string as s,
@@ -97,6 +98,25 @@ impl Function {
     }
 }
 impl Evaluator {
+    pub fn check_nodes(&self) -> Vec<NodeId> {
+        let mut pending = vec![ROOT];
+        let mut nodes = Vec::new();
+        while let Some(id) = pending.pop() {
+            match self.graph().kind(id) {
+                Kind::Map(entries) => pending.extend(entries.iter().rev().map(|(_, child)| *child)),
+                Kind::Seq(items)
+                    if self.graph().form(id).is_none_or(|name| {
+                        builtins::arity(name).is_none() && self.resolve(id, name).is_none()
+                    }) =>
+                {
+                    pending.extend(items.iter().rev())
+                }
+                _ => nodes.push(id),
+            }
+        }
+        nodes
+    }
+
     pub(super) fn parameters(
         &self,
         function: &Function,
