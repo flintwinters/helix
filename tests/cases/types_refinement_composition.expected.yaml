@@ -1,0 +1,55 @@
+root:
+  base_short_circuit:
+    - at: /
+      message: failed its refinement check
+  bottom_rejection: false
+  class_realized:
+    count: 2
+  class_rejected:
+    violations:
+      - at: /count
+        message: failed its refinement check
+  enum_rejection: false
+  fields:
+    - at: /defaulted
+      message: failed its refinement check
+    - at: /optional
+      message: failed its refinement check
+    - at: /required
+      message: failed its refinement check
+  literal_rejection: false
+  nested_list:
+    - at: /1
+      message: failed its refinement check
+    - at: /2
+      message: failed its refinement check
+  nested_map:
+    - at: /a
+      message: failed its refinement check
+    - at: /z
+      message: failed its refinement check
+  refined_bases:
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+  stacked:
+    - false
+    - true
+    - true
+    - false
+    - false
+  union: false
+status: finished

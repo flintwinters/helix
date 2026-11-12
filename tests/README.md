@@ -59,7 +59,11 @@ acceptance suites independently check actual host observations and mutations.
 `long_commands` freezes the pending request and is also performed by its suite
 with a caller-owned extended deadline; retry/cancellation/output budgets remain
 host policy tested with real subprocesses. `class_defaults` fixes default
-inheritance, explicit overrides and conflicting-parent diagnostics.
+inheritance, explicit overrides, conflicting-parent diagnostics and their
+separation from membership. `class_collection_overrides` covers whole-value
+replacement and explicit list/map composition; `types_refinement_composition`
+covers stacked predicates across the existing type formers, and
+`types_violation_order` fixes nested diagnostic traversal order.
 
 ## Testing contracts and known gaps
 

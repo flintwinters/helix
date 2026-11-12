@@ -7,7 +7,7 @@ root:
         - first
         - second
     kind: conflict
-    line: 12
+    line: 15
     message: "field `port` has different declarations from both `first` and `second`; resolve it in `child`"
     path: "/$call/2/conflict/$call/1/$call/2"
     reference:
@@ -35,6 +35,9 @@ root:
     type: class
     values:
       port: 80
+  membership_absent: true
+  membership_different: true
+  membership_wrong_type: false
   overridden:
     concrete: true
     fields:

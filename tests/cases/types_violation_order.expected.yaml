@@ -1,0 +1,29 @@
+root:
+  nested:
+    - at: /a
+      message: "missing field `a`"
+    - at: /b/0/x
+      message: "expected integer, got boolean"
+    - at: /b/0/y
+      message: "expected boolean, got integer"
+    - at: /b/0/a_extra
+      message: "unexpected field `a_extra`"
+    - at: /b/1/x
+      message: "missing field `x`"
+    - at: /b/1/y
+      message: "expected boolean, got integer"
+    - at: /z/a
+      message: "expected integer, got boolean"
+    - at: /z/z
+      message: "expected integer, got boolean"
+    - at: /a_extra
+      message: "unexpected field `a_extra`"
+    - at: /z_extra
+      message: "unexpected field `z_extra`"
+  root:
+    - at: /
+      message: "expected record, got list"
+  union:
+    - at: /
+      message: "expected string | integer, got null"
+status: finished

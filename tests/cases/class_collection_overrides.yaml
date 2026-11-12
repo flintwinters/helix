@@ -1,0 +1,31 @@
+# Inheritance replaces whole collection values. Merge/append are explicit code.
+$call:
+  - let
+  - maps: {$call: [import, 'std:map']}
+    schema: {$call: [record, packages, {$call: [list_of, {$ref: string}]}, settings, {$call: [map_of, {$ref: integer}]}]}
+    base: {$call: [class, base, {$ref: schema}, {packages: [base], settings: {keep: 1, shared: 1}}]}
+    other: {$call: [class, other, {$ref: schema}, {packages: [extra], settings: {new: 2, shared: 2}}]}
+    values: {$call: [get, {$ref: base}, values]}
+    replacements: {packages: [extra], settings: {new: 2, shared: 2}}
+  - replaced: {$call: [get, {$call: [inherit, child, {$call: [list, {$ref: base}]}, {$ref: replacements}]}, values]}
+    emptied: {$call: [get, {$call: [inherit, child, {$call: [list, {$ref: base}]}, {packages: [], settings: {}}]}, values]}
+    list_conflict:
+      $call:
+        - try
+        - {$call: [inherit, child, {$call: [list, {$ref: base}, {$ref: other}]}, {}]}
+        - {$call: [fn, [error], {$call: [get, {$ref: error}, data]}]}
+    map_conflict:
+      $call:
+        - try
+        - {$call: [inherit, child, {$call: [list, {$ref: base}, {$ref: other}]}, {packages: []}]}
+        - {$call: [fn, [error], {$call: [get, {$ref: error}, data]}]}
+    explicitly_combined:
+      $call:
+        - get
+        - $call:
+            - inherit
+            - child
+            - {$call: [list, {$ref: base}, {$ref: other}]}
+            - packages: {$call: [concat, {$call: [get, {$ref: values}, packages]}, {$call: [get, {$ref: replacements}, packages]}]}
+              settings: {$call: [maps.merge, {$call: [get, {$ref: values}, settings]}, {$call: [get, {$ref: replacements}, settings]}]}
+        - values

@@ -4,7 +4,10 @@ $call:
   - let
   - first: {$call: [class, first, {$call: [record, port, {$call: [default, {$ref: integer}, 80]}]}, {}]}
     second: {$call: [class, second, {$call: [record, port, {$call: [default, {$ref: integer}, 8080]}]}, {}]}
-  - inherited: {$call: [realize, {$call: [inherit, child, {$call: [list, {$ref: first}]}, {}]}]}
+  - membership_absent: {$call: [is, {}, {$ref: first}]}
+    membership_different: {$call: [is, {port: 443}, {$ref: first}]}
+    membership_wrong_type: {$call: [is, {port: wrong}, {$ref: first}]}
+    inherited: {$call: [realize, {$call: [inherit, child, {$call: [list, {$ref: first}]}, {}]}]}
     overridden: {$call: [realize, {$call: [inherit, child, {$call: [list, {$ref: first}]}, {port: 443}]}]}
     conflict:
       $call:

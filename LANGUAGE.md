@@ -132,6 +132,19 @@ The pure type constructors are `list_of`, `map_of`, `record` (alternating field 
 
 Subtyping uses identity and `any` as the top type. Lists and maps are covariant in their element type. A union is below a type when every alternative is below it; a type is below a union when one alternative covers it. An enum or literal is below a type when every listed value inhabits it. A refinement is below its base; proving a value belongs to a refinement still runs its predicate. Closed records admit no fields outside the target record, each source field must have a subtype of the corresponding target field, and every required target field must be required in the source. Defaults do not change membership. Unproved relationships return `false`; no theorem prover runs for arbitrary predicates.
 
+Violation lists use depth-first traversal. Lists visit increasing indices; maps
+visit canonical string-key order. Records visit declared fields in canonical key
+order (including missing required fields), then unexpected fields in canonical
+key order. Nested violations stay together at their field or index. A rejected
+union emits one violation at the checked value, with alternatives named in
+declaration order, rather than concatenating each alternative's violations.
+Refinements check the base first and only run their predicate if the base passes;
+this also applies when the base is another refinement. Refinements can wrap the
+existing type constructors and serve as collection elements or required,
+optional and defaulted fields. Class structural membership retains the limits
+described below. `types_violation_order` and `types_refinement_composition` fix
+these ordering and composition contracts.
+
 `eq` on types is structural equality of their declaration values: record field order is ignored, list order (including union members and enum alternatives) is significant, and defaults and captured predicates participate. This is declaration equality, not equality of the sets of accepted values. Types retain their readable declaration maps in saved state and round-trip through the same evaluator.
 
 ### Type-time evaluation
@@ -545,6 +558,16 @@ Callbacks are checked as functions even for empty lists. Predicates must return 
 A class is a type that can be extended. `[class, name, record_type, values?]` declares one; `{$call: [extend, {$ref: name}, {$ref: parents}, {$ref: own_record}, {$ref: values}]}` and `{$call: [inherit, {$ref: name}, {$ref: parents}, {$ref: values}]}` build children. Parents contribute fields and fixed values in order. Where parents disagree on a field declaration or fixed value, the merge raises a `conflict` error naming both sources unless the child resolves it. A redeclared field must be a subtype of every parent's declaration. Lists and maps are never merged: a child takes them whole or conflicts. `{$call: [constrain, {$ref: class}, {$ref: fn}]}` adds a whole-record predicate (cross-field invariants); constraints are unioned across parents and a failure is a `type` violation at `/`.
 
 `{$call: [realize, {$ref: class}]}` fills defaults and checks fixed values against the declared types. A class with required fields still unfilled is `abstract`: realizing it raises an `abstract` error whose `data.missing` lists each field and `required_by`. Every class records provenance: for each field, the declaring class (`type`) and where the value came from (`value`, e.g. `default of X`), so "who set this" is answered from state.
+
+A child's explicit value wins over an inherited default. Different inherited
+defaults are conflicting field declarations; resolve them by explicitly
+redeclaring the field and supplying a valid value or default. Membership only
+checks the field's type: a defaulted field may be absent or contain a different
+valid value. Realization fills an absent defaulted field; membership never fills
+it. `class_defaults` covers this distinction. For collection overrides, use
+`concat` to explicitly append lists or `std:map.merge` to explicitly merge maps
+before supplying the child value. Map merge is shallow and right-biased; neither
+operation happens implicitly during inheritance (`class_collection_overrides`).
 
 Structural membership (`is`, `expect`, and `violations`) checks a class's field schema, including field refinements, but does not enforce its fixed values or whole-record constraints. Those belong to class realization; structural membership is not a complete machine-conformance check.
 

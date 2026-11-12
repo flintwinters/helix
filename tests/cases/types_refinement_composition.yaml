@@ -1,0 +1,51 @@
+# Predicates compose through the same checker; failed bases must not call them.
+$call:
+  - let
+  - positive: {$call: [refine, {$ref: integer}, {$call: [fn, [n], {$call: [gt, {$ref: n}, 0]}]}]}
+    small: {$call: [refine, {$ref: positive}, {$call: [fn, [n], {$call: [lt, {$ref: n}, 10]}]}]}
+    one: {$call: [literal, 1]}
+    choice: {$call: [enum, 1, 2]}
+    row: {$call: [record, required, {$ref: small}, optional, {$call: [optional, {$ref: small}]}, defaulted, {$call: [default, {$ref: small}, 1]}]}
+    member: {$call: [class, member, {$call: [record, count, {$ref: small}]}, {}]}
+    accepts: {$call: [fn, [value], true]}
+    impossible: {$call: [fn, [value], {$call: [raise, unexpected_predicate, Base rejection must skip this predicate]}]}
+    samples:
+      $call:
+        - list
+        - {type: {$ref: any}, value: null}
+        - {type: {$ref: integer}, value: 1}
+        - {type: {$ref: float}, value: 1.5}
+        - {type: {$ref: string}, value: text}
+        - {type: {$ref: boolean}, value: false}
+        - {type: 'null', value: null}
+        - {type: {$ref: secret}, value: {$call: [secret, vault/name]}}
+        - {type: {$ref: function}, value: {$ref: accepts}}
+        - {type: {$ref: vm}, value: {$call: [vm, {$call: [fn, [], 1]}]}}
+        - {type: {$call: [list_of, {$ref: small}]}, value: [1, 9]}
+        - {type: {$call: [map_of, {$ref: small}]}, value: {a: 1}}
+        - {type: {$ref: row}, value: {required: 1}}
+        - {type: {$call: [union, {$ref: small}, 'null']}, value: null}
+        - {type: {$ref: choice}, value: 2}
+        - {type: {$ref: one}, value: 1}
+        - {type: {$ref: member}, value: {count: 1}}
+  - stacked:
+      $call: [map, {$call: [fn, [n], {$call: [is, {$ref: n}, {$ref: small}]}]}, [0, 1, 9, 10, wrong]]
+    refined_bases:
+      $call:
+        - map
+        - {$call: [fn, [sample], {$call: [is, {$call: [get, {$ref: sample}, value]}, {$call: [refine, {$call: [get, {$ref: sample}, type]}, {$ref: accepts}]}]}]}
+        - {$ref: samples}
+    nested_list: {$call: [violations, [1, 0, 10], {$call: [list_of, {$ref: small}]}]}
+    nested_map: {$call: [violations, {z: 10, a: 0}, {$call: [map_of, {$ref: small}]}]}
+    fields: {$call: [violations, {required: 0, optional: 10, defaulted: 0}, {$ref: row}]}
+    union: {$call: [is, 10, {$call: [union, {$ref: small}, 'null']} ]}
+    literal_rejection: {$call: [is, 2, {$call: [refine, {$ref: one}, {$ref: impossible}]}]}
+    enum_rejection: {$call: [is, 3, {$call: [refine, {$ref: choice}, {$ref: impossible}]}]}
+    bottom_rejection: {$call: [is, null, {$call: [refine, {$ref: never}, {$ref: impossible}]}]}
+    base_short_circuit: {$call: [violations, 0, {$call: [refine, {$ref: positive}, {$ref: impossible}]}]}
+    class_realized: {$call: [get, {$call: [realize, {$call: [inherit, child, {$call: [list, {$ref: member}]}, {count: 2}]}]}, values]}
+    class_rejected:
+      $call:
+        - try
+        - {$call: [inherit, child, {$call: [list, {$ref: member}]}, {count: 10}]}
+        - {$call: [fn, [error], {$call: [get, {$ref: error}, data]}]}

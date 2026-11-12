@@ -191,7 +191,7 @@ A type should read like the value it describes with the specifics left open: som
   - [x] The predicate is a named or inline `fn` from the value to a boolean, run only after the base type passes (`types_declarative`, `types_first_class`; the shared checker gates predicates on base membership)
   - [ ] A predicate that fails or returns a non-boolean is an error blamed on the predicate, distinct from "value rejected"
   - [ ] A rejected value's violation names the refinement, so the report says which rule failed and not only that one did
-  - [ ] Refinements stack (a refinement of a refinement) and compose with every other type former
+  - [x] Refinements stack (a refinement of a refinement) and compose with every other implemented type former (`types_refinement_composition`: base gating, collection elements, optional/defaulted fields, unions, enums, literals and class fields; class membership retains its separate limits below)
 - [ ] Annotate a value or a `fn` parameter/result with a type; a mismatch is a structured `type` error blaming the offending node with path and line
   - [x] Annotate a value in a map; the annotated value is still read by other expressions as the plain value
   - [ ] Annotate `fn` parameters; a bad argument blames the argument at the call site — annotations work, but `types_annotations.bad_args` records the call's path/span and parameter names, not each offending argument's path/span (`src/eval/atomic.rs`)
@@ -201,7 +201,7 @@ A type should read like the value it describes with the specifics left open: som
 - [ ] Type checking collects every violation in one pass instead of stopping at the first
   - [ ] A violation is data: path into the value, expected, actual, and the rule that rejected it
   - [x] All violations of one value against one type are returned together, nested ones included
-  - [ ] Violations come out in a stable, documented order so reports diff cleanly
+  - [x] Violations come out in a stable, documented order so reports diff cleanly (`types_violation_order`; depth-first field/key/index order, record extras last, as documented in `LANGUAGE.md`)
   - [ ] All annotation failures of a whole program are reported in one run
 - [ ] Types survive in the saved state and round-trip: emitted `root` re-read yields the same types
   - [ ] A type emits as the declaration that was written, not an expanded or internal form
@@ -272,7 +272,7 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
   - [ ] Normalize types without losing original declarations or provenance; state when normalization is canonical and preserves meaning
 - [ ] Connect inheritance to the algebra
   - [ ] Combine inherited constraints by intersection
-  - [ ] State default selection and explicit override rules separately from membership
+  - [x] State default selection and explicit override rules separately from membership (`class_defaults`; realization fills defaults, explicit child values override them, and structural membership neither fills nor demands the default value; `LANGUAGE.md#classes-machines-and-drift`)
 - [ ] Integrate every new former with the existing type system
   - [ ] Document membership, subtyping, equivalence, reflection, serialization and failure behavior
   - [ ] Cover positive, negative and boundary behavior with golden cases
@@ -329,7 +329,7 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
   - [ ] Decided: the merge model (see Open questions) and whether inheritance is nominal, structural or both
   - [x] Field types from two parents: when they combine and when they conflict (`class_conflicts`; declarations must agree or the child must explicitly narrow every parent)
   - [x] Defaults: a child's explicit value overrides a parent default; two differing parent defaults are a conflict (`class_defaults` covers inheritance, override, conflict and explicit declaration resolution)
-  - [ ] Lists and maps: one stated rule each (replace, append, or merge by key), with an explicit way to ask for another
+  - [x] Lists and maps: one stated rule each (replace, append, or merge by key), with an explicit way to ask for another (`class_collection_overrides`: whole-value replacement, conflicts, empty overrides, explicit `concat` and `std:map.merge`; `LANGUAGE.md#classes-machines-and-drift`)
   - [ ] Parent order never changes the result
   - [ ] The rules are written in `LANGUAGE.md`, with a golden case per rule
 - [ ] Conflicts between parents are type-time errors that name both sources, never silent last-writer-wins

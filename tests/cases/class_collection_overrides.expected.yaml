@@ -1,0 +1,29 @@
+root:
+  emptied:
+    packages: []
+    settings: {}
+  explicitly_combined:
+    packages:
+      - base
+      - extra
+    settings:
+      keep: 1
+      new: 2
+      shared: 2
+  list_conflict:
+    field: packages
+    sources:
+      - base
+      - other
+  map_conflict:
+    field: settings
+    sources:
+      - base
+      - other
+  replaced:
+    packages:
+      - extra
+    settings:
+      new: 2
+      shared: 2
+status: finished
