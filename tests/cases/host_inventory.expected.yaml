@@ -1,0 +1,247 @@
+root:
+  all:
+    diagnostics: []
+    status: ready
+    targets:
+      - connection:
+          address: db.example
+          port: 2222
+          transport: ssh
+        groups:
+          - production
+        id: db
+        provenance:
+          - connection:
+              address: db.example
+              transport: ssh
+            source: supplied-discovery
+          - connection:
+              port: 2222
+            index: 0
+            source: group-port
+      - connection:
+          transport: local
+        groups: []
+        id: local
+        provenance:
+          - connection:
+              transport: local
+            source: static
+      - connection:
+          address: web.example
+          port: 2200
+          transport: ssh
+          user: deploy
+        groups:
+          - production
+        id: web
+        provenance:
+          - connection:
+              address: web.example
+              transport: ssh
+              user: deploy
+            source: static
+          - connection:
+              port: 2222
+            index: 0
+            source: group-port
+          - connection:
+              port: 2200
+            index: 1
+            source: web-port
+    version: 1
+  duplicate:
+    diagnostics:
+      - calls:
+          - column: 16
+            file: "std:inventory"
+            function: /require
+            function_column: 8
+            function_file: "std:inventory"
+            function_line: 145
+            line: 173
+            path: "/add_hosts/$call/2/$call/1/$call/2/$call/2"
+          - column: 12
+            file: "std:inventory"
+            function: "/add_hosts/$call/2/$call/1"
+            function_column: 12
+            function_file: "std:inventory"
+            function_line: 163
+            line: 163
+            path: "/add_hosts/$call/2/$call/1"
+          - column: 18
+            file: "std:inventory"
+            function: /add_hosts
+            function_column: 8
+            function_file: "std:inventory"
+            function_line: 158
+            line: 525
+            path: "/resolve_checked/$call/2/$call/1/catalog/$call/1/$call/2"
+          - column: 16
+            file: "std:inventory"
+            function: "/resolve_checked/$call/2/$call/1/catalog/$call/1"
+            function_column: 16
+            function_file: "std:inventory"
+            function_line: 522
+            line: 522
+            path: "/resolve_checked/$call/2/$call/1/catalog/$call/1"
+          - column: 12
+            file: "std:inventory"
+            function: /resolve_checked
+            function_column: 8
+            function_file: "std:inventory"
+            function_line: 505
+            line: 593
+            path: "/resolve/$call/2/$call/1"
+        column: 12
+        data:
+          host: local
+          source: duplicate
+        file: "std:inventory"
+        kind: inventory_duplicate_host
+        line: 152
+        message: Host identities must be unique across all inventory inputs
+        path: "/require/$call/2/$call/3"
+        phase: type
+        reference:
+          - require
+          - "$call"
+          - 2
+          - "$call"
+          - 3
+    status: invalid
+    targets: []
+    version: 1
+  empty:
+    diagnostics: []
+    status: ready
+    targets: []
+    version: 1
+  invalid_connection:
+    diagnostics:
+      - column: 11
+        data:
+          violations:
+            - at: /hosts/0/connection
+              message: "expected record | record, got map"
+        file: "std:inventory"
+        kind: type
+        line: 597
+        message: "1 type violation: expected record | record, got map"
+        path: "/resolve/$call/2/$call/1/$call/1/$call/1"
+        phase: type
+        reference:
+          - resolve
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+    status: invalid
+    targets: []
+    version: 1
+  missing:
+    diagnostics:
+      - calls:
+          - column: 14
+            file: "std:inventory"
+            function: /require
+            function_column: 8
+            function_file: "std:inventory"
+            function_line: 145
+            line: 270
+            path: "/validate_hosts/$call/2/$call/1/$call/2"
+          - column: 12
+            file: "std:inventory"
+            function: "/validate_hosts/$call/2/$call/1"
+            function_column: 12
+            function_file: "std:inventory"
+            function_line: 267
+            line: 267
+            path: "/validate_hosts/$call/2/$call/1"
+          - column: 12
+            file: "std:inventory"
+            function: /validate_hosts
+            function_column: 8
+            function_file: "std:inventory"
+            function_line: 262
+            line: 364
+            path: "/requested/$call/2/$call/1"
+          - column: 14
+            file: "std:inventory"
+            function: /requested
+            function_column: 8
+            function_file: "std:inventory"
+            function_line: 359
+            line: 410
+            path: "/select_targets/$call/2/$call/1/included"
+          - column: 14
+            file: "std:inventory"
+            function: /select_targets
+            function_column: 8
+            function_file: "std:inventory"
+            function_line: 404
+            line: 580
+            path: "/resolve_checked/$call/2/$call/2/$call/6"
+          - column: 12
+            file: "std:inventory"
+            function: /resolve_checked
+            function_column: 8
+            function_file: "std:inventory"
+            function_line: 505
+            line: 593
+            path: "/resolve/$call/2/$call/1"
+        column: 12
+        data:
+          host: missing
+        file: "std:inventory"
+        kind: inventory_missing_host
+        line: 152
+        message: Inventory references an unknown host
+        path: "/require/$call/2/$call/3"
+        phase: type
+        reference:
+          - require
+          - "$call"
+          - 2
+          - "$call"
+          - 3
+    status: invalid
+    targets: []
+    version: 1
+  no_implicit_all:
+    diagnostics: []
+    status: ready
+    targets: []
+    version: 1
+  selected:
+    diagnostics: []
+    status: ready
+    targets:
+      - connection:
+          address: web.example
+          port: 2200
+          transport: ssh
+          user: deploy
+        groups:
+          - production
+        id: web
+        provenance:
+          - connection:
+              address: web.example
+              transport: ssh
+              user: deploy
+            source: static
+          - connection:
+              port: 2222
+            index: 0
+            source: group-port
+          - connection:
+              port: 2200
+            index: 1
+            source: web-port
+    version: 1
+status: finished

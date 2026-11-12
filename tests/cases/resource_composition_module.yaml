@@ -1,0 +1,24 @@
+# Deterministic charter contract; host acceptance lives in the corresponding suite.
+$call:
+- let
+- orchestration:
+    $call:
+    - import
+    - std:orchestration
+  config:
+    $call:
+    - import
+    - ../programs/vendor/web-config-v1/main.yaml
+- $call:
+  - orchestration.run
+  - $call:
+    - config.build
+    - service: web
+  - $call:
+    - fn
+    - - - kind
+        - $ref: string
+      - - id
+        - $ref: string
+    - status: changed
+    - $ref: orchestration.outcome

@@ -8,10 +8,11 @@ How to use this file: tick a box only when the feature works end to end *and* ha
 
 Audit (2026-11-12): a parent stays open while any of its stated obligations remain
 open. Implementation evidence is retained even where acceptance is incomplete.
-In particular, section 11's inventory, provider, guarded-command, composition and
-command-lifecycle implementations have dedicated automated suites, but lack golden cases for those
-contracts in `tests/cases/`; their boxes remain open under the rule above. A
-`tests/programs/` example or a generated suite fixture is not a golden case.
+Section 11's inventory, provider, guarded-command, composition and local command
+lifecycle implementations now pair golden cases in `tests/cases/` with their
+independent acceptance suites. Golden cases fix deterministic plans, diagnostics
+and request boundaries; host suites verify actual effects and lifecycle policy.
+A `tests/programs/` example or generated suite fixture alone is not a golden case.
 Parameter annotation diagnostics name rejected parameters but blame the call as
 a whole; the individual argument-source-blame obligation also remains open.
 
@@ -190,7 +191,7 @@ A type should read like the value it describes with the specifics left open: som
   - [x] The predicate is a named or inline `fn` from the value to a boolean, run only after the base type passes (`types_declarative`, `types_first_class`; the shared checker gates predicates on base membership)
   - [ ] A predicate that fails or returns a non-boolean is an error blamed on the predicate, distinct from "value rejected"
   - [ ] A rejected value's violation names the refinement, so the report says which rule failed and not only that one did
-  - [ ] Refinements stack (a refinement of a refinement) and compose with every other type former
+  - [x] Refinements stack (a refinement of a refinement) and compose with every other implemented type former (`types_refinement_composition`: base gating, collection elements, optional/defaulted fields, unions, enums, literals and class fields; class membership retains its separate limits below)
 - [ ] Annotate a value or a `fn` parameter/result with a type; a mismatch is a structured `type` error blaming the offending node with path and line
   - [x] Annotate a value in a map; the annotated value is still read by other expressions as the plain value
   - [ ] Annotate `fn` parameters; a bad argument blames the argument at the call site — annotations work, but `types_annotations.bad_args` records the call's path/span and parameter names, not each offending argument's path/span (`src/eval/atomic.rs`)
@@ -200,7 +201,7 @@ A type should read like the value it describes with the specifics left open: som
 - [ ] Type checking collects every violation in one pass instead of stopping at the first
   - [ ] A violation is data: path into the value, expected, actual, and the rule that rejected it
   - [x] All violations of one value against one type are returned together, nested ones included
-  - [ ] Violations come out in a stable, documented order so reports diff cleanly
+  - [x] Violations come out in a stable, documented order so reports diff cleanly (`types_violation_order`; depth-first field/key/index order, record extras last, as documented in `LANGUAGE.md`)
   - [ ] All annotation failures of a whole program are reported in one run
 - [ ] Types survive in the saved state and round-trip: emitted `root` re-read yields the same types
   - [ ] A type emits as the declaration that was written, not an expanded or internal form
@@ -271,7 +272,7 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
   - [ ] Normalize types without losing original declarations or provenance; state when normalization is canonical and preserves meaning
 - [ ] Connect inheritance to the algebra
   - [ ] Combine inherited constraints by intersection
-  - [ ] State default selection and explicit override rules separately from membership
+  - [x] State default selection and explicit override rules separately from membership (`class_defaults`; realization fills defaults, explicit child values override them, and structural membership neither fills nor demands the default value; `LANGUAGE.md#classes-machines-and-drift`)
 - [ ] Integrate every new former with the existing type system
   - [ ] Document membership, subtyping, equivalence, reflection, serialization and failure behavior
   - [ ] Cover positive, negative and boundary behavior with golden cases
@@ -327,8 +328,8 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
 - [ ] Documented, deterministic merge and override rules (which parent wins, what counts as a conflict, how lists and maps combine)
   - [ ] Decided: the merge model (see Open questions) and whether inheritance is nominal, structural or both
   - [x] Field types from two parents: when they combine and when they conflict (`class_conflicts`; declarations must agree or the child must explicitly narrow every parent)
-  - [ ] Defaults: a child's explicit value overrides a parent default; two differing parent defaults are a conflict
-  - [ ] Lists and maps: one stated rule each (replace, append, or merge by key), with an explicit way to ask for another
+  - [x] Defaults: a child's explicit value overrides a parent default; two differing parent defaults are a conflict (`class_defaults` covers inheritance, override, conflict and explicit declaration resolution)
+  - [x] Lists and maps: one stated rule each (replace, append, or merge by key), with an explicit way to ask for another (`class_collection_overrides`: whole-value replacement, conflicts, empty overrides, explicit `concat` and `std:map.merge`; `LANGUAGE.md#classes-machines-and-drift`)
   - [ ] Parent order never changes the result
   - [ ] The rules are written in `LANGUAGE.md`, with a golden case per rule
 - [ ] Conflicts between parents are type-time errors that name both sources, never silent last-writer-wins
@@ -552,14 +553,16 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
 
 ### Inventory, connections and observed state
 
-- [ ] Select and describe hosts without implicit configuration precedence
-  - [ ] Typed inventory supports stable host identities, groups, connection settings and explicit overrides with provenance
-  - [ ] Host/group selection and exclusions resolve to a reviewable target list before mutation
-  - [ ] Dynamic inventory is an explicit host input with validation; discovery never runs inside pure configuration resolution
-  - [ ] Missing hosts, duplicate identities and incompatible settings produce structured diagnostics
+- [x] Select and describe hosts without implicit configuration precedence
+  - [x] Typed inventory supports stable host identities, groups, connection settings and explicit overrides with provenance
+  - [x] Host/group selection and exclusions resolve to a reviewable target list before mutation
+  - [x] Dynamic inventory is an explicit host input with validation; discovery never runs inside pure configuration resolution
+  - [x] Missing hosts, duplicate identities and incompatible settings produce structured diagnostics
   - Evidence: `./manage.py test --suite host_inventory` exercises the pure
     `std:inventory` module with static and supplied dynamic data, an independent
     selection oracle, ordered override histories and invalid-input diagnostics.
+    `host_inventory` golden coverage fixes target ordering, override histories,
+    selection, empty inputs and invalid-input diagnostics.
     Validation includes unselected hosts and empty inventories; failures return
     no targets. The [runnable example](tests/programs/host_inventory.yaml) and
     [inventory contract](LANGUAGE.md#host-inventory) document the versioned schema,
@@ -579,17 +582,19 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
 
 ### Resource providers and change semantics
 
-- [ ] Establish one discoverable provider contract for observation, planning, application and verification
-  - [ ] Providers declare argument/result types, capabilities, supported platforms, check/diff support and failure behavior
-  - [ ] Distinguish unchanged, changed, failed, skipped and unsupported outcomes using structured data
-  - [ ] Pure plan generation shares section 8's semantics; a dry run never silently applies a resource whose preview is unsupported
-  - [ ] Re-observe after mutation and report unmet postconditions instead of trusting a successful command exit alone
-  - [ ] Define ownership and deletion explicitly so absent configuration does not accidentally remove unmanaged resources
+- [x] Establish one discoverable provider contract for observation, planning, application and verification
+  - [x] Providers declare argument/result types, capabilities, supported platforms, check/diff support and failure behavior
+  - [x] Distinguish unchanged, changed, failed, skipped and unsupported outcomes using structured data
+  - [x] Pure plan generation shares section 8's semantics; a dry run never silently applies a resource whose preview is unsupported
+  - [x] Re-observe after mutation and report unmet postconditions instead of trusting a successful command exit alone
+  - [x] Define ownership and deletion explicitly so absent configuration does not accidentally remove unmanaged resources
   - Evidence: `./manage.py test --suite provider_contract --suite type_algebra --suite library`
     checks `std:provider` with typed callbacks, pure data-only plans compatible
     with `converge`, unsupported-preview gates, exact fresh review matching,
     authorized file changes, no-op reapplication, drift repair and explicit
-    removal. Independent host-state assertions cover preservation of unmanaged
+    removal. The `provider_contract` golden covers plans, ownership/removal gates,
+    unsupported previews, stale reviews, no-ops and unmet postconditions.
+    Independent host-state assertions cover preservation of unmanaged
     files, mutation followed by failure and unmet postconditions. See the
     [runnable example](tests/programs/provider_contract.yaml) and
     [provider contract](LANGUAGE.md#resource-provider-contract). Callbacks are
@@ -604,25 +609,29 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Services: enabled/running state, reload/restart policy and readiness checks
   - [ ] Users and groups: membership, ownership implications and authorized keys with explicit removal semantics
   - [ ] Artifacts: authenticated retrieval where needed, pinned versions and integrity verification before use
-  - [ ] Arbitrary commands: explicit guards and change/failure predicates; no implied idempotence or reversibility
+  - [x] Arbitrary commands: explicit guards and change/failure predicates; no implied idempotence or reversibility
     - Evidence: `./manage.py test --suite command_provider` exercises 31 scenarios
       for `std:command` through the existing provider lifecycle and bundled local
       command host. Independent process logs and file assertions cover previews,
       guarded no-ops, drift repair, stale reviews, argument boundaries, authority
       denial, explicit failure/change classification and unmet postconditions.
+      The `command_provider` golden fixes preview/no-op reports, explicit result
+      classification and rejection of non-boolean or effectful guards.
       Predicates are pure and boolean-checked; verification requires a fresh
       satisfied guard. See the [example](tests/programs/command_provider.yaml)
       and [contract](LANGUAGE.md#guarded-command-resources). Preview describes
       proposed execution, not predicted content changes. SSH, secret redaction,
       locking, rollback and durable recovery remain separate obligations.
-- [ ] Compose resources and reusable configurations without a second execution model
-  - [ ] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
-  - [ ] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
-  - [ ] Reusable configuration modules expose typed inputs, outputs and versioned dependencies using existing imports and functions
+- [x] Compose resources and reusable configurations without a second execution model
+  - [x] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
+  - [x] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
+  - [x] Reusable configuration modules expose typed inputs, outputs and versioned dependencies using existing imports and functions
   - Evidence: `./manage.py test --suite resource_composition --suite library`
     checks `std:orchestration` against an independent dependency-order oracle,
     observable callback/file effects, failure gates, coalesced handlers and retained
-    VM continuations. Full graph validation precedes executor callbacks; handlers
+    VM continuations. `resource_composition` and `resource_composition_module`
+    goldens cover dependency failures, coalesced handlers, failure gates and the
+    pinned typed module. Full graph validation precedes executor callbacks; handlers
     run once after resources and require successful prerequisites and notifiers.
     The [typed module example](tests/programs/resource_composition.yaml) includes
     relocatable, vendored dependencies with explicit provenance. See the
@@ -637,15 +646,17 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
   - [ ] Express cross-host dependencies and controller/delegated tasks with unambiguous execution targets and authority
   - [ ] Gate rolling changes on health checks and stop subsequent batches when the declared policy fails
   - [ ] Support reboot, disconnect and reconnect workflows with bounded readiness waits
-- [ ] Make long-running operations practical — bundled local synchronous command adapter
-  - [ ] Replace the bundled host's fixed 10-second command deadline with caller-controlled bounded timeouts
-  - [ ] Support bounded output capture and progress reporting for package installs and deployments
-  - [ ] Define cancellation and descendant-process cleanup so a timed-out controller does not silently leave mutations running
-  - [ ] Retry only explicitly classified transient failures with bounded attempts and delays
+- [x] Make long-running operations practical — bundled local synchronous command adapter
+  - [x] Replace the bundled host's fixed 10-second command deadline with caller-controlled bounded timeouts
+  - [x] Support bounded output capture and progress reporting for package installs and deployments
+  - [x] Define cancellation and descendant-process cleanup so a timed-out controller does not silently leave mutations running
+  - [x] Retry only explicitly classified transient failures with bounded attempts and delays
   - Evidence: `./manage.py test --suite long_commands --suite effects --suite library`
     exercises real subprocesses, extended deadlines, cumulative capture budgets,
     metadata progress, classified retries, cancellation through both the interpreter
     and project wrapper, descendant liveness, and callback failure/panic cleanup.
+    The `long_commands` golden fixes the pending command request; the suite
+    performs that same source past the old deadline and checks capture/progress.
     The caller owns all policy; time and output budgets span attempts and delays.
     Unix process groups provide local cleanup, not rollback or containment of
     deliberately detached descendants. SIGKILL/controller crashes and uncertain

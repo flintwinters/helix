@@ -1,0 +1,198 @@
+# Deterministic charter contract; host acceptance lives in the corresponding suite.
+$call:
+- let
+- provider:
+    $call:
+    - import
+    - std:provider
+  spec:
+    version: 1
+    id: test.content
+    revision: 1.0.0
+    arguments:
+      $ref: string
+    observation:
+      $ref: string
+    result:
+      $call:
+      - literal
+      - null
+    platforms:
+    - test-linux
+    capabilities:
+    - file_read
+    - file_write
+    check: true
+    diff: true
+    failure: stop
+    observe:
+      $call:
+      - fn
+      - - args
+      - old
+    plan:
+      $call:
+      - fn
+      - - args
+        - before
+      - $call:
+        - if
+        - $call:
+          - eq
+          - $ref: args
+          - $ref: before
+        - []
+        - $call:
+          - list
+          - $call:
+            - dict
+            - field
+            - /content
+            - op
+            - set
+            - to
+            - $ref: args
+    apply:
+      $call:
+      - fn
+      - - args
+        - steps
+      - null
+- changed:
+    $call:
+    - provider.plan
+    - &id001
+      $ref: spec
+    - new
+    - old
+    - $literal: &id002
+        platform: test-linux
+        capabilities: &id003
+        - file_read
+        - file_write
+        managed: true
+        allow_remove: false
+  unchanged:
+    $call:
+    - provider.plan
+    - *id001
+    - old
+    - old
+    - $literal: *id002
+  unmanaged:
+    $call:
+    - provider.plan
+    - *id001
+    - new
+    - old
+    - $literal:
+        platform: test-linux
+        capabilities: *id003
+        managed: false
+        allow_remove: false
+  unsupported_platform:
+    $call:
+    - provider.plan
+    - *id001
+    - new
+    - old
+    - $literal:
+        platform: other
+        capabilities: *id003
+        managed: true
+        allow_remove: false
+  unsupported_preview:
+    $call:
+    - provider.plan
+    - $call:
+      - set
+      - $ref: spec
+      - check
+      - false
+    - new
+    - old
+    - $literal: *id002
+  missing_capabilities:
+    $call:
+    - provider.plan
+    - *id001
+    - new
+    - old
+    - $literal:
+        platform: test-linux
+        capabilities: []
+        managed: true
+        allow_remove: false
+  invalid_arguments:
+    $call:
+    - provider.plan
+    - *id001
+    - 42
+    - old
+    - $literal: *id002
+  removal_denied:
+    $call:
+    - provider.plan
+    - &id004
+      $call:
+      - set
+      - $ref: spec
+      - plan
+      - $call:
+        - fn
+        - - args
+          - before
+        - $literal:
+          - field: /content
+            op: remove
+            to: null
+    - new
+    - old
+    - $literal: *id002
+  removal_allowed:
+    $call:
+    - provider.plan
+    - *id004
+    - new
+    - old
+    - $literal:
+        platform: test-linux
+        capabilities: *id003
+        managed: true
+        allow_remove: true
+  stale_review:
+    $call:
+    - provider.apply
+    - $ref: spec
+    - new
+    - $literal: *id002
+    - $call:
+      - provider.plan
+      - *id001
+      - new
+      - stale
+      - $literal: *id002
+  unmet_postcondition:
+    $call:
+    - provider.apply
+    - $ref: spec
+    - new
+    - $literal: *id002
+    - $call:
+      - provider.plan
+      - *id001
+      - new
+      - old
+      - $literal: *id002
+  noop_apply:
+    $call:
+    - provider.apply
+    - $ref: spec
+    - old
+    - $literal: *id002
+    - $call:
+      - provider.plan
+      - *id001
+      - old
+      - old
+      - $literal: *id002

@@ -1,0 +1,73 @@
+root:
+  conflict:
+    column: 36
+    data:
+      field: port
+      sources:
+        - first
+        - second
+    kind: conflict
+    line: 15
+    message: "field `port` has different declarations from both `first` and `second`; resolve it in `child`"
+    path: "/$call/2/conflict/$call/1/$call/2"
+    reference:
+      - "$call"
+      - 2
+      - conflict
+      - "$call"
+      - 1
+      - "$call"
+      - 2
+  inherited:
+    concrete: true
+    fields:
+      port:
+        default: 80
+        of: integer
+        type: default
+    name: child
+    parents:
+      - first
+    provenance:
+      port:
+        type: first
+        value: default of first
+    type: class
+    values:
+      port: 80
+  membership_absent: true
+  membership_different: true
+  membership_wrong_type: false
+  overridden:
+    concrete: true
+    fields:
+      port:
+        default: 80
+        of: integer
+        type: default
+    name: child
+    parents:
+      - first
+    provenance:
+      port:
+        type: first
+        value: child
+    type: class
+    values:
+      port: 443
+  resolved:
+    concrete: true
+    fields:
+      port: integer
+    name: child
+    parents:
+      - first
+      - second
+    provenance:
+      port:
+        type: child
+        value: child
+    type: class
+    values:
+      port: 443
+status: finished

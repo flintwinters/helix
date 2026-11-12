@@ -1,0 +1,14 @@
+root:
+  changed: true
+  diagnostics: []
+  handlers:
+    "restart:web":
+      status: changed
+  resources:
+    configuration:
+      status: changed
+    package:
+      status: changed
+  status: finished
+  version: 1
+status: finished

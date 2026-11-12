@@ -65,8 +65,10 @@ def verify(h):
 
         # The deadline can exceed the old ten-second ceiling; heartbeat output stays separate.
         progress = base / 'long.jsonl'
-        result, state = run('import time; time.sleep(10.1); print("complete")',
-                            '--command-timeout-ms', '14000', '--command-progress', str(progress))
+        result = h.helix('perform', '--allow-command', '/bin/sh',
+                         '--command-timeout-ms', '14000', '--command-progress', str(progress),
+                         'tests/cases/long_commands.yaml')
+        state = yaml.safe_load(result.stderr)
         assert result.returncode == 0 and result.stdout == '' and state['root'] == {
             'code': 0, 'stdout': 'complete\n', 'stderr': ''}, (result, state)
         events = records(progress)

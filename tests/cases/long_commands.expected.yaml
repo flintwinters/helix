@@ -1,0 +1,12 @@
+pending_effect:
+  id: 1
+  location:
+    path: []
+    source: "<root>"
+  operation: command
+  payload:
+    args:
+      - "-c"
+      - "sleep 10.1; printf 'complete\\n'"
+    program: /bin/sh
+status: signaled

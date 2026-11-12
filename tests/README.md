@@ -5,7 +5,7 @@ The `effects` suite also requires `curl`, `/bin/echo`, `/bin/sh`, and permission
 to bind a local loopback HTTP listener. Its files and process fixtures stay under
 the project's `runtime/` directory.
 The `long_commands` suite requires Linux process groups and `/proc`, and exercises
-real child processes with Python. It includes one operation lasting longer than
+real child processes with Python and `/bin/sh` (with `sleep` on PATH). It includes one operation lasting longer than
 ten seconds; its derived test context allows twenty seconds per invocation.
 The Unix public-host tests in `library` also use `/bin/sh` and `/bin/sleep` to
 verify callback cleanup and cancellation through the Rust API.
@@ -59,6 +59,19 @@ unauthorized work, altered evidence and false-success responses. The `harness`
 suite injects damaged policy responses, and `dogfood_test_orchestration` is the
 golden policy contract. Standalone startup checks remain build-free; discovery,
 process concurrency, compilation and lint execution remain host responsibilities.
+
+The charter acceptance cases `host_inventory`, `provider_contract`,
+`command_provider`, `resource_composition` and `resource_composition_module`
+freeze deterministic plans, structured failures and callback reports. Their named
+acceptance suites independently check actual host observations and mutations.
+`long_commands` freezes the pending request and is also performed by its suite
+with a caller-owned extended deadline; retry/cancellation/output budgets remain
+host policy tested with real subprocesses. `class_defaults` fixes default
+inheritance, explicit overrides, conflicting-parent diagnostics and their
+separation from membership. `class_collection_overrides` covers whole-value
+replacement and explicit list/map composition; `types_refinement_composition`
+covers stacked predicates across the existing type formers, and
+`types_violation_order` fixes nested diagnostic traversal order.
 
 ## Testing contracts and known gaps
 

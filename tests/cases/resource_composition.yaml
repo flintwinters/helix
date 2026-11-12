@@ -1,0 +1,101 @@
+# Deterministic charter contract; host acceptance lives in the corresponding suite.
+$call:
+- let
+- orchestration:
+    $call:
+    - import
+    - std:orchestration
+- plan:
+    $call:
+    - orchestration.plan
+    - $literal: &id001
+        version: 1
+        resources:
+          package:
+            requires: []
+            notify: []
+          file_a:
+            requires:
+            - package
+            notify:
+            - reload
+          file_b:
+            requires:
+            - package
+            notify:
+            - reload
+        handlers: &id002
+          reload:
+            requires:
+            - package
+  coalesced:
+    $call:
+    - orchestration.run
+    - $literal: *id001
+    - $call:
+      - fn
+      - - kind
+        - id
+      - status: changed
+  unchanged:
+    $call:
+    - orchestration.run
+    - $literal: *id001
+    - $call:
+      - fn
+      - - kind
+        - id
+      - status: unchanged
+  failed_prerequisite:
+    $call:
+    - orchestration.run
+    - $literal: *id001
+    - $call:
+      - fn
+      - - kind
+        - id
+      - $call:
+        - if
+        - $call:
+          - eq
+          - $ref: id
+          - package
+        - $call:
+          - raise
+          - package_failed
+          - Package failed
+        - status: changed
+  missing:
+    $call:
+    - orchestration.run
+    - $literal:
+        version: 1
+        resources:
+          file:
+            requires:
+            - missing
+            notify: []
+        handlers: *id002
+    - $call:
+      - fn
+      - - kind
+        - id
+      - $call:
+        - raise
+        - unexpected_callback
+        - Validation must precede callbacks
+  cycle:
+    $call:
+    - orchestration.plan
+    - $literal:
+        version: 1
+        resources:
+          a:
+            requires:
+            - b
+            notify: []
+          b:
+            requires:
+            - a
+            notify: []
+        handlers: {}
