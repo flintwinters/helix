@@ -546,6 +546,13 @@ The runtime supports types, classes and callable values beyond the established p
     retains field and parent validation. This removes a redundant `from_fields`
     fold while preserving callable captures, constraints and value provenance.
     Standalone `from_fields` retains its checked construction contract.
+    Mutation planning also measures actual `std:fuzz.plan` over fixed Unicode/CRLF
+    input and the `dogfood_testing` fixture, checking every ordered source span
+    against an independent oracle. Reusing `std:list.range` removes a separate
+    offsets state machine and its helper arguments. Identical-input local debug
+    measurements showed about 5.4% and 3.2% lower median planning times; immutable
+    append costs remain, so this is reduced bookkeeping rather than an asymptotic
+    improvement or a portable performance guarantee.
     Text-mode test results now flush at suite boundaries, so completed failures
     and warnings are available while later work runs. Final aggregation retains
     its independent failure path; JSON remains one complete report. Deterministic

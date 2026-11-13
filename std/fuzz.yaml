@@ -32,32 +32,13 @@
             - - "index"
             - {"$call": ["chunk", {"$ref": "source"}, {"$ref": "size"}, {"$call": ["mul", {"$ref": "index"}, 256]}]}
           - {"$call": ["l.range", {"$call": ["div", {"$call": ["add", {"$ref": "size"}, 255]}, 256]}]}
-      "offsets":
-        "$call":
-        - "until"
-        - {"$call": ["fn", ["s"], {"$call": ["ge", {"$call": ["get", {"$ref": "s"}, "index"]}, {"$ref": "size"}]}]}
-        - "$call":
-          - "fn"
-          - - "s"
-          - "$call":
-            - "dict"
-            - "index"
-            - {"$call": ["add", {"$call": ["get", {"$ref": "s"}, "index"]}, 5]}
-            - "offsets"
-            - "$call":
-              - "append"
-              - {"$call": ["get", {"$ref": "s"}, "offsets"]}
-              - {"$call": ["get", {"$ref": "s"}, "index"]}
-        - "index": 0
-          "offsets": []
-    - {"$call": ["finish", {"$ref": "size"}, {"$ref": "scan"}, {"$call": ["get", {"$ref": "offsets"}, "offsets"]}]}
+    - {"$call": ["finish", {"$ref": "size"}, {"$ref": "scan"}]}
   - {"$ref": "list"}
 "finish":
   "$call":
   - "fn"
   - - "size"
     - "scan"
-    - "offsets"
   - "$call":
     - "render"
     - {"$ref": "size"}
@@ -69,13 +50,11 @@
         - {"$call": ["get", {"$ref": "scan"}, "bounds"]}
         - {"$call": ["list", {"$call": ["get", {"$ref": "scan"}, "start"]}, {"$ref": "size"}]}
       - {"$call": ["get", {"$ref": "scan"}, "bounds"]}
-    - {"$ref": "offsets"}
 "render":
   "$call":
   - "fn"
   - - "size"
     - "bounds"
-    - "offsets"
   - "$call":
     - "let"
     - "lines":
@@ -100,8 +79,8 @@
       "prefixes":
         "$call":
         - "map"
-        - {"$call": ["fn", ["offset"], {"$call": ["list", {"$call": ["list", 0, {"$ref": "offset"}]}]}]}
-        - {"$ref": "offsets"}
+        - {"$call": ["fn", ["index"], {"$call": ["list", {"$call": ["list", 0, {"$call": ["mul", {$ref: index}, 5]}]}]}]}
+        - {"$call": ["l.range", {"$call": ["div", {"$call": ["add", {"$ref": "size"}, 4]}, 5]}]}
     - {"$call": ["concat", {"$ref": "lines"}, {"$ref": "prefixes"}]}
 "scan_chunk":
   "$call":
