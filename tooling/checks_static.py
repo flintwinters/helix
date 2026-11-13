@@ -9,6 +9,7 @@ def check(ctx):
     try:
         verify_checks(ctx)
         verify_bodies(ctx)
+        verify_repository_modules(ctx)
         verify_format(ctx)
         verify_lsp(ctx)
         return []
@@ -40,6 +41,33 @@ def static_report(ctx, source):
     return result.returncode, yaml.safe_load(result.stdout)
 
 
+def verify_repository_modules(ctx):
+    """Exercise the checker on the policy that develops Helix, including unused bodies.
+
+    Unproved obligations remain visible in the saved reports; they are not failures
+    or claims that the module has been proved safe.
+    """
+    destination = ctx.root / 'runtime' / 'static'
+    destination.mkdir(exist_ok=True)
+    sources = sorted((ctx.root / 'std').glob('*.yaml')) + sorted((ctx.root / 'tooling').glob('*.yaml'))
+    assert sources, 'no repository Helix modules discovered'
+    failures = []
+    unchecked = 0
+    for source in sources:
+        relative = source.relative_to(ctx.root)
+        result = ctx.helix('check', str(relative))
+        artifact = destination / f'{source.parent.name}-{source.stem}.yaml'
+        artifact.write_text(result.stdout)
+        report = yaml.safe_load(result.stdout)
+        assert isinstance(report, dict) and report.get('version') == 1 and report.get('mode') == 'static', (relative, result)
+        assert isinstance(report.get('diagnostics'), list) and isinstance(report.get('unchecked'), list), (relative, report)
+        unchecked += len(report['unchecked'])
+        if result.returncode != 0 or report.get('status') != 'ok' or report['diagnostics']:
+            failures.append(f'{relative}: {report["diagnostics"]}; report: {artifact.relative_to(ctx.root)}')
+    assert not failures, '\n'.join(failures)
+    print(f'static: {len(sources)} repository modules checked; {unchecked} unproved obligations; reports: runtime/static/')
+
+
 def verify_bodies(ctx):
     """Annotated bodies and call sites are checked without running: definite mismatches fail,
     possible ones and unanalyzable code are listed as unchecked."""
@@ -65,6 +93,30 @@ def verify_bodies(ctx):
     for name, (source, kind) in bad.items():
         code, report = static_report(ctx, json.dumps(source))
         assert code == 1 and report['diagnostics'] and report['diagnostics'][0]['kind'] == kind, (name, report)
+    effectful = fn([], {'$call': ['effect', 'clock', None]})
+    # A provider factory constructs effectful callbacks in a pure region. Construction
+    # and invocation must remain distinct, including named and inline function values.
+    factories = [
+        {'$call': ['type_time', effectful]},
+        {'factory': fn([], {'apply': effectful}), 'value': {'$call': ['type_time', {'$call': ['factory']}]}},
+        {'callback': effectful, 'value': {'$call': ['type_time', {'$ref': 'callback'}]}},
+    ]
+    for source in factories:
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 0 and report['diagnostics'] == [] and report['unchecked'] == [], report
+    invocations = [
+        {'$call': ['type_time', {'$call': ['call', effectful]}]},
+        {'callback': effectful, 'value': {'$call': ['type_time', {'$call': ['callback']}]}},
+        {'callback': fn(['x'], {'$call': ['effect', 'clock', None]}),
+         'value': {'$call': ['type_time', {'$call': ['map', {'$ref': 'callback'}, [1]]}]}},
+    ]
+    for source in invocations:
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 1 and any(d['kind'] == 'type' for d in report['diagnostics']), report
+    computed = {'callback': {'$call': ['if', True, effectful, fn([], 42)]},
+                'value': {'$call': ['type_time', {'$call': ['callback']}]}}
+    code, report = static_report(ctx, json.dumps(computed))
+    assert report['diagnostics'] or report['unchecked'], report
     # A union argument may or may not satisfy the parameter: not an error, but not silent.
     code, report = static_report(ctx, json.dumps({'f': fn([['x', 'integer']], {'$ref': 'x'}),
         'g': fn([['y', {'$call': ['union', 'integer', 'string']}], ], {'$call': ['f', {'$ref': 'y'}]})}))

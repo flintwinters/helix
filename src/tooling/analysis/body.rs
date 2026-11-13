@@ -217,7 +217,7 @@ impl Checker<'_> {
 
     /// Code a `type_time` region can reach must be free of effects, or it fails when run.
     fn region(&mut self, region: NodeId) {
-        match self.graph.effects(region, &|_| None) {
+        match self.graph.region_effects(region) {
             Effects::None => {}
             Effects::Requests(at) => self.error(at, "`effect` is reachable from a `type_time` region, which rejects effects".into()),
             Effects::Unproven(at) => self.unchecked(at, "a `type_time` region reaches a call the analysis cannot see through, so its purity is not proved".into()),
