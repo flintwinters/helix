@@ -40,6 +40,8 @@ Complexity must earn its place through concrete workloads. `CHARTER.md` section 
 
 ## Current Big Tasks
 
+The active milestone is completing charter section 2. Use a general promise/mixin construct, with reversibility as its first enforced obligation. Reuse the existing execution snapshot machinery; the remaining work includes composition semantics, evaluated-value source locations, and the suspended-state editing and diff workloads. Existing bounded serialization alone does not fulfill the general promise.
+
 Consolidation, declarative types and section 7's current trust obligations are complete within their documented bounds. Versioned snapshots preserve bounded execution, and caller-owned effect journals preserve completed outcomes while refusing uncertain replay. The same nginx workload is now qualified locally and over SSH, including independently observed convergence and controller-death recovery. Choose the next milestone from a concrete remaining operational need; a real migration trial must declare its supported scope before provider expansion. Opaque secret inputs, read-only recovery inspection and persistent target locks now cover their bounded host contracts, and nginx realizes classes before application. External secret managers, remote fencing, fleet recovery and the general reversibility promise remain separate. Keep independent bootstrap and host validation; defer unrelated type algebra, provider breadth and policy migrations.
 
 1. Measure and improve development feedback on actual production-policy workloads. Further dogfooding must demonstrate a concrete benefit while retaining independent bootstrap and host failure detection; moving more policy into Helix is not itself progress.

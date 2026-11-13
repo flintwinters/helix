@@ -70,6 +70,7 @@ Reversibility is a promise type. A machine that mixes in this promise must expos
 - [x] Pure continuation replay: the same saved state produces the same result and annotation evidence. Future effect replies are explicit external inputs; this does not promise identical external execution (`library`, `snapshots`)
 - [ ] Source locations preserved on evaluated values, not only on errors
 - [ ] State diffs read well in `git diff` (stable key order, minimal churn)
+  - [x] Fresh-process zero-step restoration preserves snapshot bytes; editing a live parameter changes only its value lines, and both branches finish with independently checked results (`snapshots`). Minimal churn across execution transitions remains to qualify.
 - [x] Versioned execution format with compatibility fixtures and explicit rejection of unsupported format/runtime versions; future incompatible changes require a migration or documented rejection (`LANGUAGE.md#executable-disk-snapshots`)
 - [x] YAML representation boundaries decided: bounded acyclic aliases and standard tags are supported; cyclic aliases, custom tags and non-string keys are rejected (`yaml_model` golden and conformance suite).
 
