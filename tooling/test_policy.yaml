@@ -1,5 +1,24 @@
 # Repository test orchestration over host observations. No filesystem or process authority.
 sequences: {$call: [import, 'std:list']}
+rerun:
+  $call:
+  - fn
+  - [catalog, previous]
+  - $call:
+    - let
+    - rows: {$call: [get, {$ref: previous}, results]}
+      failed: {$call: [filter, {$call: [fn, [row], {$call: [eq, {$ref: row.status}, failed]}]}, {$ref: rows}]}
+      failed_names: {$call: [map, {$call: [fn, [row], {$ref: row.suite}]}, {$ref: failed}]}
+      companions:
+        $call: [filter, {$call: [fn, [row], {$call: [and, {$call: [has, [golden, robustness], {$ref: row.suite}]}, {$call: [ne, {$ref: row.status}, skipped]}]}]}, {$ref: rows}]
+      companion_names: {$call: [map, {$call: [fn, [row], {$ref: row.suite}]}, {$ref: companions}]}
+    - $call:
+      - filter
+      - $call:
+        - fn
+        - [name]
+        - $call: [or, {$call: [has, {$ref: failed_names}, {$ref: name}]}, {$call: [and, {$call: [has, {$ref: failed_names}, standard_library]}, {$call: [has, {$ref: companion_names}, {$ref: name}]}]}]
+      - {$ref: catalog}
 plan:
   $call:
   - fn

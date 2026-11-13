@@ -8,3 +8,10 @@ $call:
   passed: {$call: [policy.report, [{suite: first, failures: []}]]}
   failed: {$call: [policy.report, [{suite: first, failures: [one, two]}, {suite: second, failures: []}]]}
   skipped: {$call: [policy.report, [{suite: robustness, failures: [], reason: disabled while blessing expectations}]]}
+  rerun_mixed: {$call: [policy.rerun, [first, golden, second, robustness],
+    {results: [{suite: second, status: failed}, {suite: first, status: failed},
+               {suite: golden, status: passed}, {suite: robustness, status: skipped}]}]}
+  rerun_prerequisite: {$call: [policy.rerun, [first, golden, second, robustness],
+    {results: [{suite: standard_library, status: failed}, {suite: golden, status: passed},
+               {suite: robustness, status: skipped}]}]}
+  rerun_empty: {$call: [policy.rerun, [first, golden], {results: []}]}

@@ -47,6 +47,12 @@ root:
         status: passed
         suite: first
     status: passed
+  rerun_empty: []
+  rerun_mixed:
+    - first
+    - second
+  rerun_prerequisite:
+    - golden
   skipped:
     command: test
     exit_code: 0

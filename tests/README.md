@@ -34,6 +34,33 @@ text by default; `--format=json` opts into structured discovery. Usage/selection
 errors go to stderr and exit 2 in either format. Compilation failures report the
 build phase before tests run.
 
+## Rerun failed suites
+
+Save the existing versioned JSON report, then use it to select whole suites in the
+current checkout:
+
+```sh
+./manage.py --format=json test --suite golden --suite cli > runtime/test-report.json
+./manage.py --format=json test --rerun-failed runtime/test-report.json > runtime/test-rerun.json
+```
+
+The rerun leaves the input report unchanged. It selects failed suites through
+`tooling/test_policy.yaml` and uses the ordinary planner for order and prerequisites.
+A failed `standard_library` prerequisite selects its recorded, non-skipped golden
+or robustness companions, even if those companions passed. A report with no
+failures produces an empty successful report without building; it never means
+“run everything.” Historical stdout, stderr and failure messages stay out of the
+Helix selection input.
+
+Reports must be internally consistent version-1 test reports with current suite
+names. Invalid reports fail before building. Fixture filters and source revisions
+are not recorded, so this retries whole suites against current source. `--jobs`
+is allowed; `--suite`, `--case`, `--bless` and discovery options cannot be combined
+with `--rerun-failed`. Blessing is never inherited. A failed Docker or orchestration
+entry requires an explicit retry after reviewing its diagnostic; the report does
+not grant infrastructure authority or repair a failed interpreter. Ordinary
+`--suite startup` remains available without building Helix.
+
 ## Test execution context
 
 `manage.py` builds and snapshots the interpreter before running contracts.

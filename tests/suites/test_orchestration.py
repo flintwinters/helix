@@ -10,9 +10,11 @@ import yaml
 
 from tooling import test_policy, test_runner
 from tests.suites import contracts
+from tests.suites.test_reports import report_fixture, suite_fixture
 
 
 def verify(h):
+    verify_rerun_wiring(h)
     catalog = ["first", "golden", "second", "robustness"]
     for requested in (None, [], ["second"], ["second", "first", "second"],
                       ["golden"], ["robustness"], ["robustness", "golden"]):
@@ -32,6 +34,30 @@ def verify(h):
     assert default[1]["action"] == "skip" and "--suite docker_nginx" in default[1]["reason"], default
     assert test_policy.plan(h, docker_catalog, ["docker_nginx"], False) == [
         {"suite": "docker_nginx", "action": "run"}]
+    previous = report_fixture(suite_fixture("second"), suite_fixture("first"),
+                              suite_fixture("golden", "passed"), suite_fixture("robustness", "skipped"))
+    assert test_policy.rerun(h, catalog, previous) == ["first", "second"]
+    # Rerun selection needs statuses only: large captured logs must not consume
+    # interpreter source/work budgets or become policy input accidentally.
+    chatter = "UNNEEDED_REPLAY_EVIDENCE" * 65536
+    noisy = {**previous, "results": [{**row, "stdout": chatter} for row in previous["results"]]}
+    def compact_runner(args, **kwargs):
+        assert "UNNEEDED_REPLAY_EVIDENCE" not in (kwargs.get("input") or "")
+        return h.process_runner(args, **kwargs)
+    assert test_policy.rerun(replace(h, process_runner=compact_runner), catalog, noisy) == ["first", "second"]
+    assert test_policy.rerun(h, catalog, report_fixture()) == []
+    assert test_policy.rerun(h, catalog, report_fixture(suite_fixture("first", "passed"),
+                                                      suite_fixture("robustness", "skipped"))) == []
+    for companions, expected in (([suite_fixture("golden", "passed")], ["golden"]),
+                                  ([suite_fixture("robustness", "passed")], ["robustness"]),
+                                  ([suite_fixture("golden", "passed"), suite_fixture("robustness", "passed")],
+                                   ["golden", "robustness"]),
+                                  ([suite_fixture("golden", "passed"), suite_fixture("robustness", "skipped")], ["golden"])):
+        prior = report_fixture(suite_fixture("standard_library"), *companions)
+        selected = test_policy.rerun(h, catalog, prior)
+        assert selected == expected, (prior, selected)
+        plan = test_policy.plan(h, catalog, selected, False)
+        assert [row["suite"] for row in plan] == ["standard_library", *expected], plan
     observations = [{"suite": "first", "failures": ["host crash"], "stdout": "evidence", "stderr": ""},
                     {"suite": "second", "failures": [], "stdout": "", "stderr": ""}]
     actual = test_policy.report(h, observations)
@@ -58,13 +84,26 @@ def verify(h):
     faults = [(-11, "", ""), (124, "", "timeout"), (0, "[", ""), "timeout", state(None)]
     for response in faults:
         for operation in (lambda context: test_policy.plan(context, catalog, None, False),
-                          lambda context: test_policy.report(context, observations)):
+                          lambda context: test_policy.report(context, observations),
+                          lambda context: test_policy.rerun(context, catalog, previous)):
             try:
                 operation(bad_context(response))
             except test_policy.PolicyError:
                 pass
             else:
                 raise AssertionError(f"broken policy accepted: {response}")
+    # Persisted failures are observations, not authority for a damaged policy to omit
+    # failures, run passing/skipped suites, provision Docker, or execute shell text.
+    for response in ([], ["first"], ["first", "second", "golden"],
+                     ["first", "second", "robustness"], ["first", "second", "docker_nginx"],
+                     ["first", "second", "$(touch forbidden)"], ["second", "first"],
+                     ["first", "first", "second"], [{"suite": "first"}], None):
+        try:
+            test_policy.rerun(bad_context(state(response)), catalog, previous)
+        except test_policy.PolicyError:
+            pass
+        else:
+            raise AssertionError(f"unsafe rerun selection accepted: {response}")
     for response in ([], [{"suite": "first", "action": "skip", "reason": "hidden"}],
                      [{"suite": "first", "action": "run"}] * 2,
                      [{"suite": "unauthorized", "action": "run"}],
@@ -122,3 +161,33 @@ def verify(h):
         assert report["failure_count"] == (1 if phase == "plan" else 2)
         if phase == "report":
             assert report["results"][0]["failures"] == ["host failure"]
+
+
+def verify_rerun_wiring(h):
+    import tempfile
+    from pathlib import Path
+    import manage
+
+    @contextlib.contextmanager
+    def frozen(context, output_format):
+        yield h, 0
+
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="rerun-wiring-") as temporary:
+        path = Path(temporary) / "previous.json"
+        path.write_text(json.dumps(report_fixture({**suite_fixture("golden"), "blessed": True, "cases": 1})))
+        with patch.object(manage, "frozen_test_context", frozen), \
+             patch.object(test_runner.TestContext, "regression", return_value=0) as dispatch:
+            assert manage.test(False, output_format="json", rerun_failed=str(path)) == 0
+            assert dispatch.call_count == 1
+            args = dispatch.call_args.args
+            assert args[0] is False and args[1] == ["golden"] and args[3] is None, args
+        # A broken bridge returning empty cannot turn a nonempty rerun into all suites.
+        stdout = io.StringIO()
+        with patch.object(manage, "frozen_test_context", frozen), \
+             patch.object(test_policy, "rerun", return_value=[]), \
+             patch.object(test_runner.TestContext, "regression") as dispatch, \
+             contextlib.redirect_stdout(stdout):
+            assert manage.test(False, output_format="json", rerun_failed=str(path)) == 1
+            assert dispatch.call_count == 0
+        result = json.loads(stdout.getvalue())
+        assert result["results"][0]["suite"] == "orchestration" and result["failure_count"] == 1, result

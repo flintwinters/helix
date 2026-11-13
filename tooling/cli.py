@@ -195,6 +195,8 @@ def parser():
     testing.add_argument("--suite", action="append", choices=SUITES, metavar="SUITE", help="repeat to select suites; default: all except explicitly reported opt-in Docker acceptance")
     testing.add_argument("--case", action="append", metavar="GLOB",
                          help="filter fixture stems or repository-relative paths; repeat for a union; requires golden/robustness suites only")
+    testing.add_argument("--rerun-failed", metavar="REPORT.json",
+                         help="rerun failed suites from a versioned JSON test report; no inherited blessing or Docker authorization")
     testing.add_argument("--jobs", type=int, default=DEFAULT_TEST_JOBS, metavar="N",
                          help="golden/robustness case workers (default: %(default)s; 1 runs serially)")
     testing.add_argument("--list", action="store_true", help="list suite names without building")
@@ -206,6 +208,7 @@ def parser():
         f"  {name:<10} {' '.join(path)}" for name, path in aliases.items() if len(path) > 1
     )
     testing.epilog += "\nDiscover suite contracts: ./manage.py test --describe"
+    testing.epilog += "\nRerun failures: ./manage.py test --rerun-failed runtime/test-report.json"
     testing.formatter_class = argparse.RawDescriptionHelpFormatter
     root.discovery = {"shortcuts": aliases, "suites": SUITES}
     return root, aliases, leaves
@@ -276,6 +279,9 @@ def parse(argv):
         return None
     if args.command == "test" and args.jobs < 1:
         args.help_parser.error("--jobs must be positive")
+    if args.command == "test" and args.rerun_failed is not None and (
+            args.suite or args.case or args.bless or args.list or args.describe):
+        args.help_parser.error("--rerun-failed cannot be combined with --suite, --case, --bless, --list or --describe")
     if args.command == "test" and args.case and (not args.suite or set(args.suite) - {"golden", "robustness"}):
         args.help_parser.error("--case requires explicit --suite golden and/or --suite robustness")
     if args.command == "test" and args.bless and args.suite and set(args.suite) != {"golden"}:

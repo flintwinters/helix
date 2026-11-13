@@ -5,6 +5,8 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
+from pathlib import Path
 
 import yaml
 
@@ -40,6 +42,7 @@ def verify(h):
     assert (performed.returncode, performed.stdout, performed.stderr) == (direct.returncode, direct.stdout, direct.stderr)
     assert "--command-timeout-ms" in performed.stdout and "--command-progress" in performed.stdout
     verify_usage_log(h)
+    verify_failed_suite_reruns(h)
     help_result = invoke("--help")
     assert help_result.returncode == 0
     assert "eval" in help_result.stdout and "cli" in help_result.stdout
@@ -132,6 +135,62 @@ def verify(h):
     assert parse(["--format=text", "cli", "--", "--format=json"]).extra == ["--format=json"]
     with contextlib.redirect_stdout(io.StringIO()):
         assert parse(["lint", "--help"]) is None
+
+
+def verify_failed_suite_reruns(h):
+    from tests.suites.test_reports import report_fixture, suite_fixture
+
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="cli-rerun-") as temporary:
+        path = Path(temporary) / "previous report.json"
+
+        def invoke(*extra, bare=False):
+            return subprocess.run(
+                [sys.executable, *(["-S"] if bare else []), str(h.root / "manage.py"),
+                 "--format=json", "test", "--rerun-failed", str(path), *extra],
+                cwd=h.root, env={**os.environ, **({"PATH": ""} if bare else {})},
+                capture_output=True, text=True, timeout=10 if bare else 120,
+            )
+
+        previous = report_fixture(suite_fixture("startup"), suite_fixture("static", "passed"),
+                                  suite_fixture("docker_nginx", "skipped"))
+        path.write_text(json.dumps(previous, indent=2) + "\n")
+        original = path.read_bytes()
+        process = invoke("--jobs", "1")
+        result = json.loads(process.stdout)
+        assert process.returncode == 0 and result["status"] == "passed", (process, result)
+        assert [row["suite"] for row in result["results"]] == ["startup"], result
+        assert result["results"][0]["status"] == "passed", result
+        assert path.read_bytes() == original, "rerun overwrote its historical evidence"
+
+        # Even historical blessing metadata cannot rewrite expectations on a rerun.
+        for extra in (("--suite", "startup"), ("--case", "*"), ("--bless",),
+                      ("--list",), ("--describe",)):
+            process = invoke(*extra, bare=True)
+            assert process.returncode == 2 and not process.stdout, (extra, process)
+            assert json.loads(process.stderr)["error"]["kind"] == "usage", process
+        for previous in (report_fixture(), report_fixture(suite_fixture("startup", "passed"),
+                                                         suite_fixture("docker_nginx", "skipped"))):
+            path.write_text(json.dumps(previous))
+            process = invoke(bare=True)
+            assert process.returncode == 0 and not process.stderr, process
+            assert json.loads(process.stdout) == report_fixture(), process
+
+        # These inputs must be rejected before Cargo, PyYAML, or any selected test can run.
+        invalid = ["{", json.dumps({**previous, "version": 2}),
+                   json.dumps(report_fixture(suite_fixture("obsolete-suite"))),
+                   json.dumps(report_fixture(suite_fixture("startup"), suite_fixture("startup"))),
+                   json.dumps({**report_fixture(suite_fixture("startup")), "failure_count": 0}),
+                   json.dumps(report_fixture(suite_fixture("docker_nginx"))),
+                   json.dumps(report_fixture(suite_fixture("orchestration")))]
+        for source in invalid:
+            path.write_text(source)
+            process = invoke(bare=True)
+            assert process.returncode == 2 and not process.stdout, (source, process)
+            assert json.loads(process.stderr)["error"]["kind"] == "selection", process
+            assert path.read_text() == source
+        path.unlink()
+        process = invoke(bare=True)
+        assert process.returncode == 2 and json.loads(process.stderr)["error"]["kind"] == "selection", process
 
 
 def verify_usage_log(h):

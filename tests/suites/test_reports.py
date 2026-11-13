@@ -7,8 +7,25 @@ from pathlib import Path
 from tooling.test_reports import failure
 
 
+def report_fixture(*rows):
+    """Independent v1 report fixture shared by persisted-report boundary contracts."""
+    count = sum(len(row["failures"]) for row in rows)
+    return {"version": 1, "command": "test", "status": "failed" if count else "passed",
+            "exit_code": int(bool(count)), "failure_count": count, "results": list(rows)}
+
+
+def suite_fixture(name, status="failed"):
+    row = {"suite": name, "status": status,
+           "failures": [f"{name}: injected failure"] if status == "failed" else [],
+           "stdout": "retained evidence\n", "stderr": ""}
+    if status == "skipped":
+        row["reason"] = "requires explicit selection"
+    return row
+
+
 def verify(h):
     verify_structured_results(h)
+    verify_rerun_reports(h)
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="reports-") as temporary:
         root = Path(temporary)
         case = root / "tests" / "check" / "with spaces.yaml"
@@ -35,6 +52,69 @@ def verify(h):
         assert "diff truncated" in report
         assert len(report.splitlines()) < 150
         assert case.read_text() == "original"
+
+
+def verify_rerun_reports(h):
+    import copy
+    import json
+    from tooling.test_policy import load_rerun_report
+
+    catalog = ["first", "golden", "second", "robustness", "docker_nginx"]
+    valid = report_fixture(suite_fixture("first"), suite_fixture("second", "passed"),
+                           suite_fixture("docker_nginx", "skipped"))
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="rerun-reports-") as temporary:
+        path = Path(temporary) / "previous.json"
+        path.write_text(json.dumps(valid))
+        original = path.read_bytes()
+        assert load_rerun_report(path, catalog) == valid
+        assert path.read_bytes() == original
+        for report in (report_fixture(), report_fixture(suite_fixture("first", "passed")),
+                       report_fixture({**suite_fixture("golden"), "cases": 3, "jobs": 2, "blessed": True}),
+                       report_fixture(suite_fixture("standard_library"), suite_fixture("golden", "passed"))):
+            path.write_text(json.dumps(report))
+            assert load_rerun_report(path, catalog) == report
+
+        damaged = [None, [], {}, {**valid, "version": 2}, {**valid, "version": True},
+                   {**valid, "command": "build"}, {**valid, "status": "passed"},
+                   {**valid, "exit_code": 0}, {**valid, "exit_code": True},
+                   {**valid, "failure_count": 0}, {**valid, "failure_count": True},
+                   {**valid, "results": {}}, report_fixture(suite_fixture("obsolete")),
+                   report_fixture(suite_fixture("first"), suite_fixture("first"))]
+        for field, value in (("suite", []), ("status", "unknown"), ("status", "passed"),
+                             ("failures", "crash"), ("failures", [3]), ("stdout", []),
+                             ("jobs", True), ("cases", -1), ("blessed", "yes"),
+                             ("reason", "pretend skipped")):
+            report = copy.deepcopy(valid)
+            report["results"][0][field] = value
+            damaged.append(report)
+        for report in damaged:
+            path.write_text(json.dumps(report))
+            try:
+                load_rerun_report(path, catalog)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError(f"invalid persisted report accepted: {report}")
+        for report, diagnostic in ((report_fixture(suite_fixture("docker_nginx")), "--suite docker_nginx"),
+                                   (report_fixture(suite_fixture("orchestration")), "--suite harness"),
+                                   (report_fixture(suite_fixture("standard_library")), "standard_library"),
+                                   (report_fixture(suite_fixture("standard_library"),
+                                                   suite_fixture("robustness", "skipped")), "standard_library")):
+            path.write_text(json.dumps(report))
+            try:
+                load_rerun_report(path, catalog)
+            except ValueError as error:
+                assert diagnostic in str(error), error
+            else:
+                raise AssertionError(f"non-rerunnable failure accepted: {report}")
+        for source in ("{", json.dumps(valid).replace('"version": 1', '"version": 1, "version": 1', 1)):
+            path.write_text(source)
+            try:
+                load_rerun_report(path, catalog)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("malformed or duplicate-key JSON accepted")
 
 
 def verify_structured_results(h):

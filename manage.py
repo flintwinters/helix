@@ -130,26 +130,44 @@ def usage(args) -> int:
 
 
 def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS,
-         patterns: list[str] | None = None, output_format: str = DEFAULT_FORMAT) -> int:
+         patterns: list[str] | None = None, output_format: str = DEFAULT_FORMAT,
+         rerun_failed: str | None = None) -> int:
     from tooling.test_runner import discover_cases
+    from tooling import test_policy
+    from tooling.output import test_report
 
     # Fixtures invoke wrappers; keep them out of the agent usage log.
     os.environ["HELIX_USAGE_LOG"] = "0"
-    context = test_context()
     try:
+        previous = test_policy.load_rerun_report(Path(rerun_failed), SUITES) if rerun_failed is not None else None
+        context = test_context()
         cases = discover_cases(context.commands, context.root, patterns) if patterns else None
-    except ValueError as error:
+    except (ValueError, OSError, UnicodeError) as error:
         if output_format == "text":
             print(f"error: {error}", file=sys.stderr)
         else:
             emit({"command": "test", "status": "error", "exit_code": 2,
                   "error": {"kind": "selection", "message": str(error)}}, stream=sys.stderr)
         return 2
+    if previous is not None and previous["failure_count"] == 0:
+        # An explicit empty rerun is a bootstrap no-op, never the default all-suite selection.
+        return test_report([], output_format=output_format)
     if suites and set(suites) == {"startup"}:
         return context.regression(bless, suites, jobs, output_format=output_format)
 
     with frozen_test_context(context, output_format) as (frozen, code):
-        return code or frozen.regression(bless, suites, jobs, cases, output_format)
+        if code:
+            return code
+        if previous is not None:
+            try:
+                suites = test_policy.rerun(frozen, SUITES, previous)
+                if not suites:
+                    raise test_policy.PolicyError("rerun selection omitted all recorded failures")
+            except test_policy.PolicyError as error:
+                return test_report([{"suite": "orchestration", "status": "failed", "failures": [str(error)]}],
+                                   output_format=output_format)
+            return frozen.regression(False, suites, jobs, None, output_format)
+        return frozen.regression(bless, suites, jobs, cases, output_format)
 
 
 def main() -> int:
@@ -187,7 +205,7 @@ def main() -> int:
     if command == "build":
         return build(report=True, output_format=args.format)
     if command == "test":
-        return test(args.bless, args.suite, args.jobs, args.case, args.format)
+        return test(args.bless, args.suite, args.jobs, args.case, args.format, args.rerun_failed)
     if command == "usage":
         return usage(args)
     with frozen_binary(BIN) as (binary, code):

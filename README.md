@@ -157,6 +157,7 @@ python3 -m pip install PyYAML                # needed for tests and inventory
 ./manage.py test                            # all suites
 ./manage.py lint                            # JSON lint report
 ./manage.py --format=json test --suite golden # complete machine-readable report
+./manage.py test --rerun-failed runtime/test-report.json # retry suites from a saved JSON report
 ```
 
 Lint uses the [hyperlinter](https://github.com/flintwinters/hyperlinter) submodule
