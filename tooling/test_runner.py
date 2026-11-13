@@ -213,6 +213,19 @@ class TestContext:
                   or decision["stage"] == "passed" and observation["root"] is not None
                       and observation["replay"] is None and not decision["replay"]):
                 problem = "policy returned actions inconsistent with the observation phase"
+            # Helix selects the next action; independently captured evidence can
+            # veto acceptance or persistence even when that decision is well formed.
+            elif ((decision["bless"] or decision["replay"] or decision["stage"] == "passed")
+                  and observation["run"] != observation["repeated"]):
+                problem = "policy accepted nondeterministic process observations"
+            elif ((decision["replay"] or decision["stage"] == "passed")
+                  and not decision["bless"]
+                  and observation["run"]["stdout"] != observation["expected"]):
+                problem = "policy accepted an expectation mismatch without blessing"
+            elif (decision["stage"] == "passed" and observation["replay"] is not None
+                  and (observation["replay"]["returncode"] != 0
+                       or observation["replay"]["root"] != observation["root"])):
+                problem = "policy accepted a failed or changed replay"
         if problem is not None:
             raise GoldenPolicyError(problem, result, source)
         return decision

@@ -898,7 +898,14 @@ The audit must produce decisions and executable examples, not just an inventory.
   checker reuses the runtime type parser and overlap rules for a bounded structural
   fragment. Known field mistakes must fail before orchestration runs; unknown
   callbacks remain unchecked and Python retains independent host/report validation.
-  This evidence does not complete the remaining builtin/library ownership audit.
+  Golden policy provides a second concrete boundary: `std:test.golden_plan`
+  chooses actions, while Python independently vetoes success or blessing that
+  contradicts captured determinism, saved-text or replay evidence. Well-formed
+  false-success responses exercise this distinction in `harness`; shape checking
+  alone cannot supervise an interpreter testing itself. Honest deterministic
+  blessing on a reported roundtrip failure remains supported. These observation
+  checks belong to the independent host, not another runtime primitive or a
+  fallback policy. This does not complete the remaining builtin/library audit.
 - [x] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
   The tested arithmetic example exposes nested call wrappers, but ordinary named
   intermediates suffice. Production `tooling/test_policy.yaml` already names the

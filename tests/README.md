@@ -75,9 +75,14 @@ Golden-test decisions live in `std:test.golden_plan`. Python supplies captured
 run output, saved expectations and ordinary-root replay observations; Helix
 decides determinism, exact text comparison and replay outcomes. Python retains
 independent state validation, process timeouts, crash detection and failure
-artifacts. A policy crash or malformed response fails the suite; there is no
-Python comparison fallback. The `harness` suite uses independent expected
-outcomes and injected process faults to check this self-hosting boundary.
+artifacts. It also vetoes success or blessing that contradicts captured evidence:
+repeated runs must agree, unblessed results must match saved text, and passing
+replays must retain the original root. A policy crash, malformed response or
+contradictory decision fails the suite before expectations can be written; there
+is no Python policy fallback. An honest roundtrip failure may still bless the
+original deterministic run when explicitly requested. The `harness` suite uses
+independent expected outcomes and injected process faults, including well-formed
+false-success responses, to check this self-hosting boundary.
 
 Suite selection, ordering, prerequisite insertion, blessing skips and report
 aggregation live in `tooling/test_policy.yaml`. The Python runner executes its

@@ -66,6 +66,12 @@ def verify(h):
         for replay in ((0, FINISHED.replace("42", "43"), ""), (124, "", "timeout"), (0, "[", "")):
             failures, _ = exercise(replay=replay)
             stage(failures, "roundtrip")
+        # A genuine roundtrip failure still permits explicitly requested blessing
+        # of the original deterministic output; policy corruption does not.
+        failures, _ = exercise(expected="wrong", bless=True,
+                               replay=(0, FINISHED.replace("42", "43"), ""))
+        stage(failures, "roundtrip")
+        assert expected_path.read_text() == FINISHED
         for code, output in (
             (1, "status: error\nerror: {kind: type, message: bad, line: 1, column: 1}\n"),
             (1, "status: signaled\npending_effect: {id: 0, operation: read, payload: null}\n"),
@@ -111,11 +117,51 @@ def verify(h):
             stage(failures, "policy")
             assert expected_path.read_text() == FINISHED
 
+        # These decisions have valid shapes and plausible phase actions, but lie
+        # about independent host observations. None may authorize replay or writes.
+        error_state = "status: error\nerror: {kind: type, message: bad, line: 1, column: 1}\n"
+        for repeated in ((0, FINISHED.replace("42", "43"), ""),
+                         (0, FINISHED, "different stderr"), (1, error_state, "")):
+            failures, calls = exercise(expected="unchanged", repeated=repeated, bless=True,
+                                       policy_fault=decision(bless=True, replay=True))
+            stage(failures, "policy")
+            assert calls["replay"] == 0 and expected_path.read_text() == "unchanged", calls
+        # Error states have no ordinary root to replay. A forged pass here would
+        # otherwise finish successfully and bless differing outputs immediately.
+        failures, calls = exercise(output=error_state, code=1, expected="unchanged",
+                                   repeated=(1, error_state.replace("message: bad", "message: different"), ""),
+                                   bless=True, policy_fault=decision(bless=True))
+        stage(failures, "policy")
+        assert calls["policy"] == 1 and calls["replay"] == 0, calls
+        assert expected_path.read_text() == "unchanged"
+        for expected in (None, "wrong", FINISHED.rstrip("\n")):
+            failures, calls = exercise(expected=expected, policy_fault=decision(replay=True))
+            stage(failures, "policy")
+            assert calls["replay"] == 0, calls
+            assert (expected_path.read_text() if expected_path.exists() else None) == expected
+
+        # Permission to bless is not evidence that the policy will actually fix
+        # an absent or different expectation before claiming success.
+        for expected in (None, "wrong"):
+            for late in (False, True):
+                failures, calls = exercise(expected=expected, bless=True,
+                                           policy_fault=decision(replay=not late), fault_after=int(late))
+                stage(failures, "policy")
+                assert calls["replay"] == int(late) and calls["policy"] == 1 + int(late), calls
+                assert (expected_path.read_text() if expected_path.exists() else None) == expected
+
+        for replay in ((0, FINISHED.replace("42", "43"), ""), (1, error_state, "")):
+            failures, calls = exercise(expected="unchanged", bless=True, replay=replay,
+                                       policy_fault=decision(bless=True), fault_after=1)
+            stage(failures, "policy")
+            assert calls["replay"] == 1 and calls["policy"] == 2, calls
+            assert expected_path.read_text() == "unchanged"
+
         # Even a plausible false pass from a damaged interpreter cannot hide a
         # host-observed crash, timeout or malformed replay state.
         for replay in ((-11, "", ""), (124, "", "timeout"), (0, "[", "")):
             failures, calls = exercise(replay=replay, policy_fault=decision(), fault_after=1)
-            stage(failures, "roundtrip")
+            stage(failures, "policy")
             assert calls["replay"] == 1 and calls["policy"] == 2
 
         # Exercise a real large corpus observation, not only tiny synthetic outputs.
