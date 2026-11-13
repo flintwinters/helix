@@ -1,5 +1,6 @@
 """Disk restoration in fresh CLI processes; independent expected values and damaged states."""
 import copy
+import difflib
 import json
 import tempfile
 from pathlib import Path
@@ -100,11 +101,15 @@ def verify(h):
     # Sample established language interactions against the ordinary run oracle.
     for name in ('types_function_signatures', 'class_constraints', 'std_convergence',
                  'std_typing', 'types_type_time_preflight_forms', 'types_annotations',
-                 'dogfood_errors', 'types_refinement_failures'):
+                 'dogfood_errors', 'types_refinement_failures', 'nginx_ssh_request'):
         path = h.root / 'tests/cases' / f'{name}.yaml'
         ordinary = h.helix('run', str(path))
-        for count in (0, 37):
+        counts = (0, 37, 2_000_000) if name == 'nginx_ssh_request' else (0, 37)
+        for count in counts:
             saved = h.helix('snapshot', str(path), '--steps', str(count))
             assert saved.returncode in (0, 1) and not saved.stderr, saved
             restored = h.helix('restore', '-', stdin=saved.stdout)
-            assert restored.returncode == ordinary.returncode and restored.stdout == ordinary.stdout, (name, count, restored.stderr, restored.stdout[:300])
+            assert restored.returncode == ordinary.returncode and restored.stdout == ordinary.stdout, (
+                name, count, {'run_exit': ordinary.returncode, 'restore_exit': restored.returncode},
+                restored.stderr, ''.join(difflib.unified_diff(ordinary.stdout.splitlines(True),
+                    restored.stdout.splitlines(True), fromfile='uninterrupted', tofile='restored'))[:4000])

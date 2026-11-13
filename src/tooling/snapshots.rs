@@ -42,7 +42,9 @@ pub fn command(path: &str, restoring: bool, steps: Option<usize>) -> ExitCode {
             } else {
                 print!("{}", vm.state_string());
             }
-            if vm.status() == Status::Error {
+            if vm.status() == Status::Error
+                || (steps.is_none() && vm.status() != Status::Finished)
+            {
                 ExitCode::FAILURE
             } else {
                 ExitCode::SUCCESS

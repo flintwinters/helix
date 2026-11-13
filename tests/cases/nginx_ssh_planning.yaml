@@ -1,0 +1,12 @@
+# Remote selection is ordinary reviewed data; it supplies no SSH authority.
+$call:
+- let
+- nginx: {$call: [import, 'std:nginx']}
+  config: {package_version: pinned-test-version, port: 8080, server_name: helix.remote, content: "Hello over SSH\n", state: present, ssh_target: fixture}
+  observed:
+    target: remote-fixture-one
+    package_version: null
+    files: {/etc/helix-nginx/nginx.conf: null, /etc/helix-nginx/server.conf: null, /var/lib/helix-nginx/index.html: null}
+    service: {running: false, activation: null}
+    response: null
+- {$call: [nginx.plan, {$ref: config}, {$ref: observed}]}
