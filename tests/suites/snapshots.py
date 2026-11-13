@@ -89,6 +89,9 @@ def verify(h):
     compatibility = (h.root / 'tests/fixtures/snapshots/v1-ready.json').read_text()
     _, restored = invoke('restore', compatibility)
     assert restored == {'status': 'finished', 'root': 42}, restored
+    for spelling in (json.dumps(json.loads(compatibility), sort_keys=True), yaml.safe_dump(json.loads(compatibility))):
+        _, reordered = invoke('restore', spelling)
+        assert reordered == restored, reordered
     saved_error = (h.root / 'tests/fixtures/snapshots/v1-error.json').read_text()
     _, restored_error = invoke('restore', saved_error)
     expected_error = yaml.safe_load((h.root / 'tests/fixtures/snapshots/v1-error.expected.yaml').read_text())

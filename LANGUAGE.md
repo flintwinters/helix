@@ -465,7 +465,7 @@ See [Bounded command operations](HOST.md#bounded-command-operations).
 executable checkpoint. `./manage.py runtime restore checkpoint.json` runs it in a
 fresh process; adding `--steps N` saves another checkpoint after at most N
 transitions. JSON is the canonical YAML-compatible wire spelling for version 1;
-the loader currently accepts that spelling. Existing `step`/`inspect` documents
+the loader also accepts ordinary YAML within the existing data-parser size/depth bounds. Mapping presentation order has no execution meaning. Existing `step`/`inspect` documents
 remain observational, and `resume` still means pure source recovery.
 
 The snapshot embeds linked representation graphs, source-qualified path

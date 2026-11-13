@@ -400,3 +400,46 @@ recovery, remote adapters and provider-specific reconciliation remain separate
 roadmap work.
 
 `--fixed-time MILLISECONDS` fixes the clock response. `--seed INTEGER` selects a reproducible random sequence, advanced once per request; both still require their grants. Without these options the host reads the system clock and `/dev/urandom`. The deterministic generator is intended for tests and replay inputs, not cryptographic randomness. Effect request/outcome histories expose nondeterministic inputs for inspection; full fresh-process replay of active continuations remains future work. Capability failures occur before host actions and can be handled with `try`/`finally` through the ordinary evaluator.
+
+
+## Durable effect checkpoints
+
+`./manage.py runtime perform --checkpoint run.json [grants] program.yaml`
+creates a new, private execution journal. Resume with
+`./manage.py runtime perform [fresh grants] --resume-checkpoint run.json`.
+An explicit resume acknowledges a saved interruption before continuing.
+The host exclusively locks that checkpoint path, flushes an `in_flight` record
+before each effect, then atomically replaces and flushes it with the completed
+outcome. Completed effects are retained in the machine. Exit status and seeded
+random-generator progress are host bookkeeping stored alongside the snapshot;
+command, file, SSH and other grants are never stored or restored.
+
+A controller that dies after dispatch but before acknowledging the result leaves
+an uncertain request. Resume refuses to repeat it. Observe the target independently,
+then supply `./manage.py runtime reconcile run.json observed.yaml`, for example:
+
+```yaml
+request:
+  id: 2
+  operation: command
+  payload: {program: /path/to/helper, args: [apply]}
+outcome:
+  ok: {code: 0, stdout: '', stderr: ''}
+```
+
+The entire request (id, operation and payload) must match. Alternatively use
+`outcome: {error: {kind: interrupted, message: 'Observed partial application'}}`.
+Reconciliation records that caller-supplied observation without performing the
+original effect; the next resume continues ordinary success or error handling.
+It cannot certify that the observation is true. Seeded random reconciliation
+checks the supplied result against the saved deterministic generator state.
+
+These are Unix controller journals, not distributed transactions. A file lock
+protects one journal, not a target shared by multiple journals. Copying a journal
+creates an independent branch and may repeat future effects. An uncertain remote
+operation may still be running; observing it and choosing a safe outcome remain
+provider/operator responsibilities. Immutable VM state does not roll back host
+mutations. Checkpoint files can contain captured data and command output; private
+file permissions are not the charter's future secret-handle/redaction contract.
+Disk-full, rename and flush failures stop the controller; an already dispatched
+effect remains uncertain when its outcome could not be durably saved.

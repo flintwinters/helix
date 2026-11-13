@@ -144,10 +144,10 @@ Completed coverage spans:
 
 ### Obligations activated by later milestones
 
-Versioned execution snapshots now activate the restoration and compatibility obligations. Effect-boundary recovery remains open until its host acceptance evidence lands. Immutable pause points, pure source recovery and ordinary-data fixpoints retain separate contracts; inspection graphs remain non-restorable.
+Versioned execution snapshots now activate the restoration and compatibility obligations. Caller-owned effect journals now add crash/uncertainty acceptance; distributed recovery and the general reversibility promise remain open. Immutable pause points, pure source recovery and ordinary-data fixpoints retain separate contracts; inspection graphs remain non-restorable.
 
 - [x] Compare uninterrupted execution with save/resume at every transition of bounded nested-call, iteration, annotation, refinement, handler and child-machine programs; fresh CLI processes additionally cover live-local edits, embedded imports and representative existing golden workloads (`library`, `snapshots`, `execution`)
-- [ ] Extend the existing controlled-adapter failure, retry, cleanup, permission and in-memory interruption tests to fresh-process disk resume; prove completed effects are not accidentally repeated after restoration
+- [x] Fresh-process effect journals retain completed outcomes, require fresh grants and refuse uncertain replay after controller death. Exact-request reconciliation records independently observed outcomes; real command/counter tests prove completed work is not repeated (`durable_effects`), while `effects` and `long_commands` retain shared adapter failure/retry/cancellation coverage. This does not establish exactly-once external execution or distributed recovery
 - [x] Keep committed version-1 ready/error snapshots and exact public error expectations; test restoration and explicit unsupported-version rejection. No earlier executable format exists to upgrade; future version changes must extend these fixtures (`snapshots`)
 
 ---

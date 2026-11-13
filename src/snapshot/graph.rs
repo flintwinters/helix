@@ -63,13 +63,13 @@ fn get_program(j: &J, d: &mut Decoder) -> R<Program> {
         {
             return Err("invalid source reference".into());
         }
-        if lookup.insert(loc.to_string(), n).is_some() {
+        if lookup.insert(reference_key(loc)?, n).is_some() {
             return Err("duplicate source reference".into());
         }
     }
     let node = |j: &J| -> R<usize> {
         lookup
-            .get(&j.to_string())
+            .get(&reference_key(j)?)
             .copied()
             .ok_or("missing source reference".into())
     };

@@ -169,12 +169,12 @@ impl Decoder {
         let identity = Arc::as_ptr(&p) as usize;
         if !self.references.contains_key(&identity) {
             let refs = (0..p.graph.nodes.len())
-                .map(|n| Ok((graph::reference(&p.graph, n)?.to_string(), n)))
+                .map(|n| Ok((reference_key(&graph::reference(&p.graph, n)?)?, n)))
                 .collect::<R<_>>()?;
             self.references.insert(identity, refs);
         }
         self.references[&identity]
-            .get(&j.to_string())
+            .get(&reference_key(j)?)
             .copied()
             .ok_or("unknown source reference".into())
     }
@@ -256,8 +256,19 @@ impl Vm {
         if snapshot.len() > MAX_BYTES {
             return Err("snapshot exceeds byte budget".into());
         }
-        let doc: J =
-            serde_json::from_str(snapshot).map_err(|e| format!("invalid snapshot: {e}"))?;
+        let doc: J = match serde_json::from_str(snapshot) {
+            Ok(doc) => doc,
+            Err(_) => {
+                let graph = Graph::parse_data(snapshot)
+                    .map_err(|e| format!("invalid snapshot: {}", e.message))?;
+                let data = graph
+                    .data(ROOT)
+                    .plain_yaml()
+                    .ok_or("snapshot must be ordinary data")?;
+                let json = crate::emit::json_document(&data).map_err(str::to_owned)?;
+                serde_json::from_str(&json).map_err(|e| format!("invalid snapshot: {e}"))?
+            }
+        };
         keys(
             &doc,
             &["format", "version", "runtime", "machine", "objects"],
@@ -292,4 +303,17 @@ impl Vm {
         let machine: Arc<Vm> = d.v(field(&doc, "machine")?)?;
         Ok((*machine).clone())
     }
+}
+
+// Object presentation order never changes the identity of a source reference.
+fn reference_key(j: &J) -> R<String> {
+    keys(j, &["source", "path"])?;
+    let source = field(j, "source")?
+        .as_str()
+        .ok_or("invalid reference source")?;
+    let path = array(field(j, "path")?)?;
+    if path.len() > MAX_NESTING || path.iter().any(|p| !p.is_string() && p.as_u64().is_none()) {
+        return Err("invalid reference path".into());
+    }
+    Ok(serde_json::json!([source, path]).to_string())
 }

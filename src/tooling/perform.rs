@@ -7,9 +7,11 @@ pub fn run(args: &[String]) -> ExitCode {
     use crate::EffectHost;
     let mut host = EffectHost::default();
     let mut progress_path = None;
+    let mut checkpoint_path = None;
+    let mut resume_checkpoint = None;
     let mut index = 0;
     while let Some(option) = args.get(index).filter(|arg| arg.starts_with("--")) {
-        let takes_value = matches!(option.as_str(), "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--allow-ssh" | "--fixed-time" | "--seed" | "--command-timeout-ms" | "--command-output-limit" | "--command-attempts" | "--command-retry-delay-ms" | "--command-retry-exit-code" | "--command-progress");
+        let takes_value = matches!(option.as_str(), "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--allow-ssh" | "--fixed-time" | "--seed" | "--command-timeout-ms" | "--command-output-limit" | "--command-attempts" | "--command-retry-delay-ms" | "--command-retry-exit-code" | "--command-progress" | "--checkpoint" | "--resume-checkpoint");
         let value = if takes_value {
             index += 1;
             let Some(value) = args.get(index) else { eprintln!("missing value for {option}"); return ExitCode::from(2); };
@@ -36,6 +38,8 @@ pub fn run(args: &[String]) -> ExitCode {
                 Ok(value) => { host.command_policy.retry_exit_codes.insert(value); }
                 Err(_) => return usage("command retry exit code must be an integer"),
             },
+            "--checkpoint" => checkpoint_path = Some(std::path::PathBuf::from(value)),
+            "--resume-checkpoint" => resume_checkpoint = Some(std::path::PathBuf::from(value)),
             "--command-progress" => progress_path = Some(std::path::PathBuf::from(value)),
             "--allow-read" => host.read_roots.push(value.into()),
             "--allow-write" => host.write_roots.push(value.into()),
@@ -59,7 +63,7 @@ pub fn run(args: &[String]) -> ExitCode {
                 Err(_) => { eprintln!("seed must be an unsigned integer"); return ExitCode::from(2); }
             },
             "--help" => {
-                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U], --allow-stdin, --allow-stdout, --allow-time, --allow-random\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nCommand policy (caller grants, not source): --command-timeout-ms N (1..86400000, default 10000; total across retries), --command-output-limit N (1..16777216 bytes per stream across retries, default 1048576), --command-attempts N (1..32, default 1), --command-retry-delay-ms N (0..60000), repeatable --command-retry-exit-code N (1..255; only explicitly classified exit codes retry)\n--command-progress NEW_FILE writes versioned JSONL metadata, never command output; existing files are refused. SIGINT/SIGTERM cancel commands and clean up their Unix process group.\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
+                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U], --allow-stdin, --allow-stdout, --allow-time, --allow-random\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nCommand policy (caller grants, not source): --command-timeout-ms N (1..86400000, default 10000; total across retries), --command-output-limit N (1..16777216 bytes per stream across retries, default 1048576), --command-attempts N (1..32, default 1), --command-retry-delay-ms N (0..60000), repeatable --command-retry-exit-code N (1..255; only explicitly classified exit codes retry)\n--command-progress NEW_FILE writes versioned JSONL metadata, never command output; existing files are refused. SIGINT/SIGTERM cancel commands and clean up their Unix process group.\n--checkpoint NEW_FILE journals before and after each effect; --resume-checkpoint FILE restores with fresh grants and refuses uncertain outcomes. helix reconcile FILE OUTCOME records an independently observed outcome for the exact uncertain request.\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
                 return ExitCode::SUCCESS;
             }
             _ => { eprintln!("unknown perform option {option}"); return ExitCode::from(2); }
@@ -67,14 +71,28 @@ pub fn run(args: &[String]) -> ExitCode {
         index += 1;
     }
     if let Err((_, message)) = host.command_policy.validate() { return usage(&message); }
-    let Some(path) = args.get(index) else { eprintln!("perform requires a source file"); return ExitCode::from(2); };
-    index += 1;
+    if checkpoint_path.is_some() && resume_checkpoint.is_some() { return usage("choose --checkpoint or --resume-checkpoint"); }
+    let mut restored = None;
+    let checkpoint = if let Some(path) = resume_checkpoint {
+        match crate::vm::effects::durable::Checkpoint::resume(&path) {
+            Ok((checkpoint, vm)) => { restored = Some(vm); Some(checkpoint) },
+            Err(error) => return checkpoint_error(&error),
+        }
+    } else if let Some(path) = checkpoint_path {
+        match crate::vm::effects::durable::Checkpoint::create(&path) {
+            Ok(checkpoint) => Some(checkpoint), Err(error) => return checkpoint_error(&error),
+        }
+    } else { None };
+    let mut vm = if let Some(vm) = restored { vm } else {
+        let Some(path) = args.get(index) else { return usage("perform requires a source file"); };
+        index += 1;
+        let source = match std::fs::read_to_string(path) {
+            Ok(source) => source, Err(error) => return usage(&format!("cannot read {path}: {error}")),
+        };
+        Vm::load_sandboxed(&source, Some(Path::new(path)), &host.read_roots)
+    };
     if args.get(index).is_some_and(|arg| arg == "--") { index += 1; }
     host.args = args[index..].to_vec();
-    let source = match std::fs::read_to_string(path) {
-        Ok(source) => source,
-        Err(error) => { eprintln!("cannot read {path}: {error}"); return ExitCode::from(2); }
-    };
     if let Some(path) = progress_path {
         host.command_progress = Some(progress_sink(path));
     }
@@ -83,8 +101,9 @@ pub fn run(args: &[String]) -> ExitCode {
         Ok(guard) => { host.cancellation_signal = Some(&signals::CANCELLED); guard }
         Err(error) => return usage(&format!("cannot install cancellation handlers: {error}")),
     };
-    let mut vm = Vm::load_sandboxed(&source, Some(Path::new(path)), &host.read_roots);
-    host.run(&mut vm);
+    if let Some(checkpoint) = &checkpoint {
+        if let Err(error) = host.run_checkpointed(&mut vm, checkpoint) { return checkpoint_error(&error); }
+    } else { host.run(&mut vm); }
     eprint!("{}", vm.state_string());
     let cancelled = host.cancellation.load(std::sync::atomic::Ordering::Relaxed)
         || host.cancellation_signal.is_some_and(|flag| flag.load(std::sync::atomic::Ordering::Relaxed));
@@ -163,4 +182,9 @@ mod signals {
             INSTALLED.store(false, Ordering::Release);
         }
     }
+}
+
+fn checkpoint_error(message: &str) -> ExitCode {
+    eprintln!("{}", serde_json::json!({"status":"error","errors":[{"kind":"checkpoint","message":message}]}));
+    ExitCode::FAILURE
 }

@@ -13,6 +13,8 @@ mod sqlite;
 mod command;
 #[path = "effects/ssh.rs"]
 mod ssh;
+#[path = "effects/durable.rs"]
+pub mod durable;
 pub use ssh::SshTarget;
 pub use command::{CommandPolicy, CommandProgress, ProgressCallback};
 use yaml_rust2::Yaml;
@@ -48,18 +50,23 @@ impl EffectHost {
     pub fn run(&mut self, vm: &mut Vm) {
         loop {
             vm.run();
-            if vm.status() != Status::Signaled { break; }
-            if vm.is_interrupted() { break; }
-            let Some(request) = vm.pending_effect() else { break };
-            if self.cancellation.load(Ordering::Relaxed)
-                || self.cancellation_signal.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
-                *vm = vm.signal(object([("kind", Yaml::String("cancelled".into()))]));
-                break;
-            }
-            let reply = self.handle(request.id, &request.operation, &request.payload);
-            *vm = vm.resolve_effect(reply);
+            if !self.resolve_pending(vm) { break; }
         }
     }
+    /// Shared dispatch boundary for ephemeral and journaled controllers.
+    fn resolve_pending(&mut self, vm: &mut Vm) -> bool {
+        if vm.status() != Status::Signaled || vm.is_interrupted() { return false; }
+        let Some(request) = vm.pending_effect() else { return false; };
+        if self.cancellation.load(Ordering::Relaxed)
+            || self.cancellation_signal.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
+            *vm = vm.signal(object([("kind", Yaml::String("cancelled".into()))]));
+            return false;
+        }
+        let reply = self.handle(request.id, &request.operation, &request.payload);
+        *vm = vm.resolve_effect(reply);
+        true
+    }
+
     fn handle(&mut self, effect_id: u64, operation: &str, payload: &Yaml) -> Reply {
         match operation {
             "args" => Ok(Yaml::Array(self.args.iter().cloned().map(Yaml::String).collect())),
@@ -152,8 +159,7 @@ impl EffectHost {
             "random" => {
                 require(self.allow_random, "random")?;
                 let value = if let Some(seed) = self.random_seed.as_mut() {
-                    *seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-                    *seed >> 1
+                    next_random(seed)
                 } else {
                     let mut bytes = [0; 8];
                     std::fs::File::open("/dev/urandom").and_then(|mut f| f.read_exact(&mut bytes)).map_err(io_fault)?;
@@ -192,4 +198,9 @@ fn origin(url: &str) -> Result<&str, Failure> {
     let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
     if authority.is_empty() || authority.contains(['@', '\\']) || url.chars().any(char::is_whitespace) { return Err(fault("type", "invalid HTTP authority")); }
     Ok(&url[..url.len() - rest.len() + authority.len()])
+}
+
+fn next_random(seed: &mut u64) -> u64 {
+    *seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *seed >> 1
 }

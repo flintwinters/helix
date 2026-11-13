@@ -257,6 +257,8 @@ def runtime(args, binary) -> int:
         if forwarded[:1] == ["perform"]:
             return perform_forwarded(binary, forwarded)
         return subprocess.call([str(binary), *forwarded], cwd=ROOT)
+    if command == "reconcile":
+        return subprocess.call([str(binary), command, args.file, args.outcome], cwd=ROOT)
     if command == "eval":
         return subprocess.run([str(binary), *(["check", "--evaluate"] if args.check else ["run"]), "-"],
                               input=args.source, text=True, cwd=ROOT).returncode

@@ -33,6 +33,7 @@ SUITES = {
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
     "interactive": "REPL, dependency watch, completion and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
+    "durable_effects": "Disk effect recovery, controller death, uncertain-outcome reconciliation and fresh grants",
     "snapshots": "Fresh-process executable restoration, editable locals, imported sources and malformed snapshots",
     "long_commands": "Bounded command deadlines, capture, progress, retry classification and process-group cancellation",
     "ssh_host": "Real OpenSSH remote commands: host-key verification, exact argument transport and classified connection, authentication and privilege failures",
@@ -140,6 +141,9 @@ def parser():
         if name == "watch":
             leaf.add_argument("--interval-ms", type=int, default=250, help="poll interval in milliseconds")
             leaf.add_argument("--iterations", type=int, help="exit after this many run attempts")
+    reconcile = command(runtime, "reconcile", "Record an independently observed uncertain-effect outcome", ["runtime", "reconcile"], "runtime reconcile checkpoint.json observed.yaml")
+    reconcile.add_argument("file", help="effect checkpoint file")
+    reconcile.add_argument("outcome", help="exact request and observed ok/error outcome")
     for name, description in {"repl": "Evaluate one YAML document per input line",
                               "lsp": "Serve the Language Server Protocol over stdio",
                               "schema": "Print the program JSON Schema"}.items():

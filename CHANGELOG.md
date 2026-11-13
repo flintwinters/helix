@@ -6,6 +6,11 @@ milestones, not stable releases; compatibility boundaries live in
 
 ## Current development
 
+- Caller-owned durable effect journals preserve completed outcomes, refuse blind
+  replay after controller death, and support explicit reconciliation of the exact
+  uncertain request. Restoration requires fresh grants; target locking, rollback
+  and secret-safe persistence remain separate obligations.
+
 - Versioned executable snapshots preserve complete bounded continuations, captures,
   linked source graphs and pending effects across processes. Explicit snapshot and
   restore commands support live-local edits and reject unsupported versions;

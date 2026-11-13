@@ -58,3 +58,56 @@ fn error(message: &str) -> ExitCode {
     );
     ExitCode::FAILURE
 }
+
+/// Record an independently observed outcome; no effect is performed here.
+pub fn reconcile(path: &str, outcome_path: &str) -> ExitCode {
+    let result = (|| -> Result<(), String> {
+        let text = std::fs::read_to_string(outcome_path).map_err(|e| e.to_string())?;
+        let graph = crate::graph::Graph::parse_data(&text).map_err(|e| e.message)?;
+        let data = graph
+            .data(0)
+            .plain_yaml()
+            .ok_or("outcome must be ordinary data")?;
+        let request = &data["request"];
+        let expected = crate::EffectRequest {
+            id: request["id"]
+                .as_i64()
+                .filter(|id| *id > 0)
+                .ok_or("expected positive request id")? as u64,
+            operation: request["operation"]
+                .as_str()
+                .ok_or("expected request operation")?
+                .into(),
+            payload: request["payload"].clone(),
+        };
+        if matches!(expected.payload, yaml_rust2::Yaml::BadValue) {
+            return Err("missing request payload".into());
+        }
+        let outcome = &data["outcome"];
+        if outcome.as_hash().is_none_or(|h| h.len() != 1) {
+            return Err("outcome requires exactly one ok or error field".into());
+        }
+        let reply = if !matches!(outcome["ok"], yaml_rust2::Yaml::BadValue) {
+            Ok(outcome["ok"].clone())
+        } else {
+            Err((
+                outcome["error"]["kind"]
+                    .as_str()
+                    .ok_or("expected error kind")?
+                    .into(),
+                outcome["error"]["message"]
+                    .as_str()
+                    .ok_or("expected error message")?
+                    .into(),
+            ))
+        };
+        crate::vm::effects::durable::Checkpoint::reconcile(Path::new(path), &expected, reply)
+    })();
+    match result {
+        Ok(()) => {
+            println!("{}", serde_json::json!({"status":"reconciled"}));
+            ExitCode::SUCCESS
+        }
+        Err(e) => error(&e),
+    }
+}

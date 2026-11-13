@@ -123,7 +123,7 @@ def verify(h):
     from tooling.cli import parse
     for name, path in catalog["shortcuts"].items():
         extra = {"run": ["-"], "check": ["-"], "recover": ["-"], "resume": ["-"],
-                 "fmt": ["-"], "step": ["-"], "snapshot": ["-"], "restore": ["-"], "trace": ["-"], "watch": ["example.yaml"],
+                 "fmt": ["-"], "step": ["-"], "snapshot": ["-"], "restore": ["-"], "reconcile": ["checkpoint.json", "observed.yaml"], "trace": ["-"], "watch": ["example.yaml"],
                  "state": ["-"], "completion": ["bash"], "sandbox": ["-", "-"], "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
                  "lint": ["--format=text"], "test": ["--suite", "cli"], "migrate-syntax": ["tests/cases"],
                  "docker-nginx": ["describe"]}.get(name, [])

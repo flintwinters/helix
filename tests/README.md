@@ -415,3 +415,11 @@ branches and restoration at every transition of bounded nested-call, annotation,
 predicate and iteration examples. The committed version-1 compatibility fixture
 is independent of freshly generated snapshots. Existing inspection tests retain
 their separate non-restorable format contract.
+
+
+`./manage.py test --suite durable_effects` kills a real controller during a
+command, independently observes its mutation, rejects concurrent journal use
+and blind replay, checks exact-request reconciliation and fresh grants, and
+verifies that completed effects and host exit status survive fresh processes.
+The ordinary `effects` and `long_commands` suites continue to own host failure,
+retry, cancellation and capability contracts shared by both controller modes.
