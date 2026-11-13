@@ -1,7 +1,11 @@
 //! The object graph: YAML parsed into an arena of nodes with parent links and source spans.
 //! Parent links define lexical/object resolution; paths are always root-relative.
 
+mod effects;
+mod scope;
 mod syntax;
+pub(crate) use effects::Effects;
+pub(crate) use scope::Site;
 pub(crate) use syntax::Syntax;
 
 use yaml_rust2::Yaml;

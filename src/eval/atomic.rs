@@ -1,6 +1,7 @@
 //! Pure host calls and function annotations share predicate-aware checking.
 //! All callback work returns to the same explicit request engine.
 use crate::builtins::{self, Ask, Fault};
+use crate::graph::Effects;
 use crate::model::{
     Atomic, Evaluator, Function, Hash, HelixError, NodeId, Operation, Request, Scope, Value,
     string as s,
@@ -114,7 +115,7 @@ impl Evaluator {
             return Ok(());
         }
         let result = found.pop().expect("a result slot");
-        let pure = pure && self.provably_pure(&function);
+        let pure = pure && self.graph().effects(function.node, &|node| self.program.modules.root_of(node)) == Effects::None;
         self.finish(builtins::function_type(found, result, pure));
         Ok(())
     }

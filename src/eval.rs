@@ -14,7 +14,6 @@ mod forms;
 mod iteration;
 mod lexical;
 mod preflight;
-mod purity;
 
 use crate::model::Limits;
 use crate::model::{Outcome, Vm};

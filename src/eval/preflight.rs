@@ -14,10 +14,9 @@
 //! so their result does not depend on any call. Open regions run when the call happens and record
 //! what they read. Imported modules are not scanned. Evaluation memoizes each root-level region's
 //! result for the run; a body region is recomputed by each call.
-use super::lexical::Site;
 use super::Evaluator;
 use crate::builtins::{self, Evaluation, Form};
-use crate::graph::{NodeId, Syntax, ROOT};
+use crate::graph::{NodeId, Site, Syntax, ROOT};
 use std::collections::HashSet;
 
 impl Evaluator {
@@ -122,7 +121,7 @@ impl Evaluator {
             // `Err` for a parameter of a function outside the region, else the binding it reads.
             let mention = |from: NodeId, name: &str| -> Result<Option<NodeId>, ()> {
                 let head = name.split('.').next().unwrap_or(name);
-                match self.lexical_site(from, head) {
+                match self.graph().lexical_site(from, head) {
                     Some(Site::Parameter(function, _)) if !inside(function) => Err(()),
                     Some(Site::Entry(target)) => Ok(Some(target)),
                     _ => Ok(None),

@@ -1,9 +1,9 @@
 //! Parameter declarations and lexical environments, including free-binding discovery.
 use crate::graph::ROOT;
 use crate::model::{
-    Binding, Evaluator, Function, HelixError, Kind, NodeId, Request, Scope, Value, string as s,
+    Binding, Evaluator, Function, HelixError, NodeId, Request, Scope, Value, string as s,
 };
-use crate::graph::Syntax;
+use crate::graph::{Site, Syntax};
 use std::collections::HashSet;
 
 /// A lexical binding plus members that require its computed value.
@@ -114,11 +114,6 @@ impl Function {
         found
     }
 }
-/// Where a lexical name is declared.
-pub(super) enum Site {
-    Entry(NodeId),
-    Parameter(NodeId, usize),
-}
 impl Evaluator {
     pub fn check_nodes(&self) -> Vec<NodeId> {
         let mut pending = vec![ROOT];
@@ -139,41 +134,7 @@ impl Evaluator {
         &self,
         function: &Function,
     ) -> Result<Vec<(String, Option<NodeId>)>, HelixError> {
-        let graph = &function.program.graph;
-        let id = function.node;
-        let Some(items) = graph.call(id) else {
-            unreachable!()
-        };
-        if !matches!(items.len(), 3 | 4) {
-            return Err(graph.error(
-                id,
-                "arity",
-                format!(
-                    "`fn` takes 2 to 3 arguments, got {}",
-                    items.len().saturating_sub(1)
-                ),
-            ));
-        }
-        let malformed = || {
-            graph.error(
-                items[1],
-                "type",
-                "parameters must be a list of names or `[name, type]` pairs".into(),
-            )
-        };
-        let Kind::Seq(params) = graph.kind(items[1]) else {
-            return Err(malformed());
-        };
-        params
-            .iter()
-            .map(|&p| match graph.kind(p) {
-                Kind::Seq(pair) if pair.len() == 2 => Ok((
-                    graph.identifier(pair[0]).ok_or_else(malformed)?.into(),
-                    Some(pair[1]),
-                )),
-                _ => Ok((graph.identifier(p).ok_or_else(malformed)?.into(), None)),
-            })
-            .collect()
+        function.program.graph.parameters(function.node)
     }
     pub(super) fn capture_environment(&self, node: NodeId) -> Vec<Scope> {
         let mut ancestors = HashSet::new();
@@ -232,7 +193,7 @@ impl Evaluator {
         Some((Resolution { binding, members: Vec::new() }, frame))
     }
     fn resolve_name(&self, from: NodeId, name: &str) -> Option<(Binding, Option<(NodeId, usize)>)> {
-        Some(match self.lexical_site(from, name)? {
+        Some(match self.graph().lexical_site(from, name)? {
             Site::Entry(node) => (Binding::Node(node), None),
             Site::Parameter(function, index) => {
                 let frame = self.environment.iter().rev().find(|f| f.function == function)?;
@@ -240,59 +201,9 @@ impl Evaluator {
             }
         })
     }
-    /// The innermost lexical declaration of `name` visible from `from`, independent of any frame.
-    pub(super) fn lexical_site(&self, from: NodeId, name: &str) -> Option<Site> {
-        let entry = |entries: &[(String, NodeId)]| {
-            entries.iter().find(|(k, _)| k == name).map(|(_, id)| Site::Entry(*id))
-        };
-        let mut child = from;
-        while let Some(id) = self.graph().lexical_parent(child) {
-            let found = match self.graph().syntax(id) {
-                Syntax::Mapping(entries) => entry(entries),
-                Syntax::Call(items) if items.get(2) == Some(&child) => {
-                    match (self.graph().form(id), self.graph().kind(items[1])) {
-                        (Some("fn"), _) => {
-                            let function = Function {
-                                program: self.program.clone(),
-                                node: id,
-                                environment: Vec::new(),
-                            };
-                            self.parameters(&function)
-                                .ok()
-                                .and_then(|p| p.iter().position(|(n, _)| n == name))
-                                .map(|index| Site::Parameter(id, index))
-                        }
-                        (Some("let" | "closure"), Kind::Map(entries)) => entry(entries),
-                        _ => None,
-                    }
-                }
-                _ => None,
-            };
-            if found.is_some() {
-                return found;
-            }
-            child = id;
-        }
-        None
-    }
-    /// The declaration node a possibly dotted lexical name denotes, following keys through maps
-    /// and imported modules; `None` for parameters and unresolved names.
+    /// `Graph::named_node` through the modules the program links.
     pub(super) fn named_node(&self, from: NodeId, name: &str) -> Option<NodeId> {
-        let (head, rest) = match name.split_once('.') {
-            Some((head, rest)) => (head, Some(rest)),
-            None => (name, None),
-        };
-        let Some(Site::Entry(mut node)) = self.lexical_site(from, head) else {
-            return None;
-        };
-        for part in rest.into_iter().flat_map(|rest| rest.split('.')) {
-            node = self.program.modules.root_of(node).unwrap_or(node);
-            let Syntax::Mapping(entries) = self.graph().syntax(node) else {
-                return None;
-            };
-            node = entries.iter().find(|(key, _)| key == part)?.1;
-        }
-        Some(node)
+        self.graph().named_node(from, name, &|node| self.program.modules.root_of(node).unwrap_or(node))
     }
     pub(super) fn in_function(&self, id: NodeId) -> bool {
         let mut node = self.graph().parent(id);
