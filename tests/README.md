@@ -240,7 +240,7 @@ Memory and compiled-mutation artifacts use unique per-run directories. Their roo
 Immutable execution profiles record run/step/checkpoint allocation counts and timings in `runtime/execution-profile.log`. Ordinary-data roots must remain emission fixpoints, including scalars and empty containers. Function and machine values use named object graphs and are checked through inspection and execution contracts rather than source reconstruction.
 
 Daily tooling contracts are grouped into `static` (non-executing diagnostics,
-source-format equivalence/idempotence, schema and LSP framing), `interactive`
+source-format equivalence/idempotence, schema, LSP framing and local manual navigation), `interactive`
 (REPL, transitive/missing import watch changes, completions, local Cargo install),
 and `inspection` (bounded stepping, trace parity and observational saved-state
 validation). Their source witnesses live in `tests/cases/`; subprocess artifacts
@@ -250,7 +250,9 @@ also checks every production YAML module in `std/` and `tooling/`, retaining
 reports in `runtime/static/`. Diagnostics fail the gate; `unchecked` obligations
 remain visible and do not claim proven correctness. Structural controls cover optional
 fields, unknown siblings/keys, literal data and secret handles; bounded annotation
-controls cover long aliases, cycles and expanded descriptor limits.
+controls cover long aliases, cycles and expanded descriptor limits. Local navigation
+checks cover root Markdown manuals and this guide, including heading fragments
+and legacy anchors; fixtures verify missing-file and missing-anchor detection.
 
 Resource regressions grow function and machine capture graphs from shallow source until an enforced limit. They must emit structured errors and exit cleanly when releasing the retained graph. Public execution tests also release captured graphs on a small-stack thread and through thread-local teardown, preserving retained machine versions.
 

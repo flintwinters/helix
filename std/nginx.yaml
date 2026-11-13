@@ -1,5 +1,5 @@
 # One local Debian nginx workload. Host commands supply mechanisms, not plans.
-# Embedded because provider pure regions deliberately reject file imports.
+# Embedded as the standard-library entrypoint for the scoped workload.
 # Keep the public surface to operations and their two input schemas.
 $call:
 - let

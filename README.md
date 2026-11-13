@@ -7,19 +7,6 @@ state.
 
 Today machines can run, pause between explicit transitions, and branch immutably in memory. Disk save/restore and the reversibility promise are not implemented.
 
-External operations use explicit effect requests. A host authorizes and resolves
-each request; pending requests and completed outcomes remain visible in VM state.
-The `perform` command supplies file, process, environment, stream, HTTP, clock and
-randomness adapters with caller-selected grants. See `helix perform --help` for
-the capability flags. Ordinary `run` yields at an effect without executing it.
-Host events can interrupt and resume in-memory machines through the public VM API.
-These APIs do not restore continuations from emitted YAML.
-
-Long-running local commands have caller-selected time and output budgets, optional
-metadata progress, Unix process-group cancellation, and bounded retries for explicitly
-classified exit codes. Discover the policy with `./manage.py runtime perform -- --help`;
-see [command operation semantics and limits](LANGUAGE.md#bounded-command-operations).
-
 ## Try it
 
 You need Rust with Cargo (2024 edition support) and Python 3.10+.
@@ -107,8 +94,11 @@ runtime never guesses legacy syntax. JSON/YAML formatting tools may change
 quoting, flow/block style or mapping presentation order without changing meaning.
 Acyclic aliases and standard YAML tags are supported. Cyclic aliases, custom tags and non-string mapping keys remain unsupported.
 
-See the [language reference](LANGUAGE.md) for syntax, builtins, types, imports,
-and recovery.
+Choose the reference for the contract you need:
+
+- [Core language](LANGUAGE.md): syntax, evaluation, types, imports and recovery.
+- [Standard libraries](LIBRARY.md): module exports, collection helpers, testing and data formats.
+- [Host operations](HOST.md): inventory, reviewed resource application, effects and grants.
 
 ## Immutable execution
 
@@ -121,12 +111,28 @@ Functions retain direct code and lexical environments. Calls, iterations,
 refinements, pure phases, resource budgets and cleanup are explicit machine state.
 Function/machine pipeline results retain both their value projection and object table.
 
+## Host operations
+
+External operations use explicit effect requests. A host authorizes and resolves
+each request; pending requests and completed outcomes remain visible in VM state.
+The `perform` command supplies file, process, environment, stream, HTTP, clock and
+randomness adapters with caller-selected grants. See `helix perform --help` for
+the capability flags. Ordinary `run` yields at an effect without executing it.
+Host events can interrupt and resume in-memory machines through the public VM API.
+These APIs do not restore continuations from emitted YAML.
+
+Long-running local commands have caller-selected time and output budgets, optional
+metadata progress, Unix process-group cancellation, and bounded retries for explicitly
+classified exit codes. Discover the policy with `./manage.py runtime perform -- --help`;
+see [command operation semantics and limits](HOST.md#bounded-command-operations).
+
 ## Status
 
 The longer-term aim is declarative machine configuration: describe and validate
 a machine with types, then apply changes in a separate step. The pure type/class
-algebra exists; applying machine changes does not. The [charter](CHARTER.md)
-tracks that work and the suspend/resume design.
+algebra and a scoped Docker nginx workload support reviewed application and fresh
+reconciliation. General machine application remains future work. The
+[charter](CHARTER.md) tracks that work and the suspend/resume design.
 
 The language, Rust API, and saved-state format are experimental and may change.
 Saved states have no format version or migration support yet. Keep source and

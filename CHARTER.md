@@ -505,7 +505,7 @@ Implement Helix's own language services and development workflows in Helix. The 
   - [x] Stable comparator sort (`sort_by`) extracted from the work-queue example, plus first-occurrence deduplication (`unique`), in `std:list`; covered by `std_list_algorithms` and `dogfood_work_queue`. Both use quadratic scans/copying and runtime iteration limits; intended for small inputs.
   - [x] `std:list` access/slicing, enumerate/zip, one-level flatten/flat-map, short-circuit searches, quantifiers, count/partition, grouping/frequencies and default sorting; contracts and boundary cases live in `std_list_helpers`.
   - [x] Shallow right-biased merge and single-key removal in `std:map`, covered by `std_map`: stable key order, missing/null distinction, nested replacement, empty and Unicode keys, and checked arguments. Immutable copies can cost quadratic time/allocations; runtime iteration limits apply.
-  - [x] Literal splitting and joining in `std:text`, covered by `std_text`: Unicode, empty fields, separator policy and argument contracts; copying costs and iteration limits are documented in `LANGUAGE.md`.
+  - [x] Literal splitting and joining in `std:text`, covered by `std_text`: Unicode, empty fields, separator policy and argument contracts; copying costs and iteration limits are documented in `LIBRARY.md`.
 - [x] Configuration diff, dependency ordering and validation reports as reusable Helix modules, extracted from the existing dogfooding cases. Their policies and error recovery belong in Helix; primitive lookup, equality and structured error attribution remain runtime services.
   - [x] Shallow configuration comparison in `std:diff.compare`, extracted into the authoritative module used by `dogfood_config_diff`; `std_diff` covers ordering, missing/null distinctions, nested values and invalid inputs.
   - [x] Indexed batch validation in `std:validation.batch` reuses `std:test` report policy and retains inputs and original errors; `std_validation` covers continuation and boundary contracts, and `dogfood_errors` uses it for YAML row validation.
@@ -653,7 +653,7 @@ workflow or SSH support.
     selection, empty inputs and invalid-input diagnostics.
     Validation includes unselected hosts and empty inventories; failures return
     no targets. The [runnable example](tests/programs/host_inventory.yaml) and
-    [inventory contract](LANGUAGE.md#host-inventory) document the versioned schema,
+    [inventory contract](HOST.md#host-inventory) document the versioned schema,
     first-error reporting and bounded in-memory support. Connection descriptions
     confer no authority; discovery, SSH adapters and resource application remain
     separate milestones below.
@@ -685,7 +685,7 @@ workflow or SSH support.
     Independent host-state assertions cover preservation of unmanaged
     files, mutation followed by failure and unmet postconditions. See the
     [runnable example](tests/programs/provider_contract.yaml) and
-    [provider contract](LANGUAGE.md#resource-provider-contract). Callbacks are
+    [provider contract](HOST.md#resource-provider-contract). Callbacks are
     trusted provider implementations, capabilities remain caller grants, and
     revision identity is author-declared. Pure phases admit loader-authorized linked
     file modules; locking, durable recovery and production resource providers
@@ -707,7 +707,7 @@ workflow or SSH support.
       classification and rejection of non-boolean or effectful guards.
       Predicates are pure and boolean-checked; verification requires a fresh
       satisfied guard. See the [example](tests/programs/command_provider.yaml)
-      and [contract](LANGUAGE.md#guarded-command-resources). Preview describes
+      and [contract](HOST.md#guarded-command-resources). Preview describes
       proposed execution, not predicted content changes. SSH, secret redaction,
       locking, rollback and durable recovery remain separate obligations.
 - [x] Compose resources and reusable configurations without a second execution model
@@ -723,7 +723,7 @@ workflow or SSH support.
     run once after resources and require successful prerequisites and notifiers.
     The [typed module example](tests/programs/resource_composition.yaml) includes
     relocatable, vendored dependencies with explicit provenance. See the
-    [composition contract](LANGUAGE.md#resource-composition) for sequential ordering,
+    [composition contract](HOST.md#resource-composition) for sequential ordering,
     resource-only handler prerequisites and partial-failure reports. Real service
     providers, durable recovery and rollback remain separate milestones.
 
@@ -749,7 +749,7 @@ workflow or SSH support.
     Unix process groups provide local cleanup, not rollback or containment of
     deliberately detached descendants. SIGKILL/controller crashes and uncertain
     remote mutations remain obligations of connection adapters and durable recovery.
-    See [bounded command operations](LANGUAGE.md#bounded-command-operations) for
+    See [bounded command operations](HOST.md#bounded-command-operations) for
     supported semantics and limits; this does not complete resource providers or
     qualify a real Ansible workload.
 - [ ] Recover safely from partial application, building on section 2's durable snapshots
@@ -899,8 +899,27 @@ The audit must produce decisions and executable examples, not just an inventory.
   fragment. Known field mistakes must fail before orchestration runs; unknown
   callbacks remain unchecked and Python retains independent host/report validation.
   This evidence does not complete the remaining builtin/library ownership audit.
-- [ ] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
-- [ ] Separate the core language reference from library catalogs and host-operation manuals, retaining discoverable links and one authoritative description per contract. A basic program should not require learning provider lifecycles or command retry policy.
+- [x] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
+  The tested arithmetic example exposes nested call wrappers, but ordinary named
+  intermediates suffice. Production `tooling/test_policy.yaml` already names the
+  rerun selection stages and processed report results; this preserves catalog
+  order and avoids lexical self-shadowing. Callback nesting and differing
+  `map`/`std:list.flat_map` argument order remain reading costs, not evidence for
+  another syntax. `nginx_planning` names configuration and observations; the
+  workload's `emit` callback confines eager-list effect sequencing. Separate
+  resolve/plan/apply calls preserve review freshness and authority boundaries.
+  Existing bindings and callbacks cover these cases; no syntax expansion is
+  justified. Golden planning, policy harness and static mutation checks retain
+  the executable evidence.
+- [x] Separate the core language reference from library catalogs and host-operation manuals, retaining discoverable links and one authoritative description per contract. A basic program should not require learning provider lifecycles or command retry policy.
+
+Core semantics now live in `LANGUAGE.md`, library contracts in `LIBRARY.md`
+and host-operation contracts in `HOST.md`. README starts with the runnable
+arithmetic example and links all three references; old language-reference
+anchors redirect to the authoritative sections. The static suite validates local
+manual links and exercises missing-file and missing-anchor failures. Basic source,
+production test-policy callbacks and reviewed nginx application have distinct
+navigation paths without duplicate contract descriptions.
 
 ### Evidence that consolidation helped
 

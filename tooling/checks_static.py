@@ -4,9 +4,12 @@ import subprocess
 
 import yaml
 
+from tooling import checks_docs
+
 
 def check(ctx):
     try:
+        checks_docs.verify(ctx)
         verify_checks(ctx)
         verify_bodies(ctx)
         verify_policy_result_fields(ctx)
