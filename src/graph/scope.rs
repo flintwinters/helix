@@ -74,15 +74,22 @@ impl Graph {
         None
     }
 
+    /// Select the lexical base without evaluating member access. An exact name anywhere
+    /// in the lexical chain wins before a dotted root, even a nearer root declaration.
+    /// The suffix borrows the requested name and is absent for an exact binding.
+    pub(crate) fn lexical_base<'n>(&self, from: NodeId, name: &'n str) -> Option<(Site, Option<&'n str>)> {
+        if let Some(site) = self.lexical_site(from, name) {
+            return Some((site, None));
+        }
+        let (head, rest) = name.split_once('.')?;
+        self.lexical_site(from, head).map(|site| (site, Some(rest)))
+    }
+
     /// The declaration node a possibly dotted lexical name denotes, following keys through maps;
     /// `module` maps an import to the root of the module it links, the identity when nothing links.
     /// `None` for parameters and unresolved names.
     pub(crate) fn named_node(&self, from: NodeId, name: &str, module: &dyn Fn(NodeId) -> NodeId) -> Option<NodeId> {
-        let (head, rest) = match name.split_once('.') {
-            Some((head, rest)) => (head, Some(rest)),
-            None => (name, None),
-        };
-        let Some(Site::Entry(mut node)) = self.lexical_site(from, head) else {
+        let Some((Site::Entry(mut node), rest)) = self.lexical_base(from, name) else {
             return None;
         };
         for part in rest.into_iter().flat_map(|rest| rest.split('.')) {

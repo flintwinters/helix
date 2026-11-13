@@ -13,6 +13,7 @@ def state(h, command, source):
 
 
 def verify(h):
+    verify_dotted_bindings(h)
     from tests.suites.phase_input_identity import verify as verify_input_identity
     verify_input_identity(h)
     verify_computed_heads(h)
@@ -64,6 +65,62 @@ def verify(h):
         assert result["root"]["area"] == 12 and result["root"]["runtime_after"] == 42
     verify_linked_phases(h)
     print("type_time: run/check parity, nested phases, linked source, effect isolation and bounded evaluation")
+
+
+def verify_dotted_bindings(h):
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    def ref(name):
+        return {'$ref': name}
+
+    pure = call('fn', [], None, 'null')
+    effectful = call('fn', [], call('effect', 'time', None), 'null')
+    pure_type = call('pure_function_of', [], 'null')
+    for exact, namespace, expected in ((effectful, pure, False), (pure, effectful, True)):
+        source = call('let', {'api.run': exact, 'api': {'run': namespace}},
+                      call('is', call('fn', [], call('api.run'), 'null'), pure_type))
+        result = state(h, 'run', json.dumps(source))
+        assert result['status'] == 'finished' and result['root'] is expected, result
+        assert not result.get('effects') and 'pending_effect' not in result, result
+
+    # Only the selected exact callee contributes closed regions to preflight.
+    # An earlier effect distinguishes preflight failure from later invocation.
+    closed_failure = call('fn', [], call('type_time', call('div', 1, 0)))
+    for exact, namespace, rejected in ((closed_failure, pure, True), (pure, closed_failure, False)):
+        source = call('let', {'api.run': exact, 'api': {'run': namespace}},
+                      call('list', call('effect', 'time', None), call('api.run')))
+        result = state(h, 'run', json.dumps(source))
+        if rejected:
+            assert result['status'] == 'error' and result['error']['kind'] == 'divide_by_zero', result
+            assert result['error']['phase'] == 'type' and 'pending_effect' not in result, result
+            assert not result.get('effects'), result
+        else:
+            assert result['status'] == 'signaled' and result['pending_effect']['operation'] == 'time', result
+
+    for annotation, namespace, expected in ((call('function_of', [], 'null'), pure, False),
+                                             (pure_type, effectful, True)):
+        function = call('fn', [['api.run', annotation]], call('api.run'), 'null')
+        source = call('let', {'api': {'run': namespace}},
+                      call('is', function, call('pure_function_of', [annotation], 'null')))
+        result = state(h, 'run', json.dumps(source))
+        assert result['status'] == 'finished' and result['root'] is expected, result
+    function = call('fn', [['callback', pure_type]], call('callback.member'), 'null')
+    result = state(h, 'run', json.dumps(call('is', function, call('pure_function_of', [pure_type], 'null'))))
+    assert result['status'] == 'finished' and result['root'] is False, result
+
+    increment = call('fn', ['n'], call('add', ref('n'), 1))
+    for parameter, namespace, argument, region, expected in (
+        ('api.value', {'value': 13}, 42, ref('api.value'), 42),
+        ('api.run', {'run': call('fn', ['n'], 'namespace')}, increment, call('api.run', 42), 43),
+    ):
+        source = call('let', {'api': namespace, 'invoke': call('fn', [parameter], call('type_time', region))},
+                      call('invoke', argument))
+        for command in ('run', 'check'):
+            result = state(h, command, json.dumps(source))
+            assert result['status'] == 'finished' and result['root'] == expected, result
+            reads = [read['name'] for region in result['type_time_inputs'] for read in region['reads']]
+            assert reads == [parameter], result
 
 
 def verify_computed_heads(h):

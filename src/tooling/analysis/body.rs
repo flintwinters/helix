@@ -176,9 +176,10 @@ impl Checker<'_> {
     /// A call of a function the source declares, or of a parameter typed as a function.
     fn infer_user_call(&mut self, id: NodeId, items: &[NodeId]) -> Option<Ty> {
         let name = self.graph.identifier(items[0])?;
-        let callee = match self.graph.lexical_site(items[0], name.split('.').next()?)? {
-            Site::Parameter(function, index) => self.parameter_type(function, index)?,
-            Site::Entry(_) => {
+        let callee = match self.graph.lexical_base(items[0], name)? {
+            (Site::Parameter(function, index), None) => self.parameter_type(function, index)?,
+            (Site::Parameter(..), Some(_)) => return None,
+            (Site::Entry(_), _) => {
                 let target = self.graph.named_node(items[0], name, &|node| node)?;
                 self.function_type_of(target)?
             }

@@ -229,6 +229,12 @@ answer: {$call: [math.square, 6]}
 
 Dotted references select map members (`helpers.constant`, `helpers.nested.function`); an exact lexical binding containing dots takes precedence. Use imported functions as call heads or iteration callbacks, such as `{$call: [map, {$ref: math.square}, [1, 2, 3]]}`. Missing members in argument position are `unbound` errors; an unresolved call actor is an `unbound` error. Module errors include `file`; their `path`, `line`, and `column` refer to that file.
 
+Exact-name precedence searches the entire lexical chain before trying a namespace
+base, including for parameter names containing dots. Static call checking, purity
+analysis and preflight discovery use this same precedence. A function annotation
+on a parameter describes the parameter itself, not a member selected from it;
+such member calls remain unproved by these analyses.
+
 Member lookup traverses ordinary source maps lazily, without evaluating unrelated
 fields. When an intermediate binding computes a map, the ordinary evaluator
 evaluates that expression before selecting the remaining members. A module can

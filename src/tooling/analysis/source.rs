@@ -1,6 +1,6 @@
 //! Non-executing source tools. These passes never link files or construct an evaluator.
 use super::body;
-use crate::graph::{Graph, Kind, NodeId, ROOT};
+use crate::graph::{Graph, Kind, ROOT};
 use yaml_rust2::Yaml;
 
 /// The schema covers YAML's data shape; expression semantics belong to the checker.
@@ -22,14 +22,6 @@ pub(super) fn diagnostics(source: &str) -> Vec<Yaml> {
     analyze(source).0
 }
 
-/// Prove only that a lexical starting point exists. Runtime lookup tries an exact
-/// dotted binding before projecting members; member lookup may require evaluation
-/// or linked imports, neither of which belongs to this source-only pass.
-fn declared(graph: &Graph, from: NodeId, name: &str) -> bool {
-    graph.lexical_site(from, name).is_some()
-        || name.split_once('.').is_some_and(|(head, _)| graph.lexical_site(from, head).is_some())
-}
-
 /// Definite failures, then obligations the static fragment could not settle.
 fn analyze(source: &str) -> (Vec<Yaml>, Vec<Yaml>) {
     let graph = match Graph::parse(source) {
@@ -43,7 +35,7 @@ fn analyze(source: &str) -> (Vec<Yaml>, Vec<Yaml>) {
             crate::graph::Syntax::Call(items) => {
                 let actor = graph.form(id);
                 if let Some(name) = actor {
-                    if crate::builtins::arity(name).is_none() && !declared(&graph, id, name) {
+                    if crate::builtins::arity(name).is_none() && graph.lexical_base(id, name).is_none() {
                         errors.push(graph.error(items[0], "unbound", format!("unbound actor `{name}`"))
                             .to_value().plain_yaml().unwrap());
                     }
@@ -95,7 +87,7 @@ fn analyze(source: &str) -> (Vec<Yaml>, Vec<Yaml>) {
             }
             crate::graph::Syntax::Sequence(items) => pending.extend(items.iter().rev()),
             crate::graph::Syntax::Reference(name)
-                if !crate::builtins::is_primitive(name) && !declared(&graph, id, name) =>
+                if !crate::builtins::is_primitive(name) && graph.lexical_base(id, name).is_none() =>
             {
                 errors.push(graph.error(id, "unbound", format!("unbound symbol `{name}`"))
                     .to_value().plain_yaml().unwrap());

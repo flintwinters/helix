@@ -125,10 +125,9 @@ impl Evaluator {
             }
             // `Err` for a parameter of a function outside the region, else the binding it reads.
             let mention = |from: NodeId, name: &str| -> Result<Option<NodeId>, ()> {
-                let head = name.split('.').next().unwrap_or(name);
-                match self.graph().lexical_site(from, head) {
-                    Some(Site::Parameter(function, _)) if !inside(function) => Err(()),
-                    Some(Site::Entry(target)) => Ok(Some(target)),
+                match self.graph().lexical_base(from, name) {
+                    Some((Site::Parameter(function, _), _)) if !inside(function) => Err(()),
+                    Some((Site::Entry(target), _)) => Ok(Some(target)),
                     _ => Ok(None),
                 }
             };

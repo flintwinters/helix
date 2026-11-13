@@ -105,10 +105,10 @@ impl Graph {
                 None => return false,
             },
         };
-        let head = name.split('.').next().unwrap_or(name);
-        match self.lexical_site(callee, head) {
-            Some(Site::Parameter(function, index)) => self.promises_pure(function, index, module),
-            Some(Site::Entry(_)) => match self.named_node(callee, name, module) {
+        match self.lexical_base(callee, name) {
+            Some((Site::Parameter(function, index), None)) => self.promises_pure(function, index, module),
+            Some((Site::Parameter(..), Some(_))) => false,
+            Some((Site::Entry(_), _)) => match self.named_node(callee, name, module) {
                 Some(target) => {
                     pending.push((target, true));
                     // A computed binding may return a function whose body is not evaluated

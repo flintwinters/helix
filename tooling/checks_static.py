@@ -14,6 +14,7 @@ def check(ctx):
         verify_bodies(ctx)
         verify_policy_result_fields(ctx)
         verify_name_resolution(ctx)
+        verify_dotted_bindings(ctx)
         verify_record_boundaries(ctx)
         verify_annotation_bounds(ctx)
         verify_numeric_enum_overlap(ctx)
@@ -220,6 +221,40 @@ def verify_name_resolution(ctx):
         code, report = static_report(ctx, json.dumps(source))
         assert code == 1 and any(item['kind'] == 'unbound' and item['path'] == path
                                  for item in report['diagnostics']), report
+
+
+def verify_dotted_bindings(ctx):
+    """Exact dotted names win before namespace splitting in callable analysis."""
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    integer = call('fn', [['n', 'integer']], call('add', {'$ref': 'n'}, 1), 'integer')
+    text = call('fn', [['n', 'integer']], 'namespace', 'string')
+    bindings = {'api.run': integer, 'api': {'run': text}}
+    for nested in (False, True):
+        for annotation, valid in (('integer', True), ('string', False)):
+            body = call('let', {'produce': call('fn', [], call('api.run', 42), annotation)}, call('produce'))
+            source = call('let', bindings, call('let', {'api': {'run': text}}, body) if nested else body)
+            code, report = static_report(ctx, json.dumps(source))
+            if valid:
+                assert code == 0 and report['diagnostics'] == [], (nested, report)
+                process = ctx.helix('run', '-', stdin=json.dumps(source))
+                assert process.returncode == 0 and yaml.safe_load(process.stdout)['root'] == 43, process
+            else:
+                assert code == 1 and any(item['kind'] == 'type' for item in report['diagnostics']), (nested, report)
+
+    signature = call('function_of', ['integer'], 'integer')
+    function = call('fn', [['api.run', signature]], call('api.run', 42), 'integer')
+    source = call('let', {'api': {'run': text}, 'invoke': function}, call('invoke', integer))
+    code, report = static_report(ctx, json.dumps(source))
+    assert code == 0 and report['diagnostics'] == [], report
+    process = ctx.helix('run', '-', stdin=json.dumps(source))
+    assert process.returncode == 0 and yaml.safe_load(process.stdout)['root'] == 43, process
+
+    # A signature on the root parameter says nothing about an accessed member.
+    source = call('fn', [['callback', signature]], call('callback.member', 'unknown member input'), 'string')
+    code, report = static_report(ctx, json.dumps(source))
+    assert code == 0 and report['diagnostics'] == [] and report['unchecked'], report
 
 
 def verify_record_boundaries(ctx):
