@@ -6,6 +6,8 @@ import statistics
 import subprocess
 import tempfile
 import time
+from dataclasses import replace
+from itertools import chain
 from pathlib import Path
 
 import yaml
@@ -165,13 +167,39 @@ def history_comparison(base, environment, name, source_hash, samples):
             "baseline_seconds": baseline, "change_percent": (current / baseline - 1) * 100}
 
 
+def golden_host_workloads(h):
+    """Fixed observations exercise the production host boundary, not a proxy API."""
+    output = (h.root / 'tests/cases/provider_contract.expected.yaml').read_text()
+    assert yaml.safe_load(output)['status'] == 'finished', 'golden speed fixture must finish'
+    root = h.root_section(output)
+    assert root is not None, 'golden speed fixture must support ordinary-data replay'
+    process = {'returncode': 0, 'stdout': output, 'stderr': ''}
+    for phase in ('before-replay', 'after-replay'):
+        observation = {'run': process, 'repeated': dict(process), 'expected': output,
+                       'bless': False, 'root': root,
+                       'replay': None if phase == 'before-replay' else {'returncode': 0, 'root': root}}
+        expected = {'stage': 'passed', 'bless': False, 'replay': phase == 'before-replay'}
+        yield f'golden-host-{phase}', json.dumps(observation, ensure_ascii=False), expected, 1
+    output = (h.root / 'tests/cases/dogfood_testing.expected.yaml').read_text()
+    assert yaml.safe_load(output)['status'] == 'finished' and h.root_section(output) is None
+    process = {'returncode': 0, 'stdout': output, 'stderr': ''}
+    observation = {'run': process, 'repeated': dict(process), 'expected': output,
+                   'bless': False, 'root': None, 'replay': None}
+    yield 'golden-host-object-inspection', json.dumps(observation, ensure_ascii=False), {
+        'stage': 'passed', 'bless': False, 'replay': False}, 1
+
+
 def verify(h):
+    from tooling.test_runner import GoldenPolicyError
+
     base = h.root / "runtime" / "speed"
     base.mkdir(parents=True, exist_ok=True)
     verify_comparison(base)
     artifact = Path(tempfile.mkdtemp(dir=base, prefix="run-"))
     policy_source = (h.root / "tooling" / "test_policy.yaml").read_bytes()
     (artifact / "test_policy.source.yaml").write_bytes(policy_source)
+    host_source = (h.root / 'tooling/test_runner.py').read_bytes()
+    (artifact / 'test_runner.source.py').write_bytes(host_source)
     report = {
         "schema_version": 2,
         "environment": {"platform": platform.platform(), "machine": platform.machine(),
@@ -180,7 +208,9 @@ def verify(h):
         # File imports are mutable independently of the executable. Preserve their
         # provenance without excluding implementation changes from comparisons.
         "imported_sources": {"tooling/test_policy.yaml": {
-            "sha256": hashlib.sha256(policy_source).hexdigest(), "artifact": "test_policy.source.yaml"}},
+            "sha256": hashlib.sha256(policy_source).hexdigest(), "artifact": "test_policy.source.yaml"},
+            "tooling/test_runner.py": {"sha256": hashlib.sha256(host_source).hexdigest(),
+                                       "artifact": "test_runner.source.py"}},
         "method": {"clock": "perf_counter_ns", "samples": SAMPLES, "warmups": WARMUPS,
                    "scope": "CLI process startup, file loading, evaluation and state emission; excludes build and Python YAML decoding",
                    "policy": "correctness and subprocess timeout are enforced; timings are observations, not portable pass/fail thresholds"},
@@ -192,12 +222,18 @@ def verify(h):
         "profile": "debug", "samples": SAMPLES, "warmups": WARMUPS,
     }
     try:
-        for name, source, expected, operations in workloads():
+        for name, source, expected, operations in chain(workloads(), golden_host_workloads(h)):
+            host_policy = name.startswith('golden-host-')
             program = artifact / f"{name}.yaml"
             program.write_text(source)
+            observation = json.loads(source) if host_policy else None
             samples = []
             measurement = {"workload": name, "baseline_epoch": BASELINE_EPOCHS.get(name, 1),
                            "operations_per_run": operations, "seconds": samples}
+            if host_policy:
+                measurement.update(operation_unit='golden policy decisions',
+                    scope='production host serialization, process startup, policy execution, output decoding and host validation; excludes build and artifact writes',
+                    input_kind='golden_policy observation; replay through TestContext.golden_policy')
             if name in {"types-from-fields-256", "test-policy-report", "test-policy-report-failures"}:
                 measurement["operation_unit"] = "fields" if name == "types-from-fields-256" else "suite observations"
             elif name.startswith("fuzz-plan-"):
@@ -208,11 +244,31 @@ def verify(h):
                 measurement["operation_unit"] = "own field declarations"
             report["measurements"].append(measurement)
             for index in range(WARMUPS + SAMPLES):
+                captured = []
+                def capture(args, **kwargs):
+                    result = h.process_runner(args, **kwargs)
+                    captured.append((kwargs.get('input'), result))
+                    return result
+                context = replace(h, process_runner=capture) if host_policy else None
                 started = time.perf_counter_ns()
-                result = subprocess.run([str(h.binary), "run", str(program)], cwd=h.root,
-                                        capture_output=True, text=True,
-                                        timeout=h.timeout)
+                if host_policy:
+                    try:
+                        decision = context.golden_policy(observation)
+                    except GoldenPolicyError as error:
+                        (artifact / f'{name}.program.yaml').write_text(error.source)
+                        (artifact / f'{name}.state.yaml').write_text(error.result.stdout)
+                        (artifact / f'{name}.stderr').write_text(error.result.stderr)
+                        raise
+                else:
+                    result = subprocess.run([str(h.binary), "run", str(program)], cwd=h.root,
+                                            capture_output=True, text=True,
+                                            timeout=h.timeout)
                 elapsed = (time.perf_counter_ns() - started) / 1e9
+                if host_policy:
+                    assert decision == expected, (name, decision)
+                    assert len(captured) == 1, (name, captured)
+                    emitted, result = captured[0]
+                    (artifact / f'{name}.program.yaml').write_text(emitted)
                 (artifact / f"{name}.state.yaml").write_text(result.stdout)
                 (artifact / f"{name}.stderr").write_text(result.stderr)
                 assert result.returncode == 0, (name, result.returncode, result.stdout, result.stderr)

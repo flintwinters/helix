@@ -328,6 +328,11 @@ Report benchmarks also retain the imported policy source and its hash, since it
 is not embedded in the executable. That implementation fingerprint is provenance,
 not a history filter: policy changes are what these fixed workloads compare.
 Replaying a saved input otherwise uses the current checkout and executable.
+Golden host-boundary benchmarks separately include serialization, policy execution,
+decoding and independent response checks. They cover pre/post replay of the
+`provider_contract` result and non-replayable `dogfood_testing` inspection output.
+Each row declares its timing scope; raw observations and the generated `.program.yaml`
+are retained separately, alongside a snapshot of the host bridge implementation.
 Reports flag `SLOWDOWN` when median time exceeds the earliest five compatible runs
 by more than 20% and three median absolute deviations of observed noise. Matching
 host/environment, sampling settings and workload source keep comparisons relevant;
