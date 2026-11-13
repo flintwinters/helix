@@ -1,3 +1,336 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - optional_fields
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - optional_fields
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields:
+        count:
+          of: integer
+          type: optional
+        enabled:
+          default: true
+          of: boolean
+          type: default
+        name:
+          of: string
+          type: optional
+        note:
+          of: string
+          type: optional
+      type: record
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - without_field
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:types"
+    kind: parameter
+    target:
+      path:
+        - dropped
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: count
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - without_field
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - without_field
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields:
+        enabled:
+          default: true
+          of: boolean
+          type: default
+        name: string
+        note:
+          of: string
+          type: optional
+      type: record
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - without_field
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:types"
+    kind: parameter
+    target:
+      path:
+        - drop_missing
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: absent
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - without_field
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - without_field
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields:
+        count: integer
+        enabled:
+          default: true
+          of: boolean
+          type: default
+        name: string
+        note:
+          of: string
+          type: optional
+      type: record
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - from_fields
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:types"
+    kind: parameter
+    target:
+      path:
+        - empty
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - from_fields
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - from_fields
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields: {}
+      type: record
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - optional_fields
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - optional_fields
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields: {}
+      type: record
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - optional_fields
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - optional_fields
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields:
+        count:
+          of: integer
+          type: optional
+        enabled:
+          default: true
+          of: boolean
+          type: default
+        name:
+          of: string
+          type: optional
+        note:
+          of: string
+          type: optional
+      type: record
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - from_fields
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:types"
+    kind: parameter
+    target:
+      path:
+        - invalid_spec
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      broken: 42
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - from_fields
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:types"
+    kind: parameter
+    target:
+      path:
+        - rebuilt
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      count: integer
+      enabled:
+        default: true
+        of: boolean
+        type: default
+      name: string
+      note:
+        of: string
+        type: optional
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - from_fields
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - from_fields
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields:
+        count: integer
+        enabled:
+          default: true
+          of: boolean
+          type: default
+        name: string
+        note:
+          of: string
+          type: optional
+      type: record
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - optional_fields
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - optional_fields
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields:
+        x:
+          of: integer
+          type: optional
+        "y":
+          of: integer
+          type: optional
+      type: record
 objects:
   object0:
     bindings: {}

@@ -49,18 +49,22 @@ def verify(h):
 
     invalid = declaration({'x': 'integer'}, {'x': 'wrong'}, [forbidden])
     error = inspect_realization(invalid)
-    assert error['kind'] == 'type' and error['data']['violations'] == [
-        {'at': '/x', 'message': 'expected integer, got string'}], error
+    assert error['kind'] == 'type', error
+    violation, = error['data']['violations']
+    assert violation == {'at': '/x', 'message': 'expected integer, got string',
+                         'expected': 'integer', 'actual': 'wrong', 'actual_present': True, 'rule': 'type'}, error
 
     constraints = [predicate(False), predicate(7),
                    predicate(call('raise', 'constraint_probe', 'third constraint raised'))]
     error = inspect_realization(declaration({}, constraints=constraints))
     violations = error['data']['violations']
-    assert error['kind'] == 'type' and len(violations) == 3, error
-    assert violations[:2] == [
+    assert error['kind'] == 'predicate' and len(violations) == 3, error
+    assert [{key: v[key] for key in ('at', 'message')} for v in violations[:2]] == [
         {'at': '/', 'message': 'constraint 0 of `probe` does not hold'},
         {'at': '/', 'message': 'constraint 1 of `probe` failed to run: returned integer, expected boolean'},
     ], error
+    assert [v['rule'] for v in violations] == ['constraint', 'predicate_error', 'predicate_error'], error
+    assert all(v['actual'] == {} and v['actual_present'] and 'predicate' in v for v in violations), error
     assert violations[2]['at'] == '/' and violations[2]['message'].startswith('constraint 2 of `probe` failed to run:'), error
     assert 'third constraint raised' in violations[2]['message'] and error['message'] == violations[0]['message'], error
 

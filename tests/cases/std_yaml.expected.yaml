@@ -1,3 +1,187 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - dump
+          - "$call"
+          - 3
+        source: "std:yaml"
+    kind: result
+    target:
+      path:
+        - dump
+        - "$call"
+        - 2
+      source: "std:yaml"
+    type: string
+    value: "a:\n  - 1\n  - false\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - valid
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - invalid
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "1\n---\n2"
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - valid
+          - "$call"
+          - 3
+        source: "std:yaml"
+    kind: result
+    target:
+      path:
+        - valid
+        - "$call"
+        - 2
+      source: "std:yaml"
+    type: boolean
+    value: false
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - malformed
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "["
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - parsed
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "a: [add, missing, 1]"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - get_in
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - selected
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value:
+      - a
+      - 0
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - set_in
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - updated
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value:
+      - a
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - set_in
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - set_in
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:yaml"
+    type: list
+    value:
+      - 1
 root:
   dumped: "a:\n  - 1\n  - false\n"
   invalid: false

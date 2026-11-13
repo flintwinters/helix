@@ -12,6 +12,8 @@ def check(ctx):
         checks_docs.verify(ctx)
         verify_checks(ctx)
         verify_bodies(ctx)
+        verify_declarative_annotations(ctx)
+        verify_raw_descriptors(ctx)
         verify_policy_result_fields(ctx)
         verify_string_literals(ctx)
         verify_iteration_callbacks(ctx)
@@ -284,6 +286,41 @@ def verify_string_literals(ctx):
     assert code == 0 and report['diagnostics'] == [] and report['unchecked'], report
 
 
+def verify_raw_descriptors(ctx):
+    """Ordinary descriptor data is checked without evaluating source-looking data."""
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    record = {'type': 'record', 'fields': {'name': 'string'}}
+    for program in (call('expect', {'name': 7}, record),
+                    call('let', {'schema': record}, call('expect', {'name': 7}, {'$ref': 'schema'})),
+                    call('expect', 1, {'$literal': {'type': 'list', 'of': 'integer'}})):
+        code, report = static_report(ctx, json.dumps(program))
+        assert code == 1 and any(row['kind'] == 'type' for row in report['diagnostics']), report
+    for descriptor in ({'type': 'list'}, {'type': 'record', 'fields': {'bad': 3}},
+                       {'$literal': {'type': 'unknown'}}):
+        code, report = static_report(ctx, json.dumps(call('expect', 1, descriptor)))
+        assert code == 1 and any(row['path'] == '/$call/2' and 'invalid type declaration' in row['message']
+                                 for row in report['diagnostics']), report
+    for descriptor in (record, {'$literal': record}):
+        code, report = static_report(ctx, json.dumps(call('expect', {'name': 'valid'}, descriptor)))
+        assert code == 0 and not report['diagnostics'] and not report['unchecked'], report
+
+    hostile = {'$call': ['raise', 'must_not_execute', 'opaque data']}
+    opaque = call('expect', {'$literal': hostile}, {'$literal': {'type': 'literal', 'value': hostile}})
+    code, report = static_report(ctx, json.dumps(opaque))
+    assert code == 0 and not report['diagnostics'] and report['unchecked'], report
+    ran = ctx.helix('run', '-', stdin=json.dumps(opaque))
+    assert ran.returncode == 0 and yaml.safe_load(ran.stdout)['root'] == hostile, ran
+
+    default = {'type': 'record', 'fields': {'value': {'type': 'default', 'of': 'integer', 'default': 'bad'}}}
+    code, report = static_report(ctx, json.dumps(call('expect', {'value': 1}, default)))
+    assert code == 0 and not report['diagnostics'] and any('default' in row['message'] for row in report['unchecked']), report
+    oversized = {'type': 'literal', 'value': 'x' * 1_000_001}
+    code, report = static_report(ctx, json.dumps(call('expect', 'x', {'$literal': oversized})))
+    assert code == 0 and not report['diagnostics'] and report['unchecked'], report
+
+
 def verify_iteration_callbacks(ctx):
     """Callback obligations distinguish known nonempty inputs from possible emptiness."""
     import copy
@@ -370,6 +407,68 @@ def verify_iteration_callbacks(ctx):
     code, report = static_report(ctx, json.dumps(call('map', increment, [1, 'two'])))
     assert code == 0 and report['diagnostics'] == [] and any(
         item['path'] == '/$call/1' for item in report['unchecked']), report
+
+
+def verify_declarative_annotations(ctx):
+    """All written annotation obligations are checked or explicitly unresolved."""
+    from tests.suites.source_contracts import location
+
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    source = {
+        'a': call('expect', 'wrong', 'integer'),
+        'b': call('expect', {'name': 7}, call('record', 'name', 'string')),
+        'c': call('fn', [], False, 'string'),
+        'dynamic_value': call('expect', call('effect', 'time', None), 'integer'),
+        'dynamic_type': call('expect', 1, call('if', True, 'integer', 'string')),
+        'uncalled': call('fn', [['value', call('if', True, 'integer', 'string')]], None),
+    }
+    text = json.dumps(source, indent=2)
+    code, report = static_report(ctx, text)
+    assert code == 1, report
+    expected = {'/a/$call/1', '/b/$call/1/name', '/c/$call/2'}
+    assert {item['path'] for item in report['diagnostics']} == expected, report
+    for item in report['diagnostics']:
+        assert (item['line'], item['column']) == location(text, item['path']), item
+    assert {'/dynamic_value/$call/1', '/dynamic_type/$call/2', '/uncalled/$call/1/0/1'} <= {
+        item['path'] for item in report['unchecked']}, report
+    assert 'root' not in report and 'pending_effect' not in report, report
+
+    for annotation in ('UnknownType', 7, call('list_of', 'UnknownType')):
+        for expression, path in (
+            (call('expect', 1, annotation), '/$call/2'),
+            (call('fn', [['value', annotation]], None), '/$call/1/0/1'),
+            (call('fn', [], None, annotation), '/$call/3'),
+        ):
+            text = json.dumps(expression, indent=2)
+            code, report = static_report(ctx, text)
+            assert code == 1 and any(item['path'] == path and 'invalid type declaration' in item['message']
+                                     for item in report['diagnostics']), report
+            assert not any(item['path'] == path for item in report['unchecked']), report
+            assert all((item['line'], item['column']) == location(text, item['path'])
+                       for item in report['diagnostics']), report
+
+    # An annotation preserves the underlying value type for later obligations.
+    valid = call('fn', [], call('expect', 7, 'integer'), 'integer')
+    code, report = static_report(ctx, json.dumps(valid))
+    assert code == 0 and not report['diagnostics'] and not report['unchecked'], report
+    opaque = {'$literal': call('expect', 'wrong', 'integer')}
+    code, report = static_report(ctx, json.dumps(opaque))
+    assert code == 0 and not report['diagnostics'] and not report['unchecked'], report
+
+    # Reuse production robustness generation, but exercise plain static check.
+    # Neither effects nor a computed annotation may be executed by these checks.
+    damaged = json.dumps(call('fn', [['x', 'integer']],
+        call('expect', call('add', {'$ref': 'x'}, 1), 'integer'), 'integer'))
+    for variant in ctx.mutations(damaged):
+        process = ctx.helix('check', '-', stdin=variant)
+        result = yaml.safe_load(process.stdout)
+        assert process.returncode in (0, 1) and not process.stderr, process
+        assert isinstance(result, dict) and result.get('version') == 1 and result.get('mode') == 'static', process
+        assert isinstance(result.get('diagnostics'), list) and isinstance(result.get('unchecked'), list), result
+        assert result['status'] == ('error' if process.returncode else 'ok'), result
+        assert bool(result['diagnostics']) == bool(process.returncode), result
 
 
 def verify_name_resolution(ctx):
@@ -548,8 +647,8 @@ def verify_annotation_bounds(ctx):
         assert result.returncode == 0 and yaml.safe_load(result.stdout)['root']['answer'] == body, (name, result)
     source = annotated({'Alias': 'integer'}, 'Alias')
     code, report = static_report(ctx, json.dumps(source))
-    assert code == 0 and report['diagnostics'] == [] and any(
-        item['path'] == '/produce/$call/3' for item in report['unchecked']), report
+    assert code == 1 and any(item['path'] == '/produce/$call/3' and
+        'invalid type declaration' in item['message'] for item in report['diagnostics']), report
 
     aliases = {'alias0': 'integer'}
     aliases.update({f'alias{i}': ref(f'alias{i - 1}') for i in range(1, 80)})

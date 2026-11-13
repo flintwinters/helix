@@ -55,20 +55,36 @@ root:
         function_line: 22
         line: 22
         path: "/wrong_type/$call/1/$call/1"
-    column: 24
+    column: 89
     data:
       violations:
-        - argument: t
+        - actual: integer
+          actual_present: true
+          argument: t
+          argument_location:
+            column: 89
+            line: 22
+            path: "/wrong_type/$call/1/$call/2"
+            reference:
+              path:
+                - wrong_type
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+              source: "<root>"
           at: /
+          expected: function
           message: "expected function, got string"
+          rule: type
     kind: type
     line: 22
     message: "1 type violation in the arguments of `/wrong_type/$call/1/$call/1`: expected function, got string"
-    path: "/wrong_type/$call/1/$call/1"
+    path: "/wrong_type/$call/1/$call/2"
     reference:
       - wrong_type
       - "$call"
       - 1
       - "$call"
-      - 1
+      - 2
 status: finished

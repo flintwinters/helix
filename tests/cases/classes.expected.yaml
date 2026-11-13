@@ -325,8 +325,12 @@ root:
     column: 5
     data:
       violations:
-        - at: /hostname
+        - actual: 5
+          actual_present: true
+          at: /hostname
+          expected: string
           message: "expected string, got integer"
+          rule: type
     kind: type
     line: 47
     message: "1 misfit in the values of `bad`: /hostname: expected string, got integer"

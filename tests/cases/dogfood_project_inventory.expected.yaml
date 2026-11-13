@@ -1,3 +1,113 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - validate
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - malformed
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - dependencies:
+          - ghost
+          - 7
+          - ~
+        name: 9
+        owner: false
+      - dependencies: ~
+        name: ok
+        owner: tools
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - validate
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - dependencies: []
+        name: core
+        owner: runtime
+      - dependencies:
+          - core
+        name: cli
+        owner: tools
+      - dependencies:
+          - ghost
+        name: cli
+      - dependencies: []
+        owner: docs
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - validate
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - empty
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - validate
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - valid
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - dependencies: []
+        name: core
+        owner: runtime
+      - dependencies:
+          - core
+        name: cli
+        owner: tools
 objects:
   object0:
     bindings: {}
@@ -288,14 +398,30 @@ objects:
                           - "$ref": malformed
                           - 0
                       - violations
-                  - - at: /dependencies/1
+                  - - actual: 7
+                      actual_present: true
+                      at: /dependencies/1
+                      expected: string
                       message: "expected string, got integer"
-                    - at: /dependencies/2
+                      rule: type
+                    - actual: ~
+                      actual_present: true
+                      at: /dependencies/2
+                      expected: string
                       message: "expected string, got null"
-                    - at: /name
+                      rule: type
+                    - actual: 9
+                      actual_present: true
+                      at: /name
+                      expected: string
                       message: "expected string, got integer"
-                    - at: /owner
+                      rule: type
+                    - actual: false
+                      actual_present: true
+                      at: /owner
+                      expected: string
                       message: "expected string, got boolean"
+                      rule: type
           project:
             "$call":
               - record
@@ -525,21 +651,41 @@ root:
       missing: []
       name: ~
       violations:
-        - at: /dependencies/1
+        - actual: 7
+          actual_present: true
+          at: /dependencies/1
+          expected: string
           message: "expected string, got integer"
-        - at: /dependencies/2
+          rule: type
+        - actual: ~
+          actual_present: true
+          at: /dependencies/2
+          expected: string
           message: "expected string, got null"
-        - at: /name
+          rule: type
+        - actual: 9
+          actual_present: true
+          at: /name
+          expected: string
           message: "expected string, got integer"
-        - at: /owner
+          rule: type
+        - actual: false
+          actual_present: true
+          at: /owner
+          expected: string
           message: "expected string, got boolean"
+          rule: type
     - broken: []
       duplicate: false
       missing: []
       name: ok
       violations:
-        - at: /dependencies
+        - actual: ~
+          actual_present: true
+          at: /dependencies
+          expected: list of string
           message: "expected list of string, got null"
+          rule: type
     - broken: []
       duplicate: false
       missing:
@@ -548,8 +694,12 @@ root:
         - owner
       name: ~
       violations:
-        - at: /
+        - actual: ~
+          actual_present: true
+          at: /
+          expected: record
           message: "expected record, got null"
+          rule: type
   name_of:
     ref: object0
   nested_errors: ~
@@ -592,16 +742,24 @@ root:
         - owner
       name: cli
       violations:
-        - at: /owner
+        - actual: ~
+          actual_present: false
+          at: /owner
+          expected: string
           message: "missing field `owner`"
+          rule: required
     - broken: []
       duplicate: false
       missing:
         - name
       name: ~
       violations:
-        - at: /name
+        - actual: ~
+          actual_present: false
+          at: /name
+          expected: string
           message: "missing field `name`"
+          rule: required
   required_survives: ~
   valid:
     - broken: []

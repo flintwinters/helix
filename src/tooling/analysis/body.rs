@@ -77,7 +77,7 @@ pub(super) struct Findings {
 }
 
 pub(super) fn check(graph: &Graph) -> Findings {
-    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new() };
+    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new(), invalid_annotations: HashSet::new() };
     let mut pending = vec![ROOT];
     while let Some(id) = pending.pop() {
         match graph.syntax(id) {
@@ -105,6 +105,7 @@ struct Checker<'g> {
     active: HashSet<NodeId>,
     findings: Findings,
     type_memo: HashMap<(NodeId, usize), Option<Value>>,
+    invalid_annotations: HashSet<NodeId>,
 }
 
 impl Checker<'_> {
@@ -243,6 +244,7 @@ impl Checker<'_> {
                 let (then, otherwise) = (self.infer(operands[1]), self.infer(operands[2]));
                 Some(Ty::Union(vec![then?, otherwise?]))
             }
+            "expect" => self.annotated_value(operands[0], operands[1], "the value of `expect`"),
             "let" => self.infer(operands[1]),
             "type_time" => self.infer(operands[0]),
             "map" | "filter" => self.collection(actor.name, operands[0], operands[1]),
@@ -415,25 +417,50 @@ impl Checker<'_> {
         }
     }
 
-    /// An annotated function's body must be able to produce its declared result.
+    /// Every declaration is inspected even when the function is never called.
     fn function(&mut self, function: NodeId) {
+        if let Ok(parameters) = self.graph.parameters(function) {
+            for (_, annotation) in parameters {
+                if let Some(annotation) = annotation {
+                    if self.annotation(annotation).is_none() {
+                        self.unchecked_annotation(annotation, "the parameter annotation is outside the supported static type fragment");
+                    }
+                }
+            }
+        }
         let Some(items) = self.graph.call(function) else { return };
         let (Some(&body), Some(&annotation)) = (items.get(2), items.get(3)) else { return };
-        let Some(declared) = self.annotation(annotation) else {
-            return self.unchecked(annotation, "the declared result annotation is outside the supported static type fragment, so the body is not checked against it".into());
+        let what = format!("the body of `{}`", self.graph.path(function));
+        self.annotated_value(body, annotation, &what);
+    }
+
+    fn unchecked_annotation(&mut self, annotation: NodeId, message: &str) {
+        if !self.invalid_annotations.contains(&annotation) {
+            self.unchecked(annotation, message.into());
+        }
+    }
+
+    /// Value annotations and function results share one non-executing obligation.
+    /// `expect` returns its original value; checking does not invent a converted value.
+    fn annotated_value(&mut self, body: NodeId, annotation: NodeId, what: &str) -> Option<Ty> {
+        let declared = self.annotation(annotation);
+        let actual = self.infer(body);
+        let Some(declared) = declared else {
+            self.unchecked_annotation(annotation, "the annotation is outside the supported static type fragment, so its value is not checked against it");
+            return actual;
         };
-        let path = self.graph.path(function);
-        match self.infer(body) {
+        match &actual {
             Some(actual) if !actual.overlaps(&declared) => {
                 let field = actual.disjoint_field(&declared);
                 let at = field.as_ref().and_then(|field| self.result_field(body, field)).unwrap_or(body);
                 let field = field.map_or(String::new(), |name| format!(" at field `{name}`"));
-                self.error(at, format!("the body of `{path}` is {}, declared {}{field}", actual.name(), declared.name()));
+                self.error(at, format!("{what} is {}, declared {}{field}", actual.name(), declared.name()));
             }
-            Some(actual) if !actual.below(&declared) => self.unchecked(body, format!("the body of `{path}` may not be {}; it is {}", declared.name(), actual.name())),
+            Some(actual) if !actual.below(&declared) => self.unchecked(body, format!("{what} may not be {}; it is {}", declared.name(), actual.name())),
             Some(_) => {}
-            None => self.unchecked(body, format!("the body of `{path}` has no static type; declared {}", declared.name())),
+            None => self.unchecked(body, format!("{what} has no static type; declared {}", declared.name())),
         }
+        actual
     }
 
     /// Code a `type_time` region can reach must be free of effects, or it fails when run.
@@ -468,7 +495,34 @@ impl Checker<'_> {
                 _ => {}
             }
         }
-        Ty::parse(&value).ok()
+        match Ty::parse(&value) {
+            Ok(ty) => {
+                let mut pending = vec![&ty];
+                let mut defaults = false;
+                while let Some(part) = pending.pop() {
+                    match part {
+                        Ty::Record(fields) | Ty::Class(fields, ..) => {
+                            defaults |= fields.iter().any(|(_, field)| field.default.is_some());
+                            pending.extend(fields.iter().map(|(_, field)| &field.ty));
+                        }
+                        Ty::List(item) | Ty::Map(item) | Ty::Refine(item, _) => pending.push(item),
+                        Ty::Union(members) => pending.extend(members),
+                        Ty::Fn(params, result, _) => { pending.extend(params); pending.push(result); }
+                        _ => {}
+                    }
+                }
+                if defaults {
+                    self.unchecked_annotation(id, "default values require runtime declaration validation; static checking only establishes their type shape");
+                }
+                Some(ty)
+            }
+            Err(why) => {
+                if self.invalid_annotations.insert(id) {
+                    self.error(id, format!("invalid type declaration: {why}"));
+                }
+                None
+            }
+        }
     }
 
     fn type_value(&mut self, id: NodeId, depth: usize) -> Option<Value> {
@@ -488,6 +542,7 @@ impl Checker<'_> {
                 Syntax::Reference(name) => name,
                 // Ordinary strings are type values, never implicit lexical references.
                 Syntax::Scalar(Yaml::String(name)) => break Some(s(name)),
+                Syntax::Scalar(_) => break self.scalar(target),
                 _ => break self.type_constructor(target, depth),
             };
             match self.graph.lexical_site(target, name) {
@@ -509,6 +564,7 @@ impl Checker<'_> {
 
     fn type_constructor(&mut self, id: NodeId, depth: usize) -> Option<Value> {
         match self.graph.syntax(id) {
+            Syntax::Mapping(_) | Syntax::Sequence(_) | Syntax::Literal(_) => self.data_value(id, depth),
             Syntax::Call(items) => {
                 let args = &items[1..];
                 match (self.graph.identifier(items[0])?, args.len()) {
@@ -548,6 +604,52 @@ impl Checker<'_> {
             }
             _ => None,
         }
+    }
+
+    /// Materialize only data expressions, after bounding the entire expansion.
+    /// Inside `$literal`, executable-looking maps remain opaque ordinary data.
+    fn data_value(&self, id: NodeId, depth: usize) -> Option<Value> {
+        use crate::model::Kind;
+        let mut pending = vec![(id, false, depth)];
+        let mut nodes = MAX_TYPE_SHAPE_NODES;
+        let mut bytes = crate::model::MAX_VALUE_SIZE;
+        while let Some((node, quoted, depth)) = pending.pop() {
+            nodes = nodes.checked_sub(1)?;
+            if depth > MAX_TYPE_CONSTRUCTOR_DEPTH { return None; }
+            if !quoted {
+                match self.graph.syntax(node) {
+                    Syntax::Literal(value) => { pending.push((value, true, depth)); continue; }
+                    Syntax::Call(_) | Syntax::Reference(_) | Syntax::Invalid(_) => return None,
+                    _ => {}
+                }
+            }
+            match self.graph.kind(node) {
+                Kind::Scalar { value: Yaml::String(text) } => bytes = bytes.checked_sub(text.len())?,
+                Kind::Scalar { .. } => {}
+                Kind::Seq(items) => {
+                    if items.len() > nodes.saturating_sub(pending.len()) { return None; }
+                    pending.extend(items.iter().map(|item| (*item, quoted, depth + 1)));
+                }
+                Kind::Map(fields) => {
+                    nodes = nodes.checked_sub(fields.len())?;
+                    if fields.len() > nodes.saturating_sub(pending.len()) { return None; }
+                    for (name, value) in fields {
+                        bytes = bytes.checked_sub(name.len())?;
+                        pending.push((*value, quoted, depth + 1));
+                    }
+                }
+            }
+        }
+        fn materialize(graph: &Graph, node: NodeId) -> Value {
+            match graph.syntax(node) {
+                Syntax::Literal(value) => graph.data(value),
+                Syntax::Mapping(fields) => Value::Hash(fields.iter()
+                    .map(|(name, value)| (s(name), materialize(graph, *value))).collect()),
+                Syntax::Sequence(items) => Value::Array(items.iter().map(|node| materialize(graph, *node)).collect()),
+                _ => graph.data(node), // prewalk proved this is a scalar
+            }
+        }
+        Some(materialize(self.graph, id))
     }
 
     fn scalar(&self, id: NodeId) -> Option<Value> {

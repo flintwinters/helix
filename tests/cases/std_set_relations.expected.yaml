@@ -1,3 +1,2146 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - disjoint
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - disjoint
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value:
+      - 3
+      - 4
+      - 3
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - is_disjoint
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - 1
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - is_disjoint
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:set"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:set"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - 1
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:set"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - any
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: false
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - is_disjoint
+        - "$call"
+        - 2
+      source: "std:set"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - symmetric_difference
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - empty_difference
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - symmetric_difference
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - empty_difference
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - symmetric_difference
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - symmetric_difference
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - difference
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - unique
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - difference
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - symmetric_difference
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - symmetric_difference
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - difference
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - unique
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - difference
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - symmetric_difference
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - symmetric_difference
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - empty_disjoint
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - empty_disjoint
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - is_disjoint
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - is_disjoint
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:set"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:set"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:set"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - any
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: false
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - is_disjoint
+        - "$call"
+        - 2
+      source: "std:set"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - equals
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - empty_equal
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - equals
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - empty_equal
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_subset
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - equals
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_subset
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - equals
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - is_subset
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - is_subset
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:set"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - is_subset
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:set"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - is_subset
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - is_subset
+        - "$call"
+        - 2
+      source: "std:set"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_subset
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - equals
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_subset
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - equals
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - is_subset
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - is_subset
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:set"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - is_subset
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:set"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - is_subset
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - is_subset
+        - "$call"
+        - 2
+      source: "std:set"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - equals
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - equals
+        - "$call"
+        - 2
+      source: "std:set"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - invalid_arguments
+        - 0
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - invalid_arguments
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - equals
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - invalid_arguments
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - equals
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - invalid_arguments
+        - 3
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - symmetric_difference
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - invalid_arguments
+        - 4
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - symmetric_difference
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - invalid_arguments
+        - 5
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - symmetric_difference
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - left_empty
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - symmetric_difference
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - left_empty
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value:
+      - 2
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - symmetric_difference
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - symmetric_difference
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - difference
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - unique
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - difference
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - symmetric_difference
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - symmetric_difference
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - difference
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - unique
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - 2
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - difference
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - symmetric_difference
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - symmetric_difference
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - overlap
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - overlap
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value:
+      - 2.0
+      - 3
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - is_disjoint
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - is_disjoint
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:set"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:set"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:set"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - any
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - is_disjoint
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - is_disjoint
+        - "$call"
+        - 2
+      source: "std:set"
+    type: boolean
+    value: false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - equals
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - proper_subset
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - equals
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - results
+        - "$call"
+        - 2
+        - proper_subset
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value:
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - is_subset
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - equals
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - 1
+annotations_truncated: true
 root:
   results:
     disjoint: true

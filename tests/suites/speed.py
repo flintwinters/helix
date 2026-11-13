@@ -273,7 +273,8 @@ def verify(h):
                 (artifact / f"{name}.stderr").write_text(result.stderr)
                 assert result.returncode == 0, (name, result.returncode, result.stdout, result.stderr)
                 state = yaml.safe_load(result.stdout)
-                assert state == {"status": "finished", "root": expected}, (name, state)
+                assert state.get("status") == "finished" and state.get("root") == expected, (
+                    name, "workload result differs from independent oracle", state.get("status"))
                 if index >= WARMUPS:
                     samples.append(elapsed)
             source_hash = hashlib.sha256(source.encode()).hexdigest()

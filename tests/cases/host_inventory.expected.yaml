@@ -1,3 +1,1696 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": document
+      location:
+        path:
+          - resolve
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:inventory"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - resolve
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type:
+      fields:
+        groups:
+          of:
+            of:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            type: list
+          type: map
+        hosts:
+          of:
+            fields:
+              connection:
+                of:
+                  - fields:
+                      transport:
+                        type: literal
+                        value: local
+                    type: record
+                  - fields:
+                      address:
+                        check:
+                          kind: function
+                          location:
+                            path:
+                              - name
+                              - "$call"
+                              - 2
+                            source: "std:inventory"
+                        of: string
+                        type: refine
+                      jump_host:
+                        of:
+                          check:
+                            kind: function
+                            location:
+                              path:
+                                - name
+                                - "$call"
+                                - 2
+                              source: "std:inventory"
+                          of: string
+                          type: refine
+                        type: optional
+                      port:
+                        of:
+                          check:
+                            kind: function
+                            location:
+                              path:
+                                - port
+                                - "$call"
+                                - 2
+                              source: "std:machine"
+                          of: integer
+                          type: refine
+                        type: optional
+                      transport:
+                        type: literal
+                        value: ssh
+                      user:
+                        of:
+                          check:
+                            kind: function
+                            location:
+                              path:
+                                - name
+                                - "$call"
+                                - 2
+                              source: "std:inventory"
+                          of: string
+                          type: refine
+                        type: optional
+                    type: record
+                type: union
+              id:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - name
+                      - "$call"
+                      - 2
+                    source: "std:inventory"
+                of: string
+                type: refine
+            type: record
+          type: list
+        overrides:
+          of:
+            fields:
+              connection:
+                fields:
+                  address:
+                    of:
+                      check:
+                        kind: function
+                        location:
+                          path:
+                            - name
+                            - "$call"
+                            - 2
+                          source: "std:inventory"
+                      of: string
+                      type: refine
+                    type: optional
+                  jump_host:
+                    of:
+                      check:
+                        kind: function
+                        location:
+                          path:
+                            - name
+                            - "$call"
+                            - 2
+                          source: "std:inventory"
+                      of: string
+                      type: refine
+                    type: optional
+                  port:
+                    of:
+                      check:
+                        kind: function
+                        location:
+                          path:
+                            - port
+                            - "$call"
+                            - 2
+                          source: "std:machine"
+                      of: integer
+                      type: refine
+                    type: optional
+                  transport:
+                    of:
+                      type: enum
+                      values:
+                        - local
+                        - ssh
+                    type: optional
+                  user:
+                    of:
+                      check:
+                        kind: function
+                        location:
+                          path:
+                            - name
+                            - "$call"
+                            - 2
+                          source: "std:inventory"
+                      of: string
+                      type: refine
+                    type: optional
+                type: record
+              groups:
+                of:
+                  check:
+                    kind: function
+                    location:
+                      path:
+                        - name
+                        - "$call"
+                        - 2
+                      source: "std:inventory"
+                  of: string
+                  type: refine
+                type: list
+              hosts:
+                of:
+                  check:
+                    kind: function
+                    location:
+                      path:
+                        - name
+                        - "$call"
+                        - 2
+                      source: "std:inventory"
+                  of: string
+                  type: refine
+                type: list
+              source:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - name
+                      - "$call"
+                      - 2
+                    source: "std:inventory"
+                of: string
+                type: refine
+            type: record
+          type: list
+        version:
+          type: literal
+          value: 1
+      type: record
+    value:
+      groups:
+        production:
+          - web
+          - db
+      hosts:
+        - connection:
+            transport: local
+          id: local
+        - connection:
+            address: web.example
+            transport: ssh
+            user: deploy
+          id: web
+      overrides:
+        - connection:
+            port: 2222
+          groups:
+            - production
+          hosts: []
+          source: group-port
+        - connection:
+            port: 2200
+          groups: []
+          hosts:
+            - web
+          source: web-port
+      version: 1
+  - declaration:
+      code:
+        "$ref": dynamic_input
+      location:
+        path:
+          - resolve
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:inventory"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - resolve
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type:
+      of:
+        fields:
+          hosts:
+            of:
+              fields:
+                connection:
+                  of:
+                    - fields:
+                        transport:
+                          type: literal
+                          value: local
+                      type: record
+                    - fields:
+                        address:
+                          check:
+                            kind: function
+                            location:
+                              path:
+                                - name
+                                - "$call"
+                                - 2
+                              source: "std:inventory"
+                          of: string
+                          type: refine
+                        jump_host:
+                          of:
+                            check:
+                              kind: function
+                              location:
+                                path:
+                                  - name
+                                  - "$call"
+                                  - 2
+                                source: "std:inventory"
+                            of: string
+                            type: refine
+                          type: optional
+                        port:
+                          of:
+                            check:
+                              kind: function
+                              location:
+                                path:
+                                  - port
+                                  - "$call"
+                                  - 2
+                                source: "std:machine"
+                            of: integer
+                            type: refine
+                          type: optional
+                        transport:
+                          type: literal
+                          value: ssh
+                        user:
+                          of:
+                            check:
+                              kind: function
+                              location:
+                                path:
+                                  - name
+                                  - "$call"
+                                  - 2
+                                source: "std:inventory"
+                            of: string
+                            type: refine
+                          type: optional
+                      type: record
+                  type: union
+                id:
+                  check:
+                    kind: function
+                    location:
+                      path:
+                        - name
+                        - "$call"
+                        - 2
+                      source: "std:inventory"
+                  of: string
+                  type: refine
+              type: record
+            type: list
+          source:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:inventory"
+            of: string
+            type: refine
+        type: record
+      type: list
+    value:
+      - hosts:
+          - connection:
+              address: db.example
+              transport: ssh
+            id: db
+        source: supplied-discovery
+  - declaration:
+      code:
+        "$ref": selection
+      location:
+        path:
+          - resolve
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 3
+          - "$call"
+          - 2
+        source: "std:inventory"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - resolve
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type:
+      fields:
+        all:
+          of: boolean
+          type: optional
+        exclude_groups:
+          of:
+            of:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            type: list
+          type: optional
+        exclude_hosts:
+          of:
+            of:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            type: list
+          type: optional
+        groups:
+          of:
+            of:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            type: list
+          type: optional
+        hosts:
+          of:
+            of:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            type: list
+          type: optional
+      type: record
+    value:
+      all: true
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - enumerate
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - resolve_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - patched
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type: list
+    value:
+      - connection:
+          port: 2222
+        groups:
+          - production
+        hosts: []
+        source: group-port
+      - connection:
+          port: 2200
+        groups: []
+        hosts:
+          - web
+        source: web-port
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - enumerate
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type: integer
+    value: 2
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - enumerate
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - enumerate
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - - 0
+        - connection:
+            port: 2222
+          groups:
+            - production
+          hosts: []
+          source: group-port
+      - - 1
+        - connection:
+            port: 2200
+          groups: []
+          hosts:
+            - web
+          source: web-port
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - apply_override_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - resolved_connection
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type: map
+    value:
+      address: db.example
+      transport: ssh
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - apply_override_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - resolved_connection
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:inventory"
+    type: map
+    value:
+      port: 2222
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - merge
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      address: db.example
+      port: 2222
+      transport: ssh
+  - declaration:
+      code:
+        "$ref": connection
+      location:
+        path:
+          - apply_override_checked
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - resolved_connection
+          - "$call"
+          - 2
+        source: "std:inventory"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - apply_override_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - resolved_connection
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type:
+      of:
+        - fields:
+            transport:
+              type: literal
+              value: local
+          type: record
+        - fields:
+            address:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            jump_host:
+              of:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - name
+                      - "$call"
+                      - 2
+                    source: "std:inventory"
+                of: string
+                type: refine
+              type: optional
+            port:
+              of:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - port
+                      - "$call"
+                      - 2
+                    source: "std:machine"
+                of: integer
+                type: refine
+              type: optional
+            transport:
+              type: literal
+              value: ssh
+            user:
+              of:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - name
+                      - "$call"
+                      - 2
+                    source: "std:inventory"
+                of: string
+                type: refine
+              type: optional
+          type: record
+      type: union
+    value:
+      address: db.example
+      port: 2222
+      transport: ssh
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - apply_override_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - resolved_connection
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type: map
+    value:
+      address: web.example
+      transport: ssh
+      user: deploy
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - apply_override_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - resolved_connection
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:inventory"
+    type: map
+    value:
+      port: 2222
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - merge
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      address: web.example
+      port: 2222
+      transport: ssh
+      user: deploy
+  - declaration:
+      code:
+        "$ref": connection
+      location:
+        path:
+          - apply_override_checked
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - resolved_connection
+          - "$call"
+          - 2
+        source: "std:inventory"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - apply_override_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - resolved_connection
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type:
+      of:
+        - fields:
+            transport:
+              type: literal
+              value: local
+          type: record
+        - fields:
+            address:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            jump_host:
+              of:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - name
+                      - "$call"
+                      - 2
+                    source: "std:inventory"
+                of: string
+                type: refine
+              type: optional
+            port:
+              of:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - port
+                      - "$call"
+                      - 2
+                    source: "std:machine"
+                of: integer
+                type: refine
+              type: optional
+            transport:
+              type: literal
+              value: ssh
+            user:
+              of:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - name
+                      - "$call"
+                      - 2
+                    source: "std:inventory"
+                of: string
+                type: refine
+              type: optional
+          type: record
+      type: union
+    value:
+      address: web.example
+      port: 2222
+      transport: ssh
+      user: deploy
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - apply_override_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - resolved_connection
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type: map
+    value:
+      address: web.example
+      port: 2222
+      transport: ssh
+      user: deploy
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - apply_override_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - resolved_connection
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:inventory"
+    type: map
+    value:
+      port: 2200
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - merge
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      address: web.example
+      port: 2200
+      transport: ssh
+      user: deploy
+  - declaration:
+      code:
+        "$ref": connection
+      location:
+        path:
+          - apply_override_checked
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - resolved_connection
+          - "$call"
+          - 2
+        source: "std:inventory"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - apply_override_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - resolved_connection
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type:
+      of:
+        - fields:
+            transport:
+              type: literal
+              value: local
+          type: record
+        - fields:
+            address:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            jump_host:
+              of:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - name
+                      - "$call"
+                      - 2
+                    source: "std:inventory"
+                of: string
+                type: refine
+              type: optional
+            port:
+              of:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - port
+                      - "$call"
+                      - 2
+                    source: "std:machine"
+                of: integer
+                type: refine
+              type: optional
+            transport:
+              type: literal
+              value: ssh
+            user:
+              of:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - name
+                      - "$call"
+                      - 2
+                    source: "std:inventory"
+                of: string
+                type: refine
+              type: optional
+          type: record
+      type: union
+    value:
+      address: web.example
+      port: 2200
+      transport: ssh
+      user: deploy
+  - declaration:
+      code:
+        "$ref": document
+      location:
+        path:
+          - resolve
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:inventory"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - resolve
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type:
+      fields:
+        groups:
+          of:
+            of:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            type: list
+          type: map
+        hosts:
+          of:
+            fields:
+              connection:
+                of:
+                  - fields:
+                      transport:
+                        type: literal
+                        value: local
+                    type: record
+                  - fields:
+                      address:
+                        check:
+                          kind: function
+                          location:
+                            path:
+                              - name
+                              - "$call"
+                              - 2
+                            source: "std:inventory"
+                        of: string
+                        type: refine
+                      jump_host:
+                        of:
+                          check:
+                            kind: function
+                            location:
+                              path:
+                                - name
+                                - "$call"
+                                - 2
+                              source: "std:inventory"
+                          of: string
+                          type: refine
+                        type: optional
+                      port:
+                        of:
+                          check:
+                            kind: function
+                            location:
+                              path:
+                                - port
+                                - "$call"
+                                - 2
+                              source: "std:machine"
+                          of: integer
+                          type: refine
+                        type: optional
+                      transport:
+                        type: literal
+                        value: ssh
+                      user:
+                        of:
+                          check:
+                            kind: function
+                            location:
+                              path:
+                                - name
+                                - "$call"
+                                - 2
+                              source: "std:inventory"
+                          of: string
+                          type: refine
+                        type: optional
+                    type: record
+                type: union
+              id:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - name
+                      - "$call"
+                      - 2
+                    source: "std:inventory"
+                of: string
+                type: refine
+            type: record
+          type: list
+        overrides:
+          of:
+            fields:
+              connection:
+                fields:
+                  address:
+                    of:
+                      check:
+                        kind: function
+                        location:
+                          path:
+                            - name
+                            - "$call"
+                            - 2
+                          source: "std:inventory"
+                      of: string
+                      type: refine
+                    type: optional
+                  jump_host:
+                    of:
+                      check:
+                        kind: function
+                        location:
+                          path:
+                            - name
+                            - "$call"
+                            - 2
+                          source: "std:inventory"
+                      of: string
+                      type: refine
+                    type: optional
+                  port:
+                    of:
+                      check:
+                        kind: function
+                        location:
+                          path:
+                            - port
+                            - "$call"
+                            - 2
+                          source: "std:machine"
+                      of: integer
+                      type: refine
+                    type: optional
+                  transport:
+                    of:
+                      type: enum
+                      values:
+                        - local
+                        - ssh
+                    type: optional
+                  user:
+                    of:
+                      check:
+                        kind: function
+                        location:
+                          path:
+                            - name
+                            - "$call"
+                            - 2
+                          source: "std:inventory"
+                      of: string
+                      type: refine
+                    type: optional
+                type: record
+              groups:
+                of:
+                  check:
+                    kind: function
+                    location:
+                      path:
+                        - name
+                        - "$call"
+                        - 2
+                      source: "std:inventory"
+                  of: string
+                  type: refine
+                type: list
+              hosts:
+                of:
+                  check:
+                    kind: function
+                    location:
+                      path:
+                        - name
+                        - "$call"
+                        - 2
+                      source: "std:inventory"
+                  of: string
+                  type: refine
+                type: list
+              source:
+                check:
+                  kind: function
+                  location:
+                    path:
+                      - name
+                      - "$call"
+                      - 2
+                    source: "std:inventory"
+                of: string
+                type: refine
+            type: record
+          type: list
+        version:
+          type: literal
+          value: 1
+      type: record
+    value:
+      groups:
+        production:
+          - web
+          - db
+      hosts:
+        - connection:
+            transport: local
+          id: local
+        - connection:
+            address: web.example
+            transport: ssh
+            user: deploy
+          id: web
+      overrides:
+        - connection:
+            port: 2222
+          groups:
+            - production
+          hosts: []
+          source: group-port
+        - connection:
+            port: 2200
+          groups: []
+          hosts:
+            - web
+          source: web-port
+      version: 1
+  - declaration:
+      code:
+        "$ref": dynamic_input
+      location:
+        path:
+          - resolve
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:inventory"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - resolve
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type:
+      of:
+        fields:
+          hosts:
+            of:
+              fields:
+                connection:
+                  of:
+                    - fields:
+                        transport:
+                          type: literal
+                          value: local
+                      type: record
+                    - fields:
+                        address:
+                          check:
+                            kind: function
+                            location:
+                              path:
+                                - name
+                                - "$call"
+                                - 2
+                              source: "std:inventory"
+                          of: string
+                          type: refine
+                        jump_host:
+                          of:
+                            check:
+                              kind: function
+                              location:
+                                path:
+                                  - name
+                                  - "$call"
+                                  - 2
+                                source: "std:inventory"
+                            of: string
+                            type: refine
+                          type: optional
+                        port:
+                          of:
+                            check:
+                              kind: function
+                              location:
+                                path:
+                                  - port
+                                  - "$call"
+                                  - 2
+                                source: "std:machine"
+                            of: integer
+                            type: refine
+                          type: optional
+                        transport:
+                          type: literal
+                          value: ssh
+                        user:
+                          of:
+                            check:
+                              kind: function
+                              location:
+                                path:
+                                  - name
+                                  - "$call"
+                                  - 2
+                                source: "std:inventory"
+                            of: string
+                            type: refine
+                          type: optional
+                      type: record
+                  type: union
+                id:
+                  check:
+                    kind: function
+                    location:
+                      path:
+                        - name
+                        - "$call"
+                        - 2
+                      source: "std:inventory"
+                  of: string
+                  type: refine
+              type: record
+            type: list
+          source:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:inventory"
+            of: string
+            type: refine
+        type: record
+      type: list
+    value:
+      - hosts:
+          - connection:
+              transport: local
+            id: local
+        source: duplicate
+  - declaration:
+      code:
+        "$ref": selection
+      location:
+        path:
+          - resolve
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 3
+          - "$call"
+          - 2
+        source: "std:inventory"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - resolve
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:inventory"
+    type:
+      fields:
+        all:
+          of: boolean
+          type: optional
+        exclude_groups:
+          of:
+            of:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            type: list
+          type: optional
+        exclude_hosts:
+          of:
+            of:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            type: list
+          type: optional
+        groups:
+          of:
+            of:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            type: list
+          type: optional
+        hosts:
+          of:
+            of:
+              check:
+                kind: function
+                location:
+                  path:
+                    - name
+                    - "$call"
+                    - 2
+                  source: "std:inventory"
+              of: string
+              type: refine
+            type: list
+          type: optional
+      type: record
+    value:
+      all: true
+annotations_truncated: true
 root:
   all:
     diagnostics: []
@@ -122,8 +1815,13 @@ root:
       - column: 11
         data:
           violations:
-            - at: /hosts/0/connection
+            - actual:
+                transport: ssh
+              actual_present: true
+              at: /hosts/0/connection
+              expected: "record | record"
               message: "expected record | record, got map"
+              rule: type
         file: "std:inventory"
         kind: type
         line: 597

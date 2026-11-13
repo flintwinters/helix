@@ -1,3 +1,44 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - web_server
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - w80
+        - "$call"
+        - 1
+      source: "<root>"
+    type: integer
+    value: 80
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - web_server
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - w8080
+        - "$call"
+        - 1
+      source: "<root>"
+    type: integer
+    value: 8080
 objects:
   object0:
     bindings: {}

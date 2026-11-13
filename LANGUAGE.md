@@ -96,6 +96,25 @@ objects:
 
 Ordinary data retains its compact representation. An inspection graph keeps the normal `root` or `error` projection and places its named `objects` table beside it in the state envelope, so recursive lexical references stay finite and ordinary user keys cannot collide with metadata. It is **not a resumable file format**; loading this output yields ordinary data, not reconstructed functions or machines. Machines compare by logical execution state rather than allocation identity. Transition counts and continuation details are implementation details: wait for a status or observable condition rather than counting steps.
 
+Successful `expect`, function parameter and result checks add an optional
+`annotations` history beside the ordinary state projection and in machine
+inspection. Each entry records its kind, target source reference, governing
+declaration's source reference and original code, evaluated type, and checked
+value. Thus a named or computed declaration remains distinguishable from the
+descriptor it produced; ordinary values are not wrapped or changed. Retained
+machine versions preserve their own histories. Ordinary data is exact; runtime
+functions are summarized by kind and source location, and machines by kind and
+status. Such rows carry `runtime_values_omitted: true`: captured environments and
+continuations are neither traversed nor retained by the evidence. Ordinary maps
+are not object summaries merely because their fields resemble these markers.
+The retained prefix uses at most 16,384 value/string-byte units (or the smaller
+configured per-value budget), with the existing nesting limit;
+`annotations_truncated: true` explicitly marks omitted later evidence, without
+turning a successful computation into failure. Programs that perform no annotation
+checks have no such metadata. This is inspection evidence, not executable snapshot
+restoration: data-only types still round-trip through a `$literal` root, while
+predicate functions and machine graphs require their original sources to execute.
+
 The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Disk snapshots, restoration validation, reversibility-promise syntax and debugger UI are separate future work. Explicit host effects are described below.
 
 ## Type rules
@@ -145,8 +164,13 @@ copying costs and all policy execution shares the caller's resource budgets.
 same field parser as `record`. A malformed retained field raises `type` at the
 input record argument; replacing that malformed field itself is allowed because
 its old spec is discarded. Migration: repair or remove malformed sibling specs
-before extending a hand-built record. Validation checks declaration shape without
-running refinement predicates or rechecking default values against their types.
+before extending a hand-built record. Record construction and value checking also
+validate declared defaults through the ordinary predicate engine, even when a
+supplied field hides a default or an empty collection hides its element type.
+Invalid defaults are declaration errors with structured expected/actual values and
+`declaration_path`, not ordinary membership rejection. Checking never inserts a
+default into the supplied value. Structural parsing and `subtype` remain proof-only:
+they validate descriptor shape but do not execute default predicates or certify defaults.
 Repeated extensions also reparse growing field sets; they do not certify or cache
 the validity of arbitrary descriptor data.
 
@@ -172,6 +196,16 @@ order (including missing required fields), then unexpected fields in canonical
 key order. Nested violations stay together at their field or index. A rejected
 union emits one violation at the checked value, with alternatives named in
 declaration order, rather than concatenating each alternative's violations.
+Each entry contains `at` (inside the checked value), a readable `expected` type
+label, the original `actual` value, `actual_present`, a stable `rule`, and
+`message`. Missing fields have `actual_present: false`; a present null has
+`actual_present: true`. Predicate entries also carry `predicate` source, path,
+reference segments and line/column, identifying the named or inline rule.
+Predicate rejection is a normal violation. A raised error or non-boolean result
+raises `predicate` from `is`, `violations`, `expect`, annotations or default
+validation, blamed on the predicate with collected violations and, for a raised
+error, its original `cause`. Unions retain failures from predicates they reached;
+they skip later alternatives after an accepting alternative.
 Refinements check the base first and only run their predicate if the base passes;
 this also applies when the base is another refinement. Refinements can wrap the
 existing type constructors and serve as collection elements or required,
@@ -303,7 +337,7 @@ are not expressions. Migration: unresolved names that previously passed plain
 `check` now fail it, including in uncalled bodies; fix the name or provide the
 lexical binding. LSP diagnostics use the same check and source locations.
 
-Plain `check` also runs a small non-executing type check (`src/tooling/analysis/body.rs`) over literals, annotated parameters, arithmetic, comparison, `if`, structural maps, constant-key record `get`/`set`, calls of named functions and literal annotation expressions (including `record` and `with_field`). It traverses computed call heads as well as operands, so annotated inline function bodies and nested `type_time` regions are checked even when the call target itself is unproved. Literal data remains opaque. It compares annotated function bodies with their declared results, call arguments with parameter types, and `type_time` regions for effectful execution. Constructing or returning a function does not execute its body; invoking a visible function does. Computed callees remain unproved, while `pure_function_of` retains its stronger transitive contract. A mismatch whose types share no value, or an `effect` inside a region, is a `type` diagnostic. A mismatch that may or may not hold, or an expression outside the fragment, is listed in the report's `unchecked` list and does not fail the check; the LSP shows only definite errors.
+Plain `check` also runs a small non-executing type check (`src/tooling/analysis/body.rs`) over literals, annotated parameters, arithmetic, comparison, `if`, structural maps, constant-key record `get`/`set`, calls of named functions and literal annotation expressions (including `record` and `with_field`). It traverses computed call heads as well as operands, so annotated inline function bodies and nested `type_time` regions are checked even when the call target itself is unproved. Literal data remains opaque. It checks explicit `expect(value, type)` annotations, annotated function bodies against their declared results, call arguments against parameter types, and `type_time` regions for effectful execution. Every written function parameter annotation is inspected even when the function is uncalled; supported declarations are validated, and unsupported declarations receive an explicit `unchecked` obligation. Constructing or returning a function does not execute its body; invoking a visible function does. Computed callees remain unproved, while `pure_function_of` retains its stronger transitive contract. A mismatch whose types share no value, or an `effect` inside a region, is a `type` diagnostic. A mismatch that may or may not hold, or an expression outside the fragment, is listed in the report's `unchecked` list and does not fail the check; the LSP shows only definite errors.
 
 Structural map inference retains known fields even when a sibling expression is unknown. Every written field is present; unknown field types remain `any`. Required fields with incompatible types or missing required fields establish definite failure, while incompatible optional fields may overlap by omission. Dynamic keys, optional-key reads, unsupported callbacks and `$literal` data remain outside this structural fragment. The production test-policy regressions require plain `check` to reject an integer `status` or string `exit_code` without executing orchestration; this does not prove the entire policy or replace independent host validation.
 
@@ -311,7 +345,7 @@ Sequence inference combines element types, retaining `any` for unknown elements.
 
 Strings up to 256 UTF-8 bytes retain their exact literal type, allowing plain `check` to reject a misspelled constant against a literal or enum annotation. Longer strings widen to `string`. Sequences retain at most 32 type alternatives, collapsing adjacent repeats. Inferred type trees use the same 4096-node limit as annotation shapes, with field names and direct literal strings limited to the runtime value-size budget. Collection and function-signature construction account for expanded child types before retaining them, so compact alias graphs cannot expand into unbounded inferred trees. Oversized collections widen to `list` or `map`; other oversized results remain unknown. Widening still checks child expressions and reports unresolved obligations where a contract cannot be proved. These are analysis precision limits, not total process-memory limits or changes to execution semantics.
 
-Annotation aliases follow explicit `$ref` lookups without executing them; scalar strings remain literal type names even when a binding has the same spelling. Cycles, more than eight constructor levels, expanded descriptors beyond 4096 values/keys, or expanded strings beyond the runtime value-size limit remain unchecked. Memoized alias resolution prevents repeated source expansion; the descriptor budget also bounds the work passed to the shared type parser. These limits affect analysis only, not runtime type semantics.
+Annotation aliases follow explicit `$ref` lookups without executing them; scalar strings remain literal type names even when a binding has the same spelling. Safely materialized malformed declarations, including unknown literal type names, produce structured `type` diagnostics at the annotation expression. Computed annotations outside this fragment remain `unchecked`; the checker does not evaluate arbitrary expressions, load imports or execute predicates to decide them. Cycles, more than eight constructor levels, expanded descriptors beyond 4096 values/keys, or expanded strings beyond the runtime value-size limit remain unchecked. Memoized alias resolution prevents repeated source expansion; the descriptor budget also bounds the work passed to the shared type parser. These limits affect analysis only, not runtime type semantics. All independent annotation obligations in the written source are visited; a failed declaration or value does not stop checks of sibling annotations. This is bounded static analysis, not a promise to compute every terminating type-time expression. Plain `check` preserves its versioned `mode: static` report (`status: ok` or `error`, `diagnostics` and `unchecked`), rather than emitting an evaluated VM root. Exit codes are 0 without definite errors, 1 with diagnostics and 2 for usage or input-file failures; a zero exit does not discharge listed `unchecked` obligations. The maintained static suite applies the production mutation generator to annotated source and checks this report contract without executing the damaged programs.
 
 `./manage.py check --evaluate FILE` (or `helix check --evaluate FILE`) evaluates the current pure language and collects independent errors across sequence entries in order and mapping fields by canonical key, deduplicating failures reached through multiple dependents. It uses the same annotations, evaluator, and import policy as `run`; it does not enter type time or statically analyze uncalled function bodies or unchosen branches. Output includes `mode: check`, with `root` on success or an `errors` list on failure. Only errors raised inside explicit `type_time` regions carry `phase: type`; repeated failures of the same dependency are deduplicated within each phase. This replaces the former top-level `phase: type` marker on check output; consumers should inspect `mode` for collection mode and each error’s `phase` for type-time origin. Exit codes are 0 for success, 1 for program errors and 2 for usage or input-file failures. Successful ordinary-data roots retain the YAML round-trip contract; function/machine roots use the named inspection contract.
 
@@ -362,7 +396,7 @@ budgets; this migration does not add observation, application or disk recovery.
 
 ## Error kinds
 
-`permission` (a denied file import), `effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `conflict` (incompatible class parents), `abstract` (unfilled required fields on realization), `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (syntax/value, call, dependency or import nesting), `limit` (work/data/graph or iteration budgets), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
+`permission` (a denied file import), `effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `predicate` (a type predicate raised or returned a non-boolean), `conflict` (incompatible class parents), `abstract` (unfilled required fields on realization), `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (syntax/value, call, dependency or import nesting), `limit` (work/data/graph or iteration budgets), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
 
 ## Testing in Helix
 

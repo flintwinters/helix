@@ -142,12 +142,28 @@
     - {"$call": ["get", {"$call": ["get", {"$ref": "malformed"}, 0]}, "violations"]}
     - - "at": "/dependencies/1"
         "message": "expected string, got integer"
+        "expected": "string"
+        "actual": 7
+        "actual_present": true
+        "rule": "type"
       - "at": "/dependencies/2"
         "message": "expected string, got null"
+        "expected": "string"
+        "actual": null
+        "actual_present": true
+        "rule": "type"
       - "at": "/name"
         "message": "expected string, got integer"
+        "expected": "string"
+        "actual": 9
+        "actual_present": true
+        "rule": "type"
       - "at": "/owner"
         "message": "expected string, got boolean"
+        "expected": "string"
+        "actual": false
+        "actual_present": true
+        "rule": "type"
 "broken_survives":
   "$call":
   - "assert"

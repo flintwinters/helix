@@ -1,5 +1,209 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": int_to_int
+      location:
+        path:
+          - twice
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - applied
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      params:
+        - integer
+      result: integer
+      type: function
+    value:
+      kind: function
+      location:
+        path:
+          - inc
+        source: "<root>"
+  - declaration:
+      code: integer
+      location:
+        path:
+          - twice
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - applied
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 3
+  - declaration:
+      code: integer
+      location:
+        path:
+          - inc
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - twice
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: integer
+    value: 3
+  - declaration:
+      code: integer
+      location:
+        path:
+          - inc
+          - "$call"
+          - 3
+        source: "<root>"
+    kind: result
+    target:
+      path:
+        - inc
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 4
+  - declaration:
+      code: integer
+      location:
+        path:
+          - inc
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - twice
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: integer
+    value: 4
+  - declaration:
+      code: integer
+      location:
+        path:
+          - inc
+          - "$call"
+          - 3
+        source: "<root>"
+    kind: result
+    target:
+      path:
+        - inc
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 5
+  - declaration:
+      code: integer
+      location:
+        path:
+          - twice
+          - "$call"
+          - 3
+        source: "<root>"
+    kind: result
+    target:
+      path:
+        - twice
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 5
+  - declaration:
+      code: integer
+      location:
+        path:
+          - twice
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - caught
+        - unannotated_callback
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 3
+  - declaration:
+      code: integer
+      location:
+        path:
+          - twice
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - caught
+        - wrong_callback
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 3
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$ref": "n"
+    environment: []
+    kind: function
+    location:
+      path:
+        - plain
+      source: "<root>"
+    program:
+      ref: object4
+  object1:
     bindings: {}
     code:
       "$call":
@@ -16,21 +220,6 @@ objects:
     location:
       path:
         - inc
-      source: "<root>"
-    program:
-      ref: object4
-  object1:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - "n"
-        - "$ref": "n"
-    environment: []
-    kind: function
-    location:
-      path:
-        - plain
       source: "<root>"
     program:
       ref: object4
@@ -298,10 +487,15 @@ root:
     unannotated_callback: "1 type violation in the arguments of `/twice`: expected function (integer) -> integer, got function (any) -> any"
     wrong_callback: "1 type violation in the arguments of `/twice`: expected function (integer) -> integer, got function (any) -> string"
   explained:
-    - at: /
+    - actual:
+        ref: object0
+      actual_present: true
+      at: /
+      expected: "function (integer) -> integer"
       message: "expected function (integer) -> integer, got function (any) -> any"
+      rule: signature
   inc:
-    ref: object0
+    ref: object1
   int_to_int:
     params:
       - integer
@@ -324,7 +518,7 @@ root:
     param_not_covariant: false
     result_covariant: true
   plain:
-    ref: object1
+    ref: object0
   show:
     ref: object2
   twice:

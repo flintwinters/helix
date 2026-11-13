@@ -1,3 +1,882 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - report
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: tests/cases/../../tooling/inventory.yaml
+    kind: parameter
+    target:
+      path:
+        - empty
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/inventory.yaml
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/inventory.yaml
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - report
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - groups
+          - "$call"
+          - 2
+        source: tests/cases/../../tooling/inventory.yaml
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - report
+          - "$call"
+          - 3
+        source: tests/cases/../../tooling/inventory.yaml
+    kind: result
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/inventory.yaml
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - report
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: tests/cases/../../tooling/inventory.yaml
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - directory: src
+        path: src/vm.rs
+      - directory: std
+        path: std/group.yaml
+      - directory: src
+        path: "src/雪.rs"
+      - directory: "."
+        path: README.md
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/inventory.yaml
+    type: list
+    value:
+      - directory: src
+        path: src/vm.rs
+      - directory: std
+        path: std/group.yaml
+      - directory: src
+        path: "src/雪.rs"
+      - directory: "."
+        path: README.md
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/inventory.yaml
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - report
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - groups
+          - "$call"
+          - 2
+        source: tests/cases/../../tooling/inventory.yaml
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      ".":
+        - directory: "."
+          path: README.md
+      src:
+        - directory: src
+          path: src/vm.rs
+        - directory: src
+          path: "src/雪.rs"
+      std:
+        - directory: std
+          path: std/group.yaml
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/inventory.yaml
+    type: list
+    value:
+      - directory: src
+        path: src/vm.rs
+      - directory: std
+        path: std/group.yaml
+      - directory: src
+        path: "src/雪.rs"
+      - directory: "."
+        path: README.md
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/inventory.yaml
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - report
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - groups
+          - "$call"
+          - 2
+        source: tests/cases/../../tooling/inventory.yaml
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      ".":
+        - directory: "."
+          path: README.md
+      src:
+        - directory: src
+          path: src/vm.rs
+        - directory: src
+          path: "src/雪.rs"
+      std:
+        - directory: std
+          path: std/group.yaml
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/inventory.yaml
+    type: list
+    value:
+      - directory: src
+        path: src/vm.rs
+      - directory: std
+        path: std/group.yaml
+      - directory: src
+        path: "src/雪.rs"
+      - directory: "."
+        path: README.md
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/inventory.yaml
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - report
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - groups
+          - "$call"
+          - 2
+        source: tests/cases/../../tooling/inventory.yaml
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      ".":
+        - directory: "."
+          path: README.md
+      src:
+        - directory: src
+          path: src/vm.rs
+        - directory: src
+          path: "src/雪.rs"
+      std:
+        - directory: std
+          path: std/group.yaml
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/inventory.yaml
+    type: list
+    value:
+      - directory: src
+        path: src/vm.rs
+      - directory: std
+        path: std/group.yaml
+      - directory: src
+        path: "src/雪.rs"
+      - directory: "."
+        path: README.md
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/inventory.yaml
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - report
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - groups
+          - "$call"
+          - 2
+        source: tests/cases/../../tooling/inventory.yaml
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      ".":
+        - directory: "."
+          path: README.md
+      src:
+        - directory: src
+          path: src/vm.rs
+        - directory: src
+          path: "src/雪.rs"
+      std:
+        - directory: std
+          path: std/group.yaml
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/inventory.yaml
+    type: list
+    value:
+      - directory: src
+        path: src/vm.rs
+      - directory: std
+        path: std/group.yaml
+      - directory: src
+        path: "src/雪.rs"
+      - directory: "."
+        path: README.md
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/inventory.yaml
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - report
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - groups
+          - "$call"
+          - 2
+        source: tests/cases/../../tooling/inventory.yaml
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      ".":
+        - directory: "."
+          path: README.md
+      src:
+        - directory: src
+          path: src/vm.rs
+        - directory: src
+          path: "src/雪.rs"
+      std:
+        - directory: std
+          path: std/group.yaml
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/inventory.yaml
+    type: list
+    value:
+      - directory: src
+        path: src/vm.rs
+      - directory: std
+        path: std/group.yaml
+      - directory: src
+        path: "src/雪.rs"
+      - directory: "."
+        path: README.md
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/inventory.yaml
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - report
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - groups
+          - "$call"
+          - 2
+        source: tests/cases/../../tooling/inventory.yaml
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      ".":
+        - directory: "."
+          path: README.md
+      src:
+        - directory: src
+          path: src/vm.rs
+        - directory: src
+          path: "src/雪.rs"
+      std:
+        - directory: std
+          path: std/group.yaml
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/inventory.yaml
+    type: list
+    value:
+      - directory: src
+        path: src/vm.rs
+      - directory: std
+        path: std/group.yaml
+      - directory: src
+        path: "src/雪.rs"
+      - directory: "."
+        path: README.md
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - groups
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/inventory.yaml
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - report
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - groups
+          - "$call"
+          - 2
+        source: tests/cases/../../tooling/inventory.yaml
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      ".":
+        - directory: "."
+          path: README.md
+      src:
+        - directory: src
+          path: src/vm.rs
+        - directory: src
+          path: "src/雪.rs"
+      std:
+        - directory: std
+          path: std/group.yaml
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - report
+          - "$call"
+          - 3
+        source: tests/cases/../../tooling/inventory.yaml
+    kind: result
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/inventory.yaml
+    type: list
+    value:
+      - count: 1
+        directory: "."
+        files:
+          - README.md
+      - count: 2
+        directory: src
+        files:
+          - src/vm.rs
+          - "src/雪.rs"
+      - count: 1
+        directory: std
+        files:
+          - std/group.yaml
 objects:
   object0:
     bindings: {}

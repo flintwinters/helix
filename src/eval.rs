@@ -1,13 +1,14 @@
 //! Explicit execution requests and continuations. No transition invokes another interpreter.
 use crate::graph::{Graph, NodeId, ROOT};
 use crate::link;
-use crate::model::{HelixError, string as s};
+use crate::model::{CallOrigin, HelixError, string as s};
 use crate::value::{Hash, Value};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 mod atomic;
+mod annotations;
 mod effects;
 mod expression;
 mod forms;
@@ -55,6 +56,9 @@ impl Evaluator {
             pending_effect: None,
             effects: Vec::new().into(),
             type_inputs: Vec::new().into(),
+            annotations: Vec::new().into(),
+            annotation_units: 0,
+            annotations_truncated: false,
             region: None,
             scopes: 0,
             effects_allowed: true,
@@ -68,7 +72,7 @@ impl Evaluator {
         Self::start(
             function.program.clone(),
             function.environment.clone(),
-            Request::Call(function.node, function, Vec::new()),
+            Request::Call(function.node, function, Vec::new(), Vec::new()),
         )
     }
     fn graph(&self) -> &Graph {
@@ -212,7 +216,7 @@ impl Evaluator {
                     self.request_effect(site, &nodes, &values)?
                 }
 
-                Actor::Function(function) => self.push(Request::Call(site, function, values)),
+                Actor::Function(function) => self.push(Request::Call(site, function, values, nodes)),
                 Actor::Builtin(name) if name == "step" => {
                     let Value::Machine(child) = &values[0] else {
                         return Err(self.err(nodes[0], "type", "expected a vm"));
@@ -229,7 +233,8 @@ impl Evaluator {
                 }
                 Actor::Builtin(name) => self.schedule_builtin(site, nodes, name, values),
             },
-            Request::Call(site, function, args) => {
+            Request::Call(site, function, args, nodes) => {
+                let origin = CallOrigin { program: self.program.clone(), site, args: nodes };
                 self.push(Request::CallTrace(site, function.clone()));
                 let params = self.parameters(&function)?;
                 if params.len() != args.len() {
@@ -261,17 +266,18 @@ impl Evaluator {
                 });
                 self.push(Request::Parameters {
                     site,
+                    origin,
                     function,
                     args,
                     index: 0,
                     found: Vec::new(),
                 });
             }
-            Request::CallArgument(designator, args) => {
-                self.push(Request::CallResolved(designator, args));
+            Request::CallArgument(designator, args, nodes) => {
+                self.push(Request::CallResolved(designator, args, nodes));
                 self.eval(designator);
             }
-            Request::CallResolved(site, args) => {
+            Request::CallResolved(site, args, nodes) => {
                 let Value::Function(function) = self.value() else {
                     return Err(self.err(
                         site,
@@ -279,17 +285,19 @@ impl Evaluator {
                         "expected a function (`{$call: [fn, [params], body]}` or its name)",
                     ));
                 };
-                self.push(Request::Call(site, function, args));
+                self.push(Request::Call(site, function, args, nodes));
             }
             Request::Parameters {
                 site,
+                origin,
                 function,
                 args,
                 index,
                 found,
-            } => self.parameters_next(site, function, args, index, found)?,
+            } => self.parameters_next(site, origin, function, args, index, found)?,
             Request::ParameterType {
                 site,
+                origin,
                 function,
                 args,
                 index,
@@ -300,20 +308,24 @@ impl Evaluator {
                 let value = args[index].clone();
                 self.push(Request::ParameterChecked {
                     site,
+                    origin,
                     function,
                     args,
                     index,
+                    ty: ty.clone(),
                     found,
                 });
                 self.schedule_check(annotation, value, ty);
             }
             Request::ParameterChecked {
                 site,
+                origin,
                 function,
                 args,
                 index,
+                ty,
                 found,
-            } => self.parameter_checked(site, function, args, index, found)?,
+            } => self.parameter_checked(site, origin, function, args, index, ty, found)?,
             Request::CallEnd {
                 environment,
                 program,
@@ -326,7 +338,7 @@ impl Evaluator {
                 self.environment.pop();
                 if let Some(ty) = result_type {
                     let value = self.value();
-                    self.push(Request::ResultAnnotation(body, value));
+                    self.push(Request::ResultAnnotation(body, ty, value));
                     self.eval(ty);
                 }
             }
@@ -354,23 +366,24 @@ impl Evaluator {
                     error.calls.push(Value::Hash(location));
                 }
             }
-            Request::ResultAnnotation(body, value) => {
+            Request::ResultAnnotation(body, declaration, value) => {
                 let ty = self.value();
-                self.push(Request::ResultChecked(body, value.clone()));
-                self.schedule_check(body, value, ty);
+                self.push(Request::ResultChecked(body, declaration, value.clone(), ty.clone()));
+                self.schedule_check(declaration, value, ty);
             }
-            Request::ResultChecked(body, value) => {
+            Request::ResultChecked(body, declaration, value, ty) => {
                 let Value::Array(found) = self.value() else {
                     unreachable!()
                 };
                 if !found.is_empty() {
                     return Err(self.violation_error(body, "the result", found.to_vec()));
                 }
+                self.note_annotation("result", self.graph().reference(body), declaration, ty, value.clone());
                 self.finish(value);
             }
             Request::Branch { name, args, index } => self.branch(name, args, index)?,
             Request::Try(handler) => match self.take() {
-                Err(error) => self.push(Request::CallArgument(handler, vec![error.to_value()])),
+                Err(error) => self.push(Request::CallArgument(handler, vec![error.to_value()], Vec::new())),
                 Ok(value) => self.finish(value),
             },
             Request::Finally(cleanup) => {
@@ -410,7 +423,7 @@ impl Evaluator {
                 self.eval(args[1]);
             }
             Request::Atomic(operation) => self.atomic(operation)?,
-            Request::PredicateEnd(operation) => self.predicate_end(operation),
+            Request::PredicateEnd(operation, predicate) => self.predicate_end(operation, predicate),
             Request::SignatureOf(site, function, pure) => self.signature_of(site, function, pure)?,
             Request::SignatureSlot(function, mut found, pure) => {
                 found.push(self.value());
@@ -488,6 +501,9 @@ impl Evaluator {
         // frames as older inputs, and keep the input ledger accumulated by prior checks.
         state.scopes = self.scopes;
         state.type_inputs = self.type_inputs.clone();
+        state.annotations = self.annotations.clone();
+        state.annotation_units = self.annotation_units;
+        state.annotations_truncated = self.annotations_truncated;
         state.limits = self.limits;
         state.remaining_work = self.remaining_work;
         state.remaining_values = self.remaining_values;

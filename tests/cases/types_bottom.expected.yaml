@@ -17,8 +17,12 @@ root:
   null_not_bottom: false
   only_bottom: true
   rejection:
-    - at: /
+    - actual: ~
+      actual_present: true
+      at: /
+      expected: never
       message: "expected never, got null"
+      rule: type
   rejects_values:
     - false
     - false

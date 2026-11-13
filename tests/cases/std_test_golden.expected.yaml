@@ -1,3 +1,1567 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - bless_missing
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: true
+      expected: ~
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+      replay: ~
+      root: "42\n"
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: true
+      deterministic: true
+      matches_expected: false
+      replay_completed: false
+      replay_matches: false
+      replayable: true
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: true
+      replay: true
+      stage: passed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: true
+      replay: true
+      stage: passed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - bless_no_replay
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: true
+      expected: ~
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+      replay: ~
+      root: ~
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: true
+      deterministic: true
+      matches_expected: false
+      replay_completed: false
+      replay_matches: false
+      replayable: false
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: true
+      replay: false
+      stage: passed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: true
+      replay: false
+      stage: passed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - blessed_replay_failed
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: true
+      expected: ~
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+      replay:
+        returncode: 1
+        root: ~
+      root: "42\n"
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: true
+      deterministic: true
+      matches_expected: false
+      replay_completed: true
+      replay_matches: false
+      replayable: true
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: true
+      replay: false
+      stage: roundtrip
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: true
+      replay: false
+      stage: roundtrip
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - different_exit
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: false
+      expected: "status: finished\nroot: 42\n"
+      repeated:
+        returncode: 1
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+      replay: ~
+      root: "42\n"
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: false
+      deterministic: false
+      matches_expected: true
+      replay_completed: false
+      replay_matches: false
+      replayable: true
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: determinism
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: determinism
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - different_expected
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: false
+      expected: "status: finished\nroot: 43\n"
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+      replay: ~
+      root: "42\n"
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: false
+      deterministic: true
+      matches_expected: false
+      replay_completed: false
+      replay_matches: false
+      replayable: true
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: golden
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: golden
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - different_stderr
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: false
+      expected: "status: finished\nroot: 42\n"
+      repeated:
+        returncode: 0
+        stderr: warning
+        stdout: "status: finished\nroot: 42\n"
+      replay: ~
+      root: "42\n"
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: false
+      deterministic: false
+      matches_expected: true
+      replay_completed: false
+      replay_matches: false
+      replayable: true
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: determinism
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: determinism
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - different_stdout
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: true
+      expected: ~
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: other
+      replay: ~
+      root: "42\n"
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: true
+      deterministic: false
+      matches_expected: false
+      replay_completed: false
+      replay_matches: false
+      replayable: true
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: determinism
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: determinism
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - empty_missing
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: false
+      expected: ~
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: ""
+      replay: ~
+      root: ~
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: ""
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: false
+      deterministic: true
+      matches_expected: false
+      replay_completed: false
+      replay_matches: false
+      replayable: false
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: golden
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: golden
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - empty_present
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: false
+      expected: ""
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: ""
+      replay: ~
+      root: ~
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: ""
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: false
+      deterministic: true
+      matches_expected: true
+      replay_completed: false
+      replay_matches: false
+      replayable: false
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: passed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: passed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - golden_before_replay
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: false
+      expected: ~
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+      replay:
+        returncode: 1
+        root: ~
+      root: "42\n"
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: false
+      deterministic: true
+      matches_expected: false
+      replay_completed: true
+      replay_matches: false
+      replayable: true
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: golden
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: golden
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - literal_text
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: false
+      expected: "{$call: [raise, hostile]}雪\n"
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: "{$call: [raise, hostile]}雪\n"
+      replay: ~
+      root: ~
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "{$call: [raise, hostile]}雪\n"
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: false
+      deterministic: true
+      matches_expected: true
+      replay_completed: false
+      replay_matches: false
+      replayable: false
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: passed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: passed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - missing_expected
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: false
+      expected: ~
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+      replay: ~
+      root: "42\n"
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+  - declaration:
+      code:
+        "$call":
+          - record
+          - deterministic
+          - "$ref": boolean
+          - matches_expected
+          - "$ref": boolean
+          - bless_requested
+          - "$ref": boolean
+          - replayable
+          - "$ref": boolean
+          - replay_completed
+          - "$ref": boolean
+          - replay_matches
+          - "$ref": boolean
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type:
+      fields:
+        bless_requested: boolean
+        deterministic: boolean
+        matches_expected: boolean
+        replay_completed: boolean
+        replay_matches: boolean
+        replayable: boolean
+      type: record
+    value:
+      bless_requested: false
+      deterministic: true
+      matches_expected: false
+      replay_completed: false
+      replay_matches: false
+      replayable: true
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_decision
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_decision
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: golden
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_plan
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      bless: false
+      replay: false
+      stage: golden
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - golden_plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - no_replay
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      bless: false
+      expected: "status: finished\nroot: 42\n"
+      repeated:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+      replay: ~
+      root: ~
+      run:
+        returncode: 0
+        stderr: ""
+        stdout: "status: finished\nroot: 42\n"
+annotations_truncated: true
 root:
   bless_missing:
     bless: true

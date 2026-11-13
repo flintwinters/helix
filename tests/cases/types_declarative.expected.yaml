@@ -216,12 +216,31 @@ objects:
         source: "<root>"
 root:
   all_at_once:
-    - at: /host
+    - actual: 5
+      actual_present: true
+      at: /host
+      expected: string
       message: "expected string, got integer"
-    - at: /port
+      rule: type
+    - actual: 0
+      actual_present: true
+      at: /port
+      expected: refined integer
       message: failed its refinement check
-    - at: /extra
+      predicate:
+        column: 10
+        line: 3
+        path: /in_port
+        reference:
+          - in_port
+        source: "<root>"
+      rule: refinement
+    - actual: 1
+      actual_present: true
+      at: /extra
+      expected: never
       message: "unexpected field `extra`"
+      rule: closed_record
   endpoint:
     fields:
       host: string
@@ -270,10 +289,18 @@ root:
       - info
       - warn
   nested:
-    - at: /0/1
+    - actual: a
+      actual_present: true
+      at: /0/1
+      expected: integer
       message: "expected integer, got string"
-    - at: /1/0
+      rule: type
+    - actual: b
+      actual_present: true
+      at: /1/0
+      expected: integer
       message: "expected integer, got string"
+      rule: type
   no_type: "unknown type `nonsense`"
   port:
     check:

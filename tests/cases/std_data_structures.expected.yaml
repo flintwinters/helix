@@ -1,3 +1,1240 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - enqueue
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:queue"
+    kind: parameter
+    target:
+      path:
+        - queue
+        - "$call"
+        - 1
+        - xs
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - enqueue
+          - "$call"
+          - 3
+        source: "std:queue"
+    kind: result
+    target:
+      path:
+        - enqueue
+        - "$call"
+        - 2
+      source: "std:queue"
+    type: list
+    value:
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - enqueue
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:queue"
+    kind: parameter
+    target:
+      path:
+        - queue
+        - "$call"
+        - 1
+        - xs
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - enqueue
+          - "$call"
+          - 3
+        source: "std:queue"
+    kind: result
+    target:
+      path:
+        - enqueue
+        - "$call"
+        - 2
+      source: "std:queue"
+    type: list
+    value:
+      - ~
+      - false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - peek
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:queue"
+    kind: parameter
+    target:
+      path:
+        - queue
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - ~
+      - false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - first
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - peek
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:queue"
+    type: list
+    value:
+      - ~
+      - false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - dequeue
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:queue"
+    kind: parameter
+    target:
+      path:
+        - queue
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - ~
+      - false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - drop
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - dequeue
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:queue"
+    type: list
+    value:
+      - ~
+      - false
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - drop
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - dequeue
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:queue"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - drop
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - dequeue
+          - "$call"
+          - 3
+        source: "std:queue"
+    kind: result
+    target:
+      path:
+        - dequeue
+        - "$call"
+        - 2
+      source: "std:queue"
+    type: list
+    value:
+      - false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - peek
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:queue"
+    kind: parameter
+    target:
+      path:
+        - queue
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - first
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - peek
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:queue"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - union
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - sets
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 2
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - union
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - sets
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value:
+      - 3
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - union
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+      - 2
+      - 3
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+      - 2
+      - 3
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - unique
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - 2
+      - 1
+      - 3
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+      - 3
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - union
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - union
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value:
+      - 2
+      - 1
+      - 3
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - intersection
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - sets
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - ~
+      - false
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - intersection
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - sets
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value:
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - intersection
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - ~
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - ~
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - unique
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value:
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - intersection
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - intersection
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value:
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - sets
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+      - 2
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - sets
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "<root>"
+    type: list
+    value:
+      - 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:set"
+    kind: parameter
+    target:
+      path:
+        - difference
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - 1
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:set"
+    type: list
+    value:
+      - 1
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - unique
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - from
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - from
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - difference
+          - "$call"
+          - 3
+        source: "std:set"
+    kind: result
+    target:
+      path:
+        - difference
+        - "$call"
+        - 2
+      source: "std:set"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - push
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:stack"
+    kind: parameter
+    target:
+      path:
+        - stack
+        - "$call"
+        - 1
+        - xs
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - push
+          - "$call"
+          - 3
+        source: "std:stack"
+    kind: result
+    target:
+      path:
+        - push
+        - "$call"
+        - 2
+      source: "std:stack"
+    type: list
+    value:
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - push
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:stack"
+    kind: parameter
+    target:
+      path:
+        - stack
+        - "$call"
+        - 1
+        - xs
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - push
+          - "$call"
+          - 3
+        source: "std:stack"
+    kind: result
+    target:
+      path:
+        - push
+        - "$call"
+        - 2
+      source: "std:stack"
+    type: list
+    value:
+      - ~
+      - false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - peek
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:stack"
+    kind: parameter
+    target:
+      path:
+        - stack
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - ~
+      - false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - last
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - peek
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:stack"
+    type: list
+    value:
+      - ~
+      - false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - pop
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:stack"
+    kind: parameter
+    target:
+      path:
+        - stack
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - ~
+      - false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - take
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - pop
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:stack"
+    type: list
+    value:
+      - ~
+      - false
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - take
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - pop
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:stack"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - take
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - pop
+          - "$call"
+          - 3
+        source: "std:stack"
+    kind: result
+    target:
+      path:
+        - pop
+        - "$call"
+        - 2
+      source: "std:stack"
+    type: list
+    value:
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - peek
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:stack"
+    kind: parameter
+    target:
+      path:
+        - stack
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - last
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - peek
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:stack"
+    type: list
+    value: []
 root:
   queue:
     - ~

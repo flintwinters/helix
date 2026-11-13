@@ -199,6 +199,9 @@ impl Vm {
                 state.remaining_values = runner.remaining_values;
                 state.scopes = runner.scopes;
                 state.type_inputs = runner.type_inputs.clone();
+                state.annotations = runner.annotations.clone();
+                state.annotation_units = runner.annotation_units;
+                state.annotations_truncated = runner.annotations_truncated;
                 state.memo.extend(runner.memo.clone());
             }
             if let Some(error) = machine.error.take() {
@@ -208,6 +211,14 @@ impl Vm {
                         && e.message == error.message
                         && e.phase == error.phase
                         && e.file == error.file
+                        // A shared rule can fail for distinct values. Preserve their
+                        // exact data, including integer/float representations, while
+                        // still coalescing the same failed dependency.
+                        && match (&e.data, &error.data) {
+                            (None, None) => true,
+                            (Some(a), Some(b)) => a.same_view(b),
+                            _ => false,
+                        }
                 }) {
                     self.errors.push(error)
                 }
@@ -271,6 +282,12 @@ impl Vm {
             }
             if !evaluator.type_inputs.is_empty() {
                 fields.insert(s("type_time_inputs"), evaluator.type_input_names());
+            }
+            if !evaluator.annotations.is_empty() {
+                fields.insert(s("annotations"), Value::Array(evaluator.annotations.clone().into()));
+            }
+            if evaluator.annotations_truncated {
+                fields.insert(s("annotations_truncated"), Value::Boolean(true));
             }
             if let Some(event) = &evaluator.signal {
                 fields.insert(s("signal"), event.clone());

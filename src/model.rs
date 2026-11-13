@@ -85,6 +85,13 @@ pub(crate) enum Actor {
     Builtin(String),
     Function(Arc<Function>),
 }
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct CallOrigin {
+    pub program: Arc<Program>,
+    pub site: NodeId,
+    /// Empty for synthesized callback arguments, whose values have no source operands.
+    pub args: Vec<NodeId>,
+}
 /// Each pending operation is plain, owned state; error handlers are continuations too.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Request {
@@ -109,10 +116,10 @@ pub(crate) enum Request {
         values: Vec<Value>,
     },
     Apply(NodeId, Actor, Vec<NodeId>, Vec<Value>),
-    Call(NodeId, Arc<Function>, Vec<Value>),
+    Call(NodeId, Arc<Function>, Vec<Value>, Vec<NodeId>),
     CallTrace(NodeId, Arc<Function>),
-    CallArgument(NodeId, Vec<Value>),
-    CallResolved(NodeId, Vec<Value>),
+    CallArgument(NodeId, Vec<Value>, Vec<NodeId>),
+    CallResolved(NodeId, Vec<Value>, Vec<NodeId>),
     CallEnd {
         environment: Vec<Scope>,
         program: Arc<Program>,
@@ -121,10 +128,11 @@ pub(crate) enum Request {
         result_type: Option<NodeId>,
         body: NodeId,
     },
-    ResultAnnotation(NodeId, Value),
-    ResultChecked(NodeId, Value),
+    ResultAnnotation(NodeId, NodeId, Value),
+    ResultChecked(NodeId, NodeId, Value, Value),
     Parameters {
         site: NodeId,
+        origin: CallOrigin,
         function: Arc<Function>,
         args: Vec<Value>,
         index: usize,
@@ -132,6 +140,7 @@ pub(crate) enum Request {
     },
     ParameterType {
         site: NodeId,
+        origin: CallOrigin,
         function: Arc<Function>,
         args: Vec<Value>,
         index: usize,
@@ -140,9 +149,11 @@ pub(crate) enum Request {
     },
     ParameterChecked {
         site: NodeId,
+        origin: CallOrigin,
         function: Arc<Function>,
         args: Vec<Value>,
         index: usize,
+        ty: Value,
         found: Vec<Value>,
     },
     Branch {
@@ -170,7 +181,7 @@ pub(crate) enum Request {
     Refine(NodeId, Vec<NodeId>, Value),
     Refined(NodeId, Vec<NodeId>, Value),
     Atomic(Atomic),
-    PredicateEnd(Atomic),
+    PredicateEnd(Atomic, bool),
     /// Begin evaluating a function's declared signature in its own lexical environment; the flag
     /// also asks whether the function is provably effect-free.
     SignatureOf(NodeId, Arc<Function>, bool),
@@ -200,6 +211,8 @@ pub(crate) struct Atomic {
     pub(crate) nodes: Vec<NodeId>,
     pub(crate) operation: Operation,
     pub(crate) answers: Vec<Result<Value, String>>,
+    pub(crate) cause: Option<Value>,
+    pub(crate) predicate_failed: bool,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Operation {
@@ -233,6 +246,10 @@ pub(crate) struct Evaluator {
     pub(crate) effects: List,
     /// Values that outermost type-time regions read from outside themselves, by region.
     pub(crate) type_inputs: List,
+    /// Bounded successful annotation evidence; ordinary values remain unwrapped.
+    pub(crate) annotations: List,
+    pub(crate) annotation_units: usize,
+    pub(crate) annotations_truncated: bool,
     pub(crate) region: Option<Region>,
     /// Frames created so far; see `Scope::born`.
     pub(crate) scopes: usize,

@@ -43,6 +43,28 @@ def verify(h):
     root = yaml.safe_load(result.stdout)["root"]
     assert root["text"] == "add" and root["items"] == ["add", "x"] and root["answer"] == 42
 
+    # Recovery reloads annotated function source, not executable inspection data.
+    source = {'number': 'integer', 'f': {'$call': ['fn', [['n', {'$ref': 'number'}]],
+              {'$ref': 'n'}, {'$ref': 'number'}]}, 'bad': {'$call': ['div', 1, 0]}}
+    failed = h.helix('recover', '-', stdin=yaml.safe_dump(source))
+    saved = yaml.safe_load(failed.stdout)
+    assert failed.returncode == 1, failed
+    program = yaml.safe_load(saved['recovery'])
+    assert program['f'] == source['f'], program
+    program.pop('bad')
+    for argument, code in ((7, 0), ('wrong', 1)):
+        program['answer'] = {'$call': ['f', argument]}
+        saved['recovery'] = yaml.safe_dump(program)
+        result = h.helix('resume', '-', stdin=yaml.safe_dump(saved))
+        state = yaml.safe_load(result.stdout)
+        assert result.returncode == code, result
+        if code == 0:
+            assert state['root']['answer'] == 7 and any(
+                row['kind'] == 'parameter' and row['declaration']['code'] == {'$ref': 'number'}
+                for row in state['annotations']), state
+        else:
+            assert state['error']['kind'] == 'type', state
+
     for source in ['{"$call": ["div", 1, 0]}', '42', 'null', '[]', '{}']:
         result = h.helix("recover", "-", stdin=source)
         assert result.returncode in (0, 1) and not result.stderr, result

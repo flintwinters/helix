@@ -93,4 +93,6 @@ def verify_constraint_realization(h):
             "rechecked": call("try", call("realize", ref("pending")), call("fn", ["error"], ref("error")))})
         result = checked(h, json.dumps(source))
         assert result["concrete"] is False, result
-        assert result["rechecked"]["kind"] == "type" and detail in result["rechecked"]["message"], result
+        assert result["rechecked"]["kind"] == "predicate" and detail in result["rechecked"]["message"], result
+        violation, = result["rechecked"]["data"]["violations"]
+        assert violation["rule"] == "predicate_error" and violation["predicate"]["path"] == "/$call/1/pending/$call/2", violation

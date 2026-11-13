@@ -1,3 +1,157 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:convergence"
+    type: map
+    value:
+      enabled: true
+      port: 8080
+      unmanaged: keep
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:convergence"
+    type: map
+    value:
+      enabled: true
+      port: 8080
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 3
+        source: "std:diff"
+    kind: result
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+      source: "std:diff"
+    type: map
+    value:
+      added: []
+      changed: []
+      removed:
+        - unmanaged
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:convergence"
+    type: map
+    value:
+      enabled: true
+      port: 80
+      unmanaged: keep
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:convergence"
+    type: map
+    value:
+      enabled: true
+      port: 8080
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 3
+        source: "std:diff"
+    kind: result
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+      source: "std:diff"
+    type: map
+    value:
+      added: []
+      changed:
+        - after: 8080
+          before: 80
+          key: port
+      removed:
+        - unmanaged
 root:
   accepted_concrete: false
   accepted_pending_converge:
@@ -52,8 +206,25 @@ root:
     column: 39
     data:
       violations:
-        - at: /
+        - actual:
+            enabled: true
+            port: 8080
+          actual_present: true
+          at: /
+          expected: class
           message: "constraint 0 of `service` does not hold"
+          predicate:
+            column: 47
+            line: 7
+            path: "/$call/1/rejected/$call/2"
+            reference:
+              - "$call"
+              - 1
+              - rejected
+              - "$call"
+              - 2
+            source: "<root>"
+          rule: constraint
     kind: type
     line: 22
     message: "constraint 0 of `service` does not hold"

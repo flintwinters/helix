@@ -1,3 +1,54 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - square
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - area
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: tests/cases/modules/geometry.yaml
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - square
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - square
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4
 objects:
   object0:
     bindings: {}
