@@ -115,7 +115,7 @@ checks have no such metadata. This is inspection evidence, not executable snapsh
 restoration: data-only types still round-trip through a `$literal` root, while
 predicate functions and machine graphs require their original sources to execute.
 
-The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Executable disk snapshots and restoration validation use the separate versioned format described below. Machine promises enforce bounded reversibility as described below; debugger UI remains future work. Explicit host effects are described below.
+The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Executable disk snapshots and restoration validation use the separate versioned format described below. Machine promises enforce bounded reversibility as described below. Explicit host effects are described below.
 
 ## Type rules
 

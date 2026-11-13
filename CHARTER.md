@@ -35,7 +35,8 @@ recovery or independently distributed reversibility.
 workloads and preserve the completed nginx contract. The next operational
 expansion must name a concrete need and declare its supported migration scope.
 Sections 8–11 retain deferred possibilities and unresolved acceptance criteria;
-none is an automatic next task.
+none is an automatic next task. Building a UI is out of scope; execution remains
+accessible through APIs and CLI tooling.
 
 **Admission rule:** section 12 governs every addition and policy migration.
 Complete useful workloads and simplify existing semantics before opening another
@@ -1028,12 +1029,3 @@ structural class membership and merge rules are decided in
 [LANGUAGE.md](LANGUAGE.md). Executable persistence uses versioned snapshots;
 inspection and pure failed-run recovery remain separate formats. Remaining type
 proofs, richer algebra and composition experiments stay in section 8.
-
-Legacy reuse decision: use `flintwinters/helixcpp` as a reference for the planned
-interactive debugger, especially literal-YAML navigation, child-VM stepping,
-manual-edit forks and Git-backed execution history (`HUI.md`,
-`tui/helix_step.py`, `tui/tests/` in that repository). Adapt interaction contracts
-and regression scenarios to the current VM and snapshot APIs; do not import a
-second evaluator or assume the legacy state format is compatible. C compilation,
-embedded targets and graphics bindings remain deferred until a concrete workload
-justifies them. There is no blanket porting milestone.

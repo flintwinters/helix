@@ -175,9 +175,6 @@ and needs Git, Node.js, and npm; the command sets it up when needed.
 - [AGENTS.md](AGENTS.md): architecture, invariants, and change discipline.
 - [std/](std/): bundled libraries written in Helix; `./manage.py std` lists them.
 
-The earlier C++ experiment lives in
-[flintwinters/helixcpp](https://github.com/flintwinters/helixcpp).
-
 ### Change workflow
 
 - Keep implementation and regression coverage in the same logical checkpoint.
