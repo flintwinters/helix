@@ -9,7 +9,7 @@ use crate::builtins::fault::Fault;
 use crate::model::string as s;
 
 /// `{type: kind, ..entries}`.
-pub(super) fn descriptor<const N: usize>(kind: &str, entries: [(&str, Value); N]) -> Value {
+pub(crate) fn descriptor<const N: usize>(kind: &str, entries: [(&str, Value); N]) -> Value {
     let mut map = Hash::new();
     map.insert(s("type"), s(kind));
     for (k, v) in entries {

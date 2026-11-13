@@ -8,6 +8,7 @@ import yaml
 def check(ctx):
     try:
         verify_checks(ctx)
+        verify_bodies(ctx)
         verify_format(ctx)
         verify_lsp(ctx)
         return []
@@ -32,6 +33,42 @@ def verify_checks(ctx):
     assert result.returncode == 1 and yaml.safe_load(result.stdout)['status'] == 'error', result
     schema = ctx.helix('schema')
     assert schema.returncode == 0 and json.loads(schema.stdout) == json.loads((ctx.root / 'editor/helix.schema.json').read_text()), schema
+
+
+def static_report(ctx, source):
+    result = ctx.helix('check', '-', stdin=source)
+    return result.returncode, yaml.safe_load(result.stdout)
+
+
+def verify_bodies(ctx):
+    """Annotated bodies and call sites are checked without running: definite mismatches fail,
+    possible ones and unanalyzable code are listed as unchecked."""
+    def fn(params, body, result=None):
+        return {'$call': ['fn', params, body] + ([result] if result else [])}
+    ok = {
+        'literal result': fn([], 1, 'integer'),
+        'parameter result': fn([['x', 'integer']], {'$ref': 'x'}, 'integer'),
+        'arithmetic widening': fn([['x', 'integer']], {'$call': ['add', {'$ref': 'x'}, 1.5]}, 'float'),
+        'branches': fn([['x', 'boolean']], {'$call': ['if', {'$ref': 'x'}, 1, 'no']}, {'$call': ['union', 'integer', 'string']}),
+        'call': {'f': fn([['x', 'integer']], {'$ref': 'x'}, 'integer'), 'v': {'$call': ['f', 2]}},
+    }
+    for name, source in ok.items():
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 0 and report['diagnostics'] == [] and report['unchecked'] == [], (name, report)
+    bad = {
+        'result mismatch': (fn([], 'a', 'integer'), 'type'),
+        'operand mismatch': (fn([['x', 'string']], {'$call': ['add', {'$ref': 'x'}, 1]}), 'type'),
+        'argument mismatch': ({'f': fn([['x', 'integer']], {'$ref': 'x'}), 'v': {'$call': ['f', 'no']}}, 'type'),
+        'call arity': ({'f': fn([['x', 'integer']], {'$ref': 'x'}), 'v': {'$call': ['f', 1, 2]}}, 'type'),
+        'effect in region': ({'$call': ['type_time', {'$call': ['effect', 'read_file', 'x']}]}, 'type'),
+    }
+    for name, (source, kind) in bad.items():
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 1 and report['diagnostics'] and report['diagnostics'][0]['kind'] == kind, (name, report)
+    # A union argument may or may not satisfy the parameter: not an error, but not silent.
+    code, report = static_report(ctx, json.dumps({'f': fn([['x', 'integer']], {'$ref': 'x'}),
+        'g': fn([['y', {'$call': ['union', 'integer', 'string']}], ], {'$call': ['f', {'$ref': 'y'}]})}))
+    assert code == 0 and report['diagnostics'] == [] and [d['kind'] for d in report['unchecked']] == ['unchecked'], report
 
 
 def verify_format(ctx):

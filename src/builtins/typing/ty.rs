@@ -41,7 +41,7 @@ pub fn is_primitive(name: &str) -> bool {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(super) enum Ty {
+pub(crate) enum Ty {
     Any,
     Never,
     Int,
@@ -70,7 +70,7 @@ pub(super) enum Ty {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(super) struct Field {
+pub(crate) struct Field {
     pub ty: Ty,
     pub required: bool,
     pub default: Option<Value>,
@@ -113,7 +113,7 @@ fn member<'a>(map: &'a Hash, key: &str) -> Result<&'a Value, String> {
 }
 
 impl Ty {
-    pub(super) fn parse(ty: &Value) -> Result<Ty, String> {
+    pub(crate) fn parse(ty: &Value) -> Result<Ty, String> {
         match ty {
             Value::String(name) => Ok(match name.as_str() {
                 "any" => Ty::Any,
@@ -176,6 +176,31 @@ impl Ty {
         }
     }
 
+    /// Whether every value of `self` is provably a value of `other`; predicates are never run.
+    pub(crate) fn below(&self, other: &Ty) -> bool {
+        subtype(self, other, &mut |_| Err("static".into()))
+    }
+
+    /// Whether some value could inhabit both: `false` only when the types are clearly disjoint.
+    /// Refinements are taken at their base, records and element types are not compared deeply.
+    pub(crate) fn overlaps(&self, other: &Ty) -> bool {
+        match (self, other) {
+            (Ty::Never, _) | (_, Ty::Never) => false,
+            (Ty::Any, _) | (_, Ty::Any) => true,
+            (Ty::Union(members), _) => members.iter().any(|m| m.overlaps(other)),
+            (_, Ty::Union(members)) => members.iter().any(|m| self.overlaps(m)),
+            (Ty::Refine(base, _), _) => base.overlaps(other),
+            (_, Ty::Refine(base, _)) => self.overlaps(base),
+            (Ty::Enum(values), _) => values.iter().any(|v| holds(v, other, &mut |_| Ok(Value::Boolean(true)))),
+            (_, Ty::Enum(values)) => values.iter().any(|v| holds(v, self, &mut |_| Ok(Value::Boolean(true)))),
+            (Ty::List(_), Ty::List(_)) | (Ty::Map(_), Ty::Map(_)) => true,
+            (Ty::Record(_) | Ty::Class(..), Ty::Record(_) | Ty::Class(..)) => true,
+            (Ty::Function | Ty::Fn(..), Ty::Function | Ty::Fn(..)) => true,
+            (Ty::Int, Ty::Int) | (Ty::Float, Ty::Float) | (Ty::Str, Ty::Str) | (Ty::Bool, Ty::Bool) | (Ty::Null, Ty::Null) | (Ty::Secret, Ty::Secret) | (Ty::Vm, Ty::Vm) => true,
+            _ => false,
+        }
+    }
+
     /// This function type with the purity requirement met, so a failed check can say whether purity
     /// alone was the difference.
     fn purely(&self) -> Ty {
@@ -186,7 +211,7 @@ impl Ty {
     }
 
     /// Short human description used in violation messages.
-    pub(super) fn name(&self) -> String {
+    pub(crate) fn name(&self) -> String {
         match self {
             Ty::Any => "any".into(),
             Ty::Never => "never".into(),

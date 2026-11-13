@@ -265,7 +265,7 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
   - [x] Describe parameter and result types, including higher-order functions (`function_of`; `types_function_signatures`)
   - [x] Define parameter/result variance and callable compatibility: parameters contravariant, result covariant, same arity; membership evaluates a function's declared annotations without calling it, and unannotated results promise only `any`
   - [x] Express effect contracts: `pure_function_of` demands source-provable freedom from `effect`/`step`, with callee parameters promised pure by their own annotations (`types_function_purity`)
-  - [ ] Check statically that code reachable from a `type_time` region meets the purity contract before it runs
+  - [x] Check statically that code reachable from a `type_time` region meets the purity contract before it runs (a definite `effect` is a `type` error; calls the scan cannot see through are listed `unchecked`)
 - [ ] Support named recursive types
   - [ ] Define guardedness, unfolding, equality and termination of checking
   - [ ] Distinguish recursive descriptions from erroneous evaluation cycles
@@ -285,7 +285,7 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
 Current annotations and refinements enforce contracts during evaluation. `type_time` explicitly evaluates pure code; it does not infer types or prove unexecuted code safe. The non-executing `check` command provides conservative diagnostics, while `check --evaluate` collects evaluation failures. The goals below extend those boundaries; the formal guarantees belong under "Strengthening and proving the type system."
 
 - [ ] Define a statically checkable fragment and the guarantees a successful check provides
-  - [ ] Check annotated function bodies without calling them
+  - [x] Check annotated function bodies without calling them (a small literal fragment: scalars, annotated parameters, arithmetic, comparison, `if`, calls of named functions; definite mismatches are errors, possible ones `unchecked`)
   - [ ] Check both conditional branches without executing their effects
   - [ ] Report dynamic or value-dependent obligations as unchecked rather than passed
 - [ ] Decide the scope of type inference

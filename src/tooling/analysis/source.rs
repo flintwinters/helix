@@ -1,4 +1,5 @@
 //! Non-executing source tools. These passes never link files or construct an evaluator.
+use super::body;
 use crate::graph::{Graph, Kind, ROOT};
 use yaml_rust2::Yaml;
 
@@ -16,10 +17,16 @@ fn object(entries: impl IntoIterator<Item = (&'static str, Yaml)>) -> Yaml {
     )
 }
 
+/// Definite failures, as the LSP reports them.
 pub(super) fn diagnostics(source: &str) -> Vec<Yaml> {
+    analyze(source).0
+}
+
+/// Definite failures, then obligations the static fragment could not settle.
+fn analyze(source: &str) -> (Vec<Yaml>, Vec<Yaml>) {
     let graph = match Graph::parse(source) {
         Ok(graph) => graph,
-        Err(error) => return vec![error.to_value().plain_yaml().unwrap()],
+        Err(error) => return (vec![error.to_value().plain_yaml().unwrap()], Vec::new()),
     };
     let mut errors = Vec::new();
     let mut pending = vec![ROOT];
@@ -83,13 +90,16 @@ pub(super) fn diagnostics(source: &str) -> Vec<Yaml> {
             _ => {}
         }
     }
-    errors
+    let found = body::check(&graph);
+    let yaml = |list: Vec<crate::model::HelixError>| list.into_iter().map(|e| e.to_value().plain_yaml().unwrap());
+    errors.extend(yaml(found.errors));
+    (errors, yaml(found.unchecked).collect())
 }
 
 /// Parse and collect statically known builtin arity errors. No expression is run.
 /// Dynamic calls, imports, types and value-dependent failures remain runtime checks.
 pub fn check(source: &str) -> (String, bool) {
-    let errors = diagnostics(source);
+    let (errors, unchecked) = analyze(source);
     let valid = errors.is_empty();
     let report = object([
         ("version", Yaml::Integer(1)),
@@ -99,6 +109,7 @@ pub fn check(source: &str) -> (String, bool) {
             Yaml::String(if valid { "ok" } else { "error" }.into()),
         ),
         ("diagnostics", Yaml::Array(errors)),
+        ("unchecked", Yaml::Array(unchecked)),
     ]);
     (crate::emit::document(&report), valid)
 }

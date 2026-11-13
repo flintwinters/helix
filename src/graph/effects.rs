@@ -57,10 +57,7 @@ impl Graph {
                     }
                     let operands = match head.and_then(builtins::descriptor) {
                         Some(actor) => callees(actor.name),
-                        None => {
-                            pending.extend(head.and_then(|name| self.named_node(items[0], name, &identity)));
-                            &[0]
-                        }
+                        None => &[0],
                     };
                     for &at in operands {
                         if let Some(&callee) = items.get(at) {
@@ -91,10 +88,14 @@ impl Graph {
         let head = name.split('.').next().unwrap_or(name);
         match self.lexical_site(callee, head) {
             Some(Site::Parameter(function, index)) => self.promises_pure(function, index, module),
-            Some(Site::Entry(_)) => {
-                pending.extend(self.named_node(callee, name, module));
-                true
-            }
+            Some(Site::Entry(_)) => match self.named_node(callee, name, module) {
+                Some(target) => {
+                    pending.push(target);
+                    true
+                }
+                // A member of something that does not link, such as an unresolved import.
+                None => false,
+            },
             None => builtins::descriptor(name).is_some_and(|actor| !matches!(actor.name, "effect" | "step")),
         }
     }
