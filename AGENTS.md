@@ -37,8 +37,7 @@ Complexity must earn its place through concrete workloads. `CHARTER.md` section 
 
 ## Current Big Tasks
 
-Consolidation under `CHARTER.md` section 12 is complete for the scoped Docker nginx workload and its exposed phase, type/class, builtin/library and reference boundaries. The current milestone completes section 8's declarative types: actionable declaration and violation diagnostics, explicit static obligations, and source-preserving annotation inspection. Keep executable disk restoration separate from inspection and bounded static checking separate from evaluation. Keep independent bootstrap and host validation; this milestone does not complete section 11's broader replacement promise.
-
+Consolidation and the declarative-types milestone are complete within their documented bounds. The active work is charter reconciliation and section 7 trust completion, followed by validated pure disk resume, effect-boundary recovery, and the existing nginx workload on one qualified SSH host. Preserve complete explicit continuation state and source identities; snapshot input never supplies host grants. Keep independent bootstrap and host validation, and defer unrelated type algebra, provider breadth and policy migrations.
 1. Measure and improve development feedback on actual production-policy workloads. Further dogfooding must demonstrate a concrete benefit while retaining independent bootstrap and host failure detection; moving more policy into Helix is not itself progress.
 2. Design validated, versioned disk snapshots and reversibility-promise syntax, preserving complete explicit continuation state and readable execution references.
 3. Build declarative machine application on capability-controlled effects, using the scoped Ansible replacement roadmap in `CHARTER.md` section 11; extend replay and interruption guarantees alongside validated disk snapshots, then extend CLI stepping and inspection into an interactive debugger.

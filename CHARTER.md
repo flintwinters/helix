@@ -6,15 +6,20 @@ The test for "daily driver" is simple: I start a task in Helix instead of Python
 
 How to use this file: tick a box only when the feature works end to end *and* has a golden case in `tests/cases/` (run `./manage.py test`). A feature that only works in a demo stays unticked. Edit freely; this file is for humans, while `AGENTS.md` holds the agent-facing architecture and invariants.
 
-Audit (2026-11-12): a parent stays open while any of its stated obligations remain
+Audit (2026-11-13): a parent stays open while any of its stated obligations remain
 open. Implementation evidence is retained even where acceptance is incomplete.
 Section 11's inventory, provider, guarded-command, composition and local command
 lifecycle implementations now pair golden cases in `tests/cases/` with their
 independent acceptance suites. Golden cases fix deterministic plans, diagnostics
 and request boundaries; host suites verify actual effects and lifecycle policy.
 A `tests/programs/` example or generated suite fixture alone is not a golden case.
-Parameter annotation diagnostics name rejected parameters but blame the call as
-a whole; the individual argument-source-blame obligation also remains open.
+Declarative types now retain individual direct-argument blame and bounded
+annotation evidence. Synthesized callbacks retain honest call-site blame.
+Inspection evidence is not executable restoration. Unchecked operational and
+formal-proof commitments below remain open even when component tests exist.
+The active sequence is pure disk resume, effect-boundary recovery, then the
+existing nginx workload on a qualified SSH host; broader algebra and provider
+expansion remain deferred under section 12.
 
 **Where it is headed:** the niche Nix and Ansible occupy, declarative machine configuration, approached through types. A machine config is a type, fully resolved at type time and inheriting from abstract machine type classes; section 8 holds that road. Daily-driver scripting comes first because the config language has to be a language worth using.
 
@@ -121,11 +126,11 @@ leave section 2's complete suspend/resume promise unchanged.
 - [x] Sandbox/permission model for current effects: caller-authorized import/file roots, environment names, executables and HTTP origins, plus stream/clock/random grants; transitive and symlink-escape checks. These are capability boundaries, not OS isolation.
 - [x] Stability promise: documented what may change and what is frozen
 - [x] Language reference (started: `LANGUAGE.md`) and a tutorial that a stranger could follow
-- [ ] A broad strokes changelog — only large feature changes; Git history alone does not fulfill this item
+- [x] A broad strokes [changelog](CHANGELOG.md) records major capabilities, migrations and limitations; Git history supplies detail rather than replacing it
 
 ### Testing depth and breadth
 
-The current-runtime testing infrastructure is implemented; this does not complete every trust/documentation obligation above. The coverage map and limits are in `tests/README.md`; suites and their contracts are discoverable with `./manage.py test --describe`. Actor scenarios are measured in `runtime/coverage/actors.json`, peak RSS and timing in `runtime/memory/report.json`, and compiled mutation sensitivity in `runtime/mutants/report.json`. Scenario counts are not compiler branch-coverage percentages or proofs of exhaustive correctness.
+The current-runtime trust/documentation commitments above are implemented. The persistence obligations below remain open until their features and acceptance evidence land. The coverage map and limits are in `tests/README.md`; suites and their contracts are discoverable with `./manage.py test --describe`. Actor scenarios are measured in `runtime/coverage/actors.json`, peak RSS and timing in `runtime/memory/report.json`, and compiled mutation sensitivity in `runtime/mutants/report.json`. Scenario counts are not compiler branch-coverage percentages or proofs of exhaustive correctness.
 
 Treat testing as a substantial engineering responsibility. The Rust/Python size ratio is a prompt to inspect gaps, not a coverage metric or a target to pad toward. Build on the existing golden, determinism, round-trip and damaged-input checks; every new suite must be reproducible through the root `./manage.py` entrypoint, with Python orchestration and fixtures kept inside the project. Completion requires automated checks demonstrating the claimed contract; golden cases remain required for language features.
 
@@ -263,7 +268,7 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
   - [ ] Fixed-length tuples and heterogeneous positions
   - [ ] Typed map keys
   - [ ] Record row constraints and explicit width/depth subtyping rules
-- [ ] Add function-signature types beyond the current coarse `function` membership check and per-call annotations
+- [x] Add function-signature types beyond coarse `function` membership and per-call annotations (`types_function_signatures`, `types_function_purity`)
   - [x] Describe parameter and result types, including higher-order functions (`function_of`; `types_function_signatures`)
   - [x] Define parameter/result variance and callable compatibility: parameters contravariant, result covariant, same arity; membership evaluates a function's declared annotations without calling it, and unannotated results promise only `any`
   - [x] Express effect contracts: `pure_function_of` demands source-provable freedom from `effect`/`step`, with callee parameters promised pure by their own annotations (`types_function_purity`)
@@ -288,14 +293,14 @@ Current annotations and refinements enforce contracts during evaluation. `type_t
 
 - [ ] Define a statically checkable fragment and the guarantees a successful check provides
   - [x] Check annotated function bodies without calling them (a small literal fragment: scalars, annotated parameters, arithmetic, comparison, `if`, calls of named functions; definite mismatches are errors, possible ones `unchecked`)
-  - [ ] Check both conditional branches without executing their effects
-  - [ ] Report dynamic or value-dependent obligations as unchecked rather than passed
+  - [x] Check both conditional branches in the supported static fragment without executing effects (`static` body and source-traversal regressions); unsupported value reasoning remains unchecked
+  - [x] Report unresolved dynamic or value-dependent obligations as unchecked rather than passed (`static`, declarative annotation and production-policy regressions)
 - [ ] Decide the scope of type inference
   - [ ] Infer supported expression and binding types using the authoritative type algebra
   - [ ] Specify where annotations are required and how inferred types interact with unannotated code
 - [ ] Connect static results to runtime contracts
   - [ ] Reuse the authoritative membership and subtype rules instead of maintaining competing semantics
-  - [ ] Retain runtime checks for obligations outside the supported static fragment
+  - [x] Retain runtime checks for obligations outside the supported static fragment (`type_algebra`, annotated golden cases); a clean static report is not proof of successful execution
   - [ ] Produce structured diagnostics with source blame and explicit unknown/resource-exhausted outcomes
 
 ### Strengthening and proving the type system
@@ -874,8 +879,9 @@ does not complete the broader audits below:
   whole postcondition. Per-file atomic replacement remains partial progress,
   not a transaction or rollback mechanism.
 - Typed records and the existing port type suffice for this fixed workload.
-  General class realization, a generic package/file/service API, additional
-  managers and an SSH transport are deferred. This example does not establish
+  General class realization, a generic package/file/service API and additional
+  managers remain deferred for this workload. The separate SSH command adapter
+  has bounded acceptance evidence; transporting this workload is still open. This example does not establish
   their necessity or fulfill their roadmap obligations.
 - Pure regions now evaluate linked file modules through the same engine as
   embedded modules. Removing the program-wide file-import veto lets reusable
