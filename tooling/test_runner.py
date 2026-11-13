@@ -81,7 +81,7 @@ class GoldenPolicyError(RuntimeError):
     """A failed policy execution, retaining the exact replayable evidence."""
 
     def __init__(self, reason, result, source):
-        super().__init__(f"std:test.golden_plan failed: {reason}")
+        super().__init__(f"std:test.golden_decision failed: {reason}")
         self.result = result
         self.source = source
 
@@ -285,9 +285,19 @@ class TestContext:
         """Ask Helix for the next golden action; reject broken policy execution."""
         import yaml
 
+        replay = observation["replay"]
+        facts = {
+            "deterministic": observation["run"] == observation["repeated"],
+            "matches_expected": observation["run"]["stdout"] == observation["expected"],
+            "bless_requested": observation["bless"],
+            "replayable": observation["root"] is not None,
+            "replay_completed": replay is not None,
+            "replay_matches": replay is not None and replay["returncode"] == 0
+                              and replay["root"] == observation["root"],
+        }
         source = yaml.safe_dump({"$call": ["let", {
             "test": {"$call": ["import", "std:test"]},
-        }, {"$call": ["test.golden_plan", {"$literal": observation}]}]}, allow_unicode=False)
+        }, {"$call": ["test.golden_decision", {"$literal": facts}]}]}, allow_unicode=False)
         result = self.helix("run", "-", stdin=source)
         problem = self.malformed_state(result.stdout, result.returncode)
         if problem is None and (result.returncode != 0 or result.stderr):
@@ -351,11 +361,12 @@ class TestContext:
                 reloaded = self.helix("run", "-", stdin=replay)
                 replay_problem = self.malformed_state(reloaded.stdout, reloaded.returncode)
                 observation["replay"] = {"returncode": reloaded.returncode,
-                                         "root": self.root_section(reloaded.stdout) if replay_problem is None else None}
+                                         "root": self.root_section(reloaded.stdout) if replay_problem is None else None,
+                                         "stdout": reloaded.stdout, "stderr": reloaded.stderr}
                 decision = self.golden_policy(observation)
         except GoldenPolicyError as error:
             return [test_failure(self.root, case, "policy", str(error), "run", error.result,
-                                 source=error.source)]
+                                 source=error.source, observation=observation)]
         # A broken policy must never overwrite an expectation. Valid roundtrip failures
         # retain the established behavior of blessing the original deterministic run.
         if decision["bless"]:

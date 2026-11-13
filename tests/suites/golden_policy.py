@@ -12,6 +12,7 @@ FINISHED = "status: finished\nroot: 42\n"
 
 
 def verify(h):
+    verify_decision_projection(h)
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="golden-policy-") as temporary:
         case = Path(temporary) / "probe.yaml"
         case.write_text("42\n")
@@ -174,3 +175,58 @@ def verify(h):
         assert failures == [], failures
         print(f"golden_policy: fixture={largest.relative_to(h.root)} characters={len(output)} "
               f"policy_calls={calls['policy']} seconds={time.perf_counter() - started:.3f}")
+
+
+def verify_decision_projection(h):
+    """The full compatibility API and host facts share one independently checked policy."""
+    from itertools import product
+
+    cases = []
+    for deterministic, matches, bless, replayable, replay_kind in product(
+            (False, True), (False, True), (False, True), (False, True),
+            ('absent', 'matching', 'wrong-root', 'failed')):
+        root = '42\n' if replayable else None
+        run = {'returncode': 0, 'stdout': FINISHED, 'stderr': ''}
+        repeated = {**run, 'stderr': '' if deterministic else 'different'}
+        replay = (None if replay_kind == 'absent' else {
+            'returncode': 1 if replay_kind == 'failed' else 0,
+            'root': '43\n' if replay_kind == 'wrong-root' else root})
+        observation = {'run': run, 'repeated': repeated, 'expected': FINISHED if matches else None,
+                       'bless': bless, 'root': root, 'replay': replay}
+        facts = {'deterministic': deterministic, 'matches_expected': matches,
+                 'bless_requested': bless, 'replayable': replayable,
+                 'replay_completed': replay is not None,
+                 'replay_matches': replay_kind == 'matching'}
+        accepted = deterministic and (matches or bless)
+        stage = ('determinism' if not deterministic else 'golden' if not accepted else
+                 'roundtrip' if replayable and replay is not None and replay_kind != 'matching' else 'passed')
+        expected = {'stage': stage, 'bless': deterministic and bless,
+                    'replay': accepted and replayable and replay is None}
+        cases.append((observation, facts, expected))
+
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    program = call('let', {'test': call('import', 'std:test')}, [
+        [call('test.golden_plan', {'$literal': observation}),
+         call('test.golden_decision', {'$literal': facts})]
+        for observation, facts, _ in cases])
+    result = h.helix('run', '-', stdin=yaml.safe_dump(program))
+    assert result.returncode == 0 and not result.stderr, result
+    assert yaml.safe_load(result.stdout) == {'status': 'finished', 'root': [
+        [expected, expected] for _, _, expected in cases]}, result.stdout
+
+    for observation, facts, expected in cases:
+        # The full API can describe combinations the host lifecycle never emits;
+        # its independent replay veto remains stricter than policy selection.
+        if not facts['replayable'] and facts['replay_completed']:
+            continue
+        def runner(args, **kwargs):
+            source = yaml.safe_load(kwargs['input'])
+            invocation = source['$call'][2]['$call']
+            assert invocation[0] == 'test.golden_decision', invocation
+            projected = invocation[1]['$literal']
+            assert projected == facts and all(type(value) is bool for value in projected.values()), projected
+            return subprocess.CompletedProcess(args, 0, yaml.safe_dump({
+                'status': 'finished', 'root': expected}), '')
+        assert replace(h, process_runner=runner).golden_policy(observation) == expected

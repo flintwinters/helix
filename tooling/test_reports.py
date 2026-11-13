@@ -2,7 +2,7 @@
 
 
 def failure(root, case, stage, reason, command, result, *, source=None, expected=None, source_cwd=None,
-            replay_args=None):
+            replay_args=None, observation=None):
     """Keep complete evidence on disk and a focused, navigable report in stderr."""
     import difflib
     from itertools import islice
@@ -18,6 +18,10 @@ def failure(root, case, stage, reason, command, result, *, source=None, expected
     directory = Path(tempfile.mkdtemp(prefix="run-", dir=parent))
     (directory / "actual.yaml").write_text(result.stdout)
     (directory / "stderr.txt").write_text(result.stderr)
+    if observation is not None:
+        import json
+
+        (directory / "observation.json").write_text(json.dumps(observation, ensure_ascii=False, indent=2) + "\n")
     replay = relative
     if source is not None:
         replay = (directory / "input.yaml").relative_to(root)

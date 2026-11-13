@@ -41,6 +41,8 @@ def harness(h):
     verify_states(h)
     from tests.suites.test_runner import verify as verify_runner
     verify_runner(h)
+    from tests.suites.golden_evidence import verify as verify_golden_evidence
+    verify_golden_evidence(h)
     from tests.suites.build_lock import verify as verify_build_lock
     verify_build_lock(h)
     from tests.suites.mutation_generation import verify as verify_mutations

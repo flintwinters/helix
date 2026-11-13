@@ -367,48 +367,55 @@
             - {"$call": ["fn", ["ignored"], {"$ref": "alphabet"}]}
             - {"$call": ["sequences.range", {"$ref": "size"}]}
   - {"$ref": "list"}
-# Golden-run policy over host-captured text. The host independently validates
-# interpreter states and supervises processes before trusting this plan.
-# root:null excludes replay; otherwise replay:null requests it. A replay result
-# has {returncode, root}. Missing expectations are null, distinct from empty text.
+# Full captured observations remain a public convenience API. Hosts may instead
+# supply exact comparison facts to golden_decision without transporting the text.
+# Missing expectations are null, distinct from empty text. Replay is null until
+# completed; its non-null shape is {returncode, root}.
+golden_plan:
+  $call:
+  - fn
+  - [[observation, {$ref: map}]]
+  - $call:
+    - let
+    - run: {$call: [get, {$ref: observation}, run]}
+      replay: {$call: [get, {$ref: observation}, replay]}
+    - $call:
+      - golden_decision
+      - deterministic: {$call: [eq, {$ref: run}, {$call: [get, {$ref: observation}, repeated]}]}
+        matches_expected: {$call: [eq, {$call: [get, {$ref: run}, stdout]}, {$call: [get, {$ref: observation}, expected]}]}
+        bless_requested: {$call: [get, {$ref: observation}, bless]}
+        replayable: {$call: [ne, {$call: [get, {$ref: observation}, root]}, null]}
+        replay_completed: {$call: [ne, {$ref: replay}, null]}
+        replay_matches:
+          $call:
+          - and
+          - {$call: [ne, {$ref: replay}, null]}
+          - {$call: [eq, {$call: [get, {$ref: replay}, returncode]}, 0]}
+          - {$call: [eq, {$call: [get, {$ref: replay}, root]}, {$call: [get, {$ref: observation}, root]}]}
+  - {$ref: map}
+# This is the sole stage/action policy. Comparison facts confer no authority:
+# hosts independently supervise processes and veto decisions against raw evidence.
 # Blessing precedes replay, but never follows nondeterministic observations.
-"golden_plan":
-  "$call":
-  - "fn"
-  - - ["observation", {"$ref": "map"}]
-  - "$call":
-    - "let"
-    - "run": {"$call": ["get", {"$ref": "observation"}, "run"]}
-      "repeated": {"$call": ["get", {"$ref": "observation"}, "repeated"]}
-      "expected": {"$call": ["get", {"$ref": "observation"}, "expected"]}
-      "bless": {"$call": ["get", {"$ref": "observation"}, "bless"]}
-      "root": {"$call": ["get", {"$ref": "observation"}, "root"]}
-      "replay": {"$call": ["get", {"$ref": "observation"}, "replay"]}
-      "deterministic": {"$call": ["eq", {"$ref": "run"}, {"$ref": "repeated"}]}
-      "matches": {"$call": ["eq", {"$call": ["get", {"$ref": "run"}, "stdout"]}, {"$ref": "expected"}]}
-      "accepted": {"$call": ["and", {"$ref": "deterministic"}, {"$call": ["or", {"$ref": "bless"}, {"$ref": "matches"}]}]}
-      "needs_replay": {"$call": ["ne", {"$ref": "root"}, null]}
-    - "$call":
-      - "dict"
-      - "stage"
-      - "$call":
-        - "cond"
-        - {"$call": ["not", {"$ref": "deterministic"}]}
-        - "determinism"
-        - {"$call": ["not", {"$ref": "accepted"}]}
-        - "golden"
-        - "$call":
-            - "and"
-            - {"$ref": "needs_replay"}
-            - {"$call": ["ne", {"$ref": "replay"}, null]}
-            - "$call":
-              - "or"
-              - {"$call": ["ne", {"$call": ["get", {"$ref": "replay"}, "returncode"]}, 0]}
-              - {"$call": ["ne", {"$call": ["get", {"$ref": "replay"}, "root"]}, {"$ref": "root"}]}
-        - "roundtrip"
-        - "passed"
-      - "bless"
-      - {"$call": ["and", {"$ref": "deterministic"}, {"$ref": "bless"}]}
-      - "replay"
-      - {"$call": ["and", {"$ref": "accepted"}, {"$ref": "needs_replay"}, {"$call": ["eq", {"$ref": "replay"}, null]}]}
-  - {"$ref": "map"}
+golden_decision:
+  $call:
+  - fn
+  - - [facts, {$call: [record,
+        deterministic, {$ref: boolean}, matches_expected, {$ref: boolean},
+        bless_requested, {$ref: boolean}, replayable, {$ref: boolean},
+        replay_completed, {$ref: boolean}, replay_matches, {$ref: boolean}]}]
+  - $call:
+    - let
+    - accepted: {$call: [and, {$ref: facts.deterministic}, {$call: [or, {$ref: facts.bless_requested}, {$ref: facts.matches_expected}]}]}
+    - stage:
+        $call:
+        - cond
+        - {$call: [not, {$ref: facts.deterministic}]}
+        - determinism
+        - {$call: [not, {$ref: accepted}]}
+        - golden
+        - {$call: [and, {$ref: facts.replayable}, {$ref: facts.replay_completed}, {$call: [not, {$ref: facts.replay_matches}]}]}
+        - roundtrip
+        - passed
+      bless: {$call: [and, {$ref: facts.deterministic}, {$ref: facts.bless_requested}]}
+      replay: {$call: [and, {$ref: accepted}, {$ref: facts.replayable}, {$call: [not, {$ref: facts.replay_completed}]}]}
+  - {$ref: map}

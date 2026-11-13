@@ -102,9 +102,10 @@ will succeed. JSON remains silent until one complete versioned report is ready.
 The harness verifies visibility and flushing at the next suite boundary without
 timing sleeps, along with policy-failure fallback and unchanged JSON output.
 
-Golden-test decisions live in `std:test.golden_plan`. Python supplies captured
-run output, saved expectations and ordinary-root replay observations; Helix
-decides determinism, exact text comparison and replay outcomes. Python retains
+Golden-test decisions live in `std:test.golden_decision`; `golden_plan` derives
+the same facts for callers with full observations. Python sends six exact comparison
+facts while retaining captured output, expectations and replay observations; Helix
+selects failure precedence, blessing and replay actions. Python retains
 independent state validation, process timeouts, crash detection and failure
 artifacts. It also vetoes success or blessing that contradicts captured evidence:
 repeated runs must agree, unblessed results must match saved text, and passing
@@ -114,6 +115,8 @@ is no Python policy fallback. An honest roundtrip failure may still bless the
 original deterministic run when explicitly requested. The `harness` suite uses
 independent expected outcomes and injected process faults, including well-formed
 false-success responses, to check this self-hosting boundary.
+Rejected policy calls save complete raw observations in `observation.json` beside
+the compact policy program and its output, including replay stdout/stderr.
 
 Terminal CLI observations must carry usable diagnostic and effect-request
 metadata. Error kinds/messages are strings and source positions are positive
