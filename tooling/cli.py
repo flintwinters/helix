@@ -34,6 +34,7 @@ SUITES = {
     "interactive": "REPL, dependency watch, completion and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
     "long_commands": "Bounded command deadlines, capture, progress, retry classification and process-group cancellation",
+    "ssh_host": "Real OpenSSH remote commands: host-key verification, exact argument transport and classified connection, authentication and privilege failures",
     "effects": "Capability-controlled host effects, deterministic inputs, failures and pending requests",
     "startup": "Build-free discovery stays independent of execution and test-only imports",
     "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",

@@ -1,5 +1,5 @@
 //! Caller-owned host capabilities. Source and saved state cannot grant authority.
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -11,6 +11,9 @@ use failure::{Failure, fault, io_fault};
 mod sqlite;
 #[path = "effects/command.rs"]
 mod command;
+#[path = "effects/ssh.rs"]
+mod ssh;
+pub use ssh::SshTarget;
 pub use command::{CommandPolicy, CommandProgress, ProgressCallback};
 use yaml_rust2::Yaml;
 use crate::model::{Status, Vm};
@@ -30,6 +33,7 @@ pub struct EffectHost {
     pub cancellation_signal: Option<&'static AtomicBool>,
     pub command_progress: Option<ProgressCallback>,
     pub http_origins: BTreeSet<String>,
+    pub ssh_targets: BTreeMap<String, SshTarget>,
     pub allow_stdin: bool,
     pub allow_stdout: bool,
     pub allow_time: bool,
@@ -117,6 +121,14 @@ impl EffectHost {
                     cancellation_signal: self.cancellation_signal, progress: &mut self.command_progress, effect_id,
                 })?;
                 Ok(object([("code", Yaml::Integer(code)), ("stdout", Yaml::String(stdout)), ("stderr", Yaml::String(stderr))]))
+            }
+            "ssh_command" => {
+                let alias = text(&payload["host"])?;
+                let target = self.ssh_targets.get(alias).ok_or_else(|| fault("capability", "SSH target capability not granted"))?;
+                ssh::run(target, payload, command::Control {
+                    policy: &self.command_policy, cancellation: &self.cancellation,
+                    cancellation_signal: self.cancellation_signal, progress: &mut self.command_progress, effect_id,
+                })
             }
             "http" => {
                 let url = text(payload)?;

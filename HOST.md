@@ -320,6 +320,7 @@ repeat those actions.
 | `stdin` | `null` | UTF-8 text read until EOF | `--allow-stdin` |
 | `stdout` | Text string | `null` | `--allow-stdout` |
 | `command` | `{program: string, args: list_of_strings}` | `{code, stdout, stderr}` | `--allow-command EXECUTABLE` |
+| `ssh_command` | `{host: alias, program: string, args: list_of_strings, become?: user}` | `{code, stdout, stderr}` | `--allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U]` |
 | `http` | Absolute HTTP(S) URL string | `{status, body}` | `--allow-http ORIGIN` |
 | `sqlite` | `{path: string, sql: string, params?: list, write?: boolean}` | `{columns, rows, changes}` | `--allow-read ROOT`, or `--allow-write ROOT` when `write: true` |
 | `time` | `null` | Unix epoch milliseconds | `--allow-time` |
@@ -330,6 +331,14 @@ File imports under `perform` require the same `--allow-read` roots (embedded sta
 `sqlite` runs one statement (bound `params` of null, boolean, number or string) against a database inside the granted roots, with the bundled SQLite. A read request opens the file read-only; `write: true` may create it and reports `changes`. `ATTACH`/`DETACH` are denied so a statement cannot leave the authorized path, multiple statements and blob results are errors (kind `sqlite`, `conversion`), results are limited to 1 MiB and failures are catchable. The database must exist for a read request. Each request opens its own connection, so transactions across requests, rollback and concurrent-writer coordination beyond a ten-second busy timeout are the caller's concern. `std:sqlite` wraps this effect.
 
 HTTP uses the installed `curl` executable for GET requests, disables curl configuration, proxies, URL globbing and redirects, and restricts protocols to HTTP(S). An origin grant includes scheme, authority and explicit port exactly as written. HTTP error statuses remain result data. File text and HTTP responses are limited to 1 MiB. HTTP retains an eight-second request deadline and a ten-second process deadline, independently of command policy. Stdin waits for EOF.
+
+### SSH remote commands
+
+`ssh_command` runs one program on a granted target through the installed OpenSSH client under the same command policy (total timeout, output bounds, progress, cancellation, explicitly classified retries) as local commands. Source names only an alias; the caller's `--allow-ssh` grant fixes host, port, user, identity file, optional `jump` host and the allowed `become` users. A grant must supply `known_hosts`: keys are verified strictly against that file only, never trusted on first use, and user or system ssh configuration, agent and X11 forwarding and port forwards are disabled. Authentication is non-interactive (`BatchMode`) with the granted identity or the caller's agent. This is a connection and execution grant, not an OS sandbox: it authorizes whatever the remote account may run.
+
+The remote command line is built by quoting every word, so arguments reach the remote program byte-for-byte without shell interpretation, word splitting or expansion; a NUL byte is a type error. `become` runs the command through non-interactive `sudo -n -u USER --` and only for a user named in the grant. Remote exit codes, including nonzero ones, are result data. ssh's own failures (exit 255) become catchable errors of kind `ssh_host_key`, `ssh_auth` or `ssh_connection`, classified from the client's diagnostics; a sudo refusal is `ssh_privilege`, and an ungranted target or escalation user is `capability`. A remote program that itself exits 255 or mimics sudo's diagnostics is indistinguishable from these cases. Timeouts, cancellation and uncertain outcomes follow the local command rules: a timed-out or cancelled request may already have changed the remote host.
+
+Not yet provided: connection reuse, byte-preserving file transfer, remote stdin, password or interactive authentication, and fact gathering. `tests/suites/ssh_host.py` verifies the contract against an unprivileged loopback `sshd` (`./manage.py test --suite ssh_host`).
 
 ### Bounded command operations
 
