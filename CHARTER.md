@@ -892,33 +892,28 @@ The audit must produce decisions and executable examples, not just an inventory.
   Full algebra proofs/completeness, arbitrary edited-descriptor certification and
   empty-plan equivalence to membership remain separate unresolved promises; this
   audit establishes the implemented boundaries, not those broader claims.
-- [ ] Audit builtin and standard-library responsibilities against actual callers. Remove redundant convenience paths where ordinary composition is clear; retain primitives where semantics or measured costs require them. Namespacing or relocating code alone does not close this item.
-  Production test-policy result mutations exercise one concrete boundary: ordinary
-  Helix owns descriptor assembly and orchestration policy, while the non-executing
-  checker reuses the runtime type parser and overlap rules for a bounded structural
-  fragment. Known field mistakes must fail before orchestration runs; unknown
-  callbacks remain unchecked and Python retains independent host/report validation.
-  Golden policy provides a second concrete boundary: `std:test.golden_plan`
-  chooses actions, while Python independently vetoes success or blessing that
-  contradicts captured determinism, saved-text or replay evidence. Well-formed
-  false-success responses exercise this distinction in `harness`; shape checking
-  alone cannot supervise an interpreter testing itself. Honest deterministic
-  blessing on a reported roundtrip failure remains supported. These observation
-  checks belong to the independent host, not another runtime primitive or a
-  fallback policy. Checked descriptor construction supplies another boundary:
-  `with_field` now parses surviving field declarations through the same parser
-  as `record` before Helix assembles the new descriptor. Replacing a discarded
-  malformed field remains possible; refinement execution stays deferred. The
-  descriptor suite covers original argument blame and repeated `std:types`
-  reconstruction, alongside a golden repair/rejection example. No additional
-  constructor or descriptor certification mechanism is introduced. This does
-  not complete the remaining builtin/library audit.
-  Provider fresh-review identity now compares canonical data encodings rather
-  than language equality: numerically equal representations can lead to different
-  host writes. The existing serializer preserves those distinctions and canonical
-  map order without introducing another equality primitive. Provider acceptance
-  pairs representation-only stale reviews with actual file writes and exact-review
-  controls; the ordinary numeric equality contract remains unchanged.
+- [x] Audit builtin and standard-library responsibilities against actual callers. Remove redundant convenience paths where ordinary composition is clear; retain primitives where semantics or measured costs require them. Namespacing or relocating code alone does not close this item.
+
+  | Boundary | Decision and executable evidence |
+  |---|---|
+  | Evaluation, functions and machines | Retain runtime scheduling, lazy forms, captures, predicates, immutable stepping and effect requests. Remove the unused `closure` builtin and its separate scope rule: `let` plus `fn` preserves capture and laziness. `closure_retirement`, `semantics`, `execution` and `type_time` exercise the remaining engine; `yaml_model` covers legacy migration. |
+  | Ordinary values and data formats | Retain representation access, exact numeric operations and format grammars in Rust. Libraries compose collection, testing and configuration policy; YAML shares the graph parser/emitter, while JSON/CSV retain distinct grammar and encoding contracts. Registry-driven `semantics`, data-format goldens and library tests supply caller evidence. No measured basis justifies replacing these primitives. |
+  | Type construction and validation | Keep the shared type/field parser, predicate requests and conservative proofs in the runtime; `std:type_descriptor` assembles values and `std:types` derives declarations. `with_field` now validates surviving fields without rejecting repair of the discarded field or executing predicates. `descriptor_policy`, `types_with_field` and `type_algebra` cover source blame, reconstruction and proof boundaries. |
+  | State planning and application | Keep `std:diff`/`std:convergence` planning, `std:dependency` ordering, provider lifecycle, command guards and nginx activation in ordinary Helix. Their questions differ from type membership. Provider review compares canonical data encodings to preserve numeric representations; real-file `provider_contract` controls and `provider_review_identity` prove rejection before mutation. Command and nginx acceptance retain independent host postconditions. |
+  | Development policy and supervision | Keep suite planning/reporting and golden actions in Helix. Static checking reuses bounded structural type rules; Python independently validates observed failures, requested authority and golden actions before writes. Production policy mutations, hostile `harness` responses and golden replay controls independently reject tested false-success and unauthorized-write responses. Bootstrap and process supervision remain independent. |
+
+  Existing helpers already share the relevant authority: `is`/`expect`/`violations`
+  adapt one checker, class inheritance reuses extension/realization, validation
+  delegates table assertions, orchestration delegates dependency ordering, and
+  command resources delegate provider lifecycle. Similar projection helpers retain
+  their distinct missing-field contracts rather than being falsely unified.
+  The removed `closure` form has no production caller; the [language migration](LANGUAGE.md#functions-and-local-names)
+  documents `let` plus `fn`, ordinary user-defined names and offline legacy conversion.
+  This audit does not claim faster execution: repeated descriptor construction
+  retains growing-map copying and validation costs, and exact review adds bounded
+  encoding work. Future optimization needs measurements of actual callers; more
+  policy migration alone is not a benefit. General provider platforms, durable
+  recovery and formal type-algebra completeness remain separate obligations.
 - [x] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
   The tested arithmetic example exposes nested call wrappers, but ordinary named
   intermediates suffice. Production `tooling/test_policy.yaml` already names the

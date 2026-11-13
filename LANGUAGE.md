@@ -62,6 +62,15 @@ Functions retain their original immutable code and lexical environment, includin
 
 `{$call: [let, {name: value}, {$ref: body}]}` evaluates `body` with the bindings in scope. Bindings see each other (mutually, as in a map) and are evaluated only when used; a self-dependent binding is a `cycle`.
 
+The former `closure(bindings, fn)` builtin has been removed: use
+`{$call: [let, {offset: 2}, {$call: [fn, [x], {$call: [add, {$ref: x}, {$ref: offset}]}]}]}`.
+This retains the same lazy bindings and captured function environment through the
+ordinary `let` and `fn` forms. An unbound `closure` call now raises `unbound`; a
+user-defined function with that name is an ordinary eager call with no special
+binding scope. Update explicit source by replacing the old builtin head with
+`let`. The offline legacy syntax migrator converts recognized actor-first
+`closure` forms to `let`; it does not rewrite already-explicit source.
+
 **Iteration** takes a function (a name or inline `fn`) first, like every actor: `{$call: [map, {$ref: f}, {$ref: list}]}`, `{$call: [filter, {$ref: f}, {$ref: list}]}` (`f` must return a boolean), `{$call: [fold, {$ref: f}, {$ref: init}, {$ref: list}]}` (`f` takes accumulator then element), `{$call: [each, {$ref: f}, {$ref: list}]}` (calls `f` for each element, returns `null`; useful for ordered effects). `{$call: [until, {$ref: done}, {$ref: step}, {$ref: init}]}` repeats `state = step(state)` until `done(state)` is `true` and returns the state; more than 100000 steps is a `limit` error.
 
 **Evaluation order**: map fields by canonical string-key order, sequence elements and arguments left to right, all of them, except the forms that choose: `if`, `cond`, `and`, `or` (lazy), `fn` (body not run until called), `let` (bindings on use). Memoization is per node outside function bodies; inside a body every call re-evaluates.

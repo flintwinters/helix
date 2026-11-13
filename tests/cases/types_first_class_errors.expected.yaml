@@ -11,16 +11,6 @@ root:
       - 1
       - "$call"
       - 1
-  bad_closure:
-    column: 5
-    kind: type
-    line: 17
-    message: a closure needs bindings and a function
-    path: "/bad_closure/$call/1"
-    reference:
-      - bad_closure
-      - "$call"
-      - 1
   bad_constructor:
     column: 27
     kind: type
@@ -29,6 +19,18 @@ root:
     path: "/bad_constructor/$call/1/$call/1"
     reference:
       - bad_constructor
+      - "$call"
+      - 1
+      - "$call"
+      - 1
+  bad_let:
+    column: 23
+    kind: type
+    line: 17
+    message: "`let` bindings must be a map"
+    path: "/bad_let/$call/1/$call/1"
+    reference:
+      - bad_let
       - "$call"
       - 1
       - "$call"

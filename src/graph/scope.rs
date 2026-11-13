@@ -5,7 +5,7 @@ use crate::model::HelixError;
 
 /// Where a lexical name is declared.
 pub(crate) enum Site {
-    /// A map entry or `let`/`closure` binding.
+    /// A map entry or `let` binding.
     Entry(NodeId),
     /// The `index`th parameter of the `fn` at the node.
     Parameter(NodeId, usize),
@@ -61,7 +61,7 @@ impl Graph {
                         .ok()
                         .and_then(|p| p.iter().position(|(n, _)| n == name))
                         .map(|index| Site::Parameter(id, index)),
-                    (Some("let" | "closure"), Kind::Map(entries)) => entry(entries),
+                    (Some("let"), Kind::Map(entries)) => entry(entries),
                     _ => None,
                 },
                 _ => None,

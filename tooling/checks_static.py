@@ -17,6 +17,7 @@ def check(ctx):
         verify_annotation_bounds(ctx)
         verify_numeric_enum_overlap(ctx)
         verify_computed_heads(ctx)
+        verify_retired_closure(ctx)
         verify_repository_modules(ctx)
         verify_format(ctx)
         verify_lsp(ctx)
@@ -309,6 +310,18 @@ def verify_computed_heads(ctx):
     ):
         code, report = static_report(ctx, json.dumps(source))
         assert code == 0 and report['diagnostics'] == [] and report['unchecked'] == [], report
+
+
+def verify_retired_closure(ctx):
+    # Unknown heads are not assigned the retired builtin's arity or binding rules.
+    code, report = static_report(ctx, json.dumps({'$call': ['closure']}))
+    assert code == 0 and report['diagnostics'] == [], report
+    source = {'$call': ['let', {
+        'closure': {'$call': ['fn', [['value', 'integer']], {'$ref': 'value'}, 'integer']},
+    }, {'$call': ['closure', 'wrong']}]}
+    code, report = static_report(ctx, json.dumps(source))
+    assert code == 1 and any(item['kind'] == 'type' and item['path'] == '/$call/2/$call/1'
+                             for item in report['diagnostics']), report
 
 
 def verify_numeric_enum_overlap(ctx):

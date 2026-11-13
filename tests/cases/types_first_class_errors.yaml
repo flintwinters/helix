@@ -11,10 +11,10 @@
   - "try"
   - {"$call": ["map", {"$call": ["if", true, 3, {"$call": ["fn", ["n"], {"$ref": "n"}]}]}, [1]]}
   - {"$call": ["fn", ["e"], {"$ref": "e"}]}
-"bad_closure":
+"bad_let":
   "$call":
   - "try"
-  - {"$call": ["closure", [], {"$call": ["fn", ["n"], {"$ref": "n"}]}]}
+  - {"$call": ["let", [], {"$call": ["fn", ["n"], {"$ref": "n"}]}]}
   - {"$call": ["fn", ["e"], {"$ref": "e"}]}
 "wrong_type":
   "$call":

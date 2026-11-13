@@ -7,6 +7,8 @@ import yaml
 from yaml.nodes import MappingNode, ScalarNode, SequenceNode
 
 FUNCTION_RESULTS = {"fn", "closure", "get", "if", "cond", "let", "call", "fold", "until", "expect", "type_time", "try", "finally"}
+# Historical forms stay recognizable after their runtime actors are retired.
+RETIRED_FORMS = {"closure": "let"}
 
 MARKER = "# Helix explicit syntax; migrated from legacy source.\n"
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +59,7 @@ def migrate_source(source: str, *, names=()) -> str:
         if root is None:
             return source
         builtins = set(re.findall(r'actor\(\s*"([^"]+)"', (ROOT / "src/builtins.rs").read_text()))
+        builtins.update(RETIRED_FORMS)
         active = set()
         seen = set()
 
@@ -134,6 +137,9 @@ def migrate_source(source: str, *, names=()) -> str:
                 if not call:
                     return [walk(item, scope) for item in items]
                 actor = name if name is not None else walk(head, scope, True)
+                retired_form = name in RETIRED_FORMS and name not in scope
+                if retired_form:
+                    actor = RETIRED_FORMS[name]
                 args = items[1:]
                 if name == "import":
                     return {"$call": [actor, *(data(arg) for arg in args)]}
@@ -149,7 +155,7 @@ def migrate_source(source: str, *, names=()) -> str:
                         else:
                             parameters.append(data(param))
                     return {"$call": [actor, parameters, *(walk(arg, local, True) for arg in args[1:])]}
-                if name in ("let", "closure") and args and isinstance(args[0], MappingNode):
+                if (name == "let" or retired_form) and args and isinstance(args[0], MappingNode):
                     local = scope | {key.value for key, _ in args[0].value}
                     return {"$call": [actor, walk(args[0], scope), *(walk(arg, local, True) for arg in args[1:])]}
                 return {"$call": [actor, *(walk(arg, scope, True) for arg in args)]}

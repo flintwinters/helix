@@ -42,14 +42,6 @@ impl Evaluator {
                 self.parameters(&function)?;
                 self.finish(Value::Function(function));
             }
-            Form::Closure => {
-                if !matches!(self.graph().kind(args[0]), Kind::Map(_))
-                    || self.graph().form(args[1]) != Some("fn")
-                {
-                    return Err(self.err(id, "type", "a closure needs bindings and a function"));
-                }
-                self.eval(args[1]);
-            }
             Form::Let => {
                 if !matches!(self.graph().kind(args[0]), Kind::Map(_)) {
                     return Err(self.err(args[0], "type", "`let` bindings must be a map"));

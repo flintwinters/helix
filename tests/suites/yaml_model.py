@@ -112,11 +112,25 @@ def verify_migration():
         ('[list, "a\\x85b"]', {"$call": ["list", "a\x85b"]}),
         ('[let, {f: [fn, [x], x]}, [f, 42]]',
          {"$call": ["let", {"f": {"$call": ["fn", ["x"], {"$ref": "x"}]}}, {"$call": ["f", 42]}]}),
+        ('[closure, {n: 2}, [fn, [x], [add, x, n]]]',
+         {"$call": ["let", {"n": 2}, {"$call": ["fn", ["x"], {"$call": ["add", {"$ref": "x"}, {"$ref": "n"}]}]}]}),
+        ('[[closure, {n: 2}, [fn, [], n]]]',
+         {"$call": [{"$call": ["let", {"n": 2}, {"$call": ["fn", [], {"$ref": "n"}]}]}]}),
+        ('["closure", {n: 2}, "fn"]', ["closure", {"n": 2}, "fn"]),
+        ('{"$literal": [closure, {n: 2}, [fn, [], n]]}',
+         {"$literal": ["closure", {"n": 2}, ["fn", [], "n"]]}),
+        ('[let, {closure: [fn, [value], value]}, [closure, 42]]',
+         {"$call": ["let", {"closure": {"$call": ["fn", ["value"], {"$ref": "value"}]}}, {"$call": ["closure", 42]}]}),
+        ('[fn, [closure], [closure, 42]]',
+         {"$call": ["fn", ["closure"], {"$call": ["closure", 42]}]}),
+        ('[fn, [closure], [closure, {n: 2}, [n, 42]]]',
+         {"$call": ["fn", ["closure"], {"$call": ["closure", {"n": 2}, ["n", 42]]}]}),
     ]
     for source, expected in cases:
         converted = migrate_source(source)
         assert yaml.safe_load(converted) == expected, converted
         assert migrate_source(converted) == converted
+    assert yaml.safe_load(migrate_source('[closure, 42]', names=['closure'])) == {"$call": ["closure", 42]}
     for source in ('a: 1\na: 2', 'a: &value 1\nb: *value', '&cycle [*cycle]'):
         try:
             migrate_source(source)

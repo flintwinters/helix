@@ -1,0 +1,10 @@
+error:
+  column: 9
+  kind: unbound
+  line: 2
+  message: "unbound actor `closure`"
+  path: "/$call/0"
+  reference:
+    - "$call"
+    - 0
+status: error

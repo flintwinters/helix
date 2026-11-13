@@ -37,7 +37,7 @@ pub(crate) fn prepare_policy(actor: &str, args: &[Value], pred: &mut Pred) -> Re
 /// Evaluator-owned forms. Exhaustive dispatch keeps registration and evaluation policy aligned.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Form {
-    Call, Closure, If, And, Or, Cond, Let, Fn, Map, Filter, Fold, Each, Until,
+    Call, If, And, Or, Cond, Let, Fn, Map, Filter, Fold, Each, Until,
     Try, Finally, Refine, Import, TypeTime, Vm,
 }
 
@@ -89,7 +89,6 @@ const ACTORS: &[Descriptor] = &[
     actor("or", 2, None, Evaluation::Form(Form::Or)),
     actor("if", 3, Some(3), Evaluation::Form(Form::If)),
     actor("call", 1, None, Evaluation::Form(Form::Call)),
-    actor("closure", 2, Some(2), Evaluation::Form(Form::Closure)),
     actor("cond", 3, None, Evaluation::Form(Form::Cond)),
     actor("let", 2, Some(2), Evaluation::Form(Form::Let)),
     actor("fn", 2, Some(3), Evaluation::Form(Form::Fn)),

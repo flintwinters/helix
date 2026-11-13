@@ -1,0 +1,2 @@
+# The former builtin no longer binds or evaluates a body specially.
+$call: [closure, {value: 7}, {$call: [fn, [], {$ref: value}]}]
