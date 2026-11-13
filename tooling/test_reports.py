@@ -1,7 +1,7 @@
 """Replayable diagnostics for golden-state and robustness contracts."""
 
 
-def failure(root, case, stage, reason, command, result, *, source=None, expected=None):
+def failure(root, case, stage, reason, command, result, *, source=None, expected=None, source_cwd=None):
     """Keep complete evidence on disk and a focused, navigable report in stderr."""
     import difflib
     from itertools import islice
@@ -16,9 +16,22 @@ def failure(root, case, stage, reason, command, result, *, source=None, expected
     if source is not None:
         replay = (directory / "input.yaml").relative_to(root)
         (root / replay).write_text(source)
+    reproduce = f"./manage.py {command} {shlex.quote(str(replay))}"
+    if source is not None and source_cwd is not None:
+        from os.path import relpath
+        from manage import BIN
+
+        # manage.py deliberately starts runtime commands at the checkout root.
+        # Rebuild its stable binary, then replay stdin from the original import base.
+        # Pin Cargo's configured target so a later shell environment cannot build
+        # elsewhere while this recipe invokes an older executable.
+        build = shlex.join(["env", f"CARGO_TARGET_DIR={BIN.parent.parent}", "./manage.py", "build"])
+        invocation = shlex.join([relpath(BIN, source_cwd), *shlex.split(command), "-"])
+        reproduce = (f"{build} && (cd {shlex.quote(relpath(source_cwd, root))} && "
+                     f"{invocation} < {shlex.quote(relpath(root / replay, source_cwd))})")
     lines = [f"[{stage}] {relative}: {reason}",
              f"exit: {result.returncode}",
-             f"reproduce: ./manage.py {command} {shlex.quote(str(replay))}",
+             f"reproduce: {reproduce}",
              f"evidence: {directory.relative_to(root)}"]
     if expected is not None:
         (directory / "expected.yaml").write_text(expected)

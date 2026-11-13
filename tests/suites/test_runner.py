@@ -46,6 +46,67 @@ def verify_selection(h, directory):
         assert file_runs == [str(cases[1].relative_to(h.root))] * 2
 
 
+def verify_import_context(h, directory):
+    """Robustness must exercise the linked program, not accidental import errors."""
+    import json
+    import subprocess
+    import yaml
+
+    fixture = directory / 'fixture with spaces'
+    (fixture / 'nested').mkdir(parents=True)
+    (fixture / 'nested' / 'leaf.yaml').write_text('41\n')
+    (fixture / 'sibling.yaml').write_text(json.dumps({'$call': ['import', 'nested/leaf.yaml']}))
+    case = fixture / 'main.yaml'
+    source = {'$call': ['add', {'$call': ['import', 'sibling.yaml']}, 1]}
+    original = json.dumps(source)
+    source['$call'][-1] = 2
+    mutated = json.dumps(source)
+    case.write_text(original)
+
+    class OneMutation(TestContext):
+        @staticmethod
+        def mutations(text):
+            assert text == original, text
+            yield mutated
+
+    for command in ('run', 'check --evaluate'):
+        observed = []
+        inject_failure = False
+
+        def runner(args, **kwargs):
+            result = h.process_runner(args, **kwargs)
+            state = yaml.safe_load(result.stdout)
+            observed.append((result.returncode, state.get('status'), state.get('root')))
+            if inject_failure and state.get('root') == 43:
+                return subprocess.CompletedProcess(args, -11, result.stdout, 'injected after linked evaluation')
+            return result
+
+        context = OneMutation(root=h.root, binary=h.binary, timeout=h.timeout,
+                              commands={fixture: command}, process_runner=runner)
+        assert context.robustness_case(case) == []
+        assert observed == [(0, 'finished', 42), (0, 'finished', 43)], (command, observed)
+        assert case.read_text() == original
+        inject_failure = True
+        failures = context.robustness_case(case)
+        assert len(failures) == 1 and 'exit code -11' in failures[0], failures
+        report = failures[0]
+        evidence = h.root / next(line.removeprefix('evidence: ') for line in report.splitlines()
+                                 if line.startswith('evidence: '))
+        assert (evidence / 'input.yaml').read_text() == mutated
+        assert yaml.safe_load((evidence / 'actual.yaml').read_text())['root'] == 43
+        recipe = next(line.removeprefix('reproduce: ') for line in report.splitlines()
+                      if line.startswith('reproduce: '))
+        # Execute the emitted public recipe verbatim, including its build step;
+        # the injected process fault is absent, but imports must still produce43.
+        replayed = subprocess.run(recipe, shell=True, cwd=h.root, capture_output=True,
+                                  text=True, timeout=120)
+        assert replayed.returncode == 0, (recipe, replayed)
+        replay_state = yaml.safe_load(replayed.stdout)
+        assert replay_state['status'] == 'finished' and replay_state['root'] == 43, (recipe, replay_state)
+        assert (replay_state.get('mode') == 'check') == (command == 'check --evaluate'), replay_state
+        assert case.read_text() == original
+
+
 def verify_contexts(h):
     """Two overlapping invocations retain independent executable, root and timeout settings."""
     import subprocess
@@ -258,6 +319,7 @@ def verify(h):
 
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="runner-") as directory:
         verify_selection(h, Path(directory))
+        verify_import_context(h, Path(directory))
         case = Path(directory) / "probe.yaml"
         case.write_text("1")
         failed = FailedOriginal(root=h.root, binary=h.binary, timeout=h.timeout,

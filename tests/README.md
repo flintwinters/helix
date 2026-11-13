@@ -70,6 +70,12 @@ and process callback. Override execution for a fixture or compiled mutant with
 `dataclasses.replace(context, ...)`; never patch the entrypoint module or change a
 shared executable setting. The context captures `HELIX_TEST_TIMEOUT` once per run.
 Its process callback follows `subprocess.run` and supports isolated fault injection.
+Robustness runs each stdin mutation from the original fixture directory so sibling
+and transitive imports resolve as they do for the file. Mutation generation itself
+keeps the normal repository context. Failure recipes retain the input and rebuild
+through `manage.py`, then feed that input to the runtime from the original directory;
+run recipes from the repository root. Replay depends on the original module files
+and the current checkout, not a frozen dependency snapshot.
 
 Text output flushes each completed suite result and its visible evidence before
 the next suite starts. Final aggregation prints one summary and any additional

@@ -126,11 +126,11 @@ class TestContext:
     root_section = staticmethod(root_section)
     malformed_state = staticmethod(malformed_state)
 
-    def helix(self, *args: str, stdin: str | None = None) -> subprocess.CompletedProcess:
-        command = [str(self.binary), *args]
+    def helix(self, *args: str, stdin: str | None = None, cwd: Path | None = None) -> subprocess.CompletedProcess:
+        command = [str(self.root / self.binary), *args]
         try:
             return self.process_runner(command, input=stdin, capture_output=True, text=True,
-                                       cwd=self.root, timeout=self.timeout)
+                                       cwd=self.root if cwd is None else cwd, timeout=self.timeout)
         except subprocess.TimeoutExpired as error:
             return subprocess.CompletedProcess(command, 124, "", f"timed out: {error}")
 
@@ -179,9 +179,10 @@ class TestContext:
         src = case.read_text()
         command = self.commands[case.parent]
         for variant in chain((src,), self.mutations(src)):
-            run = self.helix(*shlex.split(command), "-", stdin=variant)
+            run = self.helix(*shlex.split(command), "-", stdin=variant, cwd=case.parent)
             if (why := self.malformed_state(run.stdout, run.returncode)) is not None:
-                return [test_failure(self.root, case, "robustness", why, command, run, source=variant)]
+                return [test_failure(self.root, case, "robustness", why, command, run,
+                                     source=variant, source_cwd=case.parent)]
         return []
 
     def robustness(self, cases: list[Path], jobs: int = DEFAULT_TEST_JOBS) -> list[str]:
