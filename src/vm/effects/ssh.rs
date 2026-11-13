@@ -204,12 +204,7 @@ pub(super) fn run(operation: &str, target: &SshTarget, mux: Mux<'_>, payload: &Y
             let bad_args = || fault("type", "ssh_command args must be a list of strings");
             let mut words = vec![string(payload, "program")?.to_string()];
             for arg in payload["args"].as_vec().ok_or_else(bad_args)? { words.push(arg.as_str().ok_or_else(bad_args)?.into()); }
-            let stdin = match &payload["stdin"] {
-                Yaml::BadValue | Yaml::Null => None,
-                Yaml::String(text) if text.len() <= super::LIMIT => Some(text.as_bytes()),
-                Yaml::String(_) => return Err(fault("resource", "ssh stdin exceeds 1 MiB")),
-                _ => return Err(fault("type", "ssh_command stdin must be a string")),
-            };
+            let stdin = super::command_input(&payload["stdin"])?;
             let (code, stdout, stderr) = execute(target, mux, words, escalate, stdin, control)?;
             Ok(object([("code", Yaml::Integer(code)), ("stdout", Yaml::String(stdout)), ("stderr", Yaml::String(stderr))]))
         }

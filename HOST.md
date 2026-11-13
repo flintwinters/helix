@@ -415,6 +415,32 @@ provider-specific observation is still needed to establish what happened remotel
 `--fixed-time MILLISECONDS` fixes the clock response. `--seed INTEGER` selects a reproducible random sequence, advanced once per request; both still require their grants. Without these options the host reads the system clock and `/dev/urandom`. The deterministic generator is intended for tests and replay inputs, not cryptographic randomness. Effect request/outcome histories expose nondeterministic inputs for inspection; versioned snapshots preserve active continuations across processes, and journals retain completed outcomes without re-executing them. Capability failures occur before host actions and can be handled with `try`/`finally` through the ordinary evaluator.
 
 
+## Opaque secret inputs
+
+`perform --allow-secret NAME=FILE` grants a handle access to one caller-owned,
+private regular UTF-8 file (at most 1 MiB). The source carries
+`{$call: [secret, NAME]}` or its ordinary `{type: secret, ref: NAME}` descriptor.
+Use the handle as `command.stdin`, `ssh_command.stdin`, or `ssh_file_write.text`.
+Command/SSH grants are still required. Local commands now accept the same bounded
+optional UTF-8 stdin as SSH commands. Handles are never expanded in command arguments.
+Secret SSH writes default to mode `0600`; an explicit mode remains the caller's decision.
+
+The host resolves the handle immediately before dispatch, outside the VM. Requests,
+plans, snapshots and journals retain only the handle. For a secret-consuming command,
+both captured streams are replaced with empty strings, including transformed or
+encoded output; the exit code is retained. Failures use a fixed `secret` diagnostic
+without adapter details. Reconciliation applies the same suppression before saving
+an observed reply. Progress records contain metadata only. Grants and credential
+file paths are not restored; resume needs fresh authority. Choose immutable,
+versioned references when a changed credential would change the intended operation.
+
+This contract protects credentials supplied through these handle inputs. Ordinary
+plaintext in source, environment reads, file reads, arguments or later observations
+remains ordinary execution data and may be emitted or persisted. Authorized programs
+can write their inputs elsewhere; this is not process containment, memory erasure or
+an external secret-manager protocol. The caller must keep credential sources private
+and ensure providers do not subsequently read deployed secrets back into the VM.
+
 ## Durable effect checkpoints
 
 `./manage.py runtime perform --checkpoint run.json [grants] program.yaml`
@@ -463,6 +489,7 @@ creates an independent branch and may repeat future effects. An uncertain remote
 operation may still be running; observing it and choosing a safe outcome remain
 provider/operator responsibilities. Immutable VM state does not roll back host
 mutations. Checkpoint files can contain captured data and command output; private
-file permissions are not the charter's future secret-handle/redaction contract.
+file permissions do not redact ordinary data. Use opaque secret inputs above for
+credentials that must remain outside execution state.
 Disk-full, rename and flush failures stop the controller; an already dispatched
 effect remains uncertain when its outcome could not be durably saved.

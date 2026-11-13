@@ -13,6 +13,8 @@ mod sqlite;
 mod command;
 #[path = "effects/ssh.rs"]
 mod ssh;
+#[path = "effects/secrets.rs"]
+mod secrets;
 #[path = "effects/durable.rs"]
 pub mod durable;
 pub use ssh::SshTarget;
@@ -30,6 +32,8 @@ pub struct EffectHost {
     pub write_roots: Vec<PathBuf>,
     pub env_names: BTreeSet<String>,
     pub commands: BTreeSet<String>,
+    /// Caller-owned opaque secret references; credential bytes never enter the VM.
+    pub secret_files: BTreeMap<String, PathBuf>,
     pub command_policy: CommandPolicy,
     pub cancellation: Arc<AtomicBool>,
     pub cancellation_signal: Option<&'static AtomicBool>,
@@ -68,12 +72,12 @@ impl EffectHost {
             *vm = vm.signal(object([("kind", Yaml::String("cancelled".into()))]));
             return false;
         }
-        let reply = self.handle(request.id, &request.operation, &request.payload);
+        let reply = self.handle_secret(request.id, &request.operation, &request.payload);
         *vm = vm.resolve_effect(reply);
         true
     }
 
-    fn handle(&mut self, effect_id: u64, operation: &str, payload: &Yaml) -> Reply {
+    fn handle_plain(&mut self, effect_id: u64, operation: &str, payload: &Yaml) -> Reply {
         match operation {
             "args" => Ok(Yaml::Array(self.args.iter().cloned().map(Yaml::String).collect())),
             "exit" => {
@@ -132,7 +136,7 @@ impl EffectHost {
                 let (code, stdout, stderr) = command::capture(program, &args, command::Control {
                     policy: &self.command_policy, cancellation: &self.cancellation,
                     cancellation_signal: self.cancellation_signal, progress: &mut self.command_progress, effect_id,
-                    cwd: None, stdin: None,
+                    cwd: None, stdin: command_input(&payload["stdin"])?,
                 })?;
                 Ok(object([("code", Yaml::Integer(code)), ("stdout", Yaml::String(stdout)), ("stderr", Yaml::String(stderr))]))
             }
@@ -211,4 +215,14 @@ fn origin(url: &str) -> Result<&str, Failure> {
 fn next_random(seed: &mut u64) -> u64 {
     *seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
     *seed >> 1
+}
+
+/// Local and SSH commands share the same bounded optional UTF-8 stdin contract.
+fn command_input(value: &Yaml) -> Result<Option<&[u8]>, Failure> {
+    match value {
+        Yaml::BadValue | Yaml::Null => Ok(None),
+        Yaml::String(text) if text.len() <= LIMIT => Ok(Some(text.as_bytes())),
+        Yaml::String(_) => Err(fault("resource", "command stdin exceeds 1 MiB")),
+        _ => Err(fault("type", "command stdin must be a string or granted secret handle")),
+    }
 }

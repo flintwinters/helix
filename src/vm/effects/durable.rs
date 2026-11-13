@@ -223,6 +223,7 @@ impl Checkpoint {
                 }
             }
         }
+        let outcome = super::secrets::protect(&expected.operation, &expected.payload, outcome);
         let resolved = vm.resolve_effect(outcome);
         let host = EffectHost {
             exit_code: checkpoint.exit_code,

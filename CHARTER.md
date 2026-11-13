@@ -422,9 +422,10 @@ The config is the type; the real machine is the value. "Is this machine configur
   - [ ] Both directions reported as data, per field, with the type's provenance for each
   - [x] Decided and documented: what counts as unmanaged (ignored) versus drift — extra observed fields appear in `drift.extra` but generate no removal steps (`machine_fleet`, `src/builtins/typing/machine.rs`, `LANGUAGE.md#classes-machines-and-drift`)
 - [ ] Secrets are referenced by a typed handle, never inlined into a resolved config or saved state
-  - [ ] A secret type whose values cannot be emitted: resolved configs and saved states show the handle only
-  - [ ] Secrets are fetched only during realization, by an explicit effect
-  - [ ] Error messages, plans and drift reports never contain a secret value
+  - [x] Opaque `secret(ref)` inputs stay handles in resolved data and saved state; caller-granted local/SSH command stdin and SSH file writes resolve only inside the host (`secret_effects`, `ssh_host`)
+  - [x] Secret resolution happens only while dispatching an explicit consuming effect, never during pure class realization; file grants remain caller inputs and are not restored
+  - [ ] Error messages, plans and drift reports never contain a secret value throughout the operational stack
+    - [x] Supported secret-consuming effects suppress captured streams and diagnostic contents before VM outcomes, snapshots, journals and reconciliation persist them. Ordinary plaintext inputs and later secret-bearing observations remain outside this boundary.
 
 ---
 
@@ -824,12 +825,14 @@ account; it is not an arbitrary-host bootstrap or a real playbook migration.
   - [x] Refuse uncertain replay until explicit exact-request reconciliation records an independently observed outcome (`durable_effects`, `ssh_nginx`); branch-local effect IDs do not establish exactly-once external execution, and the journal cannot prove the caller’s observation
   - [ ] Detect stale plans and conflicting concurrent controllers through preconditions and suitable locking
   - [ ] Expose partial success and pending work; recovery never reports an entire fleet successful because some hosts completed
+    - [x] Read-only `checkpoint` reports completed outcomes, source paths, exact pending work and the required recovery action for one journal, including while its writer is active (`durable_effects`).
   - [ ] Declare compensations and irreversible operations explicitly; external rollback is not implied by immutable VM state
 
 ### Credentials, operator workflows and extensibility
 
 - [ ] Complete section 8's secret-reference contract throughout the operational stack
   - [ ] Resolve credentials only at authorized host boundaries and support external secret providers
+    - [x] Private caller-granted files supply opaque local/SSH command inputs and SSH file contents; external secret-manager protocols remain open.
   - [ ] Prevent secret disclosure through command arguments, captured output, errors, diffs, logs and persisted state
   - [ ] Separate inventory data from authority; remote credentials, escalation and provider capabilities remain caller grants
 - [ ] Provide discoverable configuration-management commands and reports

@@ -11,7 +11,7 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut resume_checkpoint = None;
     let mut index = 0;
     while let Some(option) = args.get(index).filter(|arg| arg.starts_with("--")) {
-        let takes_value = matches!(option.as_str(), "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--allow-ssh" | "--ssh-control-dir" | "--fixed-time" | "--seed" | "--command-timeout-ms" | "--command-output-limit" | "--command-attempts" | "--command-retry-delay-ms" | "--command-retry-exit-code" | "--command-progress" | "--checkpoint" | "--resume-checkpoint");
+        let takes_value = matches!(option.as_str(), "--allow-secret" | "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--allow-ssh" | "--ssh-control-dir" | "--fixed-time" | "--seed" | "--command-timeout-ms" | "--command-output-limit" | "--command-attempts" | "--command-retry-delay-ms" | "--command-retry-exit-code" | "--command-progress" | "--checkpoint" | "--resume-checkpoint");
         let value = if takes_value {
             index += 1;
             let Some(value) = args.get(index) else { eprintln!("missing value for {option}"); return ExitCode::from(2); };
@@ -41,6 +41,14 @@ pub fn run(args: &[String]) -> ExitCode {
             "--checkpoint" => checkpoint_path = Some(std::path::PathBuf::from(value)),
             "--resume-checkpoint" => resume_checkpoint = Some(std::path::PathBuf::from(value)),
             "--command-progress" => progress_path = Some(std::path::PathBuf::from(value)),
+            "--allow-secret" => match value.split_once('=') {
+                Some((name, path)) if !name.is_empty() && !path.is_empty() => {
+                    if host.secret_files.insert(name.into(), path.into()).is_some() {
+                        return usage("duplicate secret grant");
+                    }
+                }
+                _ => return usage("secret grant requires NAME=FILE"),
+            },
             "--allow-read" => host.read_roots.push(value.into()),
             "--allow-write" => host.write_roots.push(value.into()),
             "--allow-env" => { host.env_names.insert(value.into()); }
@@ -67,7 +75,7 @@ pub fn run(args: &[String]) -> ExitCode {
                 Err(_) => { eprintln!("seed must be an unsigned integer"); return ExitCode::from(2); }
             },
             "--help" => {
-                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U], --ssh-control-dir PRIVATE_DIR (reuse connections), --allow-stdin, --allow-stdout, --allow-time, --allow-random\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nCommand policy (caller grants, not source): --command-timeout-ms N (1..86400000, default 10000; total across retries), --command-output-limit N (1..16777216 bytes per stream across retries, default 1048576), --command-attempts N (1..32, default 1), --command-retry-delay-ms N (0..60000), repeatable --command-retry-exit-code N (1..255; only explicitly classified exit codes retry)\n--command-progress NEW_FILE writes versioned JSONL metadata, never command output; existing files are refused. SIGINT/SIGTERM cancel commands and clean up their Unix process group.\n--checkpoint NEW_FILE journals before and after each effect; --resume-checkpoint FILE restores with fresh grants and refuses uncertain outcomes. helix reconcile FILE OUTCOME records an independently observed outcome for the exact uncertain request.\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
+                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-secret NAME=FILE (private UTF-8 input; command output suppressed), --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U], --ssh-control-dir PRIVATE_DIR (reuse connections), --allow-stdin, --allow-stdout, --allow-time, --allow-random\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nCommand policy (caller grants, not source): --command-timeout-ms N (1..86400000, default 10000; total across retries), --command-output-limit N (1..16777216 bytes per stream across retries, default 1048576), --command-attempts N (1..32, default 1), --command-retry-delay-ms N (0..60000), repeatable --command-retry-exit-code N (1..255; only explicitly classified exit codes retry)\n--command-progress NEW_FILE writes versioned JSONL metadata, never command output; existing files are refused. SIGINT/SIGTERM cancel commands and clean up their Unix process group.\n--checkpoint NEW_FILE journals before and after each effect; --resume-checkpoint FILE restores with fresh grants and refuses uncertain outcomes. helix reconcile FILE OUTCOME records an independently observed outcome for the exact uncertain request.\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
                 return ExitCode::SUCCESS;
             }
             _ => { eprintln!("unknown perform option {option}"); return ExitCode::from(2); }

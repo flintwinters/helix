@@ -33,6 +33,7 @@ SUITES = {
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
     "interactive": "REPL, dependency watch, completion and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
+    "secret_effects": "Opaque host secret inputs, suppressed captures, fresh grants and safe durable reconciliation",
     "durable_effects": "Disk effect recovery, controller death, uncertain-outcome reconciliation and fresh grants",
     "snapshots": "Fresh-process executable restoration, editable locals, imported sources and malformed snapshots",
     "long_commands": "Bounded command deadlines, capture, progress, retry classification and process-group cancellation",

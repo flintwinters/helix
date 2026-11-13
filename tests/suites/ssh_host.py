@@ -152,6 +152,24 @@ def verify(h):
             assert reply['code'] == 3, reply
             failed({'host': 'box', 'program': 'cat', 'args': [], 'stdin': 5}, 'type', *grant())
 
+            # The host resolves handles after the request is frozen. Remote echo
+            # and remote file installation must not put credentials in VM state.
+            credential = base / 'secret-source'
+            credential.write_text('ssh-private-token-91fa')
+            credential.chmod(0o600)
+            secret_grant = ['--allow-secret', f'token={credential}']
+            handle = {'type': 'secret', 'ref': 'token'}
+            result, state = run(call('ssh_command', {'host': 'box', 'program': 'cat', 'args': [], 'stdin': handle}),
+                                *grant(), *secret_grant)
+            assert result.returncode == 0 and state['root'] == dict(code=0, stdout='', stderr=''), result
+            assert credential.read_text() not in result.stderr
+            installed_secret = base / 'installed-secret'
+            result, state = run(call('ssh_file_write', {'host': 'box', 'path': str(installed_secret), 'text': handle, 'mode': None}),
+                                *grant(), *secret_grant)
+            assert result.returncode == 0 and installed_secret.read_text() == credential.read_text(), result
+            assert installed_secret.stat().st_mode & 0o777 == 0o600
+            assert credential.read_text() not in result.stderr
+
             # File transfer: exact bytes, requested mode, atomic replacement, no staging leftovers.
             remote = base / 'remote'
             remote.mkdir()
