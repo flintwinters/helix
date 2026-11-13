@@ -27,6 +27,7 @@ def verify_selection(h, directory):
             assert "matched no" in str(error)
         else:
             raise AssertionError(f"unmatched filter accepted: {patterns}")
+    verify_discovery_failures(h, directory, directories)
 
     invoked = []
     def observe(args, **kwargs):
@@ -44,6 +45,80 @@ def verify_selection(h, directory):
         assert selected.test(False, ["golden", "robustness"], patterns=["beta", "b*"]) == 0
         file_runs = [args[2] for args in invoked if args[1] == "run" and args[2] != "-"]
         assert file_runs == [str(cases[1].relative_to(h.root))] * 2
+
+
+def verify_discovery_failures(h, directory, healthy):
+    """A missing corpus is a selection failure, never a successful zero-case suite."""
+    import contextlib
+    import io
+    import json
+    from unittest.mock import patch
+    from tests.suites import contracts
+    from tooling import test_policy, test_runner
+
+    missing = directory / 'missing fixtures'
+    not_directory = directory / 'not a directory'
+    not_directory.write_text('not a corpus')
+    empty = directory / 'empty fixtures'
+    empty.mkdir()
+    expected_only = directory / 'expected only'
+    expected_only.mkdir()
+    (expected_only / 'orphan.expected.yaml').write_text('unchanged')
+    directory_only = directory / 'directory entry'
+    directory_only.mkdir()
+    (directory_only / 'not-a-file.yaml').mkdir()
+    invalid = [{}, {missing: 'run'}, {not_directory: 'run'}, {empty: 'run'},
+               {expected_only: 'run'}, {directory_only: 'run'}, {**healthy, empty: 'run'}]
+    for configured in invalid:
+        for patterns in (None, ['alpha']):
+            try:
+                discover_cases(configured, h.root, patterns)
+            except ValueError as error:
+                assert str(error), configured
+            else:
+                raise AssertionError(f'invalid fixture corpus accepted: {configured}, {patterns}')
+
+    def summarize(context, rows):
+        return {'command': 'test', 'status': 'passed', 'exit_code': 0, 'failure_count': 0,
+                'results': [{**row, 'status': 'passed'} for row in rows]}
+
+    for suite in ('golden', 'robustness'):
+        # Explicit empty selections must not silently become all cases or no work.
+        for configured, cases in (({missing: 'run'}, None), ({**healthy, empty: 'run'}, None),
+                                  ({expected_only: 'run'}, None), (healthy, []),
+                                  ({**healthy, missing: 'run'}, discover_cases(healthy, h.root))):
+            context = replace(h, commands=configured)
+            stdout, stderr = io.StringIO(), io.StringIO()
+            plan = [{'suite': 'standard_library', 'action': 'run'}, {'suite': suite, 'action': 'run'}]
+            with patch.object(test_policy, 'plan', return_value=plan), \
+                 patch.object(test_policy, 'report', side_effect=summarize) as report, \
+                 patch.object(TestContext, 'check_standard_library', return_value=[]) as standard, \
+                 patch.object(TestContext, 'golden_case', return_value=[]) as golden, \
+                 patch.object(TestContext, 'robustness', return_value=[]) as robust, \
+                 patch.object(contracts, 'run', return_value=[]) as dispatch, \
+                 contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                code = context.regression(False, [suite], cases=cases, output_format='json')
+            result = json.loads(stdout.getvalue())
+            assert code == 1 and result['version'] == 1 and result['command'] == 'test', result
+            assert result['status'] == 'failed' and result['exit_code'] == 1 and result['failure_count'] == 1, result
+            assert len(result['results']) == 1 and result['results'][0]['suite'] == 'orchestration', result
+            assert result['results'][0]['failures'] and not stderr.getvalue(), (result, stderr.getvalue())
+            assert not any(task.called for task in (standard, golden, robust, dispatch, report)), result
+
+    for suite in ('startup', 'probe'):
+        context = replace(h, commands={})
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch.object(test_runner, 'discover_cases', side_effect=AssertionError('nonfixture discovery')), \
+             patch.object(test_policy, 'plan', return_value=[{'suite': suite, 'action': 'run'}]) as plan, \
+             patch.object(test_policy, 'report', side_effect=summarize) as report, \
+             patch.object(contracts, 'run', return_value=[]) as dispatch, \
+             contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            code = context.regression(False, [suite], output_format='json')
+        result = json.loads(stdout.getvalue())
+        assert code == 0 and result['status'] == 'passed' and dispatch.call_count == 1, result
+        assert not stderr.getvalue(), stderr.getvalue()
+        if suite == 'startup':
+            assert not plan.called and not report.called
 
 
 def verify_import_context(h, directory):

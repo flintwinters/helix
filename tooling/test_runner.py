@@ -16,8 +16,17 @@ def discover_cases(directories, root, patterns=None):
     """Select fixture stems or root-relative paths; every requested glob must match."""
     from fnmatch import fnmatchcase
 
-    cases = [case for directory in directories for case in sorted(directory.glob("*.yaml"))
-             if not case.name.endswith(".expected.yaml")]
+    if not directories:
+        raise ValueError("no golden/robustness fixture directories configured")
+    cases = []
+    for directory in directories:
+        if not directory.is_dir():
+            raise ValueError(f"fixture directory is missing or not a directory: {directory}")
+        discovered = [case for case in sorted(directory.glob("*.yaml"))
+                      if not case.name.endswith(".expected.yaml") and case.is_file()]
+        if not discovered:
+            raise ValueError(f"fixture directory contains no runnable YAML inputs: {directory}")
+        cases.extend(discovered)
     if not patterns:
         return cases
     selected = set()
@@ -307,6 +316,17 @@ class TestContext:
             return test_report([{"suite": "orchestration", "status": "failed", "failures": [str(error)]}],
                                output_format=output_format)
 
+        if any(task["action"] == "run" and task["suite"] in {"golden", "robustness"} for task in plan):
+            try:
+                discovered = discover_cases(self.commands, self.root)
+                if cases is None:
+                    cases = discovered
+                elif not cases:
+                    raise ValueError("golden/robustness fixture selection must not be empty")
+            except (ValueError, OSError) as error:
+                return test_report([{"suite": "orchestration", "status": "failed", "failures": [str(error)]}],
+                                   output_format=output_format)
+
         def completed(observation):
             results.append(observation)
             if output_format != "json":
@@ -341,8 +361,6 @@ class TestContext:
             elif name == "standard_library":
                 record(name, self.check_standard_library)
             elif name in {"golden", "robustness"}:
-                if cases is None:
-                    cases = discover_cases(self.commands, self.root)
                 if name == "golden":
                     from functools import partial
                     record(name, lambda: collect_cases(partial(self.golden_case, bless=bless), cases, jobs),

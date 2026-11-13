@@ -70,6 +70,11 @@ and process callback. Override execution for a fixture or compiled mutant with
 `dataclasses.replace(context, ...)`; never patch the entrypoint module or change a
 shared executable setting. The context captures `HELIX_TEST_TIMEOUT` once per run.
 Its process callback follows `subprocess.run` and supports isolated fault injection.
+Fixture discovery requires every configured directory to exist and contain runnable
+YAML inputs; an absent corpus cannot become a passing zero-case suite. Golden and
+robustness plans validate discovery before executing suites, including filtered
+selections. Nonfixture plans and successful empty failure-reruns do not require
+fixture discovery.
 Robustness runs each stdin mutation from the original fixture directory so sibling
 and transitive imports resolve as they do for the file. Mutation generation itself
 keeps the normal repository context. Failure recipes retain the input and rebuild
