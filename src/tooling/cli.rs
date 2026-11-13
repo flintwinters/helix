@@ -27,6 +27,7 @@ pub fn dispatch(args: &[String]) -> Option<ExitCode> {
         },
         ["repl"] => interactive::repl(),
         ["completion", shell] => interactive::completion(shell),
+        ["checkpoint", path] => super::snapshots::checkpoint(path),
         ["reconcile", path, outcome] => super::snapshots::reconcile(path, outcome),
         ["snapshot", path] => super::snapshots::command(path, false, Some(0)),
         ["restore", path] => super::snapshots::command(path, true, None),

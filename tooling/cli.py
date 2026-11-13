@@ -128,6 +128,7 @@ def parser():
         "step": "Inspect a program after a bounded number of transitions",
         "snapshot": "Save executable state after a bounded number of transitions",
         "restore": "Restore executable state; optionally save after more transitions",
+        "checkpoint": "Inspect durable effects and recovery action without execution",
         "trace": "Stream evaluation transitions as YAML documents",
         "watch": "Re-run when program or transitive import contents change",
     }.items():

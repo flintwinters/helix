@@ -427,6 +427,16 @@ outcome. Completed effects are retained in the machine. Exit status and seeded
 random-generator progress are host bookkeeping stored alongside the snapshot;
 command, file, SSH and other grants are never stored or restored.
 
+Inspect a journal with `./manage.py runtime checkpoint run.json`. The versioned
+`helix.recovery.v1` report includes completed effect outcomes, source locations,
+the exact pending request, and the next action. It validates the embedded snapshot
+without running code, acquiring the writer lock, or creating files; it can inspect
+a live controller's last durable version. `observe_and_reconcile` means resume is
+blocked by uncertainty. `resume_with_fresh_grants` means no uncertain outcome is
+recorded, not that the target is unchanged or that another controller has stopped.
+`complete` and `failed` describe terminal execution. Inspection is a point-in-time
+view; reconciliation still validates the exact request under the exclusive lock.
+
 A controller that dies after dispatch but before acknowledging the result leaves
 an uncertain request. Resume refuses to repeat it. Observe the target independently,
 then supply `./manage.py runtime reconcile run.json observed.yaml`, for example:

@@ -113,3 +113,14 @@ pub fn reconcile(path: &str, outcome_path: &str) -> ExitCode {
         Err(e) => error(&e),
     }
 }
+
+/// Read-only operational view; inspection neither resumes nor reconciles effects.
+pub fn checkpoint(path: &str) -> ExitCode {
+    match crate::vm::effects::durable::Checkpoint::inspect(Path::new(path)) {
+        Ok(report) => {
+            print!("{}", crate::emit::document(&report));
+            ExitCode::SUCCESS
+        }
+        Err(message) => error(&message),
+    }
+}

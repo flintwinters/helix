@@ -60,8 +60,16 @@ impl Checkpoint {
         Ok(checkpoint)
     }
     fn load(&mut self) -> Result<(Vm, String), String> {
+        let (vm, phase, exit_code, random_seed) = Self::read(&self.path)?;
+        self.exit_code = exit_code;
+        self.random_seed = random_seed;
+        Ok((vm, phase))
+    }
+    // Atomic journal replacement lets inspection read a coherent version without
+    // taking the writer lock or creating files in the journal directory.
+    fn read(path: &Path) -> Result<(Vm, String, u8, Option<u64>), String> {
         let mut text = String::new();
-        File::open(&self.path)
+        File::open(path)
             .map_err(|e| e.to_string())?
             .take(MAX_BYTES + 1)
             .read_to_string(&mut text)
@@ -85,11 +93,11 @@ impl Checkpoint {
             .filter(|s| matches!(*s, "ready" | "in_flight"))
             .ok_or("unknown effect checkpoint phase")?
             .to_owned();
-        self.exit_code = doc["host"]["exit_code"]
+        let exit_code = doc["host"]["exit_code"]
             .as_u64()
             .filter(|n| *n <= 255)
             .ok_or("invalid saved exit code")? as u8;
-        self.random_seed = if doc["host"]["random_seed"].is_null() {
+        let random_seed = if doc["host"]["random_seed"].is_null() {
             None
         } else {
             Some(
@@ -102,7 +110,35 @@ impl Checkpoint {
         if phase == "in_flight" && vm.pending_effect().is_none() {
             return Err("in-flight checkpoint has no pending request".into());
         }
-        Ok((vm, phase))
+        Ok((vm, phase, exit_code, random_seed))
+    }
+    /// Validate and inspect one journal version without executing or taking its lock.
+    pub fn inspect(path: &Path) -> Result<Yaml, String> {
+        let (vm, phase, _, _) = Self::read(path)?;
+        let state = vm.state();
+        let pending = state["pending_effect"].clone();
+        let completed = state["effects"].as_vec().cloned().unwrap_or_default();
+        let uncertain = phase == "in_flight";
+        let action = if uncertain {
+            "observe_and_reconcile"
+        } else if vm.status() == Status::Finished {
+            "complete"
+        } else if vm.status() == Status::Error {
+            "failed"
+        } else {
+            "resume_with_fresh_grants"
+        };
+        let field = |name: &str, value| (Yaml::String(name.into()), value);
+        Ok(Yaml::Hash([
+            field("format", Yaml::String("helix.recovery.v1".into())),
+            field("phase", Yaml::String(phase)),
+            field("status", Yaml::String(vm.status().as_str().into())),
+            field("action", Yaml::String(action.into())),
+            field("resume_allowed", Yaml::Boolean(!uncertain)),
+            field("authority", Yaml::String("caller-required".into())),
+            field("effects", Yaml::Array(completed)),
+            field("pending_effect", if pending == Yaml::BadValue { Yaml::Null } else { pending }),
+        ].into_iter().collect()))
     }
     /// Resume only a checkpoint whose pending request is known not to have started.
     pub fn resume(path: &Path) -> Result<(Self, Vm), String> {

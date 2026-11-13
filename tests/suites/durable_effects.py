@@ -40,6 +40,20 @@ def verify(h):
             assert counter.read_text() == 'x'
             doc = json.loads(checkpoint.read_text())
             assert doc['phase'] == 'in_flight'
+            # Inspection works while a controller owns the journal, without
+            # modifying it, dispatching effects or weakening exclusive resume.
+            before_inspect = checkpoint.read_bytes()
+            inspected = h.helix('checkpoint', str(checkpoint))
+            assert inspected.returncode == 0, inspected
+            report = yaml.safe_load(inspected.stdout)
+            assert report['format'] == 'helix.recovery.v1'
+            assert report['action'] == 'observe_and_reconcile' and not report['resume_allowed']
+            assert report['pending_effect']['id'] == 2
+            assert report['pending_effect']['payload'] == payload
+            assert report['pending_effect']['location']
+            assert [e['id'] for e in report['effects']] == [1]
+            assert report['effects'][0]['status'] == 'finished'
+            assert checkpoint.read_bytes() == before_inspect
             # A second controller cannot use this journal while its owner is alive.
             busy = h.helix('perform', '--resume-checkpoint', str(checkpoint))
             assert busy.returncode != 0 and 'another controller' in busy.stderr, busy
@@ -63,6 +77,8 @@ def verify(h):
             reconciled = h.helix('reconcile', str(checkpoint), str(outcome))
             assert reconciled.returncode == 0, reconciled
             assert json.loads(checkpoint.read_text())['phase'] == 'ready'
+            report = yaml.safe_load(h.helix('checkpoint', str(checkpoint)).stdout)
+            assert report['action'] == 'resume_with_fresh_grants' and report['resume_allowed']
 
             denied_branch = base / 'denied.json'
             denied_branch.write_text(checkpoint.read_text())
@@ -76,6 +92,13 @@ def verify(h):
             assert repeated.returncode == 0 and output.stat().st_mtime_ns == before
             assert yaml.safe_load(resumed.stderr)['root'] == yaml.safe_load(repeated.stderr)['root']
             assert checkpoint.stat().st_mode & 0o077 == 0
+            report = yaml.safe_load(h.helix('checkpoint', str(checkpoint)).stdout)
+            assert report['action'] == 'complete' and report['pending_effect'] is None
+            assert [e['id'] for e in report['effects']] == [1, 2, 3]
+            invalid = base / 'invalid.json'
+            invalid.write_text('{"format":"helix-effects","version":999}')
+            assert h.helix('checkpoint', str(invalid)).returncode != 0
+            assert not (base / 'invalid.json.lock').exists()
         finally:
             if process.poll() is None:
                 os.killpg(process.pid, signal.SIGKILL)
