@@ -252,6 +252,92 @@ def verify_contexts(h):
     assert (h.root, h.binary, h.timeout, h.process_runner) == original
 
 
+def verify_report_reliability(h):
+    """Broken suite contracts and policy launch failures cannot erase completed work."""
+    import contextlib
+    import io
+    import json
+    import sys
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+    from tests.suites import contracts
+    from tooling import test_policy
+
+    with tempfile.TemporaryDirectory(dir=h.root / 'runtime', prefix='report-reliability-') as temporary:
+        directory = Path(temporary)
+        case = directory / 'selected.yaml'
+        case.write_text('42\n')
+        selected_path = case.relative_to(h.root).as_posix()
+        scenarios = [('none', None), ('string', 'not a failure list'), ('empty_string', ''),
+                     ('mapping', {'failure': 'lost'}), ('empty_mapping', {}),
+                     ('nonstring', [42]), ('policy_launch', [])]
+        for output_format in ('text', 'json'):
+            for name, invalid in scenarios:
+                executed = []
+                def runner(args, **kwargs):
+                    if name == 'policy_launch' and 'policy.report' in (kwargs.get('input') or ''):
+                        raise OSError('injected policy executable unavailable')
+                    return h.process_runner(args, **kwargs)
+
+                context = replace(h, commands={directory: 'run'}, process_runner=runner)
+                def golden(path, bless):
+                    assert path == case and bless is False
+                    executed.append('golden')
+                    print('earlier fixture stdout')
+                    print('earlier fixture warning', file=sys.stderr)
+                    return []
+
+                def suite(suite_name, context):
+                    executed.append(suite_name)
+                    print(f'{suite_name} captured stdout')
+                    print(f'{suite_name} captured stderr', file=sys.stderr)
+                    return invalid if suite_name == 'middle' else []
+
+                plan = [{'suite': suite_name, 'action': 'run'} for suite_name in ('golden', 'middle', 'later')]
+                stdout, stderr = io.StringIO(), io.StringIO()
+                with patch.object(test_policy, 'plan', return_value=plan), \
+                     patch.object(test_policy, 'report', wraps=test_policy.report) as aggregate, \
+                     patch.object(TestContext, 'golden_case', side_effect=golden), \
+                     patch.object(contracts, 'run', side_effect=suite), \
+                     contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                    code = context.regression(False, ['golden', 'middle', 'later'], cases=[case],
+                                              jobs=1, output_format=output_format)
+                assert code == 1 and executed == ['golden', 'middle', 'later'], (name, code, executed)
+                rows = aggregate.call_args.args[1]
+                assert rows[0]['case_paths'] == [selected_path] and rows[0]['cases'] == 1, rows
+                assert rows[0]['stdout'] == 'earlier fixture stdout\n' and rows[0]['stderr'] == 'earlier fixture warning\n', rows
+                assert rows[1]['stdout'] == 'middle captured stdout\n' and rows[1]['stderr'] == 'middle captured stderr\n', rows
+                assert all(isinstance(row['failures'], list) and all(isinstance(item, str) for item in row['failures'])
+                           for row in rows), rows
+                if name != 'policy_launch':
+                    assert len(rows[1]['failures']) == 1 and 'TypeError' in rows[1]['failures'][0], rows
+                if output_format == 'json':
+                    report = json.loads(stdout.getvalue())
+                    assert report['version'] == 1 and report['status'] == 'failed' and report['exit_code'] == 1, report
+                    assert report['failure_count'] == 1 and not stderr.getvalue(), (report, stderr.getvalue())
+                    assert [{key: value for key, value in row.items() if key != 'status'}
+                            for row in report['results'][:3]] == rows, report
+                    if name == 'policy_launch':
+                        assert len(report['results']) == 4 and report['results'][3]['suite'] == 'orchestration', report
+                        diagnostic = report['results'][3]['failures'][0]
+                        assert '127' in diagnostic and 'injected policy executable unavailable' in diagnostic, diagnostic
+                        evidence = h.root / next(line.removeprefix('evidence: ') for line in diagnostic.splitlines()
+                                                 if line.startswith('evidence: '))
+                        assert (evidence / 'actual.yaml').read_text() == ''
+                        assert 'injected policy executable unavailable' in (evidence / 'stderr.txt').read_text()
+                    else:
+                        assert len(report['results']) == 3 and report['results'][1]['status'] == 'failed', report
+                else:
+                    for token in ('golden: passed', 'later: passed', 'test: failed'):
+                        assert stdout.getvalue().count(token) == 1, stdout.getvalue()
+                    middle_status = 'passed' if name == 'policy_launch' else 'failed'
+                    assert stdout.getvalue().count(f'middle: {middle_status}') == 1, stdout.getvalue()
+                    assert stdout.getvalue().count('orchestration: failed') == int(name == 'policy_launch'), stdout.getvalue()
+                    for token in ('earlier fixture warning', 'middle captured stderr', 'later captured stderr'):
+                        assert stderr.getvalue().count(token) == 1, stderr.getvalue()
+
+
 def verify_completed_output(h):
     """Completed rows are visible before later work; JSON remains one final report."""
     import contextlib
@@ -349,6 +435,7 @@ def verify_completed_output(h):
 
 def verify(h):
     verify_contexts(h)
+    verify_report_reliability(h)
     verify_completed_output(h)
     from tests.suites.test_orchestration import verify as verify_orchestration
     verify_orchestration(h)

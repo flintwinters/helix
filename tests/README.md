@@ -78,6 +78,10 @@ and process callback. Override execution for a fixture or compiled mutant with
 `dataclasses.replace(context, ...)`; never patch the entrypoint module or change a
 shared executable setting. The context captures `HELIX_TEST_TIMEOUT` once per run.
 Its process callback follows `subprocess.run` and supports isolated fault injection.
+Suite callbacks must return a list of failure strings (`[]` means success).
+Invalid returns become suite failures with captured output, and later suites
+continue. Interpreter launch errors become failed process observations, allowing
+aggregation fallback to retain completed results and recorded case selections.
 Fixture discovery requires every configured directory to exist and contain runnable
 YAML inputs; an absent corpus cannot become a passing zero-case suite. Golden and
 robustness plans validate discovery before executing suites, including filtered

@@ -150,6 +150,9 @@ class TestContext:
             stdout, stderr = captured_text(error.output), captured_text(error.stderr)
             separator = '\n' if stderr and not stderr.endswith('\n') else ''
             return subprocess.CompletedProcess(command, 124, stdout, f"{stderr}{separator}timed out: {error}")
+        except OSError as error:
+            return subprocess.CompletedProcess(command, 127, '',
+                f"could not launch {shlex.join(command)}: {error}\n")
 
     def mutations(self, source: str):
         """Generate damaged inputs in Helix, keeping generator failures host-visible."""
@@ -349,6 +352,8 @@ class TestContext:
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 try:
                     failures = check()
+                    if not isinstance(failures, list) or any(not isinstance(item, str) for item in failures):
+                        raise TypeError(f"{name} suite must return a list of failure strings")
                 except (Exception, SystemExit):
                     import traceback
                     failures = [traceback.format_exc()]
