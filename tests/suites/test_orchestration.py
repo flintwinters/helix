@@ -71,8 +71,19 @@ def verify(h):
     large = [{"suite": name, "failures": [], "stdout": "retained log\n" * 256, "stderr": ""}
              for name in test_runner.SUITES]
     retained = test_policy.report(h, large)
-    assert [{key: value for key, value in row.items() if key != "status"}
-            for row in retained["results"]] == large
+    assert retained == {"command": "test", "failure_count": 0, "exit_code": 0, "status": "passed",
+                        "results": [{**row, "status": "passed"} for row in large]}, retained
+    # Counting failures must neither flatten away their owning suites nor discard
+    # messages. Repeated diagnostics are separate failures and retain their order.
+    failed_rows = [{**row, "failures": [
+        f'{row["suite"]}: diagnostic {max(0, index - 1)}\n'
+        + ('expected value, actual value, captured stderr, and replay source\n' * 16)
+        for index in range(2 + suite_index % 3)]}
+        for suite_index, row in enumerate(large)]
+    retained = test_policy.report(h, failed_rows)
+    assert retained == {"command": "test", "failure_count": sum(2 + index % 3 for index in range(len(large))),
+                        "exit_code": 1, "status": "failed",
+                        "results": [{**row, "status": "failed"} for row in failed_rows]}, retained
 
     def bad_context(response):
         def runner(args, **kwargs):

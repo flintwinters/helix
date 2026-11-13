@@ -85,7 +85,9 @@ independent expected outcomes and injected process faults, including well-formed
 false-success responses, to check this self-hosting boundary.
 
 Suite selection, ordering, prerequisite insertion, blessing skips and report
-aggregation live in `tooling/test_policy.yaml`. The Python runner executes its
+aggregation live in `tooling/test_policy.yaml`. Aggregation sums per-suite failure
+counts while retaining the original messages and logs in each result; it does not
+construct a second flattened failure list. The Python runner executes its
 plan and supplies captured observations; it independently rejects missing or
 unauthorized work, altered evidence and false-success responses. The `harness`
 suite injects damaged policy responses, and `dogfood_test_orchestration` is the

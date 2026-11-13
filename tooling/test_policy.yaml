@@ -1,5 +1,4 @@
 # Repository test orchestration over host observations. No filesystem or process authority.
-sequences: {$call: [import, 'std:list']}
 # Shapes belong to Helix policy; the host independently enforces observations and authority.
 strings_type: {$call: [list_of, {$ref: string}]}
 status_type: {$call: [enum, passed, failed, skipped]}
@@ -87,11 +86,11 @@ report:
   - $call:
     - let
     - processed_results: {$call: [map, {$ref: result}, {$ref: observations}]}
-      failures: {$call: [sequences.flat_map, {$ref: processed_results}, {$call: [fn, [row], {$call: [get, {$ref: row}, failures]}]}]}
-      passed: {$call: [eq, {$ref: failures}, []]}
+      total_failures: {$call: [fold, {$call: [fn, [count, row], {$call: [add, {$ref: count}, {$call: [len, {$call: [get, {$ref: row}, failures]}]}]}]}, 0, {$ref: processed_results}]}
+      passed: {$call: [eq, {$ref: total_failures}, 0]}
     - command: test
       status: {$call: [if, {$ref: passed}, passed, failed]}
       exit_code: {$call: [if, {$ref: passed}, 0, 1]}
-      failure_count: {$call: [len, {$ref: failures}]}
+      failure_count: {$ref: total_failures}
       results: {$ref: processed_results}
   - {$ref: report_type}
