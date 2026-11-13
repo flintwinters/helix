@@ -52,6 +52,20 @@ def verify(h):
         assert "diff truncated" in report
         assert len(report.splitlines()) < 150
         assert case.read_text() == "original"
+        replay_args = ['inspect', 'std', 'module with spaces; $(literal)']
+        report = failure(root, case, 'explicit-replay', 'probe', 'ignored', result, replay_args=replay_args)
+        recipe = next(line.removeprefix('reproduce: ') for line in report.splitlines()
+                      if line.startswith('reproduce: '))
+        assert shlex.split(recipe) == ['./manage.py', *replay_args], recipe
+        for options in ({'source': 'damaged'}, {'source_cwd': case.parent},
+                        {'source': 'damaged', 'source_cwd': case.parent}):
+            try:
+                failure(root, case, 'conflicting-replay', 'probe', 'run', result,
+                        replay_args=['inspect', 'std'], **options)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError(f'explicit replay accepted conflicting source context: {options}')
         verify_retained_evidence(root, case)
         verify_fuzz_evidence(h, root)
 

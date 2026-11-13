@@ -244,6 +244,12 @@ and malformed modules on every dogfood run.
 
 ## Failure artifacts
 
+The standard-library prerequisite independently compares embedded module discovery
+and source against a nonempty repository corpus. Successful responses must have
+empty stderr; unknown modules must produce a usage error on stderr without stdout.
+Failures retain both streams and expected output, with exact `inspect std`
+replay commands in the shared artifact directories.
+
 The inventory command keeps grouping policy in Helix while independently checking
 clean completion and exact coverage of the host-observed files and directories.
 It retains `runtime/inventory.input.yaml`, `inventory.state.yaml`, and

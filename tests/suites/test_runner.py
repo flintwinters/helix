@@ -252,6 +252,88 @@ def verify_contexts(h):
     assert (h.root, h.binary, h.timeout, h.process_runner) == original
 
 
+def verify_standard_library_boundary(h):
+    """Discovery/show failures retain both streams and replay the actual std command."""
+    import shlex
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    assert h.check_standard_library() == []
+    with tempfile.TemporaryDirectory(dir=h.root / 'runtime', prefix='standard-boundary-') as temporary:
+        root = Path(temporary)
+        (root / 'std').mkdir()
+        sources = {'alpha': 'answer: 42\n', 'beta': 'answer: 43\n'}
+        for name, source in sources.items():
+            (root / 'std' / f'{name}.yaml').write_text(source)
+        catalog = 'std:alpha\nstd:beta\n'
+        unknown = 'unknown standard module `unknown`; available: alpha, beta\n'
+        responses = {('std',): (0, catalog, ''),
+                     **{('std', name): (0, source, '') for name, source in sources.items()},
+                     ('std', 'unknown'): (2, '', unknown)}
+        scenarios = [
+            (('std',), (0, catalog, 'unexpected discovery stderr\n')),
+            (('std', 'alpha'), (0, sources['alpha'], 'unexpected source stderr\n')),
+            (('std', 'alpha'), (0, 'changed source\n', '')),
+            (('std', 'unknown'), (2, 'bogus source on stdout\n', unknown)),
+            (('std', 'unknown'), (2, '', '')),
+            (('std', 'unknown'), (2, '', 'unrelated host diagnostic\n')),
+            (('std', 'alpha'), (-11, 'partial source\n', 'crash detail\n')),
+            (('std',), 'timeout'),
+        ]
+        for invocation, damaged in scenarios:
+            expected_output = []
+            def runner(args, **kwargs):
+                selected = tuple(args[1:])
+                response = damaged if selected == invocation else responses[selected]
+                if response == 'timeout':
+                    error = subprocess.TimeoutExpired(args, kwargs['timeout'], output=b'std:alpha\n',
+                                                      stderr=b'partial progress\n')
+                    expected_output.append((124, 'std:alpha\n', f'partial progress\ntimed out: {error}'))
+                    raise error
+                if selected == invocation:
+                    expected_output.append(response)
+                return subprocess.CompletedProcess(args, *response)
+
+            context = replace(h, root=root, process_runner=runner)
+            failures = context.check_standard_library()
+            assert len(failures) == 1 and len(expected_output) == 1, (invocation, damaged, failures)
+            diagnostic = failures[0]
+            code, stdout, stderr = expected_output[0]
+            assert f'exit: {code}' in diagnostic, diagnostic
+            recipe = next(line.removeprefix('reproduce: ') for line in diagnostic.splitlines()
+                          if line.startswith('reproduce: '))
+            assert shlex.split(recipe) == ['./manage.py', 'inspect', *invocation], recipe
+            evidence = root / next(line.removeprefix('evidence: ') for line in diagnostic.splitlines()
+                                   if line.startswith('evidence: '))
+            assert (evidence / 'actual.yaml').read_text() == stdout
+            assert (evidence / 'stderr.txt').read_text() == stderr
+            assert (evidence / 'expected.yaml').read_text() == responses[invocation][1]
+            assert all((root / 'std' / f'{name}.yaml').read_text() == source for name, source in sources.items())
+
+        # Execute the final emitted catalog recipe without the injected timeout.
+        # The current checkout, rather than the synthetic corpus, supplies modules.
+        replayed = h.process_runner(shlex.split(recipe), cwd=h.root, capture_output=True,
+                                    text=True, timeout=120)
+        direct = h.helix('std')
+        assert (replayed.returncode, replayed.stdout, replayed.stderr) == (
+            direct.returncode, direct.stdout, direct.stderr), replayed
+
+        from unittest.mock import Mock
+        for name in ('missing', 'empty', 'not_directory', 'directory_entries'):
+            corpus_root = root / name
+            corpus_root.mkdir()
+            if name == 'not_directory':
+                (corpus_root / 'std').write_text('not a directory')
+            elif name != 'missing':
+                (corpus_root / 'std').mkdir()
+                if name == 'directory_entries':
+                    (corpus_root / 'std' / 'not-a-file.yaml').mkdir()
+            runner = Mock(side_effect=AssertionError('invalid std corpus executed interpreter'))
+            failures = replace(h, root=corpus_root, process_runner=runner).check_standard_library()
+            assert len(failures) == 1 and not runner.called, (name, failures)
+
+
 def verify_report_reliability(h):
     """Broken suite contracts and policy launch failures cannot erase completed work."""
     import contextlib
@@ -435,6 +517,7 @@ def verify_completed_output(h):
 
 def verify(h):
     verify_contexts(h)
+    verify_standard_library_boundary(h)
     verify_report_reliability(h)
     verify_completed_output(h)
     from tests.suites.test_orchestration import verify as verify_orchestration

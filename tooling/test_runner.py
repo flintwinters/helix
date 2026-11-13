@@ -406,15 +406,32 @@ class TestContext:
 
     def check_standard_library(self) -> list[str]:
         failures = []
+        directory = self.root / "std"
+        if not directory.is_dir():
+            return [f"standard library source directory is missing or not a directory: {directory}"]
+        sources = [source for source in sorted(directory.glob("*.yaml")) if source.is_file()]
+        if not sources:
+            return [f"standard library source directory contains no modules: {directory}"]
         modules = self.helix("std")
-        expected_modules = {f"std:{source.stem}" for source in (self.root / "std").glob("*.yaml")}
+        expected_modules = {f"std:{source.stem}" for source in sources}
         discovered_modules = modules.stdout.splitlines()
-        if modules.returncode != 0 or set(discovered_modules) != expected_modules or len(discovered_modules) != len(expected_modules):
-            failures.append("standard library discovery failed")
-        for source in sorted((self.root / "std").glob("*.yaml")):
+        if (modules.returncode != 0 or modules.stderr or set(discovered_modules) != expected_modules
+                or len(discovered_modules) != len(expected_modules)):
+            failures.append(test_failure(self.root, directory, "std-list",
+                "standard library discovery failed", "std", modules,
+                expected="".join(f"{name}\n" for name in sorted(expected_modules)),
+                replay_args=["inspect", "std"]))
+        for source in sources:
             shown = self.helix("std", source.stem)
-            if shown.returncode != 0 or shown.stdout != source.read_text():
-                failures.append(f"{source.name}: standard library source differs")
-        if self.helix("std", "unknown").returncode != 2:
-            failures.append("unknown standard library must exit with usage error")
+            expected = source.read_text()
+            if shown.returncode != 0 or shown.stderr or shown.stdout != expected:
+                failures.append(test_failure(self.root, source, "std-show",
+                    "standard library source differs or did not finish cleanly", "std", shown,
+                    expected=expected, replay_args=["inspect", "std", source.stem]))
+        unknown = self.helix("std", "unknown")
+        if (unknown.returncode != 2 or unknown.stdout
+                or "unknown standard module `unknown`" not in unknown.stderr):
+            failures.append(test_failure(self.root, directory, "std-unknown",
+                "unknown standard library must report a usage error", "std", unknown,
+                expected="", replay_args=["inspect", "std", "unknown"]))
         return failures

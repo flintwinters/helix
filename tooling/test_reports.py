@@ -1,7 +1,8 @@
-"""Replayable diagnostics for golden-state and robustness contracts."""
+"""Replayable evidence for supervised runtime operations and test contracts."""
 
 
-def failure(root, case, stage, reason, command, result, *, source=None, expected=None, source_cwd=None):
+def failure(root, case, stage, reason, command, result, *, source=None, expected=None, source_cwd=None,
+            replay_args=None):
     """Keep complete evidence on disk and a focused, navigable report in stderr."""
     import difflib
     from itertools import islice
@@ -9,6 +10,8 @@ def failure(root, case, stage, reason, command, result, *, source=None, expected
     import shlex
     import tempfile
 
+    if replay_args is not None and (source is not None or source_cwd is not None):
+        raise ValueError("explicit replay arguments cannot be combined with source replay")
     relative = case.relative_to(root)
     parent = root / "runtime" / "test-failures" / relative.parent / case.stem / stage
     parent.mkdir(parents=True, exist_ok=True)
@@ -20,6 +23,8 @@ def failure(root, case, stage, reason, command, result, *, source=None, expected
         replay = (directory / "input.yaml").relative_to(root)
         (root / replay).write_text(source)
     reproduce = f"./manage.py {command} {shlex.quote(str(replay))}"
+    if replay_args is not None:
+        reproduce = shlex.join(["./manage.py", *replay_args])
     if source is not None and source_cwd is not None:
         from os.path import relpath
         from manage import BIN
