@@ -5,9 +5,11 @@ There is no desired-state loop or automatic restart. Helix chooses each action.
 """
 import json
 import os
+from pathlib import Path
 import signal
 import socket
 import subprocess
+import time
 import uuid
 
 from common import CONFIG, DATA, RUN, SOCKET, event
@@ -71,6 +73,37 @@ def main():
                 stream.write(b'[older fixture output truncated]\n' + tail)
                 stream.truncate()
 
+    def worker_identities(master):
+        children = Path(f'/proc/{master.pid}/task/{master.pid}/children').read_text().split()
+        identities = set()
+        for pid in children:
+            try:
+                # The start-time tick distinguishes a reused PID. comm may
+                # contain spaces/parentheses, so fields begin after its last ).
+                fields = Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()
+                identities.add((pid, fields[19]))
+            except (FileNotFoundError, ProcessLookupError):
+                continue
+        return identities
+
+    def reload_nginx():
+        if child is None or child.poll() is not None:
+            raise RuntimeError('nginx is not running')
+        previous = worker_identities(child)
+        os.kill(child.pid, signal.SIGHUP)
+        event('service-reload', pid=child.pid)
+        deadline = time.monotonic() + 5
+        while True:
+            if stopping:
+                raise RuntimeError('supervisor stopping during nginx reload')
+            if child.poll() is not None:
+                raise RuntimeError('nginx master exited during reload')
+            if not previous.intersection(worker_identities(child)):
+                return {'pid': child.pid}
+            if time.monotonic() >= deadline:
+                raise TimeoutError('nginx old workers did not retire before reload deadline')
+            time.sleep(0.02)
+
     for signum in (signal.SIGTERM, signal.SIGINT):
         signal.signal(signum, stop_signal)
     SOCKET.unlink(missing_ok=True)
@@ -107,11 +140,7 @@ def main():
                             event('service-start', pid=child.pid)
                             reply = {'pid': child.pid}
                         elif operation == 'reload':
-                            if not running:
-                                raise RuntimeError('nginx is not running')
-                            os.kill(child.pid, signal.SIGHUP)
-                            event('service-reload', pid=child.pid)
-                            reply = {'pid': child.pid}
+                            reply = reload_nginx()
                         elif operation == 'stop':
                             stop_nginx()
                             reply = {'stopped': True}

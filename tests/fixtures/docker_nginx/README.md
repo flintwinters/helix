@@ -62,6 +62,14 @@ make inactive bytes look activated. This is operational evidence, not attestatio
 against an outside actor forging the header. A concurrent external mutation
 between review and application remains a race in this scope.
 
+A reload sends one HUP and keeps the master process. Before acknowledging it,
+the supervisor waits up to five seconds for the old worker identities (PID and
+start-time tick) to leave the master's child set; the command then checks the
+exact HTTP response. One response from a new worker alone is insufficient while
+old workers can still serve the previous configuration. A dead master, shutdown
+or retirement timeout is a failure; the fixture does not force-kill old workers
+and call that a successful reload.
+
 The action trace under `/var/lib/helix-nginx-host/actions.jsonl` records completed
 fixture operations for independent assertions. It is not an execution snapshot,
 recovery journal, or authority source. Actual package, file, process and HTTP
