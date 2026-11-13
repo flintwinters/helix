@@ -1,4 +1,8 @@
 """Contracts for explicit pure type regions, exercised through the public CLI."""
+import json
+from pathlib import Path
+import tempfile
+
 import yaml
 
 
@@ -47,15 +51,65 @@ def verify(h):
             result = state(h, command, source)
             errors = result.get("errors", [result.get("error")])
             assert any(e["kind"] == kind and e.get("phase") == "type" for e in errors), result
-    # File dependencies cannot be admitted by laziness, memoization or a constant result.
-    source = (h.root / "tests" / "cases" / "types_type_time_effect.yaml").read_text().replace("modules/geometry.yaml", "tests/cases/modules/geometry.yaml")
+    # Loading source is separate from executing effects in a pure region.
+    source = (h.root / "tests" / "cases" / "types_type_time_effect.yaml").read_text().replace('"modules/', '"tests/cases/modules/')
     for command in ("run", "check"):
         result = state(h, command, source)
         error = result["root"]["blocked"]
-        assert error["kind"] == "effect" and error["phase"] == "type", error
-        assert "including unused imports" in error["message"], error
-        assert error["path"] == "/module" and result["root"]["runtime_after"] == 42
-    print("type_time: run/check parity, nested phases, caught errors, file isolation and bounded evaluation")
+        assert error["kind"] == "purity" and error["phase"] == "type", error
+        assert error["file"].endswith("modules/phase_effect.yaml"), error
+        assert result["root"]["area"] == 12 and result["root"]["runtime_after"] == 42
+    verify_linked_phases(h)
+    print("type_time: run/check parity, nested phases, linked source, effect isolation and bounded evaluation")
+
+
+def verify_linked_phases(h):
+    def call(actor, *args):
+        return {"$call": [actor, *args]}
+
+    def ref(name):
+        return {"$ref": name}
+
+    catch = call("fn", ["error"], ref("error"))
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="phase-imports-") as directory:
+        base = Path(directory)
+        module = base / "module.yaml"
+        leaf = base / "leaf.yaml"
+        main = base / "main.yaml"
+        leaf.write_text("value: 21\n")
+        module.write_text(json.dumps({"leaf": call("import", "leaf.yaml"),
+                                      "twice": call("fn", [], call("mul", ref("leaf.value"), 2))}))
+        source = {"module": call("import", "module.yaml"),
+                  "answer": call("type_time", call("module.twice")),
+                  "direct": call("type_time", call("get", call("import", "leaf.yaml"), "value")),
+                  "independent": call("type_time", 7)}
+        main.write_text(json.dumps(source))
+        for command in ("run", "check"):
+            process = h.helix(command, *(["--evaluate"] if command == "check" else []), str(main))
+            result = yaml.safe_load(process.stdout)
+            assert process.returncode == 0 and result["root"]["answer"] == 42, result
+            assert result["root"]["direct"] == 21 and result["root"]["independent"] == 7, result
+
+        # Pure evaluation must not bypass the linker's caller-supplied import roots.
+        process = h.helix("sandbox", "-", str(main))
+        error = yaml.safe_load(process.stdout)["error"]
+        assert process.returncode == 1 and error["kind"] == "permission", error
+        process = h.helix("sandbox", str(base), str(main))
+        assert process.returncode == 0 and yaml.safe_load(process.stdout)["root"]["answer"] == 42
+
+        # Evaluate an effectful imported field first, then read it in a pure region.
+        # try keeps this region in ordinary order, so the runtime memo really exists.
+        module.write_text(json.dumps({"value": call("effect", "stdout", "once\n")}))
+        main.write_text(json.dumps(call("let", {"module": call("import", "module.yaml")},
+            call("list", ref("module.value"),
+                 call("try", call("type_time", ref("module.value")), catch)))))
+        process = h.helix("perform", "--allow-read", str(base), "--allow-stdout", str(main))
+        result = yaml.safe_load(process.stderr)
+        assert process.returncode == 0 and process.stdout == "once\n", (process, result)
+        error = result["root"][1]
+        assert error["kind"] == "purity" and error["phase"] == "type", result
+        assert error["file"].endswith("module.yaml") and error["path"] == "/value", error
+        assert len(result.get("effects", [])) == 1, result
 
 
 def verify_check_mode(h):

@@ -19,10 +19,6 @@ use crate::model::HelixError;
 /// The modules a program imports: each import form's module root, and which nodes are such roots.
 use crate::model::Modules;
 impl Modules {
-    pub(crate) fn file_import(&self) -> Option<NodeId> {
-        self.first_file_import
-    }
-
     /// The root of the module the `{$call: [import, ...]}` node `import` loads.
     pub fn root_of(&self, import: NodeId) -> Option<NodeId> {
         self.linked.get(&import).copied()
@@ -226,7 +222,6 @@ impl Linker<'_> {
                 }
             },
             None => {
-                self.modules.first_file_import.get_or_insert(import);
                 let Origin::Dir(dir) = origin else {
                     return Err(fail(
                         self.graph,

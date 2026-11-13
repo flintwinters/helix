@@ -32,8 +32,9 @@ impl Evaluator {
         Ok(())
     }
     /// Record that the active outermost region read `name` from the pre-existing frame of
-    /// `function`. Type time is pure and cannot reach effects or files, so these values are the
-    /// only run-time data its result depends on: source plus these inputs determine it.
+    /// `function`. Type time cannot request effects; imports refer to immutable source linked
+    /// before execution. These values are the only run-time data its result depends on:
+    /// the complete linked source plus these inputs determine it.
     pub(super) fn note_input(&mut self, function: NodeId, born: usize, name: &str, value: &Value) {
         let Some(region) = &self.region else { return };
         if !self.type_time || born >= region.mark {

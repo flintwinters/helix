@@ -1,5 +1,7 @@
-# Helix explicit syntax; migrated from legacy source.
-# Even unused/cached file dependencies cannot smuggle host inputs into type time.
+# Linked source is available in pure regions; executing imported effects is not.
 "module": {"$call": ["import", "modules/geometry.yaml"]}
-"blocked": {"$call": ["try", {"$call": ["type_time", {"$call": ["record"]}]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
+"effects": {"$call": ["import", "modules/phase_effect.yaml"]}
+"independent": {"$call": ["type_time", {"$call": ["record"]}]}
+"area": {"$call": ["type_time", {"$call": ["module.area", 2]}]}
+"blocked": {"$call": ["try", {"$call": ["type_time", {"$call": ["effects.emit"]}]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
 "runtime_after": {"$call": ["add", 20, 22]}

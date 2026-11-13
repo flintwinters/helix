@@ -65,6 +65,60 @@ fn equivalent(source: &str) -> Vm {
     stepped
 }
 #[test]
+fn type_time_file_modules_retain_loaded_source_across_steps_and_branches() {
+    let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("runtime")
+        .join(format!("type-time-source-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let module = directory.join("policy.yaml");
+    let main = directory.join("main.yaml");
+    let source = r#"{$call: [let, {policy: {$call: [import, policy.yaml]}}, {$call: [try, {$call: [type_time, {$call: [policy.answer]}]}, {$call: [fn, [error], {$ref: error}]}]}]}"#;
+    std::fs::write(&module, "answer: {$call: [fn, [], {$call: [add, 40, 2]}]}\n").unwrap();
+    let ready = Vm::load_file(source, &main);
+    assert_eq!(ready.status(), Status::Ready);
+    let original = ready.inspect();
+    let paused = ready.step();
+    let retained = paused.inspect();
+    // `try` defers this region until execution: only source loading has read the file.
+    std::fs::write(&module, "answer: {$call: [fn, [], 99]}\n").unwrap();
+    let mut uninterrupted = ready.clone();
+    uninterrupted.run();
+    assert_eq!(uninterrupted.status(), Status::Finished);
+    assert_eq!(root(&uninterrupted).as_i64(), Some(42));
+    assert_eq!(finish_by_steps(paused.clone()), uninterrupted);
+    let mut branch = paused.clone();
+    branch.run();
+    assert_eq!(branch, uninterrupted);
+    assert_eq!(ready.inspect(), original);
+    assert_eq!(paused.inspect(), retained);
+    let mut fresh = Vm::load_file(source, &main);
+    fresh.run();
+    assert_eq!(fresh.status(), Status::Finished);
+    assert_eq!(root(&fresh).as_i64(), Some(99));
+
+    // Reached named module functions retain the existing closed-region preflight rule.
+    std::fs::write(&module, "answer: {$call: [fn, [], {$call: [type_time, {$call: [div, 1, 0]}]}]}\n").unwrap();
+    let source = r#"{a_effect: {$call: [effect, time, null]}, policy: {$call: [import, policy.yaml]}, result: {$call: [policy.answer]}}"#;
+    let mut preflight = Vm::load_file(source, &main);
+    preflight.run();
+    assert_eq!(preflight.status(), Status::Error);
+    assert_eq!(preflight.state()["error"]["kind"].as_str(), Some("divide_by_zero"));
+    assert_eq!(preflight.state()["error"]["phase"].as_str(), Some("type"));
+    assert!(preflight.pending_effect().is_none(), "preflight must fail before the earlier effect");
+
+    // Importing the same module alone does not reach its function body for preflight.
+    let source = r#"{a_effect: {$call: [effect, time, null]}, policy: {$call: [import, policy.yaml]}}"#;
+    let mut uncalled = Vm::load_file(source, &main);
+    uncalled.run();
+    assert_eq!(uncalled.status(), Status::Signaled);
+    assert_eq!(uncalled.pending_effect().unwrap().operation, "time");
+    let mut resolved = uncalled.resolve_effect(Ok(Yaml::Integer(42)));
+    resolved.run();
+    assert_eq!(resolved.status(), Status::Finished);
+    assert_eq!(root(&resolved)["a_effect"].as_i64(), Some(42));
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn execution_paths_pause_and_resume() {
     for source in [
         r##"{"$call": ["add", 20, 22]}"##,

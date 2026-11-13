@@ -93,7 +93,7 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | --- | --- | --- |
 | Explicit call/reference/literal forms, style-independent scalar meaning, canonical map order, standard tags and acyclic aliases | `yaml_model`; `tests/suites/yaml_model.py` | Cyclic aliases, custom tags and non-string keys are deliberately unsupported |
 | Language results, structured errors, deterministic output, saved-root fixpoints | `golden`; `tests/cases/`, `tests/check/` | Not every builtin/type/arity combination has a case |
-| First-class type regions, phase-local errors, run/check parity, file-input exclusion and bounded evaluation | `type_time`; `tests/suites/type_time.py` plus type golden cases | File imports are conservatively excluded from programs using explicit type regions |
+| First-class type regions, phase-local errors, run/check parity, linked file modules and bounded evaluation | `type_time`; `tests/suites/type_time.py` plus type golden cases | Loading/confinement precede pure evaluation; imported effect requests remain forbidden |
 | Typed operational inventory, explicit override provenance, host/group selection and exclusions, dynamic input validation and structured rejection | `host_inventory`; `tests/suites/host_inventory.py` | Pure target resolution only; connection adapters and host discovery execute separately |
 | Resource dependency preflight, changed-only coalesced handlers, failure gating, typed pinned modules and callback continuation without replay | `resource_composition`; `library`; `tests/suites/resource_composition.py`; `tests/vm.rs` | Sequential composition through ordinary functions and effects; not resource-provider implementation or durable recovery |
 | Typed provider lifecycle, pure previews, fresh plan matching, explicit removal and verified file mutations | `provider_contract`; `type_algebra`; `tests/suites/provider_contract.py` | Independent host-state checks cover no-op application, drift repair and partial failures; no production provider/platform qualification or durable recovery |
@@ -211,7 +211,10 @@ source-format equivalence/idempotence, schema and LSP framing), `interactive`
 and `inspection` (bounded stepping, trace parity and observational saved-state
 validation). Their source witnesses live in `tests/cases/`; subprocess artifacts
 stay in `runtime/`. Evaluation golden fixtures under `tests/check/` explicitly
-use `check --evaluate`; plain `check` never evaluates a program.
+use `check --evaluate`; plain `check` never evaluates a program. The static suite
+also checks every production YAML module in `std/` and `tooling/`, retaining
+reports in `runtime/static/`. Diagnostics fail the gate; `unchecked` obligations
+remain visible and do not claim proven correctness.
 
 Resource regressions grow function and machine capture graphs from shallow source until an enforced limit. They must emit structured errors and exit cleanly when releasing the retained graph. Public execution tests also release captured graphs on a small-stack thread and through thread-local teardown, preserving retained machine versions.
 

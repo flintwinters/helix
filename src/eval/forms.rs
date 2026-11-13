@@ -31,9 +31,6 @@ impl Evaluator {
                     self.region = Some(Region { site: id, mark: self.scopes, inputs: Vec::new() });
                 }
                 self.push(Request::TypeEnd { previous, memo });
-                if let Some(import) = self.program.modules.file_import() {
-                    return Err(self.err(import,"effect","type_time requires a program with no file imports, including unused imports; use embedded std modules or supply source data directly"));
-                }
                 self.eval(args[0]);
             }
             Form::Fn => {

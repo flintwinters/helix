@@ -241,7 +241,7 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Decided and documented: what marks type time (see Open questions)
   - [x] An effect attempted at type time is a structured error naming the effect and the node
   - [x] Bounded: the existing `depth` and `limit` caps apply, so type time ends or fails cleanly
-  - [x] Deterministic: a region's result is a function of the source and the run-time values it reads. Effects and file imports are blocked inside the phase and its dependencies are recomputed purely, so the only run-time data that can enter is a parameter or captured value from a frame older than the region. An outermost region records each such value (functions by source node) in the machine; the state's `type_time_inputs` names them and inspection shows the values. A region that reads none is closed and leaves no entry; preflighted regions are always closed (`tests/execution.rs`)
+  - [x] Deterministic: a region's result is a function of the complete linked source graph and the run-time values it reads. Effect requests are blocked inside the phase and its dependencies are recomputed purely, so the only run-time data that can enter is a parameter or captured value from a frame older than the region. An outermost region records each such value (functions by source node) in the machine; the state's `type_time_inputs` names them and inspection shows the values. A region that reads none is closed and leaves no entry; preflighted regions are always closed (`tests/execution.rs`)
   - [x] The same type-time result whether reached by `helix check --evaluate` or by a full run (`type_time` suite); plain `check` does not evaluate type-time regions
 - [x] Type-time errors (`types_type_time_error` golden case) are the same structured errors as run-time ones, with the phase recorded in the state
   - [x] Same shape and kinds (`kind`, `message`, `path`, `line`, `column`), catchable with `try` like any other
@@ -525,12 +525,13 @@ The runtime supports types, classes and callable values beyond the established p
 
 - [ ] Canonical formatting and state inspection: implement layout, state summaries and eventually migrations in Helix. Replacing `src/emit.rs` needs lossless scalar/source reflection, scalar-to-text and escaping support, plus a bootstrap output path that does not recursively invoke the formatter. Preserve explicit literal boundaries, call/reference forms, source spans and the existing round-trip fixpoint.
 - [ ] Static checks as Helix graph passes: dependency/cycle diagnostics, annotation discovery and type reports for `helix check`. Requires access to the unevaluated graph, parent links, paths and spans without triggering effects; reuse the authoritative checker. Runtime cycle guards and resource limits remain enforced by the bootstrap.
+  - Existing development feedback: the `static` suite checks production `std/` and `tooling/` sources and retains unresolved obligations. This exposed and repaired the checker confusing construction of an effectful provider callback with its invocation. The source graph traversal is shared; the checker remains Rust, so this does not complete the graph-pass migration.
 - [ ] Test and task orchestration: express case discovery, golden comparison, round-trip checks, mutation generation and build/lint invocation in Helix once file, process, argument and parsing effects exist (section 3). Keep `./manage.py` as the obvious root entrypoint and bootstrap launcher; replace its orchestration behind that interface rather than create a competing workflow. Host-level crash checks must still detect a broken interpreter.
   - [x] Pure test policy in `std:test`: assertions, expected errors, per-case recovery, table/state fixtures, bounded properties, differential checks and serializable reports. `dogfood_testing` composes selection, failure reruns, fixture factories, shrinking and nested suites; `std_test_failure` proves a failed report becomes a structured VM error. Host filesystem/process orchestration remains pending.
   - [x] Robustness mutation policy in `std:fuzz.plan`: Helix selects ordered source-slice plans for line prefixes, line deletions and character prefixes. The production Python harness materializes one variant at a time and independently supervises interpreter failures. `std_fuzz` and harness parity contracts cover Unicode boundaries, duplicate ordering, the largest existing fixture and malformed generator results. Full host orchestration remains pending.
   - [x] Golden-test decision policy in `std:test.golden_plan`: production tests use Helix to decide deterministic-output failures, exact expected-text comparison and ordinary-root replay outcomes. Python captures observations, enforces the policy response contract and independently rejects interpreter failures. Golden fixtures and harness fault injection check the policy and its host boundary. Discovery, process execution and build/lint orchestration remain host responsibilities.
   - [x] Production suite orchestration in `tooling/test_policy.yaml`: `./manage.py test` uses Helix for suite selection/order, standard-library prerequisites, blessing skips, result statuses and report aggregation. Python executes the plan, preserves captured observations and independently rejects missing/unauthorized tasks or false-success responses. `dogfood_test_orchestration` and `harness` cover independent expected plans, policy crashes, malformed responses, retained failures and realistic report sizes. Standalone startup checks remain build-free. Filesystem discovery, process supervision/concurrency and build/lint invocation remain host-owned, so the parent milestone stays open.
-    Friction: an output-map field shadows an enclosing binding of the same name; use a distinct binding or `dict` to avoid self-reference. Computed maps in `let` require explicit `get` for field access; lexical dotted references are not general computed-value lookup. Lazy local bindings can recompute a comparison inside each callback; convergence passes computed comparisons as eager function arguments so callbacks reuse them.
+    Friction: an output-map field shadows an enclosing binding of the same name; use a distinct binding or `dict` to avoid self-reference. Lazy local bindings can recompute a comparison inside each callback; convergence passes computed comparisons as eager function arguments so callbacks reuse them.
 
 ### Migration bar
 
@@ -686,8 +687,8 @@ workflow or SSH support.
     [runnable example](tests/programs/provider_contract.yaml) and
     [provider contract](LANGUAGE.md#resource-provider-contract). Callbacks are
     trusted provider implementations, capabilities remain caller grants, and
-    revision identity is author-declared. Pure phases currently exclude linked
-    file imports; locking, durable recovery and production resource providers
+    revision identity is author-declared. Pure phases admit loader-authorized linked
+    file modules; locking, durable recovery and production resource providers
     remain separate milestones.
 - [ ] Implement a useful initial resource library behind that contract
   - [ ] Packages and repositories: presence, absence, versions, metadata refresh and package-manager locking
@@ -840,14 +841,22 @@ does not complete the broader audits below:
   General class realization, a generic package/file/service API, additional
   managers and an SSH transport are deferred. This example does not establish
   their necessity or fulfill their roadmap obligations.
-- Remaining friction is explicit: pure provider regions reject file imports,
-  forcing this reusable policy into an embedded standard module; lexical map
-  fields can shadow outer names; YAML call wrappers make implementation verbose;
+- Pure regions now evaluate linked file modules through the same engine as
+  embedded modules. Removing the program-wide file-import veto lets reusable
+  provider policy live in ordinary repository modules; loader confinement and
+  pure-phase effect rejection remain authoritative. Reproducibility requires
+  the complete transitive source graph, not only the main YAML file. The
+  `type_time` and `provider_contract` suites exercise this migration; imported
+  roots are not scanned merely because they are imported; reached functions
+  retain the existing closed-region preflight rule. No new evaluation mode,
+  module protocol or builtin is introduced.
+- Remaining friction is explicit: lexical map fields can shadow outer names;
+  YAML call wrappers make implementation verbose;
   review, phase and effect metadata require careful reading. These are inputs
   to the existing audits, not reasons to add another evaluation mode or syntax
   during this milestone. The next consolidation target is the `type_time` and
-  preflight contract, beginning with the file-import restriction encountered
-  here, before selecting further provider or platform breadth.
+  preflight contract, including placement, hoisting and caught failures, before
+  selecting further provider or platform breadth.
 
 The audit must produce decisions and executable examples, not just an inventory. Retaining a mechanism is a valid result when its distinct purpose and cost are demonstrated. Any behavior change needs a documented migration and regression coverage.
 

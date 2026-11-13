@@ -183,9 +183,16 @@ def verify(h):
                "observe": call("fn", ["args"], call("dict", "nested", function_value))}), "executable_observation")
     dependency = artifacts / "file-input.yaml"
     dependency.write_text('"new"\n')
-    result = execute("file_import_purity_boundary", call("provider.plan", ref("spec"),
+    result = execute("linked_file_plan_input", call("provider.plan", ref("spec"),
                      call("import", str(dependency)), "old", literal(context())), perform=False)
-    failed(result, "file_import_purity_boundary")
+    assert result[0]["status"] == "changed", result
+    assert result[0]["steps"] == [{"field": "/content", "op": "set", "to": "new"}], result
+    assert result[1].get("effects", []) == [], result
+    policy = artifacts / "provider-policy.yaml"
+    policy.write_text(json.dumps(descriptor()) + "\n")
+    result = plan("linked_provider_policy", call("import", str(policy)))
+    assert result[0]["status"] == "changed", result
+    assert result[0]["steps"] == [{"field": "/content", "op": "set", "to": "new"}], result
     assert result[1].get("effects", []) == [], result
 
     removal = {**observable, "plan": call("fn", ["args", "before"],

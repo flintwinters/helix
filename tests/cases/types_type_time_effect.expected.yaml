@@ -1,5 +1,23 @@
 objects:
   object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - []
+        - "$call":
+            - effect
+            - stdout
+            - "phase probe\n"
+    environment: []
+    kind: function
+    location:
+      path:
+        - emit
+      source: tests/cases/modules/phase_effect.yaml
+    program:
+      ref: object8
+  object1:
     bindings:
       m.square:
         code:
@@ -28,8 +46,8 @@ objects:
         - area
       source: tests/cases/modules/geometry.yaml
     program:
-      ref: object7
-  object1:
+      ref: object8
+  object2:
     bindings:
       number:
         code:
@@ -59,8 +77,8 @@ objects:
         - abs
       source: "std:math"
     program:
-      ref: object7
-  object2:
+      ref: object8
+  object3:
     bindings:
       max:
         code:
@@ -101,8 +119,8 @@ objects:
         - clamp
       source: "std:math"
     program:
-      ref: object7
-  object3:
+      ref: object8
+  object4:
     bindings:
       number:
         code:
@@ -132,8 +150,8 @@ objects:
         - max
       source: "std:math"
     program:
-      ref: object7
-  object4:
+      ref: object8
+  object5:
     bindings:
       number:
         code:
@@ -163,8 +181,8 @@ objects:
         - min
       source: "std:math"
     program:
-      ref: object7
-  object5:
+      ref: object8
+  object6:
     bindings:
       number:
         code:
@@ -197,8 +215,8 @@ objects:
         - sign
       source: "std:math"
     program:
-      ref: object7
-  object6:
+      ref: object8
+  object7:
     bindings:
       number:
         code:
@@ -222,22 +240,37 @@ objects:
         - square
       source: "std:math"
     program:
-      ref: object7
-  object7:
+      ref: object8
+  object8:
     kind: program
     sources:
       - code:
+          area:
+            "$call":
+              - type_time
+              - "$call":
+                  - module.area
+                  - 2
           blocked:
             "$call":
               - try
               - "$call":
                   - type_time
                   - "$call":
-                      - record
+                      - effects.emit
               - "$call":
                   - fn
                   - - e
                   - "$ref": e
+          effects:
+            "$call":
+              - import
+              - modules/phase_effect.yaml
+          independent:
+            "$call":
+              - type_time
+              - "$call":
+                  - record
           module:
             "$call":
               - import
@@ -248,6 +281,16 @@ objects:
               - 20
               - 22
         source: "<root>"
+      - code:
+          emit:
+            "$call":
+              - fn
+              - []
+              - "$call":
+                  - effect
+                  - stdout
+                  - "phase probe\n"
+        source: tests/cases/modules/phase_effect.yaml
       - code:
           area:
             "$call":
@@ -367,36 +410,54 @@ objects:
               - "$ref": number
         source: "std:math"
 root:
+  area: 12
   blocked:
-    column: 11
-    kind: effect
-    line: 3
-    message: "type_time requires a program with no file imports, including unused imports; use embedded std modules or supply source data directly"
-    path: /module
+    calls:
+      - column: 54
+        function: /emit
+        function_column: 7
+        function_file: tests/cases/modules/phase_effect.yaml
+        function_line: 1
+        line: 6
+        path: "/blocked/$call/1/$call/1"
+    column: 24
+    file: tests/cases/modules/phase_effect.yaml
+    kind: purity
+    line: 1
+    message: effects are forbidden during type time
+    path: "/emit/$call/2"
     phase: type
     reference:
-      - module
+      - emit
+      - "$call"
+      - 2
+  effects:
+    emit:
+      ref: object0
+  independent:
+    fields: {}
+    type: record
   module:
     area:
-      ref: object0
+      ref: object1
     m:
       abs:
-        ref: object1
-      clamp:
         ref: object2
-      max:
+      clamp:
         ref: object3
-      min:
+      max:
         ref: object4
+      min:
+        ref: object5
       number:
         of:
           - integer
           - float
         type: union
       sign:
-        ref: object5
-      square:
         ref: object6
+      square:
+        ref: object7
     pi: 3
   runtime_after: 42
 status: finished

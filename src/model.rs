@@ -293,7 +293,6 @@ pub(crate) struct Modules {
     pub(crate) policies: HashMap<String, NodeId>,
     pub(crate) roots: HashSet<NodeId>,
     pub(crate) visible_roots: HashSet<NodeId>,
-    pub(crate) first_file_import: Option<NodeId>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
