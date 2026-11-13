@@ -291,7 +291,7 @@ idempotent resource implementations.
 
 ## Host effects and explicit grants
 
-`{$call: [effect, {$ref: operation}, {$ref: payload}]}` yields an explicit request after evaluating its two arguments. Type time rejects effects before yielding. `Vm::run()` stops with `status: signaled`; the state contains `pending_effect` (identity, operation and payload). A host supplies a success value or structured failure through `resolve_effect`. Completed requests and outcomes remain in `effects`; resolving an already completed request does not execute it again. This is in-memory continuation support, not disk snapshot restoration.
+`{$call: [effect, {$ref: operation}, {$ref: payload}]}` yields an explicit request after evaluating its two arguments. Type time rejects effects before yielding. `Vm::run()` stops with `status: signaled`; the state contains `pending_effect` (identity, operation and payload). A host supplies a success value or structured failure through `resolve_effect`. Completed requests and outcomes remain in `effects`; resolving an already completed request does not execute it again. The versioned execution snapshot preserves this state across processes; durable host dispatch additionally requires the journal described below.
 
 Host applications use `Vm::signal(event)` to interrupt an active machine and
 `resume_signal()` to continue it. Events are bounded ordinary YAML data, visible
@@ -395,11 +395,10 @@ a pure value, in which case the emitted VM state can still be `finished`.
 This is local process lifecycle control, not an OS sandbox or rollback. It cannot
 clean up after SIGKILL or controller crashes, contain descendants that deliberately
 leave the process group, or establish whether remote mutations survived a broken
-SSH connection. Cancellation does not undo completed external changes. Durable
-recovery, remote adapters and provider-specific reconciliation remain separate
-roadmap work.
+SSH connection. Cancellation does not undo completed external changes. Caller-owned journals below retain uncertain requests for explicit reconciliation;
+provider-specific observation is still needed to establish what happened remotely.
 
-`--fixed-time MILLISECONDS` fixes the clock response. `--seed INTEGER` selects a reproducible random sequence, advanced once per request; both still require their grants. Without these options the host reads the system clock and `/dev/urandom`. The deterministic generator is intended for tests and replay inputs, not cryptographic randomness. Effect request/outcome histories expose nondeterministic inputs for inspection; full fresh-process replay of active continuations remains future work. Capability failures occur before host actions and can be handled with `try`/`finally` through the ordinary evaluator.
+`--fixed-time MILLISECONDS` fixes the clock response. `--seed INTEGER` selects a reproducible random sequence, advanced once per request; both still require their grants. Without these options the host reads the system clock and `/dev/urandom`. The deterministic generator is intended for tests and replay inputs, not cryptographic randomness. Effect request/outcome histories expose nondeterministic inputs for inspection; versioned snapshots preserve active continuations across processes, and journals retain completed outcomes without re-executing them. Capability failures occur before host actions and can be handled with `try`/`finally` through the ordinary evaluator.
 
 
 ## Durable effect checkpoints

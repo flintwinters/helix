@@ -81,8 +81,8 @@ def load_rerun_report(path, catalog):
     if not _valid_summary(value, rows):
         invalid("summary does not match recorded failures")
     failed = {row["suite"] for row in rows if row["status"] == "failed"}
-    if "docker_nginx" in failed:
-        invalid("Docker authority is not inherited; explicitly run ./manage.py test --suite docker_nginx")
+    if failed & {"docker_nginx", "ssh_nginx"}:
+        invalid("Docker authority is not inherited; explicitly run ./manage.py test --suite " + sorted(failed & {"docker_nginx", "ssh_nginx"})[0])
     if "orchestration" in failed:
         invalid("repair the orchestration failure before selecting reruns; inspect its diagnostic and run "
                 "./manage.py test --suite harness")
@@ -166,11 +166,11 @@ def plan(context, catalog, requested, bless):
                 return False
             if row.get("action") == "run":
                 if (set(row) != {"suite", "action"} or (bless and row["suite"] == "robustness")
-                        or (not requested and row["suite"] == "docker_nginx")):
+                        or (not requested and row["suite"] in {"docker_nginx", "ssh_nginx"})):
                     return False
             elif row.get("action") == "skip":
                 if (not ((bless and row["suite"] == "robustness")
-                         or (not requested and row["suite"] == "docker_nginx"))
+                         or (not requested and row["suite"] in {"docker_nginx", "ssh_nginx"}))
                         or set(row) != {"suite", "action", "reason"} or not isinstance(row["reason"], str)):
                     return False
             else:

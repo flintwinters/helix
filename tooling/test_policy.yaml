@@ -61,8 +61,8 @@ plan:
           - {suite: {$ref: name}, action: skip, reason: disabled while blessing expectations}
           - $call:
             - if
-            - {$call: [and, {$call: [eq, {$ref: requested}, []]}, {$call: [eq, {$ref: name}, docker_nginx]}]}
-            - {suite: {$ref: name}, action: skip, reason: 'requires explicit --suite docker_nginx (provisions disposable Docker resources)'}
+            - {$call: [and, {$call: [eq, {$ref: requested}, []]}, {$call: [has, [docker_nginx, ssh_nginx], {$ref: name}]}]}
+            - {suite: {$ref: name}, action: skip, reason: {$call: [concat, 'requires explicit --suite ', {$ref: name}, ' (provisions disposable Docker resources)']}}
             - {suite: {$ref: name}, action: run}
       - {$ref: ordered}
   - {$ref: tasks_type}

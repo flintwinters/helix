@@ -44,6 +44,7 @@ SUITES = {
     "resource_composition": "Validated resource dependencies, coalesced change handlers, failure gating and typed pinned modules",
     "provider_contract": "Typed provider lifecycle, pure previews, explicit ownership and independently verified mutations",
     "command_provider": "Guarded command resources, explicit result predicates, fresh reviews and real subprocess postconditions",
+    "ssh_nginx": "Opt-in disposable SSH nginx convergence, review, drift and durable recovery acceptance",
     "docker_nginx": "Opt-in Docker nginx convergence, drift and failure acceptance against independently observed Linux state",
     "golden": "Exact YAML states, deterministic evaluation, and finished-root round trips",
     "robustness": "Damaged variants of every golden input remain structured states",

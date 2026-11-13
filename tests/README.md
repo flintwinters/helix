@@ -215,7 +215,10 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | YAML toolkit scalar types, block/flow syntax, Unicode/controls, rejection cases, deterministic mutations, nested paths and parser bounds | `dogfood`; `tests/dogfood/yaml/` | Helix data subset supports bounded acyclic aliases and standard tags; cyclic aliases, custom tags and non-string keys are rejected |
 | Helix assertions, bounded collection laws, nested reports, runner failures | `dogfood`; `tests/dogfood/` | Explicit finite samples; no automatic random generation or shrinking |
 | Shared import dependencies, cycles, missing/malformed files, isolation and imported blame | `imports`; generated file trees | Symlink/path-platform combinations not exhaustive |
-| Independent VMs, repeated run, terminal failures, successful and failing check | `library`; `tests/vm.rs` | Disk restoration is not implemented |
+| Versioned executable continuations, embedded imports, live-local edits, compatibility and damaged snapshots | `snapshots`; public `library` boundary tests | Bounded format; inspection is separate, and arbitrary source edits do not invalidate memoized work |
+| Controller death, uncertain effects, exact-request reconciliation and fresh grants | `durable_effects` | One caller-owned journal; no distributed target lock or exactly-once external execution |
+| Local/SSH nginx convergence, no-op, drift, stale reviews and durable recovery on a disposable host | Opt-in `ssh_nginx`; committed SSH qualification record | Pinned Debian container/root/helper combination, not general remote provisioning |
+| Independent VMs, repeated run, terminal failures, successful and failing check | `library`; `tests/vm.rs` | Versioned restoration is checked separately by `snapshots` and the public snapshot boundary tests |
 | Quoted/block scalars, nested lookup, duplicate-key rejection, unsupported YAML constructs, precise source blame | `parser` | Parent-link consequences checked through nested lexical lookup and precise paths/spans; no graph-internal API exposed |
 | Token mutations across parsing/linking/evaluation/emission, deletion minimization | `fuzz`; seed 901723 | Bounded 200 samples; not coverage-guided fuzzing |
 | 1,001 / 4,001 / 10,001-node flat arithmetic maps | `scale` | `memory` adds peak RSS and broad scaling thresholds; no historical statistical baseline |
@@ -228,7 +231,7 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | Host file, environment, stream, command, HTTP, clock, random and SQLite effects; capability denial, ATTACH denial, deterministic runs and symlink escapes | `effects`; `tests/cases/effects_world.yaml` | Uses local HTTP and subprocess adapters; grants do not provide OS isolation |
 | Extended deadlines, cumulative output bounds, metadata progress, classified retries, SIGINT/SIGTERM cancellation and descendant liveness | `long_commands`; `tests/suites/long_commands.py` | Linux local synchronous commands; no SIGKILL recovery, detached-process containment or remote execution |
 | Pending effects, completion records, failure cleanup, external interruption and resumption without repeating completed requests | `execution`; `tests/execution.rs` | In-memory continuations only; retained branches require explicit host handling and are not globally deduplicated |
-| Actual compiled arithmetic, source-column and serialization faults rejected by existing suites | `mutants`; `runtime/mutants/` | Three targeted mutations, not a general mutation score |
+| Actual compiled arithmetic, source-column, serialization and call-syntax faults rejected by existing suites | `mutants`; `runtime/mutants/` | Four targeted mutations, not a general mutation score |
 | Growing graphs and constant-state 999/99,999-step loops, interpreter peak RSS and environment | `memory`; `runtime/memory/` | Linux + GNU time; broad operational thresholds, not a universal memory bound |
 
 These are executable branch scenarios and failure-path contracts, not compiler
@@ -423,3 +426,28 @@ and blind replay, checks exact-request reconciliation and fresh grants, and
 verifies that completed effects and host exit status survive fresh processes.
 The ordinary `effects` and `long_commands` suites continue to own host failure,
 retry, cancellation and capability contracts shared by both controller modes.
+
+
+## SSH nginx acceptance
+
+`./manage.py test --suite ssh_nginx` qualifies the same nginx policy with an
+external controller and a disposable SSH target. Like `docker_nginx`, it is
+skipped by default and explicit selection fails when prerequisites are absent.
+It requires Docker, an OpenSSH client and `ssh-keygen`; the pinned fixture image
+adds OpenSSH server and Python before application, while nginx starts absent.
+If Docker access requires noninteractive sudo, explicitly set
+`HELIX_DOCKER_SUDO=1` for either infrastructure suite. The harness never infers
+that authority; all Docker invocations, including cleanup, use the same choice.
+
+The suite runs the local baseline, then SSH preview/review/apply, repeated no-op,
+stale-review rejection, drift repair, denied authority and host-key rejection.
+It kills the external controller after a remote configuration mutation, verifies
+the installed files independently, refuses blind replay, reconciles the exact
+uncertain request and resumes with fresh grants. Independent HTTP and action
+observations prove activation and that the configuration mutation was not repeated.
+Reports, checkpoint and command evidence stay under
+`runtime/docker-nginx/RUN_ID/`; owned containers, networks and images are removed.
+The disposable keys in those local artifacts are test credentials, never production
+credentials. This is one Debian container/root/helper combination; it does not
+qualify generic remote provisioning, target locking, fleet operation or secret
+redaction. See the [operator contract](fixtures/docker_nginx/README.md#ssh-operation).

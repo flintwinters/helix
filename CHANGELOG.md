@@ -26,14 +26,19 @@ milestones, not stable releases; compatibility boundaries live in
   reasoning stays explicitly unchecked. Runtime contracts remain authoritative.
 - Caller-granted SSH commands add strict host-key verification, noninteractive
   authentication and explicit escalation grants. Loopback acceptance covers the
-  documented subset; general remote provisioning and durable recovery remain open.
+  documented subset; general remote provisioning remains open. Durable journals
+  supply a separate effect-boundary recovery contract.
 
 ## Configuration and development workflows
 
 - Typed inventory, resource providers, guarded commands and dependency/handler
   orchestration support explicit observation, review, application and verification.
   A disposable Docker nginx workload demonstrates local convergence, no-op
-  reapplication, drift repair and fresh reconciliation after failures.
+  reapplication, drift repair and fresh reconciliation after failures. The same
+  policy is qualified over caller-granted SSH, including explicit uncertainty
+  reconciliation and fresh-process continuation after controller death. This
+  covers one pinned Debian container/root/helper combination, not a general
+  remote platform or a completed Ansible migration.
 - Immutable linked file modules are usable in pure type-time regions. Purity and
   source-loading authority remain separate; reproducibility depends on the whole
   linked source graph and recorded inputs.

@@ -32,11 +32,11 @@ def verify(h):
             assert [row["suite"] for row in actual if row["action"] == "skip"] == (
                 ["robustness"] if bless and "robustness" in selected else [])
     assert test_policy.plan(h, [], [], False) == []
-    docker_catalog = ["first", "docker_nginx"]
-    default = test_policy.plan(h, docker_catalog, None, False)
-    assert default[1]["action"] == "skip" and "--suite docker_nginx" in default[1]["reason"], default
-    assert test_policy.plan(h, docker_catalog, ["docker_nginx"], False) == [
-        {"suite": "docker_nginx", "action": "run"}]
+    for suite in ("docker_nginx", "ssh_nginx"):
+        docker_catalog = ["first", suite]
+        default = test_policy.plan(h, docker_catalog, None, False)
+        assert default[1]["action"] == "skip" and f"--suite {suite}" in default[1]["reason"], default
+        assert test_policy.plan(h, docker_catalog, [suite], False) == [{"suite": suite, "action": "run"}]
     previous = report_fixture(suite_fixture("second"), suite_fixture("first"),
                               suite_fixture("golden", "passed"), suite_fixture("robustness", "skipped"))
     assert test_policy.rerun(h, catalog, previous) == ["first", "second"]

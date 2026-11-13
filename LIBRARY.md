@@ -193,3 +193,15 @@ field. Dumping uses CRLF record endings and quotes empty fields and fields
 containing commas, quotes or newlines. Empty rows and non-string cells raise
 `type`; malformed input raises `parse`. Valid rows round-trip exactly through
 `parse(dump(rows))`. Parser graph/nesting and evaluator value limits apply.
+
+
+## Scoped nginx workload
+
+`std:nginx` composes the existing provider and orchestration modules for one
+Debian container workload. It exports `resolve`, `observe`, `plan`, `check`,
+`apply`, `verify`, and its input/observation schemas. Optional `ssh_target` selects
+a caller-granted SSH alias; otherwise it uses local commands. Both paths share
+pure planning, exact fresh-review matching and observed postconditions. This is
+a fixture-qualified workload, not a generic service manager. Inputs, entrypoint,
+resource semantics and host prerequisites are authoritative in the
+[operator contract](tests/fixtures/docker_nginx/README.md).

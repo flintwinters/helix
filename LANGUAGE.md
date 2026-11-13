@@ -115,7 +115,7 @@ checks have no such metadata. This is inspection evidence, not executable snapsh
 restoration: data-only types still round-trip through a `$literal` root, while
 predicate functions and machine graphs require their original sources to execute.
 
-The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Disk snapshots, restoration validation, reversibility-promise syntax and debugger UI are separate future work. Explicit host effects are described below.
+The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Executable disk snapshots and restoration validation use the separate versioned format described below. Reversibility-promise syntax and debugger UI remain future work. Explicit host effects are described below.
 
 ## Type rules
 
@@ -466,7 +466,9 @@ executable checkpoint. `./manage.py runtime restore checkpoint.json` runs it in 
 fresh process; adding `--steps N` saves another checkpoint after at most N
 transitions. JSON is the canonical YAML-compatible wire spelling for version 1;
 the loader also accepts ordinary YAML within the existing data-parser size/depth bounds. Mapping presentation order has no execution meaning. Existing `step`/`inspect` documents
-remain observational, and `resume` still means pure source recovery.
+remain observational, and `resume` still means pure source recovery. Without
+`--steps`, restore follows `run` exit statuses: only finished execution succeeds.
+Saving a valid unfinished checkpoint succeeds; a saved error state still exits 1.
 
 The snapshot embeds linked representation graphs, source-qualified path
 references, captured environments, intermediate values, pending continuations,

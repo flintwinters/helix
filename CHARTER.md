@@ -17,13 +17,15 @@ Declarative types now retain individual direct-argument blame and bounded
 annotation evidence. Synthesized callbacks retain honest call-site blame.
 Inspection evidence is not executable restoration. Unchecked operational and
 formal-proof commitments below remain open even when component tests exist.
-The active sequence is pure disk resume, effect-boundary recovery, then the
-existing nginx workload on a qualified SSH host; broader algebra and provider
-expansion remain deferred under section 12.
+Pure disk resume, caller-owned effect-boundary recovery and the existing nginx
+workload over SSH now have independent acceptance evidence. Section 7 is complete
+within those documented bounds. Next work must address a concrete remaining
+obligation—secret-safe persistence, the general reversibility promise or a real
+migration trial—rather than automatically expanding algebra or providers.
 
 **Where it is headed:** the niche Nix and Ansible occupy, declarative machine configuration, approached through types. A machine config is a type, fully resolved at type time and inheriting from abstract machine type classes; section 8 holds that road. Daily-driver scripting comes first because the config language has to be a language worth using.
 
-**Where we are:** a resource-bounded expression language with a pure core, first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. Caller-authorized host effects, in-memory interruption, file imports and pure error recovery work; bounded versioned disk suspend/resume now works through explicit snapshot APIs; the reversibility promise type and general declarative machine application remain ahead.
+**Where we are:** a resource-bounded expression language with a pure core, first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. Caller-authorized host effects, in-memory interruption, file imports and pure error recovery work; bounded versioned disk suspend/resume and exact-request effect reconciliation work; the same nginx workload is qualified locally and over SSH on a disposable Debian host; the reversibility promise type and general declarative machine application remain ahead.
 
 **Admission rule:** unchecked items are possibilities, not authorization to expand the language. Section 12 governs additions across this charter. Prefer completing a defining workload and simplifying existing semantics over opening another feature family.
 
@@ -77,11 +79,11 @@ request and original machine while proving type-time rejection. `execution`
 tests interrupt/resume, pending requests, cleanup and no repeat after completion.
 
 Scope: file/stream adapters use UTF-8 text; HTTP currently means GET through
-installed `curl`. Signals are explicit host event APIs, not OS signal handlers.
+installed `curl`. VM signals are explicit host event APIs; the command host maps OS signals to its documented cancellation policy.
 Suspension and interruption preserve live continuations in memory; emitted
 inspection state is not a restorable disk snapshot. Retained branches require
 explicit host handling and do not share a global effect deduplication service.
-Executable snapshot restoration now has its own versioned API; the general reversibility promise and durable external-effect recovery remain separate obligations.
+Executable snapshot restoration has its own versioned API. Caller-owned journals preserve completed effects and require explicit reconciliation of uncertain requests; distributed recovery and the general reversibility promise remain open.
 
 ---
 
@@ -89,7 +91,7 @@ Executable snapshot restoration now has its own versioned API; the general rever
 
 Structured errors are readable data with paths, spans, call chains and retained causes. `try`, kind-matched recovery, `raise`, assertions and `finally` support independent validation and cleanup on either outcome. Caught errors remain visible in saved roots. Malformed-input mutation sweeps check structured failures rather than panics.
 
-Pure recovery checkpoints preserve completed root fields and restart unfinished calls after correction. Full continuation restoration remains in section 2.
+Pure recovery checkpoints preserve completed root fields and restart unfinished calls after correction. Executable continuation restoration uses the separate versioned format in section 2.
 
 ## 5. Reuse — complete
 
@@ -118,7 +120,7 @@ leave section 2's complete suspend/resume promise unchanged.
 
 ---
 
-## 7. Trust
+## 7. Trust — complete within current runtime bounds
 
 - [x] Performance: a 10k-node program runs in well under a second
 - [x] Memory stays bounded on long runs: shared work/data budgets and value/graph/depth caps; `memory` checks constant-state iteration and scaling
@@ -130,7 +132,7 @@ leave section 2's complete suspend/resume promise unchanged.
 
 ### Testing depth and breadth
 
-The current-runtime trust/documentation commitments above are implemented. The persistence obligations below remain open until their features and acceptance evidence land. The coverage map and limits are in `tests/README.md`; suites and their contracts are discoverable with `./manage.py test --describe`. Actor scenarios are measured in `runtime/coverage/actors.json`, peak RSS and timing in `runtime/memory/report.json`, and compiled mutation sensitivity in `runtime/mutants/report.json`. Scenario counts are not compiler branch-coverage percentages or proofs of exhaustive correctness.
+The current-runtime trust/documentation and bounded persistence obligations below are implemented and tested. New formats, adapters and platforms must extend that evidence before claiming support. The coverage map and limits are in `tests/README.md`; suites and their contracts are discoverable with `./manage.py test --describe`. Actor scenarios are measured in `runtime/coverage/actors.json`, peak RSS and timing in `runtime/memory/report.json`, and compiled mutation sensitivity in `runtime/mutants/report.json`. Scenario counts are not compiler branch-coverage percentages or proofs of exhaustive correctness.
 
 Treat testing as a substantial engineering responsibility. The Rust/Python size ratio is a prompt to inspect gaps, not a coverage metric or a target to pad toward. Build on the existing golden, determinism, round-trip and damaged-input checks; every new suite must be reproducible through the root `./manage.py` entrypoint, with Python orchestration and fixtures kept inside the project. Completion requires automated checks demonstrating the claimed contract; golden cases remain required for language features.
 
@@ -142,7 +144,7 @@ Completed coverage spans:
 - CLI subprocesses and public VM APIs; resource boundaries, stack safety, performance/memory scaling and type/class algebra.
 - Harness discovery, comparison, timeout/crash detection and actionable failure artifacts; fast regressions plus scheduled bounded generated/fuzz/scale runs.
 
-### Obligations activated by later milestones
+### Persistence obligations and evidence
 
 Versioned execution snapshots now activate the restoration and compatibility obligations. Caller-owned effect journals now add crash/uncertainty acceptance; distributed recovery and the general reversibility promise remain open. Immutable pause points, pure source recovery and ordinary-data fixpoints retain separate contracts; inspection graphs remain non-restorable.
 
@@ -174,7 +176,7 @@ web01: {$call: [inherit, {$call: [server, {$ref: has_ssh}]}, {hostname: web01, p
 
 ### Declarative types
 
-Completion decisions: this milestone covers ordinary type data, source-preserving annotation inspection, bounded non-executing checking, and collection of independent reached failures. These settle the earlier blanket promises explicitly: computed types emit their evaluated descriptors, with the written annotation expression preserved separately; plain `check` reports unsupported computations as unchecked rather than trying every terminating type-time expression. Executable restoration of predicate captures and checked annotations remains the versioned-snapshot obligation in sections 2–3 and the serialization proof obligation below. Inspection is not that restoration.
+Completion decisions: this milestone covers ordinary type data, source-preserving annotation inspection, bounded non-executing checking, and collection of independent reached failures. These settle the earlier blanket promises explicitly: computed types emit their evaluated descriptors, with the written annotation expression preserved separately; plain `check` reports unsupported computations as unchecked rather than trying every terminating type-time expression. Versioned execution snapshots now restore predicate captures and checked annotation state, with boundary tests in `library` and fresh-process tests in `snapshots`. The stronger serialization proof obligation below remains open. Inspection is not executable restoration.
 
 Evidence: the `type_algebra` suite owns declaration/default, violation, argument/predicate blame and annotation-evidence regressions; `static` covers source-wide obligations and damaged annotated programs; `execution` and `errors` cover retained branches and source-based recovery. The existing declarative, annotation, refinement and class golden cases preserve readable contracts, and `golden` checks ordinary emitted-root fixpoints.
 
@@ -590,8 +592,8 @@ The active consolidation target is the Docker nginx acceptance specification bel
   - [ ] Observe their actual state through authorized effects and produce a plan using section 8's realization contract
   - [ ] Review and explicitly apply that plan, then verify the resulting state independently
   - [ ] A second run performs no mutations; deliberately introduced drift produces only the necessary repair
-  - [ ] Demonstrate both local execution and SSH execution on a disposable host
-  - [ ] Record the supported distribution, resource semantics and remaining limitations alongside the example
+  - [x] Demonstrate both local execution and SSH execution on a disposable host (`ssh_nginx`; the same policy, independent observations and durable controller-death recovery)
+  - [x] Record the supported distribution, resource semantics and remaining limitations alongside the example ([operator contract](tests/fixtures/docker_nginx/README.md); one pinned Debian container/root/helper combination)
 
 ### Docker nginx acceptance specification — completed local milestone
 
@@ -603,7 +605,7 @@ The active consolidation target is the Docker nginx acceptance specification bel
 - [x] Run the Helix controller inside the target container for this first local-execution milestone. The Python harness owns Docker provisioning and independent observations from outside the Helix process. Docker exec is harness transport, not a new Helix effect or a substitute for an SSH adapter.
 - [x] Use the existing local command host and explicit caller grants. Docker access stays with the harness; the managed container receives no Docker socket, privileged mode, host PID namespace or writable host-system mounts. Scope writable project artifacts to a dedicated run directory, bind any published HTTP port only to loopback and allocate ports without fixed global names.
 - [x] Define an explicit nginx process lifecycle suitable for this container, with child reaping, bounded startup/shutdown and actual readiness checks. Document the supported supervisor/process arrangement. Do not claim systemd enablement, boot persistence or general service-manager support from this test.
-- [x] Restrict the workload to one host, one package family and one nginx instance. Fleet scheduling, SSH, TLS/ACME, additional distributions, general package upgrades and disk continuation restoration remain separate milestones. Container recreation supplies test isolation; it is not application rollback.
+- [x] Restrict the workload to one host, one package family and one nginx instance. Fleet scheduling, TLS/ACME, additional distributions and general package upgrades remain separate milestones. SSH and disk continuation qualification are recorded separately below. Container recreation supplies test isolation; it is not application rollback.
 
 #### User configuration and architecture
 
@@ -658,7 +660,7 @@ Each scenario must assert actual package/file/process/HTTP state and relevant ac
 
 #### Completion and consolidation decision
 
-- [x] Publish the runnable example, supported environment, operator workflow and complete acceptance report. Separate container-specific process behavior from future system service support. Leave section 11's SSH and broader replacement obligations open.
+- [x] Publish the runnable example, supported environment, operator workflow and complete acceptance report. Separate container-specific process behavior from future system service support. The separate SSH qualification below closes only disposable-host execution; broader replacement obligations stay open.
 - [x] Review the resulting user program against its original intent: package, configuration, content and running service. Identify every new public concept needed, remove redundant mechanisms and document justified remaining complexity under section 12. Framework implementation and a successful happy-path demo alone do not complete this target.
 
 Evidence: the [primary example](tests/programs/docker_nginx.yaml) and
@@ -673,7 +675,18 @@ provider, composition, command-host and tooling checks supply the pure and
 cross-cutting regression evidence. Section 12 records the consolidation decisions
 and unresolved semantic friction. This is typed-record application through the
 existing provider contract, not proof of section 8's general class-realization
-workflow or SSH support.
+workflow.
+
+The separate [SSH qualification](tests/fixtures/docker_nginx/ssh-qualification.json)
+records two fresh-container runs of the same policy with an external controller
+and caller-granted target alias.
+`ssh_nginx` checks local/SSH convergence, repeated no-op, stale reviews, drift,
+capability denial and host-key rejection. After a remote file mutation it kills
+the controller, independently verifies actual files, rejects uncertain replay,
+reconciles the exact request and resumes with fresh grants. HTTP and action
+observations prove activation without repeating the mutation. This qualifies
+one pinned disposable Debian container with the fixture helper and root SSH
+account; it is not an arbitrary-host bootstrap or a real playbook migration.
 
 ### Inventory, connections and observed state
 
@@ -703,7 +716,7 @@ workflow or SSH support.
   - [ ] Connection, authentication, privilege, transport and remote-command failures remain distinguishable
     - Done: `ssh_host_key`, `ssh_auth`, `ssh_connection`, `ssh_privilege`, `capability` and remote exit codes as data. Remaining: classification parses ssh/sudo diagnostics, so it is English-text and client-version sensitive, and a remote program exiting 255 is indistinguishable from an ssh failure. Transport failures await file transfer.
   - [ ] Document and check managed-host prerequisites; bootstrap missing prerequisites through an explicit supported path
-  - Evidence so far: [`HOST.md`](HOST.md#ssh-remote-commands) specifies the effect and its limits; `./manage.py test --suite ssh_host` exercises it against an unprivileged loopback `sshd` with throwaway keys. This is one controller-to-local-sshd path, not a disposable remote host, and the item above for demonstrating SSH execution of the first replacement playbook stays open.
+  - Evidence so far: [`HOST.md`](HOST.md#ssh-remote-commands) specifies the effect and its limits; `./manage.py test --suite ssh_host` exercises it against an unprivileged loopback `sshd` with throwaway keys. That adapter suite is a loopback path; `ssh_nginx` additionally qualifies the existing workload on a disposable Debian container through the same adapter. Connection reuse, agent/jump qualification and general host bootstrap remain open.
 - [ ] Gather typed facts and resource observations for realization
   - [ ] Detect supported operating systems, package managers and service managers before selecting adapters
   - [ ] Observations carry host identity and freshness information; unknown or inaccessible state is never treated as absence
@@ -729,8 +742,8 @@ workflow or SSH support.
     [provider contract](HOST.md#resource-provider-contract). Callbacks are
     trusted provider implementations, capabilities remain caller grants, and
     revision identity is author-declared. Pure phases admit loader-authorized linked
-    file modules; locking, durable recovery and production resource providers
-    remain separate milestones.
+    file modules. Caller-owned journals now supply durable dispatch; target locking
+    and general production resource providers remain separate milestones.
 - [ ] Implement a useful initial resource library behind that contract
   - [ ] Packages and repositories: presence, absence, versions, metadata refresh and package-manager locking
   - [ ] Files, directories and links: content, ownership, permissions, atomic replacement and explicit removal
@@ -749,8 +762,9 @@ workflow or SSH support.
       Predicates are pure and boolean-checked; verification requires a fresh
       satisfied guard. See the [example](tests/programs/command_provider.yaml)
       and [contract](HOST.md#guarded-command-resources). Preview describes
-      proposed execution, not predicted content changes. SSH, secret redaction,
-      locking, rollback and durable recovery remain separate obligations.
+      proposed execution, not predicted content changes. This module’s remote use,
+      secret redaction, target locking and rollback remain unqualified; durable
+      dispatch uses the separate caller-owned journal and explicit reconciliation.
 - [x] Compose resources and reusable configurations without a second execution model
   - [x] Dependencies reuse `std:dependency` where suitable and reject missing prerequisites and cycles before mutation
   - [x] Change notifications coalesce service reloads/restarts and run only after their prerequisites succeed
@@ -765,8 +779,9 @@ workflow or SSH support.
     The [typed module example](tests/programs/resource_composition.yaml) includes
     relocatable, vendored dependencies with explicit provenance. See the
     [composition contract](HOST.md#resource-composition) for sequential ordering,
-    resource-only handler prerequisites and partial-failure reports. Real service
-    providers, durable recovery and rollback remain separate milestones.
+    resource-only handler prerequisites and partial-failure reports. Versioned
+    snapshots and journals now retain these ordinary continuations; general service
+    providers and rollback remain separate milestones.
 
 ### Fleet orchestration and failure recovery
 
@@ -788,15 +803,16 @@ workflow or SSH support.
     performs that same source past the old deadline and checks capture/progress.
     The caller owns all policy; time and output budgets span attempts and delays.
     Unix process groups provide local cleanup, not rollback or containment of
-    deliberately detached descendants. SIGKILL/controller crashes and uncertain
-    remote mutations remain obligations of connection adapters and durable recovery.
+    deliberately detached descendants. SIGKILL/controller crashes leave uncertain
+    requests for journal-backed reconciliation; process cleanup and independently
+    observing remote mutations remain caller/provider obligations.
     See [bounded command operations](HOST.md#bounded-command-operations) for
     supported semantics and limits; this does not complete resource providers or
     qualify a real Ansible workload.
 - [ ] Recover safely from partial application, building on section 2's durable snapshots
-  - [ ] Persist plan identity, target identity, provider versions and step outcomes; resumed runs obtain fresh caller grants
-  - [ ] Distinguish not started, completed, failed and uncertain outcomes when a controller or connection dies during a mutation
-  - [ ] Resolve uncertain outcomes by observation or provider-supported deduplication before replay; branch-local effect IDs do not establish exactly-once external execution
+  - [x] Persist plan identity, target identity, provider versions and step outcomes for the scoped nginx lifecycle; restored execution obtains fresh caller grants (`ssh_nginx`, versioned snapshots)
+  - [x] Caller-owned journals distinguish undispatched pending requests, completed success/failure and uncertain dispatch after controller death (`durable_effects`, `ssh_nginx`); this is one journal, not fleet-wide coordination
+  - [x] Refuse uncertain replay until explicit exact-request reconciliation records an independently observed outcome (`durable_effects`, `ssh_nginx`); branch-local effect IDs do not establish exactly-once external execution, and the journal cannot prove the caller’s observation
   - [ ] Detect stale plans and conflicting concurrent controllers through preconditions and suitable locking
   - [ ] Expose partial success and pending work; recovery never reports an entire fleet successful because some hosts completed
   - [ ] Declare compensations and irreversible operations explicitly; external rollback is not implied by immutable VM state
@@ -850,7 +866,7 @@ These rules apply continuously, including to features already listed above. Reco
 
 ### Finish one defining workload before broadening
 
-- [x] Select one active consolidation target: section 11's Docker nginx acceptance specification. Its smallest useful sequence is clean preview, reviewed installation/configuration/start, independently verified HTTP response, no-op reapplication and drift repair. The full specification adds failure and fresh-reconciliation evidence before completion. Implementation and local Docker acceptance are complete; the qualification record above bounds that claim. Fresh-process continuation restoration remains a separate section 2 obligation.
+- [x] Select one active consolidation target: section 11's Docker nginx acceptance specification. Its smallest useful sequence is clean preview, reviewed installation/configuration/start, independently verified HTTP response, no-op reapplication and drift repair. The full specification adds failure and fresh-reconciliation evidence before completion. Implementation and local Docker acceptance are complete; the qualification record above bounds that claim. Fresh-process continuation restoration now has separate section 2 acceptance evidence; the general reversibility promise remains open.
 - [x] Complete that target using the existing architecture wherever possible, with repeatable acceptance evidence through `./manage.py`, an example a user can follow and explicit remaining limitations. Supporting frameworks alone do not close this item.
 - [x] Until that evidence exists, defer unrelated language expansion, provider/platform breadth and dogfooding migrations pursued only to increase the amount of Helix code. Keep the independent bootstrap and host failure detection. Replacing the active target requires recording why it failed to provide useful evidence and what work is being deferred.
 - [x] After completion, review which mechanisms the workload used, which complicated it and which remain speculative. Remove, consolidate or explicitly defer unnecessary surface before selecting the next expansion. Completion does not automatically authorize the rest of the roadmap.
@@ -860,7 +876,7 @@ These rules apply continuously, including to features already listed above. Reco
 The nginx workload supplies the following bounded consolidation decisions; it
 does not complete the broader audits below:
 
-- The user program declares six inputs and calls `std:nginx.resolve`; the
+- The user program declares the workload inputs and calls `std:nginx.resolve`; the
   alternate input reuses the same lifecycle. Package, configuration, content and
   service dependencies live in one reusable module and appear in the reviewed
   plan. Existing `std:provider` and `std:orchestration` retain lifecycle and
@@ -880,9 +896,10 @@ does not complete the broader audits below:
   not a transaction or rollback mechanism.
 - Typed records and the existing port type suffice for this fixed workload.
   General class realization, a generic package/file/service API and additional
-  managers remain deferred for this workload. The separate SSH command adapter
-  has bounded acceptance evidence; transporting this workload is still open. This example does not establish
-  their necessity or fulfill their roadmap obligations.
+  managers remain deferred for this workload. Optional `ssh_target` reuses the
+  existing SSH effect and provider lifecycle; disposable-host acceptance now
+  qualifies that transport and durable recovery. No new actor, resource protocol
+  or service-manager abstraction was needed. General platform obligations remain open.
 - Pure regions now evaluate linked file modules through the same engine as
   embedded modules. Removing the program-wide file-import veto lets reusable
   provider policy live in ordinary repository modules; loader confinement and
@@ -954,7 +971,7 @@ The audit must produce decisions and executable examples, not just an inventory.
   This audit does not claim faster execution: repeated descriptor construction
   retains growing-map copying and validation costs, and exact review adds bounded
   encoding work. Future optimization needs measurements of actual callers; more
-  policy migration alone is not a benefit. General provider platforms, durable
+  policy migration alone is not a benefit. General provider platforms, distributed
   recovery and formal type-algebra completeness remain separate obligations.
 - [x] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
   The tested arithmetic example exposes nested call wrappers, but ordinary named
@@ -991,7 +1008,7 @@ Decide these before the features that depend on them.
 
 - [x] How are user-defined actors declared in YAML so they stay readable? `{name: {$call: [fn, [params], {$ref: body}]}}`; called as `{$call: [name, ...]}`
 - [x] What is the evaluation model for effects: pull, push, or explicit yield? Explicit yield: `{$call: [effect, {$ref: operation}, {$ref: payload}]}` suspends until a caller-authorized host resolves the request.
-- [ ] Does a suspended state embed the source, reference it, or both?
+- [x] Version-1 execution snapshots embed the complete linked source graph and use source-qualified paths within it; restoration does not reopen imports. Inspection and pure recovery keep separate contracts (`snapshots`; `LANGUAGE.md#executable-disk-snapshots`).
 - [x] Types are opt-in outside configs: unannotated code retains its behavior; `expect` and function parameter/result contracts enforce declared types (`types_annotations`; `LANGUAGE.md`).
 - [ ] Is inheritance nominal (declared parents) or structural (anything with the right fields satisfies a class), or both?
 - [x] Type time is an explicit `{$call: [type_time, {$ref: expression}]}` region, with `phase: type` on failures; `check --evaluate` collects diagnostics with the same evaluator, while plain `check` is non-executing (see `LANGUAGE.md`).
