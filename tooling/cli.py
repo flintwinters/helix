@@ -41,6 +41,7 @@ SUITES = {
     "resource_composition": "Validated resource dependencies, coalesced change handlers, failure gating and typed pinned modules",
     "provider_contract": "Typed provider lifecycle, pure previews, explicit ownership and independently verified mutations",
     "command_provider": "Guarded command resources, explicit result predicates, fresh reviews and real subprocess postconditions",
+    "docker_nginx": "Opt-in Docker nginx convergence, drift and failure acceptance against independently observed Linux state",
     "golden": "Exact YAML states, deterministic evaluation, and finished-root round trips",
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",
@@ -180,13 +181,18 @@ def parser():
     migration.add_argument("paths", nargs="+", metavar="PATH", help="source files or directories (expected outputs excluded)")
     migration.add_argument("--write", action="store_true", help="rewrite source files; default only reports changes")
     quality = group("quality", "Run regression suites and structural lint")
+    docker = command(quality, "docker-nginx", "Discover Docker acceptance scenarios or clean a retained run",
+                     ["quality", "docker-nginx"], "quality docker-nginx describe")
+    docker.add_argument("action", choices=("describe", "cleanup"))
+    docker.add_argument("run_id", nargs="?", help="32-character run ID required for cleanup; only matching labeled resources are removed")
+    docker.epilog += "\nRun: ./manage.py test --suite docker_nginx. HELIX_DOCKER_NGINX_SCENARIO selects one scenario; HELIX_DOCKER_NGINX_REPEAT defaults to 2; HELIX_DOCKER_NGINX_KEEP_FAILED=1 retains failed containers."
     audit = command(quality, "migration-audit", "Compare migrated source outcomes against existing golden expectations",
             ["quality", "migration-audit"], "quality migration-audit")
     audit.add_argument("--baseline", help="read golden expectations from a Git revision instead of the working tree")
     testing = command(quality, "test", "Run regression suites or discover their contracts",
                       ["quality", "test"], "quality test --suite golden --suite cli")
     testing.add_argument("--bless", action="store_true", help="rewrite golden expectations; requires only golden or default suite selection")
-    testing.add_argument("--suite", action="append", choices=SUITES, metavar="SUITE", help="repeat to select suites; default: all")
+    testing.add_argument("--suite", action="append", choices=SUITES, metavar="SUITE", help="repeat to select suites; default: all except explicitly reported opt-in Docker acceptance")
     testing.add_argument("--case", action="append", metavar="GLOB",
                          help="filter fixture stems or repository-relative paths; repeat for a union; requires golden/robustness suites only")
     testing.add_argument("--jobs", type=int, default=DEFAULT_TEST_JOBS, metavar="N",

@@ -1,0 +1,11 @@
+# Same lifecycle, different typed inputs. This source performs no host effects.
+$call:
+- let
+- nginx: {$call: [import, 'std:nginx']}
+- $call:
+  - nginx.resolve
+  - package_version: 1.22.1-9+deb12u3
+    port: 8081
+    server_name: alternate.local
+    content: "Another Helix site\n"
+    state: present

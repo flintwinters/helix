@@ -26,11 +26,7 @@ impl Evaluator {
         let program = self.program.clone();
         if let Syntax::Reference(name) = program.graph.syntax(id) {
             match self.resolve_input(id, name) {
-                Some(Binding::Value(value)) => {
-                    self.charge_value(id, &value)?;
-                    self.finish(value);
-                }
-                Some(Binding::Node(target)) => self.eval(target),
+                Some(found) => self.read_resolution(id, name, false, found)?,
                 None if builtins::is_primitive(name) => self.finish(s(name)),
                 None => return Err(self.err(id, "unbound", format!("unbound symbol `{name}`"))),
             }
@@ -67,12 +63,9 @@ impl Evaluator {
                 if let Some(name) = self.graph().identifier(head).map(str::to_string) {
                     if builtins::arity(&name).is_some() {
                         self.apply(id, Actor::Builtin(name), items[1..].to_vec())?;
-                    } else if let Some(binding) = self.resolve_input(id, &name) {
+                    } else if let Some(found) = self.resolve_input(id, &name) {
                         self.push(Request::Actor(id, items));
-                        match binding {
-                            Binding::Value(v) => self.finish(v),
-                            Binding::Node(n) => self.eval(n),
-                        }
+                        self.read_resolution(head, &name, true, found)?;
                     } else {
                         return Err(self.err(head, "unbound", format!("unbound actor `{name}`")));
                     }
@@ -81,6 +74,27 @@ impl Evaluator {
                     self.eval(head);
                 }
             }
+        }
+        Ok(())
+    }
+    fn read_resolution(
+        &mut self,
+        site: NodeId,
+        name: &str,
+        actor: bool,
+        found: super::lexical::Resolution,
+    ) -> Result<(), HelixError> {
+        if !found.members.is_empty() {
+            self.push(Request::Project {
+                site, name: name.to_string(), members: found.members, actor,
+            });
+        }
+        match found.binding {
+            Binding::Value(value) => {
+                if !actor { self.charge_value(site, &value)?; }
+                self.finish(value);
+            }
+            Binding::Node(node) => self.eval(node),
         }
         Ok(())
     }

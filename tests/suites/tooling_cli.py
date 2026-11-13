@@ -122,7 +122,8 @@ def verify(h):
         extra = {"run": ["-"], "check": ["-"], "recover": ["-"], "resume": ["-"],
                  "fmt": ["-"], "step": ["-"], "trace": ["-"], "watch": ["example.yaml"],
                  "state": ["-"], "completion": ["bash"], "sandbox": ["-", "-"], "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
-                 "lint": ["--format=text"], "test": ["--suite", "cli"], "migrate-syntax": ["tests/cases"]}.get(name, [])
+                 "lint": ["--format=text"], "test": ["--suite", "cli"], "migrate-syntax": ["tests/cases"],
+                 "docker-nginx": ["describe"]}.get(name, [])
         short, full = parse([name, *extra]), parse([*path, *extra])
         assert {k: v for k, v in vars(short).items() if k != "help_parser"} == {
             k: v for k, v in vars(full).items() if k != "help_parser"

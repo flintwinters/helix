@@ -190,6 +190,12 @@ answer: {$call: [math.square, 6]}
 
 Dotted references select map members (`helpers.constant`, `helpers.nested.function`); an exact lexical binding containing dots takes precedence. Use imported functions as call heads or iteration callbacks, such as `{$call: [map, {$ref: math.square}, [1, 2, 3]]}`. Missing members in argument position are `unbound` errors; an unresolved call actor is an `unbound` error. Module errors include `file`; their `path`, `line`, and `column` refer to that file.
 
+Member lookup traverses ordinary source maps lazily, without evaluating unrelated
+fields. When an intermediate binding computes a map, the ordinary evaluator
+evaluates that expression before selecting the remaining members. A module can
+therefore use `let` to keep implementation bindings internal and return an
+explicit map of exports; callers retain the same dotted-reference and call syntax.
+
 Imports evaluate to their document's value. Finished output embeds the evaluated library value through the same named object graph used for other functions. Imported functions keep direct references to their original module code and scope. This output is inspection data; keep the original sources and dependencies to run the program again.
 
 Standard libraries are Helix source embedded in the executable:

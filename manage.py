@@ -157,6 +157,9 @@ def main() -> int:
     if args is None:
         return 0
     command = args.command
+    if command == "docker-nginx":
+        from tests.suites.docker_nginx import dispatch
+        return dispatch(ROOT, args.action, args.run_id, args.format)
     if command == "test" and (args.list or args.describe):
         if args.format == "json":
             emit({"command": "test", "status": "ok", "suites": SUITES if args.describe else list(SUITES)})

@@ -269,6 +269,15 @@ impl Request {
                 "resolve_actor",
                 vec![("site", g.reference(*id)), ("nodes", nodes(args))],
             ),
+            Self::Project { site, name, members, actor } => object(
+                "project_members",
+                vec![
+                    ("site", g.reference(*site)),
+                    ("name", s(name)),
+                    ("members", Value::Array(members.iter().map(|member| s(member)).collect())),
+                    ("actor", Value::Boolean(*actor)),
+                ],
+            ),
             Self::Collect {
                 site,
                 actor: a,

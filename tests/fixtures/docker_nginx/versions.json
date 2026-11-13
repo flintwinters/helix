@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "platform": "linux/amd64",
+  "distribution": "Debian bookworm",
+  "image": "debian:bookworm-slim@sha256:c67e92c8099ba22853ab4cfda7cfb494d253d6012ca82dee98ba8976772af018",
+  "builder": "rust:1.93-bookworm@sha256:1d33950f982ca6411f5e0ee4850be46e03f066f1a9efaeb41922a0e59497c9c2",
+  "package_snapshot": "20260101T000000Z",
+  "nginx_version": "1.22.1-9+deb12u3"
+}

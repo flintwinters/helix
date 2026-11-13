@@ -1,0 +1,696 @@
+{
+  "version": 1,
+  "suite": "docker_nginx",
+  "command": "./manage.py test --suite docker_nginx",
+  "implementation_revision": "9df4c3ec5ae18df2f72c2b53deff23f8d1b6bce6",
+  "result": {
+    "version": 1,
+    "run_id": "0f2df63c77814564a8ff8c5c2e3d6364",
+    "status": "passed",
+    "retained": false,
+    "elapsed_ms": 514389,
+    "versions": {
+      "version": 1,
+      "platform": "linux/amd64",
+      "distribution": "Debian bookworm",
+      "image": "debian:bookworm-slim@sha256:c67e92c8099ba22853ab4cfda7cfb494d253d6012ca82dee98ba8976772af018",
+      "builder": "rust:1.93-bookworm@sha256:1d33950f982ca6411f5e0ee4850be46e03f066f1a9efaeb41922a0e59497c9c2",
+      "package_snapshot": "20260101T000000Z",
+      "nginx_version": "1.22.1-9+deb12u3"
+    },
+    "scenarios": [
+      {
+        "scenario": "baseline",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 9528,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.05%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "7b77076e70c8",
+          "MemPerc": "2.14%",
+          "MemUsage": "10.94MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 58kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=baseline ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "updates",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 7853,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.04%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "7dfcae0ae445",
+          "MemPerc": "2.16%",
+          "MemUsage": "11.08MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 50.9kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=updates ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "drift",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 21041,
+        "resources": {
+          "BlockIO": "0B / 20.5MB",
+          "CPUPerc": "0.05%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "e542695fbcbc",
+          "MemPerc": "2.17%",
+          "MemUsage": "11.09MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.85MB / 64.3kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=drift ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "combined_drift",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 8877,
+        "resources": {
+          "BlockIO": "0B / 20.5MB",
+          "CPUPerc": "0.08%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "c31ba5a9c92b",
+          "MemPerc": "2.16%",
+          "MemUsage": "11.08MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.85MB / 56.9kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=combined_drift ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "invalid_config",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 6248,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.09%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "41a1c365faa6",
+          "MemPerc": "2.19%",
+          "MemUsage": "11.21MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 45.8kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=invalid_config ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "invalid_input",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 3251,
+        "resources": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.07%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "c5b9ce7491b3",
+          "MemPerc": "1.55%",
+          "MemUsage": "7.953MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.35kB / 126B",
+          "PIDs": "3"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=invalid_input ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "stale_review",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 10209,
+        "resources": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.04%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "9df08cd7a0cd",
+          "MemPerc": "1.52%",
+          "MemUsage": "7.785MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "1.94kB / 126B",
+          "PIDs": "3"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=stale_review ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "authority",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 2382,
+        "resources": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.08%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "14d40ef79b33",
+          "MemPerc": "1.66%",
+          "MemUsage": "8.52MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.04kB / 126B",
+          "PIDs": "3"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=authority ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "package_failure",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 15471,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.08%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "c18eb1fb8442",
+          "MemPerc": "2.19%",
+          "MemUsage": "11.24MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 66.1kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=package_failure ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "file_failure",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 10840,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.09%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "c13240a3bb68",
+          "MemPerc": "2.06%",
+          "MemUsage": "10.55MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 46.5kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=file_failure ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "service_failure",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 16231,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.12%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "df49df4146f9",
+          "MemPerc": "2.18%",
+          "MemUsage": "11.17MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 48.6kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=service_failure ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "false_success",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 9057,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.09%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "845ee789ebae",
+          "MemPerc": "2.15%",
+          "MemUsage": "11.01MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 53.5kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=false_success ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "cancellation",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 12116,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.11%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "15fb63375088",
+          "MemPerc": "2.20%",
+          "MemUsage": "11.29MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 52.7kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=cancellation ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "controller_death",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 9910,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.08%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "897e87026cd9",
+          "MemPerc": "2.13%",
+          "MemUsage": "10.88MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 48kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=controller_death ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "removal",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 7950,
+        "resources": {
+          "BlockIO": "0B / 18MB",
+          "CPUPerc": "0.10%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "b520c6ee0674",
+          "MemPerc": "1.93%",
+          "MemUsage": "9.879MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 46.5kB",
+          "PIDs": "3"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=removal ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "lifecycle",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 18227,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.08%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "8ceaf593ce67",
+          "MemPerc": "2.19%",
+          "MemUsage": "11.22MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 48.2kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=lifecycle ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "sensitivity",
+        "repetition": 1,
+        "status": "passed",
+        "elapsed_ms": 7966,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.12%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "5804eb52de72",
+          "MemPerc": "2.24%",
+          "MemUsage": "11.49MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.29MB / 47.4kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=sensitivity ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "baseline",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 9215,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.08%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "84f15a8015f2",
+          "MemPerc": "2.19%",
+          "MemUsage": "11.22MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.29MB / 48.6kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=baseline ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "updates",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 8184,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.11%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "155072da90b7",
+          "MemPerc": "2.19%",
+          "MemUsage": "11.21MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.29MB / 48.3kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=updates ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "drift",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 22419,
+        "resources": {
+          "BlockIO": "0B / 20.5MB",
+          "CPUPerc": "0.10%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "68ba3e824e7c",
+          "MemPerc": "2.12%",
+          "MemUsage": "10.85MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.85MB / 60.5kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=drift ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "combined_drift",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 9001,
+        "resources": {
+          "BlockIO": "0B / 20.5MB",
+          "CPUPerc": "0.09%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "3825b4d4342c",
+          "MemPerc": "2.22%",
+          "MemUsage": "11.35MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.85MB / 66.1kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=combined_drift ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "invalid_config",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 5995,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.05%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "dd441eb88785",
+          "MemPerc": "2.05%",
+          "MemUsage": "10.48MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 40kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=invalid_config ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "invalid_input",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 4527,
+        "resources": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.04%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "22339c3739f8",
+          "MemPerc": "1.62%",
+          "MemUsage": "8.305MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.63kB / 126B",
+          "PIDs": "3"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=invalid_input ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "stale_review",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 12598,
+        "resources": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.04%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "6b595b764c6d",
+          "MemPerc": "1.50%",
+          "MemUsage": "7.699MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.04kB / 126B",
+          "PIDs": "3"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=stale_review ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "authority",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 2438,
+        "resources": {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.05%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "2d87552ded31",
+          "MemPerc": "1.56%",
+          "MemUsage": "7.98MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.04kB / 126B",
+          "PIDs": "3"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=authority ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "package_failure",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 16284,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.06%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "772fbd485ae9",
+          "MemPerc": "2.18%",
+          "MemUsage": "11.14MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 50.9kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=package_failure ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "file_failure",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 15769,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.04%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "6e1d92619021",
+          "MemPerc": "2.27%",
+          "MemUsage": "11.64MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 43.9kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=file_failure ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "service_failure",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 21426,
+        "resources": {
+          "BlockIO": "0B / 34.2MB",
+          "CPUPerc": "0.04%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "96b0aaf14ff7",
+          "MemPerc": "2.16%",
+          "MemUsage": "11.07MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.32MB / 56.2kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=service_failure ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "false_success",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 38045,
+        "resources": {
+          "BlockIO": "0B / 34.1MB",
+          "CPUPerc": "0.05%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "2e7784a344f2",
+          "MemPerc": "2.21%",
+          "MemUsage": "11.31MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 51.5kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=false_success ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "cancellation",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 13329,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.04%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "05313c69c5c6",
+          "MemPerc": "2.17%",
+          "MemUsage": "11.09MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 39.7kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=cancellation ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "controller_death",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 15635,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.05%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "f01ced987a59",
+          "MemPerc": "2.13%",
+          "MemUsage": "10.93MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 49.5kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=controller_death ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "removal",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 8584,
+        "resources": {
+          "BlockIO": "0B / 18MB",
+          "CPUPerc": "0.04%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "6e38f19acfc4",
+          "MemPerc": "2.03%",
+          "MemUsage": "10.42MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 58.9kB",
+          "PIDs": "3"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=removal ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "lifecycle",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 18006,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.04%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "6736479972d8",
+          "MemPerc": "2.21%",
+          "MemUsage": "11.3MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 60.6kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=lifecycle ./manage.py test --suite docker_nginx"
+      },
+      {
+        "scenario": "sensitivity",
+        "repetition": 2,
+        "status": "passed",
+        "elapsed_ms": 7845,
+        "resources": {
+          "BlockIO": "0B / 17MB",
+          "CPUPerc": "0.04%",
+          "Container": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "ID": "ea6c03ac9cce",
+          "MemPerc": "2.14%",
+          "MemUsage": "10.98MiB / 512MiB",
+          "Name": "helix-nginx-0f2df63c77814564a8ff8c5c2e3d6364",
+          "NetIO": "2.3MB / 42.5kB",
+          "PIDs": "5"
+        },
+        "replay": "HELIX_DOCKER_NGINX_SCENARIO=sensitivity ./manage.py test --suite docker_nginx"
+      }
+    ],
+    "cleanup_errors": [],
+    "cleanup": "./manage.py docker-nginx cleanup 0f2df63c77814564a8ff8c5c2e3d6364"
+  },
+  "evidence": {
+    "raw_report": "runtime/docker-nginx/0f2df63c77814564a8ff8c5c2e3d6364/report.json",
+    "raw_report_sha256": "6407b425947c9b57f3cd8e1e52ebdf4e7e00f077e59daa0f817a23b81b085e7d",
+    "command_count": 1870,
+    "controller_sha256": "c32d7eaf29bd0b45d5e6fff98f47b08fc4446913e723e637b3efdd00de21ed83",
+    "image_id": "sha256:fce17a1ae80bffd81ac2ad379b5041d650fe3f3994da4b9f90bb92accce6acfa",
+    "harness_sha256": "c60fceee48d05dcdad75eb0d2e7b7d11dcd101bdd241669a55e76779a19b281d",
+    "build_context": "runtime/docker-nginx/0f2df63c77814564a8ff8c5c2e3d6364/context",
+    "retention": "Raw commands, inputs, source context and independent observations remain in the project-local artifact directory; this record is committed."
+  },
+  "qualified_host": {
+    "os": "Ubuntu 26.10",
+    "kernel": "7.3.0-10-generic",
+    "architecture": "x86_64",
+    "docker_version": "29.9.3",
+    "security_options": [
+      "name=apparmor,profile=/home/felix/projects/experiments/helix/helix/.worktrees/docker-nginx/runtime/docker-engine/apparmor-default.tpl",
+      "name=seccomp,profile=builtin",
+      "name=cgroupns"
+    ],
+    "apparmor": {
+      "source": "https://raw.githubusercontent.com/moby/profiles/main/apparmor/template.go",
+      "source_sha256": "7da15d81aa5c507f5002b844fdc49a969904681447a2cc29222bd6cbe797163b",
+      "template_sha256": "91012079608f029879e0ceca019574c40255d520ccba6b539e14335a1f3567a0",
+      "change": "Only signal/ptrace self-peer patterns use peer=\"docker-default{,//&unconfined}\" for the host stacking behavior. Other default rules retained; no unconfined or privileged containers.",
+      "scope": "Qualification covers this explicit private-daemon compatibility template, not an unmodified template on this host."
+    }
+  },
+  "resource_limits": {
+    "memory_bytes": 536870912,
+    "pids": 256,
+    "command_output_bytes_per_stream": 8388608,
+    "scenario_seconds": 900,
+    "suite_seconds": 7200,
+    "observations": "Per-scenario Docker stats are completion-time samples, not peak measurements."
+  },
+  "regressions": {
+    "golden": {
+      "status": "passed",
+      "cases": 191
+    },
+    "standard_library": "passed",
+    "execution": "passed",
+    "harness": "passed",
+    "cli": "passed",
+    "library": "passed",
+    "static": "passed",
+    "type_time": "passed",
+    "provider_contract": "passed",
+    "resource_composition": "passed",
+    "command_provider": "passed",
+    "startup": "passed",
+    "structural_lint": {
+      "status": "passed",
+      "diagnostics": 0
+    }
+  },
+  "scope": "One pinned Debian amd64 nginx workload with typed records and existing provider/orchestration contracts. SSH, general providers, class-realization application, concurrent controllers, rollback and disk continuation restoration remain unqualified."
+}

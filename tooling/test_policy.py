@@ -40,10 +40,12 @@ def plan(context, catalog, requested, bless):
                     or row["suite"] not in allowed | {"standard_library"}):
                 return False
             if row.get("action") == "run":
-                if set(row) != {"suite", "action"} or (bless and row["suite"] == "robustness"):
+                if (set(row) != {"suite", "action"} or (bless and row["suite"] == "robustness")
+                        or (not requested and row["suite"] == "docker_nginx")):
                     return False
             elif row.get("action") == "skip":
-                if (not bless or row["suite"] != "robustness"
+                if (not ((bless and row["suite"] == "robustness")
+                         or (not requested and row["suite"] == "docker_nginx"))
                         or set(row) != {"suite", "action", "reason"} or not isinstance(row["reason"], str)):
                     return False
             else:

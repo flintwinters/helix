@@ -1,0 +1,12 @@
+root:
+  actor: 42
+  different_captures: false
+  equal_captures: true
+  exact_dotted_binding: 99
+  missing_actor: unbound
+  missing_computed: unbound
+  missing_static: unbound
+  nested: 40
+  quoted_data: 7
+  static_lazy: 42
+status: finished

@@ -47,6 +47,8 @@ def harness(h):
     verify_mutations(h)
     from tests.suites.test_reports import verify as verify_reports
     verify_reports(h)
+    from tests.suites.docker_nginx import verify_harness
+    verify_harness(h)
     for output, code in [("", 0), ("[", 0), ("status: ready", 0),
                          ("status: finished", 0), ("status: error", 1),
                          ("status: finished\nroot: 1", 1), ("", -11)]:

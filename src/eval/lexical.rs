@@ -6,6 +6,12 @@ use crate::model::{
 use crate::graph::Syntax;
 use std::collections::HashSet;
 
+/// A lexical binding plus members that require its computed value.
+pub(super) struct Resolution {
+    pub(super) binding: Binding,
+    pub(super) members: Vec<String>,
+}
+
 impl Function {
     /// Free lexical bindings remain lazy code references. Recursive bindings form graph edges,
     /// not recursively expanded source or mutable environment cells.
@@ -186,30 +192,36 @@ impl Evaluator {
     }
 
     pub(super) fn resolve(&self, from: NodeId, name: &str) -> Option<Binding> {
-        self.resolve_frame(from, name).map(|(binding, _)| binding)
+        // A computed member captures its base expression. The full name remains
+        // the free-binding key, so equality retains both code and member identity.
+        self.resolve_frame(from, name).map(|(found, _)| found.binding)
     }
     /// Resolve and, inside an outermost type-time region, record a value read from a frame that
     /// predates it. Parameters and captured values are the only way run-time data can enter.
-    pub(super) fn resolve_input(&mut self, from: NodeId, name: &str) -> Option<Binding> {
-        let (binding, frame) = self.resolve_frame(from, name)?;
-        if let (Binding::Value(value), Some((function, born))) = (&binding, frame) {
+    pub(super) fn resolve_input(&mut self, from: NodeId, name: &str) -> Option<Resolution> {
+        let (found, frame) = self.resolve_frame(from, name)?;
+        if let (Binding::Value(value), Some((function, born))) = (&found.binding, frame) {
             self.note_input(function, born, name, value);
         }
-        Some(binding)
+        Some(found)
     }
     /// The binding and, for a parameter, the frame (function node, birth) it was read from.
-    fn resolve_frame(&self, from: NodeId, name: &str) -> Option<(Binding, Option<(NodeId, usize)>)> {
-        if let Some(found) = self.resolve_name(from, name) {
-            return Some(found);
+    fn resolve_frame(&self, from: NodeId, name: &str) -> Option<(Resolution, Option<(NodeId, usize)>)> {
+        if let Some((binding, frame)) = self.resolve_name(from, name) {
+            return Some((Resolution { binding, members: Vec::new() }, frame));
         }
         let (head, rest) = name.split_once('.')?;
         let (mut binding, frame) = self.resolve_name(from, head)?;
-        for part in rest.split('.') {
+        let parts = rest.split('.').collect::<Vec<_>>();
+        for (index, part) in parts.iter().enumerate() {
             binding = match binding {
                 Binding::Node(node) => {
                     let node = self.program.modules.root_of(node).unwrap_or(node);
-                    let Kind::Map(entries) = self.graph().kind(node) else {
-                        return None;
+                    let Syntax::Mapping(entries) = self.graph().syntax(node) else {
+                        return Some((Resolution {
+                            binding: Binding::Node(node),
+                            members: parts[index..].iter().map(|s| (*s).to_string()).collect(),
+                        }, frame));
                     };
                     Binding::Node(entries.iter().find(|(k, _)| k == part)?.1)
                 }
@@ -217,7 +229,7 @@ impl Evaluator {
                 _ => return None,
             };
         }
-        Some((binding, frame))
+        Some((Resolution { binding, members: Vec::new() }, frame))
     }
     fn resolve_name(&self, from: NodeId, name: &str) -> Option<(Binding, Option<(NodeId, usize)>)> {
         Some(match self.lexical_site(from, name)? {

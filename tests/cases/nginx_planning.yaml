@@ -1,0 +1,62 @@
+$call:
+- let
+- nginx: {$call: [import, 'std:nginx']}
+  config: {package_version: pinned-test-version, port: 8080, server_name: helix.local, content: "Hello\n", state: present}
+  empty:
+    target: fixture-one
+    package_version: null
+    files: {/etc/helix-nginx/nginx.conf: null, /etc/helix-nginx/server.conf: null, /var/lib/helix-nginx/index.html: null}
+    service: {running: false, activation: null}
+    response: null
+  settled:
+    target: fixture-one
+    package_version: pinned-test-version
+    files:
+      /etc/helix-nginx/nginx.conf:
+        content: '# helix.local
+
+          worker_processes 1;
+
+          pid /run/helix-nginx/nginx.pid;
+
+          error_log stderr;
+
+          events { worker_connections 64; }
+
+          http { include /etc/helix-nginx/server.conf; }
+
+          '
+        uid: 0
+        gid: 0
+        mode: 420
+      /etc/helix-nginx/server.conf:
+        content: 'server { listen 8080; server_name helix.local; add_header X-Helix-Activation "1:helix.local:8080"
+          always; root /var/lib/helix-nginx; location / { try_files /index.html =404; } }
+
+          '
+        uid: 0
+        gid: 0
+        mode: 420
+      /var/lib/helix-nginx/index.html:
+        content: 'Hello
+
+          '
+        uid: 0
+        gid: 0
+        mode: 420
+    service: {running: true, activation: '1:helix.local:8080'}
+    response: {status: 200, body: "Hello\n"}
+  step_names: {$call: [fn, [report], {$call: [if, {$call: [has, [changed, unchanged], {$ref: report.status}]}, {$call: [map, {$call: [fn, [step], {$ref: step.field}]}, {$ref: report.steps}]}, {$ref: report}]}]}
+- initial: {$call: [step_names, {$call: [nginx.plan, {$ref: config}, {$ref: empty}]}]}
+  no_op: {$call: [step_names, {$call: [nginx.plan, {$ref: config}, {$ref: settled}]}]}
+  content_only: {$call: [step_names, {$call: [nginx.plan, {$call: [set, {$ref: config}, content, "Changed\n"]}, {$ref: settled}]}]}
+  configuration: {$call: [step_names, {$call: [nginx.plan, {$call: [set, {$ref: config}, server_name, other.local]}, {$ref: settled}]}]}
+  stopped: {$call: [step_names, {$call: [nginx.plan, {$ref: config}, {$call: [set, {$call: [set, {$ref: settled}, service, {running: false, activation: null}]}, response, null]}]}]}
+  removal: {$call: [step_names, {$call: [nginx.plan, {$call: [set, {$ref: config}, state, absent]}, {$ref: settled}]}]}
+  absent_no_op: {$call: [step_names, {$call: [nginx.plan, {$call: [set, {$ref: config}, state, absent]}, {$ref: empty}]}]}
+  invalid_port: {$call: [try, {$call: [nginx.resolve, {$call: [set, {$ref: config}, port, 0]}]}, {$call: [fn, [error], {$ref: error.kind}]}]}
+  invalid_server_name: {$call: [try, {$call: [nginx.resolve, {$call: [set, {$ref: config}, server_name, "bad; injected"]}]}, {$call: [fn, [error], {$ref: error.kind}]}]}
+  dependencies: {$call: [get, {$call: [nginx.plan, {$ref: config}, {$ref: empty}]}, dependencies]}
+  missing_dependencies: {$call: [get, {$call: [get, {$call: [nginx.apply, {$ref: config}, {}]}, error]}, kind]}
+  tampered_dependencies: {$call: [get, {$call: [get, {$call: [nginx.apply, {$ref: config}, {$call: [set, {$call: [nginx.plan, {$ref: config}, {$ref: empty}]}, dependencies, {}]}]}, error]}, kind]}
+  public_exports: {$call: [keys, {$ref: nginx}]}

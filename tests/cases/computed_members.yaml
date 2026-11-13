@@ -1,0 +1,25 @@
+$call:
+- let
+- make: {$call: [fn, [n], {$call: [dict, value, {$ref: n}, add_to, {$call: [fn, [x], {$call: [add, {$ref: n}, {$ref: x}]}]}, nested, {$call: [dict, answer, {$ref: n}]}]}]}
+  box: {$call: [make, 40]}
+  box.value: 99
+  quoted: {$literal: {value: 7}}
+  static: {good: 42, unused: {$call: [raise, should_not_run, Unselected static member ran]}}
+  factory:
+    $call:
+    - fn
+    - [n]
+    - $call:
+      - let
+      - computed: {$call: [dict, answer, {$ref: n}]}
+      - {$call: [fn, [], {$ref: computed.answer}]}
+- actor: {$call: [box.add_to, 2]}
+  nested: {$ref: box.nested.answer}
+  exact_dotted_binding: {$ref: box.value}
+  quoted_data: {$ref: quoted.value}
+  static_lazy: {$ref: static.good}
+  missing_computed: {$call: [try, {$ref: box.missing}, {$call: [fn, [error], {$ref: error.kind}]}]}
+  missing_static: {$call: [try, {$ref: static.missing}, {$call: [fn, [error], {$ref: error.kind}]}]}
+  missing_actor: {$call: [try, {$call: [box.missing]}, {$call: [fn, [error], {$ref: error.kind}]}]}
+  different_captures: {$call: [eq, {$call: [factory, 1]}, {$call: [factory, 2]}]}
+  equal_captures: {$call: [eq, {$call: [factory, 1]}, {$call: [factory, 1]}]}
