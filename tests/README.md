@@ -427,6 +427,15 @@ predicate and iteration examples. The committed version-1 compatibility fixture
 is independent of freshly generated snapshots. Existing inspection tests retain
 their separate non-restorable format contract.
 
+The fresh-process suite also checks byte-stable zero-step restoration and a
+live-parameter edit whose unified diff changes only the argument value. A
+120-item nested-call map resumes with independently checked arithmetic results;
+its checkpoint exposes completed iteration output, active arguments and pending
+call returns. A detached checkpoint finishes in another working directory after
+both its original source and imported module have been removed. These are
+bounded acceptance workloads, not a guarantee of small diffs for arbitrary
+execution transitions or dependency invalidation after source edits.
+
 
 `./manage.py test --suite durable_effects` kills a real controller during a
 command, independently observes its mutation, rejects concurrent journal use
