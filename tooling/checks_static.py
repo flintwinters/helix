@@ -9,6 +9,7 @@ def check(ctx):
     try:
         verify_checks(ctx)
         verify_bodies(ctx)
+        verify_computed_heads(ctx)
         verify_repository_modules(ctx)
         verify_format(ctx)
         verify_lsp(ctx)
@@ -121,6 +122,29 @@ def verify_bodies(ctx):
     code, report = static_report(ctx, json.dumps({'f': fn([['x', 'integer']], {'$ref': 'x'}),
         'g': fn([['y', {'$call': ['union', 'integer', 'string']}], ], {'$call': ['f', {'$ref': 'y'}]})}))
     assert code == 0 and report['diagnostics'] == [] and [d['kind'] for d in report['unchecked']] == ['unchecked'], report
+
+
+def verify_computed_heads(ctx):
+    """Computed heads contain source bodies/regions, with the same literal and effect boundaries."""
+    bad_function = {'$call': ['fn', [], 'wrong', 'integer']}
+    examples = [
+        ({'$call': [bad_function]}, '/$call/0/$call/2'),
+        ({'$call': [{'$call': ['if', True, {'$call': ['fn', [], 42]}, bad_function]}]},
+         '/$call/0/$call/3/$call/2'),
+        ({'$call': [{'$call': ['type_time', {'$call': ['effect', 'time', None]}]}]},
+         '/$call/0/$call/1'),
+    ]
+    for source, path in examples:
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 1 and any(d['kind'] == 'type' and d['path'] == path for d in report['diagnostics']), report
+    for source in (
+        {'$literal': examples[0][0]},
+        {'$call': [{'$literal': bad_function}]},
+        {'$call': [{'$call': ['fn', [], {'$call': ['div', 1, 0]}]}]},
+        {'$call': [{'$call': ['import', 'does-not-exist.yaml']}]},
+    ):
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 0 and report['diagnostics'] == [] and report['unchecked'] == [], report
 
 
 def verify_format(ctx):

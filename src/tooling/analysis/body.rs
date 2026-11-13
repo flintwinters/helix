@@ -32,7 +32,8 @@ pub(super) fn check(graph: &Graph) -> Findings {
                     Some("type_time") => checker.region(id),
                     _ => {}
                 }
-                pending.extend(items.iter().skip(1).rev());
+                // A computed head contains executable source just like an argument.
+                pending.extend(items.iter().rev());
             }
             Syntax::Mapping(entries) => pending.extend(entries.iter().rev().map(|(_, id)| *id)),
             Syntax::Sequence(items) => pending.extend(items.iter().rev()),
@@ -204,7 +205,7 @@ impl Checker<'_> {
         let Some(items) = self.graph.call(function) else { return };
         let (Some(&body), Some(&annotation)) = (items.get(2), items.get(3)) else { return };
         let Some(declared) = self.annotation(annotation) else {
-            return self.unchecked(annotation, "the declared result is not a literal type, so the body is not checked against it".into());
+            return self.unchecked(annotation, "the declared result annotation is outside the supported static type fragment, so the body is not checked against it".into());
         };
         let path = self.graph.path(function);
         match self.infer(body) {

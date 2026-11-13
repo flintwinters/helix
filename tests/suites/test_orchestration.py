@@ -14,6 +14,7 @@ from tests.suites.test_reports import report_fixture, suite_fixture
 
 
 def verify(h):
+    verify_policy_annotations(h)
     verify_rerun_wiring(h)
     catalog = ["first", "golden", "second", "robustness"]
     for requested in (None, [], ["second"], ["second", "first", "second"],
@@ -58,11 +59,13 @@ def verify(h):
         assert selected == expected, (prior, selected)
         plan = test_policy.plan(h, catalog, selected, False)
         assert [row["suite"] for row in plan] == ["standard_library", *expected], plan
-    observations = [{"suite": "first", "failures": ["host crash"], "stdout": "evidence", "stderr": ""},
+    observations = [{"suite": "first", "failures": ["host crash"], "stdout": "evidence", "stderr": "",
+                     "cases": 3, "jobs": 2, "blessed": True},
                     {"suite": "second", "failures": [], "stdout": "", "stderr": ""}]
     actual = test_policy.report(h, observations)
-    assert actual["failure_count"] == actual["exit_code"] == 1
-    assert [row["status"] for row in actual["results"]] == ["failed", "passed"]
+    assert actual == {"command": "test", "failure_count": 1, "exit_code": 1, "status": "failed",
+                      "results": [{**row, "status": status} for row, status in
+                                  zip(observations, ("failed", "passed"))]}, actual
     assert test_policy.report(h, [])["exit_code"] == 0
     # Actual suite-catalog scale with retained process output, not only tiny rows.
     large = [{"suite": name, "failures": [], "stdout": "retained log\n" * 256, "stderr": ""}
@@ -161,6 +164,76 @@ def verify(h):
         assert report["failure_count"] == (1 if phase == "plan" else 2)
         if phase == "report":
             assert report["results"][0]["failures"] == ["host failure"]
+
+
+def verify_policy_annotations(h):
+    """Exercise real function contracts independently of the Python response validator."""
+    import copy
+    import tempfile
+    from pathlib import Path
+
+    original = h.root / "tooling" / "test_policy.yaml"
+
+    def execute(operation, arguments, module=original):
+        source = {"$call": ["let", {"policy": {"$call": ["import", str(module)]}},
+                  {"probe": {"$call": [f"policy.{operation}", *({"$literal": value} for value in arguments)]}}]}
+        process = h.helix("run", "-", stdin=yaml.safe_dump(source))
+        assert h.malformed_state(process.stdout, process.returncode) is None, process
+        return process.returncode, yaml.safe_load(process.stdout)
+
+    # Each failure would otherwise enter policy helpers or silently manufacture a
+    # malformed report; the annotation must name the rejected public parameter.
+    invalid = [
+        ("plan", [["first", 7], [], False], "catalog"),
+        ("plan", [["first"], "first", False], "requested"),
+        ("plan", [["first"], [], "false"], "bless"),
+        ("rerun", [["first"], {"results": [{"suite": "first", "status": "unknown"}]}], "previous"),
+        ("result", [{"suite": "first", "failures": "lost failure list"}], "observation"),
+        ("result", [{"suite": "first", "failures": [], "stdout": 4}], "observation"),
+        ("report", [[{"suite": "first", "failures": [None]}]], "observations"),
+    ]
+    for operation, arguments, parameter in invalid:
+        code, result = execute(operation, arguments)
+        assert code == 1 and result["status"] == "error", (operation, result)
+        error = result["error"]
+        assert error["kind"] == "type" and "arguments" in error["message"], error
+        assert error["path"] == "/$call/2/probe" and error["line"] > 0 and error["column"] > 0, error
+        assert {violation["argument"] for violation in error["data"]["violations"]} == {parameter}, error
+        assert any(frame.get("function") == f"/{operation}"
+                   and frame.get("function_file", "").endswith("tooling/test_policy.yaml")
+                   for frame in error["calls"]), error
+
+    observation = {"suite": "golden", "failures": [], "stdout": "雪\n", "stderr": "warning\n",
+                   "cases": 5, "jobs": 2, "blessed": True, "reason": "historically skipped"}
+    code, result = execute("result", [observation])
+    assert code == 0 and result["root"]["probe"] == {**observation, "status": "skipped"}, result
+    code, result = execute("rerun", [["first"], {"results": [{"suite": "first", "status": "failed"}]}])
+    assert code == 0 and result["root"]["probe"] == ["first"], result
+
+    # Keep the actual annotations and replace only each implementation body. A
+    # live interpreter must reject bad return shapes before the host bridge sees them.
+    mutations = [
+        ("plan", [["first"], [], False], [{"suite": "first", "action": "invented"}]),
+        ("rerun", [["first"], {"results": []}], [17]),
+        ("result", [{"suite": "first", "failures": []}],
+         {"suite": "first", "failures": [], "status": "invented"}),
+        ("report", [[]], {"command": "test", "status": "passed", "exit_code": "0",
+                          "failure_count": 0, "results": []}),
+    ]
+    policy = yaml.safe_load(original.read_text())
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="policy-annotations-") as temporary:
+        for operation, arguments, bad_return in mutations:
+            damaged = copy.deepcopy(policy)
+            function = damaged[operation]["$call"]
+            assert len(function) == 4, f"{operation} must declare its result contract"
+            function[2] = {"$literal": bad_return}
+            module = Path(temporary) / f"{operation}.yaml"
+            module.write_text(yaml.safe_dump(damaged, sort_keys=False))
+            code, result = execute(operation, arguments, module)
+            assert code == 1 and result["status"] == "error", (operation, result)
+            error = result["error"]
+            assert error["kind"] == "type" and "in the result" in error["message"], error
+            assert error["path"] == f"/{operation}/$call/2" and error["file"] == str(module), error
 
 
 def verify_rerun_wiring(h):

@@ -86,6 +86,14 @@ unauthorized work, altered evidence and false-success responses. The `harness`
 suite injects damaged policy responses, and `dogfood_test_orchestration` is the
 golden policy contract. Standalone startup checks remain build-free; discovery,
 process concurrency, compilation and lint execution remain host responsibilities.
+The public policy functions also use Helix input/result annotations for suite
+lists, task records, observation metadata, compact retry selections and reports.
+`harness` checks rejected inputs, preserved metadata and deliberately malformed
+return values against those real annotations. The independent host checks still
+own count/status consistency, retained evidence and execution authority. Runtime
+shape checks do not prove the whole policy statically: record construction and
+higher-order operations can remain explicit `unchecked` obligations in
+`runtime/static/tooling-test_policy.yaml`.
 
 The charter acceptance cases `host_inventory`, `provider_contract`,
 `command_provider`, `resource_composition` and `resource_composition_module`
@@ -169,21 +177,17 @@ properties, and nested failure aggregation run inside Helix; Python discovers
 files, checks process/state integrity, and saves replayable inputs and states
 under `runtime/dogfood/`. This suite runs in fast CI and the default test run.
 
-Start a new module with this scaffold (no expected-state file is needed):
-
-```yaml
-t: [import, std:test]
-report:
-  - t.suite
-  - - {name: addition, run: [fn, [], [t.equal, [add, 2, 3], 5]]}
-    - {name: division_error, run: [fn, [], [t.throws, [fn, [], [div, 1, 0]], "divide_by_zero"]]}
-```
+Start a new module from [string_slices.yaml](dogfood/string_slices.yaml), a small
+property test, or [reports.yaml](dogfood/reports.yaml) for named cases and
+assertions. These executable examples are checked by the same suite; no
+expected-state file is needed. Calls use `{$call: [...]}` and references use
+`{$ref: name}`; a plain YAML list is data.
 
 The runner applies `t.require_pass` to the exported report, so captured failures
 fail the command while retaining later case results and nested error data.
-See `tests/dogfood/collections.yaml` for bounded property samples and composition
-of child reports. Use `[dict, "input", variable]` to put evaluated values into
-case records; a plain scalar map value is literal data. Keep host-specific tests
+See [collections.yaml](dogfood/collections.yaml) for bounded property samples and
+composition of child reports. Use `{input: {$ref: variable}}` to put an evaluated
+binding into a case record; a plain scalar map value is literal data. Keep host-specific tests
 in the Python contract suites and exact serialization contracts in golden cases.
 The collection laws exhaust all 40 lists of length zero through three over
 `{-1, 0, 1}`, including 200 split boundaries and an independent counting oracle

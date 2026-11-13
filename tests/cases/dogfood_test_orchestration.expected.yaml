@@ -1,4 +1,28 @@
 root:
+  bad_catalog:
+    kind: type
+    violations:
+      - argument: catalog
+        at: /1
+        message: "expected string, got integer"
+  bad_observation:
+    kind: type
+    violations:
+      - argument: observation
+        at: /stdout
+        message: "expected string, got integer"
+  bad_report:
+    kind: type
+    violations:
+      - argument: observations
+        at: /0/failures/0
+        message: "expected string, got null"
+  bad_selection:
+    kind: type
+    violations:
+      - argument: previous
+        at: /results/0/status
+        message: "expected one of [passed, failed, skipped], got string"
   blessing:
     - action: run
       suite: standard_library
@@ -33,6 +57,15 @@ root:
         status: passed
         suite: second
     status: failed
+  metadata:
+    blessed: true
+    cases: 3
+    failures: []
+    jobs: 2
+    status: passed
+    stderr: "warning\n"
+    stdout: "saved output\n"
+    suite: golden
   ordinary:
     - action: run
       suite: first

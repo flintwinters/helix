@@ -1,6 +1,7 @@
 $call:
 - let
 - policy: {$call: [import, '../../tooling/test_policy.yaml']}
+  rejected: {$call: [fn, [error], {kind: {$ref: error.kind}, violations: {$ref: error.data.violations}}]}
 - ordinary: {$call: [policy.plan, [first, golden, second, robustness], [second, first, first], false]}
   default: {$call: [policy.plan, [first, golden, second, robustness], [], false]}
   blessing: {$call: [policy.plan, [golden, robustness], [robustness, golden], true]}
@@ -15,3 +16,12 @@ $call:
     {results: [{suite: standard_library, status: failed}, {suite: golden, status: passed},
                {suite: robustness, status: skipped}]}]}
   rerun_empty: {$call: [policy.rerun, [first, golden], {results: []}]}
+  metadata: {$call: [policy.result, {suite: golden, failures: [], stdout: "saved output\n",
+    stderr: "warning\n", cases: 3, jobs: 2, blessed: true}]}
+  bad_catalog: {$call: [try, {$call: [policy.plan, [first, 7], [], false]}, {$ref: rejected}]}
+  bad_selection: {$call: [try, {$call: [policy.rerun, [first],
+    {results: [{suite: first, status: unknown}]}]}, {$ref: rejected}]}
+  bad_observation: {$call: [try, {$call: [policy.result,
+    {suite: first, failures: [], stdout: 7}]}, {$ref: rejected}]}
+  bad_report: {$call: [try, {$call: [policy.report,
+    [{suite: first, failures: [null]}]]}, {$ref: rejected}]}

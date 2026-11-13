@@ -1,9 +1,28 @@
 # Repository test orchestration over host observations. No filesystem or process authority.
 sequences: {$call: [import, 'std:list']}
+# Shapes belong to Helix policy; the host independently enforces observations and authority.
+strings_type: {$call: [list_of, {$ref: string}]}
+status_type: {$call: [enum, passed, failed, skipped]}
+observation_type:
+  $call: [record, suite, {$ref: string}, failures, {$ref: strings_type},
+    stdout, {$call: [optional, {$ref: string}]}, stderr, {$call: [optional, {$ref: string}]},
+    cases, {$call: [optional, {$ref: integer}]}, jobs, {$call: [optional, {$ref: integer}]},
+    blessed, {$call: [optional, {$ref: boolean}]}, reason, {$call: [optional, {$ref: string}]}]
+result_type: {$call: [with_field, {$ref: observation_type}, status, {$ref: status_type}]}
+report_type:
+  $call: [record, command, {$call: [literal, test]}, status, {$call: [enum, passed, failed]},
+    exit_code, {$call: [enum, 0, 1]}, failure_count, {$ref: integer},
+    results, {$call: [list_of, {$ref: result_type}]}]
+# Selection consumes the host's compact projection, independent of retained report metadata.
+selection_row_type: {$call: [record, suite, {$ref: string}, status, {$ref: status_type}]}
+selection_type: {$call: [record, results, {$call: [list_of, {$ref: selection_row_type}]}]}
+run_task_type: {$call: [record, suite, {$ref: string}, action, {$call: [literal, run]}]}
+skip_task_type: {$call: [with_field, {$call: [with_field, {$ref: run_task_type}, action, {$call: [literal, skip]}]}, reason, {$ref: string}]}
+tasks_type: {$call: [list_of, {$call: [union, {$ref: run_task_type}, {$ref: skip_task_type}]}]}
 rerun:
   $call:
   - fn
-  - [catalog, previous]
+  - [[catalog, {$ref: strings_type}], [previous, {$ref: selection_type}]]
   - $call:
     - let
     - rows: {$call: [get, {$ref: previous}, results]}
@@ -19,10 +38,11 @@ rerun:
         - [name]
         - $call: [or, {$call: [has, {$ref: failed_names}, {$ref: name}]}, {$call: [and, {$call: [has, {$ref: failed_names}, standard_library]}, {$call: [has, {$ref: companion_names}, {$ref: name}]}]}]
       - {$ref: catalog}
+  - {$ref: strings_type}
 plan:
   $call:
   - fn
-  - [catalog, requested, bless]
+  - [[catalog, {$ref: strings_type}], [requested, {$ref: strings_type}], [bless, {$ref: boolean}]]
   - $call:
     - let
     - selected: {$call: [if, {$call: [eq, {$ref: requested}, []]}, {$ref: catalog}, {$ref: requested}]}
@@ -45,10 +65,11 @@ plan:
             - {suite: {$ref: name}, action: skip, reason: 'requires explicit --suite docker_nginx (provisions disposable Docker resources)'}
             - {suite: {$ref: name}, action: run}
       - {$ref: ordered}
+  - {$ref: tasks_type}
 result:
   $call:
   - fn
-  - [observation]
+  - [[observation, {$ref: observation_type}]]
   - $call:
     - set
     - {$ref: observation}
@@ -58,10 +79,11 @@ result:
       - {$call: [has, {$ref: observation}, reason]}
       - skipped
       - {$call: [if, {$call: [eq, {$call: [get, {$ref: observation}, failures]}, []]}, passed, failed]}
+  - {$ref: result_type}
 report:
   $call:
   - fn
-  - [observations]
+  - [[observations, {$call: [list_of, {$ref: observation_type}]}]]
   - $call:
     - let
     - processed_results: {$call: [map, {$ref: result}, {$ref: observations}]}
@@ -72,3 +94,4 @@ report:
       exit_code: {$call: [if, {$ref: passed}, 0, 1]}
       failure_count: {$call: [len, {$ref: failures}]}
       results: {$ref: processed_results}
+  - {$ref: report_type}
