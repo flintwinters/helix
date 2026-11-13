@@ -678,7 +678,7 @@ existing provider contract, not proof of section 8's general class-realization
 workflow.
 
 The separate [SSH qualification](tests/fixtures/docker_nginx/ssh-qualification.json)
-records two fresh-container runs of the same policy with an external controller
+records fresh-container runs of the same policy, including SSH-adapter integration, with an external controller
 and caller-granted target alias.
 `ssh_nginx` checks local/SSH convergence, repeated no-op, stale reviews, drift,
 capability denial and host-key rejection. After a remote file mutation it kills
@@ -707,16 +707,17 @@ account; it is not an arbitrary-host bootstrap or a real playbook migration.
     confer no authority; discovery, SSH adapters and resource application remain
     separate milestones below.
 - [ ] Supply dependable local and SSH host adapters through the existing effect boundary
-  - [ ] SSH supports host-key verification, existing key/agent authentication, connection reuse and jump-host configuration
-    - Done: the `ssh_command` effect verifies host keys strictly against a mandatory caller-supplied `known_hosts` (no trust on first use), authenticates non-interactively with a granted identity file, and ignores user/system ssh config. Remaining: connection reuse; the `jump` grant field exists but is untested; agent authentication is inherited from the caller's environment and untested.
-  - [ ] Privilege escalation is explicitly authorized and distinguishes connection identity from execution identity
-    - Done: `become` runs through `sudo -n -u USER --` only for users named in the caller's grant, separately from the connection user. Remaining: the successful-escalation path has no acceptance evidence (the suite checks only the refusal where the test account lacks passwordless sudo), and refusal is recognized from sudo's stderr text.
-  - [ ] Remote argument transport and file transfer preserve bytes and prevent accidental shell interpretation
-    - Done: every remote word is single-quoted and a loopback-`sshd` test confirms awkward arguments arrive unchanged. Remaining: file transfer and remote stdin; there is no non-UTF-8 payload path.
+  - [x] SSH supports host-key verification, existing key/agent authentication, connection reuse and jump-host configuration
+    - The `ssh_*` effects verify host keys strictly against a mandatory caller-supplied `known_hosts` (no trust on first use), authenticate non-interactively with a granted identity file or the caller's ssh-agent, ignore user/system ssh config, hold a `jump` hop to the same host-key/identity policy, and reuse authenticated connections only for identical grants within a private `perform` session under an owner-only `--ssh-control-dir`; session teardown closes them. Reuse needs a local filesystem (OpenSSH links sockets, which NFS refuses); a killed controller can leave a master for up to 30 seconds.
+  - [x] Privilege escalation is explicitly authorized and distinguishes connection identity from execution identity
+    - Caller-granted `become` runs a reporting shell under non-interactive sudo, preserving connection versus execution identity. The opt-in disposable Docker SSH fixture verifies successful root commands, stdin, root-owned files and actual sudo-policy refusal without requiring the controller account to emulate the remote policy.
+  - [x] Remote argument transport and file transfer preserve bytes and prevent accidental shell interpretation
+    - Every remote word is single-quoted; `ssh_command` carries remote `stdin`; `ssh_file_write` streams text to a staged temporary file, verifies the received byte count, applies the mode and renames into place (per-file atomic, no multi-file transaction); `ssh_file_read` returns the exact text. Tests compare arguments, stdin and files byte-for-byte, including CRLF, unicode, no trailing newline and shell metacharacters. Limits: UTF-8 text up to 1 MiB (non-UTF-8 content is an `io` error, matching Helix strings), absolute paths only, no directory or binary transfer, ownership is the executing account.
   - [ ] Connection, authentication, privilege, transport and remote-command failures remain distinguishable
-    - Done: `ssh_host_key`, `ssh_auth`, `ssh_connection`, `ssh_privilege`, `capability` and remote exit codes as data. Remaining: classification parses ssh/sudo diagnostics, so it is English-text and client-version sensitive, and a remote program exiting 255 is indistinguishable from an ssh failure. Transport failures await file transfer.
-  - [ ] Document and check managed-host prerequisites; bootstrap missing prerequisites through an explicit supported path
-  - Evidence so far: [`HOST.md`](HOST.md#ssh-remote-commands) specifies the effect and its limits; `./manage.py test --suite ssh_host` exercises it against an unprivileged loopback `sshd` with throwaway keys. That adapter suite is a loopback path; `ssh_nginx` additionally qualifies the existing workload on a disposable Debian container through the same adapter. Connection reuse, agent/jump qualification and general host bootstrap remain open.
+    - Remote command completion (including exit 255) and sudo-wrapper completion use nonce-tagged reports instead of diagnostic text. Pre-session host-key, authentication and connection subdivisions still depend on OpenSSH diagnostics and remain heuristic; a typed SSH protocol boundary is still needed. Framing is not protection against hostile programs inspecting their parent process.
+  - [x] Document and check managed-host prerequisites; bootstrap missing prerequisites through an explicit supported path
+    - [`HOST.md`](HOST.md#ssh-remote-commands) lists the remote tools the file effects need; `std:ssh.check` observes the gaps under the connection identity and never mistakes a failed check for an empty one; `std:ssh.bootstrap` runs only a caller-declared installer (escalated through a granted `become` when set) for an observed gap and re-checks, so success is an observation, not an exit status. No package manager or distribution is inferred, and no distribution-specific installer is qualified yet.
+  - Evidence: `./manage.py test --suite ssh_host` exercises all of the above against unprivileged loopback `sshd` servers with throwaway keys and independently counted authentications. The opt-in `HELIX_SSH_DOCKER=1` path adds a disposable container SSH target for escalation and file acceptance. `ssh_nginx` separately qualifies the nginx workload and durable recovery on a disposable Debian host. General platform support and reliable pre-session failure kinds remain open.
 - [ ] Gather typed facts and resource observations for realization
   - [ ] Detect supported operating systems, package managers and service managers before selecting adapters
   - [ ] Observations carry host identity and freshness information; unknown or inaccessible state is never treated as absence

@@ -1,0 +1,5 @@
+# Checking prerequisites yields one read-only request; authority remains with the caller.
+$call:
+- let
+- ssh: {$call: [import, 'std:ssh']}
+- {$call: [ssh.check, fixture, null, [/usr/local/bin/helix-nginx-host]]}

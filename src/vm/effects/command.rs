@@ -57,6 +57,10 @@ pub(super) struct Control<'a> {
     pub cancellation_signal: Option<&'static AtomicBool>,
     pub progress: &'a mut Option<ProgressCallback>,
     pub effect_id: u64,
+    /// Working directory for the child; `None` inherits the host's.
+    pub cwd: Option<&'a std::path::Path>,
+    /// Bytes written to the child's stdin and then closed; `None` closes stdin immediately.
+    pub stdin: Option<&'a [u8]>,
 }
 struct Run<'a> {
     control: Control<'a>,
@@ -88,10 +92,10 @@ impl Run<'_> {
         }
         Ok(())
     }
-    fn execute(&mut self, program: &str, args: &[&str]) -> Result<(i64, String, String), Failure> {
+    fn execute(&mut self, program: &str, args: &[&str], decode: &impl Fn((i64, String, String)) -> Result<(i64, String, String), Failure>) -> Result<(i64, String, String), Failure> {
         loop {
             self.check()?;
-            let result = attempt(program, args, self)?;
+            let result = decode(attempt(program, args, self)?)?;
             self.check()?;
             let code = result.0 as i32;
             if self.attempt >= self.control.policy.max_attempts
@@ -110,9 +114,16 @@ impl Run<'_> {
     }
 }
 pub(super) fn capture(program: &str, args: &[&str], control: Control<'_>) -> Result<(i64, String, String), Failure> {
+    capture_with(program, args, control, Ok)
+}
+
+/// Decode a transport result before applying the shared retry policy.
+pub(super) fn capture_with(program: &str, args: &[&str], control: Control<'_>,
+    decode: impl Fn((i64, String, String)) -> Result<(i64, String, String), Failure>,
+) -> Result<(i64, String, String), Failure> {
     control.policy.validate()?;
     let mut run = Run { control, started: Instant::now(), heartbeat: Instant::now(), attempt: 1, bytes: [0; 2] };
-    let result = run.execute(program, args);
+    let result = run.execute(program, args, &decode);
     if let Err((kind, _)) = &result {
         let event = match kind.as_str() { "timeout" => "timeout", "cancelled" => "cancelled", "resource" => "resource", _ => "failed" };
         // Preserve the original failure even when the reporting sink itself has failed.
@@ -127,9 +138,18 @@ fn attempt(program: &str, args: &[&str], run: &mut Run<'_>) -> Result<(i64, Stri
     use std::process::{Command, Stdio};
     run.event("starting", None)?;
     run.check()?;
-    let child = Command::new(program).args(args).stdin(Stdio::null()).stdout(Stdio::piped())
-        .stderr(Stdio::piped()).process_group(0).spawn().map_err(io_fault)?;
+    let mut command = Command::new(program);
+    command.args(args).stdin(if run.control.stdin.is_some() { Stdio::piped() } else { Stdio::null() })
+        .stdout(Stdio::piped()).stderr(Stdio::piped()).process_group(0);
+    if let Some(cwd) = run.control.cwd { command.current_dir(cwd); }
+    let child = command.spawn().map_err(io_fault)?;
     let mut child = ProcessGroup { child, reaped: false };
+    // A writer thread keeps a child that never reads stdin from blocking the deadline loop; a
+    // broken pipe just means the child stopped reading, which its exit status already reports.
+    let _feeder = run.control.stdin.zip(child.child.stdin.take()).map(|(bytes, mut pipe)| {
+        let bytes = bytes.to_vec();
+        std::thread::spawn(move || { use std::io::Write; let _ = pipe.write_all(&bytes); })
+    });
     let mut stdout = child.child.stdout.take().unwrap();
     let mut stderr = child.child.stderr.take().unwrap();
     let mut output = [Vec::new(), Vec::new()];
