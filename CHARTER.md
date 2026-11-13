@@ -4,41 +4,42 @@
 
 The test for "daily driver" is simple: I start a task in Helix instead of Python or shell, I finish it, and I can open the saved state afterwards and understand exactly what happened.
 
-How to use this file: tick a box only when the feature works end to end *and* has a golden case in `tests/cases/` (run `./manage.py test`). A feature that only works in a demo stays unticked. Edit freely; this file is for humans, while `AGENTS.md` holds the agent-facing architecture and invariants.
+This charter records direction, acceptance criteria and bounded completion evidence.
+[AGENTS.md](AGENTS.md) owns project architecture and current priorities;
+[LANGUAGE.md](LANGUAGE.md), [LIBRARY.md](LIBRARY.md) and [HOST.md](HOST.md)
+own implemented contracts. [tests/README.md](tests/README.md) owns test operation.
 
-Audit (2026-11-13): a parent stays open while any of its stated obligations remain
-open. Implementation evidence is retained even where acceptance is incomplete.
-Section 11's inventory, provider, guarded-command, composition and local command
-lifecycle implementations now pair golden cases in `tests/cases/` with their
-independent acceptance suites. Golden cases fix deterministic plans, diagnostics
-and request boundaries; host suites verify actual effects and lifecycle policy.
-A `tests/programs/` example or generated suite fixture alone is not a golden case.
-Declarative types now retain individual direct-argument blame and bounded
-annotation evidence. Synthesized callbacks retain honest call-site blame.
-Inspection evidence is not executable restoration. Unchecked operational and
-formal-proof commitments below remain open even when component tests exist.
-Pure disk resume, caller-owned effect-boundary recovery and the existing nginx
-workload over SSH now have independent acceptance evidence. Section 7 is complete
-within those documented bounds. Next work must address a concrete remaining
-obligation—secret-safe persistence, effectful reversibility beyond section 2's bounded promise or a real
-migration trial—rather than automatically expanding algebra or providers.
+**Completion rule:** check an item only when its stated scope works end to end
+and has automated evidence through `./manage.py`. Language features also need a
+golden case in `tests/cases/`; host behavior needs independent host observations.
+A demo or a `tests/programs/` fixture alone does not qualify. Parents stay open
+while any stated obligation remains open. Tests do not establish formal proofs
+or real-world adoption; those milestones need their own evidence.
 
-**Where it is headed:** the niche Nix and Ansible occupy, declarative machine configuration, approached through types. A machine config is a type, fully resolved at type time and inheriting from abstract machine type classes; section 8 holds that road. Daily-driver scripting comes first because the config language has to be a language worth using.
+**Direction:** declarative machine configuration through first-class types.
+Resolve and validate desired configuration purely, then observe, review and apply
+through caller-authorized effects. Daily scripting and readable saved execution
+must make that foundation useful in practice.
 
-**Where we are:** a resource-bounded expression language with a pure core, first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. Caller-authorized host effects, in-memory interruption, file imports and pure error recovery work; bounded versioned disk suspend/resume and exact-request effect reconciliation work; the same nginx workload is qualified locally and over SSH on a disposable Debian host; the reversibility promise type and general declarative machine application remain ahead.
+**Audited status (2026-11-13):** the core language, bounded reversible machines,
+current host adapters, CLI/editor tooling and runtime trust contracts are
+implemented. Versioned snapshots restore execution; caller-owned journals refuse
+uncertain effect replay. The Docker nginx workload is qualified locally and over
+SSH, including controller-death recovery. Opaque host-only secret inputs,
+read-only recovery inspection, shared-domain target locks and pure class-driven
+nginx configuration have bounded acceptance evidence. These do not establish
+general machine application, secret-safe arbitrary data, remote fencing, fleet
+recovery or independently distributed reversibility.
 
-Completion audit: sections 3 and 6, and section 8's declarative/first-class type
-subsections, now explicitly mark their already-tested scopes complete. The open
-parents in sections 2, 8 and 11 are blocked by general guarantees or operational
-acceptance, not just unchecked bookkeeping. Section 12's completed audits do not
-retire its continuing admission rules. The four bounded operational priorities now have implemented contracts: opaque
-host-only secret inputs, persistent target coordination in one shared lock domain,
-read-only recovery inspection, and pure class-driven nginx configuration with
-provenance. Maintained host and class suites plus repeated Docker baseline
-acceptance qualify these scopes; external secret managers, remote fencing, fleet
-recovery and general type/machine equivalence remain open.
+**Current focus:** improve measured development feedback on production policy
+workloads and preserve the completed nginx contract. The next operational
+expansion must name a concrete need and declare its supported migration scope.
+Sections 8–11 retain deferred possibilities and unresolved acceptance criteria;
+none is an automatic next task.
 
-**Admission rule:** unchecked items are possibilities, not authorization to expand the language. Section 12 governs additions across this charter. Prefer completing a defining workload and simplifying existing semantics over opening another feature family.
+**Admission rule:** section 12 governs every addition and policy migration.
+Complete useful workloads and simplify existing semantics before opening another
+feature family. Completed audits do not retire these continuing rules.
 
 ---
 
@@ -173,7 +174,7 @@ The long-range target. A type is ordinary readable YAML, a value like any other,
 Principles that hold for the whole section, and that settle most design questions inside it:
 
 - **One language, one graph.** Types live in the same object graph as programs and state, are written in the same YAML, and are computed by the same evaluator. There is no schema dialect, template layer or generics syntax beside the language. If a feature needs a second notation, the design is wrong.
-- **The round trip covers types.** The founding promise (source and saved state are the same readable thing) applies to types unchanged: a type can be read, diffed, hand-edited and re-read, and a saved state shows the types that governed it.
+- **Readable types and explicit persistence boundaries.** Ordinary type data can be read, diffed, edited and re-read. Types containing predicates retain executable captures only through versioned snapshots; emitted inspection graphs are not executable source. Saved annotation evidence is bounded and may be explicitly truncated.
 - **A type describes, it does not act.** A type says what a value is. It never converts, coerces, fetches or repairs; checking a value against a type either passes or yields error data. This matches the no-silent-coercion rule in `LANGUAGE.md`.
 - **Wrong is loud and early.** The reason for types here is to move failures from "halfway through changing a machine" to "before anything ran", and to report all of them at once, each blamed on a node with path and line.
 - **Explain where things came from.** In Nix and Ansible the hard question is rarely "what is this value" but "who set it and why did it win". Helix answers that from the state, not from a debugger or a precedence table held in the reader's head.
@@ -329,7 +330,7 @@ The goal is justified guarantees, with the assumptions and limits visible. Execu
 - [ ] Prove preservation and progress for the typed core, accounting for structured errors, effects and the boundary with unannotated code; state what successful checking actually rules out
 - [ ] Prove type-time evaluation cannot perform run-time effects and is deterministic under its declared inputs; separate resource-bounded failure from mathematical termination
 - [ ] Prove inherited constraints are preserved by composition and parent order cannot change a successful result; treat defaults and override conflicts under their own rules
-- [ ] Prove type serialization/reflection preserve meaning and that checked annotations retain their meaning after save/reload; extend the argument to suspended execution when resume exists
+- [ ] Prove type serialization/reflection preserve meaning and that checked annotations retain their meaning after save/reload; include versioned snapshots of suspended execution and captured predicates
 - [ ] Mechanize the core definitions and proofs in a chosen proof assistant, recording assumptions and trusted components; keep a precise correspondence with the Rust implementation
 - [ ] Add reproducible algebra-law, generated counterexample and differential checks through `./manage.py`, reusing the golden and round-trip infrastructure; retain minimized failures as regression cases
 - [ ] Make proof checking discoverable through `./manage.py` and run it alongside implementation checks; a changed semantic rule requires updating its proof obligations and executable cases together
@@ -349,13 +350,13 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
   - [x] Classes inheriting from classes, to any depth (`class_inheritance_depth`: five-level chain; flattened fields, values and per-field provenance; resource bounds still apply)
   - [ ] The result is a plain flattened type: emitted, it reads as if written out by hand
   - [x] Constraints from every parent all hold on the realized result (`class_constraints`; abstract composition defers whole-record checks until realization)
-- [ ] Documented, deterministic merge and override rules (which parent wins, what counts as a conflict, how lists and maps combine)
-  - [ ] Decided: the merge model (see Open questions) and whether inheritance is nominal, structural or both
+- [x] Documented, deterministic merge and override rules within the implemented class algebra (agreement, explicit resolution and whole-value collection replacement)
+  - [x] Structural membership checks fields, fixed values and constraints; declared parents drive composition and provenance, not nominal instance identity. Merge rules require agreement or explicit child resolution (`types_class_membership`, `class_conflicts`; `LANGUAGE.md#classes-machines-and-drift`)
   - [x] Field types from two parents: when they combine and when they conflict (`class_conflicts`; declarations must agree or the child must explicitly narrow every parent)
   - [x] Defaults: a child's explicit value overrides a parent default; two differing parent defaults are a conflict (`class_defaults` covers inheritance, override, conflict and explicit declaration resolution)
   - [x] Lists and maps: one stated rule each (replace, append, or merge by key), with an explicit way to ask for another (`class_collection_overrides`: whole-value replacement, conflicts, empty overrides, explicit `concat` and `std:map.merge`; `LANGUAGE.md#classes-machines-and-drift`)
   - [x] Parent order never changes the result (`class_inheritance_depth`: fields, values and provenance equal under reversed parent lists)
-  - [ ] The rules are written in `LANGUAGE.md`, with a golden case per rule
+  - [x] The implemented rules are documented in `LANGUAGE.md#classes-machines-and-drift`, with `class_defaults`, `class_conflicts` and `class_collection_overrides` golden coverage plus `class_merge_identity` suite regressions
 - [ ] Conflicts between parents are type-time errors that name both sources, never silent last-writer-wins
   - [ ] The error gives the field and the path and line of each disagreeing declaration
   - [ ] Every conflict in a declaration is reported in one pass
@@ -376,7 +377,7 @@ An abstract class is an incomplete description: some fields fixed, some defaulte
 
 ### Tools for composition over inheritance
 
-Take the Smalltalk intuition of sending a message to a value, with a mathematically small, pure core: an object is readable data with behavior, and a message application is a function of the receiver and arguments. Prefer composing small capabilities to growing class hierarchies. These are design goals; syntax and dispatch rules remain to be settled.
+Take the Smalltalk intuition of sending a message to a value, with a mathematically small, pure core: an object is readable data with behavior, and a message application is a function of the receiver and arguments. Prefer composing small capabilities to growing class hierarchies. These are deferred workload ideas, not a commitment to add object syntax or dispatch. First demonstrate where ordinary maps, explicit receiver arguments and functions are insufficient.
 
 - [ ] Compose objects from immutable records and existing first-class functions; methods reuse ordinary `fn` parameters, closures and result contracts
 - [ ] Define message application as explicit receiver/name/arguments lookup and function application, with one documented rule for binding the receiver (`self`)
@@ -386,13 +387,26 @@ Take the Smalltalk intuition of sending a message to a value, with a mathematica
 - [ ] Adapt capabilities through explicit member selection, renaming and exclusion, reusing ordinary map/function tools wherever possible
 - [ ] Support polymorphism through a shared message contract; distinguish satisfying a capability from declaring an ancestor, and reuse the type algebra for compatibility
 - [ ] Keep behavior discoverable as data: inspect available messages, contracts, captured bindings and composition provenance; missing or conflicting messages produce structured errors with source locations
-- [ ] Serialize composed values, behavior and captured state through the existing YAML round trip; saving and reloading preserves message results without hidden host identity
+- [ ] Demonstrate composed behavior and captures surviving versioned execution snapshots without hidden host identity; ordinary-data YAML round trips and non-restorable inspection retain their separate contracts
 - [ ] Document composition laws and boundaries: identity, associativity for compatible components, conflict behavior and observational equivalence; demonstrate them with golden cases and reproducible laws through `./manage.py`
 - [ ] Demonstrate a small pure object built from independent capabilities, a delegated wrapper and an immutable update, without requiring inheritance or a parallel method evaluator
 
 ### Machine configs as type-time types
 
-The config is the type; the real machine is the value. "Is this machine configured correctly" becomes "does this machine inhabit its type", drift is a machine that no longer does, and applying a config is making the value fit the type. That framing splits the work into two phases with a hard wall between them. Type time resolves classes, overrides and cross-machine constraints into a complete description using nothing but the source: no SSH, no facts gathered from hosts, no network. Everything that can be wrong with the description is found there, and the resolved description is a reviewable artifact in `git diff`. Only then does realization touch a machine, as an explicit, separate, resumable run built on effects (section 3) and suspend/resume (section 2), with its plan and progress as readable state. From Nix this takes pure evaluation before any change and reproducibility; from Ansible it takes agentless, incremental application to machines that already exist. What it rejects is Ansible's failure halfway through a play from an error knowable in advance, and Nix's opaque evaluation whose result cannot simply be read.
+The long-range goal is a typed desired machine description, resolved without
+machine contact before observation and application. The implemented operations
+remain distinct: class realization fills defaults and validates a configuration;
+membership checks allowed values; convergence compares configured values with
+observations and preserves unmanaged extras. An empty plan is not membership in
+a closed class. [The language contract](LANGUAGE.md#classes-machines-and-drift)
+owns these distinctions.
+
+Pure resolution uses the complete linked source and explicit inputs. Observations
+arrive through authorized effects; planning consumes them as data, and reviewed
+application performs separately authorized changes. Each supported workload must
+establish freshness, idempotence and recovery with independent observations.
+General machine application and fleet-wide validation remain open; the nginx
+workload supplies the bounded evidence noted below.
 
 - [ ] A machine config is a concrete type inheriting from abstract machine classes; it is fully resolved at type time with no machine contact
   - [x] A small standard vocabulary of machine classes (packages, files, services, users), declared in Helix itself (`std:machine`, `std_machine` golden case)
@@ -417,7 +431,7 @@ The config is the type; the real machine is the value. "Is this machine configur
 - [ ] Realization is a separate, explicit step: compare a resolved config with a machine's observed state and produce a plan as data
   - [ ] Observed state is gathered by effects into a value of a declared type
   - [x] The plan is plain YAML: ordered steps, each naming the field of the type it realizes (`machine_fleet.plan_web1`; `converge` emits canonical field-ordered `set` steps)
-  - [ ] An empty plan means the machine inhabits its type — `converge` compares configured values and ignores extra observed fields, while class membership uses a closed record (and now also checks constraints); equivalence is not established
+  - [x] Keep convergence distinct from membership: an empty plan means configured values match; extra observed fields remain unmanaged. Closed membership additionally enforces schemas, pins and constraints (`convergence_policy`, `machine_fleet`). Any future machine-satisfaction relation needs a separately defined contract
   - [x] Planning changes nothing on the machine (dry run is the default, applying is the explicit act): `drift` and `converge` only compare supplied data (`machine_fleet`); effectful observation and complete machine application remain separate obligations
 - [ ] Applying a plan uses the effect system (section 3), is idempotent, and suspends/resumes per step (section 2) with the pending step visible in the state
   - [ ] Each step is an explicit effect recorded in the state before it runs
@@ -447,7 +461,7 @@ Real programs, in order of ambition, grouped by what unlocks them. Each one is a
 - [ ] Validate an inline project inventory (required fields, duplicate names, broken references) using `assert`/`try` so one bad record is reported as error data without stopping the rest, and fix the real data from its findings
 - [ ] Compute a dependency order for a small set of real tasks; missing and cyclic dependencies surface as raised, kind-matched errors that a caller recovers from, not special-cased return values
 - [ ] Reconcile two inline inventories or expense lists, with `assert` invariants (totals balance, no negative stock) whose failures name the offending record, and use them to correct the originals
-- [ ] A friction log: every awkward moment from the programs above, especially around error handling, becomes a charter item or a deliberate "no"
+- [ ] Use friction from actual programs to choose a concrete improvement or record a deliberate deferral; do not turn every awkward expression into a feature obligation
 
 ### Pure-core test coverage and friction
 
@@ -459,7 +473,7 @@ Golden coverage is evidence of executable examples, not evidence of real-world a
 
 - `dogfood_project_inventory`: missing required fields, duplicate names and dangling dependencies, plus valid and empty inventories. A declared record type now supplies required fields and collected nested violations; malformed rows retain their diagnostics without aborting duplicate and reference reporting.
 
-- `dogfood_dependency_order`: stable ordering of diamond dependencies, missing references, cycles, self-dependencies and empty graphs; independent work completes before blocked tasks are reported. Friction: immutable maps have no removal operation, so each batch rebuilds the pending map. Blocked results preserve the graph rather than claiming every blocked node belongs to a cycle.
+- `dogfood_dependency_order`: stable ordering of diamond dependencies, missing references, cycles, self-dependencies and empty graphs; independent work completes before blocked tasks are reported. The implementation rebuilds the pending map per batch; `std:map.remove` now supplies single-key removal, but repeated immutable removals would still copy maps. Blocked results preserve the graph rather than claiming every blocked node belongs to a cycle.
 
 - `dogfood_expense_reconciliation`: aggregate duplicate accounts and refunds in integer cents; report mismatched totals and accounts present on only one side, including zero balances; balanced and empty ledgers yield no findings. Friction: currency units and matching keys are conventions in user code, with no decimal-money type.
 
@@ -519,7 +533,7 @@ Friction: lazy bindings require assertions in the result dependency chain; wrapp
 
 ## 10. Super dogfood
 
-Implement Helix's own language services and development workflows in Helix. The goal is to replace host implementations with ordinary, inspectable Helix modules, beyond merely writing example programs. Start with pure policy over data; keep a small Rust bootstrap for parsing, primitive values and operations, evaluation, source attribution, and effect execution until a replacement can preserve their contracts.
+Use Helix for its own policy when production callers demonstrate clearer behavior or better development feedback. Implementation language is not a success criterion. Section 12 retains runtime parsing, evaluation, shared type checking and independent host supervision where their contracts justify them; preserve an independent build bootstrap.
 
 ### Already within reach of the pure core
 
@@ -539,52 +553,40 @@ Implement Helix's own language services and development workflows in Helix. The 
 
 ### Next: types and callable values make the larger pieces practical
 
-The runtime supports types, classes and callable values beyond the established pure core. The remaining migrations below do not imply that the complete section 8 contract already works.
+Types and callable values are implemented. The earlier blanket proposals to move
+the type checker and class realization into Helix are deferred by section 12's
+boundary audit: both need shared validation, predicate scheduling, resource bounds
+and original source blame. Moving only assembly adds cross-language sequencing
+without removing that responsibility. Reconsider only against a measured failing
+caller such as `std:types.redeclare` or class-driven nginx configuration.
 
-- [ ] Type validation and checking: move descriptor traversal, nested violation collection, unions, records and refinement orchestration from `src/builtins/typing/ty.rs` into Helix. Needs dependable primitive type inspection and first-class predicate calls; preserve declaration errors versus rejected values versus failed predicates, bounded traversal, deterministic diagnostics and source blame. Keep one authoritative checker used by both annotations and explicit checks.
-- [ ] Class composition and realization: implement inheritance conflict detection, defaults, required-field checks, flattening and provenance from `src/builtins/typing/class.rs` in Helix, building on the shared checker and the supported subtype rules. Requires callable predicates and sufficient provenance reflection; preserve explicit conflict resolution and parent-order independence. Future algebra and subtyping policy should live beside this code rather than grow another Rust policy engine.
-  - Realization migration remains deferred: the existing embedded-policy call returns its result directly, while realization must validate filled defaults, collect predicate failures through the shared checker, and preserve original builtin argument/call blame. Moving only default assembly would add cross-language sequencing without removing that responsibility. Use the concrete `std:types.redeclare` and `std:machine` workload and focused ordering/provenance contracts to assess a future migration; nginx now exercises ordinary class realization, defaults and provenance before provider planning; test-report policy still does not. This supplies a concrete workload for assessing future migration, not an automatic reason to move the checker.
-- [ ] Machine vocabulary and planning policy: declare packages/files/services/users, fleet constraints, dependency ordering and plan validation in Helix (section 8). Given typed observations, compute the complete plan as data; host adapters expose narrowly defined effects. Versioned snapshots and caller-owned journals now preserve pending effects and continuations (section 2); each application must still establish its own reconciliation and target-coordination contract.
+Machine vocabulary and lifecycle policy already use ordinary modules. Remaining
+machine/fleet work belongs to sections 8 and 11, with the same reconciliation and
+target-coordination obligations regardless of implementation language.
 
 ### With a few explicit runtime services
 
-- [ ] Canonical formatting and state inspection: implement layout, state summaries and eventually migrations in Helix. Replacing `src/emit.rs` needs lossless scalar/source reflection, scalar-to-text and escaping support, plus a bootstrap output path that does not recursively invoke the formatter. Preserve explicit literal boundaries, call/reference forms, source spans and the existing round-trip fixpoint.
-- [ ] Static checks as Helix graph passes: dependency/cycle diagnostics, annotation discovery and type reports for `helix check`. Requires access to the unevaluated graph, parent links, paths and spans without triggering effects; reuse the authoritative checker. Runtime cycle guards and resource limits remain enforced by the bootstrap.
+- [ ] Evaluate a workload-driven migration of formatting or inspection policy, only if it improves the existing implementation. Replacing `src/emit.rs` needs lossless scalar/source reflection, scalar-to-text and escaping support, plus a bootstrap output path that does not recursively invoke the formatter. Preserve explicit literal boundaries, call/reference forms, source spans and the existing round-trip fixpoint.
+- [ ] Evaluate Helix graph passes for a concrete static-analysis workload; retain the current Rust checker until a replacement demonstrates a benefit. Requires access to the unevaluated graph, parent links, paths and spans without triggering effects; reuse the authoritative checker. Runtime cycle guards and resource limits remain enforced by the bootstrap.
   - Existing development feedback: the `static` suite checks production `std/` and `tooling/` sources and retains unresolved obligations. This exposed and repaired the checker confusing construction of an effectful provider callback with its invocation, and omitting annotated bodies in computed call heads. Production test-policy input/result annotations exercise runtime contracts; mutation checks require early structural field diagnostics and source-local errors for absent policy references/callbacks. Missing-name analysis reuses runtime lexical declarations without loading imports or guessing dynamic members; unsupported higher-order obligations remain explicit. The source graph traversal is shared; the checker remains Rust, so this does not complete the graph-pass migration.
-- [ ] Test and task orchestration: express case discovery, golden comparison, round-trip checks, mutation generation and build/lint invocation in Helix once file, process, argument and parsing effects exist (section 3). Keep `./manage.py` as the obvious root entrypoint and bootstrap launcher; replace its orchestration behind that interface rather than create a competing workflow. Host-level crash checks must still detect a broken interpreter.
-  - [x] Pure test policy in `std:test`: assertions, expected errors, per-case recovery, table/state fixtures, bounded properties, differential checks and serializable reports. `dogfood_testing` composes selection, failure reruns, fixture factories, shrinking and nested suites; `std_test_failure` proves a failed report becomes a structured VM error. Host filesystem/process orchestration remains pending.
-  - [x] Robustness mutation policy in `std:fuzz.plan`: Helix selects ordered source-slice plans for line prefixes, line deletions and character prefixes. The production Python harness materializes one variant at a time and independently supervises interpreter failures. `std_fuzz` and harness parity contracts cover Unicode boundaries, duplicate ordering, the largest existing fixture and malformed generator results. Robustness executes stdin mutations with the fixture's original import base, and retained replay recipes restore that context; independent sibling/transitive-import controls check actual original and mutated results rather than accepting an incidental missing-import error. Full host orchestration remains pending.
+- [ ] Improve test and task feedback on actual production workloads. Existing pure policy is implemented below; moving filesystem discovery, process supervision or build/lint invocation requires a demonstrated benefit. Keep `./manage.py` as the root entrypoint, independent bootstrap and host-level detection of a broken interpreter.
+  - [x] Pure test policy in `std:test`: assertions, expected errors, per-case recovery, table/state fixtures, bounded properties, differential checks and serializable reports. `dogfood_testing` composes selection, failure reruns, fixture factories, shrinking and nested suites; `std_test_failure` proves a failed report becomes a structured VM error. Filesystem/process orchestration remains host-owned.
+  - [x] Robustness mutation policy in `std:fuzz.plan`: Helix selects ordered source-slice plans for line prefixes, line deletions and character prefixes. The production Python harness materializes one variant at a time and independently supervises interpreter failures. `std_fuzz` and harness parity contracts cover Unicode boundaries, duplicate ordering, the largest existing fixture and malformed generator results. Robustness executes stdin mutations with the fixture's original import base, and retained replay recipes restore that context; independent sibling/transitive-import controls check actual original and mutated results rather than accepting an incidental missing-import error. Host orchestration remains independently supervised.
   - [x] Golden-test decision policy in `std:test.golden_plan`: production tests use Helix to decide deterministic-output failures, exact expected-text comparison and ordinary-root replay outcomes. Python captures observations, enforces the policy response contract and independently rejects interpreter failures. Golden fixtures and harness fault injection check the policy and its host boundary. Discovery, process execution and build/lint orchestration remain host responsibilities.
-  - [x] Production suite orchestration in `tooling/test_policy.yaml`: `./manage.py test` uses Helix for suite selection/order, standard-library prerequisites, blessing skips, result statuses and report aggregation. Python executes the plan, preserves captured observations and independently rejects missing/unauthorized tasks or false-success responses. `dogfood_test_orchestration` and `harness` cover independent expected plans, policy crashes, malformed responses, retained failures and realistic report sizes. Saved versioned reports also drive failed-suite reruns through the same policy and planner: this removes manual extraction of failed suites after mixed outcomes. Host validation rejects inconsistent reports and altered selections before tasks run; a prior report never grants blessing or Docker authority. Empty retry selections remain empty, and failed standard-library prerequisites retain their runnable fixture companions. Explicit fixture selections persist as independently validated per-suite paths through subsequent reports and reruns; missing paths fail before building, while legacy and unfiltered reports retain whole-suite behavior. Standalone startup checks remain build-free. Filesystem discovery, process supervision/concurrency and build/lint invocation remain host-owned, so the parent milestone stays open.
-  - Measured feedback now includes actual report assembly with retained logs and
-    failure-heavy inputs, plus `std:types` reconstruction, in the existing speed
-    suite. Report aggregation counts per-suite failures directly instead of
-    flattening their messages into a redundant list, removing its `std:list`
-    dependency. Identical-input local debug measurements showed about 10% and 8%
-    lower median CLI times for mixed and failure-heavy reports, respectively;
-    these observations are not portable guarantees. Independent complete-output
-    checks retain duplicate diagnostics, order and all captured logs.
-    Class reconstruction also measures concrete machine fleets and persisted
-    declarations with 128 owned fields. `std:types.redeclare` assembles the
-    selected record directly after validating the original class; `extend`
-    retains field and parent validation. This removes a redundant `from_fields`
-    fold while preserving callable captures, constraints and value provenance.
-    Standalone `from_fields` retains its checked construction contract.
-    Mutation planning also measures actual `std:fuzz.plan` over fixed Unicode/CRLF
-    input and the `dogfood_testing` fixture, checking every ordered source span
-    against an independent oracle. Reusing `std:list.range` removes a separate
-    offsets state machine and its helper arguments. Scanner helpers retain the
-    computed index, character and boundary end as eager parameters, avoiding lazy
-    recomputation; ordinary characters take a direct index-update path. Together,
-    these changes reduced local debug median planning times by about 21% on both
-    fixed inputs. Immutable append costs remain; this is reduced bookkeeping,
-    not an asymptotic improvement or a portable performance guarantee.
-    Text-mode test results now flush at suite boundaries, so completed failures
-    and warnings are available while later work runs. Final aggregation retains
-    its independent failure path; JSON remains one complete report. Deterministic
-    harness checkpoints verify early visibility without timing assumptions or
-    adding interpreter calls for progress.
-    Friction: an output-map field shadows an enclosing binding of the same name; use a distinct binding or `dict` to avoid self-reference. Lazy local bindings can recompute a comparison inside each callback; convergence passes computed comparisons as eager function arguments so callbacks reuse them.
+  - [x] Production suite orchestration in `tooling/test_policy.yaml`: `./manage.py test` uses Helix for suite selection/order, standard-library prerequisites, blessing skips, result statuses and report aggregation. Python executes the plan, preserves captured observations and independently rejects missing/unauthorized tasks or false-success responses. `dogfood_test_orchestration` and `harness` cover independent expected plans, policy crashes, malformed responses, retained failures and realistic report sizes. Saved versioned reports also drive failed-suite reruns through the same policy and planner: this removes manual extraction of failed suites after mixed outcomes. Host validation rejects inconsistent reports and altered selections before tasks run; a prior report never grants blessing or Docker authority. Empty retry selections remain empty, and failed standard-library prerequisites retain their runnable fixture companions. Explicit fixture selections persist as independently validated per-suite paths through subsequent reports and reruns; missing paths fail before building, while legacy and unfiltered reports retain whole-suite behavior. Standalone startup checks remain build-free. Filesystem discovery, process supervision/concurrency and build/lint invocation remain host-owned; future changes need a measured feedback target.
+  - Measured feedback uses the existing speed suite and independent output
+    oracles: production report assembly (including retained failure logs),
+    `std:types` reconstruction of fleets and 128-field declarations, and
+    `std:fuzz.plan` over fixed Unicode/CRLF and real fixture inputs. Removing
+    redundant report flattening, record reconstruction and mutation bookkeeping
+    improved local debug medians; immutable copying costs remain. These are
+    workload observations, not portable performance guarantees.
+  - Text results flush at suite boundaries; final policy aggregation retains an
+    independent failure path and JSON remains a complete report. Deterministic
+    harness checkpoints verify early visibility without timing assumptions.
+  - Remaining friction: output-map fields shadow same-named enclosing bindings;
+    lazy bindings can repeat work in callbacks. Existing distinct names, `dict`
+    and eager function arguments address these cases without new evaluation rules.
 
 ### Migration bar
 
@@ -689,8 +691,8 @@ the complete raw report's location and digest. Existing golden, execution,
 provider, composition, command-host and tooling checks supply the pure and
 cross-cutting regression evidence. Section 12 records the consolidation decisions
 and unresolved semantic friction. This is typed-record application through the
-existing provider contract, not proof of section 8's general class-realization
-workflow.
+existing provider contract, with pure class-driven input realization; it does
+not establish section 8's general machine-application workflow.
 
 The separate [SSH qualification](tests/fixtures/docker_nginx/ssh-qualification.json)
 records fresh-container runs of the same policy, including SSH-adapter integration, with an external controller
@@ -758,8 +760,9 @@ account; it is not an arbitrary-host bootstrap or a real playbook migration.
     [provider contract](HOST.md#resource-provider-contract). Callbacks are
     trusted provider implementations, capabilities remain caller grants, and
     revision identity is author-declared. Pure phases admit loader-authorized linked
-    file modules. Caller-owned journals now supply durable dispatch; target locking
-    and general production resource providers remain separate milestones.
+    file modules. Caller-owned journals supply durable dispatch and shared-domain target locks
+    coordinate cooperating controllers. Remote fencing and general production
+    resource providers remain separate milestones.
 - [ ] Implement a useful initial resource library behind that contract
   - [ ] Packages and repositories: presence, absence, versions, metadata refresh and package-manager locking
   - [ ] Files, directories and links: content, ownership, permissions, atomic replacement and explicit removal
@@ -892,61 +895,31 @@ These rules apply continuously, including to features already listed above. Reco
 
 ### Consolidate the existing semantic surface
 
-The nginx workload supplies the following bounded consolidation decisions; it
-does not complete the broader audits below:
+The nginx workload establishes these decisions; the reference manuals and
+acceptance suites retain implementation detail:
 
-- The user program declares the workload inputs and calls `std:nginx.resolve`; the
-  alternate input reuses the same lifecycle. Package, configuration, content and
-  service dependencies live in one reusable module and appear in the reviewed
-  plan. Existing `std:provider` and `std:orchestration` retain lifecycle and
-  dependency authority. Python supplies host mechanisms and independent tests.
-- An initial source-map module exposed every helper as a member. A root `let`
-  now exports only six operations and two schemas. This exposed a gap in dotted
-  lookup of computed maps: the evaluator now projects their members through an
-  explicit continuation in the existing engine. Static source-member lookup
-  remains lazy. `computed_members` and public execution regressions cover
-  captures, source blame, effects, stepping and retained machines. No new syntax
-  or builtin actor was needed; this repair still adds a continuation obligation.
-- The activation token and provider revision share one definition. Actual
-  resource observations gate dependent actions; nginx worker retirement and
-  exact HTTP responses establish activation. These checks remain necessary:
-  a successful command or one response from a new worker cannot establish the
-  whole postcondition. Per-file atomic replacement remains partial progress,
-  not a transaction or rollback mechanism.
-- The workload's configuration class now reuses its typed input schema and the
-  existing port type. Ordinary class realization provides defaults, constraints
-  and separately inspectable provenance before the unchanged provider plan.
-  The `nginx_types` suite and repeated Docker baseline exercise that concrete
-  benefit. A generic package/file/service API and additional managers remain deferred. Optional `ssh_target` reuses the
-  existing SSH effect and provider lifecycle; disposable-host acceptance now
-  qualifies that transport and durable recovery. No new actor, resource protocol
-  or service-manager abstraction was needed. General platform obligations remain open.
-- Pure regions now evaluate linked file modules through the same engine as
-  embedded modules. Removing the program-wide file-import veto lets reusable
-  provider policy live in ordinary repository modules; loader confinement and
-  pure-phase effect rejection remain authoritative. Reproducibility requires
-  the complete transitive source graph, not only the main YAML file. The
-  `type_time` and `provider_contract` suites exercise this migration; imported
-  roots are not scanned merely because they are imported; reached functions
-  retain the existing closed-region preflight rule. No new evaluation mode,
-  module protocol or builtin is introduced.
-- The phase audit keeps preflight as scheduling over the existing evaluator.
-  Computed heads now participate in region discovery and parameter-dependency
-  analysis; check mode consistently collects reached work and retains inputs
-  from memoized closures. The [phase contract](LANGUAGE.md#type-time-evaluation)
-  explains timing, input determinism, migration and the workload reasons for
-  retaining handler, child-machine, parameter and import boundaries.
-  The `type_time`, `execution` and provider suites pair placement examples
-  with completed effects and retained-machine evidence. The phase-input identity
-  regressions retain numeric kinds, signed zero and nested representations across
-  calls, captures and inspection while deduplicating exact repeats. Parameter-independence
-  analysis remains conservative; this is not a claim of complete static inference.
-- Remaining friction is explicit: lexical map fields can shadow outer names;
-  YAML call wrappers make implementation verbose;
-  review, phase and effect metadata require careful reading. These are inputs
-  to the existing audits, not reasons to add another evaluation mode or syntax
-  during this milestone. Further development feedback should exercise existing
-  policy and validation workflows; provider or platform breadth stays deferred.
+- Keep desired-state policy in `std:nginx`, provider lifecycle in `std:provider`
+  and dependency scheduling in `std:orchestration`. Fixture helpers supply host
+  mechanisms and independent observations. Pure class realization reuses the
+  input schema, defaults and constraints; `nginx_types` and Docker acceptance
+  exercise the result.
+- Reuse ordinary computed-map member lookup to expose a small module API.
+  `computed_members` and execution regressions cover the resulting continuation,
+  captures, blame, effects and retained machines; no new syntax or actor is needed.
+- Require fresh observations, nginx worker retirement and exact HTTP responses
+  before claiming activation. Atomic file replacement remains partial progress,
+  not rollback. SSH reuses the same lifecycle; its qualification does not imply
+  general service management or platform support.
+- Evaluate linked file and embedded modules through the same pure engine.
+  Loader confinement and effect rejection remain authoritative. Reproducibility
+  requires the complete linked source, and preflight remains conservative
+  scheduling over that engine. The [phase contract](LANGUAGE.md#type-time-evaluation)
+  owns timing, input identity and handler/function/import boundaries; `type_time`,
+  `execution` and provider suites preserve them.
+- Retain the remaining friction as evidence for future work: lexical fields can
+  shadow outer names, YAML call wrappers are verbose, and review/phase/effect
+  metadata needs careful reading. These costs do not themselves justify new
+  syntax, another evaluation mode or broader providers.
 
 The audit must produce decisions and executable examples, not just an inventory. Retaining a mechanism is a valid result when its distinct purpose and cost are demonstrated. Any behavior change needs a documented migration and regression coverage.
 
@@ -1025,14 +998,22 @@ navigation paths without duplicate contract descriptions.
 
 ## Open questions
 
-Decide these before the features that depend on them.
+Resolve these only when a concrete workload depends on them; section 12 still
+controls admission.
 
-- [x] How are user-defined actors declared in YAML so they stay readable? `{name: {$call: [fn, [params], {$ref: body}]}}`; called as `{$call: [name, ...]}`
-- [x] What is the evaluation model for effects: pull, push, or explicit yield? Explicit yield: `{$call: [effect, {$ref: operation}, {$ref: payload}]}` suspends until a caller-authorized host resolves the request.
-- [x] Version-1 execution snapshots embed the complete linked source graph and use source-qualified paths within it; restoration does not reopen imports. Inspection and pure recovery keep separate contracts (`snapshots`; `LANGUAGE.md#executable-disk-snapshots`).
-- [x] Types are opt-in outside configs: unannotated code retains its behavior; `expect` and function parameter/result contracts enforce declared types (`types_annotations`; `LANGUAGE.md`).
-- [ ] Is inheritance nominal (declared parents) or structural (anything with the right fields satisfies a class), or both?
-- [x] Type time is an explicit `{$call: [type_time, {$ref: expression}]}` region, with `phase: type` on failures; `check --evaluate` collects diagnostics with the same evaluator, while plain `check` is non-executing (see `LANGUAGE.md`).
-- [x] How do parent classes merge? Explicit agreement or child resolution: incompatible declarations/values conflict, child field redeclarations must narrow every parent, and lists/maps are replaced whole. `LANGUAGE.md#classes-machines-and-drift` and `class_conflicts` describe the implemented model; stronger order-independent provenance and richer merge operators remain open above.
-- [ ] What is the story for secrets in persisted state?
-- [ ] Which parts of `flintwinters/helixcpp` are worth carrying over, and which are better left behind?
+- [ ] How should independently hosted reversible participants coordinate restoration
+  without the joint snapshot boundary of section 2?
+- [ ] How should arbitrary source edits invalidate completed work in a suspended
+  execution while preserving trustworthy provenance?
+- [ ] How should secret-bearing observations and external secret managers extend
+  the current opaque-input boundary without persisting plaintext?
+- [ ] Which real migration workload justifies the next provider/platform scope,
+  and what recovery and target-coordination guarantees does it require?
+- [ ] Which parts of `flintwinters/helixcpp` solve an admitted workload better than
+  the existing implementation?
+
+Actor declarations, explicit effect yield, opt-in annotations, type-time regions,
+structural class membership and merge rules are decided in
+[LANGUAGE.md](LANGUAGE.md). Executable persistence uses versioned snapshots;
+inspection and pure failed-run recovery remain separate formats. Remaining type
+proofs, richer algebra and composition experiments stay in section 8.
