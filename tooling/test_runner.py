@@ -285,10 +285,8 @@ class TestContext:
                    cases: list[Path] | None = None, output_format: str = DEFAULT_FORMAT) -> int:
         import contextlib
         import io
-        from tooling.output import test_report
-
         from tooling import test_policy
-        from tooling.output import render_test_report
+        from tooling.output import observed_test_status, render_test_report, render_test_result, test_report
 
         # This one bootstrap contract must run without a built interpreter.
         bootstrap = bool(suites) and set(suites) == {"startup"}
@@ -300,6 +298,11 @@ class TestContext:
             return test_report([{"suite": "orchestration", "status": "failed", "failures": [str(error)]}],
                                output_format=output_format)
 
+        def completed(observation):
+            results.append(observation)
+            if output_format != "json":
+                render_test_result({**observation, "status": observed_test_status(observation)})
+
         def record(name, check, **details):
             stdout, stderr = io.StringIO(), io.StringIO()
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
@@ -308,8 +311,8 @@ class TestContext:
                 except (Exception, SystemExit):
                     import traceback
                     failures = [traceback.format_exc()]
-            results.append({"suite": name, "failures": failures, "stdout": stdout.getvalue(), "stderr": stderr.getvalue(),
-                            **details})
+            completed({"suite": name, "failures": failures, "stdout": stdout.getvalue(), "stderr": stderr.getvalue(),
+                       **details})
 
         def library():
             from manage import build_lock
@@ -323,7 +326,7 @@ class TestContext:
         for task in plan:
             name = task["suite"]
             if task["action"] == "skip":
-                results.append({"suite": name, "failures": [], "reason": task["reason"]})
+                completed({"suite": name, "failures": [], "reason": task["reason"]})
             elif name == "library":
                 record(name, library)
             elif name == "standard_library":
@@ -341,18 +344,17 @@ class TestContext:
                 from tests.suites import contracts
                 record(name, lambda: contracts.run(name, self))
         if bootstrap:
-            return test_report([{**row, "status": "failed" if row["failures"] else "passed"}
-                                for row in results], output_format=output_format)
+            return test_report([{**row, "status": observed_test_status(row)} for row in results],
+                               output_format=output_format, rendered_results=len(results))
         try:
             report = test_policy.report(self, results)
         except test_policy.PolicyError as error:
             # Host emergency reporting retains all observations even when the
             # interpreter responsible for aggregation crashes or lies about them.
-            fallback = [{**row, "status": "failed" if row["failures"] else
-                         "skipped" if "reason" in row else "passed"} for row in results]
+            fallback = [{**row, "status": observed_test_status(row)} for row in results]
             fallback.append({"suite": "orchestration", "status": "failed", "failures": [str(error)]})
-            return test_report(fallback, output_format=output_format)
-        return render_test_report(report, output_format=output_format)
+            return test_report(fallback, output_format=output_format, rendered_results=len(results))
+        return render_test_report(report, output_format=output_format, rendered_results=len(results))
 
     def check_standard_library(self) -> list[str]:
         failures = []

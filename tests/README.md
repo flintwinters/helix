@@ -71,6 +71,14 @@ and process callback. Override execution for a fixture or compiled mutant with
 shared executable setting. The context captures `HELIX_TEST_TIMEOUT` once per run.
 Its process callback follows `subprocess.run` and supports isolated fault injection.
 
+Text output flushes each completed suite result and its visible evidence before
+the next suite starts. Final aggregation prints one summary and any additional
+orchestration failure, without repeating completed results. Early suite statuses
+describe host observations; they do not guarantee that final policy aggregation
+will succeed. JSON remains silent until one complete versioned report is ready.
+The harness verifies visibility and flushing at the next suite boundary without
+timing sleeps, along with policy-failure fallback and unchanged JSON output.
+
 Golden-test decisions live in `std:test.golden_plan`. Python supplies captured
 run output, saved expectations and ordinary-root replay observations; Helix
 decides determinism, exact text comparison and replay outcomes. Python retains

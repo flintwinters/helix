@@ -145,11 +145,13 @@ unfinished fields after an error, but cannot restore active calls or iterations.
 browse commands, or append `--help` at any level.
 
 Project help, suite/module discovery, builds, and tests default to concise text.
-Help shows the current command level. Tests show suite outcomes, case counts,
-skip reasons, and full failure diagnostics; successful stdout is suppressed, while
-stderr warnings remain visible. Usage errors go to stderr with exit code 2.
+Help shows the current command level. Text-mode tests show and flush each suite
+outcome, case count, skip reason and failure diagnostic as the suite finishes;
+successful stdout is suppressed, while stderr warnings remain visible. These are
+host-observed suite results; final policy aggregation can still fail independently. Usage errors go to stderr with exit code 2.
 Use `./manage.py --format=json` before a command for complete versioned reports,
-including captured successful test output. `--help-json` requests the full command
+including captured successful test output. JSON test output remains one complete
+document emitted after aggregation. `--help-json` requests the full command
 catalog without building. This keeps routine agent context focused on decisions
 while retaining explicit machine-readable evidence.
 Language execution, module source, inventory, and

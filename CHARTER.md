@@ -539,6 +539,11 @@ The runtime supports types, classes and callable values beyond the established p
     lower median CLI times for mixed and failure-heavy reports, respectively;
     these observations are not portable guarantees. Independent complete-output
     checks retain duplicate diagnostics, order and all captured logs.
+    Text-mode test results now flush at suite boundaries, so completed failures
+    and warnings are available while later work runs. Final aggregation retains
+    its independent failure path; JSON remains one complete report. Deterministic
+    harness checkpoints verify early visibility without timing assumptions or
+    adding interpreter calls for progress.
     Friction: an output-map field shadows an enclosing binding of the same name; use a distinct binding or `dict` to avoid self-reference. Lazy local bindings can recompute a comparison inside each callback; convergence passes computed comparisons as eager function arguments so callbacks reuse them.
 
 ### Migration bar

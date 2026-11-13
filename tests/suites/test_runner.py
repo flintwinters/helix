@@ -79,8 +79,104 @@ def verify_contexts(h):
     assert (h.root, h.binary, h.timeout, h.process_runner) == original
 
 
+def verify_completed_output(h):
+    """Completed rows are visible before later work; JSON remains one final report."""
+    import contextlib
+    import io
+    import json
+    import sys
+    from unittest.mock import patch
+
+    from tests.suites import contracts
+    from tooling import test_policy, test_runner
+
+    class FlushedOutput(io.StringIO):
+        def __init__(self):
+            super().__init__()
+            self.flushed = ''
+
+        def flush(self):
+            self.flushed = self.getvalue()
+
+    for output_format in ('text', 'json'):
+        for report_failure in (False, True):
+            stdout, stderr = FlushedOutput(), FlushedOutput()
+            checkpoints = []
+            observations = []
+            plan = [{'suite': 'first', 'action': 'run'},
+                    {'suite': 'omitted', 'action': 'skip', 'reason': 'explicit skip'},
+                    {'suite': 'second', 'action': 'run'}]
+
+            def checkpoint():
+                checkpoints.append((stdout.getvalue(), stderr.getvalue(), stdout.flushed, stderr.flushed))
+
+            def run(suite, context):
+                if suite == 'first':
+                    print('failed suite output')
+                    print('first warning', file=sys.stderr)
+                    return ['independent failure']
+                assert suite == 'second', suite
+                checkpoint()  # A deterministic boundary before the later suite does work.
+                print('successful suite chatter')
+                print('second warning', file=sys.stderr)
+                return []
+
+            def report(context, rows):
+                checkpoint()  # Aggregation can also block after all suites completed.
+                observations.extend(rows)
+                if report_failure:
+                    raise test_policy.PolicyError('aggregation unavailable')
+                return {'command': 'test', 'status': 'failed', 'exit_code': 1, 'failure_count': 1,
+                        'results': [{**row, 'status': status} for row, status in
+                                    zip(rows, ('failed', 'skipped', 'passed'))]}
+
+            with patch.object(test_policy, 'plan', return_value=plan), \
+                 patch.object(test_policy, 'report', side_effect=report), \
+                 patch.object(contracts, 'run', side_effect=run), \
+                 contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                code = h.regression(False, ['first', 'second'], output_format=output_format)
+            assert code == 1 and len(checkpoints) == 2, (code, checkpoints)
+            if output_format == 'json':
+                assert all(point == ('', '', '', '') for point in checkpoints), checkpoints
+                result = json.loads(stdout.getvalue())
+                assert stderr.getvalue() == '', stderr.getvalue()
+                assert (result['version'], result['command'], result['status'], result['exit_code']) == (1, 'test', 'failed', 1), result
+                assert len(result['results']) == 3 + int(report_failure), result
+                assert result['failure_count'] == 1 + int(report_failure), result
+                assert result['results'][:3] == [{**row, 'status': status} for row, status in
+                                               zip(observations, ('failed', 'skipped', 'passed'))], result
+                if report_failure:
+                    assert result['results'][3]['failures'] == ['aggregation unavailable'], result
+            else:
+                first_out, first_err, flushed_out, flushed_err = checkpoints[0]
+                assert 'first: failed\n' in first_out and 'omitted: skipped (explicit skip)\n' in first_out, checkpoints
+                assert 'failed suite output\n' in first_out, checkpoints
+                assert 'first warning\n' in first_err and 'FAIL independent failure\n' in first_err, checkpoints
+                assert first_out == flushed_out and first_err == flushed_err, checkpoints
+                assert 'second: passed\n' in checkpoints[1][2] and 'second warning\n' in checkpoints[1][3], checkpoints
+                for token in ('first: failed\n', 'omitted: skipped (explicit skip)\n', 'second: passed\n',
+                              'failed suite output\n', 'test: failed ('):
+                    assert stdout.getvalue().count(token) == 1, stdout.getvalue()
+                assert 'successful suite chatter' not in stdout.getvalue(), stdout.getvalue()
+                for token in ('first warning\n', 'second warning\n', 'FAIL independent failure\n'):
+                    assert stderr.getvalue().count(token) == 1, stderr.getvalue()
+                assert stdout.getvalue().count('orchestration: failed\n') == int(report_failure), stdout.getvalue()
+                assert stderr.getvalue().count('FAIL aggregation unavailable\n') == int(report_failure), stderr.getvalue()
+
+    # Bootstrap has no policy aggregation, but still emits its completed row once.
+    stdout, stderr = FlushedOutput(), FlushedOutput()
+    with patch.object(test_policy, 'plan', side_effect=AssertionError('bootstrap called policy')), \
+         patch.object(test_policy, 'report', side_effect=AssertionError('bootstrap called policy')), \
+         patch.object(contracts, 'run', return_value=[]), \
+         contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+        assert h.regression(False, ['startup']) == 0
+    assert stdout.getvalue().count('startup: passed\n') == 1, stdout.getvalue()
+    assert 'startup: passed\n' in stdout.flushed and stderr.getvalue() == '', (stdout.flushed, stderr.getvalue())
+
+
 def verify(h):
     verify_contexts(h)
+    verify_completed_output(h)
     from tests.suites.test_orchestration import verify as verify_orchestration
     verify_orchestration(h)
     from tests.suites.golden_policy import verify as verify_golden_policy

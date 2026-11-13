@@ -12,7 +12,7 @@ Complexity must earn its place through concrete workloads. `CHARTER.md` section 
 
 ## Architecture
 
-- Project tooling defaults to concise, scoped text with actionable failures; complete versioned JSON is explicit. Optimize agent output for decision-relevant information and progressive discovery, not serialization alone. Wrappers preserve language and pipeline wire contracts.
+- Project tooling defaults to concise, scoped text with actionable failures; complete versioned JSON is explicit. Optimize agent output for decision-relevant information and progressive discovery, not serialization alone. Completed text test results appear as suites finish; final policy aggregation can fail independently. Wrappers preserve language and pipeline wire contracts, including complete JSON reports.
 - `src/model.rs` defines source graphs, dedicated runtime values and explicit execution state. Code, collections and machine versions share immutable storage with copy-on-write updates. Runtime functions and VMs are distinct from ordinary lists/maps.
 - `src/graph.rs` preserves lexical topology and source spans; `src/graph/syntax.rs` is the authoritative syntax boundary over YAML representation nodes. Inspectable references are source-qualified paths with string-key and integer-index segments; arena indices and allocation addresses have no language meaning.
 - `src/eval.rs` is the exhaustive outer dispatcher; `src/eval/` owns source evaluation, scopes, iteration and host interactions within the same iterative engine. Calls, annotations, error unwinding, memoization, cycle guards, resource budgets and phase state are explicit. Functions retain original code and lexical environments; execution never emits or reparses function source.
