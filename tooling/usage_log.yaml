@@ -1,7 +1,7 @@
 # Appends one runtime invocation to the usage log. tooling/usage_log.py observes the invocation
 # and runs this program under `perform`, granting write access only to the database's directory.
 # Argument: DATABASE_PATH; the observed record arrives as JSON on stdin (argv already JSON text).
-# This file owns the table definition.
+# This file owns the table definition and its additive migrations.
 $call:
 - let
 -
@@ -18,12 +18,16 @@ $call:
           cwd TEXT NOT NULL,
           exit_code INTEGER,              -- NULL when interrupted
           program_path TEXT,              -- source file argument, if any (repository-relative)
-          program TEXT,                   -- inline source, or file contents at invocation (first 64 KiB)
+          program TEXT,                   -- complete inline, stdin or file source at invocation
           program_sha256 TEXT,
-          stdin_program INTEGER NOT NULL, -- 1 when the program was read from stdin (content not captured)
-          agent TEXT                      -- HELIX_AGENT, else claude-code when CLAUDECODE is set
+          stdin_program INTEGER NOT NULL, -- 1 when the program was read from stdin (captured in program)
+          agent TEXT,                     -- HELIX_AGENT, else claude-code when CLAUDECODE is set
+          stdout TEXT,                    -- complete; NULL when a terminal or an interactive command
+          stderr TEXT                     -- complete; NULL when a terminal or an interactive command
       )
-    columns: [started_at, duration_ms, command, argv, cwd, exit_code, program_path, program, program_sha256, stdin_program, agent]
+    # Databases created before output capture lack these columns.
+    added: [stdout, stderr]
+    columns: [started_at, duration_ms, command, argv, cwd, exit_code, program_path, program, program_sha256, stdin_program, agent, stdout, stderr]
     insert:
       $call:
       - concat
@@ -41,6 +45,30 @@ $call:
         - $call:
           - list
           - {$call: [sqlite.execute, {$ref: database}, {$ref: schema}, []]}
+          - $call:
+            - map
+            - $call:
+              - fn
+              - [column]
+              - $call:
+                - if
+                - $call:
+                  - eq
+                  - 0
+                  - $call:
+                    - get
+                    - $call:
+                      - get
+                      - $call:
+                        - sqlite.query
+                        - {$ref: database}
+                        - SELECT COUNT(*) AS n FROM pragma_table_info('calls') WHERE name = ?
+                        - [{$ref: column}]
+                      - 0
+                    - n
+                - {$call: [sqlite.execute, {$ref: database}, {$call: [concat, 'ALTER TABLE calls ADD COLUMN ', {$ref: column}, ' TEXT']}, []]}
+                - 0
+            - {$ref: added}
           - $call:
             - sqlite.execute
             - {$ref: database}
