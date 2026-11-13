@@ -17,7 +17,8 @@ mod typing;
 mod value;
 
 pub use fault::Fault;
-pub use typing::{is_primitive, refine, violations, Violation};
+pub use typing::{is_primitive, refine, violations, Ask, Violation};
+pub(crate) use typing::function_type;
 use typing::Pred;
 use value::{equal, type_name};
 
@@ -116,6 +117,7 @@ const ACTORS: &[Descriptor] = &[
     actor("list_of", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("map_of", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("record", 0, None, Evaluation::Policy("type_descriptor")),
+    actor("function_of", 2, Some(2), Evaluation::Policy("type_descriptor")),
     actor("optional", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("default", 2, Some(2), Evaluation::Policy("type_descriptor")),
     actor("union", 1, None, Evaluation::Policy("type_descriptor")),
@@ -174,11 +176,6 @@ pub fn apply(name: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault
         Evaluation::Raise => Err(raise(args)),
         Evaluation::Form(_) | Evaluation::Engine | Evaluation::Policy(_) => unreachable!("engine operations are dispatched by the evaluator"),
     }
-}
-
-/// The name `type` reports for a value.
-pub fn type_of(value: &Value) -> &'static str {
-    type_name(value)
 }
 
 /// A boolean operand at argument `arg`: `not`, and every condition the evaluator's forms test.

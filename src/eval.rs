@@ -411,6 +411,11 @@ impl Evaluator {
             }
             Request::Atomic(operation) => self.atomic(operation)?,
             Request::PredicateEnd(operation) => self.predicate_end(operation),
+            Request::SignatureOf(site, function) => self.signature_of(site, function)?,
+            Request::SignatureSlot(function, mut found) => {
+                found.push(self.value());
+                self.signature_next(function, found)?;
+            }
             Request::AdvanceChild => {
                 unreachable!("child advancement is dispatched by the VM scheduler")
             }

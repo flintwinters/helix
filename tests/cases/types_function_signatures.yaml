@@ -1,0 +1,30 @@
+# Function types describe parameters and result, higher-order ones included. A function inhabits one
+# when its declared annotations prove it: parameters contravariant, result covariant. An
+# unannotated parameter accepts anything; an unannotated result promises nothing (`any`).
+"inc": {"$call": ["fn", [["n", "integer"]], {"$call": ["add", {"$ref": "n"}, 1]}, "integer"]}
+"show": {"$call": ["fn", [["n", "any"]], {"$call": ["str", {"$ref": "n"}]}, "string"]}
+"plain": {"$call": ["fn", ["n"], {"$ref": "n"}]}
+"int_to_int": {"$call": ["function_of", ["integer"], "integer"]}
+"twice": {"$call": ["fn", [["f", {"$ref": "int_to_int"}], ["x", "integer"]], {"$call": ["f", {"$call": ["f", {"$ref": "x"}]}]}, "integer"]}
+"members":
+  "exact": {"$call": ["is", {"$ref": "inc"}, {"$ref": "int_to_int"}]}
+  "wider_param_narrower_use": {"$call": ["is", {"$ref": "show"}, {"$call": ["function_of", ["integer"], "string"]}]}
+  "unannotated_result": {"$call": ["is", {"$ref": "plain"}, {"$ref": "int_to_int"}]}
+  "param_mismatch": {"$call": ["is", {"$ref": "inc"}, {"$call": ["function_of", ["string"], "integer"]}]}
+  "arity_mismatch": {"$call": ["is", {"$ref": "inc"}, {"$call": ["function_of", ["integer", "integer"], "integer"]}]}
+  "bare_function": {"$call": ["is", {"$ref": "inc"}, "function"]}
+  "not_a_function": {"$call": ["is", 3, {"$ref": "int_to_int"}]}
+  "higher_order": {"$call": ["is", {"$ref": "twice"}, {"$call": ["function_of", [{"$ref": "int_to_int"}, "integer"], "integer"]}]}
+"order":
+  "narrower_below_function": {"$call": ["subtype", {"$ref": "int_to_int"}, "function"]}
+  "function_not_below_narrower": {"$call": ["subtype", "function", {"$ref": "int_to_int"}]}
+  "param_contravariant": {"$call": ["subtype", {"$call": ["function_of", ["any"], "integer"]}, {"$ref": "int_to_int"}]}
+  "param_not_covariant": {"$call": ["subtype", {"$ref": "int_to_int"}, {"$call": ["function_of", ["any"], "integer"]}]}
+  "result_covariant": {"$call": ["subtype", {"$call": ["function_of", ["integer"], "integer"]}, {"$call": ["function_of", ["integer"], {"$call": ["union", "integer", "string"]}]}]}
+  "callback_param_flips": {"$call": ["subtype", {"$call": ["function_of", [{"$ref": "int_to_int"}], "integer"]}, {"$call": ["function_of", [{"$call": ["function_of", ["any"], "integer"]}], "integer"]}]}
+"explained": {"$call": ["violations", {"$ref": "plain"}, {"$ref": "int_to_int"}]}
+"applied": {"$call": ["twice", {"$ref": "inc"}, 3]}
+"caught":
+  "wrong_callback": {"$call": ["try", {"$call": ["twice", {"$ref": "show"}, 3]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}]}
+  "unannotated_callback": {"$call": ["try", {"$call": ["twice", {"$ref": "plain"}, 3]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}]}
+  "not_a_type": {"$call": ["try", {"$call": ["function_of", "integer", "integer"]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}]}

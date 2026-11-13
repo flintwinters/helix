@@ -1,0 +1,332 @@
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - "n"
+            - integer
+        - "$call":
+            - add
+            - "$ref": "n"
+            - 1
+        - integer
+    environment: []
+    kind: function
+    location:
+      path:
+        - inc
+      source: "<root>"
+    program:
+      ref: object4
+  object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$ref": "n"
+    environment: []
+    kind: function
+    location:
+      path:
+        - plain
+      source: "<root>"
+    program:
+      ref: object4
+  object2:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - "n"
+            - any
+        - "$call":
+            - str
+            - "$ref": "n"
+        - string
+    environment: []
+    kind: function
+    location:
+      path:
+        - show
+      source: "<root>"
+    program:
+      ref: object4
+  object3:
+    bindings:
+      int_to_int:
+        code:
+          path:
+            - int_to_int
+          source: "<root>"
+    code:
+      "$call":
+        - fn
+        - - - f
+            - "$ref": int_to_int
+          - - x
+            - integer
+        - "$call":
+            - f
+            - "$call":
+                - f
+                - "$ref": x
+        - integer
+    environment: []
+    kind: function
+    location:
+      path:
+        - twice
+      source: "<root>"
+    program:
+      ref: object4
+  object4:
+    kind: program
+    sources:
+      - code:
+          applied:
+            "$call":
+              - twice
+              - "$ref": inc
+              - 3
+          caught:
+            not_a_type:
+              "$call":
+                - try
+                - "$call":
+                    - function_of
+                    - integer
+                    - integer
+                - "$call":
+                    - fn
+                    - - e
+                    - "$call":
+                        - get
+                        - "$ref": e
+                        - message
+            unannotated_callback:
+              "$call":
+                - try
+                - "$call":
+                    - twice
+                    - "$ref": plain
+                    - 3
+                - "$call":
+                    - fn
+                    - - e
+                    - "$call":
+                        - get
+                        - "$ref": e
+                        - message
+            wrong_callback:
+              "$call":
+                - try
+                - "$call":
+                    - twice
+                    - "$ref": show
+                    - 3
+                - "$call":
+                    - fn
+                    - - e
+                    - "$call":
+                        - get
+                        - "$ref": e
+                        - message
+          explained:
+            "$call":
+              - violations
+              - "$ref": plain
+              - "$ref": int_to_int
+          inc:
+            "$call":
+              - fn
+              - - - "n"
+                  - integer
+              - "$call":
+                  - add
+                  - "$ref": "n"
+                  - 1
+              - integer
+          int_to_int:
+            "$call":
+              - function_of
+              - - integer
+              - integer
+          members:
+            arity_mismatch:
+              "$call":
+                - is
+                - "$ref": inc
+                - "$call":
+                    - function_of
+                    - - integer
+                      - integer
+                    - integer
+            bare_function:
+              "$call":
+                - is
+                - "$ref": inc
+                - function
+            exact:
+              "$call":
+                - is
+                - "$ref": inc
+                - "$ref": int_to_int
+            higher_order:
+              "$call":
+                - is
+                - "$ref": twice
+                - "$call":
+                    - function_of
+                    - - "$ref": int_to_int
+                      - integer
+                    - integer
+            not_a_function:
+              "$call":
+                - is
+                - 3
+                - "$ref": int_to_int
+            param_mismatch:
+              "$call":
+                - is
+                - "$ref": inc
+                - "$call":
+                    - function_of
+                    - - string
+                    - integer
+            unannotated_result:
+              "$call":
+                - is
+                - "$ref": plain
+                - "$ref": int_to_int
+            wider_param_narrower_use:
+              "$call":
+                - is
+                - "$ref": show
+                - "$call":
+                    - function_of
+                    - - integer
+                    - string
+          order:
+            callback_param_flips:
+              "$call":
+                - subtype
+                - "$call":
+                    - function_of
+                    - - "$ref": int_to_int
+                    - integer
+                - "$call":
+                    - function_of
+                    - - "$call":
+                          - function_of
+                          - - any
+                          - integer
+                    - integer
+            function_not_below_narrower:
+              "$call":
+                - subtype
+                - function
+                - "$ref": int_to_int
+            narrower_below_function:
+              "$call":
+                - subtype
+                - "$ref": int_to_int
+                - function
+            param_contravariant:
+              "$call":
+                - subtype
+                - "$call":
+                    - function_of
+                    - - any
+                    - integer
+                - "$ref": int_to_int
+            param_not_covariant:
+              "$call":
+                - subtype
+                - "$ref": int_to_int
+                - "$call":
+                    - function_of
+                    - - any
+                    - integer
+            result_covariant:
+              "$call":
+                - subtype
+                - "$call":
+                    - function_of
+                    - - integer
+                    - integer
+                - "$call":
+                    - function_of
+                    - - integer
+                    - "$call":
+                        - union
+                        - integer
+                        - string
+          plain:
+            "$call":
+              - fn
+              - - "n"
+              - "$ref": "n"
+          show:
+            "$call":
+              - fn
+              - - - "n"
+                  - any
+              - "$call":
+                  - str
+                  - "$ref": "n"
+              - string
+          twice:
+            "$call":
+              - fn
+              - - - f
+                  - "$ref": int_to_int
+                - - x
+                  - integer
+              - "$call":
+                  - f
+                  - "$call":
+                      - f
+                      - "$ref": x
+              - integer
+        source: "<root>"
+root:
+  applied: 5
+  caught:
+    not_a_type: "expected a list of parameter types, got string"
+    unannotated_callback: "1 type violation in the arguments of `/twice`: expected function (integer) -> integer, got function (any) -> any"
+    wrong_callback: "1 type violation in the arguments of `/twice`: expected function (integer) -> integer, got function (any) -> string"
+  explained:
+    - at: /
+      message: "expected function (integer) -> integer, got function (any) -> any"
+  inc:
+    ref: object0
+  int_to_int:
+    params:
+      - integer
+    result: integer
+    type: function
+  members:
+    arity_mismatch: false
+    bare_function: true
+    exact: true
+    higher_order: true
+    not_a_function: false
+    param_mismatch: false
+    unannotated_result: false
+    wider_param_narrower_use: true
+  order:
+    callback_param_flips: true
+    function_not_below_narrower: false
+    narrower_below_function: true
+    param_contravariant: true
+    param_not_covariant: false
+    result_covariant: true
+  plain:
+    ref: object1
+  show:
+    ref: object2
+  twice:
+    ref: object3
+status: finished

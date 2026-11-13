@@ -171,6 +171,10 @@ pub(crate) enum Request {
     Refined(NodeId, Vec<NodeId>, Value),
     Atomic(Atomic),
     PredicateEnd(Atomic),
+    /// Begin evaluating a function's declared signature in its own lexical environment.
+    SignatureOf(NodeId, Arc<Function>),
+    /// A declared type has been evaluated; `found` holds the ones before it, parameters then result.
+    SignatureSlot(Arc<Function>, Vec<Value>),
     AdvanceChild,
 }
 
@@ -194,7 +198,7 @@ pub(crate) struct Atomic {
     pub(crate) site: NodeId,
     pub(crate) nodes: Vec<NodeId>,
     pub(crate) operation: Operation,
-    pub(crate) answers: Vec<Result<bool, String>>,
+    pub(crate) answers: Vec<Result<Value, String>>,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Operation {

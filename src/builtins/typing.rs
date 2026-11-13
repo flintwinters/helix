@@ -11,7 +11,8 @@ use crate::value::Value;
 
 use super::fault::Fault;
 pub use construct::refine;
-pub use ty::{is_primitive, violations, Pred, Violation};
+pub(crate) use construct::function_type;
+pub use ty::{is_primitive, violations, Ask, Pred, Violation};
 
 pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault> {
     match actor {

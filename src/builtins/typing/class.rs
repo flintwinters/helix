@@ -15,7 +15,7 @@ use crate::value::Hash;
 use crate::value::Value;
 
 use super::construct::{descriptor, reflect};
-use super::ty::{check_ty, mapping, subtype, Field, Pred, Ty, DEFAULT_SOURCE};
+use super::ty::{check_ty, mapping, predicate, subtype, Field, Pred, Ty, DEFAULT_SOURCE};
 use crate::builtins::fault::Fault;
 use crate::builtins::value::equal;
 use crate::model::string as s;
@@ -282,7 +282,7 @@ fn constrained(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
     let values = Value::Hash(class.slots.iter().filter_map(|slot| slot.value.as_ref().map(|(v, _)| (s(&slot.name), v.clone()))).collect());
     let mut found = Vec::new();
     for (i, check) in class.constraints.iter().enumerate() {
-        let why = match pred(check, &values) {
+        let why = match predicate(pred, check, &values) {
             Ok(true) => continue,
             Ok(false) => format!("constraint {i} of `{}` does not hold", class.name),
             Err(why) => format!("constraint {i} of `{}` failed to run: {why}", class.name),

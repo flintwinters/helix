@@ -8,9 +8,25 @@ use crate::value::Value;
 use crate::builtins::value::{equal, is_function, type_name};
 use crate::model::string as s;
 
-/// Runs a refinement's `{$call: [fn, [value], body]}` source on a value. `Err` is a failure inside the
-/// predicate, reported as a violation rather than aborting the check.
-pub type Pred<'a> = dyn FnMut(&Value, &Value) -> Result<bool, String> + 'a;
+/// Work only the engine can do for a pure check; its answer is retained and replayed.
+pub enum Ask<'a> {
+    /// Run a predicate's `{$call: [fn, [value], body]}` source on a value: answers a boolean.
+    Predicate(&'a Value, &'a Value),
+    /// Evaluate a function's declared parameter and result annotations: answers its signature type.
+    Signature(&'a Value),
+}
+
+/// Answers an `Ask`. `Err` is a failure inside the requested work, reported as a violation rather
+/// than aborting the check.
+pub type Pred<'a> = dyn FnMut(Ask) -> Result<Value, String> + 'a;
+
+/// Whether `predicate` holds for `value`.
+pub(super) fn predicate(pred: &mut Pred, predicate: &Value, value: &Value) -> Result<bool, String> {
+    match pred(Ask::Predicate(predicate, value))? {
+        Value::Boolean(verdict) => Ok(verdict),
+        other => Err(format!("returned {}, expected boolean", type_name(&other))),
+    }
+}
 
 /// Provenance prefix of a value that realization filled from a field default; such a value is not
 /// pinned by class membership, which neither fills nor demands defaults.
@@ -33,7 +49,10 @@ pub(super) enum Ty {
     Bool,
     Null,
     Secret,
+    /// Any function: the top of the function types, and all that `function` says.
     Function,
+    /// A function declared to take these parameters and return this result.
+    Fn(Vec<Ty>, Box<Ty>),
     Vm,
     List(Box<Ty>),
     Map(Box<Ty>),
@@ -123,6 +142,10 @@ impl Ty {
                         _ => Err("an `enum` needs a non-empty list of `values`".into()),
                     },
                     "literal" => Ok(Ty::Enum(vec![member(map, "value")?.clone()])),
+                    "function" => {
+                        let Value::Array(params) = member(map, "params")? else { return Err("a `function` type needs a list of `params` types".into()) };
+                        Ok(Ty::Fn(params.iter().map(Ty::parse).collect::<Result<_, _>>()?, Box::new(Ty::parse(member(map, "result")?)?)))
+                    }
                     "refine" => {
                         let base = Ty::parse(member(map, "of")?)?;
                         let predicate = member(map, "check")?;
@@ -158,6 +181,7 @@ impl Ty {
             Ty::Null => "null".into(),
             Ty::Secret => "secret".into(),
             Ty::Function => "function".into(),
+            Ty::Fn(params, result) => format!("function ({}) -> {}", params.iter().map(Ty::name).collect::<Vec<_>>().join(", "), result.name()),
             Ty::Vm => "vm".into(),
             Ty::List(of) if **of == Ty::Any => "list".into(),
             Ty::List(of) => format!("list of {}", of.name()),
@@ -231,6 +255,11 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
     match (ty, value) {
         (Ty::Any, _) | (Ty::Int, Value::Integer(_)) | (Ty::Float, Value::Float(_)) | (Ty::Str, Value::String(_)) | (Ty::Bool, Value::Boolean(_)) | (Ty::Null, Value::Null) => {}
         (Ty::Function, _) if is_function(value) => {}
+        (Ty::Fn(..), _) if is_function(value) => match pred(Ask::Signature(value)).and_then(|declared| Ty::parse(&declared)) {
+            Ok(declared) if subtype(&declared, ty, pred) => {}
+            Ok(declared) => out.push(Violation { at: at.into(), message: format!("expected {}, got {}", ty.name(), declared.name()) }),
+            Err(why) => out.push(Violation { at: at.into(), message: format!("signature check failed to run: {why}") }),
+        },
         (Ty::Vm, Value::Machine(_)) => {}
         (Ty::Secret, Value::Hash(h)) if h.len() == 2 && text(h, "type") == Some("secret") && text(h, "ref").is_some() => {}
         (Ty::Secret, Value::String(_)) => out.push(Violation { at: at.into(), message: "a secret is a handle (`[secret, ref]`), not an inline string".into() }),
@@ -248,7 +277,7 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
             }
             if out.len() == before {
                 for (i, constraint) in constraints.iter().enumerate() {
-                    match pred(constraint, value) {
+                    match predicate(pred, constraint, value) {
                         Ok(true) => {}
                         Ok(false) => out.push(Violation { at: at.into(), message: format!("constraint {i} does not hold") }),
                         Err(why) => out.push(Violation { at: at.into(), message: format!("constraint {i} failed to run: {why}") }),
@@ -258,11 +287,11 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
         }
         (Ty::Union(members), _) if members.iter().any(|m| holds(value, m, pred)) => {}
         (Ty::Enum(values), _) if values.iter().any(|v| equal(v, value)) => {}
-        (Ty::Refine(base, predicate), _) => {
+        (Ty::Refine(base, check_fn), _) => {
             let before = out.len();
             check(value, base, at, pred, out);
             if out.len() == before {
-                match pred(predicate, value) {
+                match predicate(pred, check_fn, value) {
                     Ok(true) => {}
                     Ok(false) => out.push(Violation { at: at.into(), message: "failed its refinement check".into() }),
                     Err(why) => out.push(Violation { at: at.into(), message: format!("refinement check failed to run: {why}") }),
@@ -317,6 +346,10 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
         (_, Ty::Union(members)) => members.iter().any(|m| subtype(a, m, pred)),
         (Ty::Enum(values), _) => values.iter().all(|v| holds(v, b, pred)),
         (Ty::Refine(base, _), _) => subtype(base, b, pred),
+        (Ty::Fn(..), Ty::Function) => true,
+        // Parameters are contravariant, the result covariant: a function that accepts more and
+        // promises more can stand wherever the narrower signature is expected.
+        (Ty::Fn(pa, ra), Ty::Fn(pb, rb)) => pa.len() == pb.len() && pa.iter().zip(pb).all(|(x, y)| subtype(y, x, pred)) && subtype(ra, rb, pred),
         (Ty::List(x), Ty::List(y)) | (Ty::Map(x), Ty::Map(y)) => subtype(x, y, pred),
         (Ty::Record(fa) | Ty::Class(fa, ..), Ty::Record(fb)) => record_subtype(fa, fb, pred),
         (Ty::Class(fa, xa, ca), Ty::Class(fb, xb, cb)) => {

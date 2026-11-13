@@ -262,8 +262,8 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
   - [ ] Typed map keys
   - [ ] Record row constraints and explicit width/depth subtyping rules
 - [ ] Add function-signature types beyond the current coarse `function` membership check and per-call annotations
-  - [ ] Describe parameter and result types, including higher-order functions
-  - [ ] Define parameter/result variance and callable compatibility
+  - [x] Describe parameter and result types, including higher-order functions (`function_of`; `types_function_signatures`)
+  - [x] Define parameter/result variance and callable compatibility: parameters contravariant, result covariant, same arity; membership evaluates a function's declared annotations without calling it, and unannotated results promise only `any`
   - [ ] Express effect contracts, including the purity required of type-time functions
 - [ ] Support named recursive types
   - [ ] Define guardedness, unfolding, equality and termination of checking

@@ -65,6 +65,11 @@ pub fn refine(base: Value, check: Value) -> Result<Value, Fault> {
     Ok(descriptor("refine", [("of", base), ("check", check)]))
 }
 
+/// `{type: function, params, result}`: the signature a function declares with its annotations.
+pub(crate) fn function_type(params: Vec<Value>, result: Value) -> Value {
+    descriptor("function", [("params", Value::Array(params.into())), ("result", result)])
+}
+
 /// Validate constructor arguments through the same type parser/checker as annotations.
 /// Descriptor assembly and immutable transformation belong to std:type_descriptor.
 pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Option<crate::model::PolicyCall>, Fault> {
@@ -75,6 +80,11 @@ pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Op
             if !holds(&args[1], &ty, pred) {
                 return Err(Fault::at(1, "type", format!("default does not fit {}", ty.name())));
             }
+        }
+        "function_of" => {
+            let Value::Array(params) = &args[0] else { return Err(Fault::expected(0, "a list of parameter types", &args[0])) };
+            params.iter().try_for_each(|param| Ty::parse(param).map(drop)).map_err(|why| Fault::at(0, "type", why))?;
+            type_arg(args, 1)?;
         }
         "union" => { (0..args.len()).try_for_each(|i| type_arg(args, i).map(drop))?; }
         "enum" | "literal" => {}

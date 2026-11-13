@@ -40,6 +40,8 @@ build:
     - {$call: [descriptor, list, {of: {$call: [get, {$ref: args}, 0]}}]}
     - {$call: [eq, {$ref: actor}, map_of]}
     - {$call: [descriptor, map, {of: {$call: [get, {$ref: args}, 0]}}]}
+    - {$call: [eq, {$ref: actor}, function_of]}
+    - {$call: [descriptor, function, {params: {$call: [get, {$ref: args}, 0]}, result: {$call: [get, {$ref: args}, 1]}}]}
     - {$call: [eq, {$ref: actor}, optional]}
     - {$call: [descriptor, optional, {of: {$call: [get, {$ref: args}, 0]}}]}
     - {$call: [eq, {$ref: actor}, default]}

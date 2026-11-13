@@ -1,6 +1,6 @@
 //! Pure host calls and function annotations share predicate-aware checking.
 //! All callback work returns to the same explicit request engine.
-use crate::builtins::{self, Fault};
+use crate::builtins::{self, Ask, Fault};
 use crate::model::{
     Atomic, Evaluator, Function, Hash, HelixError, NodeId, Operation, Request, Scope, Value,
     string as s,
@@ -73,16 +73,43 @@ impl Evaluator {
         Ok(())
     }
     pub(super) fn predicate_end(&mut self, mut operation: Atomic) {
-        let verdict = match self.take() {
-            Ok(Value::Boolean(v)) => Ok(v),
-            Ok(other) => Err(format!(
-                "returned {}, expected boolean",
-                builtins::type_of(&other)
-            )),
-            Err(error) => Err(format!("{}: {}", error.kind, error.message)),
-        };
-        operation.answers.push(verdict);
+        let answer = self
+            .take()
+            .map_err(|error| format!("{}: {}", error.kind, error.message));
+        operation.answers.push(answer);
         self.push(Request::Atomic(operation));
+    }
+    /// Evaluate a function's declared parameter and result types as the function would at a call
+    /// (its own lexical environment) and answer the signature type; undeclared ones are `any`.
+    pub(super) fn signature_of(&mut self, site: NodeId, function: Arc<Function>) -> Result<(), HelixError> {
+        if self.depth >= self.limits.max_depth {
+            return Err(self.err(site, "depth", format!("calls nested deeper than {}", self.limits.max_depth)));
+        }
+        let environment = std::mem::replace(&mut self.environment, function.environment.clone());
+        let program = std::mem::replace(&mut self.program, function.program.clone());
+        self.depth += 1;
+        self.push(Request::CallEnd { environment, program });
+        self.signature_next(function, Vec::new())
+    }
+    pub(super) fn signature_next(&mut self, function: Arc<Function>, mut found: Vec<Value>) -> Result<(), HelixError> {
+        let params = self.parameters(&function)?;
+        let result = function.program.graph.call(function.node).and_then(|items| items.get(3).copied());
+        while found.len() <= params.len() {
+            let declared = match params.get(found.len()) {
+                Some((_, annotation)) => *annotation,
+                None => result,
+            };
+            let Some(node) = declared else {
+                found.push(s("any"));
+                continue;
+            };
+            self.push(Request::SignatureSlot(function, found));
+            self.eval(node);
+            return Ok(());
+        }
+        let result = found.pop().expect("a result slot");
+        self.finish(builtins::function_type(found, result));
+        Ok(())
     }
     pub(super) fn parameters_next(
         &mut self,
@@ -176,16 +203,19 @@ impl Evaluator {
     pub(super) fn atomic(&mut self, operation: Atomic) -> Result<(), HelixError> {
         let mut cursor = 0;
         let mut pending = None;
-        let mut pred = |check: &Value, value: &Value| {
+        let mut pred = |ask: Ask| {
             let index = cursor;
             cursor += 1;
             if let Some(answer) = operation.answers.get(index) {
                 return answer.clone();
             }
             if pending.is_none() {
-                pending = Some((check.clone(), value.clone()));
+                pending = Some(match ask {
+                    Ask::Predicate(check, value) => (check.clone(), Some(value.clone())),
+                    Ask::Signature(function) => (function.clone(), None),
+                });
             }
-            Err("pending predicate".into())
+            Err("pending answer".into())
         };
         let mut policy = None;
         let result = match &operation.operation {
@@ -209,7 +239,11 @@ impl Evaluator {
             let site = operation.site;
             self.push(Request::PredicateEnd(operation));
             match check {
+                Value::Function(function) if value.is_none() => {
+                    self.push(Request::SignatureOf(site, function));
+                }
                 Value::Function(function) => {
+                    let value = value.expect("predicate asks carry a value");
                     if self.parameters(&function)?.len() != 1 {
                         self.fail(self.err(
                             site,

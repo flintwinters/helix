@@ -205,7 +205,7 @@ impl Atomic {
                         self.answers
                             .iter()
                             .map(|a| match a {
-                                Ok(v) => Value::Boolean(*v),
+                                Ok(v) => v.clone(),
                                 Err(e) => s(e),
                             })
                             .collect(),
@@ -467,6 +467,14 @@ impl Request {
                     "predicate_return"
                 },
                 vec![("operation", operation.view(g))],
+            ),
+            Self::SignatureOf(site, f) => object(
+                "signature",
+                vec![("site", g.reference(*site)), ("function", function(f))],
+            ),
+            Self::SignatureSlot(f, found) => object(
+                "signature_slot",
+                vec![("function", function(f)), ("declared", values(found))],
             ),
             Self::AdvanceChild => object("advance_child", Vec::new()),
         }
