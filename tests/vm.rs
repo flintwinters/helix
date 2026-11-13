@@ -216,3 +216,6 @@ fn failing_or_panicking_progress_callbacks_reap_running_commands() {
 
 #[path = "snapshots.rs"]
 mod snapshots;
+
+#[path = "peers.rs"]
+mod peers;

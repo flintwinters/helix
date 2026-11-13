@@ -497,13 +497,58 @@ includes its declared parents and every promise type is a subtype of `vm`.
 Snapshots preserve attached obligations. The Rust API accepts the same descriptor
 through `Vm::with_promise(Yaml)`.
 
-This initial behavioral contract covers bounded execution and explicit interruption
-inputs. Promised machines may expose pending effects, but host dispatch and effect
-resolution are refused: an externally completed action cannot be rolled back if
-its reply exceeds the serialization budget. Independent-error checking is also
-refused on promised machines. Ordinary machines retain their existing effect and
-checking contracts. Promises do not grant authority, encrypt ordinary data, undo
-effects, or automatically invalidate memoized results after source edits.
+The behavioral contract covers bounded execution, explicit interruption inputs,
+and communication inside a coordinated promised system. Arbitrary host dispatch
+and direct `Vm::resolve_effect` remain refused: an externally completed action
+cannot be rolled back if its reply exceeds the serialization budget.
+Independent-error checking is also refused on promised machines. Ordinary
+machines retain their existing effect and checking contracts. Promises do not
+grant authority, encrypt ordinary data, undo effects outside their system, or
+automatically invalidate memoized results after source edits.
+
+### Communication between promised machines
+
+`PromisedSystem` owns named promised VM versions and their committed delivery
+receipts. The complete system is the restoration boundary: both participants and
+communication history rewind together. Restoring just a client cannot rewind a
+server that continues outside that snapshot.
+
+A sender yields `{$call: [effect, peer_send, {to: server, value: DATA}]}` and the
+receiver yields `{$call: [effect, peer_receive, {from: client}]}`. Their explicit
+participant names must match. A rendezvous resolves the sender with `null` and
+the receiver with the sent ordinary value, recording both request identities.
+Both new machine states and the receipt are checked for serializability before
+publishing the new immutable system version. Rejection leaves the previous
+system intact; there is no partially committed delivery.
+
+The Rust API `PromisedSystem::deliver(sender, send_id, receiver, receive_id)`
+requires the expected request IDs. Repeating an already committed delivery is a
+no-op within that system history. The receiver may compute a result and send it
+back in another rendezvous. A checkpoint between request acceptance and reply
+therefore retains the server's progress without repeating the accepted request.
+Retained system branches remain independent.
+
+`./manage.py runtime system-snapshot system.yaml --steps N` creates a joint
+checkpoint from `{participants: {name: SOURCE_STRING, ...}}`. Each source is
+explicitly admitted with the reversible promise. `system-restore checkpoint.json`
+continues the aggregate; `--steps N` emits another checkpoint. Source files are
+not needed after the initial checkpoint. The deterministic round-robin scheduler
+persists its cursor and shares progress among runnable machines and matching
+rendezvous. An unfinished, nonfailed system with no available transition reports `blocked`,
+not success; terminal systems retain `finished` or `error`.
+The ordinary state report contains `status`, `machines`, and `delivery_count`.
+The versioned joint format is separate from a single-machine execution snapshot.
+The aggregate is bounded to 128 participants, 100,000 delivery receipts and
+32 MiB of serialized state, including its trailing newline. Receipt history is
+retained with participant effect outcomes and validated for consistency on
+restore. `PromisedSystem::signal(name, event)` and `resume_signal(name)` retain
+interruption state within the same aggregate; an interrupted participant cannot
+rendezvous until resumed. Extracting a participant does not create a new valid
+communication history from already completed peer effects.
+
+This implements a coordinated local execution boundary, not a network transport
+or independent checkpoint protocol between remote processes. Communication with
+an unpromised external system still requires the existing host effect contracts.
 
 ## Executable disk snapshots
 

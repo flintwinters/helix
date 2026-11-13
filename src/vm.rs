@@ -10,6 +10,7 @@ use yaml_rust2::Yaml;
 pub use crate::model::{EffectRequest, Status, Vm};
 #[path = "vm/effects.rs"]
 pub mod effects;
+pub mod peers;
 impl Status {
     pub fn as_str(self) -> &'static str {
         match self {

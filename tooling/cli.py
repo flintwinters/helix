@@ -129,6 +129,8 @@ def parser():
     for name, description in {
         "fmt": "Emit canonical YAML source without executing",
         "step": "Inspect a program after a bounded number of transitions",
+        "system-snapshot": "Form promised participants and save their coordinated execution state",
+        "system-restore": "Restore all promised participants and communication together",
         "snapshot": "Save executable state after a bounded number of transitions",
         "restore": "Restore executable state; optionally save after more transitions",
         "checkpoint": "Inspect durable effects and recovery action without execution",
@@ -137,9 +139,11 @@ def parser():
         "watch": "Re-run when program or transitive import contents change",
     }.items():
         leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} program.yaml")
-        leaf.add_argument("file", metavar="FILE", help="source file (or - except for watch)")
-        if name in ("snapshot", "restore"):
-            leaf.add_argument("--steps", type=int, default=0 if name == "snapshot" else None, help="transitions before saving; restore runs to completion when omitted")
+        file_help = {"system-snapshot": "participant source manifest, or - for stdin",
+                     "system-restore": "complete promised-system checkpoint, or - for stdin"}.get(name, "source file (or - except for watch)")
+        leaf.add_argument("file", metavar="FILE", help=file_help)
+        if name in ("snapshot", "restore", "system-snapshot", "system-restore"):
+            leaf.add_argument("--steps", type=int, default=0 if name in ("snapshot", "system-snapshot") else None, help="transitions before saving; restore runs to completion when omitted")
         if name == "step":
             leaf.add_argument("--steps", type=int, default=1, help="number of transitions (default: 1)")
         if name == "trace":

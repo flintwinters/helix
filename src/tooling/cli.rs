@@ -30,6 +30,12 @@ pub fn dispatch(args: &[String]) -> Option<ExitCode> {
         ["target-release", path] => super::snapshots::target_release(path),
         ["checkpoint", path] => super::snapshots::checkpoint(path),
         ["reconcile", path, outcome] => super::snapshots::reconcile(path, outcome),
+        ["system-snapshot", path] => super::peers::command(path, false, Some(0)),
+        ["system-restore", path] => super::peers::command(path, true, None),
+        [mode @ ("system-snapshot" | "system-restore"), path, "--steps", count] => match count.parse() {
+            Ok(count) => super::peers::command(path, *mode == "system-restore", Some(count)),
+            Err(_) => usage("--steps requires a nonnegative integer"),
+        },
         ["snapshot", path] => super::snapshots::command(path, false, Some(0)),
         ["restore", path] => super::snapshots::command(path, true, None),
         [mode @ ("snapshot" | "restore"), path, "--steps", count] => match count.parse() {

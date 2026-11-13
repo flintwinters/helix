@@ -289,6 +289,23 @@ and independently inspects project-local files. This supports the bundled local
 adapter; it does not supply SSH transport or qualify arbitrary programs as safe,
 idempotent resource implementations.
 
+## Promised participant communication
+
+Communication inside a `PromisedSystem` uses `peer_send` and `peer_receive`
+requests rather than an OS or network adapter. Both participants must carry a
+promise, and matching request identities resolve together in one immutable,
+serializable system transition. Delivery receipts make duplicate submission of
+that committed rendezvous a no-op. See [communication between promised
+machines](LANGUAGE.md#communication-between-promised-machines) for syntax and
+restoration semantics.
+
+The complete participant set and its receipts form the checkpoint boundary.
+Rewinding that aggregate does not undo operations in an independent server or
+external service. The bundled `EffectHost` continues to refuse host dispatch for
+promised VMs; placing a host operation inside a participant does not bypass
+that boundary. The current aggregate is local and coordinated, not remote
+fencing or an exactly-once transport service.
+
 ## Host effects and explicit grants
 
 `{$call: [effect, {$ref: operation}, {$ref: payload}]}` yields an explicit request after evaluating its two arguments. Type time rejects effects before yielding. `Vm::run()` stops with `status: signaled`; the state contains `pending_effect` (identity, operation and payload). A host supplies a success value or structured failure through `resolve_effect`. Completed requests and outcomes remain in `effects`; resolving an already completed request does not execute it again. The versioned execution snapshot preserves this state across processes; durable host dispatch additionally requires the journal described below.

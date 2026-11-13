@@ -173,3 +173,6 @@ def verify(h):
                 name, count, {'run_exit': ordinary.returncode, 'restore_exit': restored.returncode},
                 restored.stderr, ''.join(difflib.unified_diff(ordinary.stdout.splitlines(True),
                     restored.stdout.splitlines(True), fromfile='uninterrupted', tofile='restored'))[:4000])
+
+    from tests.suites.promised_peers import verify as verify_peers
+    verify_peers(h)

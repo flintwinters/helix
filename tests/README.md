@@ -437,6 +437,14 @@ bounded acceptance workloads, not a guarantee of small diffs for arbitrary
 execution transitions or dependency invalidation after source edits.
 
 
+The same `snapshots` and `library` suites qualify promised participant
+communication: a client request and stateful server reply, fresh-process joint
+restoration between acceptance and reply, duplicate delivery, retained branches,
+receipt/participant consistency, unpromised participant rejection, and scheduler
+fairness while another participant remains runnable. These tests restore the
+complete coordinated system; they do not establish an independently checkpointed
+remote transport or undo effects outside that system.
+
 `./manage.py test --suite durable_effects` kills a real controller during a
 command, independently observes its mutation, rejects concurrent journal use
 and blind replay, checks exact-request reconciliation and fresh grants, and

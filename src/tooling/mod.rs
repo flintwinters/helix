@@ -6,3 +6,4 @@ pub mod interactive;
 pub mod perform;
 
 pub mod snapshots;
+pub mod peers;
