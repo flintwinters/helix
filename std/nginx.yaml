@@ -1,0 +1,250 @@
+# One local Debian nginx workload. Host commands supply mechanisms, not plans.
+# Embedded because provider pure regions deliberately reject file imports.
+provider: {$call: [import, 'std:provider']}
+orchestration: {$call: [import, 'std:orchestration']}
+machine: {$call: [import, 'std:machine']}
+lists: {$call: [import, 'std:list']}
+# Literal server identities, not an nginx directive/template injection surface.
+server_name_type:
+  $call:
+  - refine
+  - $ref: provider.name
+  - $call:
+    - fn
+    - - name
+    - $call:
+      - and
+      - $call:
+        - le
+        - $call:
+          - len
+          - $ref: name
+        - 253
+      - $call:
+        - lists.all
+        - $call:
+          - lists.range
+          - $call:
+            - len
+            - $ref: name
+        - $call:
+          - fn
+          - - index
+          - $call:
+            - has
+            - abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-_
+            - $call:
+              - slice
+              - $ref: name
+              - $ref: index
+              - $call:
+                - add
+                - $ref: index
+                - 1
+input: {$call: [record, package_version, {$ref: provider.name}, port, {$ref: machine.port}, server_name, {$ref: server_name_type}, content, {$ref: string}, state, {$call: [enum, present, absent]}]}
+null_type: {$call: [literal, null]}
+file_type: {$call: [record, content, {$ref: string}, uid, {$ref: integer}, gid, {$ref: integer}, mode, {$ref: integer}]}
+observation_type: {$call: [record, target, {$ref: provider.name}, package_version, {$call: [union, {$ref: string}, {$ref: null_type}]}, files, {$call: [map_of, {$call: [union, {$ref: file_type}, {$ref: null_type}]}]}, service, {$call: [record, running, {$ref: boolean}, activation, {$call: [union, {$ref: string}, {$ref: null_type}]}]}, response, {$call: [union, {$call: [record, status, {$ref: integer}, body, {$ref: string}]}, {$ref: null_type}]}]}
+main_path: /etc/helix-nginx/nginx.conf
+server_path: /etc/helix-nginx/server.conf
+content_path: /var/lib/helix-nginx/index.html
+resolve: {$call: [fn, [config], {$call: [expect, {$ref: config}, {$ref: input}]}]}
+activation_token: {$call: [fn, [config], {$call: [concat, {$ref: config.server_name}, ':', {$call: [str, {$ref: config.port}]}]}]}
+file: {$call: [fn, [text], {content: {$ref: text}, uid: 0, gid: 0, mode: 420}]}
+render_configuration:
+  $call:
+  - fn
+  - [config]
+  - $call:
+    - dict
+    - {$ref: main_path}
+    - {$call: [file, {$call: [concat, '# ', {$ref: config.server_name}, "\nworker_processes 1;\npid /run/helix-nginx/nginx.pid;\nerror_log stderr;\nevents { worker_connections 64; }\nhttp { include /etc/helix-nginx/server.conf; }\n"]}]}
+    - {$ref: server_path}
+    - {$call: [file, {$call: [concat, 'server { listen ', {$call: [str, {$ref: config.port}]}, '; server_name ', {$ref: config.server_name}, '; add_header X-Helix-Activation "', {$call: [activation_token, {$ref: config}]}, '" always; root /var/lib/helix-nginx; location / { try_files /index.html =404; } ', "}\n"]}]}
+configuration: {$call: [fn, [config], {$call: [render_configuration, {$ref: config}]}]}
+configuration_before: {$call: [fn, [before], {$call: [dict, {$ref: main_path}, {$call: [get, {$ref: before.files}, {$ref: main_path}]}, {$ref: server_path}, {$call: [get, {$ref: before.files}, {$ref: server_path}]}]}]}
+# A content replacement takes effect without reload. Ignore the old response body
+# only while that replacement is planned; the fresh postcondition checks it.
+service_before:
+  $call:
+  - fn
+  - [config, before]
+  - running: {$ref: before.service.running}
+    activation: {$ref: before.service.activation}
+    configuration_pending: {$call: [and, {$ref: before.service.running}, {$call: [configuration_changed, {$ref: config}, {$ref: before}]}]}
+    response: {$call: [if, {$call: [and, {$call: [eq, {$ref: config.state}, present]}, {$call: [ne, {$call: [get, {$ref: before.files}, {$ref: content_path}]}, {$call: [file, {$ref: config.content}]}]}, {$ref: before.service.running}]}, {status: 200, body: {$ref: config.content}}, {$ref: before.response}]}
+# Metadata repairs alone do not reload; changed configuration bytes do.
+file_content: {$call: [fn, [value], {$call: [if, {$call: [eq, {$ref: value}, null]}, null, {$ref: value.content}]}]}
+configuration_changed:
+  $call:
+  - fn
+  - - config
+    - before
+  - $call:
+    - lists.any
+    - $call:
+      - list
+      - $ref: main_path
+      - $ref: server_path
+    - $call:
+      - fn
+      - - path
+      - $call:
+        - ne
+        - $call:
+          - file_content
+          - $call:
+            - get
+            - $ref: before.files
+            - $ref: path
+        - $call:
+          - file_content
+          - $call:
+            - get
+            - $call:
+              - render_configuration
+              - $ref: config
+            - $ref: path
+before_fields:
+  $call:
+  - fn
+  - [config, before]
+  - package: {$ref: before.package_version}
+    configuration: {$call: [configuration_before, {$ref: before}]}
+    content: {$call: [get, {$ref: before.files}, {$ref: content_path}]}
+    service: {$call: [service_before, {$ref: config}, {$ref: before}]}
+desired_fields:
+  $call:
+  - fn
+  - [config]
+  - $call:
+    - if
+    - {$call: [eq, {$ref: config.state}, present]}
+    - package: {$ref: config.package_version}
+      configuration: {$call: [render_configuration, {$ref: config}]}
+      content: {$call: [file, {$ref: config.content}]}
+      service: {running: true, configuration_pending: false, activation: {$call: [activation_token, {$ref: config}]}, response: {status: 200, body: {$ref: config.content}}}
+    - package: null
+      configuration: {$call: [dict, {$ref: main_path}, null, {$ref: server_path}, null]}
+      content: null
+      service: {running: false, configuration_pending: false, activation: null, response: null}
+steps:
+  $call:
+  - fn
+  - [config, before]
+  - {$call: [steps_fields, {$ref: config}, {$call: [desired_fields, {$ref: config}]}, {$call: [before_fields, {$ref: config}, {$ref: before}]}]}
+steps_fields:
+  $call:
+  - fn
+  - [config, desired, before]
+  - $call:
+    - map
+    - {$call: [fn, [name], {field: {$ref: name}, op: {$call: [if, {$call: [eq, {$ref: config.state}, absent]}, remove, set]}, from: {$call: [get, {$ref: before}, {$ref: name}]}, to: {$call: [get, {$ref: desired}, {$ref: name}]}}]}
+    - {$call: [filter, {$call: [fn, [field], {$call: [ne, {$call: [get, {$ref: desired}, {$ref: field}]}, {$call: [get, {$ref: before}, {$ref: field}]}]}]}, [package, configuration, content, service]]}
+# Command errors remain source-linked Helix errors with the complete host reply.
+host:
+  $call:
+  - fn
+  - [operation, payload]
+  - {$call: [host_reply, {$ref: operation}, {$call: [effect, command, {program: /usr/local/bin/helix-nginx-host, args: {$call: [list, {$ref: operation}, {$call: [json_dump, {$ref: payload}]}]}}]}]}
+host_reply:
+  $call:
+  - fn
+  - [operation, reply]
+  - {$call: [if, {$call: [eq, {$ref: reply.code}, 0]}, {$call: [json_parse, {$ref: reply.stdout}]}, {$call: [raise, nginx_host, {$call: [concat, 'nginx host operation failed: ', {$ref: operation}]}, {$ref: reply}]}]}
+observe_state: {$call: [fn, [config], {$call: [host, observe, {port: {$ref: config.port}}]}]}
+observe: {$call: [fn, [config], {$call: [observe_state, {$call: [resolve, {$ref: config}]}]}]}
+context: {$call: [fn, [config], {platform: debian-container, capabilities: [command], managed: true, allow_remove: {$call: [eq, {$ref: config.state}, absent]}}]}
+# The full observation (including target identity) participates in review matching.
+descriptor:
+  version: 1
+  id: local.debian.nginx
+  revision: '1'
+  arguments: {$ref: input}
+  observation: {$ref: observation_type}
+  result: {$ref: map}
+  platforms: [debian-container]
+  capabilities: [command]
+  check: true
+  diff: true
+  failure: stop
+  observe: {$ref: observe_state}
+  plan: {$ref: steps}
+  apply: {$ref: execute}
+plan: {$call: [fn, [config, before], {$call: [provider.plan, {$ref: descriptor}, {$call: [resolve, {$ref: config}]}, {$ref: before}, {$call: [context, {$ref: config}]}]}]}
+check: {$call: [fn, [config], {$call: [provider.check, {$ref: descriptor}, {$call: [resolve, {$ref: config}]}, {$call: [context, {$ref: config}]}]}]}
+apply: {$call: [fn, [config, review], {$call: [provider.apply, {$ref: descriptor}, {$call: [resolve, {$ref: config}]}, {$call: [context, {$ref: config}]}, {$ref: review}]}]}
+verify:
+  $call:
+  - fn
+  - [config]
+  - {$call: [verified, {$call: [check, {$ref: config}]}]}
+verified: {$call: [fn, [report], {$call: [if, {$call: [eq, {$ref: report.status}, unchanged]}, {$ref: report}, {$call: [raise, nginx_postcondition, Nginx has not converged, {$ref: report}]}]}]}
+# Service activation is the final resource: one reload for all config changes.
+# The live HTTP activation marker also detects a prior install-before-reload crash.
+graph:
+  $call:
+  - fn
+  - [config]
+  - version: 1
+    handlers: {}
+    resources:
+      package: {requires: {$call: [if, {$call: [eq, {$ref: config.state}, absent]}, [configuration, content], []]}, notify: []}
+      configuration: {requires: {$call: [if, {$call: [eq, {$ref: config.state}, absent]}, [service], [package]]}, notify: []}
+      content: {requires: {$call: [if, {$call: [eq, {$ref: config.state}, absent]}, [service], [package, configuration]]}, notify: []}
+      service: {requires: {$call: [if, {$call: [eq, {$ref: config.state}, absent]}, [], [package, configuration, content]]}, notify: []}
+execute:
+  $call:
+  - fn
+  - [config, changes]
+  - {$call: [executed, {$call: [orchestration.run, {$call: [graph, {$ref: config}]}, {$call: [fn, [kind, id], {$call: [resource, {$ref: config}, {$ref: changes}, {$ref: id}]}]}]}]}
+executed: {$call: [fn, [report], {$call: [if, {$call: [eq, {$ref: report.status}, finished]}, {$ref: report}, {$call: [raise, nginx_application, Nginx resource application failed, {$ref: report}]}]}]}
+resource:
+  $call:
+  - fn
+  - [config, changes, id]
+  - $call:
+    - let
+    - selected: {$call: [filter, {$call: [fn, [step], {$call: [eq, {$ref: step.field}, {$ref: id}]}]}, {$ref: changes}]}
+    - {$call: [if, {$call: [eq, {$ref: selected}, []]}, {status: unchanged}, {$call: [resource_changed, {$ref: config}, {$ref: id}, {$call: [mutate, {$ref: config}, {$ref: id}, {$call: [get, {$ref: selected}, 0]}]}]}]}
+# Verify the resource before allowing dependent mutations, including when a host
+# command falsely reports success. The aggregate provider also verifies the whole.
+resource_changed: {$call: [fn, [config, id, reply], {$call: [resource_verified, {$ref: config}, {$ref: id}, {$ref: reply}, {$call: [observe_state, {$ref: config}]}]}]}
+resource_verified:
+  $call:
+  - fn
+  - [config, id, reply, after]
+  - $call:
+    - if
+    - {$call: [lists.any, {$call: [steps, {$ref: config}, {$call: [expect, {$ref: after}, {$ref: observation_type}]}]}, {$call: [fn, [step], {$call: [eq, {$ref: step.field}, {$ref: id}]}]}]}
+    - {$call: [raise, nginx_resource_postcondition, Fresh observation did not satisfy the resource, {resource: {$ref: id}, result: {$ref: reply}, observation: {$ref: after}}]}
+    - {status: changed, details: {$call: [json_dump, {result: {$ref: reply}, observation: {$call: [get, {$call: [before_fields, {$ref: config}, {$ref: after}]}, {$ref: id}]}}]}}
+mutate:
+  $call:
+  - fn
+  - [config, id, step]
+  - {$call: [if, {$call: [eq, {$ref: config.state}, absent]}, {$call: [remove, {$ref: id}]}, {$call: [install, {$ref: config}, {$ref: id}, {$ref: step}]}]}
+install:
+  $call:
+  - fn
+  - [config, id, step]
+  - $call:
+    - cond
+    - {$call: [eq, {$ref: id}, package]}
+    - {$call: [host, package-install, {version: {$ref: config.package_version}}]}
+    - {$call: [eq, {$ref: id}, configuration]}
+    - {$call: [host, files-install, {files: {$call: [render_configuration, {$ref: config}]}, validate: true}]}
+    - {$call: [eq, {$ref: id}, content]}
+    - {$call: [host, files-install, {files: {$call: [dict, {$ref: content_path}, {$call: [file, {$ref: config.content}]}]}, validate: false}]}
+    - {$call: [host, {$call: [if, {$ref: step.from.running}, service-reload, service-start]}, {port: {$ref: config.port}, body: {$ref: config.content}, activation: {$call: [activation_token, {$ref: config}]}}]}
+remove:
+  $call:
+  - fn
+  - [id]
+  - $call:
+    - cond
+    - {$call: [eq, {$ref: id}, service]}
+    - {$call: [host, service-stop, {}]}
+    - {$call: [eq, {$ref: id}, package]}
+    - {$call: [host, package-remove, {}]}
+    - {$call: [host, files-remove, {paths: {$call: [if, {$call: [eq, {$ref: id}, content]}, {$call: [list, {$ref: content_path}]}, {$call: [list, {$ref: main_path}, {$ref: server_path}]}]}}]}

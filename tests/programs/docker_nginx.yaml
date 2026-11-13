@@ -1,0 +1,12 @@
+# Resolve the desired input without contacting a host. See the docker_nginx suite
+# for observation, review, application and independently verified convergence.
+$call:
+- let
+- nginx: {$call: [import, 'std:nginx']}
+- $call:
+  - nginx.resolve
+  - package_version: 1.22.1-9+deb12u3
+    port: 8080
+    server_name: helix.local
+    content: "Hello from Helix\n"
+    state: present

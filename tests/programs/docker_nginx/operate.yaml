@@ -1,0 +1,37 @@
+# Read one JSON request from stdin; write one JSON response to stdout.
+# Requests: {mode, config, before? (plan), review? (apply)}.
+# Exit 0: resolved/observed/converged/applied; 2: preview drift; 1: failure.
+$call:
+- let
+- nginx: {$call: [import, 'std:nginx']}
+  request_type: {$call: [record, mode, {$call: [enum, resolve, observe, plan, check, apply, verify]}, config, {$ref: nginx.input}, before, {$call: [optional, {$ref: nginx.observation_type}]}, review, {$call: [optional, {$ref: map}]}]}
+  dispatch:
+    $call:
+    - fn
+    - [request]
+    - $call:
+      - cond
+      - {$call: [eq, {$ref: request.mode}, resolve]}
+      - {$call: [nginx.resolve, {$ref: request.config}]}
+      - {$call: [eq, {$ref: request.mode}, observe]}
+      - {$call: [nginx.observe, {$ref: request.config}]}
+      - {$call: [eq, {$ref: request.mode}, plan]}
+      - {$call: [nginx.plan, {$ref: request.config}, {$ref: request.before}]}
+      - {$call: [eq, {$ref: request.mode}, check]}
+      - {$call: [nginx.check, {$ref: request.config}]}
+      - {$call: [eq, {$ref: request.mode}, apply]}
+      - {$call: [nginx.apply, {$ref: request.config}, {$ref: request.review}]}
+      - {$call: [nginx.verify, {$ref: request.config}]}
+  emit:
+    $call:
+    - fn
+    - [report]
+    - $call:
+      - get
+      - $call:
+        - list
+        - {$call: [effect, stdout, {$call: [json_dump, {$ref: report}]}]}
+        - {$call: [effect, exit, {$call: [cond, {$call: [has, [failed, invalid, unsupported, skipped], {$call: [get, {$ref: report}, status, unchanged]}]}, 1, {$call: [and, {$call: [eq, {$call: [get, {$ref: report}, status, unchanged]}, changed]}, {$call: [not, {$call: [get, {$ref: report}, applied, false]}]}]}, 2, 0]}]}
+        - {$ref: report}
+      - 2
+- {$call: [emit, {$call: [dispatch, {$call: [expect, {$call: [json_parse, {$call: [effect, stdin, null]}]}, {$ref: request_type}]}]}]}

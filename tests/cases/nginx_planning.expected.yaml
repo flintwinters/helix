@@ -1,0 +1,227 @@
+root:
+  absent_no_op: []
+  configuration:
+    - configuration
+    - service
+  content_only:
+    - content
+  initial:
+    - package
+    - configuration
+    - content
+    - service
+  invalid_port: type
+  invalid_server_name: type
+  no_op: []
+  removal:
+    - package
+    - configuration
+    - content
+    - service
+  stopped:
+    - service
+status: finished
+type_time_inputs:
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
+  - location:
+      path:
+        - plan
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    reads:
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: p
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: args
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: before
+      - function:
+          path:
+            - plan
+          source: "std:provider"
+        name: ctx
