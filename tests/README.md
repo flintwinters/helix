@@ -227,14 +227,20 @@ and malformed modules on every dogfood run.
 
 ## Failure artifacts
 
-Golden and robustness failures identify the source path and contract stage, show a
+Golden, robustness and minimized fuzz failures identify the source path and contract stage, show a
 rerun command, and save complete output evidence under `runtime/test-failures/`.
 Golden mismatches include a bounded unified diff. Round-trip and damaged-input
 failures save their exact replay source; `check` replays retain check semantics.
 Interpreter timeouts retain captured partial stdout and stderr, append a timeout
 diagnostic, and remain failures even if the captured state looks complete. Byte
 captures decode as UTF-8 with replacement for incomplete or invalid sequences.
-Evidence for the same case and stage is replaced on the next failure.
+Each failure gets a unique directory beneath its case and stage. Later reruns and
+concurrent failures do not replace evidence referenced by earlier reports. Fuzz
+artifacts retain the minimized input and its captured output; replay preserves
+`check --evaluate` and the original input directory. Artifacts remain until the
+containing `runtime/` files are explicitly removed.
+Replay still uses the current executable, linked dependencies, and any original
+fixture referenced by its command; captured artifacts are not a checkout snapshot.
 
 ## Resource checks and benchmarks
 

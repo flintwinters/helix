@@ -5,11 +5,14 @@ def failure(root, case, stage, reason, command, result, *, source=None, expected
     """Keep complete evidence on disk and a focused, navigable report in stderr."""
     import difflib
     from itertools import islice
+    from pathlib import Path
     import shlex
+    import tempfile
 
     relative = case.relative_to(root)
-    directory = root / "runtime" / "test-failures" / relative.parent / case.stem / stage
-    directory.mkdir(parents=True, exist_ok=True)
+    parent = root / "runtime" / "test-failures" / relative.parent / case.stem / stage
+    parent.mkdir(parents=True, exist_ok=True)
+    directory = Path(tempfile.mkdtemp(prefix="run-", dir=parent))
     (directory / "actual.yaml").write_text(result.stdout)
     (directory / "stderr.txt").write_text(result.stderr)
     replay = relative

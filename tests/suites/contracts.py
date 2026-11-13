@@ -271,6 +271,9 @@ def parser(h):
 
 
 def fuzz(h):
+    import shlex
+    from tooling.test_reports import failure
+
     seed = 901723
     rng = random.Random(seed)
     corpus = ['{"x": {"$call": ["add", 1, 2]}}', '{"f": {"$call": ["fn", ["x"], {"$call": ["add", {"$ref": "x"}, 1]}]}, "r": {"$call": ["f", 2]}}',
@@ -283,22 +286,26 @@ def fuzz(h):
             pos = rng.randrange(len(source) + 1)
             source = source[:pos] + rng.choice(alphabet) + source[pos + rng.randrange(2):]
         command = rng.choice(("run", "check"))
+        arguments = [command, *(["--evaluate"] if command == "check" else [])]
         def fails(candidate):
-            result = h.helix(command, *(["--evaluate"] if command == "check" else []), "-", stdin=candidate)
-            return h.malformed_state(result.stdout, result.returncode)
-        why = fails(source)
+            result = h.helix(*arguments, "-", stdin=candidate)
+            return h.malformed_state(result.stdout, result.returncode), result
+        why, accepted_result = fails(source)
         if why:
             # Bounded deletion minimization; preserve exactly the same failure category.
             minimized = source
             for _ in range(2):
                 for pos in range(len(minimized) - 1, -1, -1):
                     candidate = minimized[:pos] + minimized[pos + 1:]
-                    if fails(candidate) == why:
+                    candidate_why, candidate_result = fails(candidate)
+                    if candidate_why == why:
                         minimized = candidate
-            artifact = h.root / "runtime" / f"fuzz-{seed}-{sample}.yaml"
-            artifact.write_text(minimized)
-            raise AssertionError(f"seed={seed} sample={sample}: {why}; original={source!r}; "
-                                 f"artifact={artifact}; reproduce: ./manage.py {command} {artifact}")
+                        accepted_result = candidate_result
+            case = h.root / "runtime" / f"fuzz-{seed}-{sample}.yaml"
+            raise AssertionError(failure(h.root, case, "fuzz",
+                                         f"seed={seed} sample={sample}: {why}; original={source!r}",
+                                         shlex.join(arguments), accepted_result,
+                                         source=minimized, source_cwd=h.root))
     print(f"fuzz: seed={seed}, 200 mutations")
 
 

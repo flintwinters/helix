@@ -52,6 +52,94 @@ def verify(h):
         assert "diff truncated" in report
         assert len(report.splitlines()) < 150
         assert case.read_text() == "original"
+        verify_retained_evidence(root, case)
+        verify_fuzz_evidence(h, root)
+
+
+def evidence_path(root, report):
+    return root / next(line.removeprefix('evidence: ') for line in report.splitlines()
+                       if line.startswith('evidence: '))
+
+
+def verify_retained_evidence(root, case):
+    """Old reports keep coherent evidence through repeats and overlapping failures."""
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    def write(label, *, optional=True):
+        result = subprocess.CompletedProcess([], -11, f'actual {label}', f'stderr {label}')
+        report = failure(root, case, 'retention', label, 'run', result,
+                         **({'source': f'source {label}', 'expected': f'expected {label}'} if optional else {}))
+        return evidence_path(root, report)
+
+    def snapshot(path):
+        return {entry.name: entry.read_bytes() for entry in path.iterdir() if entry.is_file()}
+
+    first = write('first')
+    original = snapshot(first)
+    second = write('second', optional=False)
+    assert first != second and snapshot(first) == original, (first, second)
+    assert snapshot(second) == {'actual.yaml': b'actual second', 'stderr.txt': b'stderr second'}, snapshot(second)
+    third = write('third')
+    assert len({first, second, third}) == 3 and snapshot(first) == original
+    assert (third / 'input.yaml').read_text() == 'source third'
+    assert (third / 'expected.yaml').read_text() == 'expected third'
+
+    barrier = threading.Barrier(2, timeout=5)
+    def concurrent(label):
+        barrier.wait()
+        return write(label)
+
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        paths = list(workers.map(concurrent, ('left', 'right')))
+    assert len({first, second, third, *paths}) == 5, paths
+    for label, path in zip(('left', 'right'), paths):
+        assert snapshot(path) == {name: f'{content} {label}'.encode() for name, content in (
+            ('actual.yaml', 'actual'), ('stderr.txt', 'stderr'), ('input.yaml', 'source'), ('expected.yaml', 'expected'))}, path
+    assert snapshot(first) == original
+
+
+def verify_fuzz_evidence(h, root):
+    """Minimized evidence belongs to the accepted input, with the actual check mode."""
+    from dataclasses import replace
+    from unittest.mock import patch
+    from tests.suites import contracts
+
+    (root / 'runtime').mkdir(exist_ok=True)
+    for command in ('run', 'check'):
+        attempted = []
+        def runner(args, **kwargs):
+            source = kwargs['input']
+            attempted.append(source)
+            assert args[1:] == [command, *(['--evaluate'] if command == 'check' else []), '-'], args
+            if '!' in source:
+                return subprocess.CompletedProcess(args, -11, f'crashed source={source!r}', f'crash stderr={source!r}')
+            return subprocess.CompletedProcess(args, 0, 'status: finished\nroot: null\n', 'rejected candidate stderr')
+
+        context = replace(h, root=root, process_runner=runner)
+        with patch.object(contracts.random, 'Random') as random:
+            random.return_value.choice.side_effect = lambda choices: command if choices == ('run', 'check') else '!' if isinstance(choices, str) else choices[0]
+            random.return_value.randint.return_value = 1
+            random.return_value.randrange.return_value = 0
+            try:
+                contracts.fuzz(context)
+            except AssertionError as error:
+                report = str(error)
+            else:
+                raise AssertionError('fuzz accepted an injected interpreter crash')
+        assert attempted[-1] == '' and '!' in attempted, attempted
+        assert '[fuzz]' in report and 'seed=901723' in report and 'sample=0' in report, report
+        evidence = evidence_path(root, report)
+        assert (evidence / 'input.yaml').read_text() == '!'
+        assert (evidence / 'actual.yaml').read_text() == "crashed source='!'"
+        assert (evidence / 'stderr.txt').read_text() == "crash stderr='!'"
+        recipe = next(line.removeprefix('reproduce: ') for line in report.splitlines()
+                      if line.startswith('reproduce: '))
+        tokens = shlex.split(recipe)
+        index = tokens.index(command)
+        assert tokens[index:index + (3 if command == 'check' else 2)] == (
+            ['check', '--evaluate', '-'] if command == 'check' else ['run', '-']), recipe
+        assert '(cd' in tokens and '<' in tokens, recipe
 
 
 def verify_rerun_reports(h):
