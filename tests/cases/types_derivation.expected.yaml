@@ -136,16 +136,34 @@ objects:
                 - "$call":
                     - if
                     - "$call":
-                        - eq
+                        - and
                         - "$call":
-                            - get
+                            - or
+                            - "$call":
+                                - ne
+                                - "$ref": which
+                                - value
+                            - "$call":
+                                - eq
+                                - "$call":
+                                    - get
+                                    - "$call":
+                                        - get
+                                        - "$ref": provenance
+                                        - "$ref": key
+                                    - value_kind
+                                - explicit
+                        - "$call":
+                            - eq
                             - "$call":
                                 - get
-                                - "$ref": provenance
-                                - "$ref": key
-                            - "$ref": which
-                            - ""
-                        - "$ref": name
+                                - "$call":
+                                    - get
+                                    - "$ref": provenance
+                                    - "$ref": key
+                                - "$ref": which
+                                - ""
+                            - "$ref": name
                     - "$call":
                         - set
                         - "$ref": result
@@ -188,9 +206,19 @@ objects:
             - let
             - name:
                 "$call":
-                  - get
-                  - "$ref": t
-                  - name
+                  - if
+                  - "$call":
+                      - subtype
+                      - "$ref": t
+                      - any
+                  - "$call":
+                      - get
+                      - "$ref": t
+                      - name
+                  - "$call":
+                      - raise
+                      - type
+                      - expected a class declaration
             - "$call":
                 - let
                 - declared:
@@ -608,16 +636,34 @@ objects:
                       - "$call":
                           - if
                           - "$call":
-                              - eq
+                              - and
                               - "$call":
-                                  - get
+                                  - or
+                                  - "$call":
+                                      - ne
+                                      - "$ref": which
+                                      - value
+                                  - "$call":
+                                      - eq
+                                      - "$call":
+                                          - get
+                                          - "$call":
+                                              - get
+                                              - "$ref": provenance
+                                              - "$ref": key
+                                          - value_kind
+                                      - explicit
+                              - "$call":
+                                  - eq
                                   - "$call":
                                       - get
-                                      - "$ref": provenance
-                                      - "$ref": key
-                                  - "$ref": which
-                                  - ""
-                              - "$ref": name
+                                      - "$call":
+                                          - get
+                                          - "$ref": provenance
+                                          - "$ref": key
+                                      - "$ref": which
+                                      - ""
+                                  - "$ref": name
                           - "$call":
                               - set
                               - "$ref": result
@@ -640,9 +686,19 @@ objects:
                   - let
                   - name:
                       "$call":
-                        - get
-                        - "$ref": t
-                        - name
+                        - if
+                        - "$call":
+                            - subtype
+                            - "$ref": t
+                            - any
+                        - "$call":
+                            - get
+                            - "$ref": t
+                            - name
+                        - "$call":
+                            - raise
+                            - type
+                            - expected a class declaration
                   - "$call":
                       - let
                       - declared:

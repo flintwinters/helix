@@ -402,18 +402,23 @@ root:
       files:
         type: files
         value: default of files
+        value_kind: default
       hostname:
         type: host
         value: dup
+        value_kind: explicit
       packages:
         type: packages
         value: default of packages
+        value_kind: default
       services:
         type: services
         value: default of services
+        value_kind: default
       users:
         type: users
         value: default of users
+        value_kind: default
     type: class
     values:
       files: {}
@@ -460,18 +465,23 @@ root:
         files:
           type: files
           value: default of files
+          value_kind: default
         hostname:
           type: host
           value: web1
+          value_kind: explicit
         packages:
           type: packages
           value: web1
+          value_kind: explicit
         services:
           type: services
           value: web1
+          value_kind: explicit
         users:
           type: users
           value: web1
+          value_kind: explicit
       type: class
       values:
         files: {}
@@ -520,18 +530,23 @@ root:
         files:
           type: files
           value: default of files
+          value_kind: default
         hostname:
           type: host
           value: web2
+          value_kind: explicit
         packages:
           type: packages
           value: default of packages
+          value_kind: default
         services:
           type: services
           value: default of services
+          value_kind: default
         users:
           type: users
           value: default of users
+          value_kind: default
       type: class
       values:
         files: {}
@@ -699,9 +714,11 @@ root:
       hostname:
         type: host
         value: partial
+        value_kind: explicit
       packages:
         type: packages
         value: partial
+        value_kind: explicit
     type: class
     values:
       hostname: p
@@ -753,18 +770,23 @@ root:
       files:
         type: files
         value: default of files
+        value_kind: default
       hostname:
         type: host
         value: web1
+        value_kind: explicit
       packages:
         type: packages
         value: web1
+        value_kind: explicit
       services:
         type: services
         value: web1
+        value_kind: explicit
       users:
         type: users
         value: web1
+        value_kind: explicit
     type: class
     values:
       files: {}
@@ -814,18 +836,23 @@ root:
       files:
         type: files
         value: default of files
+        value_kind: default
       hostname:
         type: host
         value: web2
+        value_kind: explicit
       packages:
         type: packages
         value: default of packages
+        value_kind: default
       services:
         type: services
         value: default of services
+        value_kind: default
       users:
         type: users
         value: default of users
+        value_kind: default
     type: class
     values:
       files: {}

@@ -1,0 +1,24 @@
+# Display labels must not decide whether a value is explicitly fixed or defaulted.
+$call:
+- let
+- types: {$call: [import, 'std:types']}
+  base: {$call: [class, base, {$call: [record, value, {$call: [default, integer, 7]}]}]}
+  defaulted: {$call: [realize, {$ref: base}]}
+  fixed: {$call: [extend, 'default of base', [{$ref: defaulted}], {$call: [record]}, {value: 7}]}
+  realized: {$call: [realize, {$ref: fixed}]}
+  child: {$call: [inherit, child, [{$ref: realized}], {}]}
+  default_child: {$call: [inherit, 'default of base', [{$ref: base}], {}]}
+  redeclared: {$call: [types.redeclare, {$ref: default_child}, [{$ref: base}]]}
+  default_first: {$call: [extend, joined, [{$ref: defaulted}, {$ref: fixed}], {$call: [record]}, {}]}
+  fixed_first: {$call: [extend, joined, [{$ref: fixed}, {$ref: defaulted}], {$call: [record]}, {}]}
+- fixed_accepts_value: {$call: [is, {value: 7}, {$ref: fixed}]}
+  fixed_rejects_change: {$call: [not, {$call: [is, {value: 8}, {$ref: fixed}]}]}
+  fixed_requires_presence: {$call: [not, {$call: [is, {}, {$ref: fixed}]}]}
+  realized_rejects_change: {$call: [not, {$call: [is, {value: 8}, {$ref: realized}]}]}
+  child_rejects_change: {$call: [not, {$call: [is, {value: 8}, {$ref: child}]}]}
+  default_allows_change: {$call: [is, {value: 8}, {$ref: defaulted}]}
+  default_is_not_fixed_subtype: {$call: [not, {$call: [subtype, {$ref: defaulted}, {$ref: fixed}]}]}
+  redeclaration_preserves_descriptor: {$call: [eq, {$ref: default_child}, {$ref: redeclared}]}
+  redeclaration_preserves_default: {$call: [is, {value: 8}, {$ref: redeclared}]}
+  default_first_keeps_fixed: {$call: [not, {$call: [is, {value: 8}, {$ref: default_first}]}]}
+  fixed_first_keeps_fixed: {$call: [not, {$call: [is, {value: 8}, {$ref: fixed_first}]}]}

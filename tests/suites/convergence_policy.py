@@ -5,6 +5,7 @@ from tests.suites.contracts import checked
 
 
 def verify(h):
+    verify_constraint_realization(h)
     wanted = {f"field_{index:03}": None if index % 5 == 0 else index for index in range(128)}
     observed = {key: (value if index % 3 == 0 else "drift")
                 for index, (key, value) in enumerate(wanted.items()) if index % 4}
@@ -39,3 +40,33 @@ def verify(h):
             assert result["invalid"]["kind"] == kind, result["invalid"]
             assert result["invalid"]["path"].startswith("/invalid/$call/1/$call/"), result["invalid"]
     print("convergence: 128 configured fields, independent plan oracle, purity, no-op and original blame")
+
+
+def verify_constraint_realization(h):
+    source = (h.root / "tests" / "cases" / "class_constraints_realized.yaml").read_text()
+    result = checked(h, source)
+    assert result["original_concrete"] is True and result["original_plan"] == [], result
+    assert result["rejected_concrete"] is False and result["accepted_concrete"] is False, result
+    assert result["values_retained"] is True and result["provenance_retained"] is True, result
+    assert result["open_fields"] == {} and result["rejected_membership"] is False, result
+    for key in ("pending_drift", "pending_converge", "accepted_pending_converge"):
+        assert result[key]["kind"] == "abstract" and "realize it first" in result[key]["message"], result[key]
+    error = result["rejected_realization"]
+    assert error["kind"] == "type" and "constraint 0 of `service` does not hold" in error["message"], error
+    assert result["revalidated_concrete"] is True, result
+    assert result["revalidated_plan"] == [{"field": "port", "op": "set", "from": 80, "to": 8080}], result
+
+    call = lambda actor, *args: {"$call": [actor, *args]}
+    ref = lambda name: {"$ref": name}
+    # Attaching a predicate does not run it. Explicit realization invokes the
+    # existing predicate engine, preserving its non-boolean/failure diagnostics.
+    for predicate, detail in ((7, "returned integer, expected boolean"),
+                              (call("raise", "constraint_probe", "predicate invoked"), "predicate invoked")):
+        source = call("let", {
+            "base": call("realize", call("class", "probe", call("record"), {})),
+            "pending": call("constrain", ref("base"), call("fn", ["values"], predicate)),
+        }, {"concrete": ref("pending.concrete"),
+            "rechecked": call("try", call("realize", ref("pending")), call("fn", ["error"], ref("error")))})
+        result = checked(h, json.dumps(source))
+        assert result["concrete"] is False, result
+        assert result["rechecked"]["kind"] == "type" and detail in result["rechecked"]["message"], result

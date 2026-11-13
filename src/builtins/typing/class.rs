@@ -15,7 +15,7 @@ use crate::value::Hash;
 use crate::value::Value;
 
 use super::construct::{descriptor, reflect};
-use super::ty::{check_ty, mapping, predicate, subtype, Field, Pred, Ty, DEFAULT_SOURCE};
+use super::ty::{check_ty, mapping, predicate, subtype, value_kind, Field, Pred, Ty, ValueKind, DEFAULT_SOURCE};
 use crate::builtins::fault::Fault;
 use crate::builtins::value::equal;
 use crate::model::string as s;
@@ -26,7 +26,7 @@ struct Slot {
     name: String,
     spec: Value,
     declared_by: String,
-    value: Option<(Value, String)>,
+    value: Option<(Value, String, ValueKind)>,
 }
 
 /// Argument positions of the declared fields and fixed values, for blaming the right one.
@@ -62,6 +62,8 @@ pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Valu
         "constrain" => {
             let mut class = Class::from_value(&args[0], 0)?;
             class.constraints.push(args[1].clone());
+            // A stronger declaration needs explicit realization before its values are planned.
+            class.concrete = false;
             Ok(class.to_value())
         }
         _ => unreachable!("`{actor}` is not a class builtin"),
@@ -146,7 +148,10 @@ impl Class {
             .iter()
             .map(|(field, spec)| {
                 let Value::String(field) = field else { return Err(bad()) };
-                let value = values.get(&s(field)).map(|v| Ok((v.clone(), source(field, "value")?))).transpose()?;
+                let value = values.get(&s(field)).map(|v| {
+                    let kind = value_kind(map, field).map_err(|why| Fault::at(arg, "type", why))?;
+                    Ok((v.clone(), source(field, "value")?, kind))
+                }).transpose()?;
                 Ok(Slot { name: field.clone(), spec: spec.clone(), declared_by: source(field, "type")?, value })
             })
             .collect::<Result<_, _>>()?;
@@ -160,9 +165,10 @@ impl Class {
             fields.insert(s(&slot.name), slot.spec.clone());
             let mut origin = Hash::new();
             origin.insert(s("type"), s(&slot.declared_by));
-            if let Some((value, by)) = &slot.value {
+            if let Some((value, by, kind)) = &slot.value {
                 values.insert(s(&slot.name), value.clone());
                 origin.insert(s("value"), s(by));
+                origin.insert(s("value_kind"), s(kind.as_str()));
             }
             provenance.insert(s(&slot.name), Value::Hash(origin));
         }
@@ -212,12 +218,14 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where
             },
         };
         let value = match own_value {
-            Some(v) => Some((v.clone(), name.to_string())),
+            Some(v) => Some((v.clone(), name.to_string(), ValueKind::Explicit)),
             None => {
-                let supplied: Vec<&(Value, String)> = inherited.iter().filter_map(|s| s.value.as_ref()).collect();
+                let supplied: Vec<&(Value, String, ValueKind)> = inherited.iter().filter_map(|s| s.value.as_ref()).collect();
                 match supplied.iter().find(|other| !equal(&other.0, &supplied[0].0)) {
                     Some(other) => return Err(conflict(&field, &supplied[0].1, &other.1, "different values", name)),
-                    None => supplied.first().map(|v| (*v).clone()),
+                    // An equal default cannot erase another parent's fixed-value obligation.
+                    None => supplied.iter().find(|v| v.2 == ValueKind::Explicit)
+                        .or_else(|| supplied.first()).map(|v| (*v).clone()),
                 }
             }
         };
@@ -256,7 +264,7 @@ fn narrow(field: &str, spec: &Value, inherited: &[&Slot], name: &str, arg: usize
 fn validate(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
     let mut found = Vec::new();
     for slot in &class.slots {
-        let Some((value, _)) = &slot.value else { continue };
+        let Some((value, _, _)) = &slot.value else { continue };
         let ty = Field::parse(&slot.spec).map_err(|why| Fault::at(2, "type", why))?.ty;
         found.extend(check_slot(&slot.name, value, &ty, pred));
     }
@@ -279,7 +287,7 @@ fn check_slot(field: &str, value: &Value, ty: &Ty, pred: &mut Pred) -> Vec<(Valu
 
 /// Whole-record constraints run on the realized values; each failure is reported.
 fn constrained(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
-    let values = Value::Hash(class.slots.iter().filter_map(|slot| slot.value.as_ref().map(|(v, _)| (s(&slot.name), v.clone()))).collect());
+    let values = Value::Hash(class.slots.iter().filter_map(|slot| slot.value.as_ref().map(|(v, _, _)| (s(&slot.name), v.clone()))).collect());
     let mut found = Vec::new();
     for (i, check) in class.constraints.iter().enumerate() {
         let why = match predicate(pred, check, &values) {
@@ -305,7 +313,7 @@ fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Clas
         }
         let field = Field::parse(&slot.spec).map_err(|why| Fault { arg, ..Fault::whole("type", why) })?;
         match field.default {
-            Some(default) => slot.value = Some((default, format!("{DEFAULT_SOURCE}{}", slot.declared_by))),
+            Some(default) => slot.value = Some((default, format!("{DEFAULT_SOURCE}{}", slot.declared_by), ValueKind::Default)),
             None if field.required => missing.push(slot.clone()),
             None => {}
         }
@@ -328,5 +336,5 @@ pub(super) fn concrete_values(class: &Value, arg: usize) -> Result<Hash, Fault> 
     if !parsed.concrete {
         return Err(Fault::at(arg, "abstract", format!("class `{}` is abstract; realize it first", parsed.name)));
     }
-    Ok(parsed.slots.into_iter().filter_map(|slot| slot.value.map(|(v, _)| (s(&slot.name), v))).collect())
+    Ok(parsed.slots.into_iter().filter_map(|slot| slot.value.map(|(v, _, _)| (s(&slot.name), v))).collect())
 }

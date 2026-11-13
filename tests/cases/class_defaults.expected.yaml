@@ -32,6 +32,7 @@ root:
       port:
         type: first
         value: default of first
+        value_kind: default
     type: class
     values:
       port: 80
@@ -52,6 +53,7 @@ root:
       port:
         type: first
         value: child
+        value_kind: explicit
     type: class
     values:
       port: 443
@@ -67,6 +69,7 @@ root:
       port:
         type: child
         value: child
+        value_kind: explicit
     type: class
     values:
       port: 443

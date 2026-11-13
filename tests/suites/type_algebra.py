@@ -32,7 +32,64 @@ def accepts(value, spec):
     raise AssertionError(f"oracle does not cover {kind}")
 
 
+def verify_fixed_origins(h):
+    """Class names are labels; fixed-value membership must not parse their display text."""
+    for name in ("ordinary", "default of base", "default of default of base"):
+        source = {
+            "types": {"$call": ["import", "std:types"]},
+            "base": {"$call": ["class", "base", {"$call": ["record", "value", {"$call": ["default", "integer", 7]}]}]},
+            "defaulted": {"$call": ["realize", {"$ref": "base"}]},
+            "fixed": {"$call": ["extend", name, [{"$ref": "defaulted"}], {"$call": ["record"]}, {"value": 7}]},
+            "realized": {"$call": ["realize", {"$ref": "fixed"}]},
+            "child": {"$call": ["inherit", "child", [{"$ref": "realized"}], {}]},
+            "default_child": {"$call": ["inherit", name, [{"$ref": "base"}], {}]},
+            "redeclared": {"$call": ["types.redeclare", {"$ref": "default_child"}, [{"$ref": "base"}]]},
+            "default_first": {"$call": ["extend", "joined", [{"$ref": "defaulted"}, {"$ref": "fixed"}], {"$call": ["record"]}, {}]},
+            "fixed_first": {"$call": ["extend", "joined", [{"$ref": "fixed"}, {"$ref": "defaulted"}], {"$call": ["record"]}, {}]},
+            "observations": {"$call": ["list",
+                {"$call": ["is", {"value": 7}, {"$ref": "fixed"}]},
+                {"$call": ["is", {"value": 8}, {"$ref": "fixed"}]},
+                {"$call": ["is", {}, {"$ref": "fixed"}]},
+                {"$call": ["is", {"value": 8}, {"$ref": "realized"}]},
+                {"$call": ["is", {"value": 8}, {"$ref": "child"}]},
+                {"$call": ["is", {"value": 8}, {"$ref": "defaulted"}]},
+                {"$call": ["subtype", {"$ref": "defaulted"}, {"$ref": "fixed"}]},
+                {"$call": ["eq", {"$ref": "default_child"}, {"$ref": "redeclared"}]},
+                {"$call": ["is", {"value": 8}, {"$ref": "redeclared"}]},
+                {"$call": ["is", {"value": 8}, {"$ref": "default_first"}]},
+                {"$call": ["is", {"value": 8}, {"$ref": "fixed_first"}]}]},
+        }
+        root = checked(h, json.dumps(source))
+        assert root["observations"] == [True, False, False, False, False, True, False, True, True, False, False], (name, root["observations"])
+    # Emitted ordinary-data descriptors retain semantic origins when consumed again.
+    for key, expected in (("realized", False), ("defaulted", True)):
+        literal = {"$literal": root[key]}
+        replay = checked(h, json.dumps({
+            "membership": {"$call": ["is", {"value": 8}, literal]},
+            "realization": {"$call": ["eq", literal, {"$call": ["realize", literal]}]},
+        }))
+        assert replay == {"membership": expected, "realization": True}, replay
+    # Old display-only origins cannot be disambiguated safely, and malformed kinds
+    # must fail through the same parser in membership, realization and redeclaration.
+    for kind in ("absent", None, "unknown", False):
+        malformed = json.loads(json.dumps(root["fixed"]))
+        origin = malformed["provenance"]["value"]
+        if kind == "absent":
+            origin.pop("value_kind")
+        else:
+            origin["value_kind"] = kind
+        literal = {"$literal": malformed}
+        for operation in (["is", {"value": 7}, literal], ["realize", literal],
+                          ["types.redeclare", literal, []]):
+            source = {"$call": ["let", {"types": {"$call": ["import", "std:types"]}}, {"$call": operation}]}
+            result = h.helix("run", "-", stdin=json.dumps(source))
+            assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, result
+            error = yaml.safe_load(result.stdout)["error"]
+            assert error["kind"] == "type" and "value_kind" in error["message"] and "rebuild" in error["message"], error
+
+
 def verify(h):
+    verify_fixed_origins(h)
     from tests.suites.descriptor_policy import verify as verify_descriptors
     verify_descriptors(h)
     from tests.suites.convergence_policy import verify as verify_convergence
@@ -95,8 +152,9 @@ def verify(h):
     for field in ('fields', 'values', 'provenance'):
         assert root['ab'][field] == root['ba'][field], (field, root['ab'], root['ba'])
     assert root['ab']['values'] == {'x': 1, 'y': 'v', 'z': True}
-    assert root['ab']['provenance'] == {'x': {'type': 'base', 'value': 'base'},
-                                       'y': {'type': 'a', 'value': 'a'}, 'z': {'type': 'b', 'value': 'b'}}
+    assert root['ab']['provenance'] == {'x': {'type': 'base', 'value': 'base', 'value_kind': 'explicit'},
+                                       'y': {'type': 'a', 'value': 'a', 'value_kind': 'explicit'},
+                                       'z': {'type': 'b', 'value': 'b', 'value_kind': 'explicit'}}
     assert root['missing']['kind'] == 'abstract'
     assert root['missing']['data']['missing'] == [{'field': 'x', 'required_by': 'needs'},
                                                   {'field': 'y', 'required_by': 'needs'}]

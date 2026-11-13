@@ -1,0 +1,24 @@
+# New constraints invalidate realization; values and the original class are retained.
+$call:
+- let
+- base: {$call: [realize, {$call: [class, service,
+    {$call: [record, port, {$call: [default, {$ref: integer}, 8080]}, enabled, {$ref: boolean}]},
+    {enabled: true}]}]}
+  rejected: {$call: [constrain, {$ref: base}, {$call: [fn, [values], false]}]}
+  accepted: {$call: [constrain, {$ref: base},
+    {$call: [fn, [values], {$call: [gt, {$ref: values.port}, 0]}]}]}
+  catch_error: {$call: [fn, [error], {$ref: error}]}
+- original_concrete: {$ref: base.concrete}
+  original_plan: {$call: [converge, {$ref: base}, {port: 8080, enabled: true, unmanaged: keep}]}
+  rejected_concrete: {$ref: rejected.concrete}
+  accepted_concrete: {$ref: accepted.concrete}
+  values_retained: {$call: [eq, {$ref: rejected.values}, {$ref: base.values}]}
+  provenance_retained: {$call: [eq, {$ref: rejected.provenance}, {$ref: base.provenance}]}
+  open_fields: {$call: [open_fields, {$ref: rejected}]}
+  rejected_membership: {$call: [is, {port: 8080, enabled: true}, {$ref: rejected}]}
+  pending_drift: {$call: [try, {$call: [drift, {$ref: rejected}, {port: 8080, enabled: true}]}, {$ref: catch_error}]}
+  pending_converge: {$call: [try, {$call: [converge, {$ref: rejected}, {port: 80, enabled: true}]}, {$ref: catch_error}]}
+  accepted_pending_converge: {$call: [try, {$call: [converge, {$ref: accepted}, {}]}, {$ref: catch_error}]}
+  rejected_realization: {$call: [try, {$call: [realize, {$ref: rejected}]}, {$ref: catch_error}]}
+  revalidated_concrete: {$call: [get, {$call: [realize, {$ref: accepted}]}, concrete]}
+  revalidated_plan: {$call: [converge, {$call: [realize, {$ref: accepted}]}, {port: 80, enabled: true, unmanaged: keep}]}

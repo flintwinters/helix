@@ -107,6 +107,7 @@ root:
       listen:
         type: web_80
         value: web_80
+        value_kind: explicit
     type: class
     values:
       listen: 80
@@ -120,6 +121,7 @@ root:
       listen:
         type: web_80
         value: web_80
+        value_kind: explicit
     type: class
     values:
       listen: 80
@@ -133,6 +135,7 @@ root:
       listen:
         type: web_8080
         value: web_8080
+        value_kind: explicit
     type: class
     values:
       listen: 8080

@@ -269,12 +269,15 @@ root:
       hostname:
         type: machine
         value: web01
+        value_kind: explicit
       packages:
         type: server
         value: web01
+        value_kind: explicit
       ssh_port:
         type: has_ssh
         value: default of has_ssh
+        value_kind: default
     type: class
     values:
       hostname: web01
@@ -304,12 +307,15 @@ root:
       hostname:
         type: machine
         value: web02
+        value_kind: explicit
       packages:
         type: server
         value: web02
+        value_kind: explicit
       ssh_port:
         type: has_ssh
         value: web02
+        value_kind: explicit
     type: class
     values:
       hostname: web02

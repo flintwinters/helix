@@ -271,18 +271,23 @@ root:
       a:
         type: level0
         value: level0
+        value_kind: explicit
       b:
         type: level1
         value: level1
+        value_kind: explicit
       c:
         type: level2
         value: level2
+        value_kind: explicit
       d:
         type: level3
         value: level3
+        value_kind: explicit
       e:
         type: level4
         value: deep
+        value_kind: explicit
     type: class
     values:
       a: 1
@@ -340,9 +345,11 @@ root:
       cpus:
         type: sized
         value: sized
+        value_kind: explicit
       hostname:
         type: host
         value: node
+        value_kind: explicit
     type: class
     values:
       cpus: 2
@@ -357,6 +364,7 @@ root:
       a:
         type: level0
         value: level0
+        value_kind: explicit
     type: class
     values:
       a: 1
@@ -372,9 +380,11 @@ root:
       a:
         type: level0
         value: level0
+        value_kind: explicit
       b:
         type: level1
         value: level1
+        value_kind: explicit
     type: class
     values:
       a: 1
@@ -392,12 +402,15 @@ root:
       a:
         type: level0
         value: level0
+        value_kind: explicit
       b:
         type: level1
         value: level1
+        value_kind: explicit
       c:
         type: level2
         value: level2
+        value_kind: explicit
     type: class
     values:
       a: 1
@@ -417,15 +430,19 @@ root:
       a:
         type: level0
         value: level0
+        value_kind: explicit
       b:
         type: level1
         value: level1
+        value_kind: explicit
       c:
         type: level2
         value: level2
+        value_kind: explicit
       d:
         type: level3
         value: level3
+        value_kind: explicit
     type: class
     values:
       a: 1
@@ -447,15 +464,19 @@ root:
       a:
         type: level0
         value: level0
+        value_kind: explicit
       b:
         type: level1
         value: level1
+        value_kind: explicit
       c:
         type: level2
         value: level2
+        value_kind: explicit
       d:
         type: level3
         value: level3
+        value_kind: explicit
       e:
         type: level4
     type: class
@@ -494,6 +515,7 @@ root:
         cpus:
           type: sized
           value: sized
+          value_kind: explicit
       type: class
       values:
         cpus: 2
@@ -510,6 +532,7 @@ root:
       cpus:
         type: sized
         value: sized
+        value_kind: explicit
     type: class
     values:
       cpus: 2
@@ -526,9 +549,11 @@ root:
       cpus:
         type: sized
         value: sized
+        value_kind: explicit
       hostname:
         type: host
         value: node
+        value_kind: explicit
     type: class
     values:
       cpus: 2

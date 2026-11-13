@@ -205,6 +205,7 @@ root:
       mode:
         type: a
         value: a
+        value_kind: explicit
       port:
         type: a
     type: class
@@ -221,6 +222,7 @@ root:
       mode:
         type: b
         value: b
+        value_kind: explicit
       port:
         type: b
     type: class
@@ -250,6 +252,7 @@ root:
       mode:
         type: a
         value: a
+        value_kind: explicit
       port:
         type: a
     type: class
@@ -278,6 +281,7 @@ root:
       mode:
         type: a
         value: m2
+        value_kind: explicit
       port:
         type: a
     type: class

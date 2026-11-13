@@ -1,0 +1,13 @@
+root:
+  child_rejects_change: true
+  default_allows_change: true
+  default_first_keeps_fixed: true
+  default_is_not_fixed_subtype: true
+  fixed_accepts_value: true
+  fixed_first_keeps_fixed: true
+  fixed_rejects_change: true
+  fixed_requires_presence: true
+  realized_rejects_change: true
+  redeclaration_preserves_default: true
+  redeclaration_preserves_descriptor: true
+status: finished

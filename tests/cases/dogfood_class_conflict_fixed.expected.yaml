@@ -16,9 +16,11 @@ root:
       enabled:
         type: interactive
         value: interactive
+        value_kind: explicit
       restart:
         type: interactive
         value: interactive
+        value_kind: explicit
     type: class
     values:
       enabled: true
@@ -36,9 +38,11 @@ root:
       enabled:
         type: interactive
         value: interactive
+        value_kind: explicit
       restart:
         type: interactive
         value: worker
+        value_kind: explicit
     type: class
     values:
       enabled: true
@@ -54,9 +58,11 @@ root:
       enabled:
         type: unattended
         value: unattended
+        value_kind: explicit
       restart:
         type: unattended
         value: unattended
+        value_kind: explicit
     type: class
     values:
       enabled: true

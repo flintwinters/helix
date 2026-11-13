@@ -593,15 +593,14 @@ Plain `check` also runs a small non-executing type check (`src/tooling/analysis/
 
 ### Classes, machines and drift
 
-A class is a type that can be extended. `[class, name, record_type, values?]` declares one; `{$call: [extend, {$ref: name}, {$ref: parents}, {$ref: own_record}, {$ref: values}]}` and `{$call: [inherit, {$ref: name}, {$ref: parents}, {$ref: values}]}` build children. Parents contribute fields and fixed values in order. Where parents disagree on a field declaration or fixed value, the merge raises a `conflict` error naming both sources unless the child resolves it. A redeclared field must be a subtype of every parent's declaration. Lists and maps are never merged: a child takes them whole or conflicts. `{$call: [constrain, {$ref: class}, {$ref: fn}]}` adds a whole-record predicate (cross-field invariants); constraints are unioned across parents and a failure is a `type` violation at `/`.
+A class is a type that can be extended. `{$call: [class, name, record_type, values?]}` declares one; `{$call: [extend, {$ref: name}, {$ref: parents}, {$ref: own_record}, {$ref: values}]}` and `{$call: [inherit, {$ref: name}, {$ref: parents}, {$ref: values}]}` build children. Parents contribute fields and fixed values in order. Where parents disagree on a field declaration or fixed value, the merge raises a `conflict` error naming both sources unless the child resolves it. A redeclared field must be a subtype of every parent's declaration. Lists and maps are never merged: a child takes them whole or conflicts. `{$call: [constrain, {$ref: class}, {$ref: fn}]}` adds a whole-record predicate (cross-field invariants); constraints are unioned across parents and a failure is a `type` violation at `/`. Adding a constraint is declaration-only and marks the returned class abstract until `realize` checks it, even when the input was concrete or the new predicate would pass. The original class remains unchanged. Use `realize(constrain(class, predicate))` before planning with the new class.
 
-`{$call: [realize, {$ref: class}]}` fills defaults and checks fixed values against the declared types. A class with required fields still unfilled is `abstract`: realizing it raises an `abstract` error whose `data.missing` lists each field and `required_by`. Every class records provenance: for each field, the declaring class (`type`) and where the value came from (`value`, e.g. `default of X`), so "who set this" is answered from state.
+`{$call: [realize, {$ref: class}]}` fills defaults and checks fixed values against the declared types. A class with required fields still unfilled is `abstract`: realizing it raises an `abstract` error whose `data.missing` lists each field and `required_by`. Every class records provenance: for each field, the declaring class (`type`) and where the value came from (`value`, e.g. `default of X`), so "who set this" is answered from state. Each valued field also carries `value_kind: explicit` or `value_kind: default`; this discriminator determines fixed-value semantics, independently of class names and display labels. Older valued descriptors without this discriminator must be rebuilt from their declarations; the runtime rejects ambiguous or malformed kinds instead of inferring them from labels.
 
-A child's explicit value wins over an inherited default. Different inherited
+A child's explicit value wins over an inherited default. Equal inherited values retain an explicit fixed-value obligation if any parent supplies one, regardless of parent order. Different inherited
 defaults are conflicting field declarations; resolve them by explicitly
-redeclaring the field and supplying a valid value or default. Membership only
-checks the field's type: a defaulted field may be absent or contain a different
-valid value. Realization fills an absent defaulted field; membership never fills
+redeclaring the field and supplying a valid value or default. For a defaulted field without an explicit fixed value, membership only
+checks the field's type: it may be absent or contain a different valid value. Realization fills an absent defaulted field; membership never fills
 it. `class_defaults` covers this distinction. For collection overrides, use
 `concat` to explicitly append lists or `std:map.merge` to explicitly merge maps
 before supplying the child value. Map merge is shallow and right-biased; neither
@@ -618,8 +617,10 @@ Collection helpers used to build such data: `{$call: [list, ...]}` and `{$call: 
 
 `std:convergence.compare(wanted, observed)` and `plan(wanted, observed)` own the
 pure comparison and plan policy over maps. The public `drift` and `converge`
-builtins extract concrete class values and validate their inputs before calling
-these functions through the same evaluator. The module reuses `std:diff`, treats
+builtins check descriptor shape and concreteness and extract class values before calling
+these functions through the same evaluator. Planning does not rerun field or whole-record
+predicates. Class descriptors are ordinary data, and manually setting `concrete` is
+not evidence of validation; use `realize` after editing a descriptor. The module reuses `std:diff`, treats
 nested changes as whole-field replacements, and distinguishes absence from null.
 Its collection passes and immutable map updates consume the caller's work/data
 budgets; this migration does not add observation, application or disk recovery.

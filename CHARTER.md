@@ -870,6 +870,14 @@ The audit must produce decisions and executable examples, not just an inventory.
 
 - [x] Audit `type_time` and preflight as one evaluation contract: explain when work runs, what inputs it may depend on and how failures are caught. Exercise placement under bindings, calls, branches and handlers, and dependencies on effects. Prefer a uniform rule; justify each remaining context-sensitive exception with a required workload.
 - [ ] Audit the type/class/configuration boundaries: membership, realization, subtyping, fixed values, constraints and drift/convergence. Demonstrate which questions genuinely differ and consolidate overlapping mechanisms without conflating those questions.
+  The first boundary repairs make `constrain` invalidate realization and share an explicit
+  provenance-kind parser between class construction and membership/subtyping.
+  `class_constraints_realized`, `class_provenance` and `type_algebra` cover retained
+  original classes, revalidation, label collisions, equal inherited default/fixed
+  values in both parent orders, reconstruction and legacy-descriptor rejection.
+  Planning remains comparison of already realized values, without predicate execution;
+  closed membership and extra-preserving convergence answer different questions.
+  The broader audit remains open; these repairs do not certify manually edited descriptors.
 - [ ] Audit builtin and standard-library responsibilities against actual callers. Remove redundant convenience paths where ordinary composition is clear; retain primitives where semantics or measured costs require them. Namespacing or relocating code alone does not close this item.
 - [ ] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
 - [ ] Separate the core language reference from library catalogs and host-operation manuals, retaining discoverable links and one authoritative description per contract. A basic program should not require learning provider lifecycles or command retry policy.

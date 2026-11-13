@@ -205,6 +205,7 @@ root:
       max:
         type: machine
         value: pinned
+        value_kind: explicit
       min:
         type: machine
       role:
@@ -231,12 +232,15 @@ root:
       max:
         type: machine
         value: pinned
+        value_kind: explicit
       min:
         type: machine
         value: realized
+        value_kind: explicit
       role:
         type: machine
         value: default of machine
+        value_kind: default
     type: class
     values:
       max: 5

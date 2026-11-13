@@ -29,9 +29,40 @@ pub(super) fn predicate(pred: &mut Pred, predicate: &Value, value: &Value) -> Re
     }
 }
 
-/// Provenance prefix of a value that realization filled from a field default; such a value is not
-/// pinned by class membership, which neither fills nor demands defaults.
+/// Human-readable label only; semantic origin is carried separately by `ValueKind`.
 pub(super) const DEFAULT_SOURCE: &str = "default of ";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum ValueKind {
+    Explicit,
+    Default,
+}
+
+impl ValueKind {
+    pub(super) fn as_str(self) -> &'static str {
+        match self {
+            Self::Explicit => "explicit",
+            Self::Default => "default",
+        }
+    }
+}
+
+/// Names and display labels cannot distinguish defaults from explicitly fixed values.
+/// Legacy descriptors are ambiguous, so require the semantic discriminator rather than guessing.
+pub(super) fn value_kind(class: &Hash, field: &str) -> Result<ValueKind, String> {
+    let kind = match class.get(&s("provenance")) {
+        Some(Value::Hash(provenance)) => match provenance.get(&s(field)) {
+            Some(Value::Hash(origin)) => text(origin, "value_kind"),
+            _ => None,
+        },
+        _ => None,
+    };
+    match kind {
+        Some("explicit") => Ok(ValueKind::Explicit),
+        Some("default") => Ok(ValueKind::Default),
+        _ => Err(format!("class value `{field}` requires provenance `value_kind` of `explicit` or `default`; rebuild the class from its declaration")),
+    }
+}
 
 const PRIMITIVES: [&str; 12] = ["any", "never", "integer", "float", "string", "boolean", "null", "list", "map", "secret", "function", "vm"];
 
@@ -167,7 +198,7 @@ impl Ty {
                         if kind == "record" {
                             return Ok(Ty::Record(fields));
                         }
-                        Ok(Ty::Class(fields, fixed_values(map), constraints(map)))
+                        Ok(Ty::Class(fields, fixed_values(map)?, constraints(map)))
                     }
                     other => Err(format!("`{other}` is not a type constructor")),
                 }
@@ -238,13 +269,16 @@ impl Ty {
 }
 
 /// The values a class pins: those set explicitly rather than filled from a default.
-fn fixed_values(class: &Hash) -> Vec<(String, Value)> {
-    let (Some(Value::Hash(values)), Some(Value::Hash(provenance))) = (class.get(&s("values")), class.get(&s("provenance"))) else { return Vec::new() };
-    let defaulted = |name: &Value| match provenance.get(name) {
-        Some(Value::Hash(origin)) => text(origin, "value").is_some_and(|by| by.starts_with(DEFAULT_SOURCE)),
-        _ => false,
-    };
-    values.iter().filter(|(name, _)| !defaulted(name)).filter_map(|(name, value)| key(name).ok().map(|name| (name, value.clone()))).collect()
+fn fixed_values(class: &Hash) -> Result<Vec<(String, Value)>, String> {
+    let Some(Value::Hash(values)) = class.get(&s("values")) else { return Ok(Vec::new()) };
+    let mut fixed = Vec::new();
+    for (name, value) in values {
+        let name = key(name)?;
+        if value_kind(class, &name)? == ValueKind::Explicit {
+            fixed.push((name, value.clone()));
+        }
+    }
+    Ok(fixed)
 }
 
 fn constraints(class: &Hash) -> Vec<Value> {

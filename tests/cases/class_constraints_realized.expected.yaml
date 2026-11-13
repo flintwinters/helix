@@ -1,0 +1,74 @@
+root:
+  accepted_concrete: false
+  accepted_pending_converge:
+    column: 63
+    kind: abstract
+    line: 21
+    message: "class `service` is abstract; realize it first"
+    path: "/$call/2/accepted_pending_converge/$call/1/$call/1"
+    reference:
+      - "$call"
+      - 2
+      - accepted_pending_converge
+      - "$call"
+      - 1
+      - "$call"
+      - 1
+  open_fields: {}
+  original_concrete: true
+  original_plan: []
+  pending_converge:
+    column: 54
+    kind: abstract
+    line: 20
+    message: "class `service` is abstract; realize it first"
+    path: "/$call/2/pending_converge/$call/1/$call/1"
+    reference:
+      - "$call"
+      - 2
+      - pending_converge
+      - "$call"
+      - 1
+      - "$call"
+      - 1
+  pending_drift:
+    column: 48
+    kind: abstract
+    line: 19
+    message: "class `service` is abstract; realize it first"
+    path: "/$call/2/pending_drift/$call/1/$call/1"
+    reference:
+      - "$call"
+      - 2
+      - pending_drift
+      - "$call"
+      - 1
+      - "$call"
+      - 1
+  provenance_retained: true
+  rejected_concrete: false
+  rejected_membership: false
+  rejected_realization:
+    column: 39
+    data:
+      violations:
+        - at: /
+          message: "constraint 0 of `service` does not hold"
+    kind: type
+    line: 22
+    message: "constraint 0 of `service` does not hold"
+    path: "/$call/2/rejected_realization/$call/1"
+    reference:
+      - "$call"
+      - 2
+      - rejected_realization
+      - "$call"
+      - 1
+  revalidated_concrete: true
+  revalidated_plan:
+    - field: port
+      from: 80
+      op: set
+      to: 8080
+  values_retained: true
+status: finished

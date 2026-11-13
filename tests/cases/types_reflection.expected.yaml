@@ -19,6 +19,7 @@ root:
       fixed:
         type: base
         value: base
+        value_kind: explicit
       optional:
         type: base
       required:
@@ -50,6 +51,7 @@ root:
       fixed:
         type: base
         value: base
+        value_kind: explicit
       optional:
         type: base
       required:
@@ -80,14 +82,17 @@ root:
       extra:
         type: child
         value: filled
+        value_kind: explicit
       fixed:
         type: base
         value: base
+        value_kind: explicit
       optional:
         type: base
       required:
         type: base
         value: filled
+        value_kind: explicit
     type: class
     values:
       extra: done

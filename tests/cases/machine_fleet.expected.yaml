@@ -20,15 +20,19 @@ root:
       hostname:
         type: machine
         value: db1
+        value_kind: explicit
       port:
         type: machine
         value: default of machine
+        value_kind: default
       role:
         type: machine
         value: db1
+        value_kind: explicit
       token:
         type: machine
         value: db1
+        value_kind: explicit
     type: class
     values:
       hostname: db1
@@ -69,15 +73,19 @@ root:
         hostname:
           type: machine
           value: web1
+          value_kind: explicit
         port:
           type: machine
           value: default of machine
+          value_kind: default
         role:
           type: machine
           value: web1
+          value_kind: explicit
         token:
           type: machine
           value: web1
+          value_kind: explicit
       type: class
       values:
         hostname: w1
@@ -106,15 +114,19 @@ root:
         hostname:
           type: machine
           value: web2
+          value_kind: explicit
         port:
           type: machine
           value: web2
+          value_kind: explicit
         role:
           type: machine
           value: web2
+          value_kind: explicit
         token:
           type: machine
           value: web2
+          value_kind: explicit
       type: class
       values:
         hostname: w2
@@ -143,15 +155,19 @@ root:
         hostname:
           type: machine
           value: db1
+          value_kind: explicit
         port:
           type: machine
           value: default of machine
+          value_kind: default
         role:
           type: machine
           value: db1
+          value_kind: explicit
         token:
           type: machine
           value: db1
+          value_kind: explicit
       type: class
       values:
         hostname: db1
@@ -241,15 +257,19 @@ root:
       hostname:
         type: machine
         value: web1
+        value_kind: explicit
       port:
         type: machine
         value: default of machine
+        value_kind: default
       role:
         type: machine
         value: web1
+        value_kind: explicit
       token:
         type: machine
         value: web1
+        value_kind: explicit
     type: class
     values:
       hostname: w1
@@ -279,15 +299,19 @@ root:
       hostname:
         type: machine
         value: web2
+        value_kind: explicit
       port:
         type: machine
         value: web2
+        value_kind: explicit
       role:
         type: machine
         value: web2
+        value_kind: explicit
       token:
         type: machine
         value: web2
+        value_kind: explicit
     type: class
     values:
       hostname: w2
