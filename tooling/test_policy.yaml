@@ -5,7 +5,8 @@ status_type: {$call: [enum, passed, failed, skipped]}
 observation_type:
   $call: [record, suite, {$ref: string}, failures, {$ref: strings_type},
     stdout, {$call: [optional, {$ref: string}]}, stderr, {$call: [optional, {$ref: string}]},
-    cases, {$call: [optional, {$ref: integer}]}, jobs, {$call: [optional, {$ref: integer}]},
+    cases, {$call: [optional, {$ref: integer}]}, case_paths, {$call: [optional, {$ref: strings_type}]},
+    jobs, {$call: [optional, {$ref: integer}]},
     blessed, {$call: [optional, {$ref: boolean}]}, reason, {$call: [optional, {$ref: string}]}]
 result_type: {$call: [with_field, {$ref: observation_type}, status, {$ref: status_type}]}
 report_type:

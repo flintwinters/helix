@@ -1,6 +1,6 @@
 """Supervised Helix orchestration; the host validates authority and retained evidence."""
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from tooling.test_reports import failure
 
@@ -19,7 +19,7 @@ def _valid_summary(value, observations):
 def _result_problem(row):
     """Validate the shared shallow result-row contract, without trusting numeric equality."""
     required = {"suite", "status", "failures"}
-    optional = {"stdout", "stderr", "cases", "jobs", "blessed", "reason"}
+    optional = {"stdout", "stderr", "cases", "case_paths", "jobs", "blessed", "reason"}
     if (not isinstance(row, dict) or not required <= set(row) or set(row) - required - optional
             or not isinstance(row["suite"], str)):
         return "results must contain suite observations with supported fields"
@@ -35,6 +35,15 @@ def _result_problem(row):
                    for key, minimum in (("cases", 0), ("jobs", 1)))
             or ("blessed" in row and type(row["blessed"]) is not bool)):
         return f"invalid observation metadata for {row['suite']}"
+    if "case_paths" in row:
+        paths = row["case_paths"]
+        if (row["suite"] not in {"golden", "robustness"} or row["status"] == "skipped"
+                or not isinstance(paths, list) or not paths
+                or any(not isinstance(path, str) or not path or PurePosixPath(path).is_absolute()
+                       or ".." in PurePosixPath(path).parts or PurePosixPath(path).as_posix() != path
+                       for path in paths)
+                or len(set(paths)) != len(paths) or row.get("cases") != len(paths)):
+            return f"invalid case_paths metadata for {row['suite']}"
     return None
 
 
@@ -84,14 +93,39 @@ def load_rerun_report(path, catalog):
     return value
 
 
-def rerun(context, catalog, previous):
-    """Select whole failed suites; independently reject omitted or additional work."""
+def _rerun_expected(catalog, previous):
     rows = previous["results"]
     failed = {row["suite"] for row in rows if row["status"] == "failed"}
     if "standard_library" in failed:
         failed.update(row["suite"] for row in rows
                       if row["suite"] in {"golden", "robustness"} and row["status"] != "skipped")
-    expected = [name for name in catalog if name in failed]
+    return [name for name in catalog if name in failed]
+
+
+def rerun_cases(context, catalog, previous):
+    """Resolve recorded scopes against eligible current fixtures before building."""
+    from tooling.test_runner import discover_cases
+
+    selected = set(_rerun_expected(catalog, previous))
+    scoped = [row for row in previous["results"] if row["suite"] in selected and "case_paths" in row]
+    if not scoped:
+        return {}
+    available = {case.relative_to(context.root).as_posix(): case
+                 for case in discover_cases(context.commands, context.root)}
+    result = {}
+    for row in scoped:
+        missing = [path for path in row["case_paths"] if path not in available]
+        if missing:
+            raise ValueError(f"recorded {row['suite']} fixtures are no longer available: {', '.join(missing)}")
+        requested = set(row["case_paths"])
+        result[row["suite"]] = [case for path, case in available.items() if path in requested]
+    return result
+
+
+def rerun(context, catalog, previous):
+    """Select failed suites; independently reject omitted or additional work."""
+    rows = previous["results"]
+    expected = _rerun_expected(catalog, previous)
     selection = {"results": [{"suite": row["suite"], "status": row["status"]} for row in rows]}
     return evaluate(context, "rerun", [list(catalog), selection],
                     lambda value: isinstance(value, list) and value == expected)

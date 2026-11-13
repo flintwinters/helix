@@ -36,11 +36,11 @@ build phase before tests run.
 
 ## Rerun failed suites
 
-Save the existing versioned JSON report, then use it to select whole suites in the
-current checkout:
+Save the versioned JSON report, then use it to retry failed suites in the current
+checkout, preserving any explicit fixture selection:
 
 ```sh
-./manage.py --format=json test --suite golden --suite cli > runtime/test-report.json
+./manage.py --format=json test --suite golden --case types_reflection_inverse > runtime/test-report.json
 ./manage.py --format=json test --rerun-failed runtime/test-report.json > runtime/test-rerun.json
 ```
 
@@ -52,9 +52,17 @@ failures produces an empty successful report without building; it never means
 “run everything.” Historical stdout, stderr and failure messages stay out of the
 Helix selection input.
 
+Filtered golden/robustness results record exact repository-relative `case_paths`
+beside their case count. Reruns preserve each suite's own selection, including
+companions selected by a failed standard-library prerequisite, and retain it in
+the next report. A missing recorded fixture fails before building; selections
+never silently expand or drop unavailable inputs. Unfiltered results and legacy
+reports without `case_paths` retry the whole current suite. Source revisions are
+not recorded, so retries use current source and dependencies.
+
 Reports must be internally consistent version-1 test reports with current suite
-names. Invalid reports fail before building. Fixture filters and source revisions
-are not recorded, so this retries whole suites against current source. `--jobs`
+names. Invalid reports fail before building. Current readers accept legacy
+reports; older strict readers reject the added optional `case_paths` field. `--jobs`
 is allowed; `--suite`, `--case`, `--bless` and discovery options cannot be combined
 with `--rerun-failed`. Blessing is never inherited. A failed Docker or orchestration
 entry requires an explicit retry after reviewing its diagnostic; the report does

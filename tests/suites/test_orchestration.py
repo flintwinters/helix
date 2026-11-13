@@ -14,6 +14,7 @@ from tests.suites.test_reports import report_fixture, suite_fixture
 
 
 def verify(h):
+    verify_scoped_rerun(h)
     verify_policy_annotations(h)
     verify_report_metadata(h)
     verify_rerun_wiring(h)
@@ -254,6 +255,7 @@ def verify_policy_annotations(h):
         ("rerun", [["first"], {"results": [{"suite": "first", "status": "unknown"}]}], "previous"),
         ("result", [{"suite": "first", "failures": "lost failure list"}], "observation"),
         ("result", [{"suite": "first", "failures": [], "stdout": 4}], "observation"),
+        ("result", [{"suite": "golden", "failures": [], "cases": 1, "case_paths": [17]}], "observation"),
         ("report", [[{"suite": "first", "failures": [None]}]], "observations"),
     ]
     for operation, arguments, parameter in invalid:
@@ -298,6 +300,160 @@ def verify_policy_annotations(h):
             error = result["error"]
             assert error["kind"] == "type" and "in the result" in error["message"], error
             assert error["path"] == f"/{operation}/$call/2" and error["file"] == str(module), error
+
+
+def verify_scoped_rerun(h):
+    """A filtered failure report preserves its exact fixture scope through reruns."""
+    import tempfile
+    from pathlib import Path
+    import manage
+
+    with tempfile.TemporaryDirectory(dir=h.root / 'runtime', prefix='scoped-rerun-') as temporary:
+        directory = Path(temporary)
+        cases = [directory / f'{name}.yaml' for name in ('alpha', 'beta', 'gamma')]
+        for case in cases:
+            case.write_text('42\n')
+            case.with_suffix('.expected.yaml').write_text('wrong expectation\n')
+        invoked = []
+        def runner(args, **kwargs):
+            if len(args) > 2 and args[1] == 'run' and args[2] != '-':
+                invoked.append(args[2])
+            return h.process_runner(args, **kwargs)
+
+        context = replace(h, commands={directory: 'run'}, process_runner=runner)
+        stdout = io.StringIO()
+        with patch.object(test_runner.TestContext, 'check_standard_library', return_value=[]), \
+             contextlib.redirect_stdout(stdout):
+            assert context.regression(False, ['golden'], cases=[cases[0]], output_format='json') == 1
+        initial = json.loads(stdout.getvalue())
+        golden = next(row for row in initial['results'] if row['suite'] == 'golden')
+        selected_path = str(cases[0].relative_to(h.root))
+        assert golden.get('case_paths') == [selected_path] and golden['cases'] == 1, initial
+        assert invoked == [selected_path, selected_path], invoked
+        # Historical blessing metadata is descriptive, never authority on retry.
+        golden['blessed'] = True
+        saved = directory / 'previous.json'
+        saved.write_text(json.dumps(initial))
+        historical = saved.read_bytes()
+        assert test_policy.load_rerun_report(saved, test_runner.SUITES) == initial
+
+        @contextlib.contextmanager
+        def frozen(provided, output_format):
+            assert provided is context
+            yield context, 0
+
+        invoked.clear()
+        stdout = io.StringIO()
+        with patch.object(manage, 'test_context', return_value=context), \
+             patch.object(manage, 'frozen_test_context', frozen), \
+             patch.object(test_runner.TestContext, 'check_standard_library', return_value=[]), \
+             contextlib.redirect_stdout(stdout):
+            assert manage.test(False, output_format='json', rerun_failed=str(saved)) == 1
+        rerun = json.loads(stdout.getvalue())
+        golden = next(row for row in rerun['results'] if row['suite'] == 'golden')
+        assert golden['case_paths'] == [selected_path] and golden['cases'] == 1 and golden['blessed'] is False, rerun
+        assert invoked == [selected_path, selected_path], invoked
+        assert saved.read_bytes() == historical
+        assert all(case.with_suffix('.expected.yaml').read_text() == 'wrong expectation\n' for case in cases)
+
+        paths = [str(case.relative_to(h.root)) for case in cases]
+        def scoped(suite, index, status='failed'):
+            return {**suite_fixture(suite, status), 'cases': 1, 'case_paths': [paths[index]]}
+
+        scenarios = [
+            ('separate_subsets', report_fixture(scoped('golden', 0), scoped('robustness', 1)),
+             {'golden': [cases[0]], 'robustness': [cases[1]]}),
+            ('prerequisite_companions', report_fixture(suite_fixture('standard_library'),
+                scoped('golden', 0, 'passed'), scoped('robustness', 1, 'passed')),
+             {'golden': [cases[0]], 'robustness': [cases[1]]}),
+            ('prerequisite_skipped', report_fixture(suite_fixture('standard_library'),
+                scoped('golden', 0, 'passed'), suite_fixture('robustness', 'skipped')),
+             {'golden': [cases[0]]}),
+            ('legacy_whole_suite', report_fixture(suite_fixture('golden')), {'golden': cases}),
+            ('legacy_and_scoped', report_fixture(suite_fixture('golden'), scoped('robustness', 1)),
+             {'golden': cases, 'robustness': [cases[1]]}),
+        ]
+        for name, previous, expected in scenarios:
+            saved.write_text(json.dumps(previous))
+            historical = saved.read_bytes()
+            executed = {}
+            def golden_case(case, bless):
+                assert bless is False
+                executed.setdefault('golden', []).append(case)
+                return []
+            def robustness(selected, jobs):
+                executed['robustness'] = list(selected)
+                return []
+            stdout = io.StringIO()
+            with patch.object(manage, 'test_context', return_value=context), \
+                 patch.object(manage, 'frozen_test_context', frozen), \
+                 patch.object(test_runner.TestContext, 'check_standard_library', return_value=[]), \
+                 patch.object(test_runner.TestContext, 'golden_case', side_effect=golden_case), \
+                 patch.object(test_runner.TestContext, 'robustness', side_effect=robustness), \
+                 contextlib.redirect_stdout(stdout):
+                assert manage.test(False, jobs=1, output_format='json', rerun_failed=str(saved)) == 0, (name, stdout.getvalue())
+            assert executed == expected and saved.read_bytes() == historical, (name, executed)
+            report = json.loads(stdout.getvalue())
+            for row in report['results']:
+                old = next((old for old in previous['results'] if old['suite'] == row['suite']), {})
+                if row['suite'] in expected:
+                    assert row['cases'] == len(expected[row['suite']]), (name, row)
+                    assert row.get('case_paths') == old.get('case_paths'), (name, row, old)
+
+        missing = str((directory / 'deleted.yaml').relative_to(h.root))
+        # A passed suite's stale path is not needed to retry an unrelated suite.
+        previous = report_fixture(suite_fixture('startup'),
+                                  {**scoped('golden', 0, 'passed'), 'case_paths': [missing]})
+        saved.write_text(json.dumps(previous))
+        stdout = io.StringIO()
+        with patch.object(manage, 'test_context', return_value=context), \
+             patch.object(manage, 'frozen_test_context', frozen), \
+             patch.object(contracts, 'run', return_value=[]) as dispatch, \
+             contextlib.redirect_stdout(stdout):
+            assert manage.test(False, output_format='json', rerun_failed=str(saved)) == 0
+        assert [row['suite'] for row in json.loads(stdout.getvalue())['results']] == ['startup']
+        assert dispatch.call_count == 1
+
+        saved.write_text(json.dumps(report_fixture(previous['results'][1])))
+        stdout = io.StringIO()
+        with patch.object(manage, 'test_context', return_value=context), \
+             patch.object(manage, 'frozen_test_context') as build, \
+             patch.object(test_runner, 'discover_cases', side_effect=AssertionError('empty rerun discovered fixtures')), \
+             contextlib.redirect_stdout(stdout):
+            assert manage.test(False, output_format='json', rerun_failed=str(saved)) == 0
+        assert not build.called and json.loads(stdout.getvalue()) == report_fixture()
+
+        outside = directory / 'not a fixture root'
+        outside.mkdir()
+        outsider = outside / 'outside.yaml'
+        outsider.write_text('42\n')
+        base = scoped('golden', 0)
+        invalid_rows = [
+            {**base, 'case_paths': None}, {**base, 'case_paths': paths[0]},
+            {**base, 'case_paths': [1]}, {**base, 'case_paths': [], 'cases': 0},
+            {**base, 'case_paths': [paths[0], paths[0]], 'cases': 2},
+            {**base, 'cases': 2}, {key: value for key, value in base.items() if key != 'cases'},
+            {**base, 'case_paths': [missing]}, {**base, 'case_paths': [str(cases[0])]},
+            {**base, 'case_paths': ['../outside.yaml']},
+            {**base, 'case_paths': ['./' + paths[0]]},
+            {**base, 'case_paths': [paths[0].replace('/', '//', 1)]},
+            {**base, 'case_paths': [str(outsider.relative_to(h.root))]},
+            {**base, 'case_paths': [str(cases[0].with_suffix('.expected.yaml').relative_to(h.root))]},
+            {**base, 'suite': 'startup'},
+            {**base, 'status': 'skipped', 'failures': [], 'reason': 'not executed'},
+        ]
+        for row in invalid_rows:
+            saved.write_text(json.dumps(report_fixture(row)))
+            historical = saved.read_bytes()
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with patch.object(manage, 'test_context', return_value=context), \
+                 patch.object(manage, 'frozen_test_context') as build, \
+                 patch.object(test_runner.TestContext, 'regression') as dispatch, \
+                 contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                code = manage.test(False, output_format='json', rerun_failed=str(saved))
+            assert code == 2 and not stdout.getvalue(), (row, code, stdout.getvalue(), stderr.getvalue())
+            assert json.loads(stderr.getvalue())['error']['kind'] == 'selection', (row, stderr.getvalue())
+            assert not build.called and not dispatch.called and saved.read_bytes() == historical, row
 
 
 def verify_rerun_wiring(h):

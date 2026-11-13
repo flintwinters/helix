@@ -142,6 +142,7 @@ def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_
         previous = test_policy.load_rerun_report(Path(rerun_failed), SUITES) if rerun_failed is not None else None
         context = test_context()
         cases = discover_cases(context.commands, context.root, patterns) if patterns else None
+        case_selections = test_policy.rerun_cases(context, SUITES, previous) if previous is not None else None
     except (ValueError, OSError, UnicodeError) as error:
         if output_format == "text":
             print(f"error: {error}", file=sys.stderr)
@@ -166,7 +167,7 @@ def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_
             except test_policy.PolicyError as error:
                 return test_report([{"suite": "orchestration", "status": "failed", "failures": [str(error)]}],
                                    output_format=output_format)
-            return frozen.regression(False, suites, jobs, None, output_format)
+            return frozen.regression(False, suites, jobs, None, output_format, case_selections=case_selections)
         return frozen.regression(bless, suites, jobs, cases, output_format)
 
 

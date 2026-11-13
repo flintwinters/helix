@@ -300,7 +300,8 @@ class TestContext:
         return []
 
     def regression(self, bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_JOBS,
-                   cases: list[Path] | None = None, output_format: str = DEFAULT_FORMAT) -> int:
+                   cases: list[Path] | None = None, output_format: str = DEFAULT_FORMAT, *,
+                   case_selections: Mapping[str, list[Path]] | None = None) -> int:
         import contextlib
         import io
         from tooling import test_policy
@@ -316,13 +317,24 @@ class TestContext:
             return test_report([{"suite": "orchestration", "status": "failed", "failures": [str(error)]}],
                                output_format=output_format)
 
-        if any(task["action"] == "run" and task["suite"] in {"golden", "robustness"} for task in plan):
+        fixture_suites = [task["suite"] for task in plan
+                          if task["action"] == "run" and task["suite"] in {"golden", "robustness"}]
+        selected_cases = {}
+        scoped_suites = set()
+        if fixture_suites:
             try:
                 discovered = discover_cases(self.commands, self.root)
-                if cases is None:
-                    cases = discovered
-                elif not cases:
-                    raise ValueError("golden/robustness fixture selection must not be empty")
+                for name in fixture_suites:
+                    selected = case_selections.get(name, cases) if case_selections is not None else cases
+                    if selected is None:
+                        selected_cases[name] = discovered
+                    else:
+                        if not selected:
+                            raise ValueError("golden/robustness fixture selection must not be empty")
+                        if len(set(selected)) != len(selected) or any(case not in discovered for case in selected):
+                            raise ValueError(f"{name} fixture selection must contain unique discovered inputs")
+                        selected_cases[name] = selected
+                        scoped_suites.add(name)
             except (ValueError, OSError) as error:
                 return test_report([{"suite": "orchestration", "status": "failed", "failures": [str(error)]}],
                                    output_format=output_format)
@@ -361,12 +373,16 @@ class TestContext:
             elif name == "standard_library":
                 record(name, self.check_standard_library)
             elif name in {"golden", "robustness"}:
+                suite_cases = selected_cases[name]
+                details = {"cases": len(suite_cases), "jobs": jobs}
+                if name in scoped_suites:
+                    details["case_paths"] = [case.relative_to(self.root).as_posix() for case in suite_cases]
                 if name == "golden":
                     from functools import partial
-                    record(name, lambda: collect_cases(partial(self.golden_case, bless=bless), cases, jobs),
-                           cases=len(cases), jobs=jobs, blessed=bless)
+                    record(name, lambda: collect_cases(partial(self.golden_case, bless=bless), suite_cases, jobs),
+                           **details, blessed=bless)
                 else:
-                    record(name, lambda: self.robustness(cases, jobs), cases=len(cases), jobs=jobs)
+                    record(name, lambda: self.robustness(suite_cases, jobs), **details)
             else:
                 from tests.suites import contracts
                 record(name, lambda: contracts.run(name, self))
