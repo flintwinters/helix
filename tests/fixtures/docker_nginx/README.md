@@ -96,3 +96,31 @@ metadata drift are injected independently by the harness.
 the real `nginx -t` check. This proves that candidate validation preserves a live
 working configuration without exposing arbitrary nginx directive injection in
 the user-facing server-name input.
+
+## Qualification evidence
+
+[`qualification.json`](qualification.json) records the complete scenario results,
+image/package/controller identities, duration, cleanup result and regression
+checks for this milestone. Its raw-report path points into the retained
+project-local `runtime/docker-nginx/` artifacts, with a SHA-256 digest; those raw
+commands, source build context and observations are local evidence, not checked
+into Git. Resource figures are samples at scenario completion, not peak memory
+measurements. The fixture enforces a 512 MiB memory limit and a 256-process limit.
+
+The qualified host used Ubuntu 26.10, kernel `7.3.0-10-generic`, and a private
+Docker 29.9.3 daemon. Builtin seccomp remained active. This host stacks the
+AppArmor label as `docker-default//&unconfined`; the stock self-peer signal rule
+prevented child reaping and signaling. The private daemon's `--apparmor-profile`
+template changed only the signal/ptrace self-peer patterns to
+`peer="docker-default{,//&unconfined}"`, preserving the other default rules.
+Containers remained unprivileged, without host mounts or host PID access.
+This qualification therefore covers that explicit compatibility configuration,
+not an unmodified AppArmor template on this host.
+
+The template came from the [Moby AppArmor template](https://github.com/moby/profiles/blob/main/apparmor/template.go);
+the qualification record pins the downloaded source and modified template
+digests. Both files and their provenance remain under `runtime/docker-engine/`.
+Docker documents [daemon AppArmor template customization](https://docs.docker.com/engine/security/apparmor/).
+The suite does not install a daemon, alter host security policy or silently
+select an unconfined profile; its explicit invocation requires a working Docker
+environment with the process operations this workload needs.
