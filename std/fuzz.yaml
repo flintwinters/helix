@@ -93,66 +93,64 @@
   - "$call":
     - "until"
     - {"$call": ["fn", ["s"], {"$call": ["ge", {"$call": ["get", {"$ref": "s"}, "index"]}, {"$ref": "limit"}]}]}
-    - "$call":
-      - "fn"
-      - - "s"
-      - "$call":
-        - "let"
-        - "i": {"$call": ["get", {"$ref": "s"}, "index"]}
-          "c":
-            "$call":
-            - "slice"
-            - {"$ref": "text"}
-            - {"$call": ["sub", {"$ref": "i"}, {"$ref": "base"}]}
-            - {"$call": ["add", {"$call": ["sub", {"$ref": "i"}, {"$ref": "base"}]}, 1]}
-          "end":
-            "$call":
-            - "add"
-            - {"$ref": "i"}
-            - "$call":
-              - "if"
-              - "$call":
-                - "and"
-                - {"$call": ["eq", {"$ref": "c"}, "\r"]}
-                - {"$call": ["lt", {"$call": ["add", {"$ref": "i"}, 1]}, {"$ref": "size"}]}
-                - "$call":
-                  - "eq"
-                  - "$call":
-                    - "slice"
-                    - {"$ref": "text"}
-                    - {"$call": ["add", {"$call": ["sub", {"$ref": "i"}, {"$ref": "base"}]}, 1]}
-                    - {"$call": ["add", {"$call": ["sub", {"$ref": "i"}, {"$ref": "base"}]}, 2]}
-                  - "\n"
-              - 2
-              - 1
-        - "$call":
-          - "if"
-          - "$call":
-            - "has"
-            - - "\n"
-              - "\r"
-              - "\v"
-              - "\f"
-              - "\x1C"
-              - "\x1D"
-              - "\x1E"
-              - "\N"
-              - "\L"
-              - "\P"
-            - {"$ref": "c"}
-          - "$call":
-            - "dict"
-            - "index"
-            - {"$ref": "end"}
-            - "start"
-            - {"$ref": "end"}
-            - "bounds"
-            - "$call":
-              - "append"
-              - {"$call": ["get", {"$ref": "s"}, "bounds"]}
-              - {"$call": ["list", {"$call": ["get", {"$ref": "s"}, "start"]}, {"$ref": "end"}]}
-          - {"$call": ["set", {"$ref": "s"}, "index", {"$ref": "end"}]}
+    - {$call: [fn, [s], {$call: [scan_index, {$ref: text}, {$ref: base}, {$ref: size}, {$ref: s}, {$call: [get, {$ref: s}, index]}]}]}
     - {"$ref": "state"}
+# Function arguments retain these computed values; local let bindings would
+# reevaluate the index, current character and end at each use in the next state.
+scan_index:
+  $call:
+  - fn
+  - [text, base, size, state, index]
+  - $call:
+    - scan_character
+    - {$ref: text}
+    - {$ref: base}
+    - {$ref: size}
+    - {$ref: state}
+    - {$ref: index}
+    - {$call: [slice, {$ref: text}, {$call: [sub, {$ref: index}, {$ref: base}]}, {$call: [add, {$call: [sub, {$ref: index}, {$ref: base}]}, 1]}]}
+scan_character:
+  $call:
+  - fn
+  - [text, base, size, state, index, character]
+  - $call:
+    - if
+    - {$call: [has, ["\n", "\r", "\v", "\f", "\x1C", "\x1D", "\x1E", "\N", "\L", "\P"], {$ref: character}]}
+    - $call:
+      - scan_advance
+      - {$ref: state}
+      - $call:
+        - add
+        - {$ref: index}
+        - $call:
+          - if
+          - $call:
+            - and
+            - {$call: [eq, {$ref: character}, "\r"]}
+            - {$call: [lt, {$call: [add, {$ref: index}, 1]}, {$ref: size}]}
+            - $call:
+              - eq
+              - $call:
+                - slice
+                - {$ref: text}
+                - {$call: [add, {$call: [sub, {$ref: index}, {$ref: base}]}, 1]}
+                - {$call: [add, {$call: [sub, {$ref: index}, {$ref: base}]}, 2]}
+              - "\n"
+          - 2
+          - 1
+    - {$call: [set, {$ref: state}, index, {$call: [add, {$ref: index}, 1]}]}
+scan_advance:
+  $call:
+  - fn
+  - [state, end]
+  - $call:
+    - dict
+    - index
+    - {$ref: end}
+    - start
+    - {$ref: end}
+    - bounds
+    - {$call: [append, {$call: [get, {$ref: state}, bounds]}, {$call: [list, {$call: [get, {$ref: state}, start]}, {$ref: end}]}]}
 "scan_part":
   "$call":
   - "fn"

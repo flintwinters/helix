@@ -549,10 +549,12 @@ The runtime supports types, classes and callable values beyond the established p
     Mutation planning also measures actual `std:fuzz.plan` over fixed Unicode/CRLF
     input and the `dogfood_testing` fixture, checking every ordered source span
     against an independent oracle. Reusing `std:list.range` removes a separate
-    offsets state machine and its helper arguments. Identical-input local debug
-    measurements showed about 5.4% and 3.2% lower median planning times; immutable
-    append costs remain, so this is reduced bookkeeping rather than an asymptotic
-    improvement or a portable performance guarantee.
+    offsets state machine and its helper arguments. Scanner helpers retain the
+    computed index, character and boundary end as eager parameters, avoiding lazy
+    recomputation; ordinary characters take a direct index-update path. Together,
+    these changes reduced local debug median planning times by about 21% on both
+    fixed inputs. Immutable append costs remain; this is reduced bookkeeping,
+    not an asymptotic improvement or a portable performance guarantee.
     Text-mode test results now flush at suite boundaries, so completed failures
     and warnings are available while later work runs. Final aggregation retains
     its independent failure path; JSON remains one complete report. Deterministic

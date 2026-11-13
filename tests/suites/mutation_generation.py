@@ -32,6 +32,9 @@ def verify(h):
     sources.extend(("a" * 255 + "\r\n" + "b" * 257,
                     "🙂" * 255 + "\u2028" + "é" * 257,
                     "a" * 256 + "\r\n" + "b" * 256))
+    # Lookahead may reach EOF, and chunk positions count scalars rather than
+    # UTF-8 bytes even when CRLF straddles the boundary.
+    sources.extend(("🙂" * 255 + "\r", "🙂" * 255 + "\r\n" + "é" * 256 + "\r"))
     from tooling.test_runner import discover_cases
     largest = max(discover_cases(h.commands, h.root), key=lambda case: case.stat().st_size)
     sources.append(largest.read_text())
