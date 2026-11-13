@@ -37,6 +37,36 @@ def workloads():
     yield "map-set-existing-key", repeated('{"$call": ["get", {"$call": ["set", {"$ref": "mapping"}, {"$ref": "key"}, 43]}, {"$ref": "key"}]}', "43", 1000,
                                            {"mapping": {key: 42}, "key": key}), 1000, 1000
 
+    fields = {f"field_{index:03}": "integer" for index in range(256)}
+    source = {"$call": ["let", {"types": {"$call": ["import", "std:types"]}},
+                        {"$call": ["types.from_fields", fields]}]}
+    yield "types-from-fields-256", json.dumps(source), {"type": "record", "fields": fields}, len(fields)
+
+    # Use the actual manage.py policy and catalog, retaining process logs rather
+    # than replacing production report assembly with a small arithmetic proxy.
+    from tooling.cli import SUITES
+
+    observations = [{"suite": name, "failures": [], "stdout": "retained log\n" * 256, "stderr": ""}
+                    for name in SUITES]
+    assert len(observations) >= 2, "report workload requires failed and skipped controls"
+    observations[0]["failures"] = ["observed process failure"]
+    observations[1]["reason"] = "explicitly skipped workload"
+    failure_heavy = [{"suite": name, "failures": [
+        f'{name} case {index}: expected deterministic result; observed mismatch\n'
+        + ('captured source, expected value, actual value, and replay context\n' * 16)
+        for index in range(4)], "stdout": "retained log\n" * 256, "stderr": ""} for name in SUITES]
+    for name, rows in (("test-policy-report", observations), ("test-policy-report-failures", failure_heavy)):
+        results = [{**row, "status": "skipped" if "reason" in row else "failed" if row["failures"] else "passed"}
+                   for row in rows]
+        failure_count = sum(len(row["failures"]) for row in rows)
+        expected = {"command": "test", "status": "failed" if failure_count else "passed",
+                    "exit_code": int(bool(failure_count)), "failure_count": failure_count, "results": results}
+        # Programs live in runtime/speed/run-*; this import preserves replayability
+        # without making source hashes depend on the absolute checkout directory.
+        source = {"$call": ["let", {"policy": {"$call": ["import", "../../../tooling/test_policy.yaml"]}},
+                            {"$call": ["policy.report", {"$literal": rows}]}]}
+        yield name, json.dumps(source), expected, len(rows)
+
 
 def history_comparison(base, environment, name, source_hash, samples):
     """Compare against the earliest five compatible runs, avoiding a drifting baseline."""
@@ -71,11 +101,17 @@ def verify(h):
     base.mkdir(parents=True, exist_ok=True)
     verify_comparison(base)
     artifact = Path(tempfile.mkdtemp(dir=base, prefix="run-"))
+    policy_source = (h.root / "tooling" / "test_policy.yaml").read_bytes()
+    (artifact / "test_policy.source.yaml").write_bytes(policy_source)
     report = {
         "schema_version": 2,
         "environment": {"platform": platform.platform(), "machine": platform.machine(),
                         "python": platform.python_version(), "profile": "debug",
                         "binary_sha256": hashlib.sha256(h.binary.read_bytes()).hexdigest()},
+        # File imports are mutable independently of the executable. Preserve their
+        # provenance without excluding implementation changes from comparisons.
+        "imported_sources": {"tooling/test_policy.yaml": {
+            "sha256": hashlib.sha256(policy_source).hexdigest(), "artifact": "test_policy.source.yaml"}},
         "method": {"clock": "perf_counter_ns", "samples": SAMPLES, "warmups": WARMUPS,
                    "scope": "CLI process startup, file loading, evaluation and state emission; excludes build and Python YAML decoding",
                    "policy": "correctness and subprocess timeout are enforced; timings are observations, not portable pass/fail thresholds"},
@@ -93,6 +129,8 @@ def verify(h):
             samples = []
             measurement = {"workload": name, "baseline_epoch": BASELINE_EPOCHS.get(name, 1),
                            "operations_per_run": operations, "seconds": samples}
+            if name in {"types-from-fields-256", "test-policy-report", "test-policy-report-failures"}:
+                measurement["operation_unit"] = "fields" if name == "types-from-fields-256" else "suite observations"
             report["measurements"].append(measurement)
             for index in range(WARMUPS + SAMPLES):
                 started = time.perf_counter_ns()

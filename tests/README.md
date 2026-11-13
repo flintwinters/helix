@@ -226,9 +226,16 @@ Speed benchmarks run through `./manage.py test --suite speed` and the default fu
 suite. They measure the debug CLI (startup, loading, evaluation and emission),
 excluding compilation and Python YAML decoding. Each workload gets one warmup
 and five measured runs, checked against its expected result. Arithmetic maps,
-function loops, ASCII/Unicode slicing, and long-key map reads/replacements save
-raw samples, median/range, throughput, platform and binary hash to
+function loops, ASCII/Unicode slicing, and long-key map reads/replacements run
+alongside actual `std:types.from_fields` reconstruction and production test-report
+assembly. Report inputs use the suite catalog with retained logs, mixed outcomes
+and a failure-heavy variant; Python checks every output row and summary. The
+workloads save raw samples, median/range, throughput, platform and binary hash to
 `runtime/speed/report.json`; unique run directories retain inputs and states.
+Report benchmarks also retain the imported policy source and its hash, since it
+is not embedded in the executable. That implementation fingerprint is provenance,
+not a history filter: policy changes are what these fixed workloads compare.
+Replaying a saved input otherwise uses the current checkout and executable.
 Reports flag `SLOWDOWN` when median time exceeds the earliest five compatible runs
 by more than 20% and three median absolute deviations of observed noise. Matching
 host/environment, sampling settings and workload source keep comparisons relevant;
