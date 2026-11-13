@@ -819,6 +819,7 @@ account; it is not an arbitrary-host bootstrap or a real playbook migration.
 
 ### Fleet orchestration and failure recovery
 
+- [ ] Define and qualify fleet recovery, healing and regeneration as an operational goal. Before implementation, clarify what each means, what failures and environments it covers, what state and authority must survive, and what independent evidence establishes success. In particular, leave regeneration's scope open until explicitly defined; do not infer whether it means rebuilding controller state, reconverging surviving hosts, replacing destroyed hosts, or another lifecycle. The recovery requirements below are a starting point, not a complete definition of this broader goal.
 - [ ] Run across a fleet with bounded, observable scheduling
   - [ ] Support concurrency limits, serial batches, canaries and explicit failure thresholds
   - [ ] Express cross-host dependencies and controller/delegated tasks with unambiguous execution targets and authority
