@@ -121,7 +121,7 @@ leave section 2's complete suspend/resume promise unchanged.
 - [x] Sandbox/permission model for current effects: caller-authorized import/file roots, environment names, executables and HTTP origins, plus stream/clock/random grants; transitive and symlink-escape checks. These are capability boundaries, not OS isolation.
 - [x] Stability promise: documented what may change and what is frozen
 - [x] Language reference (started: `LANGUAGE.md`) and a tutorial that a stranger could follow
-- [ ] A changelog — no project changelog is present; Git history alone does not fulfill this item
+- [ ] A broad strokes changelog — only large feature changes; Git history alone does not fulfill this item
 
 ### Testing depth and breadth
 
