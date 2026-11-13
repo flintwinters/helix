@@ -484,6 +484,10 @@ impl Evaluator {
         let mut state = Self::start(self.program.clone(), Vec::new(), Request::Eval(node));
         state.effects_allowed = false;
         state.memo = self.memo.clone();
+        // Memoized closures retain frame birth stamps; subsequent regions must see those
+        // frames as older inputs, and keep the input ledger accumulated by prior checks.
+        state.scopes = self.scopes;
+        state.type_inputs = self.type_inputs.clone();
         state.limits = self.limits;
         state.remaining_work = self.remaining_work;
         state.remaining_values = self.remaining_values;

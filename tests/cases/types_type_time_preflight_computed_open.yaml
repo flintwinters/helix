@@ -1,0 +1,8 @@
+# The selector occurs only in a computed call head; it still makes the region open.
+{$call: [let,
+  {increment: {$call: [fn, [n], {$call: [add, {$ref: n}, 1]}]},
+   decrement: {$call: [fn, [n], {$call: [sub, {$ref: n}, 1]}]},
+   choose: {$call: [fn, [forward],
+     {$call: [type_time,
+       {$call: [{$call: [if, {$ref: forward}, {$ref: increment}, {$ref: decrement}]}, 41]}]}]}},
+  {$call: [list, {$call: [choose, true]}, {$call: [choose, false]}]}]}

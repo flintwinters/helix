@@ -1,0 +1,4 @@
+# The catch boundary also applies to closed regions reached through computed heads.
+{$call: [try,
+  {$call: [{$call: [fn, [], {$call: [type_time, {$call: [div, 1, 0]}]}]}]},
+  {$call: [fn, [error], {$call: [list, {$ref: error.kind}, {$ref: error.phase}]}]}]}

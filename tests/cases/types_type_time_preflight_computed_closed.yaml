@@ -1,0 +1,4 @@
+# An inline computed head reaches its closed region before the earlier effect.
+{$call: [list,
+  {$call: [effect, time, null]},
+  {$call: [{$call: [fn, [], {$call: [type_time, {$call: [div, 1, 0]}]}]}]}]}

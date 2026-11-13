@@ -313,6 +313,62 @@ fn check_mode_keeps_independent_runtime_and_type_time_failures() {
 }
 
 #[test]
+fn check_collection_does_not_preflight_unchosen_regions_on_success() {
+    let branch = r#"{$call: [if, true, 42, {$call: [type_time, {$call: [div, 1, 0]}]}]}"#;
+    let mut run = Vm::load(branch);
+    run.run();
+    assert_eq!(run.status(), Status::Error);
+    assert_eq!(run.state()["error"]["phase"].as_str(), Some("type"));
+    for failing_sibling in [false, true] {
+        let source = format!("answer: {branch}\nother: {}", if failing_sibling { "{$call: [div, 1, 0]}" } else { "7" });
+        let mut checked = Vm::load(&source);
+        checked.check();
+        let state = checked.state();
+        if failing_sibling {
+            assert_eq!(checked.status(), Status::Error);
+            let errors = state["errors"].as_vec().unwrap();
+            assert_eq!(errors.len(), 1);
+            assert_eq!(errors[0]["path"].as_str(), Some("/other"));
+            assert!(errors[0]["phase"].is_badvalue());
+        } else {
+            assert_eq!(checked.status(), Status::Finished);
+            assert_eq!(state["root"]["answer"].as_i64(), Some(42));
+        }
+    }
+}
+
+#[test]
+fn check_collection_retains_captured_inputs_across_independent_entries() {
+    let common = r#"
+factory: {$call: [fn, [value],
+  {$call: [{$call: [fn, [captured],
+    {$call: [fn, [], {$call: [type_time, {$call: [add, {$ref: captured}, 1]}]}]}]}, {$ref: value}]}]}
+a_first: {$call: [factory, 41]}
+b_second: {$call: [factory, 42]}
+x_first: {$call: [a_first]}
+y_repeat: {$call: [a_first]}
+z_second: {$call: [b_second]}
+"#;
+    for failing_sibling in [false, true] {
+        let source = format!("{common}\nother: {}", if failing_sibling { "{$call: [div, 1, 0]}" } else { "7" });
+        let mut checked = Vm::load(&source);
+        checked.check();
+        assert_eq!(checked.status(), if failing_sibling { Status::Error } else { Status::Finished });
+        let inspection = checked.inspect();
+        let inputs = inspection["type_time_inputs"].as_vec().unwrap();
+        assert_eq!(inputs.len(), 2, "distinct inputs survive; a repeated read is not duplicated");
+        for (index, value) in [41, 42].into_iter().enumerate() {
+            assert_eq!(inputs[index]["inputs"][0]["name"].as_str(), Some("captured"));
+            assert_eq!(inputs[index]["inputs"][0]["value"].as_i64(), Some(value));
+        }
+        if !failing_sibling {
+            assert_eq!(checked.state()["root"]["x_first"].as_i64(), Some(42));
+            assert_eq!(checked.state()["root"]["z_second"].as_i64(), Some(43));
+        }
+    }
+}
+
+#[test]
 fn retained_capture_graphs_drop_on_small_stacks_and_thread_teardown() {
     for body in [r##"{"$call": ["fn", [], {"$call": ["get", {"$ref": "row"}, 1]}]}"##, r##"{"$call": ["vm", {"$call": ["fn", [], {"$call": ["get", {"$ref": "row"}, 1]}]}]}"##] {
         let source = format!(
@@ -389,6 +445,56 @@ fn type_time_frames_it_creates_are_not_inputs() {
 }
 
 #[test]
+fn computed_head_preflight_preserves_stepping_and_catch_boundaries() {
+    let open = equivalent(include_str!("cases/types_type_time_preflight_computed_open.yaml"));
+    assert_eq!(open.status(), Status::Finished);
+    assert_eq!(root(&open), Yaml::Array(vec![Yaml::Integer(42), Yaml::Integer(40)]));
+    let inputs = open.inspect()["type_time_inputs"].clone();
+    assert_eq!(inputs.as_vec().unwrap().len(), 2);
+    for (index, forward) in [true, false].into_iter().enumerate() {
+        assert_eq!(inputs[index]["inputs"][0]["name"].as_str(), Some("forward"));
+        assert_eq!(inputs[index]["inputs"][0]["value"].as_bool(), Some(forward));
+    }
+    let closed = equivalent(include_str!("cases/types_type_time_preflight_computed_closed.yaml"));
+    assert_eq!(closed.status(), Status::Error);
+    assert_eq!(closed.state()["error"]["kind"].as_str(), Some("divide_by_zero"));
+    assert_eq!(closed.state()["error"]["phase"].as_str(), Some("type"));
+    assert!(closed.pending_effect().is_none());
+    let caught = equivalent(include_str!("cases/types_type_time_preflight_computed_caught.yaml"));
+    assert_eq!(caught.status(), Status::Finished);
+    assert_eq!(root(&caught), Yaml::Array(vec![Yaml::String("divide_by_zero".into()), Yaml::String("type".into())]));
+}
+
+#[test]
+fn computed_head_parameters_follow_retained_effect_branches() {
+    let source = r#"{$call: [let,
+      {choose: {$call: [fn, [forward], {$call: [type_time,
+        {$call: [{$call: [if, {$ref: forward},
+          {$call: [fn, [n], {$call: [add, {$ref: n}, 1]}]},
+          {$call: [fn, [n], {$call: [sub, {$ref: n}, 1]}]}]}, 41]}]}]}},
+      {$call: [choose, {$call: [effect, input, null]}]}]}"#;
+    let mut pending = Vm::load(source);
+    pending.run();
+    assert_eq!(pending.status(), Status::Signaled);
+    assert!(pending.state()["type_time_inputs"].is_badvalue());
+    let retained = pending.inspect();
+    for (forward, answer) in [(true, 42), (false, 40)] {
+        let branch = pending.resolve_effect(Ok(Yaml::Boolean(forward)));
+        let stepped = finish_by_steps(branch.clone());
+        let mut uninterrupted = branch;
+        uninterrupted.run();
+        assert_eq!(stepped, uninterrupted);
+        assert_eq!(stepped.status(), Status::Finished);
+        assert_eq!(root(&stepped).as_i64(), Some(answer));
+        let inputs = stepped.inspect()["type_time_inputs"].clone();
+        assert_eq!(inputs[0]["inputs"][0]["name"].as_str(), Some("forward"));
+        assert_eq!(inputs[0]["inputs"][0]["value"].as_bool(), Some(forward));
+        assert_eq!(stepped.state()["effects"].as_vec().unwrap().len(), 1);
+        assert_eq!(pending.inspect(), retained);
+    }
+}
+
+#[test]
 fn external_signal_preserves_pending_effect_and_requires_explicit_resume() {
     let mut vm = Vm::load(r##"{"$call": ["effect", "time", null]}"##);
     vm.run();
@@ -436,6 +542,38 @@ fn effects_are_rejected_during_type_time_and_checking() {
     checked.check();
     assert_eq!(checked.status(), Status::Error);
     assert_eq!(checked.state()["errors"].as_vec().unwrap().len(), 2);
+}
+
+#[test]
+fn type_time_catch_and_child_boundaries_run_after_prior_effects() {
+    let caught = r#"{$call: [try, {$call: [type_time, {$call: [div, 1, 0]}]}, {$call: [fn, [error], {$ref: error}]}]}"#;
+    let child = r#"{$call: [let,
+      {original: {$call: [vm, {$call: [fn, [], {$call: [type_time, {$call: [div, 1, 0]}]}]}]},
+       stopped: {$call: [fn, [m], {$call: [eq, {$call: [get, {$call: [inspect, {$ref: m}]}, status]}, error]}]},
+       advance: {$call: [fn, [m], {$call: [step, {$ref: m}]}]}},
+      {$call: [get, {$call: [inspect, {$call: [until, {$ref: stopped}, {$ref: advance}, {$ref: original}]}]}, outcome]}]}"#;
+    let unused_handler = r#"{$call: [try, 42, {$call: [fn, [error], {$call: [type_time, {$call: [div, 1, 0]}]}]}]}"#;
+    for (body, fails_inside) in [(caught, true), (child, true), (unused_handler, false)] {
+        let source = format!("{{$call: [list, {{$call: [effect, time, null]}}, {body}]}}");
+        let mut pending = Vm::load(&source);
+        pending.run();
+        assert_eq!(pending.status(), Status::Signaled);
+        assert_eq!(pending.pending_effect().unwrap().operation, "time");
+        let retained = pending.state();
+        let mut completed = pending.resolve_effect(Ok(Yaml::Integer(7)));
+        completed.run();
+        assert_eq!(completed.status(), Status::Finished, "{body}");
+        let state = completed.state();
+        assert_eq!(state["root"][0].as_i64(), Some(7));
+        if fails_inside {
+            assert_eq!(state["root"][1]["kind"].as_str(), Some("divide_by_zero"));
+            assert_eq!(state["root"][1]["phase"].as_str(), Some("type"));
+        } else {
+            assert_eq!(state["root"][1].as_i64(), Some(42));
+        }
+        assert_eq!(state["effects"].as_vec().unwrap().len(), 1);
+        assert_eq!(pending.state(), retained);
+    }
 }
 
 #[test]

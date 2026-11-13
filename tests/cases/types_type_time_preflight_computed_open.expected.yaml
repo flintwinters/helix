@@ -1,0 +1,37 @@
+root:
+  - 42
+  - 40
+status: finished
+type_time_inputs:
+  - location:
+      path:
+        - "$call"
+        - 1
+        - choose
+        - "$call"
+        - 2
+      source: "<root>"
+    reads:
+      - function:
+          path:
+            - "$call"
+            - 1
+            - choose
+          source: "<root>"
+        name: forward
+  - location:
+      path:
+        - "$call"
+        - 1
+        - choose
+        - "$call"
+        - 2
+      source: "<root>"
+    reads:
+      - function:
+          path:
+            - "$call"
+            - 1
+            - choose
+          source: "<root>"
+        name: forward

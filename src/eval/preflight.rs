@@ -9,10 +9,11 @@
 //!   thunk runs in a child machine whose failure is an observable value, so it is the same;
 //! - a function body runs when the function is called and may read the call's arguments.
 //! A function body is entered only through a function the scan reaches (a name that resolves to a
-//! `fn` in a scanned position, or a `fn` literal passed as an operand), and only its closed
-//! regions are hoisted: those that read no parameter, directly or through the bindings they use,
+//! `fn` in a scanned position, or a `fn` literal used as an operand or computed call head), and only
+//! its closed regions are hoisted: those that read no parameter, directly or through bindings they use,
 //! so their result does not depend on any call. Open regions run when the call happens and record
-//! what they read. Imported modules are not scanned. Evaluation memoizes each root-level region's
+//! what they read. Importing a module does not scan its root, but statically reached module
+//! functions follow the same closed-region rule. Evaluation memoizes each root-level region's
 //! result for the run; a body region is recomputed by each call.
 use super::Evaluator;
 use crate::builtins::{self, Evaluation, Form};
@@ -56,10 +57,14 @@ impl Evaluator {
                                 _ => self.operands(&items[1..], &mut pending, &mut bodies, &mut entered),
                             },
                             None => {
-                                if let Some(name) = head {
+                                let operands = if let Some(name) = head {
                                     reach(self, name, items[0], &mut bodies);
-                                }
-                                self.operands(&items[1..], &mut pending, &mut bodies, &mut entered)
+                                    &items[1..]
+                                } else {
+                                    // A computed head is evaluated just like an operand.
+                                    items
+                                };
+                                self.operands(operands, &mut pending, &mut bodies, &mut entered)
                             }
                         }
                     }
@@ -70,7 +75,7 @@ impl Evaluator {
         }
         regions
     }
-    /// Queue operands; a `fn` literal in operand position is used, so its body is reached.
+    /// Queue evaluated expressions; a `fn` literal used as an operand or head is reached.
     fn operands(&self, items: &[NodeId], pending: &mut Vec<NodeId>, bodies: &mut Vec<NodeId>, entered: &mut HashSet<NodeId>) {
         let graph = self.graph();
         for &item in items.iter().rev() {
@@ -141,6 +146,10 @@ impl Evaluator {
                     pending.extend(items[1..].iter());
                     match graph.identifier(items[0]) {
                         Some(name) if builtins::arity(name).is_none() => mention(items[0], name),
+                        None => {
+                            pending.push(items[0]);
+                            Ok(None)
+                        }
                         _ => Ok(None),
                     }
                 }

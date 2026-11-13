@@ -179,7 +179,9 @@ impl Vm {
             return;
         }
         self.checking = true;
-        let mut evaluator = self.evaluator.as_ref().unwrap().clone();
+        // Collection and final root assembly use ordinary evaluation throughout.
+        // Retaining the load-time queue would run preflight only when collection succeeds.
+        let mut evaluator = Arc::new(self.evaluator.as_ref().unwrap().for_node(ROOT));
         for node in evaluator.check_nodes() {
             let mut machine = Self {
                 evaluator: Some(Arc::new(evaluator.for_node(node))),
@@ -195,6 +197,8 @@ impl Vm {
                 let state = Arc::make_mut(&mut evaluator);
                 state.remaining_work = runner.remaining_work;
                 state.remaining_values = runner.remaining_values;
+                state.scopes = runner.scopes;
+                state.type_inputs = runner.type_inputs.clone();
                 state.memo.extend(runner.memo.clone());
             }
             if let Some(error) = machine.error.take() {

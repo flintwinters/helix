@@ -850,17 +850,25 @@ does not complete the broader audits below:
   roots are not scanned merely because they are imported; reached functions
   retain the existing closed-region preflight rule. No new evaluation mode,
   module protocol or builtin is introduced.
+- The phase audit keeps preflight as scheduling over the existing evaluator.
+  Computed heads now participate in region discovery and parameter-dependency
+  analysis; check mode consistently collects reached work and retains inputs
+  from memoized closures. The [phase contract](LANGUAGE.md#type-time-evaluation)
+  explains timing, input determinism, migration and the workload reasons for
+  retaining handler, child-machine, parameter and import boundaries.
+  The `type_time`, `execution` and provider suites pair placement examples
+  with completed effects and retained-machine evidence. Parameter-independence
+  analysis remains conservative; this is not a claim of complete static inference.
 - Remaining friction is explicit: lexical map fields can shadow outer names;
   YAML call wrappers make implementation verbose;
   review, phase and effect metadata require careful reading. These are inputs
   to the existing audits, not reasons to add another evaluation mode or syntax
-  during this milestone. The next consolidation target is the `type_time` and
-  preflight contract, including placement, hoisting and caught failures, before
-  selecting further provider or platform breadth.
+  during this milestone. Further development feedback should exercise existing
+  policy and validation workflows; provider or platform breadth stays deferred.
 
 The audit must produce decisions and executable examples, not just an inventory. Retaining a mechanism is a valid result when its distinct purpose and cost are demonstrated. Any behavior change needs a documented migration and regression coverage.
 
-- [ ] Audit `type_time` and preflight as one evaluation contract: explain when work runs, what inputs it may depend on and how failures are caught. Exercise placement under bindings, calls, branches and handlers, and dependencies on effects. Prefer a uniform rule; justify each remaining context-sensitive exception with a required workload.
+- [x] Audit `type_time` and preflight as one evaluation contract: explain when work runs, what inputs it may depend on and how failures are caught. Exercise placement under bindings, calls, branches and handlers, and dependencies on effects. Prefer a uniform rule; justify each remaining context-sensitive exception with a required workload.
 - [ ] Audit the type/class/configuration boundaries: membership, realization, subtyping, fixed values, constraints and drift/convergence. Demonstrate which questions genuinely differ and consolidate overlapping mechanisms without conflating those questions.
 - [ ] Audit builtin and standard-library responsibilities against actual callers. Remove redundant convenience paths where ordinary composition is clear; retain primitives where semantics or measured costs require them. Namespacing or relocating code alone does not close this item.
 - [ ] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.

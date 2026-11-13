@@ -13,6 +13,7 @@ def state(h, command, source):
 
 
 def verify(h):
+    verify_computed_heads(h)
     verify_check_mode(h)
     cases = [h.root / "tests" / "cases" / f"{name}.yaml" for name in (
         "types_reflection", "types_type_time", "types_type_time_effect", "types_type_time_error")]
@@ -61,6 +62,53 @@ def verify(h):
         assert result["root"]["area"] == 12 and result["root"]["runtime_after"] == 42
     verify_linked_phases(h)
     print("type_time: run/check parity, nested phases, linked source, effect isolation and bounded evaluation")
+
+
+def verify_computed_heads(h):
+    def call(actor, *args):
+        return {"$call": [actor, *args]}
+
+    def ref(name):
+        return {"$ref": name}
+
+    increment = call("fn", ["n"], call("add", ref("n"), 1))
+    region = call("type_time", call(ref("callback"), 41))
+    bodies = [region,
+              call("let", {"alias": ref("callback")}, call("type_time", call(ref("alias"), 41))),
+              call("let", {"captured": call("fn", [], region)}, call("captured"))]
+    for body in bodies:
+        source = json.dumps(call("let", {"apply": call("fn", ["callback"], body)},
+                                 call("apply", increment)))
+        for command in ("run", "check"):
+            result = state(h, command, source)
+            assert result["status"] == "finished" and result["root"] == 42, result
+            reads = [read["name"] for region in result["type_time_inputs"] for read in region["reads"]]
+            assert reads == ["callback"], result
+
+    failure = call("fn", [], call("type_time", call("div", 1, 0)))
+    # Inline, explicitly referenced, and named heads must discover the same closed body.
+    for head in (failure, ref("fail"), "fail", call("if", True, ref("fail"), failure),
+                 call("type_time", call("get", call("list", call("div", 1, 0), failure), 1))):
+        source = json.dumps(call("let", {"fail": failure}, call("list",
+                            call("effect", "time", None), call(head))))
+        result = state(h, "run", source)
+        assert result["status"] == "error", result
+        assert result["error"]["kind"] == "divide_by_zero" and result["error"]["phase"] == "type", result
+        assert "pending_effect" not in result and not result.get("effects"), result
+        caught = json.dumps(call("let", {"fail": failure},
+                                call("try", call(head), call("fn", ["error"], ref("error")))))
+        result = state(h, "run", caught)
+        assert result["status"] == "finished" and result["root"]["kind"] == "divide_by_zero", result
+        assert result["root"]["phase"] == "type", result
+
+    # Computed-head traversal uses the same dead-branch rule and catch boundary as operands.
+    head = call("if", True, call("fn", [], 42), failure)
+    result = state(h, "run", json.dumps(call("list", call("effect", "time", None), call(head))))
+    assert result["status"] == "error" and result["error"]["phase"] == "type", result
+    head = call("try", call("type_time", call("div", 1, 0)),
+                call("fn", ["error"], call("fn", [], ref("error.kind"))))
+    result = state(h, "run", json.dumps(call(head)))
+    assert result["status"] == "finished" and result["root"] == "divide_by_zero", result
 
 
 def verify_linked_phases(h):

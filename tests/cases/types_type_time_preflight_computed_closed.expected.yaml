@@ -1,0 +1,18 @@
+error:
+  column: 49
+  kind: divide_by_zero
+  line: 4
+  message: "`div` by zero"
+  path: "/$call/2/$call/0/$call/2/$call/1"
+  phase: type
+  reference:
+    - "$call"
+    - 2
+    - "$call"
+    - 0
+    - "$call"
+    - 2
+    - "$call"
+    - 1
+phase: type
+status: error
