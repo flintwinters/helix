@@ -13,6 +13,7 @@ def check(ctx):
         verify_checks(ctx)
         verify_bodies(ctx)
         verify_policy_result_fields(ctx)
+        verify_iteration_callbacks(ctx)
         verify_name_resolution(ctx)
         verify_dotted_bindings(ctx)
         verify_record_boundaries(ctx)
@@ -38,6 +39,15 @@ def verify_checks(ctx):
     result = ctx.helix('check', '-', stdin='{"unused": {"$call": ["fn", [], {"$call": ["add", 1]}]}, "lazy": {"$call": ["if", true, 42, {"$call": ["sub", 1]}]}}')
     report = yaml.safe_load(result.stdout)
     assert result.returncode == 1 and [d['path'] for d in report['diagnostics']] == ['/lazy/$call/3', '/unused/$call/2'], result
+    # Body inference must respect the source pass's arity rejection before
+    # indexing operands, including special forms and collection operations.
+    for operands in (['map'], ['filter', 42], ['if'], ['let'], ['type_time'],
+                     ['map', 42, [], 'extra']):
+        result = ctx.helix('check', '-', stdin=json.dumps({'$call': operands}))
+        report = yaml.safe_load(result.stdout)
+        assert result.returncode == 1 and report['mode'] == 'static', result
+        assert any(item['kind'] == 'arity' and operands[0] in item['message']
+                   for item in report['diagnostics']), (operands, report)
     for source in ('[', 'x: 1\nx: 2\n'):
         result = ctx.helix('check', '-', stdin=source)
         assert result.returncode == 1 and yaml.safe_load(result.stdout)['diagnostics'][0]['kind'] == 'parse', result
@@ -165,6 +175,94 @@ def verify_policy_result_fields(ctx):
                     and (field in item['message'] or field in item.get('path', ''))]
         assert process.returncode == 1 and relevant, (operation, field, report)
         assert all(item['line'] > 0 and item['column'] > 0 for item in relevant), relevant
+
+
+def verify_iteration_callbacks(ctx):
+    """Callback obligations distinguish known nonempty inputs from possible emptiness."""
+    import copy
+    from tests.suites.source_contracts import location
+
+    original = yaml.safe_load((ctx.root / 'tooling' / 'test_policy.yaml').read_text())
+    destination = ctx.root / 'runtime' / 'static' / 'policy-mutations'
+    destination.mkdir(parents=True, exist_ok=True)
+    callback_path = '/report/$call/2/$call/1/processed_results/$call/1'
+    for label, definite in (('callback-parameter', False), ('nonempty-map-input', True)):
+        policy = copy.deepcopy(original)
+        if definite:
+            policy['report']['$call'][2]['$call'][1]['processed_results']['$call'][2] = [1]
+        else:
+            policy['result']['$call'][1][0][1] = 'integer'
+        source = json.dumps(policy, indent=2)
+        path = destination / f'{label}.yaml'
+        path.write_text(source)
+        process = ctx.helix('check', str(path.relative_to(ctx.root)))
+        path.with_suffix('.report.yaml').write_text(process.stdout)
+        report = yaml.safe_load(process.stdout)
+        findings = report['diagnostics'] if definite else report['unchecked']
+        relevant = [item for item in findings if item['path'] == callback_path]
+        assert process.returncode == int(definite) and report['mode'] == 'static' and relevant, (label, report)
+        assert all(item['kind'] == ('type' if definite else 'unchecked') and
+                   (item['line'], item['column']) == location(source, callback_path) for item in relevant), relevant
+        if not definite:
+            assert report['diagnostics'] == [], report
+
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    def fn(params, body, result=None):
+        return call('fn', params, body, *([result] if result is not None else []))
+
+    increment = fn([['n', 'integer']], call('add', {'$ref': 'n'}, 1), 'integer')
+    positive = fn([['n', 'integer']], call('gt', {'$ref': 'n'}, 0), 'boolean')
+    for actor, callback, expected in (('map', increment, [1, 2]), ('filter', positive, [1])):
+        function = fn([], call(actor, callback, [0, 1]), call('list_of', 'integer'))
+        code, report = static_report(ctx, json.dumps(function))
+        assert code == 0 and report['diagnostics'] == [] and report['unchecked'] == [], (actor, report)
+        process = ctx.helix('run', '-', stdin=json.dumps(call(function)))
+        assert process.returncode == 0 and yaml.safe_load(process.stdout)['root'] == expected, process
+
+    wrong_input = fn([['n', 'string']], {'$ref': 'n'}, 'string')
+    wrong_predicate = fn([['n', 'integer']], 'not boolean', 'string')
+    for expression, path in ((call('map', wrong_input, [1]), '/$call/1'),
+                             (call('filter', wrong_predicate, [1]), '/$call/1'),
+                             (call('map', fn(['a', 'b'], None), [1]), '/$call/1'),
+                             (call('map', increment, {}), '/$call/2')):
+        code, report = static_report(ctx, json.dumps(expression))
+        assert code == 1 and any(item['kind'] == 'type' and item['path'] == path
+                                 for item in report['diagnostics']), report
+
+    # Callback operands are values: a scalar spelling does not resolve a binding.
+    for callback, valid in (({'$ref': 'increment'}, True), ('increment', False)):
+        expression = call('let', {'increment': increment}, call('map', callback, [1]))
+        code, report = static_report(ctx, json.dumps(expression))
+        assert code == int(not valid), report
+        if valid:
+            assert report['diagnostics'] == [] and report['unchecked'] == [], report
+            process = ctx.helix('run', '-', stdin=json.dumps(expression))
+            assert process.returncode == 0 and yaml.safe_load(process.stdout)['root'] == [2], process
+        else:
+            assert any(item['kind'] == 'type' and item['path'] == '/$call/2/$call/1'
+                       for item in report['diagnostics']), report
+
+    # Empty input never invokes or even resolves the callback at runtime.
+    for actor, callback in (('map', wrong_input), ('filter', wrong_predicate),
+                            ('map', fn(['a', 'b'], None)), ('filter', 42)):
+        expression = call(actor, callback, [])
+        code, report = static_report(ctx, json.dumps(expression))
+        assert code == 0 and report['diagnostics'] == [], report
+        process = ctx.helix('run', '-', stdin=json.dumps(expression))
+        assert process.returncode == 0 and yaml.safe_load(process.stdout)['root'] == [], process
+
+    for callback in (fn(['n'], {'$ref': 'n'}), call('if', True, increment, increment)):
+        function = fn([], call('map', callback, [1]), call('list_of', 'integer'))
+        code, report = static_report(ctx, json.dumps(function))
+        assert code == 0 and report['diagnostics'] == [] and report['unchecked'], report
+
+    # A union element summary overlaps the callback input; it does not establish
+    # that every possible element fails, even when the source list is nonempty.
+    code, report = static_report(ctx, json.dumps(call('map', increment, [1, 'two'])))
+    assert code == 0 and report['diagnostics'] == [] and any(
+        item['path'] == '/$call/1' for item in report['unchecked']), report
 
 
 def verify_name_resolution(ctx):

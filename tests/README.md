@@ -134,7 +134,11 @@ return values against those real annotations. The independent host checks still
 own count/status consistency, retained evidence and execution authority. Runtime
 shape checks do not prove the whole policy statically. The static suite mutates
 the real policy to return an integer status or string exit code and requires
-field diagnostics before execution. Unknown higher-order operations and partially
+field diagnostics before execution. Callback mutations also require a precise
+unchecked obligation for an incompatible report callback over a possibly empty
+list, and a definite diagnostic for a nonempty incompatible input. Collection
+controls preserve empty-input callback skipping, declared output types and
+conservative handling of unknown callbacks. Unknown higher-order operations and partially
 proved results remain explicit `unchecked` obligations in
 `runtime/static/tooling-test_policy.yaml`. Mutation sources and diagnostics are
 retained in `runtime/static/policy-mutations/`.

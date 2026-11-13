@@ -1,7 +1,8 @@
 //! Static checking of function bodies and call sites without running anything. It covers a
 //! deliberately small fragment: literals, annotated parameters, arithmetic and comparison,
-//! conditions, structural records and constant-key access/update, calls of named functions with
-//! annotated parameters, and annotation expressions made of literal type constructors.
+//! conditions, sequences, declared map/filter callbacks, structural records and constant-key
+//! access/update, calls of named functions with annotated parameters, and annotation expressions
+//! made of literal type constructors.
 //! Unknown record fields retain `any`; other unsupported expressions have no static type.
 //!
 //! A finding is an `error` only when the program is certain to fail: the inferred type and the
@@ -89,6 +90,19 @@ impl Checker<'_> {
                 Site::Entry(target) => self.infer(target),
             },
             Syntax::Call(items) => self.infer_call(id, items),
+            Syntax::Sequence(items) => {
+                let mut members = Vec::new();
+                for &item in items {
+                    let ty = self.infer(item).unwrap_or(Ty::Any);
+                    // Compact homogeneous runs without quadratic shape comparisons.
+                    if members.last() != Some(&ty) { members.push(ty); }
+                }
+                Some(Ty::List(Box::new(match members.len() {
+                    0 => Ty::Never,
+                    1 => members.pop().unwrap(),
+                    _ => Ty::Union(members),
+                })))
+            }
             Syntax::Mapping(entries) => Some(Ty::Record(entries.iter().map(|(name, node)| {
                 (name.clone(), Field { ty: self.infer(*node).unwrap_or(Ty::Any), required: true, default: None })
             }).collect())),
@@ -107,6 +121,12 @@ impl Checker<'_> {
         let Some(actor) = head.and_then(builtins::descriptor) else {
             return self.infer_user_call(id, items);
         };
+        // The source pass owns arity diagnostics; it still invokes this pass
+        // after finding them, so malformed calls must not index missing operands.
+        let (min, max) = actor.arity;
+        if operands.len() < min || max.is_some_and(|max| operands.len() > max) {
+            return None;
+        }
         let number = Ty::Union(vec![Ty::Int, Ty::Float]);
         match actor.name {
             "add" | "sub" | "mul" | "div" | "mod" | "neg" => {
@@ -133,6 +153,7 @@ impl Checker<'_> {
             }
             "let" => self.infer(operands[1]),
             "type_time" => self.infer(operands[0]),
+            "map" | "filter" => self.collection(actor.name, operands[0], operands[1]),
             "get" if operands.len() == 2 => {
                 let Value::String(key) = self.scalar(operands[1])? else { return None };
                 let Ty::Record(fields) = self.infer(operands[0])? else { return None };
@@ -156,6 +177,56 @@ impl Checker<'_> {
             "fn" => self.function_type(id),
             _ => None,
         }
+    }
+
+    /// Iteration calls its callback only when an element exists. Collection
+    /// annotations permit empty lists, so only literal nonempty inputs justify
+    /// definite invocation errors; no contextual callback-body inference is used.
+    fn collection(&mut self, actor: &str, callback: NodeId, input: NodeId) -> Option<Ty> {
+        let list = Ty::List(Box::new(Ty::Any));
+        let actual = self.expect(input, actor, &list);
+        let Some(Ty::List(element)) = actual else {
+            if actual.as_ref().is_none_or(|ty| ty.overlaps(&list)) {
+                self.unchecked(input, format!("`{actor}` input has no known list element type"));
+            }
+            return None;
+        };
+        let nonempty = match self.graph.syntax(input) {
+            Syntax::Sequence(items) if items.is_empty() => return Some(Ty::List(Box::new(Ty::Never))),
+            Syntax::Sequence(_) => true,
+            _ => false,
+        };
+        let signature = self.infer(callback);
+        let Some(Ty::Fn(params, result, _)) = signature else {
+            match signature {
+                Some(ty) if !ty.overlaps(&Ty::Function) && nonempty =>
+                    self.error(callback, format!("`{actor}` callback is {}, expected function", ty.name())),
+                _ => self.unchecked(callback, format!("`{actor}` callback has no known callable signature")),
+            }
+            return if actor == "filter" { Some(Ty::List(element)) } else { None };
+        };
+        if params.len() != 1 {
+            let message = format!("`{actor}` callback takes {} arguments, expected 1", params.len());
+            if nonempty { self.error(callback, message); } else { self.unchecked(callback, message); }
+        } else {
+            self.callback_type(callback, actor, "argument", &element, &params[0], nonempty);
+        }
+        if actor == "filter" {
+            self.callback_type(callback, actor, "result", &result, &Ty::Bool, nonempty);
+            Some(Ty::List(element))
+        } else {
+            if *result == Ty::Any {
+                self.unchecked(callback, "`map` callback result has no more specific static type than any".into());
+            }
+            Some(Ty::List(result))
+        }
+    }
+
+    fn callback_type(&mut self, at: NodeId, actor: &str, part: &str, actual: &Ty, expected: &Ty, nonempty: bool) {
+        if actual.below(expected) { return; }
+        let message = format!("`{actor}` callback {part} is {}, expected {}", actual.name(), expected.name());
+        if nonempty && !actual.overlaps(expected) { self.error(at, message); }
+        else { self.unchecked(at, message); }
     }
 
     /// An operand's type, reporting a definite mismatch with `expected` and noting a possible one.
