@@ -420,6 +420,53 @@ def verify_report_reliability(h):
                         assert stderr.getvalue().count(token) == 1, stderr.getvalue()
 
 
+def verify_robustness_state_validation(h, directory):
+    """Malformed exit-1 states are failures, with the actual rejected input retained."""
+    import json
+    import subprocess
+
+    class Mutated(TestContext):
+        @staticmethod
+        def mutations(source):
+            yield '2\n'
+
+    case = directory / 'malformed-state.yaml'
+    case.write_text('1\n')
+    malformed = [
+        {'status': 'error', 'error': {'kind': 7, 'message': 'bad', 'line': 1, 'column': 1}},
+        {'status': 'signaled', 'pending_effect': {'id': True, 'operation': 'clock', 'payload': None}},
+    ]
+    retained = []
+    for state in malformed:
+        for reject_original in (True, False):
+            rejected = json.dumps(state) + '\n'
+            warning = 'retained malformed-state diagnostic\n'
+            inputs = []
+
+            def run(args, **kwargs):
+                inputs.append(kwargs['input'])
+                assert kwargs['cwd'] == case.parent, kwargs
+                if reject_original or kwargs['input'] == '2\n':
+                    return subprocess.CompletedProcess(args, 1, rejected, warning)
+                return subprocess.CompletedProcess(args, 0, 'status: finished\nroot: 1\n', '')
+
+            context = Mutated(root=h.root, binary=h.binary, timeout=h.timeout,
+                              commands={case.parent: 'run'}, process_runner=run)
+            failures = context.robustness_case(case)
+            assert len(failures) == 1, (state, reject_original, failures)
+            assert inputs == (['1\n'] if reject_original else ['1\n', '2\n']), inputs
+            diagnostic = failures[0]
+            assert '[robustness]' in diagnostic and 'exit: 1' in diagnostic, diagnostic
+            evidence = h.root / next(line.removeprefix('evidence: ') for line in diagnostic.splitlines()
+                                     if line.startswith('evidence: '))
+            assert evidence not in retained, (evidence, retained)
+            assert (evidence / 'actual.yaml').read_text() == rejected
+            assert (evidence / 'stderr.txt').read_text() == warning
+            assert (evidence / 'input.yaml').read_text() == inputs[-1]
+            retained.append(evidence)
+    assert all(path.is_dir() for path in retained), retained
+
+
 def verify_completed_output(h):
     """Completed rows are visible before later work; JSON remains one final report."""
     import contextlib
@@ -603,6 +650,7 @@ def verify(h):
         verify_timeout_output(h, Path(directory))
         verify_selection(h, Path(directory))
         verify_import_context(h, Path(directory))
+        verify_robustness_state_validation(h, Path(directory))
         case = Path(directory) / "probe.yaml"
         case.write_text("1")
         failed = FailedOriginal(root=h.root, binary=h.binary, timeout=h.timeout,

@@ -115,6 +115,16 @@ original deterministic run when explicitly requested. The `harness` suite uses
 independent expected outcomes and injected process faults, including well-formed
 false-success responses, to check this self-hosting boundary.
 
+Terminal CLI observations must carry usable diagnostic and effect-request
+metadata. Error kinds/messages are strings and source positions are positive
+integers; collected and single-error fields are both validated when supplied.
+Pending effect IDs are nonnegative integers and operations are strings. Boolean
+values do not count as integer metadata. Roots, error extensions and request
+payloads remain arbitrary data. Both YAML loader paths and injected malformed
+original/mutated robustness outputs exercise these checks; rejected outputs retain
+their exact input, stdout and stderr. This is a CLI observation contract, not a
+validator for arbitrary VM inspection states or restorable snapshots.
+
 Suite selection, ordering, prerequisite insertion, blessing skips and report
 aggregation live in `tooling/test_policy.yaml`. Aggregation sums per-suite failure
 counts while retaining the original messages and logs in each result; it does not

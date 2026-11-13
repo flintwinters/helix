@@ -87,8 +87,11 @@ class GoldenPolicyError(RuntimeError):
 
 
 def malformed_state(out: str, returncode: int) -> str | None:
-    """Why `out` is not a well-formed serialized state (None if it is): the contract that nothing panics
-    and every error is structured, machine-parseable data."""
+    """Validate terminal CLI observations and required diagnostic/request metadata.
+
+    Roots, diagnostic extensions and request payloads remain unrestricted data.
+    This is not a validator for arbitrary VM inspection states or disk restoration.
+    """
     import yaml
 
     if returncode not in (0, 1):
@@ -107,12 +110,29 @@ def malformed_state(out: str, returncode: int) -> str | None:
         pending = state.get("pending_effect")
         if not isinstance(pending, dict) or not {"id", "operation", "payload"} <= pending.keys():
             return "signaled state has no explicit pending effect"
+        if type(pending["id"]) is not int or pending["id"] < 0:
+            return "pending effect id must be a nonnegative integer"
+        if not isinstance(pending["operation"], str):
+            return "pending effect operation must be a string"
     if state["status"] == "finished" and "root" not in state:
         return "finished state has no root"
     if state["status"] == "error":
-        errors = state.get("errors") if "errors" in state else [state.get("error")]
-        if not (isinstance(errors, list) and errors and all(isinstance(e, dict) and ERROR_FIELDS <= e.keys() for e in errors)):
+        errors = state.get("errors", [])
+        if not isinstance(errors, list) or ("errors" in state and not errors):
+            return "errors must be a nonempty list"
+        if "error" in state:
+            errors = [state["error"], *errors]
+        if not errors:
             return f"error lacks fields {sorted(ERROR_FIELDS)}"
+        for index, error in enumerate(errors):
+            if not isinstance(error, dict) or not ERROR_FIELDS <= error.keys():
+                return f"error {index} lacks fields {sorted(ERROR_FIELDS)}"
+            for field in ("kind", "message"):
+                if not isinstance(error[field], str):
+                    return f"error {index} {field} must be a string"
+            for field in ("line", "column"):
+                if type(error[field]) is not int or error[field] < 1:
+                    return f"error {index} {field} must be a positive integer"
     return None
 
 
