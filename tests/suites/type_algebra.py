@@ -89,6 +89,8 @@ def verify_fixed_origins(h):
 
 
 def verify(h):
+    from tests.suites.predicate_identity import verify as verify_predicates
+    verify_predicates(h)
     from tests.suites.subtype_laws import verify as verify_subtypes
     verify_subtypes(h)
     verify_constraint_descriptors(h)

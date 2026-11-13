@@ -887,8 +887,11 @@ The audit must produce decisions and executable examples, not just an inventory.
   structural collection targets without enumerating combinations. `subtype_laws`
   pairs independently chosen membership witnesses with subtype implications; static
   checks retain overlapping numeric cases as unchecked rather than false errors.
-  Predicate identity across numerically equal captured values remains an identified
-  audit target, including constraint composition and reconstruction.
+  Predicate proofs and inheritance preserve exact source/capture identity while public
+  equality remains unchanged. `predicate_identity` covers distinct equal captures,
+  inherited declarations, constraint composition and reconstruction. Reconstruction
+  preserves the original constraint list and checks inherited requirements through
+  the existing subtype relation; it no longer subtracts language-equal predicates.
 - [ ] Audit builtin and standard-library responsibilities against actual callers. Remove redundant convenience paths where ordinary composition is clear; retain primitives where semantics or measured costs require them. Namespacing or relocating code alone does not close this item.
 - [ ] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
 - [ ] Separate the core language reference from library catalogs and host-operation manuals, retaining discoverable links and one authoritative description per contract. A basic program should not require learning provider lifecycles or command retry policy.

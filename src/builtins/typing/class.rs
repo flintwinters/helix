@@ -15,7 +15,7 @@ use crate::value::Hash;
 use crate::value::Value;
 
 use super::construct::{descriptor, reflect};
-use super::ty::{check_ty, constraints, mapping, predicate, subtype, value_kind, Field, Pred, Ty, ValueKind, DEFAULT_SOURCE};
+use super::ty::{check_ty, constraints, mapping, predicate, same_predicate, subtype, value_kind, Field, Pred, Ty, ValueKind, DEFAULT_SOURCE};
 use crate::builtins::fault::Fault;
 use crate::builtins::value::{equal, is_function};
 use crate::model::string as s;
@@ -212,10 +212,19 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where
                 narrow(&field, spec, &inherited, name, at.fields, pred)?;
                 (spec.clone(), name.to_string())
             }
-            None => match inherited.iter().find(|other| !equal(&other.spec, &inherited[0].spec)) {
-                Some(other) => return Err(conflict(&field, &inherited[0].declared_by, &other.declared_by, "different declarations", name)),
-                None => (inherited[0].spec.clone(), inherited[0].declared_by.clone()),
-            },
+            None => {
+                // Keep the original declaration agreement, including metadata, and require
+                // a type proof too: language equality of captured predicates is insufficient.
+                for other in inherited.iter().skip(1) {
+                    let agrees = equal(&other.spec, &inherited[0].spec)
+                        && Field::parse(&other.spec).map_err(|why| Fault::at(1, "type", why))?
+                            == Field::parse(&inherited[0].spec).map_err(|why| Fault::at(1, "type", why))?;
+                    if !agrees {
+                        return Err(conflict(&field, &inherited[0].declared_by, &other.declared_by, "different declarations", name));
+                    }
+                }
+                (inherited[0].spec.clone(), inherited[0].declared_by.clone())
+            }
         };
         let value = match own_value {
             Some(v) => Some((v.clone(), name.to_string(), ValueKind::Explicit)),
@@ -237,7 +246,7 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where
     }
     let mut constraints: Vec<Value> = Vec::new();
     for constraint in parents.iter().flat_map(|p| &p.constraints) {
-        if !constraints.contains(constraint) {
+        if !constraints.iter().any(|existing| same_predicate(existing, constraint)) {
             constraints.push(constraint.clone());
         }
     }

@@ -71,7 +71,7 @@ pub fn is_primitive(name: &str) -> bool {
     PRIMITIVES.contains(&name)
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) enum Ty {
     Any,
     Never,
@@ -98,6 +98,36 @@ pub(crate) enum Ty {
     Enum(Vec<Value>),
     /// A base type plus the raw source of a predicate.
     Refine(Box<Ty>, Value),
+}
+
+/// Proofs require the same retained predicate, not merely language-equal captured values.
+/// Inspection equality preserves scalar representation and function source/environment identity.
+pub(super) fn same_predicate(left: &Value, right: &Value) -> bool {
+    left.same_view(right)
+}
+
+impl PartialEq for Ty {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Any, Self::Any) | (Self::Never, Self::Never)
+            | (Self::Int, Self::Int) | (Self::Float, Self::Float)
+            | (Self::Str, Self::Str) | (Self::Bool, Self::Bool)
+            | (Self::Null, Self::Null) | (Self::Secret, Self::Secret)
+            | (Self::Function, Self::Function) | (Self::Vm, Self::Vm) => true,
+            (Self::Fn(pa, ra, ea), Self::Fn(pb, rb, eb)) => pa == pb && ra == rb && ea == eb,
+            (Self::List(a), Self::List(b)) | (Self::Map(a), Self::Map(b)) => a == b,
+            (Self::Record(a), Self::Record(b)) => a == b,
+            (Self::Class(fa, va, ca), Self::Class(fb, vb, cb)) => {
+                fa == fb && va == vb && ca.len() == cb.len()
+                    && ca.iter().zip(cb).all(|(a, b)| same_predicate(a, b))
+            }
+            (Self::Union(a), Self::Union(b)) => a == b,
+            // Enum membership and fixed values deliberately retain language equality.
+            (Self::Enum(a), Self::Enum(b)) => a == b,
+            (Self::Refine(a, pa), Self::Refine(b, pb)) => a == b && same_predicate(pa, pb),
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -442,7 +472,7 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
         (Ty::List(x), Ty::List(y)) | (Ty::Map(x), Ty::Map(y)) => subtype(x, y, pred),
         (Ty::Record(fa) | Ty::Class(fa, ..), Ty::Record(fb)) => record_subtype(fa, fb, pred),
         (Ty::Class(fa, xa, ca), Ty::Class(fb, xb, cb)) => {
-            record_subtype(fa, fb, pred) && xb.iter().all(|(n, v)| xa.iter().any(|(m, w)| m == n && equal(v, w))) && cb.iter().all(|c| ca.contains(c))
+            record_subtype(fa, fb, pred) && xb.iter().all(|(n, v)| xa.iter().any(|(m, w)| m == n && equal(v, w))) && cb.iter().all(|c| ca.iter().any(|a| same_predicate(a, c)))
         }
         _ => false,
     }

@@ -250,7 +250,12 @@ objects:
                       - expected a class declaration
             - "$call":
                 - let
-                - declared:
+                - constraints_present:
+                    "$call":
+                      - has
+                      - "$ref": t
+                      - constraints
+                  declared:
                     "$call":
                       - extend
                       - "$ref": name
@@ -281,63 +286,45 @@ objects:
                               - provenance
                           - "$ref": name
                           - value
-                  inherited:
-                    "$call":
-                      - fold
-                      - "$call":
-                          - fn
-                          - - result
-                            - parent
-                          - "$call":
-                              - concat
-                              - "$ref": result
-                              - "$call":
-                                  - get
-                                  - "$ref": parent
-                                  - constraints
-                                  - []
-                      - []
-                      - "$ref": parents
                 - "$call":
                     - let
-                    - constrained:
+                    - candidate:
                         "$call":
-                          - fold
+                          - if
+                          - "$ref": constraints_present
                           - "$call":
-                              - fn
-                              - - result
-                                - check
-                              - "$call":
-                                  - constrain
-                                  - "$ref": result
-                                  - "$ref": check
-                          - "$ref": declared
-                          - "$call":
-                              - filter
-                              - "$call":
-                                  - fn
-                                  - - check
-                                  - "$call":
-                                      - not
-                                      - "$call":
-                                          - has
-                                          - "$ref": inherited
-                                          - "$ref": check
+                              - set
+                              - "$ref": declared
+                              - constraints
                               - "$call":
                                   - get
                                   - "$ref": t
                                   - constraints
-                                  - []
+                          - "$ref": declared
                     - "$call":
                         - if
                         - "$call":
-                            - get
-                            - "$ref": t
-                            - concrete
+                            - subtype
+                            - "$call":
+                                - if
+                                - "$ref": constraints_present
+                                - "$ref": candidate
+                                - "$ref": t
+                            - "$ref": declared
                         - "$call":
-                            - realize
-                            - "$ref": constrained
-                        - "$ref": constrained
+                            - if
+                            - "$call":
+                                - get
+                                - "$ref": t
+                                - concrete
+                            - "$call":
+                                - realize
+                                - "$ref": candidate
+                            - "$ref": candidate
+                        - "$call":
+                            - raise
+                            - type
+                            - Redeclaration must preserve every inherited requirement
     environment: []
     kind: function
     location:
@@ -713,7 +700,12 @@ objects:
                             - expected a class declaration
                   - "$call":
                       - let
-                      - declared:
+                      - constraints_present:
+                          "$call":
+                            - has
+                            - "$ref": t
+                            - constraints
+                        declared:
                           "$call":
                             - extend
                             - "$ref": name
@@ -744,63 +736,45 @@ objects:
                                     - provenance
                                 - "$ref": name
                                 - value
-                        inherited:
-                          "$call":
-                            - fold
-                            - "$call":
-                                - fn
-                                - - result
-                                  - parent
-                                - "$call":
-                                    - concat
-                                    - "$ref": result
-                                    - "$call":
-                                        - get
-                                        - "$ref": parent
-                                        - constraints
-                                        - []
-                            - []
-                            - "$ref": parents
                       - "$call":
                           - let
-                          - constrained:
+                          - candidate:
                               "$call":
-                                - fold
+                                - if
+                                - "$ref": constraints_present
                                 - "$call":
-                                    - fn
-                                    - - result
-                                      - check
-                                    - "$call":
-                                        - constrain
-                                        - "$ref": result
-                                        - "$ref": check
-                                - "$ref": declared
-                                - "$call":
-                                    - filter
-                                    - "$call":
-                                        - fn
-                                        - - check
-                                        - "$call":
-                                            - not
-                                            - "$call":
-                                                - has
-                                                - "$ref": inherited
-                                                - "$ref": check
+                                    - set
+                                    - "$ref": declared
+                                    - constraints
                                     - "$call":
                                         - get
                                         - "$ref": t
                                         - constraints
-                                        - []
+                                - "$ref": declared
                           - "$call":
                               - if
                               - "$call":
-                                  - get
-                                  - "$ref": t
-                                  - concrete
+                                  - subtype
+                                  - "$call":
+                                      - if
+                                      - "$ref": constraints_present
+                                      - "$ref": candidate
+                                      - "$ref": t
+                                  - "$ref": declared
                               - "$call":
-                                  - realize
-                                  - "$ref": constrained
-                              - "$ref": constrained
+                                  - if
+                                  - "$call":
+                                      - get
+                                      - "$ref": t
+                                      - concrete
+                                  - "$call":
+                                      - realize
+                                      - "$ref": candidate
+                                  - "$ref": candidate
+                              - "$call":
+                                  - raise
+                                  - type
+                                  - Redeclaration must preserve every inherited requirement
           without_field:
             "$call":
               - fn

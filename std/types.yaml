@@ -81,7 +81,8 @@
       - {"$call": ["keys", {"$ref": "specs"}]}
   - {"$ref": "map"}
 # Class declaration is recoverable from reflection plus the parent classes: provenance says which
-# fields and values the class itself declared, and constraints beyond the parents' are its own.
+# fields and values the class itself declared. Retain the complete constraint list;
+# language equality is not a proof that two predicates enforce the same requirement.
 "own_entries":
   "$call":
   - "fn"
@@ -122,18 +123,14 @@
           - {"$ref": "parents"}
           - {"$call": ["from_fields", {"$call": ["own_entries", {"$call": ["get", {"$ref": "t"}, "fields"]}, {"$call": ["get", {"$ref": "t"}, "provenance"]}, {"$ref": "name"}, "type"]}]}
           - {"$call": ["own_entries", {"$call": ["get", {"$ref": "t"}, "values"]}, {"$call": ["get", {"$ref": "t"}, "provenance"]}, {"$ref": "name"}, "value"]}
-        "inherited":
-          "$call":
-          - "fold"
-          - {"$call": ["fn", ["result", "parent"], {"$call": ["concat", {"$ref": "result"}, {"$call": ["get", {"$ref": "parent"}, "constraints", []]}]}]}
-          - []
-          - {"$ref": "parents"}
+        constraints_present: {$call: [has, {$ref: t}, constraints]}
       - "$call":
         - "let"
-        - "constrained":
-            "$call":
-            - "fold"
-            - {"$call": ["fn", ["result", "check"], {"$call": ["constrain", {"$ref": "result"}, {"$ref": "check"}]}]}
-            - {"$ref": "declared"}
-            - {"$call": ["filter", {"$call": ["fn", ["check"], {"$call": ["not", {"$call": ["has", {"$ref": "inherited"}, {"$ref": "check"}]}]}]}, {"$call": ["get", {"$ref": "t"}, "constraints", []]}]}
-        - {"$call": ["if", {"$call": ["get", {"$ref": "t"}, "concrete"]}, {"$call": ["realize", {"$ref": "constrained"}]}, {"$ref": "constrained"}]}
+        - candidate: {$call: [if, {$ref: constraints_present},
+            {$call: [set, {$ref: declared}, constraints, {$call: [get, {$ref: t}, constraints]}]},
+            {$ref: declared}]}
+        - $call:
+          - if
+          - {$call: [subtype, {$call: [if, {$ref: constraints_present}, {$ref: candidate}, {$ref: t}]}, {$ref: declared}]}
+          - {$call: [if, {$call: [get, {$ref: t}, concrete]}, {$call: [realize, {$ref: candidate}]}, {$ref: candidate}]}
+          - {$call: [raise, type, Redeclaration must preserve every inherited requirement]}
