@@ -62,6 +62,14 @@ make inactive bytes look activated. This is operational evidence, not attestatio
 against an outside actor forging the header. A concurrent external mutation
 between review and application remains a race in this scope.
 
+File-install errors retain the original kind/message and expose
+`completed_paths`: replacements already visible in the filesystem. `uncertain`
+and, when present, `uncertain_path` identify a replacement or durability step
+whose completion was not confirmed. These details remain in the operator's
+structured host error even when no whole resource completed. An orchestration
+`changed: false` counts completed resources; it does not negate partial host
+mutations or the need for fresh observation after failure.
+
 A reload sends one HUP and keeps the master process. Before acknowledging it,
 the supervisor waits up to five seconds for the old worker identities (PID and
 start-time tick) to leave the master's child set; the command then checks the

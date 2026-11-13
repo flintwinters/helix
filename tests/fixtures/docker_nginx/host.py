@@ -18,6 +18,15 @@ import time
 from common import CONFIG, CONTENT, DATA, FILES, RUN, SERVER, event, supervisor, wait_until
 
 
+class FileInstallFailure(RuntimeError):
+    """Keep visible partial replacements separate from resource completion."""
+
+    def __init__(self, cause, progress):
+        super().__init__(str(cause))
+        self.cause = cause
+        self.progress = progress
+
+
 def command(arguments, timeout=45):
     RUN.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryFile(dir=RUN) as stdout, tempfile.TemporaryFile(dir=RUN) as stderr:
@@ -135,7 +144,7 @@ def checked_files(payload):
     return result
 
 
-def install_files(payload, fault):
+def install_files(payload, fault, progress):
     files = checked_files(payload)
     if fault == 'permission-denied':
         raise PermissionError('injected managed-file permission denial')
@@ -170,12 +179,17 @@ def install_files(payload, fault):
                     os.fsync(stream.fileno())
                 os.chown(staging, spec['uid'], spec['gid'])
                 os.chmod(staging, spec['mode'])
+                progress['uncertain'] = True
+                progress['uncertain_path'] = str(path)
                 os.replace(staging, path)
+                progress['completed_paths'].append(str(path))
                 parent = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
                 try:
                     os.fsync(parent)
                 finally:
                     os.close(parent)
+                progress['uncertain'] = False
+                progress.pop('uncertain_path')
                 event('files-install', path=str(path))
             finally:
                 Path(staging).unlink(missing_ok=True)
@@ -221,7 +235,11 @@ def execute(operation, payload):
     if operation in ('package-install', 'package-remove'):
         result = package(operation, payload, fault)
     elif operation == 'files-install':
-        result = install_files(payload, fault)
+        progress = {'completed_paths': [], 'uncertain': False}
+        try:
+            result = install_files(payload, fault, progress)
+        except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
+            raise FileInstallFailure(error, progress) from error
     elif operation == 'files-remove':
         for name in payload['paths']:
             path = Path(name)
@@ -253,7 +271,11 @@ def main():
         result = execute(sys.argv[1], payload)
         print(json.dumps(result, sort_keys=True))
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
-        print(json.dumps({'error': {'kind': type(error).__name__, 'message': str(error)}}, sort_keys=True))
+        cause = error.cause if isinstance(error, FileInstallFailure) else error
+        detail = {'kind': type(cause).__name__, 'message': str(cause)}
+        if isinstance(error, FileInstallFailure):
+            detail.update(error.progress)
+        print(json.dumps({'error': detail}, sort_keys=True))
         return 1
     return 0
 
