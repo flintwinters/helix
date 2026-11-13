@@ -33,6 +33,7 @@ SUITES = {
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
     "interactive": "REPL, dependency watch, completion and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
+    "target_coordination": "Cross-journal target exclusion and persistent crash uncertainty for cooperating controllers",
     "secret_effects": "Opaque host secret inputs, suppressed captures, fresh grants and safe durable reconciliation",
     "durable_effects": "Disk effect recovery, controller death, uncertain-outcome reconciliation and fresh grants",
     "snapshots": "Fresh-process executable restoration, editable locals, imported sources and malformed snapshots",
@@ -130,6 +131,7 @@ def parser():
         "snapshot": "Save executable state after a bounded number of transitions",
         "restore": "Restore executable state; optionally save after more transitions",
         "checkpoint": "Inspect durable effects and recovery action without execution",
+        "target-release": "Acknowledge independently established target quiescence after recovery",
         "trace": "Stream evaluation transitions as YAML documents",
         "watch": "Re-run when program or transitive import contents change",
     }.items():

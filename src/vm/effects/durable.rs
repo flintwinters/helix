@@ -23,27 +23,7 @@ impl Checkpoint {
             .unwrap_or(Path::new("."));
         let name = path.file_name().ok_or("checkpoint requires a filename")?;
         let lock = parent.join(format!("{}.lock", name.to_string_lossy()));
-        let mut options = OpenOptions::new();
-        options.read(true).write(true).create(true);
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::OpenOptionsExt;
-            options.mode(0o600).custom_flags(libc::O_NOFOLLOW);
-        }
-        let file = options
-            .open(&lock)
-            .map_err(|e| format!("checkpoint lock: {e}"))?;
-        #[cfg(unix)]
-        {
-            use std::os::fd::AsRawFd;
-            if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
-                return Err("checkpoint is owned by another controller".into());
-            }
-        }
-        #[cfg(not(unix))]
-        {
-            return Err("durable effect checkpoints currently require Unix file locks".into());
-        }
+        let file = super::locks::exclusive(&lock)?;
         Ok(Self {
             path: path.to_owned(),
             _lock: file,

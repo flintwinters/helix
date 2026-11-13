@@ -124,3 +124,11 @@ pub fn checkpoint(path: &str) -> ExitCode {
         Err(message) => error(&message),
     }
 }
+
+/// Explicit acknowledgement of independently established target quiescence.
+pub fn target_release(path: &str) -> ExitCode {
+    match crate::vm::effects::locks::TargetGuard::acknowledge(Path::new(path)) {
+        Ok(()) => { println!("{{\"status\":\"released\"}}"); ExitCode::SUCCESS }
+        Err(message) => error(&message),
+    }
+}

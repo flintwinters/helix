@@ -441,6 +441,35 @@ can write their inputs elsewhere; this is not process containment, memory erasur
 an external secret-manager protocol. The caller must keep credential sources private
 and ensure providers do not subsequently read deployed secrets back into the VM.
 
+## Coordinating one target across journals
+
+Add `--target-lock PATH` to every `perform` invocation that can mutate the same
+target. This is a caller-selected coordination domain, independent of checkpoint
+paths and SSH aliases. Cooperating controllers sharing that filesystem path and
+working Unix lock semantics cannot run simultaneously, even with different
+journals. Use a protected directory and never unlink or replace a live lock file.
+No source, inventory entry or restored journal grants this coordination authority;
+the caller must supply the same target lock again when resuming.
+
+Before dispatch, the controller durably marks the target held. Successful terminal
+execution with no failed effect outcomes releases it. Process death, interruption,
+failed effects (including caught failures) or persistence failure retain the marker.
+A later controller refuses it even after the OS lock becomes free. This deliberately
+fails closed, including failures that happened before any actual mutation.
+
+For recovery, inspect the journal, independently establish that any surviving local
+or remote mutator has stopped, observe partial state, and reconcile the exact
+uncertain request. Then run `./manage.py runtime target-release PATH` to acknowledge
+that observation, and resume with fresh grants and the same `--target-lock PATH`.
+Release cannot steal a live controller's OS lock. It cannot prove the observation,
+choose compensation or reconcile a journal on the operator's behalf.
+
+This qualifies one shared lock domain, not a remote lease/fencing service. Controllers
+using different paths or bypassing the flag, unrelated administrators, broken lock
+semantics and filesystem partitions are outside the contract. General multi-controller
+remote fencing remains a separate obligation. Fresh provider observations and review
+matching remain necessary after obtaining the lock.
+
 ## Durable effect checkpoints
 
 `./manage.py runtime perform --checkpoint run.json [grants] program.yaml`
@@ -483,8 +512,9 @@ original effect; the next resume continues ordinary success or error handling.
 It cannot certify that the observation is true. Seeded random reconciliation
 checks the supplied result against the saved deterministic generator state.
 
-These are Unix controller journals, not distributed transactions. A file lock
-protects one journal, not a target shared by multiple journals. Copying a journal
+These are Unix controller journals, not distributed transactions. A checkpoint file lock
+protects one journal. The separate target lock above coordinates cooperating
+controllers across journals in an explicitly shared lock domain. Copying a journal
 creates an independent branch and may repeat future effects. An uncertain remote
 operation may still be running; observing it and choosing a safe outcome remain
 provider/operator responsibilities. Immutable VM state does not roll back host

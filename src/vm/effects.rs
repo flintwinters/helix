@@ -13,6 +13,8 @@ mod sqlite;
 mod command;
 #[path = "effects/ssh.rs"]
 mod ssh;
+#[path = "effects/locks.rs"]
+pub mod locks;
 #[path = "effects/secrets.rs"]
 mod secrets;
 #[path = "effects/durable.rs"]

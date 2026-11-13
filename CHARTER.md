@@ -824,6 +824,7 @@ account; it is not an arbitrary-host bootstrap or a real playbook migration.
   - [x] Caller-owned journals distinguish undispatched pending requests, completed success/failure and uncertain dispatch after controller death (`durable_effects`, `ssh_nginx`); this is one journal, not fleet-wide coordination
   - [x] Refuse uncertain replay until explicit exact-request reconciliation records an independently observed outcome (`durable_effects`, `ssh_nginx`); branch-local effect IDs do not establish exactly-once external execution, and the journal cannot prove the caller’s observation
   - [ ] Detect stale plans and conflicting concurrent controllers through preconditions and suitable locking
+    - [x] A caller-selected target lock excludes cooperating controllers using different journals in one shared lock domain; persistent held markers block reuse after controller death until explicit quiescence acknowledgement (`target_coordination`). Remote fencing, partitions and nonparticipating writers remain open.
   - [ ] Expose partial success and pending work; recovery never reports an entire fleet successful because some hosts completed
     - [x] Read-only `checkpoint` reports completed outcomes, source paths, exact pending work and the required recovery action for one journal, including while its writer is active (`durable_effects`).
   - [ ] Declare compensations and irreversible operations explicitly; external rollback is not implied by immutable VM state
