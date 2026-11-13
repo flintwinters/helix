@@ -1,0 +1,6 @@
+# A region that reads a parameter, directly or through a binding, is not hoisted: it runs per call
+# with the argument. Hoisting it would fail on the unbound parameter before the run.
+"a_read": {"$call": ["effect", "read_file", {"path": "unused"}]}
+"direct": {"$call": ["fn", ["n"], {"$call": ["type_time", {"$call": ["add", {"$ref": "n"}, 1]}]}]}
+"through": {"$call": ["fn", ["n"], {"$call": ["let", {"m": {"$ref": "n"}}, {"$call": ["type_time", {"$ref": "m"}]}]}]}
+"z_use": [{"$call": ["direct", 1]}, {"$call": ["through", 2]}]

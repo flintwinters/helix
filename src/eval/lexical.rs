@@ -108,6 +108,11 @@ impl Function {
         found
     }
 }
+/// Where a lexical name is declared.
+pub(super) enum Site {
+    Entry(NodeId),
+    Parameter(NodeId, usize),
+}
 impl Evaluator {
     pub fn check_nodes(&self) -> Vec<NodeId> {
         let mut pending = vec![ROOT];
@@ -215,11 +220,18 @@ impl Evaluator {
         Some((binding, frame))
     }
     fn resolve_name(&self, from: NodeId, name: &str) -> Option<(Binding, Option<(NodeId, usize)>)> {
+        Some(match self.lexical_site(from, name)? {
+            Site::Entry(node) => (Binding::Node(node), None),
+            Site::Parameter(function, index) => {
+                let frame = self.environment.iter().rev().find(|f| f.function == function)?;
+                (Binding::Value(frame.args[index].clone()), Some((function, frame.born)))
+            }
+        })
+    }
+    /// The innermost lexical declaration of `name` visible from `from`, independent of any frame.
+    pub(super) fn lexical_site(&self, from: NodeId, name: &str) -> Option<Site> {
         let entry = |entries: &[(String, NodeId)]| {
-            entries
-                .iter()
-                .find(|(k, _)| k == name)
-                .map(|(_, id)| (Binding::Node(*id), None))
+            entries.iter().find(|(k, _)| k == name).map(|(_, id)| Site::Entry(*id))
         };
         let mut child = from;
         while let Some(id) = self.graph().lexical_parent(child) {
@@ -236,13 +248,7 @@ impl Evaluator {
                             self.parameters(&function)
                                 .ok()
                                 .and_then(|p| p.iter().position(|(n, _)| n == name))
-                                .and_then(|i| {
-                                    self.environment
-                                        .iter()
-                                        .rev()
-                                        .find(|f| f.function == id)
-                                        .map(|f| (Binding::Value(f.args[i].clone()), Some((id, f.born))))
-                                })
+                                .map(|index| Site::Parameter(id, index))
                         }
                         (Some("let" | "closure"), Kind::Map(entries)) => entry(entries),
                         _ => None,

@@ -1,0 +1,6 @@
+# A region in the body of a reached function that reads no parameter is hoisted: the call sits in an
+# untaken branch, yet the failing region stops the run although `a_read` sorts first.
+"a_read": {"$call": ["effect", "read_file", {"path": "unused"}]}
+"bad": {"$call": ["expect", {"port": "http"}, {"$call": ["record", "port", {"$ref": "integer"}]}]}
+"check": {"$call": ["fn", [], {"$call": ["type_time", {"$ref": "bad"}]}]}
+"z_use": {"$call": ["if", false, 0, {"$call": ["check"]}]}
