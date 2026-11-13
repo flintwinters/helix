@@ -1,0 +1,24 @@
+# A replacement discards its old field; malformed surviving fields are rejected.
+$call:
+- let
+- malformed: {type: record, fields: {bad: 3, kept: boolean}}
+  raising: {$call: [fn, [value], {$call: [raise, predicate_ran, declaration invoked its predicate]}]}
+  kind: {$call: [fn, [error], {$call: [get, {$ref: error}, kind]}]}
+- repaired: {$call: [with_field, {$ref: malformed}, bad, integer]}
+  retained: {$call: [try, {$call: [with_field, {$ref: malformed}, good, string]}, {$ref: kind}]}
+  nested:
+    $call:
+    - try
+    - {$call: [with_field, {type: record, fields: {bad: {type: optional, of: {type: list, of: 3}}}}, good, string]}
+    - {$ref: kind}
+  predicate_not_run:
+    $call:
+    - keys
+    - $call:
+      - get
+      - $call:
+        - with_field
+        - {$call: [record, guarded, {$call: [refine, integer, {$ref: raising}]}]}
+        - added
+        - string
+      - fields

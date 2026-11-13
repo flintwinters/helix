@@ -19,12 +19,18 @@ def verify(h):
         (["record"], {"type": "record", "fields": {}}),
         (["with_field", {"type": "record", "fields": {"x": "integer"}}, "x", "string"],
          {"type": "record", "fields": {"x": "string"}}),
+        # Replacement removes the old declaration; only surviving fields need
+        # to be valid, so replacing the malformed field remains a valid repair.
+        (["with_field", {"type": "record", "fields": {"bad": 3, "kept": "boolean"}}, "bad", "integer"],
+         {"type": "record", "fields": {"bad": "integer", "kept": "boolean"}}),
     ]
     for count in (1, 32, 256):
         fields = {f"field_{index:03}": "integer" for index in range(count)}
         constructors.append((["record", *(item for pair in fields.items() for item in pair)],
                              {"type": "record", "fields": fields}))
+        constructors.append((["types.from_fields", fields], {"type": "record", "fields": fields}))
     source = {f"c{index}": {"$call": args} for index, (args, _) in enumerate(constructors)}
+    source = {"$call": ["let", {"types": {"$call": ["import", "std:types"]}}, source]}
     assert checked(h, json.dumps(source)) == {
         f"c{index}": expected for index, (_, expected) in enumerate(constructors)
     }
@@ -46,6 +52,14 @@ def verify(h):
         (["with_field", {"type": "record", "fields": {}}, "x", 3], 3, "type", "expected a type"),
         (["with_field", {"type": "record"}, "x", "integer"], 1, "type", "malformed record type"),
     ]
+    # Adding one valid field cannot carry malformed surviving schemas into a
+    # supposedly constructed record. The invalid input is the original record.
+    for spec in (3, {"type": "optional", "of": 3},
+                 {"type": "default", "of": 3, "default": 0},
+                 {"type": "list", "of": 3},
+                 {"type": "record", "fields": {"nested": 3}}):
+        invalid.append((["with_field", {"type": "record", "fields": {"bad": spec}},
+                         "good", "string"], 1, "type", "expected a type"))
     for args, blame, kind, message in invalid:
         result = h.helix("run", "-", stdin=json.dumps({"probe": {"$call": args}}))
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, result

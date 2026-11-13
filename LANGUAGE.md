@@ -132,6 +132,14 @@ do not use a second checker. The module's `build(actor, args)` is the assembly
 implementation, not a replacement for the checked public constructors. Its
 immutable record updates copy growing maps, so large records can incur quadratic
 copying costs and all policy execution shares the caller's resource budgets.
+`with_field` validates the replacement spec and every retained field through the
+same field parser as `record`. A malformed retained field raises `type` at the
+input record argument; replacing that malformed field itself is allowed because
+its old spec is discarded. Migration: repair or remove malformed sibling specs
+before extending a hand-built record. Validation checks declaration shape without
+running refinement predicates or rechecking default values against their types.
+Repeated extensions also reparse growing field sets; they do not certify or cache
+the validity of arbitrary descriptor data.
 
 ```yaml
 list_type: {$call: [fn, [t], {$call: [list_of, {$ref: t}]}]}

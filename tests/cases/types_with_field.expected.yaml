@@ -1,0 +1,12 @@
+root:
+  nested: type
+  predicate_not_run:
+    - added
+    - guarded
+  repaired:
+    fields:
+      bad: integer
+      kept: boolean
+    type: record
+  retained: type
+status: finished

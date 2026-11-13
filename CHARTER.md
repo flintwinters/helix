@@ -905,7 +905,14 @@ The audit must produce decisions and executable examples, not just an inventory.
   alone cannot supervise an interpreter testing itself. Honest deterministic
   blessing on a reported roundtrip failure remains supported. These observation
   checks belong to the independent host, not another runtime primitive or a
-  fallback policy. This does not complete the remaining builtin/library audit.
+  fallback policy. Checked descriptor construction supplies another boundary:
+  `with_field` now parses surviving field declarations through the same parser
+  as `record` before Helix assembles the new descriptor. Replacing a discarded
+  malformed field remains possible; refinement execution stays deferred. The
+  descriptor suite covers original argument blame and repeated `std:types`
+  reconstruction, alongside a golden repair/rejection example. No additional
+  constructor or descriptor certification mechanism is introduced. This does
+  not complete the remaining builtin/library audit.
 - [x] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
   The tested arithmetic example exposes nested call wrappers, but ordinary named
   intermediates suffice. Production `tooling/test_policy.yaml` already names the

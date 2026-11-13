@@ -120,8 +120,14 @@ pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Op
             }
             if !matches!(&args[1], Value::String(_)) { return Err(Fault::expected(1, "string field name", &args[1])); }
             spec_arg(args, 2)?;
-            if !matches!(record.get(&s("fields")), Some(Value::Hash(_))) {
+            let Some(Value::Hash(fields)) = record.get(&s("fields")) else {
                 return Err(Fault::at(0, "type", "malformed record type".into()));
+            };
+            // The replacement may repair a malformed removed field, but every
+            // surviving declaration must meet the same contract as `record`.
+            // Parsing checks shape without running defaults or predicates.
+            for (_, spec) in fields.iter().filter(|(name, _)| *name != &args[1]) {
+                Field::parse(spec).map_err(|why| Fault::at(0, "type", why))?;
             }
         }
         _ => return Ok(None),
