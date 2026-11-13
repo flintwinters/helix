@@ -871,29 +871,27 @@ does not complete the broader audits below:
 The audit must produce decisions and executable examples, not just an inventory. Retaining a mechanism is a valid result when its distinct purpose and cost are demonstrated. Any behavior change needs a documented migration and regression coverage.
 
 - [x] Audit `type_time` and preflight as one evaluation contract: explain when work runs, what inputs it may depend on and how failures are caught. Exercise placement under bindings, calls, branches and handlers, and dependencies on effects. Prefer a uniform rule; justify each remaining context-sensitive exception with a required workload.
-- [ ] Audit the type/class/configuration boundaries: membership, realization, subtyping, fixed values, constraints and drift/convergence. Demonstrate which questions genuinely differ and consolidate overlapping mechanisms without conflating those questions.
-  The first boundary repairs make `constrain` invalidate realization and share an explicit
-  provenance-kind parser between class construction and membership/subtyping.
-  `class_constraints_realized`, `class_provenance` and `type_algebra` cover retained
-  original classes, revalidation, label collisions, equal inherited default/fixed
-  values in both parent orders, reconstruction and legacy-descriptor rejection.
-  Planning remains comparison of already realized values, without predicate execution;
-  closed membership and extra-preserving convergence answer different questions,
-  demonstrated on the same missing, changed and extra-field values in `convergence_policy`.
-  Shared constraint-shape validation rejects malformed declarations even through
-  `subtype(t, any)` and empty collections; `provider_contract` independently checks
-  that invalid observation/result schemas fail before observer effects. Valid predicate
-  bodies remain deferred. The broader audit remains open; these repairs do not
-  certify manually edited descriptors.
-  Numeric enum/literal proofs now cover equality-preserving scalar alternatives and
-  structural collection targets without enumerating combinations. `subtype_laws`
-  pairs independently chosen membership witnesses with subtype implications; static
-  checks retain overlapping numeric cases as unchecked rather than false errors.
-  Predicate proofs and inheritance preserve exact source/capture identity while public
-  equality remains unchanged. `predicate_identity` covers distinct equal captures,
-  inherited declarations, constraint composition and reconstruction. Reconstruction
-  preserves the original constraint list and checks inherited requirements through
-  the existing subtype relation; it no longer subtracts language-equal predicates.
+- [x] Audit the type/class/configuration boundaries: membership, realization, subtyping, fixed values, constraints and drift/convergence. Demonstrate which questions genuinely differ and consolidate overlapping mechanisms without conflating those questions.
+  The [boundary decisions and migrations](LANGUAGE.md#classes-machines-and-drift)
+  distinguish closed membership, completed configuration, conservative inclusion
+  proofs and observation comparison. `convergence_policy` applies membership and
+  planning to the same missing, changed and extra-field values and retains an
+  independent 128-field comparison oracle.
+  Construction and membership share provenance-kind and constraint-shape validation;
+  realization and membership use the same field checker and predicate engine.
+  Proofs and inheritance reuse exact retained-value identity where choosing a
+  representative can affect behavior; public numeric/value equality is unchanged.
+  `class_merge_identity` prevents parent order from choosing distinguishable values
+  and covers explicit resolution and priority; `predicate_identity` covers retained constraints and reconstruction.
+  Reconstruction preserves the complete constraint list and checks inherited
+  requirements through the existing subtype relation instead of subtracting predicates.
+  `class_constraints_realized`, `class_provenance`, `subtype_laws`, `type_algebra`
+  and static checks cover invalidation, default/pin distinctions, declaration errors,
+  exact captures and bounded numeric equality-class proofs. `provider_contract`
+  independently verifies malformed schemas fail before observation effects.
+  Full algebra proofs/completeness, arbitrary edited-descriptor certification and
+  empty-plan equivalence to membership remain separate unresolved promises; this
+  audit establishes the implemented boundaries, not those broader claims.
 - [ ] Audit builtin and standard-library responsibilities against actual callers. Remove redundant convenience paths where ordinary composition is clear; retain primitives where semantics or measured costs require them. Namespacing or relocating code alone does not close this item.
 - [ ] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
 - [ ] Separate the core language reference from library catalogs and host-operation manuals, retaining discoverable links and one authoritative description per contract. A basic program should not require learning provider lifecycles or command retry policy.

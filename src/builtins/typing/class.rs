@@ -213,15 +213,14 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where
                 (spec.clone(), name.to_string())
             }
             None => {
-                // Keep the original declaration agreement, including metadata, and require
-                // a type proof too: language equality of captured predicates is insufficient.
+                // Defaults and captured predicates can distinguish language-equal values;
+                // choosing an inherited declaration must not change behavior with parent order.
                 for other in inherited.iter().skip(1) {
-                    let agrees = equal(&other.spec, &inherited[0].spec)
-                        && Field::parse(&other.spec).map_err(|why| Fault::at(1, "type", why))?
-                            == Field::parse(&inherited[0].spec).map_err(|why| Fault::at(1, "type", why))?;
-                    if !agrees {
+                    if !other.spec.same_view(&inherited[0].spec) {
                         return Err(conflict(&field, &inherited[0].declared_by, &other.declared_by, "different declarations", name));
                     }
+                    // Preserve validation of duplicate declarations even when no value is set.
+                    Field::parse(&inherited[0].spec).map_err(|why| Fault::at(1, "type", why))?;
                 }
                 (inherited[0].spec.clone(), inherited[0].declared_by.clone())
             }
@@ -232,9 +231,19 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where
                 let supplied: Vec<&(Value, String, ValueKind)> = inherited.iter().filter_map(|s| s.value.as_ref()).collect();
                 match supplied.iter().find(|other| !equal(&other.0, &supplied[0].0)) {
                     Some(other) => return Err(conflict(&field, &supplied[0].1, &other.1, "different values", name)),
-                    // An equal default cannot erase another parent's fixed-value obligation.
-                    None => supplied.iter().find(|v| v.2 == ValueKind::Explicit)
-                        .or_else(|| supplied.first()).map(|v| (*v).clone()),
+                    None => {
+                        // An equal default cannot erase another parent's fixed-value obligation.
+                        let selected = supplied.iter().copied().find(|v| v.2 == ValueKind::Explicit)
+                            .or_else(|| supplied.first().copied());
+                        if let Some(first) = selected {
+                            // Only winning contributions must agree on a representative:
+                            // membership equality alone does not preserve predicate behavior.
+                            if let Some(other) = supplied.iter().find(|v| v.2 == first.2 && !v.0.same_view(&first.0)) {
+                                return Err(conflict(&field, &first.1, &other.1, "different value representations", name));
+                            }
+                        }
+                        selected.cloned()
+                    }
                 }
             }
         };

@@ -599,7 +599,7 @@ A class is a type that can be extended. `{$call: [class, name, record_type, valu
 
 `{$call: [realize, {$ref: class}]}` fills defaults and checks fixed values against the declared types. A class with required fields still unfilled is `abstract`: realizing it raises an `abstract` error whose `data.missing` lists each field and `required_by`. Every class records provenance: for each field, the declaring class (`type`) and where the value came from (`value`, e.g. `default of X`), so "who set this" is answered from state. Each valued field also carries `value_kind: explicit` or `value_kind: default`; this discriminator determines fixed-value semantics, independently of class names and display labels. Older valued descriptors without this discriminator must be rebuilt from their declarations; the runtime rejects ambiguous or malformed kinds instead of inferring them from labels.
 
-A child's explicit value wins over an inherited default. Equal inherited values retain an explicit fixed-value obligation if any parent supplies one, regardless of parent order. Different inherited
+A child's explicit value wins over an inherited default. Equal inherited values retain an explicit fixed-value obligation if any parent supplies one, regardless of parent order. Inherited declarations must agree exactly, including defaults and captured predicates. Among competing explicit values (or defaults when none is explicit), the selected representation must also agree exactly: `1` versus `1.0`, signed zero, nested differences and distinct captures can change a predicate's result despite language equality. Such ambiguity raises `conflict` in either parent order. Resolve value ambiguity with an explicit child value; resolve declaration/default ambiguity by redeclaring the field. An explicit value still takes precedence over a language-equal realized default without requiring matching representations. Fixed-value membership continues to use language equality. Different inherited
 defaults are conflicting field declarations; resolve them by explicitly
 redeclaring the field and supplying a valid value or default. For a defaulted field without an explicit fixed value, membership only
 checks the field's type: it may be absent or contain a different valid value. Realization fills an absent defaulted field; membership never fills
@@ -609,6 +609,17 @@ before supplying the child value. Map merge is shallow and right-biased; neither
 operation happens implicitly during inheritance (`class_collection_overrides`).
 
 Class membership (`is`, `expect`, and `violations`) checks the closed field schema (including field refinements), then every explicitly fixed value (the field must be present and equal; values realization filled from a default are not pinned), then each whole-record constraint on the checked map; constraints run only when the earlier checks pass. A realized class's `values` are members of it (`types_class_membership`). As a subtype, a class is below a record with fitting fields, and below another class only when it also pins every value and carries every constraint of the other.
+
+These operations answer distinct questions over the same class:
+
+| Question | Operation | Contract |
+| --- | --- | --- |
+| Is a supplied value allowed? | `is`, `violations`, `expect` | Closed fields, explicit pins and reached predicates; no default filling. |
+| Can a declaration produce a complete valid configuration? | `realize` (`inherit` also realizes) | Fill defaults, require missing fields, check values and constraints, mark concrete. |
+| Is every admitted source value proved acceptable to another type? | `subtype` | Structural rules and conservative predicate identity; unproved relationships return false. |
+| Which configured values differ from observations? | `drift`, `converge` | Compare concrete configured values; report/preserve extras and do not rerun predicates. |
+
+A realized default `x: 7` can admit `{}` or `{x: 8}` while planning a change to `7`. Conversely, `{x: 7, extra: keep}` fails closed membership but produces an empty convergence plan. These distinctions are intentional; realization and membership share field/predicate checking, while planning shares the existing data-comparison policy.
 
 Machine state is compared as data. `{$call: [drift, {$ref: class}, {$ref: actual}]}` returns `{missing, changed, extra}`; `{$call: [converge, {$ref: class}, {$ref: actual}]}` returns ordered `set` steps and is empty when all configured values match. Extra observed fields are reported in `drift.extra` but never produce removal steps. An empty plan is therefore not equivalent to membership in the closed record schema. Neither acts: applying a plan is a separate effectful step. The
 [`std:provider` contract](#resource-provider-contract) supplies an explicit reviewed
