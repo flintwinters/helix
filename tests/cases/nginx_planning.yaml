@@ -56,3 +56,7 @@ $call:
   absent_no_op: {$call: [step_names, {$call: [nginx.plan, {$call: [set, {$ref: config}, state, absent]}, {$ref: empty}]}]}
   invalid_port: {$call: [try, {$call: [nginx.resolve, {$call: [set, {$ref: config}, port, 0]}]}, {$call: [fn, [error], {$ref: error.kind}]}]}
   invalid_server_name: {$call: [try, {$call: [nginx.resolve, {$call: [set, {$ref: config}, server_name, "bad; injected"]}]}, {$call: [fn, [error], {$ref: error.kind}]}]}
+  dependencies: {$call: [get, {$call: [nginx.plan, {$ref: config}, {$ref: empty}]}, dependencies]}
+  missing_dependencies: {$call: [get, {$call: [get, {$call: [nginx.apply, {$ref: config}, {}]}, error]}, kind]}
+  tampered_dependencies: {$call: [get, {$call: [get, {$call: [nginx.apply, {$ref: config}, {$call: [set, {$call: [nginx.plan, {$ref: config}, {$ref: empty}]}, dependencies, {}]}]}, error]}, kind]}
+  public_exports: {$call: [keys, {$ref: nginx}]}

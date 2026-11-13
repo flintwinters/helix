@@ -7,6 +7,7 @@ $call:
   orchestration: {$call: [import, 'std:orchestration']}
   machine: {$call: [import, 'std:machine']}
   lists: {$call: [import, 'std:list']}
+  maps: {$call: [import, 'std:map']}
   # Literal server identities, not an nginx directive/template injection surface.
   server_name_type:
     $call:
@@ -174,9 +175,121 @@ $call:
     observe: {$ref: observe_state}
     plan: {$ref: steps}
     apply: {$ref: execute}
-  plan: {$call: [fn, [config, before], {$call: [provider.plan, {$ref: descriptor}, {$call: [resolve, {$ref: config}]}, {$ref: before}, {$call: [context, {$ref: config}]}]}]}
-  check: {$call: [fn, [config], {$call: [provider.check, {$ref: descriptor}, {$call: [resolve, {$ref: config}]}, {$call: [context, {$ref: config}]}]}]}
-  apply: {$call: [fn, [config, review], {$call: [provider.apply, {$ref: descriptor}, {$call: [resolve, {$ref: config}]}, {$call: [context, {$ref: config}]}, {$ref: review}]}]}
+  # Review includes the exact graph; remove only that verified decoration before
+  # handing the remaining report to the provider's strict fresh-review comparison.
+  with_dependencies:
+    $call:
+    - fn
+    - - config
+      - report
+    - $call:
+      - set
+      - $ref: report
+      - dependencies
+      - $call:
+        - graph
+        - $ref: config
+  plan:
+    $call:
+    - fn
+    - - config
+      - before
+    - $call:
+      - with_dependencies
+      - $ref: config
+      - $call:
+        - provider.plan
+        - $ref: descriptor
+        - $call:
+          - resolve
+          - $ref: config
+        - $ref: before
+        - $call:
+          - context
+          - $ref: config
+  check:
+    $call:
+    - fn
+    - - config
+    - $call:
+      - with_dependencies
+      - $ref: config
+      - $call:
+        - provider.check
+        - $ref: descriptor
+        - $call:
+          - resolve
+          - $ref: config
+        - $call:
+          - context
+          - $ref: config
+  provider_review:
+    $call:
+    - fn
+    - - config
+      - review
+    - $call:
+      - if
+      - $call:
+        - eq
+        - $call:
+          - get
+          - $ref: review
+          - dependencies
+          - null
+        - $call:
+          - graph
+          - $ref: config
+      - $call:
+        - maps.remove
+        - $ref: review
+        - dependencies
+      - $call:
+        - raise
+        - nginx_review_dependencies
+        - The reviewed dependency graph does not match this workload
+  apply:
+    $call:
+    - fn
+    - - config
+      - review
+    - $call:
+      - apply_config
+      - $call:
+        - resolve
+        - $ref: config
+      - $ref: review
+  apply_config:
+    $call:
+    - fn
+    - - config
+      - review
+    - $call:
+      - try
+      - $call:
+        - with_dependencies
+        - $ref: config
+        - $call:
+          - provider.apply
+          - $ref: descriptor
+          - $ref: config
+          - $call:
+            - context
+            - $ref: config
+          - $call:
+            - provider_review
+            - $ref: config
+            - $ref: review
+      - $call:
+        - fn
+        - - error
+        - $call:
+          - with_dependencies
+          - $ref: config
+          - $call:
+            - provider.failure_report
+            - preflight
+            - $ref: error
   verify:
     $call:
     - fn

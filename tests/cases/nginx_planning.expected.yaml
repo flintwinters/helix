@@ -5,6 +5,28 @@ root:
     - service
   content_only:
     - content
+  dependencies:
+    handlers: {}
+    resources:
+      configuration:
+        notify: []
+        requires:
+          - package
+      content:
+        notify: []
+        requires:
+          - package
+          - configuration
+      package:
+        notify: []
+        requires: []
+      service:
+        notify: []
+        requires:
+          - package
+          - configuration
+          - content
+    version: 1
   initial:
     - package
     - configuration
@@ -12,7 +34,17 @@ root:
     - service
   invalid_port: type
   invalid_server_name: type
+  missing_dependencies: nginx_review_dependencies
   no_op: []
+  public_exports:
+    - apply
+    - check
+    - input
+    - observation_type
+    - observe
+    - plan
+    - resolve
+    - verify
   removal:
     - package
     - configuration
@@ -20,6 +52,7 @@ root:
     - service
   stopped:
     - service
+  tampered_dependencies: nginx_review_dependencies
 status: finished
 type_time_inputs:
   - location:
