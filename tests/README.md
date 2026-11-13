@@ -244,6 +244,13 @@ and malformed modules on every dogfood run.
 
 ## Failure artifacts
 
+The inventory command keeps grouping policy in Helix while independently checking
+clean completion and exact coverage of the host-observed files and directories.
+It retains `runtime/inventory.input.yaml`, `inventory.state.yaml`, and
+`inventory.stderr.txt`; rejected results also get unique replayable failure
+artifacts. A contradictory state or altered counts/membership cannot be printed
+as a successful inventory report.
+
 Golden, robustness and minimized fuzz failures identify the source path and contract stage, show a
 rerun command, and save complete output evidence under `runtime/test-failures/`.
 Golden mismatches include a bounded unified diff. Round-trip and damaged-input

@@ -5,6 +5,32 @@ from pathlib import Path
 
 import yaml
 
+from tooling.test_reports import failure
+from tooling.test_runner import malformed_state
+
+
+def _report_problem(value, records):
+    """Check preservation of host observations without recomputing grouping policy."""
+    if not isinstance(value, list):
+        return "inventory report must be a list"
+    observed = {record["path"]: record["directory"] for record in records}
+    directories, paths = set(), set()
+    for row in value:
+        if (not isinstance(row, dict) or set(row) != {"directory", "count", "files"}
+                or not isinstance(row["directory"], str) or row["directory"] in directories
+                or not isinstance(row["files"], list) or not row["files"]
+                or type(row["count"]) is not int or row["count"] != len(row["files"])):
+            return "inventory report has an invalid directory row"
+        directories.add(row["directory"])
+        for path in row["files"]:
+            if (not isinstance(path, str) or path in paths
+                    or path not in observed or observed[path] != row["directory"]):
+                return "inventory report changed or duplicated an observed file"
+            paths.add(path)
+    if paths != observed.keys():
+        return "inventory report omitted observed files"
+    return None
+
 
 def report(helix, records):
     """Run the same pure shim used by golden cases; retain replayable source and state."""
@@ -31,9 +57,19 @@ def inventory(helix, root: Path) -> int:
     artifacts.mkdir(exist_ok=True)
     (artifacts / "inventory.input.yaml").write_text(source)
     (artifacts / "inventory.state.yaml").write_text(result.stdout)
-    if result.returncode:
-        print(result.stdout or result.stderr, file=sys.stderr, end="")
+    (artifacts / "inventory.stderr.txt").write_text(result.stderr)
+    problem = malformed_state(result.stdout, result.returncode)
+    if problem is None and (result.returncode != 0 or result.stderr):
+        problem = "inventory policy did not finish cleanly"
+    if problem is None:
+        state = yaml.safe_load(result.stdout)
+        if state["status"] != "finished" or not isinstance(state["root"], dict) or "report" not in state["root"]:
+            problem = "inventory policy must finish with root.report"
+        else:
+            problem = _report_problem(state["root"]["report"], records)
+    if problem is not None:
+        print(failure(root, root / "tooling" / "inventory.yaml", "inventory", problem,
+                      "run", result, source=source), file=sys.stderr)
         return 1
-    state = yaml.safe_load(result.stdout)
     print(yaml.safe_dump(state["root"]["report"], allow_unicode=True, sort_keys=False), end="")
     return 0
