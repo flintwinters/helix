@@ -83,3 +83,14 @@ fn malformed_version_and_references_are_rejected() {
     assert!(Vm::restore(&doc.to_string()).is_err());
     assert!(Vm::restore(&run(Vm::load("42")).state_string()).is_err());
 }
+
+#[test]
+fn expanded_source_references_obey_the_snapshot_budget() {
+    // A small source can otherwise expand dramatically when a long ancestor key
+    // occurs in every saved path. Saving must stop while constructing the graph.
+    let source = format!("? \"{}\"\n: [{}]", "k".repeat(16_000), vec!["0"; 2500].join(","));
+    let vm = Vm::load(&source);
+    assert_eq!(vm.status(), Status::Ready);
+    assert!(vm.snapshot().unwrap_err().contains("budget"));
+    assert_eq!(vm.status(), Status::Ready);
+}

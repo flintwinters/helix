@@ -47,7 +47,7 @@ impl Encoder {
             return Err("snapshot encoding budget exhausted".into());
         }
         self.depth += 1;
-        self.units += 1;
+        self.units += 32;
         let result = v.put(self);
         self.depth -= 1;
         result
@@ -74,17 +74,29 @@ impl Encoder {
         );
         Ok(J::String(name))
     }
+    fn account(&mut self, size: usize) -> R<()> {
+        self.units = self.units.saturating_add(size);
+        if self.units > MAX_BYTES {
+            return Err("snapshot encoding budget exhausted".into());
+        }
+        Ok(())
+    }
+    fn location(&mut self, graph: &Graph, node: NodeId) -> R<J> {
+        let reference = graph::reference(graph, node)?;
+        self.account(reference.to_string().len())?;
+        Ok(reference)
+    }
     fn n(&mut self, n: &NodeId) -> R<J> {
-        let p = self.program.as_ref().ok_or("node without source program")?;
-        graph::reference(&p.graph, *n)
+        let p = self.program.clone().ok_or("node without source program")?;
+        self.location(&p.graph, *n)
     }
     fn caller(&mut self, n: &NodeId) -> R<J> {
         let p = self
             .caller
-            .as_ref()
-            .or(self.program.as_ref())
+            .clone()
+            .or(self.program.clone())
             .ok_or("call without source program")?;
-        graph::reference(&p.graph, *n)
+        self.location(&p.graph, *n)
     }
     fn ns(&mut self, ns: &Vec<NodeId>) -> R<J> {
         Ok(J::Array(ns.iter().map(|n| self.n(n)).collect::<R<_>>()?))

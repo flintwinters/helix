@@ -19,7 +19,17 @@ macro_rules! scalar {
         }
     };
 }
-scalar!(String);
+impl Wire for String {
+    fn put(&self, e: &mut Encoder) -> R<J> {
+        e.account(self.len())?;
+        Ok(J::String(self.clone()))
+    }
+    fn get(j: &J, _: &mut Decoder) -> R<Self> {
+        j.as_str()
+            .map(str::to_owned)
+            .ok_or("expected string".into())
+    }
+}
 scalar!(usize);
 scalar!(u64);
 scalar!(i64);
@@ -84,7 +94,7 @@ impl Wire for Value {
             Self::Boolean(v) => serde_json::json!({"boolean": v}),
             Self::Integer(v) => serde_json::json!({"integer": v}),
             Self::Float(v) => serde_json::json!({"float": v.to_string()}),
-            Self::String(v) => serde_json::json!({"string": v}),
+            Self::String(v) => serde_json::json!({"string": e.v(v)?}),
             Self::Array(v) => serde_json::json!({"list": e.v(v)?}),
             Self::Hash(v) => {
                 let mut map = serde_json::Map::new();

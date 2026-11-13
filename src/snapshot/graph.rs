@@ -18,30 +18,30 @@ fn put_program(p: &Program, e: &mut Encoder) -> R<J> {
         let kind = match &node.kind {
             Kind::Scalar { value } => serde_json::json!({"scalar":e.v(value)?}),
             Kind::Seq(items) => {
-                serde_json::json!({"sequence":items.iter().map(|n| reference(g,*n)).collect::<R<Vec<_>>>()?})
+                serde_json::json!({"sequence":items.iter().map(|n| e.location(g,*n)).collect::<R<Vec<_>>>()?})
             }
             Kind::Map(items) => {
-                serde_json::json!({"mapping":items.iter().map(|(k,n)| Ok(serde_json::json!([k,reference(g,*n)?]))).collect::<R<Vec<_>>>()?})
+                serde_json::json!({"mapping":items.iter().map(|(k,n)| Ok(serde_json::json!([k,e.location(g,*n)?]))).collect::<R<Vec<_>>>()?})
             }
         };
         rows.push(
-            serde_json::json!({"location":reference(g,n)?,"span":e.v(&node.span)?,"kind":kind}),
+            serde_json::json!({"location":e.location(g,n)?,"span":e.v(&node.span)?,"kind":kind}),
         );
     }
     let mut links = p.modules.linked.iter().collect::<Vec<_>>();
     links.sort_by_key(|(n, _)| **n);
     let mut policies = BTreeMap::new();
     for (name, n) in &p.modules.policies {
-        policies.insert(name, reference(g, *n)?);
+        policies.insert(name, e.location(g, *n)?);
     }
-    let sorted = |set: &HashSet<usize>| -> R<Vec<J>> {
+    fn sorted(e: &mut Encoder, g: &Graph, set: &HashSet<usize>) -> R<Vec<J>> {
         let mut ids = set.iter().copied().collect::<Vec<_>>();
         ids.sort_unstable();
-        ids.into_iter().map(|n| reference(g, n)).collect()
-    };
+        ids.into_iter().map(|n| e.location(g, n)).collect()
+    }
     Ok(
-        serde_json::json!({"nodes":rows,"linked":links.into_iter().map(|(a,b)|Ok(serde_json::json!([reference(g,*a)?,reference(g,*b)?]))).collect::<R<Vec<_>>>()?,
-        "policies":policies,"roots":sorted(&p.modules.roots)?,"visible_roots":sorted(&p.modules.visible_roots)?}),
+        serde_json::json!({"nodes":rows,"linked":links.into_iter().map(|(a,b)|Ok(serde_json::json!([e.location(g,*a)?,e.location(g,*b)?]))).collect::<R<Vec<_>>>()?,
+        "policies":policies,"roots":sorted(e, g, &p.modules.roots)?,"visible_roots":sorted(e, g, &p.modules.visible_roots)?}),
     )
 }
 fn get_program(j: &J, d: &mut Decoder) -> R<Program> {
