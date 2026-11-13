@@ -1,0 +1,57 @@
+# Appends one runtime invocation to the usage log. tooling/usage_log.py observes the invocation
+# and runs this program under `perform`, granting write access only to the database's directory.
+# Argument: DATABASE_PATH; the observed record arrives as JSON on stdin (argv already JSON text).
+# This file owns the table definition.
+$call:
+- let
+-
+    sqlite: {$call: [import, 'std:sqlite']}
+    json: {$call: [import, 'std:json']}
+    text: {$call: [import, 'std:text']}
+    schema: |
+      CREATE TABLE IF NOT EXISTS calls (
+          id INTEGER PRIMARY KEY,
+          started_at TEXT NOT NULL,       -- UTC ISO-8601
+          duration_ms INTEGER,            -- NULL when interrupted before the child returned
+          command TEXT NOT NULL,          -- manage.py command, e.g. eval, run, exec, cli, perform
+          argv TEXT NOT NULL,             -- JSON array: manage.py arguments as typed
+          cwd TEXT NOT NULL,
+          exit_code INTEGER,              -- NULL when interrupted
+          program_path TEXT,              -- source file argument, if any (repository-relative)
+          program TEXT,                   -- inline source, or file contents at invocation (first 64 KiB)
+          program_sha256 TEXT,
+          stdin_program INTEGER NOT NULL, -- 1 when the program was read from stdin (content not captured)
+          agent TEXT                      -- HELIX_AGENT, else claude-code when CLAUDECODE is set
+      )
+    columns: [started_at, duration_ms, command, argv, cwd, exit_code, program_path, program, program_sha256, stdin_program, agent]
+    insert:
+      $call:
+      - concat
+      - 'INSERT INTO calls ('
+      - {$call: [text.join, {$ref: columns}, ', ']}
+      - ') VALUES ('
+      - {$call: [text.join, {$call: [map, {$call: [fn, [c], '?']}, {$ref: columns}]}, ', ']}
+      - ')'
+    log:
+      $call:
+      - fn
+      - [database, record]
+      - $call:
+        - get
+        - $call:
+          - list
+          - {$call: [sqlite.execute, {$ref: database}, {$ref: schema}, []]}
+          - $call:
+            - sqlite.execute
+            - {$ref: database}
+            - {$ref: insert}
+            - $call:
+              - map
+              - {$call: [fn, [c], {$call: [get, {$ref: record}, {$ref: c}]}]}
+              - {$ref: columns}
+        - 1
+- $call:
+  - let
+  - arguments: {$call: [effect, args, null]}
+    record: {$call: [json.parse, {$call: [effect, stdin, null]}]}
+  - {$call: [log, {$call: [get, {$ref: arguments}, 0]}, {$ref: record}]}

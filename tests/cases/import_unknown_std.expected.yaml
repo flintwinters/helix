@@ -2,7 +2,7 @@ error:
   column: 27
   kind: import
   line: 2
-  message: "unknown standard module `nope`; available: nginx, convergence, type_descriptor, command, provider, orchestration, inventory, fuzz, validation, dependency, text, diff, json, csv, set, stack, queue, yaml, math, list, group, map, types, test, machine"
+  message: "unknown standard module `nope`; available: nginx, sqlite, convergence, type_descriptor, command, provider, orchestration, inventory, fuzz, validation, dependency, text, diff, json, csv, set, stack, queue, yaml, math, list, group, map, types, test, machine"
   path: "/a/$call/1"
   reference:
     - a

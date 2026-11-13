@@ -197,7 +197,9 @@ argv, source text or file contents, exit code, duration, caller). Analyse it wit
 Stdin programs are flagged but not captured. `HELIX_USAGE_LOG=0` disables logging,
 `HELIX_USAGE_DB` relocates it, `HELIX_AGENT` labels the caller (`claude-code` is
 inferred from `CLAUDECODE`). Test runs do not log, and the installed `helix` binary
-or `target/` executables invoked directly bypass the log.
+or `target/` executables invoked directly bypass the log. The log is written by
+`tooling/usage_log.yaml`, a Helix program using `std:sqlite` (the `sqlite` effect), so a
+build is needed to log but not to report; a failed write only warns.
 
 ## Daily tooling
 
