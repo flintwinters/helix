@@ -27,6 +27,14 @@ migration trial—rather than automatically expanding algebra or providers.
 
 **Where we are:** a resource-bounded expression language with a pure core, first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. Caller-authorized host effects, in-memory interruption, file imports and pure error recovery work; bounded versioned disk suspend/resume and exact-request effect reconciliation work; the same nginx workload is qualified locally and over SSH on a disposable Debian host; the reversibility promise type and general declarative machine application remain ahead.
 
+Completion audit: sections 3 and 6, and section 8's declarative/first-class type
+subsections, now explicitly mark their already-tested scopes complete. The open
+parents in sections 2, 8 and 11 are blocked by general guarantees or operational
+acceptance, not just unchecked bookkeeping. Section 12's completed audits do not
+retire its continuing admission rules. The next bounded milestone is safe secret
+handling, target coordination, operator recovery and type-driven application for
+the existing single-host workload; broader fleet and formal-proof promises stay open.
+
 **Admission rule:** unchecked items are possibilities, not authorization to expand the language. Section 12 governs additions across this charter. Prefer completing a defining workload and simplifying existing semantics over opening another feature family.
 
 ---
@@ -64,7 +72,7 @@ Reversibility is a promise type. A machine that mixes in this promise must expos
 
 ---
 
-## 3. Talking to the world
+## 3. Talking to the world — complete within supported adapter bounds
 
 Completed: caller-authorized file I/O, arguments/exit codes, environment, standard streams, command capture, HTTP, time/randomness and JSON/YAML/CSV codecs. Pending effects are explicit in machine state; host events can interrupt and resume in-memory execution.
 
@@ -99,7 +107,7 @@ File imports provide isolated namespaces, documented visibility and circular-imp
 
 ---
 
-## 6. Daily tooling
+## 6. Daily tooling — complete within current CLI/editor scope
 
 Completed: `run` and exit codes, REPL, canonical formatter, non-executing `check`, step/trace, saved-state inspection, content-based watch, JSON Schema/LSP, shell completion/help and `cargo install`. `std:test` supplies in-language assertions, semantic state comparison and golden-test decisions over captured text; file discovery and process supervision remain host duties.
 
@@ -174,7 +182,7 @@ server: {$call: [class, {hostname: string, packages: {$call: [list_of, {$ref: st
 web01: {$call: [inherit, {$call: [server, {$ref: has_ssh}]}, {hostname: web01, packages: [nginx]}]}
 ```
 
-### Declarative types
+### Declarative types — complete within the documented fragment
 
 Completion decisions: this milestone covers ordinary type data, source-preserving annotation inspection, bounded non-executing checking, and collection of independent reached failures. These settle the earlier blanket promises explicitly: computed types emit their evaluated descriptors, with the written annotation expression preserved separately; plain `check` reports unsupported computations as unchecked rather than trying every terminating type-time expression. Versioned execution snapshots now restore predicate captures and checked annotation state, with boundary tests in `library` and fresh-process tests in `snapshots`. The stronger serialization proof obligation below remains open. Inspection is not executable restoration.
 
@@ -223,7 +231,7 @@ A type should read like the value it describes with the specifics left open: som
   - [x] Preserves the established versioned static report: `mode: static`, `status`, `diagnostics`, and `unchecked`, with exit codes 0/1/2. Evaluation collection retains its separate state-document contract
   - [x] Covered by the maintained mutation sweep: damaged annotated programs yield a well-formed static report, never a panic
 
-### First-class types
+### First-class types — complete within current runtime bounds
 
 "First-class" means there is no type-level language: whatever can be done with a number or a map can be done with a type, using the functions, `let`, iteration and errors that already exist. Abstraction over types is therefore just a function that returns a type, which is how Helix avoids the templating (Jinja in Ansible) and the bespoke module machinery other tools grow. Type time is not a different interpreter; it is ordinary evaluation run under a stricter contract (pure, no effects, bounded), and that contract is what makes a type trustworthy to compute before a machine is involved. Functions are first-class values, with referenced lexical bindings preserved in readable closures.
 
@@ -529,7 +537,7 @@ The runtime supports types, classes and callable values beyond the established p
 - [ ] Type validation and checking: move descriptor traversal, nested violation collection, unions, records and refinement orchestration from `src/builtins/typing/ty.rs` into Helix. Needs dependable primitive type inspection and first-class predicate calls; preserve declaration errors versus rejected values versus failed predicates, bounded traversal, deterministic diagnostics and source blame. Keep one authoritative checker used by both annotations and explicit checks.
 - [ ] Class composition and realization: implement inheritance conflict detection, defaults, required-field checks, flattening and provenance from `src/builtins/typing/class.rs` in Helix, building on the shared checker and the supported subtype rules. Requires callable predicates and sufficient provenance reflection; preserve explicit conflict resolution and parent-order independence. Future algebra and subtyping policy should live beside this code rather than grow another Rust policy engine.
   - Realization migration remains deferred: the existing embedded-policy call returns its result directly, while realization must validate filled defaults, collect predicate failures through the shared checker, and preserve original builtin argument/call blame. Moving only default assembly would add cross-language sequencing without removing that responsibility. Use the concrete `std:types.redeclare` and `std:machine` workload and focused ordering/provenance contracts to assess a future migration; current nginx and test-report policy do not exercise class realization.
-- [ ] Machine vocabulary and planning policy: declare packages/files/services/users, fleet constraints, dependency ordering and plan validation in Helix (section 8). Given typed observations, compute the complete plan as data; host adapters expose narrowly defined effects. Resume and retry policy can follow once pending effects and continuations serialize (section 2).
+- [ ] Machine vocabulary and planning policy: declare packages/files/services/users, fleet constraints, dependency ordering and plan validation in Helix (section 8). Given typed observations, compute the complete plan as data; host adapters expose narrowly defined effects. Versioned snapshots and caller-owned journals now preserve pending effects and continuations (section 2); each application must still establish its own reconciliation and target-coordination contract.
 
 ### With a few explicit runtime services
 
@@ -585,7 +593,7 @@ Reuse the type/class algebra, `std:machine`, `drift`, `converge`, `std:dependenc
 
 ### First useful replacement: one Linux host
 
-The active consolidation target is the Docker nginx acceptance specification below. Its local-container scope is deliberately narrower than this parent milestone; completing it does not establish SSH support or general Linux service management.
+The Docker nginx acceptance specification below is complete, with separate SSH and durable-recovery qualification. Its pinned container scope is narrower than this parent milestone: a real playbook migration and general Linux service management remain open.
 
 - [ ] Replace one real configuration playbook with an end-to-end Helix configuration
   - [ ] Declare a package, a managed configuration file and a service using the existing machine vocabulary
