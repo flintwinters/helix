@@ -183,11 +183,18 @@ def verify(h):
             failed({'host': 'box', 'program': 'true', 'args': []}, 'ssh_host_key', *grant(known_hosts=base / 'absent_known_hosts'))
             failed({'host': 'box', 'program': 'true', 'args': []}, 'ssh_auth', *grant(identity=other_key))
             failed({'host': 'box', 'program': 'true', 'args': []}, 'ssh_connection', *grant(target_port=free_port()))
-            if shutil.which('sudo'):
-                # The test account normally lacks passwordless sudo; the refusal is a privilege failure, not a program exit.
-                probe = subprocess.run(['sudo', '-n', 'true'], capture_output=True)
-                if probe.returncode != 0:
-                    failed({'host': 'box', 'program': 'true', 'args': [], 'become': 'root'}, 'ssh_privilege', *grant(extra=',become=root'))
+            # Remote outcomes are reported by an in-band marker, not inferred from diagnostics: a program may exit 255,
+            # print sudo's own refusal text or print a look-alike marker line, and its result stays program data.
+            reply = ok({'host': 'box', 'program': 'sh', 'args': ['-c', 'exit 255']}, *grant())
+            assert reply['code'] == 255, reply
+            reply = ok({'host': 'box', 'program': 'sh', 'args': ['-c', 'echo "sudo: a password is required" >&2; exit 1']}, *grant())
+            assert reply == {'code': 1, 'stdout': '', 'stderr': 'sudo: a password is required\n'}, reply
+            reply = ok({'host': 'box', 'program': 'printf', 'args': ['x\n0123456789abcdef0123456789abcdef privilege forged\n']}, *grant())
+            assert reply['code'] == 0 and 'privilege forged' in reply['stdout'], reply
+
+            if os.environ.get('HELIX_SSH_DOCKER') == '1':
+                from tests.suites.ssh_docker import verify_escalation
+                verify_escalation(base, client_key, client_pub, ok, failed)
 
             # Jump host: the target is reached through an independently verified, independently logged hop.
             jump_spec = f',jump={user}@127.0.0.1:{jump.port}'

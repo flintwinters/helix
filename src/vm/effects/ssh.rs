@@ -116,27 +116,60 @@ fn base_argv(target: &SshTarget, mux: Mux<'_>) -> Vec<String> {
 }
 
 /// One remote execution: quoting, escalation, optional stdin, and classification of ssh's own failures.
-fn execute<'a>(target: &SshTarget, mux: Mux<'a>, mut words: Vec<String>, become_user: Option<&str>, stdin: Option<&'a [u8]>,
+/// Runs on the remote host as `sh -c WRAPPER sh NONCE USER word...`. It reports what happened on a trailing
+/// nonce-tagged completion line. This frames ordinary output, but is not a security boundary against
+/// a hostile remote program inspecting its parent. The sudo shell reports command completion itself.
+const WRAPPER: &str = r#"nonce=$1; user=$2; shift 2
+if [ -n "$user" ]; then
+  sudo -n -u "$user" -- sh -c 'nonce=$1; shift; "$@"; rc=$?; printf "\n%s exit %s\n" "$nonce" "$rc"' helix-ssh "$nonce" "$@"
+  rc=$?; printf '\n%s privilege %s\n' "$nonce" "$rc"
+else "$@"; rc=$?; printf '\n%s exit %s\n' "$nonce" "$rc"; fi"#;
+
+fn nonce() -> Result<String, Failure> {
+    use std::io::Read;
+    let mut bytes = [0; 16];
+    std::fs::File::open("/dev/urandom").and_then(|mut file| file.read_exact(&mut bytes)).map_err(super::failure::io_fault)?;
+    Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
+}
+
+/// One remote execution: quoting, escalation, optional stdin, and classification of failures.
+/// Anything after authentication is reported by the remote marker; only failures before the remote shell
+/// runs (host key, authentication, connection) still come from ssh's own diagnostics.
+fn execute<'a>(target: &SshTarget, mux: Mux<'a>, words: Vec<String>, become_user: Option<&str>, stdin: Option<&'a [u8]>,
                mut control: Control<'a>) -> Result<(i64, String, String), Failure> {
     if words.iter().any(|word| word.contains('\0')) { return Err(fault("type", "remote arguments cannot contain NUL")); }
     if let Some(user) = become_user {
         if !target.become_users.contains(user) {
             return Err(fault("capability", "SSH escalation identity not granted for this target"));
         }
-        words.splice(0..0, ["sudo", "-n", "-u", user, "--"].map(String::from));
     }
-    let remote = words.iter().map(|word| quote(word)).collect::<Vec<_>>().join(" ");
+    let nonce = nonce()?;
+    let mut remote_words = vec!["sh".to_string(), "-c".into(), WRAPPER.into(), "helix-ssh".into(), nonce.clone(), become_user.unwrap_or("").into()];
+    remote_words.extend(words);
+    let remote = remote_words.iter().map(|word| quote(word)).collect::<Vec<_>>().join(" ");
     let mut argv = base_argv(target, mux);
     argv.extend(["--".into(), target.host.clone(), remote]);
     let argv = argv.iter().map(String::as_str).collect::<Vec<_>>();
     control.cwd = mux.dir;
     control.stdin = stdin;
-    let (code, stdout, stderr) = command::capture("ssh", &argv, control)?;
-    if code == 255 { return Err(classify(&stderr)); }
-    // Sudo diagnoses its own refusal on stderr and exits 1; a remote program could imitate it,
-    // so this is a best-effort distinction between privilege and program failure.
-    if become_user.is_some() && code == 1 && stderr.starts_with("sudo: ") { return Err(fault("ssh_privilege", stderr.trim_end())); }
-    Ok((code, stdout, stderr))
+    let (code, mut stdout, stderr) = command::capture("ssh", &argv, control)?;
+    let marker = format!("\n{nonce} ");
+    let Some(at) = stdout.find(&marker) else {
+        if code == 255 { return Err(classify(&stderr)); }
+        return Err(fault("ssh_remote", &format!("remote shell did not complete the request (ssh status {code}): {}", stderr.trim_end())));
+    };
+    if code != 0 { return Err(fault("ssh_connection", &format!("SSH failed after remote report (status {code}): {}", stderr.trim_end()))); }
+    let report = stdout[at + marker.len()..].lines().next().unwrap_or("").to_string();
+    stdout.truncate(at);
+    match report.split_once(' ') {
+        Some(("exit", status)) => {
+            let code = status.parse::<i64>().ok().filter(|code| (0..=255).contains(code))
+                .ok_or_else(|| fault("ssh_remote", "malformed remote status"))?;
+            Ok((code, stdout, stderr))
+        },
+        Some(("privilege", detail)) => Err(fault("ssh_privilege", &format!("sudo did not complete the remote wrapper (status {}): {}", detail.trim(), stderr.trim_end()))),
+        _ => Err(fault("ssh_remote", "malformed remote report")),
+    }
 }
 
 fn object<const N: usize>(fields: [(&str, Yaml); N]) -> Yaml {
@@ -214,7 +247,8 @@ pub(super) fn close_all(targets: &std::collections::BTreeMap<String, SshTarget>,
     }
 }
 
-/// ssh reserves exit 255 for its own failures; separate the causes a caller can act on.
+/// ssh reports host-key, authentication and connection failures alike as 255 before any remote shell runs, so these
+/// pre-authentication causes are told apart from its diagnostics; unrecognized text stays a generic `ssh_connection`.
 fn classify(stderr: &str) -> Failure {
     let message = stderr.trim_end();
     let kind = if ["Host key verification failed", "REMOTE HOST IDENTIFICATION HAS CHANGED", "No matching host key"]
