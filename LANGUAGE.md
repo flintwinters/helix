@@ -287,6 +287,16 @@ See [List helpers](LIBRARY.md#list-helpers).
 
 ## Checking programs
 
+Plain `check` reports `unbound` for an explicit reference or named call whose
+lexical starting name is absent. It shares runtime lexical lookup, preserving
+exact dotted bindings and function captures; primitive type references and
+registered builtin call heads remain valid. It does not execute source or load
+imports, and does not infer whether an imported, computed or parameter value
+contains a requested member. Literal payloads and parameter-name declarations
+are not expressions. Migration: unresolved names that previously passed plain
+`check` now fail it, including in uncalled bodies; fix the name or provide the
+lexical binding. LSP diagnostics use the same check and source locations.
+
 Plain `check` also runs a small non-executing type check (`src/tooling/analysis/body.rs`) over literals, annotated parameters, arithmetic, comparison, `if`, structural maps, constant-key record `get`/`set`, calls of named functions and literal annotation expressions (including `record` and `with_field`). It traverses computed call heads as well as operands, so annotated inline function bodies and nested `type_time` regions are checked even when the call target itself is unproved. Literal data remains opaque. It compares annotated function bodies with their declared results, call arguments with parameter types, and `type_time` regions for effectful execution. Constructing or returning a function does not execute its body; invoking a visible function does. Computed callees remain unproved, while `pure_function_of` retains its stronger transitive contract. A mismatch whose types share no value, or an `effect` inside a region, is a `type` diagnostic. A mismatch that may or may not hold, or an expression outside the fragment, is listed in the report's `unchecked` list and does not fail the check; the LSP shows only definite errors.
 
 Structural map inference retains known fields even when a sibling expression is unknown. Every written field is present; unknown field types remain `any`. Required fields with incompatible types or missing required fields establish definite failure, while incompatible optional fields may overlap by omission. Dynamic keys, optional-key reads, unsupported callbacks and `$literal` data remain outside this structural fragment. The production test-policy regressions require plain `check` to reject an integer `status` or string `exit_code` without executing orchestration; this does not prove the entire policy or replace independent host validation.

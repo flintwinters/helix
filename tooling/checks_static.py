@@ -13,6 +13,7 @@ def check(ctx):
         verify_checks(ctx)
         verify_bodies(ctx)
         verify_policy_result_fields(ctx)
+        verify_name_resolution(ctx)
         verify_record_boundaries(ctx)
         verify_annotation_bounds(ctx)
         verify_numeric_enum_overlap(ctx)
@@ -165,6 +166,62 @@ def verify_policy_result_fields(ctx):
         assert all(item['line'] > 0 and item['column'] > 0 for item in relevant), relevant
 
 
+def verify_name_resolution(ctx):
+    """Prove absent lexical names without guessing dynamic member contents."""
+    import copy
+    from tests.suites.source_contracts import location
+
+    original = yaml.safe_load((ctx.root / 'tooling' / 'test_policy.yaml').read_text())
+    destination = ctx.root / 'runtime' / 'static' / 'policy-mutations'
+    destination.mkdir(parents=True, exist_ok=True)
+    for name, typo, path in (
+        ('report-result-reference', 'processed_result', '/report/$call/2/$call/2/results'),
+        ('report-map-callback', 'reslut', '/report/$call/2/$call/1/processed_results/$call/1'),
+    ):
+        mutated = copy.deepcopy(original)
+        body = mutated['report']['$call'][2]['$call']
+        target = body[2]['results'] if name == 'report-result-reference' else body[1]['processed_results']['$call'][1]
+        assert target == {'$ref': 'processed_results' if name == 'report-result-reference' else 'result'}, target
+        target['$ref'] = typo
+        # Flow mappings give both YAML parsers the same explicit node marker.
+        source = json.dumps(mutated, indent=2)
+        fixture = destination / f'{name}.yaml'
+        fixture.write_text(source)
+        process = ctx.helix('check', str(fixture.relative_to(ctx.root)))
+        fixture.with_suffix('.report.yaml').write_text(process.stdout)
+        report = yaml.safe_load(process.stdout)
+        relevant = [item for item in report['diagnostics'] if item['kind'] == 'unbound' and item['path'] == path]
+        assert process.returncode == 1 and report['mode'] == 'static' and relevant, (name, report)
+        assert all(typo in item['message'] and (item['line'], item['column']) == location(source, path)
+                   for item in relevant), (name, relevant)
+
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    def ref(name):
+        return {'$ref': name}
+
+    possible = {
+        'exact_dotted_binding': {'answer.value': 42, 'copy': ref('answer.value')},
+        'exact_dotted_callback': {'answer.value': call('fn', [], 42), 'copy': call('answer.value')},
+        'dotted_parameter': call('fn', ['row'], ref('row.member')),
+        'parameter_callback': call('fn', ['callback'], call('callback', 1)),
+        'captured_parameter': call('fn', ['outer'], call('fn', ['inner'], call('add', ref('outer'), ref('inner')))),
+        'imported_member': call('let', {'module': call('import', 'not-read-by-static-check.yaml')}, ref('module.member')),
+        'computed_member': call('let', {'record': call('if', True, {'member': 1}, {})}, ref('record.member')),
+        'builtin_values': [ref('integer'), call('add', 1, 2), call('list_of', ref('string'))],
+        'literal_references': {'$literal': [ref('missing'), call('missing_callback'), {'$literal': ref('also_missing')}]},
+    }
+    for name, source in possible.items():
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 0 and report['diagnostics'] == [], (name, report)
+    for source, path in ((ref('add'), '/'), (ref('absent'), '/'),
+                         (call(ref('add'), 1, 2), '/$call/0'), (call('missing_callback'), '/$call/0')):
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 1 and any(item['kind'] == 'unbound' and item['path'] == path
+                                 for item in report['diagnostics']), report
+
+
 def verify_record_boundaries(ctx):
     """Closed records expose definite field errors without treating uncertainty as failure."""
     def call(actor, *args):
@@ -315,7 +372,8 @@ def verify_computed_heads(ctx):
 def verify_retired_closure(ctx):
     # Unknown heads are not assigned the retired builtin's arity or binding rules.
     code, report = static_report(ctx, json.dumps({'$call': ['closure']}))
-    assert code == 0 and report['diagnostics'] == [], report
+    assert code == 1 and [item['kind'] for item in report['diagnostics']] == ['unbound'], report
+    assert report['diagnostics'][0]['path'] == '/$call/0', report
     source = {'$call': ['let', {
         'closure': {'$call': ['fn', [['value', 'integer']], {'$ref': 'value'}, 'integer']},
     }, {'$call': ['closure', 'wrong']}]}
@@ -427,6 +485,20 @@ def verify_lsp(ctx):
     assert ctx.helix('exec', formatted).stdout == '42\n', formatted
     assert replies[5]['error']['code'] == -32601, replies
     assert replies[6]['params']['diagnostics'] == [] and replies[7]['result'] is None, replies
+    request = [
+        {'id': 1, 'method': 'initialize', 'params': {}},
+        {'method': 'textDocument/didOpen', 'params': {'textDocument': {
+            'uri': uri, 'version': 1, 'text': '{"$ref": "misspelled_callback"}'}}},
+        {'id': 2, 'method': 'shutdown'},
+        {'method': 'exit'},
+    ]
+    result = subprocess.run([str(ctx.binary), 'lsp'], input=b''.join(map(frame, request)),
+                            capture_output=True, cwd=ctx.root, timeout=ctx.timeout)
+    assert result.returncode == 0 and not result.stderr, result
+    replies = messages(result.stdout)
+    diagnostic = replies[1]['params']['diagnostics'][0]
+    assert diagnostic['code'] == 'unbound' and 'misspelled_callback' in diagnostic['message'], diagnostic
+    assert diagnostic['range']['start'] == {'line': 0, 'character': 0}, diagnostic
     for bad in (b'Content-Length: 99999999\r\n\r\n', b'Content-Length: 3\r\n\r\nxx', b'Content-Length: 1\r\n\r\nx'):
         result = subprocess.run([str(ctx.binary), 'lsp'], input=bad, capture_output=True, cwd=ctx.root, timeout=ctx.timeout)
         assert result.returncode != 0 and not result.stdout, result
