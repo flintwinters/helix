@@ -57,6 +57,10 @@ pub(super) struct Control<'a> {
     pub cancellation_signal: Option<&'static AtomicBool>,
     pub progress: &'a mut Option<ProgressCallback>,
     pub effect_id: u64,
+    /// Working directory for the child; `None` inherits the host's.
+    pub cwd: Option<&'a std::path::Path>,
+    /// Bytes written to the child's stdin and then closed; `None` closes stdin immediately.
+    pub stdin: Option<&'a [u8]>,
 }
 struct Run<'a> {
     control: Control<'a>,
@@ -127,9 +131,18 @@ fn attempt(program: &str, args: &[&str], run: &mut Run<'_>) -> Result<(i64, Stri
     use std::process::{Command, Stdio};
     run.event("starting", None)?;
     run.check()?;
-    let child = Command::new(program).args(args).stdin(Stdio::null()).stdout(Stdio::piped())
-        .stderr(Stdio::piped()).process_group(0).spawn().map_err(io_fault)?;
+    let mut command = Command::new(program);
+    command.args(args).stdin(if run.control.stdin.is_some() { Stdio::piped() } else { Stdio::null() })
+        .stdout(Stdio::piped()).stderr(Stdio::piped()).process_group(0);
+    if let Some(cwd) = run.control.cwd { command.current_dir(cwd); }
+    let child = command.spawn().map_err(io_fault)?;
     let mut child = ProcessGroup { child, reaped: false };
+    // A writer thread keeps a child that never reads stdin from blocking the deadline loop; a
+    // broken pipe just means the child stopped reading, which its exit status already reports.
+    let _feeder = run.control.stdin.zip(child.child.stdin.take()).map(|(bytes, mut pipe)| {
+        let bytes = bytes.to_vec();
+        std::thread::spawn(move || { use std::io::Write; let _ = pipe.write_all(&bytes); })
+    });
     let mut stdout = child.child.stdout.take().unwrap();
     let mut stderr = child.child.stderr.take().unwrap();
     let mut output = [Vec::new(), Vec::new()];

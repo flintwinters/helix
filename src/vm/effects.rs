@@ -34,6 +34,8 @@ pub struct EffectHost {
     pub command_progress: Option<ProgressCallback>,
     pub http_origins: BTreeSet<String>,
     pub ssh_targets: BTreeMap<String, SshTarget>,
+    /// Private directory for connection-reuse sockets; `None` disables reuse.
+    pub ssh_control_dir: Option<PathBuf>,
     pub allow_stdin: bool,
     pub allow_stdout: bool,
     pub allow_time: bool,
@@ -45,6 +47,10 @@ pub struct EffectHost {
 }
 
 impl EffectHost {
+    /// Stop persistent SSH connections this host may have started; call once when the session ends.
+    pub fn close_ssh_connections(&self) {
+        if let Some(dir) = &self.ssh_control_dir { ssh::close_all(&self.ssh_targets, dir); }
+    }
     pub fn run(&mut self, vm: &mut Vm) {
         loop {
             vm.run();
@@ -119,15 +125,17 @@ impl EffectHost {
                 let (code, stdout, stderr) = command::capture(program, &args, command::Control {
                     policy: &self.command_policy, cancellation: &self.cancellation,
                     cancellation_signal: self.cancellation_signal, progress: &mut self.command_progress, effect_id,
+                    cwd: None, stdin: None,
                 })?;
                 Ok(object([("code", Yaml::Integer(code)), ("stdout", Yaml::String(stdout)), ("stderr", Yaml::String(stderr))]))
             }
-            "ssh_command" => {
+            "ssh_command" | "ssh_file_read" | "ssh_file_write" => {
                 let alias = text(&payload["host"])?;
                 let target = self.ssh_targets.get(alias).ok_or_else(|| fault("capability", "SSH target capability not granted"))?;
-                ssh::run(target, payload, command::Control {
+                ssh::run(operation, target, ssh::Mux { dir: self.ssh_control_dir.as_deref() }, payload, command::Control {
                     policy: &self.command_policy, cancellation: &self.cancellation,
                     cancellation_signal: self.cancellation_signal, progress: &mut self.command_progress, effect_id,
+                    cwd: None, stdin: None,
                 })
             }
             "http" => {
@@ -137,7 +145,7 @@ impl EffectHost {
                 // No redirects, proxies, curl config, cookies or URL globbing. Grant is exact origin.
                 let (code, mut output, error) = command::capture("curl", &["-q", "--silent", "--show-error", "--globoff", "--noproxy", "*", "--proto", "=http,https", "--max-time", "8", "--max-filesize", "1048576", "--write-out", "\n%{http_code}", "--url", url], command::Control { policy: &CommandPolicy::default(),
                     cancellation: &self.cancellation, cancellation_signal: self.cancellation_signal,
-                    progress: &mut None, effect_id })?;
+                    progress: &mut None, effect_id, cwd: None, stdin: None })?;
                 if code != 0 { return Err(fault("http", &error)); }
                 let (body, status) = output.rsplit_once('\n').ok_or_else(|| fault("http", "missing HTTP status"))?;
                 let status = status.parse::<i64>().map_err(io_fault)?;

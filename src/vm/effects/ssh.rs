@@ -1,7 +1,7 @@
 //! Remote commands over the system OpenSSH client. Grants name exact targets; source cannot
 //! choose a destination, key, host-key policy or escalation identity.
 use std::collections::BTreeSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use yaml_rust2::Yaml;
 use super::command::{self, Control};
 use super::failure::{Failure, fault};
@@ -54,6 +54,12 @@ impl SshTarget {
                 return Err(format!("SSH {name} contains option-like or whitespace characters"));
             }
         }
+        if let Some(jump) = &target.jump {
+            let (user, host, port) = split_jump(jump);
+            if host.is_empty() || user.is_some_and(str::is_empty) || port.is_some_and(|port| port.parse::<u16>().map_or(true, |port| port == 0)) {
+                return Err("SSH jump must be [USER@]HOST[:PORT]".into());
+            }
+        }
         if !target.become_users.iter().all(|user| plain_name(user)) {
             return Err("SSH become user must be a plain account name".into());
         }
@@ -64,24 +70,12 @@ impl SshTarget {
 /// POSIX single-quote one word so the remote login shell sees exactly the bytes supplied.
 pub(super) fn quote(word: &str) -> String { format!("'{}'", word.replace('\'', "'\\''")) }
 
-pub(super) fn run(target: &SshTarget, payload: &Yaml, control: Control<'_>) -> Result<Yaml, Failure> {
-    let bad_args = || fault("type", "ssh_command args must be a list of strings");
-    let program = payload["program"].as_str().ok_or_else(|| fault("type", "ssh_command program must be a string"))?;
-    let mut words = vec![program.to_string()];
-    for arg in payload["args"].as_vec().ok_or_else(bad_args)? { words.push(arg.as_str().ok_or_else(bad_args)?.into()); }
-    if words.iter().any(|word| word.contains('\0')) { return Err(fault("type", "remote arguments cannot contain NUL")); }
-    let escalated = match &payload["become"] {
-        Yaml::BadValue | Yaml::Null => false,
-        Yaml::String(user) => {
-            if !target.become_users.contains(user) {
-                return Err(fault("capability", "SSH escalation identity not granted for this target"));
-            }
-            words.splice(0..0, ["sudo", "-n", "-u", user, "--"].map(String::from));
-            true
-        }
-        _ => return Err(fault("type", "ssh_command become must be a user name string")),
-    };
-    let remote = words.iter().map(|word| quote(word)).collect::<Vec<_>>().join(" ");
+/// Caller-owned multiplexing state: sockets live in one private directory and persist briefly.
+#[derive(Clone, Copy, Default)]
+pub(super) struct Mux<'a> { pub dir: Option<&'a Path> }
+
+/// Verification and authentication options every hop uses, so a jump host is held to the same policy as the target.
+fn hardened(target: &SshTarget) -> Vec<String> {
     let mut argv: Vec<String> = ["-F", "/dev/null", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=yes",
         "-o", "GlobalKnownHostsFile=/dev/null", "-o", "ConnectTimeout=10", "-o", "ClearAllForwardings=yes",
         "-o", "ForwardAgent=no", "-o", "ForwardX11=no", "-T"].map(String::from).into();
@@ -89,18 +83,135 @@ pub(super) fn run(target: &SshTarget, payload: &Yaml, control: Control<'_>) -> R
     if let Some(identity) = &target.identity {
         argv.extend(["-o".into(), "IdentitiesOnly=yes".into(), "-i".into(), identity.display().to_string()]);
     }
+    argv
+}
+
+/// `[USER@]HOST[:PORT]`, validated when the grant is parsed.
+fn split_jump(spec: &str) -> (Option<&str>, &str, Option<&str>) {
+    let (user, rest) = match spec.rsplit_once('@') { Some((user, rest)) => (Some(user), rest), None => (None, spec) };
+    match rest.rsplit_once(':') { Some((host, port)) => (user, host, Some(port)), None => (user, rest, None) }
+}
+
+/// Options shared by every ssh invocation for a target, including the explicit `-O exit` teardown.
+fn base_argv(target: &SshTarget, mux: Mux<'_>) -> Vec<String> {
+    let mut argv = hardened(target);
     if let Some(user) = &target.user { argv.extend(["-l".into(), user.clone()]); }
     if let Some(port) = target.port { argv.extend(["-p".into(), port.to_string()]); }
-    if let Some(jump) = &target.jump { argv.extend(["-J".into(), jump.clone()]); }
+    if let Some(jump) = &target.jump {
+        // OpenSSH's own `-J` hop would ignore our host-key file, identity and BatchMode, so spell the hop out.
+        let (user, host, port) = split_jump(jump);
+        let mut hop: Vec<String> = hardened(target);
+        if let Some(user) = user { hop.extend(["-l".into(), user.into()]); }
+        if let Some(port) = port { hop.extend(["-p".into(), port.into()]); }
+        hop.extend(["-W".into(), "%h:%p".into(), "--".into(), host.into()]);
+        let hop = std::iter::once("ssh".to_string()).chain(hop).map(|word| quote(&word)).collect::<Vec<_>>().join(" ");
+        argv.extend(["-o".into(), format!("ProxyCommand={hop}")]);
+    }
+    if mux.dir.is_some() {
+        // `%C` hashes local host, remote host, port and user, so targets never share a connection. The path is
+        // relative to the child's working directory (the private socket directory) to stay under sun_path limits.
+        argv.extend(["-o", "ControlMaster=auto", "-o", "ControlPath=%C", "-o", "ControlPersist=30s"].map(String::from));
+    }
+    argv
+}
+
+/// One remote execution: quoting, escalation, optional stdin, and classification of ssh's own failures.
+fn execute<'a>(target: &SshTarget, mux: Mux<'a>, mut words: Vec<String>, become_user: Option<&str>, stdin: Option<&'a [u8]>,
+               mut control: Control<'a>) -> Result<(i64, String, String), Failure> {
+    if words.iter().any(|word| word.contains('\0')) { return Err(fault("type", "remote arguments cannot contain NUL")); }
+    if let Some(user) = become_user {
+        if !target.become_users.contains(user) {
+            return Err(fault("capability", "SSH escalation identity not granted for this target"));
+        }
+        words.splice(0..0, ["sudo", "-n", "-u", user, "--"].map(String::from));
+    }
+    let remote = words.iter().map(|word| quote(word)).collect::<Vec<_>>().join(" ");
+    let mut argv = base_argv(target, mux);
     argv.extend(["--".into(), target.host.clone(), remote]);
     let argv = argv.iter().map(String::as_str).collect::<Vec<_>>();
+    control.cwd = mux.dir;
+    control.stdin = stdin;
     let (code, stdout, stderr) = command::capture("ssh", &argv, control)?;
     if code == 255 { return Err(classify(&stderr)); }
     // Sudo diagnoses its own refusal on stderr and exits 1; a remote program could imitate it,
     // so this is a best-effort distinction between privilege and program failure.
-    if escalated && code == 1 && stderr.starts_with("sudo: ") { return Err(fault("ssh_privilege", stderr.trim_end())); }
-    Ok(Yaml::Hash([("code", Yaml::Integer(code)), ("stdout", Yaml::String(stdout)), ("stderr", Yaml::String(stderr))]
-        .into_iter().map(|(key, value)| (Yaml::String(key.into()), value)).collect()))
+    if become_user.is_some() && code == 1 && stderr.starts_with("sudo: ") { return Err(fault("ssh_privilege", stderr.trim_end())); }
+    Ok((code, stdout, stderr))
+}
+
+fn object<const N: usize>(fields: [(&str, Yaml); N]) -> Yaml {
+    Yaml::Hash(fields.into_iter().map(|(key, value)| (Yaml::String(key.into()), value)).collect())
+}
+fn string<'a>(payload: &'a Yaml, field: &str) -> Result<&'a str, Failure> {
+    payload[field].as_str().ok_or_else(|| fault("type", &format!("ssh payload `{field}` must be a string")))
+}
+fn become_user(payload: &Yaml) -> Result<Option<&str>, Failure> {
+    match &payload["become"] {
+        Yaml::BadValue | Yaml::Null => Ok(None),
+        Yaml::String(user) => Ok(Some(user)),
+        _ => Err(fault("type", "ssh become must be a user name string")),
+    }
+}
+/// Remote file operations take absolute paths so the login shell's working directory never matters.
+fn remote_path(payload: &Yaml) -> Result<&str, Failure> {
+    let path = string(payload, "path")?;
+    if !path.starts_with('/') || path.contains('\0') { return Err(fault("type", "remote file path must be absolute")); }
+    Ok(path)
+}
+
+pub(super) fn run(operation: &str, target: &SshTarget, mux: Mux<'_>, payload: &Yaml, control: Control<'_>) -> Result<Yaml, Failure> {
+    let escalate = become_user(payload)?;
+    match operation {
+        "ssh_command" => {
+            let bad_args = || fault("type", "ssh_command args must be a list of strings");
+            let mut words = vec![string(payload, "program")?.to_string()];
+            for arg in payload["args"].as_vec().ok_or_else(bad_args)? { words.push(arg.as_str().ok_or_else(bad_args)?.into()); }
+            let stdin = match &payload["stdin"] {
+                Yaml::BadValue | Yaml::Null => None,
+                Yaml::String(text) if text.len() <= super::LIMIT => Some(text.as_bytes()),
+                Yaml::String(_) => return Err(fault("resource", "ssh stdin exceeds 1 MiB")),
+                _ => return Err(fault("type", "ssh_command stdin must be a string")),
+            };
+            let (code, stdout, stderr) = execute(target, mux, words, escalate, stdin, control)?;
+            Ok(object([("code", Yaml::Integer(code)), ("stdout", Yaml::String(stdout)), ("stderr", Yaml::String(stderr))]))
+        }
+        "ssh_file_read" => {
+            let path = remote_path(payload)?;
+            let (code, stdout, stderr) = execute(target, mux, ["cat", "--", path].map(String::from).into(), escalate, None, control)?;
+            if code != 0 { return Err(fault("ssh_file", stderr.trim_end())); }
+            Ok(Yaml::String(stdout))
+        }
+        "ssh_file_write" => {
+            let path = remote_path(payload)?;
+            let text = string(payload, "text")?;
+            if text.len() > super::LIMIT { return Err(fault("resource", "ssh file content exceeds 1 MiB")); }
+            let mode = match &payload["mode"] {
+                Yaml::BadValue | Yaml::Null => "0644",
+                Yaml::String(mode) if (3..=4).contains(&mode.len()) && mode.chars().all(|c| ('0'..='7').contains(&c)) => mode,
+                _ => return Err(fault("type", "ssh file mode must be an octal string such as \"0644\"")),
+            };
+            // Stage beside the target, verify the received byte count, then rename: readers never see a partial
+            // file and a failed or truncated transfer leaves the original untouched. Not a multi-file transaction.
+            const SCRIPT: &str = "set -eu; umask 077; tmp=$(mktemp -- \"$1.helix.XXXXXX\"); trap 'rm -f -- \"$tmp\"' EXIT; \
+cat > \"$tmp\"; [ \"$(wc -c < \"$tmp\")\" -eq \"$3\" ]; chmod -- \"$2\" \"$tmp\"; mv -f -- \"$tmp\" \"$1\"; trap - EXIT";
+            let words = ["sh", "-c", SCRIPT, "helix-write", path, mode, &text.len().to_string()].map(String::from).into();
+            let (code, _, stderr) = execute(target, mux, words, escalate, Some(text.as_bytes()), control)?;
+            if code != 0 { return Err(fault("ssh_file", stderr.trim_end())); }
+            Ok(Yaml::Null)
+        }
+        _ => Err(fault("effect", &format!("unknown SSH operation `{operation}`"))),
+    }
+}
+
+/// Tear down persistent masters at the end of a host session; failures only mean nothing was running.
+pub(super) fn close_all(targets: &std::collections::BTreeMap<String, SshTarget>, dir: &Path) {
+    for target in targets.values() {
+        let mut argv = base_argv(target, Mux { dir: Some(dir) });
+        argv.extend(["-O".into(), "exit".into(), "--".into(), target.host.clone()]);
+        let _ = std::process::Command::new("ssh").args(&argv).current_dir(dir)
+            .stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null())
+            .status();
+    }
 }
 
 /// ssh reserves exit 255 for its own failures; separate the causes a caller can act on.

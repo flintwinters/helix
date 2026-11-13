@@ -4,6 +4,8 @@ Run commands from the repository root. Tests require Python 3.10+, PyYAML, and R
 The `effects` suite also requires `curl`, `/bin/echo`, `/bin/sh`, and permission
 to bind a local loopback HTTP listener. Its files and process fixtures stay under
 the project's `runtime/` directory.
+The `ssh_host` suite requires the OpenSSH client, `ssh-keygen`, `ssh-agent` and `sshd` binaries (it fails with a diagnostic when absent) and starts
+unprivileged loopback servers on free ports under `runtime/`; connection-reuse checks place sockets under `XDG_RUNTIME_DIR` because NFS cannot link sockets.
 The `long_commands` suite requires Linux process groups and `/proc`, and exercises
 real child processes with Python and `/bin/sh` (with `sleep` on PATH). It includes one operation lasting longer than
 ten seconds; its derived test context allows twenty seconds per invocation.
@@ -227,6 +229,7 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | Embedded-only and confined file imports, traversal, symlinks, transitive and uncalled imports | `permissions`; `library` | Path authorization assumes no hostile concurrent directory replacement |
 | Host file, environment, stream, command, HTTP, clock, random and SQLite effects; capability denial, ATTACH denial, deterministic runs and symlink escapes | `effects`; `tests/cases/effects_world.yaml` | Uses local HTTP and subprocess adapters; grants do not provide OS isolation |
 | Extended deadlines, cumulative output bounds, metadata progress, classified retries, SIGINT/SIGTERM cancellation and descendant liveness | `long_commands`; `tests/suites/long_commands.py` | Linux local synchronous commands; no SIGKILL recovery, detached-process containment or remote execution |
+| SSH remote commands, strict host keys, exact argument/stdin/file transfer, jump hops, agent auth, connection reuse, classified failures and `std:ssh` prerequisite bootstrap | `ssh_host`; `tests/suites/ssh_host.py` | Unprivileged loopback `sshd` with throwaway keys, not a separate remote host; no passwordless-sudo success path; reuse needs a local-filesystem `XDG_RUNTIME_DIR` |
 | Pending effects, completion records, failure cleanup, external interruption and resumption without repeating completed requests | `execution`; `tests/execution.rs` | In-memory continuations only; retained branches require explicit host handling and are not globally deduplicated |
 | Actual compiled arithmetic, source-column and serialization faults rejected by existing suites | `mutants`; `runtime/mutants/` | Three targeted mutations, not a general mutation score |
 | Growing graphs and constant-state 999/99,999-step loops, interpreter peak RSS and environment | `memory`; `runtime/memory/` | Linux + GNU time; broad operational thresholds, not a universal memory bound |

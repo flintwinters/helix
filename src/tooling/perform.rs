@@ -9,7 +9,7 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut progress_path = None;
     let mut index = 0;
     while let Some(option) = args.get(index).filter(|arg| arg.starts_with("--")) {
-        let takes_value = matches!(option.as_str(), "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--allow-ssh" | "--fixed-time" | "--seed" | "--command-timeout-ms" | "--command-output-limit" | "--command-attempts" | "--command-retry-delay-ms" | "--command-retry-exit-code" | "--command-progress");
+        let takes_value = matches!(option.as_str(), "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--allow-ssh" | "--ssh-control-dir" | "--fixed-time" | "--seed" | "--command-timeout-ms" | "--command-output-limit" | "--command-attempts" | "--command-retry-delay-ms" | "--command-retry-exit-code" | "--command-progress");
         let value = if takes_value {
             index += 1;
             let Some(value) = args.get(index) else { eprintln!("missing value for {option}"); return ExitCode::from(2); };
@@ -46,6 +46,10 @@ pub fn run(args: &[String]) -> ExitCode {
                 Ok((alias, target)) => { host.ssh_targets.insert(alias, target); }
                 Err(message) => return usage(&message),
             },
+            "--ssh-control-dir" => match private_directory(Path::new(value)) {
+                Ok(dir) => host.ssh_control_dir = Some(dir),
+                Err(message) => return usage(&message),
+            },
             "--allow-stdin" => host.allow_stdin = true,
             "--allow-stdout" => host.allow_stdout = true,
             "--allow-time" => host.allow_time = true,
@@ -59,7 +63,7 @@ pub fn run(args: &[String]) -> ExitCode {
                 Err(_) => { eprintln!("seed must be an unsigned integer"); return ExitCode::from(2); }
             },
             "--help" => {
-                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U], --allow-stdin, --allow-stdout, --allow-time, --allow-random\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nCommand policy (caller grants, not source): --command-timeout-ms N (1..86400000, default 10000; total across retries), --command-output-limit N (1..16777216 bytes per stream across retries, default 1048576), --command-attempts N (1..32, default 1), --command-retry-delay-ms N (0..60000), repeatable --command-retry-exit-code N (1..255; only explicitly classified exit codes retry)\n--command-progress NEW_FILE writes versioned JSONL metadata, never command output; existing files are refused. SIGINT/SIGTERM cancel commands and clean up their Unix process group.\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
+                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U], --ssh-control-dir PRIVATE_DIR (reuse connections), --allow-stdin, --allow-stdout, --allow-time, --allow-random\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nCommand policy (caller grants, not source): --command-timeout-ms N (1..86400000, default 10000; total across retries), --command-output-limit N (1..16777216 bytes per stream across retries, default 1048576), --command-attempts N (1..32, default 1), --command-retry-delay-ms N (0..60000), repeatable --command-retry-exit-code N (1..255; only explicitly classified exit codes retry)\n--command-progress NEW_FILE writes versioned JSONL metadata, never command output; existing files are refused. SIGINT/SIGTERM cancel commands and clean up their Unix process group.\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
                 return ExitCode::SUCCESS;
             }
             _ => { eprintln!("unknown perform option {option}"); return ExitCode::from(2); }
@@ -85,10 +89,23 @@ pub fn run(args: &[String]) -> ExitCode {
     };
     let mut vm = Vm::load_sandboxed(&source, Some(Path::new(path)), &host.read_roots);
     host.run(&mut vm);
+    host.close_ssh_connections();
     eprint!("{}", vm.state_string());
     let cancelled = host.cancellation.load(std::sync::atomic::Ordering::Relaxed)
         || host.cancellation_signal.is_some_and(|flag| flag.load(std::sync::atomic::Ordering::Relaxed));
     if vm.status() == Status::Finished && !cancelled { ExitCode::from(host.exit_code) } else { ExitCode::FAILURE }
+}
+
+/// Connection-reuse sockets grant their holder the authenticated session, so the directory must be owner-only.
+fn private_directory(path: &Path) -> Result<std::path::PathBuf, String> {
+    use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
+    std::fs::DirBuilder::new().recursive(true).mode(0o700).create(path)
+        .map_err(|error| format!("cannot create SSH control directory {}: {error}", path.display()))?;
+    let meta = std::fs::metadata(path).map_err(|error| error.to_string())?;
+    if !meta.is_dir() || meta.permissions().mode() & 0o077 != 0 {
+        return Err(format!("SSH control directory {} must be a directory accessible only by its owner", path.display()));
+    }
+    path.canonicalize().map_err(|error| error.to_string())
 }
 
 fn usage(message: &str) -> ExitCode {
