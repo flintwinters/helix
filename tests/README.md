@@ -214,3 +214,40 @@ stay in `runtime/`. Evaluation golden fixtures under `tests/check/` explicitly
 use `check --evaluate`; plain `check` never evaluates a program.
 
 Resource regressions grow function and machine capture graphs from shallow source until an enforced limit. They must emit structured errors and exit cleanly when releasing the retained graph. Public execution tests also release captured graphs on a small-stack thread and through thread-local teardown, preserving retained machine versions.
+
+## Docker nginx acceptance
+
+`./manage.py test --suite docker_nginx` is an explicit infrastructure test. The
+ordinary default test plan reports it as skipped; explicitly selecting it requires
+a working Docker CLI/daemon and fails if they are unavailable. Build inputs use
+pinned Linux/amd64 image manifests, locked Rust dependencies and a dated Debian
+package snapshot from `tests/fixtures/docker_nginx/versions.json`. The fixture
+starts without nginx. The controller runs inside that container using only its
+ordinary command effect grant; the host harness retains Docker authority.
+
+Discover scenarios and replay commands with `./manage.py docker-nginx describe`.
+The suite runs every scenario twice by default. For a focused iteration:
+
+```sh
+HELIX_DOCKER_NGINX_SCENARIO=baseline HELIX_DOCKER_NGINX_REPEAT=1 ./manage.py test --suite docker_nginx
+HELIX_DOCKER_NGINX_KEEP_FAILED=1 ./manage.py test --suite docker_nginx
+./manage.py docker-nginx cleanup RUN_ID
+```
+
+Run artifacts are under `runtime/docker-nginx/RUN_ID/`: Docker/image versions,
+inputs, raw command output, independent OS observations, action traces, timings,
+per-scenario outcomes and replay commands. Failure retention is explicit; ordinary
+success, failure and cancellation remove only resources bearing that run's label.
+Cleanup verifies labels again and retains evidence on disk. No Docker socket or
+host-system mount enters the managed container; HTTP publication is loopback-only.
+The first build requires registry, crates.io and Debian snapshot access.
+
+The independent observer checks dpkg state, file bytes/ownership/mode, process
+identity and HTTP output. Helix supplies desired-state resolution and planning;
+Python never decides which mutations should implement a plan. PID 1 owns nginx
+and reaps its children so the command host can clean up its own process groups.
+This qualifies a local container process model, not systemd, SSH, fleet operation,
+application rollback or restoration of serialized execution. Controller-death
+cases start a fresh observed/reviewed application instead of replaying old effects.
+The `harness` suite checks opt-in authorization, prerequisite failure, cleanup
+ownership and independent-observer sensitivity without Docker.

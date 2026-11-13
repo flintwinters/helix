@@ -20,7 +20,11 @@ plan:
           - if
           - {$call: [and, {$ref: bless}, {$call: [eq, {$ref: name}, robustness]}]}
           - {suite: {$ref: name}, action: skip, reason: disabled while blessing expectations}
-          - {suite: {$ref: name}, action: run}
+          - $call:
+            - if
+            - {$call: [and, {$call: [eq, {$ref: requested}, []]}, {$call: [eq, {$ref: name}, docker_nginx]}]}
+            - {suite: {$ref: name}, action: skip, reason: 'requires explicit --suite docker_nginx (provisions disposable Docker resources)'}
+            - {suite: {$ref: name}, action: run}
       - {$ref: ordered}
 result:
   $call:

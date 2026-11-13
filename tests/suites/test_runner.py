@@ -33,10 +33,10 @@ def verify_selection(h, directory):
         invoked.append(args)
         return h.process_runner(args, **kwargs)
     selected = replace(h, commands=directories, process_runner=observe)
-    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+    with contextlib.redirect_stdout(io.StringIO()) as stdout, contextlib.redirect_stderr(io.StringIO()) as stderr:
         assert selected.test(False, ["golden"], patterns=["missing"]) == 2
         assert invoked == [], "an unmatched filter executed a process"
-        assert selected.test(True, ["golden"], patterns=["beta"]) == 0
+        assert selected.test(True, ["golden"], patterns=["beta"]) == 0, (stdout.getvalue(), stderr.getvalue())
         assert cases[1].with_suffix(".expected.yaml").read_text() != "unchanged"
         assert all(case.with_suffix(".expected.yaml").read_text() == "unchanged"
                    for case in (cases[0], cases[2]))

@@ -27,6 +27,11 @@ def verify(h):
             assert [row["suite"] for row in actual if row["action"] == "skip"] == (
                 ["robustness"] if bless and "robustness" in selected else [])
     assert test_policy.plan(h, [], [], False) == []
+    docker_catalog = ["first", "docker_nginx"]
+    default = test_policy.plan(h, docker_catalog, None, False)
+    assert default[1]["action"] == "skip" and "--suite docker_nginx" in default[1]["reason"], default
+    assert test_policy.plan(h, docker_catalog, ["docker_nginx"], False) == [
+        {"suite": "docker_nginx", "action": "run"}]
     observations = [{"suite": "first", "failures": ["host crash"], "stdout": "evidence", "stderr": ""},
                     {"suite": "second", "failures": [], "stdout": "", "stderr": ""}]
     actual = test_policy.report(h, observations)
@@ -70,6 +75,14 @@ def verify(h):
             pass
         else:
             raise AssertionError(f"unsafe plan accepted: {response}")
+    for requested, response in ((None, [{"suite": "docker_nginx", "action": "run"}]),
+            (["docker_nginx"], [{"suite": "docker_nginx", "action": "skip", "reason": "hidden"}])):
+        try:
+            test_policy.plan(bad_context(state(response)), ["docker_nginx"], requested, False)
+        except test_policy.PolicyError:
+            pass
+        else:
+            raise AssertionError(f"Docker opt-in boundary bypassed: {response}")
     for response, bless in (([{"suite": "golden", "action": "run"}], False),
                             ([{"suite": "golden", "action": "run"},
                               {"suite": "standard_library", "action": "run"}], False),
