@@ -13,6 +13,7 @@ def check(ctx):
         verify_checks(ctx)
         verify_bodies(ctx)
         verify_policy_result_fields(ctx)
+        verify_string_literals(ctx)
         verify_iteration_callbacks(ctx)
         verify_name_resolution(ctx)
         verify_dotted_bindings(ctx)
@@ -155,7 +156,8 @@ def verify_policy_result_fields(ctx):
     policy = yaml.safe_load(original.read_text())
     destination = ctx.root / 'runtime' / 'static' / 'policy-mutations'
     destination.mkdir(parents=True, exist_ok=True)
-    for operation, field, value in [('result', 'status', 17), ('report', 'exit_code', 'zero')]:
+    for operation, field, value in [('result', 'status', 17), ('report', 'exit_code', 'zero'),
+                                    ('report', 'command', 'tests')]:
         mutated = copy.deepcopy(policy)
         body = mutated[operation]['$call'][2]['$call']
         if operation == 'result':
@@ -165,7 +167,7 @@ def verify_policy_result_fields(ctx):
             assert body[0] == 'let' and field in body[2], body
             body[2][field] = value
         source = destination / f'{operation}-{field}.yaml'
-        source.write_text(yaml.safe_dump(mutated, sort_keys=False))
+        source.write_text(json.dumps(mutated, indent=2))
         process = ctx.helix('check', str(source.relative_to(ctx.root)))
         source.with_suffix('.report.yaml').write_text(process.stdout)
         report = yaml.safe_load(process.stdout)
@@ -175,6 +177,111 @@ def verify_policy_result_fields(ctx):
                     and (field in item['message'] or field in item.get('path', ''))]
         assert process.returncode == 1 and relevant, (operation, field, report)
         assert all(item['line'] > 0 and item['column'] > 0 for item in relevant), relevant
+        if field == 'command':
+            from tests.suites.source_contracts import location
+            path = '/report/$call/2/$call/2/command'
+            assert any(item['path'] == path and (item['line'], item['column']) ==
+                       location(source.read_text(), path) for item in relevant), relevant
+
+
+def verify_string_literals(ctx):
+    """Retain bounded string alternatives without claiming uncertain values fail."""
+    from tests.suites.source_contracts import location
+
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    def fn(params, body, result):
+        return call('fn', params, body, result)
+
+    for annotation in ('string', call('enum', 'test', 'other'), call('literal', 'test')):
+        code, report = static_report(ctx, json.dumps(fn([], 'test', annotation)))
+        assert code == 0 and report['diagnostics'] == [] and report['unchecked'] == [], report
+    for body, params in (({'$ref': 'value'}, [['value', 'string']]),
+                         (call('if', {'$ref': 'flag'}, 'test', 'other'), [['flag', 'boolean']])):
+        code, report = static_report(ctx, json.dumps(fn(params, body, call('literal', 'test'))))
+        assert code == 0 and report['diagnostics'] == [] and report['unchecked'], report
+    expected_record = call('record', 'command', call('literal', 'test'))
+    wrapped = call('let', {}, call('type_time', call('let', {}, {'command': 'tests'})))
+    source = json.dumps(fn([], wrapped, expected_record), indent=2)
+    code, report = static_report(ctx, source)
+    path = '/$call/2/$call/2/$call/1/$call/2/command'
+    assert code == 1 and any(item['kind'] == 'type' and item['path'] == path and
+                            (item['line'], item['column']) == location(source, path)
+                            for item in report['diagnostics']), report
+    # References and unknown values keep blame on the function body: locating a
+    # field must not chase a parameter declaration or invent a source child.
+    wrong_record = call('record', 'command', call('literal', 'tests'))
+    for params, definite in (([['value', wrong_record]], True), (['value'], False)):
+        source = json.dumps(fn(params, {'$ref': 'value'}, expected_record), indent=2)
+        code, report = static_report(ctx, source)
+        findings = report['diagnostics'] if definite else report['unchecked']
+        assert code == int(definite) and any(item['path'] == '/$call/2' and
+            (item['line'], item['column']) == location(source, '/$call/2') for item in findings), report
+    # Numeric inference retains its existing kind-level behavior.
+    for body, annotation, valid in ((1, 'integer', True), (1.0, 'integer', False)):
+        code, report = static_report(ctx, json.dumps(fn([], body, annotation)))
+        assert code == int(not valid) and bool(report['diagnostics']) == (not valid), report
+
+    # The string bound measures UTF-8 bytes, not character count. Widening is
+    # uncertainty, never an assertion that a long string satisfies a literal.
+    for text, exact in (('é' * 128, True), ('é' * 128 + 'a', False)):
+        code, report = static_report(ctx, json.dumps(fn([], text, call('literal', 'other'))))
+        assert code == int(exact) and bool(report['diagnostics']) == exact, report
+        if not exact:
+            assert report['unchecked'], report
+
+    callback = fn([['n', 'integer']], {'$ref': 'n'}, 'integer')
+    for count in (32, 33):
+        values = [f'value-{index}' for index in range(count)]
+        code, report = static_report(ctx, json.dumps(call('map', callback, values)))
+        assert code == int(count == 32) and bool(report['diagnostics']) == (count == 32), report
+        if count == 33:
+            assert report['unchecked'], report
+    # Record alternatives obey the same local sequence budget. Children after
+    # widening must still be visited so independent mistakes remain visible.
+    records = [{f'field-{index}': index} for index in range(40)]
+    code, report = static_report(ctx, json.dumps(call('map', callback, records)))
+    assert code == 0 and report['diagnostics'] == [] and report['unchecked'], report
+    records.append({'bad': call('add', 'not numeric', 1)})
+    code, report = static_report(ctx, json.dumps(call('map', callback, records)))
+    assert code == 1 and any(item['kind'] == 'type' and
+                            item['path'] == '/$call/2/40/bad/$call/1'
+                            for item in report['diagnostics']), report
+
+    # These small source DAGs describe exponentially large inferred trees when
+    # reused aliases are expanded. The normal process timeout bounds the check;
+    # no runtime evaluation or machine-dependent performance threshold is needed.
+    for shape in ('list', 'record'):
+        def pair(left, right):
+            return [left, right] if shape == 'list' else {'left': left, 'right': right}
+
+        bindings = {'a0': pair('a', 'b'), 'b0': pair('b', 'a')}
+        for depth in range(1, 21):
+            left, right = {'$ref': f'a{depth - 1}'}, {'$ref': f'b{depth - 1}'}
+            bindings[f'a{depth}'] = pair(left, right)
+            bindings[f'b{depth}'] = pair(right, left)
+        annotation = (call('list_of', 'any') if shape == 'list' else
+                      call('record', 'left', 'any', 'right', 'any'))
+        source = call('let', bindings, fn([], {'$ref': 'a20'}, annotation))
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 0 and report['diagnostics'] == [], (shape, report)
+        # The offending operand sits inside the shared graph, not in a separate
+        # top-level expression that could bypass bounded inference entirely.
+        bindings['b0'] = pair('b', call('add', 'not numeric', 1))
+        code, report = static_report(ctx, json.dumps(source))
+        path = '/$call/1/b0/' + ('1' if shape == 'list' else 'right') + '/$call/1'
+        assert code == 1 and any(item['kind'] == 'type' and item['path'] == path
+                                for item in report['diagnostics']), (shape, report)
+
+    # Reusing a long-key record is compact source but its expanded inferred
+    # field names exceed the aggregate byte budget before the node budget.
+    bindings = {'child': {'k' * 4096: 'value'}}
+    bindings['wide'] = {f'field-{index}': {'$ref': 'child'} for index in range(300)}
+    narrow = call('record', 'field-0', call('record', 'k' * 4096, 'string'))
+    source = call('let', bindings, fn([], {'$ref': 'wide'}, narrow))
+    code, report = static_report(ctx, json.dumps(source))
+    assert code == 0 and report['diagnostics'] == [] and report['unchecked'], report
 
 
 def verify_iteration_callbacks(ctx):

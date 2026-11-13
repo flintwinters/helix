@@ -17,6 +17,57 @@ use yaml_rust2::Yaml;
 
 const MAX_TYPE_CONSTRUCTOR_DEPTH: usize = 8;
 const MAX_TYPE_SHAPE_NODES: usize = 4096;
+// Local precision limits complement the expanded inferred-type shape budget.
+const MAX_INFERRED_STRING_BYTES: usize = 256;
+const MAX_SEQUENCE_ALTERNATIVES: usize = 32;
+
+/// Count expanded type structure, stopping before a shared source DAG can grow
+/// into an unbounded inferred tree. Count retained value slots, but do not walk
+/// their shared contents or function environments; this is not a total-memory cap.
+fn type_cost(ty: &Ty, limit: usize, byte_limit: usize) -> Option<(usize, usize)> {
+    let mut pending = vec![ty];
+    let mut size = 0usize;
+    let mut bytes = 0usize;
+    while let Some(ty) = pending.pop() {
+        size = size.checked_add(1)?;
+        if size > limit { return None; }
+        match ty {
+            Ty::List(item) | Ty::Map(item) | Ty::Refine(item, _) => pending.push(item),
+            Ty::Fn(params, result, _) => {
+                if params.len() + 1 > limit - size { return None; }
+                pending.extend(params);
+                pending.push(result);
+            }
+            Ty::Union(members) => {
+                if members.len() > limit - size { return None; }
+                pending.extend(members);
+            }
+            Ty::Record(fields) | Ty::Class(fields, ..) => {
+                if fields.len() > limit - size { return None; }
+                for (name, field) in fields {
+                    bytes = bytes.checked_add(name.len())?;
+                    size = size.checked_add(usize::from(field.default.is_some()))?;
+                }
+                if let Ty::Class(_, fixed, constraints) = ty {
+                    size = size.checked_add(fixed.len())?.checked_add(constraints.len())?;
+                    for (name, _) in fixed { bytes = bytes.checked_add(name.len())?; }
+                }
+                pending.extend(fields.iter().map(|(_, field)| &field.ty));
+            }
+            Ty::Enum(values) => {
+                size = size.checked_add(values.len())?;
+                for value in values {
+                    if let Value::String(text) = value { bytes = bytes.checked_add(text.len())?; }
+                }
+            }
+            Ty::Any | Ty::Never | Ty::Int | Ty::Float | Ty::Str | Ty::Bool
+                | Ty::Null | Ty::Secret | Ty::Function | Ty::Vm => {}
+        }
+        if size > limit || bytes > byte_limit { return None; }
+        if pending.len() > limit - size { return None; }
+    }
+    Some((size, bytes))
+}
 
 /// What the checks found: definite failures, and obligations they could not settle.
 #[derive(Default)]
@@ -72,7 +123,8 @@ impl Checker<'_> {
         if !self.active.insert(id) {
             return None;
         }
-        let found = self.infer_node(id);
+        let found = self.infer_node(id).filter(|ty|
+            type_cost(ty, MAX_TYPE_SHAPE_NODES, crate::model::MAX_VALUE_SIZE).is_some());
         self.active.remove(&id);
         self.memo.insert(id, found.clone());
         found
@@ -82,7 +134,11 @@ impl Checker<'_> {
         match self.graph.syntax(id) {
             Syntax::Scalar(Yaml::Integer(_)) => Some(Ty::Int),
             Syntax::Scalar(Yaml::Real(_)) => Some(Ty::Float),
-            Syntax::Scalar(Yaml::String(_)) => Some(Ty::Str),
+            Syntax::Scalar(Yaml::String(text)) => Some(if text.len() <= MAX_INFERRED_STRING_BYTES {
+                Ty::Enum(vec![s(text)])
+            } else {
+                Ty::Str
+            }),
             Syntax::Scalar(Yaml::Boolean(_)) => Some(Ty::Bool),
             Syntax::Scalar(Yaml::Null) => Some(Ty::Null),
             Syntax::Reference(name) if !name.contains('.') => match self.graph.lexical_site(id, name)? {
@@ -92,10 +148,28 @@ impl Checker<'_> {
             Syntax::Call(items) => self.infer_call(id, items),
             Syntax::Sequence(items) => {
                 let mut members = Vec::new();
+                let mut widened = false;
+                let mut remaining = MAX_TYPE_SHAPE_NODES - 2; // list and possible union
+                let mut remaining_bytes = crate::model::MAX_VALUE_SIZE;
                 for &item in items {
                     let ty = self.infer(item).unwrap_or(Ty::Any);
+                    // Continue checking every item after widening, retaining
+                    // diagnostics without collecting further alternatives.
+                    if widened { continue; }
                     // Compact homogeneous runs without quadratic shape comparisons.
-                    if members.last() != Some(&ty) { members.push(ty); }
+                    if members.last() != Some(&ty) {
+                        let cost = type_cost(&ty, remaining, remaining_bytes);
+                        if members.len() == MAX_SEQUENCE_ALTERNATIVES || cost.is_none() {
+                            members.clear();
+                            members.push(Ty::Any);
+                            widened = true;
+                        } else {
+                            let (nodes, bytes) = cost.unwrap();
+                            remaining -= nodes;
+                            remaining_bytes -= bytes;
+                            members.push(ty);
+                        }
+                    }
                 }
                 Some(Ty::List(Box::new(match members.len() {
                     0 => Ty::Never,
@@ -103,9 +177,27 @@ impl Checker<'_> {
                     _ => Ty::Union(members),
                 })))
             }
-            Syntax::Mapping(entries) => Some(Ty::Record(entries.iter().map(|(name, node)| {
-                (name.clone(), Field { ty: self.infer(*node).unwrap_or(Ty::Any), required: true, default: None })
-            }).collect())),
+            Syntax::Mapping(entries) => {
+                let mut fields = Vec::new();
+                let mut remaining = Some(MAX_TYPE_SHAPE_NODES - 1);
+                let mut remaining_bytes = crate::model::MAX_VALUE_SIZE;
+                for (name, node) in entries {
+                    let ty = self.infer(*node).unwrap_or(Ty::Any);
+                    if let Some(left) = remaining {
+                        let cost = remaining_bytes.checked_sub(name.len())
+                            .and_then(|bytes| type_cost(&ty, left, bytes));
+                        if let Some((nodes, bytes)) = cost {
+                            remaining = Some(left - nodes);
+                            remaining_bytes -= name.len() + bytes;
+                            fields.push((name.clone(), Field { ty, required: true, default: None }));
+                        } else {
+                            remaining = None;
+                            fields.clear();
+                        }
+                    }
+                }
+                Some(if remaining.is_some() { Ty::Record(fields) } else { Ty::Map(Box::new(Ty::Any)) })
+            }
             _ => None,
         }
     }
@@ -284,16 +376,43 @@ impl Checker<'_> {
     /// source proves no effect.
     fn function_type(&mut self, function: NodeId) -> Option<Ty> {
         let params = self.graph.parameters(function).ok()?;
-        let params = params.into_iter().map(|(_, annotation)| annotation.map_or(Some(Ty::Any), |a| self.annotation(a))).collect::<Option<Vec<_>>>()?;
+        let mut remaining = MAX_TYPE_SHAPE_NODES - 1;
+        let mut remaining_bytes = crate::model::MAX_VALUE_SIZE;
+        let mut declared = Vec::new();
+        for (_, annotation) in params {
+            let ty = annotation.map_or(Some(Ty::Any), |a| self.annotation(a))?;
+            let (nodes, bytes) = type_cost(&ty, remaining, remaining_bytes)?;
+            remaining -= nodes;
+            remaining_bytes -= bytes;
+            declared.push(ty);
+        }
         let result = match self.graph.call(function)?.get(3) {
             Some(&annotation) => self.annotation(annotation)?,
             None => Ty::Any,
         };
+        type_cost(&result, remaining, remaining_bytes)?;
         let pure = self.graph.effects(function, &|_| None) == Effects::None;
-        Some(Ty::Fn(params, Box::new(result), pure))
+        Some(Ty::Fn(declared, Box::new(result), pure))
     }
     fn function_type_of(&mut self, node: NodeId) -> Option<Ty> {
         if self.graph.form(node) == Some("fn") { self.function_type(node) } else { None }
+    }
+
+    /// Locate a returned record member through wrappers whose result is exactly
+    /// their body. Do not guess origins through references or conditional paths.
+    fn result_field(&self, mut node: NodeId, field: &str) -> Option<NodeId> {
+        loop {
+            match self.graph.syntax(node) {
+                Syntax::Mapping(entries) => return entries.iter()
+                    .find(|(name, _)| name == field).map(|(_, value)| *value),
+                Syntax::Call(items) => node = match (self.graph.form(node), items.len()) {
+                    (Some("let"), 3) => items[2],
+                    (Some("type_time"), 2) => items[1],
+                    _ => return None,
+                },
+                _ => return None,
+            }
+        }
     }
 
     /// An annotated function's body must be able to produce its declared result.
@@ -307,10 +426,7 @@ impl Checker<'_> {
         match self.infer(body) {
             Some(actual) if !actual.overlaps(&declared) => {
                 let field = actual.disjoint_field(&declared);
-                let at = match (self.graph.syntax(body), field.as_ref()) {
-                    (Syntax::Mapping(entries), Some(field)) => entries.iter().find(|(name, _)| name == field).map_or(body, |(_, node)| *node),
-                    _ => body,
-                };
+                let at = field.as_ref().and_then(|field| self.result_field(body, field)).unwrap_or(body);
                 let field = field.map_or(String::new(), |name| format!(" at field `{name}`"));
                 self.error(at, format!("the body of `{path}` is {}, declared {}{field}", actual.name(), declared.name()));
             }
