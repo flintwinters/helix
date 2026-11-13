@@ -222,9 +222,10 @@ impl Ty {
             (_, Ty::Union(members)) => members.iter().any(|m| self.overlaps(m)),
             (Ty::Refine(base, _), _) => base.overlaps(other),
             (_, Ty::Refine(base, _)) => self.overlaps(base),
-            (Ty::Enum(values), _) => values.iter().any(|v| holds(v, other, &mut |_| Ok(Value::Boolean(true)))),
-            (_, Ty::Enum(values)) => values.iter().any(|v| holds(v, self, &mut |_| Ok(Value::Boolean(true)))),
+            (Ty::Enum(values), _) => values.iter().any(|v| super::literal::may_overlap(v, other)),
+            (_, Ty::Enum(values)) => values.iter().any(|v| super::literal::may_overlap(v, self)),
             (Ty::List(_), Ty::List(_)) | (Ty::Map(_), Ty::Map(_)) => true,
+            (Ty::Map(_), Ty::Record(_) | Ty::Class(..)) | (Ty::Record(_) | Ty::Class(..), Ty::Map(_)) => true,
             (Ty::Record(_) | Ty::Class(..), Ty::Record(_) | Ty::Class(..)) => true,
             (Ty::Function | Ty::Fn(..), Ty::Function | Ty::Fn(..)) => true,
             (Ty::Int, Ty::Int) | (Ty::Float, Ty::Float) | (Ty::Str, Ty::Str) | (Ty::Bool, Ty::Bool) | (Ty::Null, Ty::Null) | (Ty::Secret, Ty::Secret) | (Ty::Vm, Ty::Vm) => true,
@@ -430,8 +431,8 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
     }
     match (a, b) {
         (Ty::Union(members), _) => members.iter().all(|m| subtype(m, b, pred)),
+        (Ty::Enum(values), _) => values.iter().all(|v| super::literal::covered_by(v, b, pred)),
         (_, Ty::Union(members)) => members.iter().any(|m| subtype(a, m, pred)),
-        (Ty::Enum(values), _) => values.iter().all(|v| holds(v, b, pred)),
         (Ty::Refine(base, _), _) => subtype(base, b, pred),
         (Ty::Fn(..), Ty::Function) => true,
         // Parameters are contravariant, the result covariant: a function that accepts more and
@@ -447,7 +448,7 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
     }
 }
 
-fn record_subtype(fa: &[(String, Field)], fb: &[(String, Field)], pred: &mut Pred) -> bool {
+pub(super) fn record_subtype(fa: &[(String, Field)], fb: &[(String, Field)], pred: &mut Pred) -> bool {
     let fits = |(name, f): &(String, Field)| fb.iter().find(|(n, _)| n == name).is_some_and(|(_, g)| subtype(&f.ty, &g.ty, pred) && (f.required || !g.required));
     fa.iter().all(fits) && fb.iter().filter(|(_, g)| g.required).all(|(n, _)| fa.iter().any(|(m, f)| m == n && f.required))
 }

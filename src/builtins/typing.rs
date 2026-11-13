@@ -5,6 +5,7 @@
 mod class;
 mod construct;
 mod machine;
+mod literal;
 mod ty;
 
 use crate::value::Value;

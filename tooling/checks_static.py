@@ -9,6 +9,7 @@ def check(ctx):
     try:
         verify_checks(ctx)
         verify_bodies(ctx)
+        verify_numeric_enum_overlap(ctx)
         verify_computed_heads(ctx)
         verify_repository_modules(ctx)
         verify_format(ctx)
@@ -145,6 +146,44 @@ def verify_computed_heads(ctx):
     ):
         code, report = static_report(ctx, json.dumps(source))
         assert code == 0 and report['diagnostics'] == [] and report['unchecked'] == [], report
+
+
+def verify_numeric_enum_overlap(ctx):
+    """Equal numeric representations overlap, without proving every value fits."""
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    def fn(params, body, result):
+        return call('fn', params, body, result)
+
+    literal = lambda value: call('literal', value)
+    examples = [
+        ('float_return_integer_literal', 1.0, literal(1)),
+        ('integer_return_float_literal', 1, literal(1.0)),
+        ('float_return_mixed_enum', 1.0, call('enum', 1, 'ok')),
+        ('fractional_return', 1.5, literal(1.5)),
+    ]
+    sources = [(name, call('let', {'produce': fn([], value, annotation)}, call('produce')), value)
+               for name, value, annotation in examples]
+    sources.append(('enum_argument_to_float', call('let', {
+        'consume': fn([['x', 'float']], {'$ref': 'x'}, 'float'),
+        'produce': fn([['x', literal(1)]], call('consume', {'$ref': 'x'}), 'float'),
+    }, call('produce', 1.0)), 1.0))
+    for name, source, expected in sources:
+        text = json.dumps(source)
+        code, report = static_report(ctx, text)
+        assert code == 0 and report['diagnostics'] == [], (name, report)
+        assert any('may not be' in item['message'] for item in report['unchecked']), (name, report)
+        # An actual accepted execution witnesses overlap independently of static inference.
+        process = ctx.helix('run', '-', stdin=text)
+        assert process.returncode == 0 and yaml.safe_load(process.stdout)['root'] == expected, (name, process)
+
+    # Keep definite mismatches loud: equality does not coerce strings or rounded integers.
+    for value, annotation in [('1', literal(1)), (1, literal(1.5)),
+                              (9007199254740992.0, literal(9007199254740993))]:
+        source = fn([], value, annotation)
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 1 and any(item['kind'] == 'type' for item in report['diagnostics']), report
 
 
 def verify_format(ctx):
