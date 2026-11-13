@@ -1,0 +1,55 @@
+# Review matching preserves representations; exact matches reach the callback.
+$call:
+- let
+- provider: {$call: [import, 'std:provider']}
+  context: {platform: test, capabilities: [], managed: true, allow_remove: false}
+  spec:
+    version: 1
+    id: review.identity
+    revision: '1'
+    arguments: map
+    observation: string
+    result: any
+    platforms: [test]
+    capabilities: []
+    check: true
+    diff: true
+    failure: stop
+    observe: {$call: [fn, [args], old]}
+    plan: {$call: [fn, [args, before], [{field: value, op: set, to: {nested: [1]}}]]}
+    apply: {$call: [fn, [args, steps], {$call: [raise, apply_reached, exact review reached application]}]}
+  outcome:
+    $call:
+    - fn
+    - [reviewed_args, current_args]
+    - $call:
+      - get
+      - $call:
+        - get
+        - $call:
+          - provider.apply
+          - {$ref: spec}
+          - {$ref: current_args}
+          - {$ref: context}
+          - {$call: [provider.plan, {$ref: spec}, {$ref: reviewed_args}, old, {$ref: context}]}
+        - error
+      - kind
+- numeric_kind: {$call: [outcome, {nested: [1]}, {nested: [1.0]}]}
+  signed_zero: {$call: [outcome, {nested: [0.0]}, {nested: [-0.0]}]}
+  exact: {$call: [outcome, {nested: [1], label: retained}, {label: retained, nested: [1]}]}
+  changed_step:
+    $call:
+    - let
+    - review: {$call: [provider.plan, {$ref: spec}, {}, old, {$ref: context}]}
+    - $call:
+      - get
+      - $call:
+        - get
+        - $call:
+          - provider.apply
+          - {$ref: spec}
+          - {}
+          - {$ref: context}
+          - {$call: [set, {$ref: review}, steps, [{field: value, op: set, to: {nested: [1.0]}}]]}
+        - error
+      - kind

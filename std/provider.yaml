@@ -135,7 +135,9 @@ apply_checked:
     - {$call: [has, [changed, unchanged], {$call: [get, {$ref: current}, status]}]}
     - $call:
       - if
-      - {$call: [eq, {$ref: review}, {$ref: current}]}
+      # Public equality equates numeric representations that callbacks can distinguish.
+      # Canonical data encoding preserves those representations and ignores map presentation.
+      - {$call: [eq, {$call: [yaml_dump, {$ref: review}]}, {$call: [yaml_dump, {$ref: current}]}]}
       - {$call: [if, {$call: [eq, {$call: [get, {$ref: current}, status]}, unchanged]}, {$ref: current}, {$call: [mutate, {$ref: p}, {$ref: args}, {$ref: ctx}, {$call: [set, {$ref: current}, attempted, true]}]}]}
       - {$call: [raise, provider_stale_plan, The reviewed plan does not match fresh provider state and caller inputs]}
     - {$ref: current}

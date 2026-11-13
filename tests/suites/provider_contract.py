@@ -223,6 +223,49 @@ def verify(h):
     wrong_result = {**observable, "apply": call("fn", ["args", "steps"], logged("apply", 42))}
     failed(run("apply_result_type", wrong_result, mode="apply"), "apply_result_type")
 
+    # Numeric language equality is weaker than reviewed execution identity. This
+    # real callback persists the exact nested argument representation it receives.
+    representation_file = artifacts / "representation.txt"
+    representation_spec = descriptor(
+        arguments=ref("map"),
+        observe=call("fn", ["args"], call("effect", "file_read", str(representation_file))),
+        plan=call("fn", ["args", "before"], call("if", call("eq", ref("before"), "old"),
+                  [{"field": "/representation", "op": "set", "to": {"nested": [1]}}], [])),
+        apply=call("fn", ["args", "steps"], call("effect", "file_write",
+                   call("dict", "path", str(representation_file), "text", call("yaml_dump", ref("args"))))))
+    representation_grants = ("--allow-read", str(artifacts), "--allow-write", str(artifacts))
+    for name, reviewed_value, current_value in (("numeric_kind", 1, 1.0), ("signed_zero", 0.0, -0.0)):
+        old_args = {"payload": [{"value": reviewed_value}], "label": "retained"}
+        new_args = {"label": "retained", "payload": [{"value": current_value}]}
+        review, _, _ = plan(f"{name}_review", representation_spec, args=old_args)
+        representation_file.write_text("old")
+        result = run(f"{name}_stale_review", representation_spec, args=new_args, mode="apply",
+                     flags=representation_grants, reviewed=review)
+        assert failed(result, name)["error"]["kind"] == "provider_stale_plan", result
+        assert representation_file.read_text() == "old", result
+        assert [item["operation"] for item in result[1].get("effects", [])] == ["file_read"], result
+
+        # Identical values in a differently ordered source map still match the
+        # review and exercise the write callback and postcondition successfully.
+        exact_args = {"label": "retained", "payload": [{"value": reviewed_value}]}
+        result = run(f"{name}_exact_review", representation_spec, args=exact_args, mode="apply",
+                     flags=representation_grants, reviewed=review)
+        assert result[0]["status"] == "changed" and result[0]["applied"] is True, result
+        assert [item["operation"] for item in result[1]["effects"]] == ["file_read", "file_write", "file_read"], result
+        persisted = yaml.safe_load(representation_file.read_text())
+        assert persisted == exact_args and type(persisted["payload"][0]["value"]) is type(reviewed_value), persisted
+        if isinstance(reviewed_value, float):
+            assert persisted["payload"][0]["value"].hex() == reviewed_value.hex(), persisted
+
+    tampered = json.loads(json.dumps(review))
+    tampered["steps"][0]["to"]["nested"][0] = 1.0
+    representation_file.write_text("old")
+    result = run("numeric_step_stale_review", representation_spec, args=exact_args, mode="apply",
+                 flags=representation_grants, reviewed=tampered)
+    assert failed(result, "numeric_step_stale_review")["error"]["kind"] == "provider_stale_plan", result
+    assert representation_file.read_text() == "old", result
+    assert [item["operation"] for item in result[1].get("effects", [])] == ["file_read"], result
+
     # Actual authorized reads/writes, checked independently in Python. A sibling
     # file represents unmanaged state that every lifecycle path must preserve.
     managed = artifacts / "managed.txt"

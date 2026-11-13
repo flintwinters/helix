@@ -913,6 +913,12 @@ The audit must produce decisions and executable examples, not just an inventory.
   reconstruction, alongside a golden repair/rejection example. No additional
   constructor or descriptor certification mechanism is introduced. This does
   not complete the remaining builtin/library audit.
+  Provider fresh-review identity now compares canonical data encodings rather
+  than language equality: numerically equal representations can lead to different
+  host writes. The existing serializer preserves those distinctions and canonical
+  map order without introducing another equality primitive. Provider acceptance
+  pairs representation-only stale reviews with actual file writes and exact-review
+  controls; the ordinary numeric equality contract remains unchanged.
 - [x] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
   The tested arithmetic example exposes nested call wrappers, but ordinary named
   intermediates suffice. Production `tooling/test_policy.yaml` already names the

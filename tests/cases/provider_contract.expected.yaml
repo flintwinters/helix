@@ -168,7 +168,7 @@ root:
       column: 9
       file: "std:provider"
       kind: provider_stale_plan
-      line: 140
+      line: 142
       message: The reviewed plan does not match fresh provider state and caller inputs
       path: "/apply_checked/$call/2/$call/2/$call/3"
       reference:

@@ -195,9 +195,15 @@ module contents in addition to the author-declared revision.
 Successful plans contain `version`, `provider`, `revision`, `args`, `context`,
 `before`, `steps`, `status` (`changed` or `unchanged`), `phase: plan` and
 `applied: false`. `changed` at this phase means changes are planned, not already
-performed. Application observes and plans again, then requires exact equality
-with the reviewed report before mutation. This detects changed inputs or
-observations; it does not provide a lock against changes between observation and
+performed. Application observes and plans again, then compares the canonical
+YAML encodings of the complete fresh and reviewed reports before mutation.
+Numeric kinds and signed zero must match, including inside arguments, observations
+and steps; map presentation order does not matter. Ordinary language `eq` is
+insufficient because callbacks can distinguish equal numeric representations.
+Migration: a representation-only change now produces `provider_stale_plan`;
+obtain and review a fresh plan before applying it. Encoding both reports adds
+bounded serialization work under the existing runtime budgets. This detects
+changed inputs or observations; it does not provide a lock against changes between observation and
 mutation. Provider revisions are declarations, not verified content hashes.
 Provider authors must include target identity in arguments and change revisions
 when callback behavior changes; captured callback environments are not recorded
