@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-from common import CONFIG, CONTENT, DATA, FILES, RUN, SERVER, event, supervisor, wait_until
+from common import CONFIG, DATA, FILES, RUN, SERVER, event, supervisor, wait_until
 
 
 class FileInstallFailure(RuntimeError):

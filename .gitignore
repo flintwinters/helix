@@ -1,4 +1,5 @@
 target/
 runtime/
+/.worktrees/
 /CLAUDE.md
 __pycache__/

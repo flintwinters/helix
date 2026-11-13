@@ -4,6 +4,7 @@
 def failure(root, case, stage, reason, command, result, *, source=None, expected=None):
     """Keep complete evidence on disk and a focused, navigable report in stderr."""
     import difflib
+    from itertools import islice
     import shlex
 
     relative = case.relative_to(root)
@@ -21,12 +22,13 @@ def failure(root, case, stage, reason, command, result, *, source=None, expected
              f"evidence: {directory.relative_to(root)}"]
     if expected is not None:
         (directory / "expected.yaml").write_text(expected)
-        diff = list(difflib.unified_diff(expected.splitlines(keepends=True),
-                                       result.stdout.splitlines(keepends=True),
-                                       fromfile="expected", tofile="actual"))
+        diff_limit = 120
+        diff = list(islice(difflib.unified_diff(expected.splitlines(keepends=True),
+                                              result.stdout.splitlines(keepends=True),
+                                              fromfile="expected", tofile="actual"), diff_limit + 1))
         lines.append("".join(line if line.endswith("\n") else line + "\n\\ No newline at end of file\n"
-                             for line in diff[:120]).rstrip())
-        if len(diff) > 120:
+                             for line in diff[:diff_limit]).rstrip())
+        if len(diff) > diff_limit:
             lines.append("diff truncated; complete values are in evidence files")
     if result.stderr:
         lines.append("stderr:\n" + result.stderr[:2000])

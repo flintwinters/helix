@@ -40,7 +40,7 @@ SCENARIOS = {
 
 # Deliberately independent of adapter observation/planning code. Read actual OS state.
 PROBE = r'''
-import hashlib, json, os, pathlib, subprocess, sys, urllib.request
+import json, pathlib, subprocess, sys, urllib.request
 paths = ['/etc/helix-nginx/nginx.conf', '/etc/helix-nginx/server.conf', '/var/lib/helix-nginx/index.html', '/var/lib/helix-unmanaged/sentinel']
 files = {}
 for name in paths:
