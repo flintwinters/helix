@@ -301,7 +301,11 @@ excluding compilation and Python YAML decoding. Each workload gets one warmup
 and five measured runs, checked against its expected result. Arithmetic maps,
 function loops, ASCII/Unicode slicing, and long-key map reads/replacements run
 alongside actual `std:types.from_fields` reconstruction, `std:types.redeclare` over
-16 concrete `std:machine` declarations, and production test-report assembly. The
+16 concrete `std:machine` declarations, production test-report assembly, and
+`std:fuzz.plan` over fixed Unicode/CRLF input and the `dogfood_testing` fixture.
+Mutation benchmarks check the complete ordered span plan against an independent
+Python line-boundary oracle, including duplicates; they measure planning rather
+than execution of the generated mutations. The
 machine workload checks complete descriptors, including defaults, fixed values,
 provenance and parent names. A separate persisted 128-field class measures
 redeclaration of own required, optional and default fields without first building

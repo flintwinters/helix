@@ -37,6 +37,20 @@ def workloads():
     yield "map-set-existing-key", repeated('{"$call": ["get", {"$call": ["set", {"$ref": "mapping"}, {"$ref": "key"}, 43]}, {"$ref": "key"}]}', "43", 1000,
                                            {"mapping": {key: 42}, "key": key}), 1000, 1000
 
+    from tests.suites.mutation_generation import reference_plan
+    # Fixed seam/Unicode input and an explicitly chosen real robustness fixture.
+    # Do not dynamically choose the largest case: source hashes should change
+    # only when the chosen workload changes, not when unrelated fixtures grow.
+    unicode_source = ('a' * 255 + '\r\n' + ''.join(
+        f'field_{index}: "雪🙂é e\u0301 ' + 'payload ' * 6 + '"\r\n'
+        for index in range(96)) + 'last: "tail"\u2028')
+    fixture = Path(__file__).resolve().parents[2] / 'tests' / 'cases' / 'dogfood_testing.yaml'
+    for name, text in (('fuzz-plan-unicode-crlf', unicode_source),
+                       ('fuzz-plan-dogfood-testing', fixture.read_text())):
+        source = {'$call': ['let', {'fuzz': {'$call': ['import', 'std:fuzz']}},
+                            {'$call': ['fuzz.plan', text]}]}
+        yield name, json.dumps(source, ensure_ascii=False), reference_plan(text), len(text)
+
     fields = {f"field_{index:03}": "integer" for index in range(256)}
     source = {"$call": ["let", {"types": {"$call": ["import", "std:types"]}},
                         {"$call": ["types.from_fields", fields]}]}
@@ -186,6 +200,8 @@ def verify(h):
                            "operations_per_run": operations, "seconds": samples}
             if name in {"types-from-fields-256", "test-policy-report", "test-policy-report-failures"}:
                 measurement["operation_unit"] = "fields" if name == "types-from-fields-256" else "suite observations"
+            elif name.startswith("fuzz-plan-"):
+                measurement["operation_unit"] = "source Unicode scalars"
             elif name == "types-redeclare-machine-fleet":
                 measurement["operation_unit"] = "machine declarations"
             elif name == "types-redeclare-own-fields-128":

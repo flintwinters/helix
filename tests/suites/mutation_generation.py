@@ -6,14 +6,21 @@ import time
 import yaml
 
 
+def reference_plan(source):
+    """Independent scalar spans from Python's line boundaries, including order/duplicates."""
+    plan = []
+    start = 0
+    for line in source.splitlines(keepends=True):
+        end = start + len(line)
+        plan.extend(([[0, start]], [[0, start], [end, len(source)]]))
+        start = end
+    plan.extend([[0, index]] for index in range(0, len(source), 5))
+    return plan
+
+
 def reference(source):
-    """Frozen pre-migration policy, retained only as an independent test oracle."""
-    lines = source.splitlines(keepends=True)
-    variants = []
-    for index in range(len(lines)):
-        variants.extend(("".join(lines[:index]), "".join(lines[:index] + lines[index + 1:])))
-    variants.extend(source[:index] for index in range(0, len(source), 5))
-    return variants
+    """Materialize the same mutation contract for host-generator parity checks."""
+    return ["".join(source[start:end] for start, end in spans) for spans in reference_plan(source)]
 
 
 def verify(h):
