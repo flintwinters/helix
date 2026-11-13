@@ -231,6 +231,9 @@ Golden and robustness failures identify the source path and contract stage, show
 rerun command, and save complete output evidence under `runtime/test-failures/`.
 Golden mismatches include a bounded unified diff. Round-trip and damaged-input
 failures save their exact replay source; `check` replays retain check semantics.
+Interpreter timeouts retain captured partial stdout and stderr, append a timeout
+diagnostic, and remain failures even if the captured state looks complete. Byte
+captures decode as UTF-8 with replacement for incomplete or invalid sequences.
 Evidence for the same case and stage is replaced on the next failure.
 
 ## Resource checks and benchmarks

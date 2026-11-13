@@ -132,7 +132,15 @@ class TestContext:
             return self.process_runner(command, input=stdin, capture_output=True, text=True,
                                        cwd=self.root if cwd is None else cwd, timeout=self.timeout)
         except subprocess.TimeoutExpired as error:
-            return subprocess.CompletedProcess(command, 124, "", f"timed out: {error}")
+            # TimeoutExpired may carry bytes even with text=True, including a
+            # partial UTF-8 sequence. Preserve diagnostic text without letting
+            # decoding hide the timeout or turn partial output into success.
+            def captured_text(value):
+                return value.decode('utf-8', errors='replace') if isinstance(value, bytes) else value or ''
+
+            stdout, stderr = captured_text(error.output), captured_text(error.stderr)
+            separator = '\n' if stderr and not stderr.endswith('\n') else ''
+            return subprocess.CompletedProcess(command, 124, stdout, f"{stderr}{separator}timed out: {error}")
 
     def mutations(self, source: str):
         """Generate damaged inputs in Helix, keeping generator failures host-visible."""

@@ -107,6 +107,43 @@ def verify_import_context(h, directory):
         assert case.read_text() == original
 
 
+def verify_timeout_output(h, directory):
+    """Timeouts retain captured evidence without accepting a finished-looking state."""
+    import subprocess
+
+    case = directory / 'timeout.yaml'
+    case.write_text('42\n')
+    examples = [
+        (b'status: finished\nroot: 42\n', b'progress caf\xc3\xa9 \xe2',
+         'status: finished\nroot: 42\n', 'progress café \ufffd'),
+        ('partial state', 'progress already terminated\n', 'partial state', 'progress already terminated\n'),
+        (None, None, '', ''),
+    ]
+    for captured_out, captured_err, expected_out, expected_err in examples:
+        def timeout(args, **kwargs):
+            assert kwargs['text'] is True
+            raise subprocess.TimeoutExpired(args, kwargs['timeout'], output=captured_out, stderr=captured_err)
+
+        context = replace(h, commands={case.parent: 'run'}, process_runner=timeout)
+        result = context.helix('run', '-', stdin='42')
+        assert result.returncode == 124 and result.stdout == expected_out, result
+        prefix = expected_err + ('\n' if expected_err and not expected_err.endswith('\n') else '')
+        assert result.stderr.startswith(prefix + 'timed out: '), result
+        assert result.stderr.count('timed out: ') == 1, result
+        assert context.malformed_state(result.stdout, result.returncode) is not None, result
+
+        failures = context.robustness_case(case)
+        assert len(failures) == 1 and 'exit code 124' in failures[0], failures
+        assert 'timed out:' in failures[0], failures
+        evidence = h.root / next(line.removeprefix('evidence: ') for line in failures[0].splitlines()
+                                 if line.startswith('evidence: '))
+        assert (evidence / 'actual.yaml').read_text() == expected_out
+        retained_stderr = (evidence / 'stderr.txt').read_text()
+        assert retained_stderr.startswith(prefix + 'timed out: '), retained_stderr
+        assert (evidence / 'input.yaml').read_text() == '42\n'
+        assert case.read_text() == '42\n'
+
+
 def verify_contexts(h):
     """Two overlapping invocations retain independent executable, root and timeout settings."""
     import subprocess
@@ -318,6 +355,7 @@ def verify(h):
             yield source
 
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="runner-") as directory:
+        verify_timeout_output(h, Path(directory))
         verify_selection(h, Path(directory))
         verify_import_context(h, Path(directory))
         case = Path(directory) / "probe.yaml"
