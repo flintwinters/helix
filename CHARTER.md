@@ -246,7 +246,7 @@ A type should read like the value it describes with the specifics left open: som
 - [x] Type-time errors (`types_type_time_error` golden case) are the same structured errors as run-time ones, with the phase recorded in the state
   - [x] Same shape and kinds (`kind`, `message`, `path`, `line`, `column`), catchable with `try` like any other
   - [x] The saved state records which phase failed
-  - [x] A type-time failure stops before any run-time effect when its region is on an unconditional path from the root (mapping entries, sequence items, call and iteration arguments, `let` bodies, `finally` operands, the first operand of `if`/`cond`/`and`/`or`): those regions run before the first run-time step (`types_type_time_preflight`, `types_type_time_preflight_forms`). Regions in a branch, `try`, a function body or an unreferenced `let` binding keep ordinary order, so caught failures and unchosen branches behave as documented (`types_type_time_preflight_caught`)
+  - [x] A type-time failure stops before any run-time effect when its region sits anywhere outside a `try` operand, a function body or an import: mapping entries, sequence items, call and iteration arguments, `let` bindings and bodies, every branch of `if`/`cond`/`and`/`or`. Those regions run before the first run-time step, even in an unchosen branch or an unreferenced binding (`types_type_time_preflight`, `types_type_time_preflight_forms`, `types_type_time_preflight_dead_code`). Regions in a `try` or a function body keep ordinary order so caught failures behave as documented (`types_type_time_preflight_caught`)
 
 ### Expanding the type algebra
 

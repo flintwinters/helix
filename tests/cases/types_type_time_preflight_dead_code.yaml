@@ -1,0 +1,5 @@
+# A region in an untaken branch or an unreferenced `let` binding is still checked before the run:
+# the failing region stops it although `a_read` sorts first and the branch is never chosen.
+"a_read": {"$call": ["effect", "read_file", {"path": "unused"}]}
+"bad": {"$call": ["expect", {"port": "http"}, {"$call": ["record", "port", {"$ref": "integer"}]}]}
+"z_branch": {"$call": ["if", true, "taken", {"$call": ["type_time", {"$ref": "bad"}]}]}

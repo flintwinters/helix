@@ -1,13 +1,14 @@
-//! Type-time preflight: explicit `type_time` regions that every run evaluates are checked before
-//! the program's first run-time step, so a failing region stops the run before any effect.
+//! Type-time preflight: every `type_time` region that can run before the program's first run-time
+//! step does, so a failing region stops the run before any effect.
 //!
-//! A region qualifies when it sits on an unconditional evaluation path from the root: mapping
-//! entries, sequence items, arguments of ordinary calls and iteration forms, a `let` body, the
-//! operands of `finally`, and the first operand of `if`, `cond`, `and` and `or`. Regions in a
-//! branch, a `try`, a function body or a `let` binding (which is evaluated only if referenced) are
-//! not hoisted: they depend on a choice, a handler or call-time arguments, so they keep ordinary
-//! evaluation order, `try` can still catch their failures and unchosen branches stay unchecked.
-//! Evaluation memoizes each region's result, so the run reuses it.
+//! The scan covers the program's own source from the root through mapping entries, sequence items
+//! and every operand of every form: untaken branches and `let` bindings that are never referenced
+//! included, so such a region is checked whether or not the run would reach it. Two boundaries stay
+//! out of reach, both because a failure there can be caught or deferred at run time:
+//! - a `try` is the explicit catch boundary, so regions inside it keep ordinary order;
+//! - a function body runs when the function is called, possibly under a `try` at the call site, and
+//!   may read the call's arguments; its regions run then and record what they read.
+//! Imported modules are not scanned. Evaluation memoizes each region's result for the run.
 use super::Evaluator;
 use crate::builtins::{self, Evaluation, Form};
 use crate::graph::{NodeId, Syntax, ROOT};
@@ -25,12 +26,7 @@ impl Evaluator {
                 Syntax::Call(items) => match graph.identifier(items[0]).and_then(builtins::descriptor) {
                     Some(actor) => match actor.evaluation {
                         Evaluation::Form(Form::TypeTime) => regions.push(id),
-                        Evaluation::Form(Form::Let) => pending.extend(items.get(2)),
-                        Evaluation::Form(Form::If | Form::Cond | Form::And | Form::Or) => pending.extend(items.get(1)),
-                        Evaluation::Form(Form::Finally | Form::Map | Form::Filter | Form::Fold | Form::Each | Form::Until | Form::Call) => {
-                            pending.extend(items[1..].iter().rev())
-                        }
-                        Evaluation::Form(_) => {}
+                        Evaluation::Form(Form::Try | Form::Import | Form::Fn) => {}
                         _ => pending.extend(items[1..].iter().rev()),
                     },
                     None => pending.extend(items[1..].iter().rev()),

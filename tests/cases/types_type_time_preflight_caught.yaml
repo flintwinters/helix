@@ -1,8 +1,7 @@
-# Regions under `try`, `if` and functions are not hoisted: a caught type-time failure leaves the
-# earlier effect requestable, and an unchosen branch is never checked.
+# Regions under `try` and in function bodies are not hoisted: a caught type-time failure leaves the
+# earlier effect requestable, and a function that is never called never runs its region.
 "a_read": {"$call": ["effect", "read_file", {"path": "unused"}]}
 "bad": {"$call": ["expect", {"port": "http"}, {"$call": ["record", "port", {"$ref": "integer"}]}]}
 "caught": {"$call": ["try", {"$call": ["type_time", {"$ref": "bad"}]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}]}
-"unchosen": {"$call": ["if", false, {"$call": ["type_time", {"$ref": "bad"}]}, "skipped"]}
-"lazy_binding": {"$call": ["let", {"unused": {"$call": ["type_time", {"$ref": "bad"}]}}, 1]}
-"branch_only": {"$call": ["if", true, "taken", {"$call": ["type_time", {"$ref": "bad"}]}]}
+"uncalled": {"$call": ["fn", [], {"$call": ["type_time", {"$ref": "bad"}]}]}
+"guarded": {"$call": ["try", {"$call": ["uncalled"]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}]}
