@@ -184,6 +184,19 @@ impl Evaluator {
                     ));
                 }
             }
+            Request::Project { site, name, members, actor } => {
+                let mut value = self.value();
+                for member in members {
+                    value = match value {
+                        Value::Hash(map) => map.get(&s(&member)).cloned(),
+                        _ => None,
+                    }.ok_or_else(|| self.err(site, "unbound", format!(
+                        "unbound {} `{name}`", if actor { "actor" } else { "symbol" }
+                    )))?;
+                }
+                self.charge_value(site, &value)?;
+                self.finish(value);
+            }
             Request::Collect {
                 site,
                 actor,

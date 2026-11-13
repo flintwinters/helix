@@ -95,6 +95,12 @@ pub(crate) enum Request {
     Eval(NodeId),
     Finish(NodeId, usize, bool),
     Actor(NodeId, Vec<NodeId>),
+    Project {
+        site: NodeId,
+        name: String,
+        members: Vec<String>,
+        actor: bool,
+    },
     Collect {
         site: NodeId,
         actor: Option<Actor>,

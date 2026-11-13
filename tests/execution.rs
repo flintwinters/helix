@@ -500,3 +500,44 @@ fn builtin_policy_sources_are_visible_when_execution_enters_them() {
     }
 
 }
+
+#[test]
+fn computed_member_projection_preserves_suspended_branches_and_blame() {
+    let mut pending = Vm::load(r#"{$call: [let, {box: {$call: [effect, input, null]}}, {$ref: box.answer}]}"#);
+    pending.run();
+    assert_eq!(pending.status(), Status::Signaled);
+    let inspection = pending.inspect();
+    assert!(inspection["continuations"].as_vec().unwrap().iter().any(|request|
+        request["kind"].as_str() == Some("project_members")
+            && request["name"].as_str() == Some("box.answer")));
+    let reply = |n| Yaml::Hash([(Yaml::String("answer".into()), Yaml::Integer(n))].into_iter().collect());
+    let first = finish_by_steps(pending.resolve_effect(Ok(reply(41))));
+    let mut second = pending.resolve_effect(Ok(reply(42)));
+    second.run();
+    assert_eq!(root(&first), Yaml::Integer(41));
+    assert_eq!(root(&second), Yaml::Integer(42));
+    assert_eq!(pending.inspect(), inspection);
+    assert_eq!(second.state()["effects"].as_vec().unwrap().len(), 1);
+
+    let mut missing = pending.resolve_effect(Ok(Yaml::Hash(Default::default())));
+    missing.run();
+    assert_eq!(missing.state()["error"]["kind"].as_str(), Some("unbound"));
+    assert_eq!(missing.state()["error"]["path"].as_str(), Some("/$call/2"));
+    assert_eq!(missing.state()["error"]["message"].as_str(), Some("unbound symbol `box.answer`"));
+}
+
+#[test]
+fn dotted_static_members_remain_lazy_and_computed_inputs_remain_tracked() {
+    let mut lazy = Vm::load(r#"{$call: [let, {data: {safe: 42, unused: {$call: [effect, forbidden, null]}}}, {$call: [try, {$ref: data.absent}, {$call: [fn, [error], {$ref: error.kind}]}]}]}"#);
+    lazy.run();
+    assert_eq!(root(&lazy), Yaml::String("unbound".into()));
+    assert!(lazy.pending_effect().is_none());
+    assert!(lazy.state()["effects"].is_badvalue());
+
+    let vm = equivalent(r#"{$call: [{$call: [fn, [n], {$call: [type_time, {$call: [let, {box: {$call: [dict, answer, {$ref: n}]}}, {$ref: box.answer}]}]}]}, 42]}"#);
+    assert_eq!(root(&vm), Yaml::Integer(42));
+    assert_eq!(vm.state()["type_time_inputs"][0]["reads"][0]["name"].as_str(), Some("n"));
+    assert_eq!(vm.inspect()["type_time_inputs"][0]["inputs"][0]["value"].as_i64(), Some(42));
+    let checked = equivalent(include_str!("cases/computed_members.yaml"));
+    assert_eq!(root(&checked)["different_captures"], Yaml::Boolean(false));
+}
