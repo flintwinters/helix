@@ -88,7 +88,72 @@ def verify_fixed_origins(h):
             assert error["kind"] == "type" and "value_kind" in error["message"] and "rebuild" in error["message"], error
 
 
+def verify_redeclaration(h):
+    """Rebuilding owned declarations retains validation, laziness and value origins."""
+    call = lambda actor, *args: {'$call': [actor, *args]}
+    ref = lambda name: {'$ref': name}
+    capture = call('fn', ['tag'], call('fn', [], call('type', ref('tag'))))
+    bindings = {
+        'types': call('import', 'std:types'),
+        'capture': capture,
+        'callback': call('capture', 1.0),
+        'base': call('class', 'owner', call('record',
+            'required', 'integer', 'optional', call('optional', 'string'),
+            'defaulted', call('default', 'integer', 7),
+            'guarded', call('refine', 'integer', call('fn', ['value'], call('effect', 'time', None))))),
+        'rebuilt': call('types.redeclare', ref('base'), []),
+        'realized': call('realize', call('class', 'concrete', call('record',
+            'number', call('default', 'integer', 7), 'fixed', 'any',
+            'callback', call('default', 'function', ref('callback')),
+            'optional', call('optional', 'string')), {'fixed': 1.0})),
+        'reconstructed': call('types.redeclare', ref('realized'), []),
+        'parent': call('class', 'parent', call('record', 'required', 'integer')),
+    }
+    observations = {
+        'fields_preserved': call('eq', ref('base.fields'), ref('rebuilt.fields')),
+        'field_names': call('keys', ref('rebuilt.fields')),
+        'optional': ref('rebuilt.fields.optional'),
+        'defaulted': ref('rebuilt.fields.defaulted'),
+        'abstract': call('not', ref('rebuilt.concrete')),
+        'abstract_values': ref('rebuilt.values'),
+        'realized': ref('reconstructed.concrete'),
+        'provenance': ref('reconstructed.provenance'),
+        'number': ref('reconstructed.values.number'),
+        'fixed_kind': call('type', ref('reconstructed.values.fixed')),
+        'callback_capture': call(ref('reconstructed.values.callback')),
+        'default_stays_overridable': call('is', call('dict', 'number', 8, 'fixed', 1.0, 'callback', ref('callback')), ref('reconstructed')),
+    }
+    malformed_field = {'type': 'optional', 'of': {'type': 'list', 'of': 3}}
+    invalid_original = call('set', ref('base'), 'fields', {'required': malformed_field})
+    invalid_parent = call('set', ref('parent'), 'fields', {'required': malformed_field})
+    invalid_constraints = call('set', ref('parent'), 'constraints', [None])
+    for name, original, parents in (
+        ('invalid_original', invalid_original, []),
+        ('invalid_parent_fields', ref('base'), [invalid_parent]),
+        ('invalid_parent_constraints', ref('base'), [invalid_constraints]),
+    ):
+        observations[name] = call('try', call('types.redeclare', original, parents),
+                                  call('fn', ['error'], ref('error.kind')))
+    result = checked(h, json.dumps(call('let', bindings, observations)))
+    assert result == {
+        'fields_preserved': True, 'field_names': ['defaulted', 'guarded', 'optional', 'required'],
+        'optional': {'type': 'optional', 'of': 'string'},
+        'defaulted': {'type': 'default', 'of': 'integer', 'default': 7},
+        'abstract': True, 'abstract_values': {}, 'realized': True,
+        'provenance': {
+            'number': {'type': 'concrete', 'value': 'default of concrete', 'value_kind': 'default'},
+            'callback': {'type': 'concrete', 'value': 'default of concrete', 'value_kind': 'default'},
+            'fixed': {'type': 'concrete', 'value': 'concrete', 'value_kind': 'explicit'},
+            'optional': {'type': 'concrete'},
+        },
+        'number': 7, 'fixed_kind': 'float', 'callback_capture': 'float',
+        'default_stays_overridable': True,
+        'invalid_original': 'type', 'invalid_parent_fields': 'type', 'invalid_parent_constraints': 'type',
+    }, result
+
+
 def verify(h):
+    verify_redeclaration(h)
     from tests.suites.class_realization import verify as verify_realization
     verify_realization(h)
     from tests.suites.class_merge_identity import verify as verify_merge_identity

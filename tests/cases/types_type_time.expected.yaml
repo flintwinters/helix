@@ -187,11 +187,6 @@ objects:
       ref: object6
   object4:
     bindings:
-      from_fields:
-        code:
-          path:
-            - from_fields
-          source: "std:types"
       own_entries:
         code:
           path:
@@ -232,7 +227,10 @@ objects:
                       - "$ref": name
                       - "$ref": parents
                       - "$call":
-                          - from_fields
+                          - dict
+                          - type
+                          - record
+                          - fields
                           - "$call":
                               - own_entries
                               - "$call":
@@ -632,7 +630,10 @@ objects:
                             - "$ref": name
                             - "$ref": parents
                             - "$call":
-                                - from_fields
+                                - dict
+                                - type
+                                - record
+                                - fields
                                 - "$call":
                                     - own_entries
                                     - "$call":

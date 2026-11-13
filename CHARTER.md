@@ -540,6 +540,12 @@ The runtime supports types, classes and callable values beyond the established p
     lower median CLI times for mixed and failure-heavy reports, respectively;
     these observations are not portable guarantees. Independent complete-output
     checks retain duplicate diagnostics, order and all captured logs.
+    Class reconstruction also measures concrete machine fleets and persisted
+    declarations with 128 owned fields. `std:types.redeclare` assembles the
+    selected record directly after validating the original class; `extend`
+    retains field and parent validation. This removes a redundant `from_fields`
+    fold while preserving callable captures, constraints and value provenance.
+    Standalone `from_fields` retains its checked construction contract.
     Text-mode test results now flush at suite boundaries, so completed failures
     and warnings are available while later work runs. Final aggregation retains
     its independent failure path; JSON remains one complete report. Deterministic

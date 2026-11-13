@@ -258,7 +258,9 @@ function loops, ASCII/Unicode slicing, and long-key map reads/replacements run
 alongside actual `std:types.from_fields` reconstruction, `std:types.redeclare` over
 16 concrete `std:machine` declarations, and production test-report assembly. The
 machine workload checks complete descriptors, including defaults, fixed values,
-provenance and parent names. Report inputs use the suite catalog with retained logs, mixed outcomes
+provenance and parent names. A separate persisted 128-field class measures
+redeclaration of own required, optional and default fields without first building
+the input through `from_fields`. Report inputs use the suite catalog with retained logs, mixed outcomes
 and a failure-heavy variant; Python checks every output row and summary. The
 workloads save raw samples, median/range, throughput, platform and binary hash to
 `runtime/speed/report.json`; unique run directories retain inputs and states.

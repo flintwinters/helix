@@ -121,7 +121,7 @@
           - "extend"
           - {"$ref": "name"}
           - {"$ref": "parents"}
-          - {"$call": ["from_fields", {"$call": ["own_entries", {"$call": ["get", {"$ref": "t"}, "fields"]}, {"$call": ["get", {"$ref": "t"}, "provenance"]}, {"$ref": "name"}, "type"]}]}
+          - {"$call": ["dict", "type", "record", "fields", {"$call": ["own_entries", {"$call": ["get", {"$ref": "t"}, "fields"]}, {"$call": ["get", {"$ref": "t"}, "provenance"]}, {"$ref": "name"}, "type"]}]}
           - {"$call": ["own_entries", {"$call": ["get", {"$ref": "t"}, "values"]}, {"$call": ["get", {"$ref": "t"}, "provenance"]}, {"$ref": "name"}, "value"]}
         constraints_present: {$call: [has, {$ref: t}, constraints]}
       - "$call":
