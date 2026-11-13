@@ -198,7 +198,7 @@ impl Ty {
                         if kind == "record" {
                             return Ok(Ty::Record(fields));
                         }
-                        Ok(Ty::Class(fields, fixed_values(map)?, constraints(map)))
+                        Ok(Ty::Class(fields, fixed_values(map)?, constraints(map)?))
                     }
                     other => Err(format!("`{other}` is not a type constructor")),
                 }
@@ -281,10 +281,18 @@ fn fixed_values(class: &Hash) -> Result<Vec<(String, Value)>, String> {
     Ok(fixed)
 }
 
-fn constraints(class: &Hash) -> Vec<Value> {
+/// Validate declaration shape independently of whether a value reaches its predicates.
+pub(super) fn constraints(class: &Hash) -> Result<Vec<Value>, String> {
     match class.get(&s("constraints")) {
-        Some(Value::Array(items)) => items.to_vec(),
-        _ => Vec::new(),
+        None => Ok(Vec::new()),
+        Some(Value::Array(items)) => items.iter().enumerate().map(|(index, item)| {
+            if is_function(item) {
+                Ok(item.clone())
+            } else {
+                Err(format!("class constraint {index} must be a function"))
+            }
+        }).collect(),
+        Some(_) => Err("class `constraints` must be a list of functions".into()),
     }
 }
 

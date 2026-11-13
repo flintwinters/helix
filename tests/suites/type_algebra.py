@@ -89,6 +89,7 @@ def verify_fixed_origins(h):
 
 
 def verify(h):
+    verify_constraint_descriptors(h)
     verify_fixed_origins(h)
     from tests.suites.descriptor_policy import verify as verify_descriptors
     verify_descriptors(h)
@@ -158,3 +159,62 @@ def verify(h):
     assert root['missing']['kind'] == 'abstract'
     assert root['missing']['data']['missing'] == [{'field': 'x', 'required_by': 'needs'},
                                                   {'field': 'y', 'required_by': 'needs'}]
+
+
+def verify_constraint_descriptors(h):
+    """Malformed declarations fail even when ordinary membership would short-circuit."""
+    call = lambda actor, *args: {"$call": [actor, *args]}
+    literal = lambda value: {"$literal": value}
+    ref = lambda name: {"$ref": name}
+    base_expression = call("realize", call("class", "checked", call("record", "x", ref("integer")), {"x": 1}))
+    base = checked(h, json.dumps(base_expression))
+    predicate = call("fn", ["value"], True)
+
+    def operations(descriptor):
+        return {
+            "subtype": call("subtype", literal(descriptor), "any"),
+            "empty_list": call("is", [], {"type": "list", "of": literal(descriptor)}),
+            "invalid_field": call("is", {"x": "wrong"}, literal(descriptor)),
+            "realize": call("realize", literal(descriptor)),
+            "constrain": call("constrain", literal(descriptor), predicate),
+            "inherit": call("inherit", "child", [literal(descriptor)], {}),
+            "drift": call("drift", literal(descriptor), {}),
+        }
+
+    for constraints in (None, 7, {}, [None], ["not a function"], [{}]):
+        descriptor = {**base, "constraints": constraints}
+        for name, expression in operations(descriptor).items():
+            process = h.helix("run", "-", stdin=json.dumps({"probe": expression}))
+            assert process.returncode == 1 and h.malformed_state(process.stdout, 1) is None, (name, constraints, process)
+            error = yaml.safe_load(process.stdout)["error"]
+            assert error["kind"] == "type" and "constraint" in error["message"], (name, constraints, error)
+            assert error["path"].startswith("/probe"), error
+
+    # Both omission and an explicit empty list are valid declarations; controls
+    # prove rejection is about malformed constraints, not every class descriptor.
+    for descriptor in (base, {**base, "constraints": []}):
+        result = checked(h, json.dumps(operations(descriptor)))
+        assert result["subtype"] is True and result["empty_list"] is True, result
+        assert result["invalid_field"] is False and result["realize"]["concrete"] is True, result
+        assert result["constrain"]["concrete"] is False and result["inherit"]["concrete"] is True, result
+        assert result["drift"] == {"missing": {"x": 1}, "changed": {}, "extra": {}}, result
+
+    for value in (None, False, 3, "not a function", {}, []):
+        process = h.helix("run", "-", stdin=json.dumps(call("constrain", literal(base), literal(value))))
+        assert process.returncode == 1 and h.malformed_state(process.stdout, 1) is None, (value, process)
+        error = yaml.safe_load(process.stdout)["error"]
+        assert error["kind"] == "type" and "function" in error["message"], error
+
+    # Valid callable constraints remain lazy during construction and declaration
+    # validation. Only a fitting candidate reaches the predicate in the engine.
+    source = call("let", {
+        "pending": call("constrain", literal(base), call("fn", ["value"], call("raise", "probe", "predicate invoked"))),
+    }, {"subtype": call("subtype", ref("pending"), "any"),
+        "empty_list": call("is", [], call("list_of", ref("pending"))),
+        "invalid_field": call("is", {"x": "wrong"}, ref("pending")),
+        "concrete": ref("pending.concrete"),
+        "reached": call("violations", {"x": 1}, ref("pending"))})
+    result = checked(h, json.dumps(source))
+    assert result["subtype"] is True and result["empty_list"] is True, result
+    assert result["invalid_field"] is False and result["concrete"] is False, result
+    assert len(result["reached"]) == 1 and "predicate invoked" in result["reached"][0]["message"], result

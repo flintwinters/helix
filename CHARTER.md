@@ -876,8 +876,13 @@ The audit must produce decisions and executable examples, not just an inventory.
   original classes, revalidation, label collisions, equal inherited default/fixed
   values in both parent orders, reconstruction and legacy-descriptor rejection.
   Planning remains comparison of already realized values, without predicate execution;
-  closed membership and extra-preserving convergence answer different questions.
-  The broader audit remains open; these repairs do not certify manually edited descriptors.
+  closed membership and extra-preserving convergence answer different questions,
+  demonstrated on the same missing, changed and extra-field values in `convergence_policy`.
+  Shared constraint-shape validation rejects malformed declarations even through
+  `subtype(t, any)` and empty collections; `provider_contract` independently checks
+  that invalid observation/result schemas fail before observer effects. Valid predicate
+  bodies remain deferred. The broader audit remains open; these repairs do not
+  certify manually edited descriptors.
 - [ ] Audit builtin and standard-library responsibilities against actual callers. Remove redundant convenience paths where ordinary composition is clear; retain primitives where semantics or measured costs require them. Namespacing or relocating code alone does not close this item.
 - [ ] Evaluate representative source for readability: a small script, a higher-order transformation and the selected defining workload. Record where YAML wrappers or implicit evaluation rules obscure intent, try existing composition first and compare any proposed alternative before adding syntax.
 - [ ] Separate the core language reference from library catalogs and host-operation manuals, retaining discoverable links and one authoritative description per contract. A basic program should not require learning provider lifecycles or command retry policy.

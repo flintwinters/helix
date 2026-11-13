@@ -6,6 +6,7 @@ from tests.suites.contracts import checked
 
 def verify(h):
     verify_constraint_realization(h)
+    verify_membership_planning_boundary(h)
     wanted = {f"field_{index:03}": None if index % 5 == 0 else index for index in range(128)}
     observed = {key: (value if index % 3 == 0 else "drift")
                 for index, (key, value) in enumerate(wanted.items()) if index % 4}
@@ -40,6 +41,29 @@ def verify(h):
             assert result["invalid"]["kind"] == kind, result["invalid"]
             assert result["invalid"]["path"].startswith("/invalid/$call/1/$call/"), result["invalid"]
     print("convergence: 128 configured fields, independent plan oracle, purity, no-op and original blame")
+
+
+def verify_membership_planning_boundary(h):
+    """Membership checks permitted values; planning compares configured values."""
+    call = lambda actor, *args: {"$call": [actor, *args]}
+    ref = lambda name: {"$ref": name}
+    configured = call("realize", call("class", "defaulted",
+                      call("record", "x", call("default", ref("integer"), 7))))
+    cases = [
+        ({}, True, {"missing": {"x": 7}, "changed": {}, "extra": {}},
+         [{"field": "x", "op": "set", "to": 7}]),
+        ({"x": 8}, True, {"missing": {}, "changed": {"x": {"want": 7, "have": 8}}, "extra": {}},
+         [{"field": "x", "op": "set", "from": 8, "to": 7}]),
+        ({"x": 7, "extra": "keep"}, False, {"missing": {}, "changed": {}, "extra": {"extra": "keep"}}, []),
+    ]
+    source = call("let", {"configured": configured}, [
+        {"member": call("is", observed, ref("configured")),
+         "drift": call("drift", ref("configured"), observed),
+         "plan": call("converge", ref("configured"), observed)}
+        for observed, _, _, _ in cases])
+    actual = checked(h, json.dumps(source))
+    expected = [{"member": member, "drift": drift, "plan": plan} for _, member, drift, plan in cases]
+    assert actual == expected, (actual, expected)
 
 
 def verify_constraint_realization(h):

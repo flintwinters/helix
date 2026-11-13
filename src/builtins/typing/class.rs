@@ -15,9 +15,9 @@ use crate::value::Hash;
 use crate::value::Value;
 
 use super::construct::{descriptor, reflect};
-use super::ty::{check_ty, mapping, predicate, subtype, value_kind, Field, Pred, Ty, ValueKind, DEFAULT_SOURCE};
+use super::ty::{check_ty, constraints, mapping, predicate, subtype, value_kind, Field, Pred, Ty, ValueKind, DEFAULT_SOURCE};
 use crate::builtins::fault::Fault;
-use crate::builtins::value::equal;
+use crate::builtins::value::{equal, is_function};
 use crate::model::string as s;
 
 /// One field of a class: its declaration, who declared it, and its value with who supplied it.
@@ -61,6 +61,9 @@ pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Valu
         "open_fields" => open_fields(&args[0]),
         "constrain" => {
             let mut class = Class::from_value(&args[0], 0)?;
+            if !is_function(&args[1]) {
+                return Err(Fault::expected(1, "function", &args[1]));
+            }
             class.constraints.push(args[1].clone());
             // A stronger declaration needs explicit realization before its values are planned.
             class.concrete = false;
@@ -140,10 +143,7 @@ impl Class {
             },
             _ => Err(bad()),
         };
-        let constraints = match get("constraints") {
-            Some(Value::Array(items)) => items.to_vec(),
-            _ => Vec::new(),
-        };
+        let constraints = constraints(map).map_err(|why| Fault::at(arg, "type", why))?;
         let slots = fields
             .iter()
             .map(|(field, spec)| {

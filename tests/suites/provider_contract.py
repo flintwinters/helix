@@ -137,6 +137,13 @@ def verify(h):
         {**observable, "apply": []}, {**observable, "check": "yes"},
         {**observable, "capabilities": [1]}, {**observable, "platforms": [False]},
     ]
+    # A malformed class constraint is a declaration error, even when check mode
+    # never uses the result schema or observation would fail after the callback.
+    for field in ("observation", "result"):
+        for constraints in (None, {"check": True}, [False]):
+            invalid_type = call("set", call("class", "invalid", call("record")),
+                                "constraints", literal(constraints))
+            invalid_specs.append({**observable, field: invalid_type})
     for index, spec in enumerate(invalid_specs):
         result = run(f"invalid_descriptor_{index:02}", spec)
         failed(result, index)
