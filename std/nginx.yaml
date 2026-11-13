@@ -151,11 +151,60 @@ $call:
     - fn
     - [operation, payload]
     - {$call: [host_reply, {$ref: operation}, {$call: [effect, command, {program: /usr/local/bin/helix-nginx-host, args: {$call: [list, {$ref: operation}, {$call: [json_dump, {$ref: payload}]}]}}]}]}
+  # Expose partial host progress without losing the raw command evidence.
+  # A malformed failure payload must not replace the original command failure.
+  decode_host_error:
+    $call:
+    - fn
+    - - text
+    - $call:
+      - try
+      - $call:
+        - expect
+        - $call:
+          - get
+          - $call:
+            - json_parse
+            - $ref: text
+          - error
+          - null
+        - $ref: map
+      - $call:
+        - fn
+        - - ignored
+        - null
   host_reply:
     $call:
     - fn
-    - [operation, reply]
-    - {$call: [if, {$call: [eq, {$ref: reply.code}, 0]}, {$call: [json_parse, {$ref: reply.stdout}]}, {$call: [raise, nginx_host, {$call: [concat, 'nginx host operation failed: ', {$ref: operation}]}, {$ref: reply}]}]}
+    - - operation
+      - reply
+    - $call:
+      - if
+      - $call:
+        - eq
+        - $ref: reply.code
+        - 0
+      - $call:
+        - json_parse
+        - $ref: reply.stdout
+      - $call:
+        - raise
+        - nginx_host
+        - $call:
+          - concat
+          - 'nginx host operation failed: '
+          - $ref: operation
+        - $call:
+          - set
+          - $call:
+            - set
+            - $ref: reply
+            - operation
+            - $ref: operation
+          - host_error
+          - $call:
+            - decode_host_error
+            - $ref: reply.stdout
   observe_state: {$call: [fn, [config], {$call: [host, observe, {port: {$ref: config.port}}]}]}
   observe: {$call: [fn, [config], {$call: [observe_state, {$call: [resolve, {$ref: config}]}]}]}
   context: {$call: [fn, [config], {platform: debian-container, capabilities: [command], managed: true, allow_remove: {$call: [eq, {$ref: config.state}, absent]}}]}

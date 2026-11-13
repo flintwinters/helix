@@ -541,3 +541,35 @@ fn dotted_static_members_remain_lazy_and_computed_inputs_remain_tracked() {
     let checked = equivalent(include_str!("cases/computed_members.yaml"));
     assert_eq!(root(&checked)["different_captures"], Yaml::Boolean(false));
 }
+
+#[test]
+fn nginx_host_failure_preserves_structured_progress_and_raw_command_evidence() {
+    let mut pending = Vm::load(r#"{$call: [let, {nginx: {$call: [import, 'std:nginx']}}, {$call: [nginx.observe, {package_version: test, port: 8080, server_name: test.local, content: hello, state: present}]}]}"#);
+    pending.run();
+    assert_eq!(pending.status(), Status::Signaled);
+    assert_eq!(pending.pending_effect().unwrap().operation, "command");
+    let partial = r#"{"error":{"kind":"OSError","message":"replacement failed","completed_paths":["/etc/helix-nginx/nginx.conf"],"uncertain":true,"uncertain_path":"/etc/helix-nginx/server.conf"}}"#;
+    for output in [partial, "not JSON", r#"{"error":"invalid error shape"}"#] {
+        let reply = Yaml::Hash([
+            (Yaml::String("code".into()), Yaml::Integer(1)),
+            (Yaml::String("stdout".into()), Yaml::String(output.into())),
+            (Yaml::String("stderr".into()), Yaml::String("raw stderr".into())),
+        ].into_iter().collect());
+        let mut failed = pending.resolve_effect(Ok(reply));
+        failed.run();
+        let state = failed.state();
+        assert_eq!(state["error"]["kind"].as_str(), Some("nginx_host"));
+        let data = &state["error"]["data"];
+        assert_eq!(data["operation"].as_str(), Some("observe"));
+        assert_eq!(data["code"].as_i64(), Some(1));
+        assert_eq!(data["stdout"].as_str(), Some(output));
+        assert_eq!(data["stderr"].as_str(), Some("raw stderr"));
+        if output == partial {
+            assert_eq!(data["host_error"]["completed_paths"][0].as_str(), Some("/etc/helix-nginx/nginx.conf"));
+            assert_eq!(data["host_error"]["uncertain"], Yaml::Boolean(true));
+            assert_eq!(data["host_error"]["uncertain_path"].as_str(), Some("/etc/helix-nginx/server.conf"));
+        } else {
+            assert_eq!(data["host_error"], Yaml::Null);
+        }
+    }
+}
