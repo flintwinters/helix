@@ -188,6 +188,17 @@ Use `./manage.py --help` or `--help-json` for command discovery,
 `./manage.py test --describe` for suite contracts, and `./manage.py std [module]`
 to discover embedded libraries and read their source.
 
+## Usage log
+
+Every runtime invocation made through `./manage.py` (`run`, `eval`, `exec`, `cli`,
+`perform`, `check`, ...) is recorded in `runtime/usage.sqlite3` (table `calls`: command,
+argv, source text or file contents, exit code, duration, caller). Analyse it with
+`./manage.py inspect usage` (summary), `--schema`, or read-only `--sql 'SELECT ...'`.
+Stdin programs are flagged but not captured. `HELIX_USAGE_LOG=0` disables logging,
+`HELIX_USAGE_DB` relocates it, `HELIX_AGENT` labels the caller (`claude-code` is
+inferred from `CLAUDECODE`). Test runs do not log, and the installed `helix` binary
+or `target/` executables invoked directly bypass the log.
+
 ## Daily tooling
 
 Install from this checkout with `cargo install --path . --locked`; Cargo puts

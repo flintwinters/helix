@@ -99,10 +99,42 @@ def frozen_test_context(context, output_format=DEFAULT_FORMAT):
         yield (replace(context, binary=binary) if code == 0 else None), code
 
 
+def usage(args) -> int:
+    """Report on the runtime invocation log; read-only and independent of the build."""
+    import sqlite3
+
+    from tooling import usage_log
+
+    try:
+        tables = usage_log.report(ROOT, sql=args.sql, schema=args.schema, limit=args.limit)
+    except (sqlite3.Error, OSError) as error:
+        message = f"usage log unavailable ({usage_log.database(ROOT)}): {error}"
+        if args.format == "text":
+            print(f"error: {message}", file=sys.stderr)
+        else:
+            emit({"command": "usage", "status": "error", "exit_code": 2, "error": {"kind": "usage_log", "message": message}},
+                 stream=sys.stderr)
+        return 2
+    if args.format == "json":
+        emit({"command": "usage", "status": "ok", **{name: [dict(zip(columns, row)) for row in rows]
+                                                      for name, (columns, rows) in tables.items()}})
+        return 0
+    for name, (columns, rows) in tables.items():
+        if name != "query":
+            print(f"{name}:")
+        if name != "schema":
+            print("\t".join(columns))
+        for row in rows:
+            print("\t".join("" if value is None else str(value) for value in row))
+    return 0
+
+
 def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS,
          patterns: list[str] | None = None, output_format: str = DEFAULT_FORMAT) -> int:
     from tooling.test_runner import discover_cases
 
+    # Fixtures invoke wrappers; keep them out of the agent usage log.
+    os.environ["HELIX_USAGE_LOG"] = "0"
     context = test_context()
     try:
         cases = discover_cases(context.commands, context.root, patterns) if patterns else None
@@ -153,8 +185,16 @@ def main() -> int:
         return build(report=True, output_format=args.format)
     if command == "test":
         return test(args.bless, args.suite, args.jobs, args.case, args.format)
+    if command == "usage":
+        return usage(args)
     with frozen_binary(BIN) as (binary, code):
-        return code or runtime(args, binary)
+        if code:
+            return code
+        from tooling.usage_log import logged
+
+        with logged(ROOT, args, sys.argv[1:]) as outcome:
+            outcome["exit_code"] = runtime(args, binary)
+        return outcome["exit_code"]
 
 
 def perform_forwarded(binary, arguments):

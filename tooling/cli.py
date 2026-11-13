@@ -72,6 +72,7 @@ CONTRACT = (
     "(build and forwarded tools retain their own codes). "
     "Paths and stdin imports resolve from the repository root. "
     "Generated artifacts live in runtime/. "
+    "Runtime invocations are logged to runtime/usage.sqlite3 (inspect usage; HELIX_USAGE_LOG=0 disables, HELIX_USAGE_DB relocates). "
     "HELIX_TEST_TIMEOUT controls test interpreter timeouts (seconds; default 10); "
     "CARGO_TARGET_DIR selects Cargo build output."
 )
@@ -169,6 +170,11 @@ def parser():
     modules.add_argument("module", nargs="?", help="module name, optionally prefixed with std:")
     command(inspect, "inventory", "Report source files grouped through Helix; save replay artifacts in runtime/",
             ["inspect", "inventory"], "inspect inventory")
+    usage = command(inspect, "usage", "Summarize or query the log of runtime invocations made through manage.py",
+                    ["inspect", "usage"], "inspect usage --sql 'SELECT command, COUNT(*) FROM calls GROUP BY 1'")
+    usage.add_argument("--sql", help="read-only SQL over table calls (see --schema)")
+    usage.add_argument("--schema", action="store_true", help="print the calls table definition")
+    usage.add_argument("--limit", type=int, default=10, help="recent calls to list in the summary (default: %(default)s)")
     migration = command(runtime, "migrate-syntax", "Convert legacy YAML source offline to explicit syntax",
                         ["runtime", "migrate-syntax"], "runtime migrate-syntax --write std tests/cases")
     migration.add_argument("paths", nargs="+", metavar="PATH", help="source files or directories (expected outputs excluded)")

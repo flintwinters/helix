@@ -39,6 +39,7 @@ def verify(h):
     direct = h.helix("perform", "--help")
     assert (performed.returncode, performed.stdout, performed.stderr) == (direct.returncode, direct.stdout, direct.stderr)
     assert "--command-timeout-ms" in performed.stdout and "--command-progress" in performed.stdout
+    verify_usage_log(h)
     help_result = invoke("--help")
     assert help_result.returncode == 0
     assert "eval" in help_result.stdout and "cli" in help_result.stdout
@@ -130,3 +131,31 @@ def verify(h):
     assert parse(["--format=text", "cli", "--", "--format=json"]).extra == ["--format=json"]
     with contextlib.redirect_stdout(io.StringIO()):
         assert parse(["lint", "--help"]) is None
+
+
+def verify_usage_log(h):
+    """Runtime invocations are logged without changing behavior; project tests and opt-outs are not."""
+    import sqlite3
+
+    database = h.root / "runtime" / "usage-contract.sqlite3"
+    database.unlink(missing_ok=True)
+    env = {**os.environ, "HELIX_USAGE_DB": str(database), "HELIX_USAGE_LOG": "1"}
+
+    def invoke(*args, **extra):
+        return subprocess.run([sys.executable, str(h.root / "manage.py"), *args], cwd=h.root, input="",
+                              capture_output=True, text=True, timeout=120, env={**env, **extra})
+
+    ok, failed = invoke("eval", '{"$call": ["add", 20, 22]}'), invoke("eval", '{"$call": ["div", 1, 0]}')
+    assert (ok.returncode, failed.returncode) == (0, 1) and not ok.stderr
+    assert invoke("eval", "1", HELIX_USAGE_LOG="0").returncode == 0
+    assert invoke("std", "math").returncode == 0
+    rows = sqlite3.connect(database).execute(
+        "SELECT command, exit_code, program, stdin_program FROM calls ORDER BY id").fetchall()
+    assert rows == [("eval", 0, '{"$call": ["add", 20, 22]}', 0), ("eval", 1, '{"$call": ["div", 1, 0]}', 0),
+                    ("std", 0, None, 0)], rows
+    report = json.loads(invoke("--format=json", "usage", "--sql", "SELECT COUNT(*) AS n FROM calls").stdout)
+    assert report["query"] == [{"n": 3}]
+    assert invoke("usage", "--sql", "DELETE FROM calls").returncode == 2
+    unusable = invoke("usage", HELIX_USAGE_DB=str(h.root / "runtime" / "missing" / "usage.sqlite3"))
+    assert unusable.returncode == 2 and "usage log unavailable" in unusable.stderr
+    database.unlink()
