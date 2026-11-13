@@ -13,6 +13,8 @@ def state(h, command, source):
 
 
 def verify(h):
+    from tests.suites.phase_input_identity import verify as verify_input_identity
+    verify_input_identity(h)
     verify_computed_heads(h)
     verify_check_mode(h)
     cases = [h.root / "tests" / "cases" / f"{name}.yaml" for name in (

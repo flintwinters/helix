@@ -51,7 +51,8 @@ impl Evaluator {
             .collect(),
         );
         let region = self.region.as_mut().expect("checked above");
-        if !region.inputs.contains(&input) {
+        // Language-equal inputs can still differ under `type`, `str`, or inspection.
+        if !region.inputs.iter().any(|seen| seen.same_view(&input)) {
             region.inputs.push(input);
         }
     }
@@ -70,7 +71,7 @@ impl Evaluator {
             .into_iter()
             .collect(),
         );
-        if !self.type_inputs.contains(&entry) {
+        if !self.type_inputs.iter().any(|seen| seen.same_view(&entry)) {
             self.charge_value(region.site, &entry)?;
             self.type_inputs.push(entry);
         }

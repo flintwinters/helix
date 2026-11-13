@@ -857,7 +857,9 @@ does not complete the broader audits below:
   explains timing, input determinism, migration and the workload reasons for
   retaining handler, child-machine, parameter and import boundaries.
   The `type_time`, `execution` and provider suites pair placement examples
-  with completed effects and retained-machine evidence. Parameter-independence
+  with completed effects and retained-machine evidence. The phase-input identity
+  regressions retain numeric kinds, signed zero and nested representations across
+  calls, captures and inspection while deduplicating exact repeats. Parameter-independence
   analysis remains conservative; this is not a claim of complete static inference.
 - Remaining friction is explicit: lexical map fields can shadow outer names;
   YAML call wrappers make implementation verbose;

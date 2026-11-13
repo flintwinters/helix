@@ -369,6 +369,73 @@ z_second: {$call: [b_second]}
 }
 
 #[test]
+fn phase_input_ledger_preserves_numeric_representations_in_retained_runs_and_checks() {
+    for (first, second, operation, expected) in [
+        ("1", "1.0", "type", vec![Yaml::Integer(1), Yaml::Real("1.0".into())]),
+        ("0.0", "-0.0", "str", vec![Yaml::Real("0.0".into()), Yaml::Real("-0.0".into())]),
+    ] {
+        let source = format!(r#"
+sample: {{$call: [fn, [value], {{$call: [type_time, {{$call: [{operation}, {{$ref: value}}]}}]}}]}}
+a_first: {{$call: [sample, {first}]}}
+b_second: {{$call: [sample, {second}]}}
+c_repeat: {{$call: [sample, {first}]}}
+"#);
+        for checking in [false, true] {
+            let ready = Vm::load(&source);
+            let initial = ready.inspect();
+            let mut completed = ready.clone();
+            if checking { completed.check(); } else { completed.run(); }
+            assert_eq!(completed.status(), Status::Finished);
+            let inspection = completed.inspect();
+            let inputs = inspection["type_time_inputs"].as_vec().unwrap();
+            let values = inputs.iter().map(|entry| entry["inputs"][0]["value"].clone()).collect::<Vec<_>>();
+            assert_eq!(values, expected, "inspection must retain distinct numeric representations");
+            let retained = completed.clone();
+            assert_eq!(retained.step(), completed);
+            assert_eq!(retained.inspect(), inspection);
+            assert_eq!(ready.inspect(), initial);
+            if !checking {
+                assert_eq!(finish_by_steps(ready), completed);
+            }
+        }
+    }
+}
+
+#[test]
+fn one_phase_records_distinct_preexisting_captures_without_duplicate_reads() {
+    let source = r#"
+factory: {$call: [fn, [tag], {$call: [fn, [], {$call: [type, {$ref: tag}]}]}]}
+apply: {$call: [fn, [callbacks], {$call: [type_time, {$call: [list,
+  {$call: [{$call: [get, {$ref: callbacks}, 0]}]},
+  {$call: [{$call: [get, {$ref: callbacks}, 1]}]},
+  {$call: [{$call: [get, {$ref: callbacks}, 0]}]}]}]}]}
+answer: {$call: [apply, [{$call: [factory, 1]}, {$call: [factory, 1.0]}]]}
+"#;
+    for checking in [false, true] {
+        let ready = Vm::load(source);
+        let initial = ready.inspect();
+        let mut completed = ready.clone();
+        if checking { completed.check(); } else { completed.run(); }
+        assert_eq!(completed.status(), Status::Finished);
+        assert_eq!(root(&completed)["answer"], Yaml::Array(vec![
+            Yaml::String("integer".into()), Yaml::String("float".into()), Yaml::String("integer".into())]));
+        let inspection = completed.inspect();
+        let regions = inspection["type_time_inputs"].as_vec().unwrap();
+        assert_eq!(regions.len(), 1);
+        let reads = regions[0]["inputs"].as_vec().unwrap();
+        assert_eq!(reads.len(), 3, "one callback-list read and two distinct capture reads");
+        let captures = reads.iter().filter(|read| read["name"].as_str() == Some("tag"))
+            .map(|read| read["value"].clone()).collect::<Vec<_>>();
+        assert_eq!(captures, vec![Yaml::Integer(1), Yaml::Real("1.0".into())]);
+        assert_eq!(ready.inspect(), initial);
+        assert_eq!(completed.clone().inspect(), inspection);
+        if !checking {
+            assert_eq!(finish_by_steps(ready), completed);
+        }
+    }
+}
+
+#[test]
 fn retained_capture_graphs_drop_on_small_stacks_and_thread_teardown() {
     for body in [r##"{"$call": ["fn", [], {"$call": ["get", {"$ref": "row"}, 1]}]}"##, r##"{"$call": ["vm", {"$call": ["fn", [], {"$call": ["get", {"$ref": "row"}, 1]}]}]}"##] {
         let source = format!(
