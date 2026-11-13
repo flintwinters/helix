@@ -73,6 +73,30 @@ def workloads():
                 [{"$ref": "machine.machine"}]]}]}, declarations]}]}
     yield "types-redeclare-machine-fleet", json.dumps(source), expected_fleet, fleet_size
 
+    # Start with a persisted ordinary descriptor so timing isolates redeclaration
+    # from constructing the same original fields through from_fields first.
+    own_fields, own_values, own_provenance = {}, {}, {}
+    declaration_name = "service-settings"
+    for index in range(128):
+        field = f"setting_{index:03}"
+        origin = {"type": declaration_name}
+        if index % 3 == 0:
+            own_fields[field] = "integer"
+            own_values[field] = index
+            origin.update(value=declaration_name, value_kind="explicit")
+        elif index % 3 == 1:
+            own_fields[field] = {"type": "optional", "of": "string"}
+        else:
+            own_fields[field] = {"type": "default", "of": "string", "default": f"default-{index}"}
+            own_values[field] = f"default-{index}"
+            origin.update(value=f"default of {declaration_name}", value_kind="default")
+        own_provenance[field] = origin
+    own_declaration = {"type": "class", "name": declaration_name, "parents": [],
+        "fields": own_fields, "values": own_values, "provenance": own_provenance, "concrete": True}
+    source = {"$call": ["let", {"types": {"$call": ["import", "std:types"]}},
+        {"$call": ["types.redeclare", {"$literal": own_declaration}, []]}]}
+    yield "types-redeclare-own-fields-128", json.dumps(source), own_declaration, len(own_fields)
+
     # Use the actual manage.py policy and catalog, retaining process logs rather
     # than replacing production report assembly with a small arithmetic proxy.
     from tooling.cli import SUITES
@@ -164,6 +188,8 @@ def verify(h):
                 measurement["operation_unit"] = "fields" if name == "types-from-fields-256" else "suite observations"
             elif name == "types-redeclare-machine-fleet":
                 measurement["operation_unit"] = "machine declarations"
+            elif name == "types-redeclare-own-fields-128":
+                measurement["operation_unit"] = "own field declarations"
             report["measurements"].append(measurement)
             for index in range(WARMUPS + SAMPLES):
                 started = time.perf_counter_ns()
