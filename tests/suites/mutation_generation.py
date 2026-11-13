@@ -48,10 +48,61 @@ def verify(h):
                   f"characters={len(source)} variants={len(actual)} seconds={time.perf_counter() - started:.3f}")
 
     # A broken generator must fail the harness, never silently skip robustness.
-    def planned(args, **kwargs):
-        plan = [[], [[0, 1]], [[0, 1], [3, 5]]]
-        return subprocess.CompletedProcess(args, 0, yaml.safe_dump({"status": "finished", "root": plan}), "")
-    assert list(replace(h, process_runner=planned).mutations("abcde")) == ["", "a", "ade"]
+    def planned_mutations(source, plan):
+        def planned(args, **kwargs):
+            return subprocess.CompletedProcess(args, 0, yaml.safe_dump({"status": "finished", "root": plan}), "")
+        return list(replace(h, process_runner=planned).mutations(source))
+
+    assert planned_mutations("", []) == []
+    coverage_source = "α\r\nbeta\n中tail"
+    complete = reference_plan(coverage_source)
+    # Coverage concerns source intervals, not a canonical serialization or order.
+    alternative = []
+    for spans in reversed(complete):
+        segmented = [[0, 0]]
+        for start, end in spans:
+            midpoint = (start + end) // 2
+            segmented.extend(([start, midpoint], [midpoint, midpoint], [midpoint, end]))
+        alternative.append(segmented)
+    assert planned_mutations(coverage_source, alternative) == list(reversed(reference(coverage_source)))
+    assert planned_mutations("abcde", [[], [], []]) == ["", "", ""]
+    # Total count and unique work matter; duplicate frequencies remain policy's
+    # parity contract. The empty prefix is still supplied by offset zero.
+    redistributed = [complete[1], *complete[1:]]
+    assert planned_mutations(coverage_source, redistributed) == [
+        "".join(coverage_source[start:end] for start, end in spans) for spans in redistributed]
+
+    invalid_coverage = [
+        ("empty", []),
+        ("truncated", complete[:-1]),
+        ("identity only", [[[0, len(coverage_source)]]] * len(complete)),
+    ]
+    # The first line deletion has a unique positional meaning in this source.
+    missing = [list(spans) for spans in complete]
+    missing[1] = complete[0]
+    invalid_coverage.append(("unique deletion omitted", missing))
+    for label, spans in (("out of category", [[1, 2]]),
+                          ("overlapping spans", [[0, 3], [2, 4]]),
+                          ("reordered spans", [[3, 5], [0, 2]])):
+        invalid_coverage.append((label, [spans, *complete[1:]]))
+    for label, plan in invalid_coverage:
+        try:
+            planned_mutations(coverage_source, plan)
+        except (RuntimeError, ValueError):
+            pass
+        else:
+            raise AssertionError(f"generator accepted incomplete mutation coverage: {label}")
+
+    # Equal emitted strings do not substitute for distinct deletion positions.
+    repeated_source = "aa\naa\n"
+    positional = reference_plan(repeated_source)
+    positional[1] = positional[3]
+    try:
+        planned_mutations(repeated_source, positional)
+    except (RuntimeError, ValueError):
+        pass
+    else:
+        raise AssertionError("generator accepted a missing deletion hidden by repeated source text")
     responses = [(0, "", ""), (0, "[", ""), (0, "status: finished\nroot: 42\n", ""),
                  (0, "status: finished\nroot: [1]\n", ""), (-11, "", ""), (124, "", ""),
                  (1, "status: error\nerror: {kind: type, message: bad, line: 1, column: 1}\n", ""),

@@ -86,6 +86,63 @@ class GoldenPolicyError(RuntimeError):
         self.source = source
 
 
+class MutationPolicyError(RuntimeError):
+    """A rejected mutation policy result with a retained replay diagnostic."""
+
+
+def mutation_plan_problem(source: str, variants) -> str | None:
+    """Veto missing or unsupported work, without generating replacement mutations.
+
+    Coverage is positional, not equality of emitted text. Ordering and duplicate
+    frequencies remain the policy's contract, checked by independent parity tests.
+    """
+    size = len(source)
+    if not isinstance(variants, list) or not all(
+        isinstance(variant, list) and all(
+            isinstance(span, list) and len(span) == 2
+            and all(type(bound) is int for bound in span)
+            and 0 <= span[0] <= span[1] <= size
+            for span in variant)
+        for variant in variants
+    ):
+        return "generator root must contain variants of bounded source spans"
+
+    def intervals(spans):
+        retained = []
+        for start, end in spans:
+            if start == end:
+                continue
+            if retained and start < retained[-1][1]:
+                return None
+            if retained and start == retained[-1][1]:
+                retained[-1] = (retained[-1][0], end)
+            else:
+                retained.append((start, end))
+        return tuple(retained)
+
+    required = {intervals(((0, offset),)) for offset in range(0, size, 5)}
+    count = (size + 4) // 5
+    start = 0
+    for line in source.splitlines(keepends=True):
+        end = start + len(line)
+        required.add(intervals(((0, start),)))
+        required.add(intervals(((0, start), (end, size))))
+        count += 2
+        start = end
+    if len(variants) != count:
+        return f"generator plan has {len(variants)} variants, expected {count}"
+    covered = set()
+    for index, variant in enumerate(variants):
+        retained = intervals(variant)
+        if retained is None:
+            return f"generator variant {index} has overlapping or out-of-order spans"
+        covered.add(retained)
+    if covered != required:
+        return (f"generator plan omits {len(required - covered)} required source-interval mutations "
+                f"and includes {len(covered - required)} unsupported mutations")
+    return None
+
+
 def malformed_state(out: str, returncode: int) -> str | None:
     """Validate terminal CLI observations and required diagnostic/request metadata.
 
@@ -188,18 +245,11 @@ class TestContext:
         if problem is None:
             state = yaml.safe_load(result.stdout)
             variants = state.get("root")
-            if not isinstance(variants, list) or not all(
-                isinstance(variant, list) and all(
-                    isinstance(span, list) and len(span) == 2
-                    and all(type(bound) is int for bound in span)
-                    and 0 <= span[0] <= span[1] <= len(source)
-                    for span in variant)
-                for variant in variants
-            ):
-                problem = "generator root must contain variants of bounded source spans"
+            problem = mutation_plan_problem(source, variants)
         if problem is not None:
-            raise RuntimeError(f"std:fuzz.plan failed: {problem}\n"
-                               f"exit: {result.returncode}\n{result.stdout}\n{result.stderr}")
+            raise MutationPolicyError(test_failure(
+                self.root, self.root / "std" / "fuzz.yaml", "mutation-plan",
+                f"std:fuzz.plan failed: {problem}", "run", result, source=program))
         for variant in variants:
             yield "".join(source[start:end] for start, end in variant)
 
@@ -218,11 +268,14 @@ class TestContext:
 
         src = case.read_text()
         command = self.commands[case.parent]
-        for variant in chain((src,), self.mutations(src)):
-            run = self.helix(*shlex.split(command), "-", stdin=variant, cwd=case.parent)
-            if (why := self.malformed_state(run.stdout, run.returncode)) is not None:
-                return [test_failure(self.root, case, "robustness", why, command, run,
-                                     source=variant, source_cwd=case.parent)]
+        try:
+            for variant in chain((src,), self.mutations(src)):
+                run = self.helix(*shlex.split(command), "-", stdin=variant, cwd=case.parent)
+                if (why := self.malformed_state(run.stdout, run.returncode)) is not None:
+                    return [test_failure(self.root, case, "robustness", why, command, run,
+                                         source=variant, source_cwd=case.parent)]
+        except MutationPolicyError as error:
+            return [f"{case.relative_to(self.root)}: {error}"]
         return []
 
     def robustness(self, cases: list[Path], jobs: int = DEFAULT_TEST_JOBS) -> list[str]:

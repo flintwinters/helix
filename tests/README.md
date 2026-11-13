@@ -125,6 +125,17 @@ original/mutated robustness outputs exercise these checks; rejected outputs reta
 their exact input, stdout and stderr. This is a CLI observation contract, not a
 validator for arbitrary VM inspection states or restorable snapshots.
 
+Mutation planning remains authoritative in `std:fuzz`. Before executing its
+variants, the host verifies the promised line prefixes, line deletions and
+five-character prefixes as source-interval coverage, plus the total work count.
+It rejects missing or unsupported work without generating replacement variants.
+Equivalent adjacent-span representations and plan order are accepted; independent
+parity tests still enforce the library's exact ordering and duplicate frequencies.
+Comparing source positions prevents repeated text from concealing an omitted
+deletion. Generator failures retain their generated program, output and stderr
+through the shared evidence writer, fail the affected fixture, and allow other
+selected fixtures to continue. Empty source still requires an empty plan.
+
 Suite selection, ordering, prerequisite insertion, blessing skips and report
 aggregation live in `tooling/test_policy.yaml`. Aggregation sums per-suite failure
 counts while retaining the original messages and logs in each result; it does not

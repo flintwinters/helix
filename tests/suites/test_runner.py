@@ -467,6 +467,54 @@ def verify_robustness_state_validation(h, directory):
     assert all(path.is_dir() for path in retained), retained
 
 
+def verify_generator_failure_evidence(h, directory):
+    """A damaged generator fails its case without losing later selected work."""
+    import subprocess
+    import yaml
+
+    cases = [directory / 'generator-first.yaml', directory / 'generator-second.yaml']
+    for case, source in zip(cases, ('1\n', '2\n')):
+        case.write_text(source)
+    retained = []
+    for warning in ('', 'injected generator diagnostic\n'):
+        generated, executed = [], []
+        rejected = 'status: finished\nroot: []\n'
+
+        def runner(args, **kwargs):
+            source = kwargs['input']
+            parsed = yaml.safe_load(source)
+            if isinstance(parsed, dict) and '$call' in parsed:
+                original = parsed['$call'][2]['$call'][1]
+                generated.append((original, source))
+                if original == '1\n':
+                    return subprocess.CompletedProcess(args, 0, rejected, warning)
+                assert original == '2\n', original
+                # One terminated line: prefix, deletion, then offset-zero prefix.
+                plan = [[[0, 0]], [[0, 0], [2, 2]], [[0, 0]]]
+                return subprocess.CompletedProcess(args, 0,
+                    yaml.safe_dump({'status': 'finished', 'root': plan}), '')
+            executed.append(source)
+            return subprocess.CompletedProcess(args, 0, 'status: finished\nroot: 1\n', '')
+
+        context = replace(h, commands={directory: 'run'}, process_runner=runner)
+        failures = collect_cases(context.robustness_case, cases, jobs=1)
+        assert len(failures) == 1, failures
+        assert [original for original, _ in generated] == ['1\n', '2\n'], generated
+        assert executed == ['1\n', '2\n', '', '', ''], executed
+        diagnostic = failures[0]
+        assert cases[0].name in diagnostic and 'std:fuzz.plan' in diagnostic, diagnostic
+        evidence = h.root / next(line.removeprefix('evidence: ') for line in diagnostic.splitlines()
+                                 if line.startswith('evidence: '))
+        assert evidence not in retained, (evidence, retained)
+        assert (evidence / 'input.yaml').read_text() == generated[0][1]
+        assert (evidence / 'actual.yaml').read_text() == rejected
+        assert (evidence / 'stderr.txt').read_text() == warning
+        recipe = next(line.removeprefix('reproduce: ') for line in diagnostic.splitlines()
+                      if line.startswith('reproduce: '))
+        assert './manage.py' in recipe and 'run' in recipe and 'input.yaml' in recipe, recipe
+        retained.append(evidence)
+
+
 def verify_completed_output(h):
     """Completed rows are visible before later work; JSON remains one final report."""
     import contextlib
@@ -651,6 +699,7 @@ def verify(h):
         verify_selection(h, Path(directory))
         verify_import_context(h, Path(directory))
         verify_robustness_state_validation(h, Path(directory))
+        verify_generator_failure_evidence(h, Path(directory))
         case = Path(directory) / "probe.yaml"
         case.write_text("1")
         failed = FailedOriginal(root=h.root, binary=h.binary, timeout=h.timeout,
