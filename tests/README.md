@@ -103,7 +103,10 @@ aggregation live in `tooling/test_policy.yaml`. Aggregation sums per-suite failu
 counts while retaining the original messages and logs in each result; it does not
 construct a second flattened failure list. The Python runner executes its
 plan and supplies captured observations; it independently rejects missing or
-unauthorized work, altered evidence and false-success responses. The `harness`
+unauthorized work, altered evidence and false-success responses. Live responses
+and saved reports share the same row validation, including exact integer counts
+and boolean blessing metadata; Python-equal replacements such as `1` and `true`
+cannot silently change the report schema. The `harness`
 suite injects damaged policy responses, and `dogfood_test_orchestration` is the
 golden policy contract. Standalone startup checks remain build-free; discovery,
 process concurrency, compilation and lint execution remain host responsibilities.

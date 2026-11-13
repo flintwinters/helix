@@ -16,6 +16,28 @@ def _valid_summary(value, observations):
             and value["status"] == ("failed" if count else "passed"))
 
 
+def _result_problem(row):
+    """Validate the shared shallow result-row contract, without trusting numeric equality."""
+    required = {"suite", "status", "failures"}
+    optional = {"stdout", "stderr", "cases", "jobs", "blessed", "reason"}
+    if (not isinstance(row, dict) or not required <= set(row) or set(row) - required - optional
+            or not isinstance(row["suite"], str)):
+        return "results must contain suite observations with supported fields"
+    if (not isinstance(row["failures"], list)
+            or any(not isinstance(item, str) for item in row["failures"])
+            or not isinstance(row["status"], str)
+            or row["status"] not in {"passed", "failed", "skipped"}
+            or bool(row["failures"]) != (row["status"] == "failed")
+            or ("reason" in row) != (row["status"] == "skipped")):
+        return f"inconsistent failures/status for {row['suite']}"
+    if (any(key in row and not isinstance(row[key], str) for key in ("stdout", "stderr", "reason"))
+            or any(key in row and (type(row[key]) is not int or row[key] < minimum)
+                   for key, minimum in (("cases", 0), ("jobs", 1)))
+            or ("blessed" in row and type(row["blessed"]) is not bool)):
+        return f"invalid observation metadata for {row['suite']}"
+    return None
+
+
 def load_rerun_report(path, catalog):
     """Validate persisted observations before any build; reports never carry authority."""
     def unique_object(pairs):
@@ -42,25 +64,11 @@ def load_rerun_report(path, catalog):
     seen = set()
     rows = value["results"]
     for row in rows:
-        required = {"suite", "status", "failures"}
-        optional = {"stdout", "stderr", "cases", "jobs", "blessed", "reason"}
-        if (not isinstance(row, dict) or not required <= set(row) or set(row) - required - optional
-                or not isinstance(row["suite"], str) or row["suite"] not in known
-                or row["suite"] in seen):
+        if (problem := _result_problem(row)) is not None:
+            invalid(problem)
+        if row["suite"] not in known or row["suite"] in seen:
             invalid("results must contain unique, known suites with supported fields")
         seen.add(row["suite"])
-        if (not isinstance(row["failures"], list)
-                or any(not isinstance(item, str) for item in row["failures"])
-                or not isinstance(row["status"], str)
-                or row["status"] not in {"passed", "failed", "skipped"}
-                or bool(row["failures"]) != (row["status"] == "failed")
-                or ("reason" in row) != (row["status"] == "skipped")):
-            invalid(f"inconsistent failures/status for {row['suite']}")
-        if (any(key in row and not isinstance(row[key], str) for key in ("stdout", "stderr", "reason"))
-                or any(key in row and (type(row[key]) is not int or row[key] < minimum)
-                       for key, minimum in (("cases", 0), ("jobs", 1)))
-                or ("blessed" in row and type(row["blessed"]) is not bool)):
-            invalid(f"invalid observation metadata for {row['suite']}")
     if not _valid_summary(value, rows):
         invalid("summary does not match recorded failures")
     failed = {row["suite"] for row in rows if row["status"] == "failed"}
@@ -152,12 +160,8 @@ def report(context, observations):
                 or len(value["results"]) != len(observations)):
             return False
         for row, observation in zip(value["results"], observations):
-            if not isinstance(row, dict) or {key: item for key, item in row.items() if key != "status"} != observation:
-                return False
-            if not isinstance(row.get("status"), str) or row["status"] not in {"passed", "failed", "skipped"}:
-                return False
-            if (bool(observation["failures"]) != (row["status"] == "failed")
-                    or ("reason" in observation) != (row["status"] == "skipped")):
+            if (_result_problem(row) is not None
+                    or {key: item for key, item in row.items() if key != "status"} != observation):
                 return False
         # Independently observed failures cannot be erased by a damaged interpreter.
         return _valid_summary(value, observations)

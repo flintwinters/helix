@@ -15,6 +15,7 @@ from tests.suites.test_reports import report_fixture, suite_fixture
 
 def verify(h):
     verify_policy_annotations(h)
+    verify_report_metadata(h)
     verify_rerun_wiring(h)
     catalog = ["first", "golden", "second", "robustness"]
     for requested in (None, [], ["second"], ["second", "first", "second"],
@@ -175,6 +176,58 @@ def verify(h):
         assert report["failure_count"] == (1 if phase == "plan" else 2)
         if phase == "report":
             assert report["results"][0]["failures"] == ["host failure"]
+
+
+def verify_report_metadata(h):
+    """Live reports obey the same exact metadata types as their persisted form."""
+    import tempfile
+    from pathlib import Path
+    from tooling.output import emit
+
+    catalog = ['first', 'second']
+    observations = [
+        {'suite': 'first', 'failures': ['independent failure'], 'cases': 1, 'jobs': 1,
+         'blessed': True, 'stdout': 'retained first output\n', 'stderr': 'warning\n'},
+        {'suite': 'second', 'failures': [], 'cases': 0, 'jobs': 1,
+         'blessed': False, 'stdout': 'retained second output\n', 'stderr': ''},
+    ]
+    actual = test_policy.report(h, observations)
+    expected = {'command': 'test', 'status': 'failed', 'exit_code': 1, 'failure_count': 1,
+                'results': [{**row, 'status': status} for row, status in
+                            zip(observations, ('failed', 'passed'))]}
+    assert actual == expected, actual
+    serialized = io.StringIO()
+    emit(actual, stream=serialized)
+    with tempfile.TemporaryDirectory(dir=h.root / 'runtime', prefix='report-metadata-') as directory:
+        path = Path(directory) / 'report.json'
+        path.write_text(serialized.getvalue())
+        loaded = test_policy.load_rerun_report(path, catalog)
+        assert loaded == {'version': 1, **expected}, loaded
+        for row in loaded['results']:
+            assert type(row['cases']) is int and type(row['jobs']) is int and type(row['blessed']) is bool, row
+        assert test_policy.rerun(h, catalog, loaded) == ['first']
+        assert path.read_text() == serialized.getvalue()
+
+    # Python equality equates these scalars, but the versioned report contract
+    # distinguishes integers from booleans/floats and booleans from numbers.
+    mutations = [(0, field, value) for field in ('cases', 'jobs') for value in (True, 1.0)]
+    mutations += [(0, 'blessed', value) for value in (1, 1.0)]
+    mutations += [(1, 'blessed', value) for value in (0, 0.0)]
+    for index, field, value in mutations:
+        rows = [dict(row) for row in actual['results']]
+        rows[index][field] = value
+        damaged = {**actual, 'results': rows}
+
+        def runner(args, **kwargs):
+            return subprocess.CompletedProcess(args, 0,
+                yaml.safe_dump({'status': 'finished', 'root': damaged}), '')
+
+        try:
+            test_policy.report(replace(h, process_runner=runner), observations)
+        except test_policy.PolicyError:
+            pass
+        else:
+            raise AssertionError(f'live report accepted changed metadata type: {field}={value!r} ({type(value).__name__})')
 
 
 def verify_policy_annotations(h):
