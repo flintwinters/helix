@@ -114,6 +114,10 @@ class Docker:
         self.daemon_ready = False
         self.cleaning = False
 
+    def progress(self, **values):
+        state = dict(version=1, run_id=self.run_id, elapsed_ms=round((time.monotonic()-self.started)*1000), **values)
+        (self.artifacts / "progress.json").write_text(json.dumps(state, indent=2) + "\n")
+
     def command(self, *args, timeout=60, check=True, input_text=None):
         deadline = min(self.deadline, self.scenario_deadline or self.deadline)
         if not self.cleaning and time.monotonic() >= deadline:
@@ -214,6 +218,7 @@ class Docker:
         self.command("cp", str(path), f"{self.container}:{name}")
 
     def fault(self, value=None):
+        self.fault_spec = value or {}
         self.exec("rm", "-f", "/run/helix-nginx/fault-reached.json", "/run/helix-nginx/fault-release")
         if value is None:
             self.exec("rm", "-f", FAULT)
@@ -283,9 +288,17 @@ class Docker:
     def wait_fault(self):
         for _ in range(200):
             if self.exec("test", "-f", "/run/helix-nginx/fault-reached.json", check=False).returncode == 0:
+                reached = json.loads(self.exec("cat", "/run/helix-nginx/fault-reached.json").stdout)
+                assert reached["operation"] in self.fault_spec, reached
+                expected = "after" if self.fault_spec[reached["operation"]] == "after-mutation" else "before"
+                assert reached["phase"] == expected, reached
                 return
             time.sleep(0.05)
         raise AssertionError("fault injection boundary was not reached")
+
+    def signal_process(self, pid, signum):
+        assert pid > 1
+        self.exec("python3", "-c", "import os,sys; os.kill(int(sys.argv[1]),int(sys.argv[2]))", str(pid), str(signum))
 
     def kill_controller(self, pid, signum):
         import yaml
@@ -293,18 +306,26 @@ class Docker:
         if signum == signal.SIGKILL:
             inspect_children = "import json,os,pathlib,sys; p=sys.argv[1]; children=pathlib.Path('/proc/'+p+'/task/'+p+'/children').read_text().split(); print(json.dumps(sorted({os.getpgid(int(child)) for child in children})))"
             groups = json.loads(self.exec("python3", "-c", inspect_children, str(pid)).stdout)
-        self.exec("python3", "-c", "import os,signal,sys; os.kill(int(sys.argv[1]),int(sys.argv[2]))", str(pid), str(signum))
+        self.signal_process(pid, signum)
         if signum == signal.SIGKILL:
             # Fault injection owns these observed child groups. SIGKILL itself
             # promises no cleanup; this fixture cleanup makes orphan pauses finite.
             for group in set([pid, *groups]):
                 assert group > 1
-                self.exec("python3", "-c", "import os,signal,sys; os.killpg(int(sys.argv[1]),signal.SIGKILL)", str(group), check=False)
+                self.exec("python3", "-c", "import os,signal,sys\ntry: os.killpg(int(sys.argv[1]),signal.SIGKILL)\nexcept ProcessLookupError: pass", str(group))
+            self.wait_path("/run/helix-nginx/controller.exit")
+            assert self.exec("cat", "/run/helix-nginx/controller.exit").stdout == str(-signal.SIGKILL)
         else:
             self.wait_path("/run/helix-nginx/controller.exit")
             assert self.exec("cat", "/run/helix-nginx/controller.exit").stdout == "1"
             state = yaml.safe_load(self.exec("cat", "/run/helix-nginx/controller.stderr").stdout)
-            assert state["status"] != "finished" or state["root"].get("status") == "failed", state
+            assert any(row.get("operation") == "command" and row.get("status") == "error" and row.get("outcome", {}).get("kind") == "cancelled" for row in state.get("effects", [])), state
+            if state["status"] == "signaled":
+                assert state["signal"]["kind"] == "cancelled", state
+            else:
+                assert state["status"] == "finished" and state["root"]["status"] == "failed", state
+                resources = state["root"]["error"]["data"]["resources"]
+                assert any(row.get("error", {}).get("kind") == "cancelled" for row in resources.values()), resources
 
     def apply(self, inputs, *, expected="changed", review=None):
         review = self.controller("check", inputs) if review is None else review
@@ -366,6 +387,40 @@ def expected_files(inputs):
     }
 
 
+def expected_dependencies(state="present"):
+    requires = ({"package": ["configuration", "content"], "configuration": ["service"], "content": ["service"], "service": []}
+                if state == "absent" else {"package": [], "configuration": ["package"], "content": ["package", "configuration"], "service": ["package", "configuration", "content"]})
+    return {"version": 1, "handlers": {}, "resources": {name: {"requires": parents, "notify": []} for name, parents in requires.items()}}
+
+
+def assert_failure(report, kind, phase=None, *, resource=None, host_kind=None, cause=None, command=None, code=None):
+    """Require the intended structured failure, preserving its real host cause."""
+    assert report["status"] == "failed" and report.get("phase") == phase, report
+    error = report["error"]
+    if resource is not None:
+        assert error["kind"] == "nginx_application", error
+        resources = error["data"]["resources"]
+        assert resources[resource]["status"] == "failed", resources
+        for dependent in {"package": ("configuration", "content", "service"), "configuration": ("content", "service"), "content": ("service",), "service": ()}[resource]:
+            assert resources[dependent] == {"status": "skipped", "reason": "prerequisite_failed"}, resources
+        error = resources[resource]["error"]
+    assert error["kind"] == kind and {"path", "line", "column"} <= error.keys(), error
+    message = error["message"]
+    if host_kind is not None:
+        assert kind == "nginx_host" and error["data"]["code"] != 0, error
+        host = json.loads(error["data"]["stdout"])["error"]
+        assert error["data"]["host_error"] == host, error
+        assert host["kind"] == host_kind, host
+        message = host["message"]
+        if command is not None:
+            detail = json.loads(message)
+            assert detail["command"] == command and detail["code"] == code, detail
+            message = detail["stderr"]
+    if cause is not None:
+        assert cause in message, (cause, message)
+    return error
+
+
 def baseline(d):
     inputs = desired()
     before = d.probe()
@@ -379,6 +434,7 @@ def baseline(d):
     first, second = d.controller("check", inputs), d.controller("check", inputs)
     assert pure == first, (pure, first)
     assert first == second and first["status"] == "changed", (first, second)
+    assert first["dependencies"] == expected_dependencies(), first
     assert d.probe() == before and d.actions() == actions
     d.apply(inputs, review=first)
     d.converged(inputs)
@@ -446,8 +502,10 @@ def combined_drift(d):
     d.host("service-stop")
     d.host("package-remove")
     d.exec("rm", "-f", *FILES)
+    actions = len(d.actions())
     d.apply(inputs)
     d.converged(inputs)
+    assert [(row["operation"], row.get("path")) for row in d.actions()[actions:]] == [("package-install", None), ("files-install", FILES[0]), ("files-install", FILES[1]), ("files-install", FILES[2]), ("service-start", None)]
 
 
 def invalid_config(d):
@@ -463,7 +521,16 @@ def invalid_input(d):
     before, actions = d.probe(), d.actions()
     for change in ({"port": "8080"}, {"port": -1}, {"state": "unknown"}, {"unexpected": True}, {"content": False}, {"server_name": "bad; directive true;"}):
         result = d.controller("check", {**desired(), **change})
-        assert result["status"] == "failed", result
+        assert_failure(result, "type")
+    review = d.controller("check", desired())
+    assert review["dependencies"] == expected_dependencies(), review
+    missing = {key: value for key, value in review.items() if key != "dependencies"}
+    unknown = json.loads(json.dumps(review))
+    unknown["dependencies"]["resources"]["configuration"]["requires"] = ["not-a-resource"]
+    cyclic = json.loads(json.dumps(review))
+    cyclic["dependencies"]["resources"]["package"]["requires"] = ["service"]
+    for invalid in (missing, unknown, cyclic):
+        assert_failure(d.controller("apply", desired(), invalid), "nginx_review_dependencies", "preflight")
     assert d.probe() == before and d.actions() == actions
 
 
@@ -475,24 +542,28 @@ def stale_review(d):
     d.exec("chmod", "600", FILES[2])
     before, actions = d.probe(), d.actions()
     result = d.controller("apply", changed, reviewed)
-    assert result["status"] == "failed" and d.probe() == before and d.actions() == actions, result
+    assert_failure(result, "provider_stale_plan", "preflight")
+    assert d.probe() == before and d.actions() == actions
     d.apply(changed)
     review = d.controller("check", changed)
     before, actions = d.probe(), d.actions()
     result = d.controller("apply", {**changed, "content": "unreviewed\n"}, review)
-    assert result["status"] == "failed" and d.probe() == before and d.actions() == actions, result
+    assert_failure(result, "provider_stale_plan", "preflight")
+    assert d.probe() == before and d.actions() == actions
     result = d.controller("apply", changed, {**review, "revision": "older-provider-revision"})
-    assert result["status"] == "failed" and d.probe() == before and d.actions() == actions, result
+    assert_failure(result, "provider_stale_plan", "preflight")
+    assert d.probe() == before and d.actions() == actions
     d.fresh()
     result = d.controller("apply", changed, review)
-    assert result["status"] == "failed" and d.probe()["package"] is None, result
+    assert_failure(result, "provider_stale_plan", "preflight")
+    assert d.probe()["package"] is None and d.actions() == []
 
 
 def authority(d):
     before, actions = d.probe(), d.actions()
-    assert d.controller("check", desired(), grant=False)["status"] == "failed"
+    assert_failure(d.controller("check", desired(), grant=False), "capability", "observe", cause="not granted")
     d.fault({"observe": "fail"})
-    assert d.controller("check", desired())["status"] == "failed"
+    assert_failure(d.controller("check", desired()), "nginx_host", "observe", host_kind="RuntimeError", cause="injected observe failure")
     d.fault()
     assert d.probe() == before and d.actions() == actions
 
@@ -504,7 +575,20 @@ def failed_operation(d, operation, mode, inputs=None, *, timeout_ms=120000):
     d.fault({operation: mode})
     report = d.controller("apply", inputs, review, timeout_ms=timeout_ms)
     d.fault()
-    assert report["status"] == "failed", report
+    resource = ("package" if operation.startswith("package-") else "service" if operation.startswith("service-")
+                else "configuration" if any(step["field"] == "configuration" for step in review["steps"]) else "content")
+    if mode == "delay":
+        assert_failure(report, "timeout", "apply", resource=resource, cause="total timeout")
+    elif mode in {"false-success", "suppress-reload"}:
+        error = assert_failure(report, "nginx_resource_postcondition", "apply", resource=resource)
+        assert error["data"]["resource"] == resource and error["data"]["result"]["fixture_false_success"] is True, error
+    else:
+        kinds = {"permission-denied": "PermissionError", "replace-failure": "OSError"}
+        causes = {"permission-denied": "injected managed-file permission denial", "replace-failure": "injected second atomic replacement failure",
+                  "invalid-candidate": 'unknown directive "helix_fixture_invalid_directive"', "repository": "127.0.0.1:1", "fail": f"injected {operation} failure"}
+        command = "/usr/sbin/nginx" if mode == "invalid-candidate" else "apt-get" if mode == "repository" else None
+        assert_failure(report, "nginx_host", "apply", resource=resource, host_kind=kinds.get(mode, "RuntimeError"),
+                       cause=causes[mode], command=command, code=1 if mode == "invalid-candidate" else 100)
     d.preserved()
     return report
 
@@ -512,7 +596,8 @@ def failed_operation(d, operation, mode, inputs=None, *, timeout_ms=120000):
 def package_failure(d):
     bad = {**desired(), "package_version": "0.0.0-does-not-exist"}
     failed = d.controller("apply", bad, d.controller("check", bad))
-    assert failed["status"] == "failed" and d.probe()["http"] is None, failed
+    assert_failure(failed, "nginx_host", "apply", resource="package", host_kind="RuntimeError", command="apt-get", code=100, cause="was not found")
+    assert d.probe()["http"] is None
     for mode in ("repository", "delay"):
         failed_operation(d, "package-install", mode, timeout_ms=1500 if mode == "delay" else 120000)
         assert all(d.probe()["files"][name] is None for name in FILES)
@@ -520,8 +605,9 @@ def package_failure(d):
     pid = d.fixture_process(locker)
     d.wait_path("/run/helix-nginx/lock-held")
     report = d.controller("apply", desired(), d.controller("check", desired()))
-    d.exec("kill", str(pid))
-    assert report["status"] == "failed" and d.probe()["package"] is None, report
+    d.signal_process(pid, signal.SIGTERM)
+    assert_failure(report, "nginx_host", "apply", resource="package", host_kind="RuntimeError", command="apt-get", code=100, cause="Unable to acquire the dpkg frontend lock")
+    assert d.probe()["package"] is None
     d.apply(desired())
     d.converged(desired())
 
@@ -536,7 +622,11 @@ def file_failure(d):
     configuration = {**desired(), "server_name": "partial.helix.test"}
     before = d.probe()
     actions = len(d.actions())
-    failed_operation(d, "files-install", "replace-failure", configuration)
+    report = failed_operation(d, "files-install", "replace-failure", configuration)
+    failure = report["error"]["data"]["resources"]["configuration"]["error"]["data"]
+    assert failure["operation"] == "files-install", failure
+    assert failure["host_error"]["completed_paths"] == [FILES[0]], failure
+    assert failure["host_error"]["uncertain"] is False, failure
     partial = d.probe()
     assert partial["files"][FILES[0]]["content"] != before["files"][FILES[0]]["content"]
     assert partial["files"][FILES[1]] == before["files"][FILES[1]] and partial["http"] == before["http"]
@@ -552,8 +642,9 @@ def service_failure(d):
     pid = d.fixture_process(occupant)
     d.wait_path("/run/helix-nginx/port-held")
     report = d.controller("apply", desired(), d.controller("check", desired()))
-    d.exec("kill", str(pid))
-    assert report["status"] == "failed", report
+    d.signal_process(pid, signal.SIGTERM)
+    assert_failure(report, "nginx_host", "apply", resource="service", host_kind="TimeoutError", cause="readiness deadline exceeded")
+    assert "Address already in use" in d.exec("cat", "/var/lib/helix-nginx-host/nginx.log").stdout
     d.apply(desired())
     changed = {**desired(), "server_name": "reload.helix.test"}
     failed_operation(d, "service-reload", "fail", changed)
@@ -628,7 +719,9 @@ def controller_death(d):
 def removal(d):
     d.apply(desired())
     absent = {**desired(), "state": "absent"}
-    d.apply(absent)
+    review = d.controller("check", absent)
+    assert review["dependencies"] == expected_dependencies("absent"), review
+    d.apply(absent, review=review)
     state = d.probe()
     assert state["package"] is None and state["http"] is None and all(state["files"][p] is None for p in FILES), state
     before = d.actions()
@@ -676,9 +769,11 @@ def verify(h):
     signal.signal(signal.SIGTERM, interrupted)
     print(f"docker_nginx artifacts: {d.artifacts.relative_to(h.root)}")
     try:
+        d.progress(phase="provision", status="running")
         d.provision()
         for repetition in range(repeats):
             for name in names:
+                d.progress(phase="scenario", status="running", scenario=name, repetition=repetition + 1, completed=results)
                 d.fresh()
                 start = time.monotonic()
                 d.scenario_deadline = start + 900
@@ -715,6 +810,7 @@ def verify(h):
                       scenarios=results, commands=d.events, cleanup_errors=cleanup_errors,
                       cleanup=f"./manage.py docker-nginx cleanup {d.run_id}")
         (d.artifacts / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+        d.progress(phase="complete", status=report["status"], completed=results)
         if cleanup_errors and not active_failure:
             raise AssertionError("Docker evidence/cleanup failed: " + "; ".join(cleanup_errors))
 
