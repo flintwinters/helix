@@ -11,6 +11,9 @@ from pathlib import Path
 
 from tests.suites import contracts
 
+# The control build is cold (bundled SQLite compiles C); mutant rebuilds are incremental.
+BUILD_TIMEOUT = 600
+
 MUTATIONS = [
     ("arithmetic", "src/builtins/number.rs", '"add" => acc.checked_add(x)',
      '"add" => acc.checked_sub(x)', "generated"),
@@ -38,7 +41,7 @@ def verify(h):
     reports = []
     def build(label):
         result = subprocess.run(["cargo", "build", "--offline", "--quiet"], cwd=workspace,
-                                env=env, text=True, capture_output=True, timeout=120)
+                                env=env, text=True, capture_output=True, timeout=BUILD_TIMEOUT)
         (run_directory / f"{label}.build.log").write_text(result.stdout + result.stderr)
         assert result.returncode == 0, f"{label}: build failed, not a killed mutation; see runtime/mutants/"
     def run(suite):

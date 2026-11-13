@@ -2,6 +2,7 @@
 import http.server
 import json
 import os
+import sqlite3
 from pathlib import Path
 import tempfile
 import threading
@@ -99,6 +100,29 @@ def verify(h):
         assert result.returncode == 0 and state['root'] == 'capability', state
         result, state = run('{"$call": ["type_time", {"$call": ["effect", "stdout", "must not print"]}]}', '--allow-stdout')
         assert result.returncode == 1 and result.stdout == '' and state['error']['phase'] == 'type', state
+        database = base / 'data.sqlite3'
+        db = json.dumps(str(database))
+        def sql(statement, params='[]', write=False):
+            return f'{{"$call": ["effect", "sqlite", {{"path": {db}, "sql": {json.dumps(statement)}, "params": {params}, "write": {json.dumps(write)}}}]}}'
+        denied(sql('CREATE TABLE t (a)', write=True), '--allow-read', str(base))
+        result, state = run(sql('CREATE TABLE t (id INTEGER PRIMARY KEY, name TEXT, v REAL)', write=True), '--allow-write', str(base))
+        assert result.returncode == 0 and state['root'] == {'columns': [], 'rows': [], 'changes': 0}, state
+        denied(sql('SELECT 1'), '--allow-write', str(base))
+        result, state = run(sql('INSERT INTO t (name, v) VALUES (?, ?), (?, ?)', '["x", 1.5, null, 2]', write=True), '--allow-write', str(base))
+        assert result.returncode == 0 and state['root']['changes'] == 2, state
+        result, state = run(sql('SELECT id, name, v FROM t ORDER BY id'), '--allow-read', str(base))
+        assert result.returncode == 0 and state['root'] == {'columns': ['id', 'name', 'v'], 'rows': [[1, 'x', 1.5], [2, None, 2.0]], 'changes': 0}, state
+        for statement, write, kind in [('DELETE FROM t', False, 'sqlite'), ('SELECT 1; SELECT 2', False, 'sqlite'),
+                                       (f"ATTACH {json.dumps(str(target))} AS other", True, 'sqlite'),
+                                       ('SELECT x\'ff\'', False, 'conversion'), ('SELECT ?', False, 'type')]:
+            params = '[[1]]' if kind == 'type' else '[]'
+            result, state = run(sql(statement, params, write=write), '--allow-read', str(base), '--allow-write', str(base))
+            assert result.returncode == 1 and state['error']['kind'] == kind, (statement, state)
+        assert [row[0] for row in sqlite3.connect(database).execute('SELECT id FROM t')] == [1, 2]
+        result, state = run("""{"$call": ["let", {"s": {"$call": ["import", "std:sqlite"]}},
+            {"$call": ["list", {"$call": ["s.execute", %s, "INSERT INTO t (name) VALUES (?)", ["y"]]}, {"$call": ["s.query", %s, "SELECT name FROM t WHERE id > 1 ORDER BY id", []]}]}]}""" % (db, db),
+            '--allow-read', str(base), '--allow-write', str(base))
+        assert result.returncode == 0 and state['root'] == [1, [{'name': None}, {'name': 'y'}]], state
         huge = base / 'huge'
         huge.write_bytes(b'x' * (1024 * 1024 + 1))
         result, state = run(f'{{"$call": ["effect", "file_read", {json.dumps(str(huge))}]}}', '--allow-read', str(base))

@@ -7,6 +7,8 @@ use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 #[path = "effects/failure.rs"]
 mod failure;
 use failure::{Failure, fault, io_fault};
+#[path = "effects/sqlite.rs"]
+mod sqlite;
 #[path = "effects/command.rs"]
 mod command;
 pub use command::{CommandPolicy, CommandProgress, ProgressCallback};
@@ -73,6 +75,18 @@ impl EffectHost {
                 if content.len() > LIMIT { return Err(fault("resource", "file content exceeds 1 MiB")); }
                 std::fs::write(path, content).map_err(io_fault)?;
                 Ok(Yaml::Null)
+            }
+            "sqlite" => {
+                let write = match &payload["write"] {
+                    Yaml::BadValue | Yaml::Null => false,
+                    Yaml::Boolean(flag) => *flag,
+                    _ => return Err(fault("type", "sqlite write must be a boolean")),
+                };
+                let statement = sqlite::Statement::parse(payload)?;
+                // Database files follow the file grants: reading needs a read root, any write needs a write root.
+                let path = text(&payload["path"])?;
+                let path = if write { authorized(path, &self.write_roots, true)? } else { authorized(path, &self.read_roots, false)? };
+                sqlite::run(&path, write, &statement)
             }
             "env" => {
                 let name = text(payload)?;

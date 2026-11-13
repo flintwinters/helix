@@ -192,7 +192,7 @@ def main() -> int:
             return code
         from tooling.usage_log import logged
 
-        with logged(ROOT, args, sys.argv[1:]) as outcome:
+        with logged(ROOT, binary, args, sys.argv[1:]) as outcome:
             outcome["exit_code"] = runtime(args, binary)
         return outcome["exit_code"]
 

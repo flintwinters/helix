@@ -208,6 +208,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:validation` | `batch(values, validate)` (indexed validation and transformation reports) |
 | `std:dependency` | `plan(tasks)` (stable dependency batches and blocked-task report) |
 | `std:provider` | `plan(provider, args, before, context)`, `check(provider, args, context)`, `apply(provider, args, context, reviewed)` ([typed resource lifecycle](#resource-provider-contract)) |
+| `std:sqlite` | `query(path, sql, params)` (rows as maps), `execute(path, sql, params)` (changed rows), `request(path, sql, params, write)` ([`sqlite` effect](#host-effects-and-explicit-grants)) |
 | `std:command` | `make(config)`, `plan`, `check`, `apply` ([guarded command resources](#guarded-command-resources)) |
 | `std:orchestration` | `plan(document)`, `run(document, execute)` (validated resource dependencies and coalesced, deferred change handlers) |
 | `std:types` | `from_fields(specs)`, `without_field(t,name)`, `optional_field(spec)`, `optional_fields(t)` |
@@ -781,10 +782,13 @@ repeat those actions.
 | `stdout` | Text string | `null` | `--allow-stdout` |
 | `command` | `{program: string, args: list_of_strings}` | `{code, stdout, stderr}` | `--allow-command EXECUTABLE` |
 | `http` | Absolute HTTP(S) URL string | `{status, body}` | `--allow-http ORIGIN` |
+| `sqlite` | `{path: string, sql: string, params?: list, write?: boolean}` | `{columns, rows, changes}` | `--allow-read ROOT`, or `--allow-write ROOT` when `write: true` |
 | `time` | `null` | Unix epoch milliseconds | `--allow-time` |
 | `random` | `null` | Nonnegative 63-bit integer | `--allow-random` |
 
 File imports under `perform` require the same `--allow-read` roots (embedded standard modules remain available). Relative file-effect paths resolve against the host working directory; imports retain source-relative resolution. File roots are canonicalized; existing symlinks and parents of new files must remain within a granted root. These checks are import-style confinement, not protection against concurrent filesystem changes or an OS sandbox. Commands use argument vectors without an implicit shell, inherit the host environment and working directory, and receive closed stdin. An executable grant authorizes that executable's ambient access, including subprocesses; granting a shell authorizes shell commands. Nonzero command exits are result data; spawn, encoding and host failures are catchable errors. The `exit` effect selects the eventual successful exit code and does not skip cleanup or later evaluation.
+
+`sqlite` runs one statement (bound `params` of null, boolean, number or string) against a database inside the granted roots, with the bundled SQLite. A read request opens the file read-only; `write: true` may create it and reports `changes`. `ATTACH`/`DETACH` are denied so a statement cannot leave the authorized path, multiple statements and blob results are errors (kind `sqlite`, `conversion`), results are limited to 1 MiB and failures are catchable. The database must exist for a read request. Each request opens its own connection, so transactions across requests, rollback and concurrent-writer coordination beyond a ten-second busy timeout are the caller's concern. `std:sqlite` wraps this effect.
 
 HTTP uses the installed `curl` executable for GET requests, disables curl configuration, proxies, URL globbing and redirects, and restricts protocols to HTTP(S). An origin grant includes scheme, authority and explicit port exactly as written. HTTP error statuses remain result data. File text and HTTP responses are limited to 1 MiB. HTTP retains an eight-second request deadline and a ten-second process deadline, independently of command policy. Stdin waits for EOF.
 

@@ -1,0 +1,42 @@
+# SQLite access through the explicit `sqlite` host effect (one statement per request).
+# Database paths follow the host's file grants: `query` needs --allow-read, `execute` --allow-write
+# (which may create the file). Parameters are null, booleans (stored 0/1), numbers or strings;
+# blob results are unsupported. Nothing here grants authority or provides rollback beyond what a
+# single SQLite statement does; sequencing several statements is the caller's responsibility.
+l: {$call: [import, 'std:list']}
+request:
+  $call:
+  - fn
+  - [path, sql, params, write]
+  - $call:
+    - effect
+    - sqlite
+    - {$call: [dict, path, {$ref: path}, sql, {$ref: sql}, params, {$ref: params}, write, {$ref: write}]}
+# Rows as maps keyed by column name; duplicate column names keep the last value.
+query:
+  $call:
+  - fn
+  - [path, sql, params]
+  - $call:
+    - let
+    - result: {$call: [request, {$ref: path}, {$ref: sql}, {$ref: params}, false]}
+    - $call:
+      - map
+      - $call:
+        - fn
+        - [row]
+        - $call:
+          - fold
+          - $call:
+            - fn
+            - [record, pair]
+            - {$call: [set, {$ref: record}, {$call: [get, {$ref: pair}, 0]}, {$call: [get, {$ref: pair}, 1]}]}
+          - {$call: [dict]}
+          - {$call: [l.zip, {$call: [get, {$ref: result}, columns]}, {$ref: row}]}
+      - {$call: [get, {$ref: result}, rows]}
+# Number of rows the statement changed.
+execute:
+  $call:
+  - fn
+  - [path, sql, params]
+  - {$call: [get, {$call: [request, {$ref: path}, {$ref: sql}, {$ref: params}, true]}, changes]}
