@@ -688,10 +688,15 @@ workflow or SSH support.
     separate milestones below.
 - [ ] Supply dependable local and SSH host adapters through the existing effect boundary
   - [ ] SSH supports host-key verification, existing key/agent authentication, connection reuse and jump-host configuration
+    - Done: the `ssh_command` effect verifies host keys strictly against a mandatory caller-supplied `known_hosts` (no trust on first use), authenticates non-interactively with a granted identity file, and ignores user/system ssh config. Remaining: connection reuse; the `jump` grant field exists but is untested; agent authentication is inherited from the caller's environment and untested.
   - [ ] Privilege escalation is explicitly authorized and distinguishes connection identity from execution identity
+    - Done: `become` runs through `sudo -n -u USER --` only for users named in the caller's grant, separately from the connection user. Remaining: the successful-escalation path has no acceptance evidence (the suite checks only the refusal where the test account lacks passwordless sudo), and refusal is recognized from sudo's stderr text.
   - [ ] Remote argument transport and file transfer preserve bytes and prevent accidental shell interpretation
+    - Done: every remote word is single-quoted and a loopback-`sshd` test confirms awkward arguments arrive unchanged. Remaining: file transfer and remote stdin; there is no non-UTF-8 payload path.
   - [ ] Connection, authentication, privilege, transport and remote-command failures remain distinguishable
+    - Done: `ssh_host_key`, `ssh_auth`, `ssh_connection`, `ssh_privilege`, `capability` and remote exit codes as data. Remaining: classification parses ssh/sudo diagnostics, so it is English-text and client-version sensitive, and a remote program exiting 255 is indistinguishable from an ssh failure. Transport failures await file transfer.
   - [ ] Document and check managed-host prerequisites; bootstrap missing prerequisites through an explicit supported path
+  - Evidence so far: [`HOST.md`](HOST.md#ssh-remote-commands) specifies the effect and its limits; `./manage.py test --suite ssh_host` exercises it against an unprivileged loopback `sshd` with throwaway keys. This is one controller-to-local-sshd path, not a disposable remote host, and the item above for demonstrating SSH execution of the first replacement playbook stays open.
 - [ ] Gather typed facts and resource observations for realization
   - [ ] Detect supported operating systems, package managers and service managers before selecting adapters
   - [ ] Observations carry host identity and freshness information; unknown or inaccessible state is never treated as absence
