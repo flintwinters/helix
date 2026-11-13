@@ -14,6 +14,7 @@ mod forms;
 mod iteration;
 mod lexical;
 mod preflight;
+mod purity;
 
 use crate::model::Limits;
 use crate::model::{Outcome, Vm};
@@ -411,10 +412,10 @@ impl Evaluator {
             }
             Request::Atomic(operation) => self.atomic(operation)?,
             Request::PredicateEnd(operation) => self.predicate_end(operation),
-            Request::SignatureOf(site, function) => self.signature_of(site, function)?,
-            Request::SignatureSlot(function, mut found) => {
+            Request::SignatureOf(site, function, pure) => self.signature_of(site, function, pure)?,
+            Request::SignatureSlot(function, mut found, pure) => {
                 found.push(self.value());
-                self.signature_next(function, found)?;
+                self.signature_next(function, found, pure)?;
             }
             Request::AdvanceChild => {
                 unreachable!("child advancement is dispatched by the VM scheduler")

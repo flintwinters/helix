@@ -65,9 +65,17 @@ pub fn refine(base: Value, check: Value) -> Result<Value, Fault> {
     Ok(descriptor("refine", [("of", base), ("check", check)]))
 }
 
-/// `{type: function, params, result}`: the signature a function declares with its annotations.
-pub(crate) fn function_type(params: Vec<Value>, result: Value) -> Value {
-    descriptor("function", [("params", Value::Array(params.into())), ("result", result)])
+/// `{type: function, params, result}` (plus `pure: true` when effect-free): the signature a function
+/// declares with its annotations.
+pub(crate) fn function_type(params: Vec<Value>, result: Value, pure: bool) -> Value {
+    let signature = descriptor("function", [("params", Value::Array(params.into())), ("result", result)]);
+    match (signature, pure) {
+        (Value::Hash(mut map), true) => {
+            map.insert(s("pure"), Value::Boolean(true));
+            Value::Hash(map)
+        }
+        (signature, _) => signature,
+    }
 }
 
 /// Validate constructor arguments through the same type parser/checker as annotations.
@@ -81,7 +89,7 @@ pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Op
                 return Err(Fault::at(1, "type", format!("default does not fit {}", ty.name())));
             }
         }
-        "function_of" => {
+        "function_of" | "pure_function_of" => {
             let Value::Array(params) = &args[0] else { return Err(Fault::expected(0, "a list of parameter types", &args[0])) };
             params.iter().try_for_each(|param| Ty::parse(param).map(drop)).map_err(|why| Fault::at(0, "type", why))?;
             type_arg(args, 1)?;

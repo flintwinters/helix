@@ -118,6 +118,7 @@ const ACTORS: &[Descriptor] = &[
     actor("map_of", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("record", 0, None, Evaluation::Policy("type_descriptor")),
     actor("function_of", 2, Some(2), Evaluation::Policy("type_descriptor")),
+    actor("pure_function_of", 2, Some(2), Evaluation::Policy("type_descriptor")),
     actor("optional", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("default", 2, Some(2), Evaluation::Policy("type_descriptor")),
     actor("union", 1, None, Evaluation::Policy("type_descriptor")),

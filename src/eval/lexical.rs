@@ -275,6 +275,25 @@ impl Evaluator {
         }
         None
     }
+    /// The declaration node a possibly dotted lexical name denotes, following keys through maps
+    /// and imported modules; `None` for parameters and unresolved names.
+    pub(super) fn named_node(&self, from: NodeId, name: &str) -> Option<NodeId> {
+        let (head, rest) = match name.split_once('.') {
+            Some((head, rest)) => (head, Some(rest)),
+            None => (name, None),
+        };
+        let Some(Site::Entry(mut node)) = self.lexical_site(from, head) else {
+            return None;
+        };
+        for part in rest.into_iter().flat_map(|rest| rest.split('.')) {
+            node = self.program.modules.root_of(node).unwrap_or(node);
+            let Syntax::Mapping(entries) = self.graph().syntax(node) else {
+                return None;
+            };
+            node = entries.iter().find(|(key, _)| key == part)?.1;
+        }
+        Some(node)
+    }
     pub(super) fn in_function(&self, id: NodeId) -> bool {
         let mut node = self.graph().parent(id);
         while let Some(parent) = node {

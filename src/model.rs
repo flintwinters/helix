@@ -171,10 +171,11 @@ pub(crate) enum Request {
     Refined(NodeId, Vec<NodeId>, Value),
     Atomic(Atomic),
     PredicateEnd(Atomic),
-    /// Begin evaluating a function's declared signature in its own lexical environment.
-    SignatureOf(NodeId, Arc<Function>),
+    /// Begin evaluating a function's declared signature in its own lexical environment; the flag
+    /// also asks whether the function is provably effect-free.
+    SignatureOf(NodeId, Arc<Function>, bool),
     /// A declared type has been evaluated; `found` holds the ones before it, parameters then result.
-    SignatureSlot(Arc<Function>, Vec<Value>),
+    SignatureSlot(Arc<Function>, Vec<Value>, bool),
     AdvanceChild,
 }
 

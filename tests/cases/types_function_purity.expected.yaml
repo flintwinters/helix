@@ -1,0 +1,23 @@
+root:
+  explained:
+    - at: /
+      message: "expected pure function (integer) -> integer, got function (integer) -> integer (not provably pure)"
+  members:
+    callee_not_visible: false
+    callee_promised_pure: true
+    direct_effect: false
+    effect_through_a_callee: false
+    effectful_unconstrained: true
+    iteration_over_effect: false
+    iteration_over_pure: true
+    library_sum: true
+    library_sum_plain: true
+    pure_arithmetic: true
+    recursion: true
+    stepping_a_machine: false
+  order:
+    plain_not_below_pure: false
+    pure_below_function: true
+    pure_below_plain: true
+  type_time_callee: 5
+status: finished

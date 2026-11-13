@@ -7,6 +7,12 @@ use crate::model::{
 };
 use std::sync::Arc;
 
+/// What a pure host operation is waiting for the engine to answer.
+enum Pending {
+    Predicate(Value, Value),
+    Signature(Value, bool),
+}
+
 impl Evaluator {
     pub(super) fn schedule_builtin(
         &mut self,
@@ -81,7 +87,7 @@ impl Evaluator {
     }
     /// Evaluate a function's declared parameter and result types as the function would at a call
     /// (its own lexical environment) and answer the signature type; undeclared ones are `any`.
-    pub(super) fn signature_of(&mut self, site: NodeId, function: Arc<Function>) -> Result<(), HelixError> {
+    pub(super) fn signature_of(&mut self, site: NodeId, function: Arc<Function>, pure: bool) -> Result<(), HelixError> {
         if self.depth >= self.limits.max_depth {
             return Err(self.err(site, "depth", format!("calls nested deeper than {}", self.limits.max_depth)));
         }
@@ -89,9 +95,9 @@ impl Evaluator {
         let program = std::mem::replace(&mut self.program, function.program.clone());
         self.depth += 1;
         self.push(Request::CallEnd { environment, program });
-        self.signature_next(function, Vec::new())
+        self.signature_next(function, Vec::new(), pure)
     }
-    pub(super) fn signature_next(&mut self, function: Arc<Function>, mut found: Vec<Value>) -> Result<(), HelixError> {
+    pub(super) fn signature_next(&mut self, function: Arc<Function>, mut found: Vec<Value>, pure: bool) -> Result<(), HelixError> {
         let params = self.parameters(&function)?;
         let result = function.program.graph.call(function.node).and_then(|items| items.get(3).copied());
         while found.len() <= params.len() {
@@ -103,12 +109,13 @@ impl Evaluator {
                 found.push(s("any"));
                 continue;
             };
-            self.push(Request::SignatureSlot(function, found));
+            self.push(Request::SignatureSlot(function, found, pure));
             self.eval(node);
             return Ok(());
         }
         let result = found.pop().expect("a result slot");
-        self.finish(builtins::function_type(found, result));
+        let pure = pure && self.provably_pure(&function);
+        self.finish(builtins::function_type(found, result, pure));
         Ok(())
     }
     pub(super) fn parameters_next(
@@ -211,8 +218,8 @@ impl Evaluator {
             }
             if pending.is_none() {
                 pending = Some(match ask {
-                    Ask::Predicate(check, value) => (check.clone(), Some(value.clone())),
-                    Ask::Signature(function) => (function.clone(), None),
+                    Ask::Predicate(check, value) => Pending::Predicate(check.clone(), value.clone()),
+                    Ask::Signature(function, pure) => Pending::Signature(function.clone(), pure),
                 });
             }
             Err("pending answer".into())
@@ -235,15 +242,14 @@ impl Evaluator {
                 })
                 .map_err(|why| self.err(operation.site, "type", why)),
         };
-        if let Some((check, value)) = pending {
+        if let Some(asked) = pending {
             let site = operation.site;
             self.push(Request::PredicateEnd(operation));
-            match check {
-                Value::Function(function) if value.is_none() => {
-                    self.push(Request::SignatureOf(site, function));
+            match asked {
+                Pending::Signature(Value::Function(function), pure) => {
+                    self.push(Request::SignatureOf(site, function, pure));
                 }
-                Value::Function(function) => {
-                    let value = value.expect("predicate asks carry a value");
+                Pending::Predicate(Value::Function(function), value) => {
                     if self.parameters(&function)?.len() != 1 {
                         self.fail(self.err(
                             site,

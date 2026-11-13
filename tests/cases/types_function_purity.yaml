@@ -1,0 +1,518 @@
+# `pure_function_of` additionally demands that the function is provably free of effects, judged from
+# source without calling it: an `effect` anywhere it can reach, or a call it cannot see through, is
+# not provable. A parameter annotated with a pure function type is a visible callee.
+{
+ "$call": [
+  "let",
+  {
+   "lib": {
+    "$call": [
+     "import",
+     "std:list"
+    ]
+   },
+   "pure_int": {
+    "$call": [
+     "pure_function_of",
+     [
+      "integer"
+     ],
+     "integer"
+    ]
+   },
+   "any_int": {
+    "$call": [
+     "function_of",
+     [
+      "integer"
+     ],
+     "integer"
+    ]
+   },
+   "arith": {
+    "$call": [
+     "fn",
+     [
+      [
+       "n",
+       "integer"
+      ]
+     ],
+     {
+      "$call": [
+       "add",
+       {
+        "$ref": "n"
+       },
+       1
+      ]
+     },
+     "integer"
+    ]
+   },
+   "reads": {
+    "$call": [
+     "fn",
+     [
+      [
+       "n",
+       "integer"
+      ]
+     ],
+     {
+      "$call": [
+       "get",
+       {
+        "$call": [
+         "effect",
+         "read_file",
+         {
+          "path": "x"
+         }
+        ]
+       },
+       "n"
+      ]
+     },
+     "integer"
+    ]
+   },
+   "delegates": {
+    "$call": [
+     "fn",
+     [
+      [
+       "n",
+       "integer"
+      ]
+     ],
+     {
+      "$call": [
+       "reads",
+       {
+        "$ref": "n"
+       }
+      ]
+     },
+     "integer"
+    ]
+   },
+   "recursive": {
+    "$call": [
+     "fn",
+     [
+      [
+       "n",
+       "integer"
+      ]
+     ],
+     {
+      "$call": [
+       "if",
+       {
+        "$call": [
+         "le",
+         {
+          "$ref": "n"
+         },
+         0
+        ]
+       },
+       0,
+       {
+        "$call": [
+         "recursive",
+         {
+          "$call": [
+           "sub",
+           {
+            "$ref": "n"
+           },
+           1
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "integer"
+    ]
+   },
+   "unseen_callee": {
+    "$call": [
+     "fn",
+     [
+      [
+       "f",
+       "function"
+      ],
+      [
+       "n",
+       "integer"
+      ]
+     ],
+     {
+      "$call": [
+       "f",
+       {
+        "$ref": "n"
+       }
+      ]
+     },
+     "integer"
+    ]
+   },
+   "pure_callee": {
+    "$call": [
+     "fn",
+     [
+      [
+       "f",
+       {
+        "$ref": "pure_int"
+       }
+      ],
+      [
+       "n",
+       "integer"
+      ]
+     ],
+     {
+      "$call": [
+       "f",
+       {
+        "$ref": "n"
+       }
+      ]
+     },
+     "integer"
+    ]
+   },
+   "mapped": {
+    "$call": [
+     "fn",
+     [
+      [
+       "xs",
+       "list"
+      ]
+     ],
+     {
+      "$call": [
+       "map",
+       {
+        "$ref": "arith"
+       },
+       {
+        "$ref": "xs"
+       }
+      ]
+     },
+     "list"
+    ]
+   },
+   "mapped_effect": {
+    "$call": [
+     "fn",
+     [
+      [
+       "xs",
+       "list"
+      ]
+     ],
+     {
+      "$call": [
+       "map",
+       {
+        "$ref": "reads"
+       },
+       {
+        "$ref": "xs"
+       }
+      ]
+     },
+     "list"
+    ]
+   },
+   "stepping": {
+    "$call": [
+     "fn",
+     [
+      [
+       "m",
+       "vm"
+      ]
+     ],
+     {
+      "$call": [
+       "step",
+       {
+        "$ref": "m"
+       }
+      ]
+     },
+     "vm"
+    ]
+   }
+  },
+  {
+   "members": {
+    "pure_arithmetic": {
+     "$call": [
+      "is",
+      {
+       "$ref": "arith"
+      },
+      {
+       "$ref": "pure_int"
+      }
+     ]
+    },
+    "direct_effect": {
+     "$call": [
+      "is",
+      {
+       "$ref": "reads"
+      },
+      {
+       "$ref": "pure_int"
+      }
+     ]
+    },
+    "effect_through_a_callee": {
+     "$call": [
+      "is",
+      {
+       "$ref": "delegates"
+      },
+      {
+       "$ref": "pure_int"
+      }
+     ]
+    },
+    "recursion": {
+     "$call": [
+      "is",
+      {
+       "$ref": "recursive"
+      },
+      {
+       "$ref": "pure_int"
+      }
+     ]
+    },
+    "callee_not_visible": {
+     "$call": [
+      "is",
+      {
+       "$ref": "unseen_callee"
+      },
+      {
+       "$call": [
+        "pure_function_of",
+        [
+         "function",
+         "integer"
+        ],
+        "integer"
+       ]
+      }
+     ]
+    },
+    "callee_promised_pure": {
+     "$call": [
+      "is",
+      {
+       "$ref": "pure_callee"
+      },
+      {
+       "$call": [
+        "pure_function_of",
+        [
+         {
+          "$ref": "pure_int"
+         },
+         "integer"
+        ],
+        "integer"
+       ]
+      }
+     ]
+    },
+    "iteration_over_pure": {
+     "$call": [
+      "is",
+      {
+       "$ref": "mapped"
+      },
+      {
+       "$call": [
+        "pure_function_of",
+        [
+         "list"
+        ],
+        "list"
+       ]
+      }
+     ]
+    },
+    "iteration_over_effect": {
+     "$call": [
+      "is",
+      {
+       "$ref": "mapped_effect"
+      },
+      {
+       "$call": [
+        "pure_function_of",
+        [
+         "list"
+        ],
+        "list"
+       ]
+      }
+     ]
+    },
+    "stepping_a_machine": {
+     "$call": [
+      "is",
+      {
+       "$ref": "stepping"
+      },
+      {
+       "$call": [
+        "pure_function_of",
+        [
+         "vm"
+        ],
+        "vm"
+       ]
+      }
+     ]
+    },
+    "effectful_unconstrained": {
+     "$call": [
+      "is",
+      {
+       "$ref": "reads"
+      },
+      {
+       "$ref": "any_int"
+      }
+     ]
+    },
+    "library_sum": {
+     "$call": [
+      "is",
+      {
+       "$ref": "lib.sum"
+      },
+      {
+       "$call": [
+        "pure_function_of",
+        [
+         {
+          "$call": [
+           "list_of",
+           "integer"
+          ]
+         }
+        ],
+        {
+         "$call": [
+          "union",
+          "integer",
+          "float"
+         ]
+        }
+       ]
+      }
+     ]
+    },
+    "library_sum_plain": {
+     "$call": [
+      "is",
+      {
+       "$ref": "lib.sum"
+      },
+      {
+       "$call": [
+        "function_of",
+        [
+         {
+          "$call": [
+           "list_of",
+           "integer"
+          ]
+         }
+        ],
+        {
+         "$call": [
+          "union",
+          "integer",
+          "float"
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "order": {
+    "pure_below_plain": {
+     "$call": [
+      "subtype",
+      {
+       "$ref": "pure_int"
+      },
+      {
+       "$ref": "any_int"
+      }
+     ]
+    },
+    "plain_not_below_pure": {
+     "$call": [
+      "subtype",
+      {
+       "$ref": "any_int"
+      },
+      {
+       "$ref": "pure_int"
+      }
+     ]
+    },
+    "pure_below_function": {
+     "$call": [
+      "subtype",
+      {
+       "$ref": "pure_int"
+      },
+      "function"
+     ]
+    }
+   },
+   "explained": {
+    "$call": [
+     "violations",
+     {
+      "$ref": "reads"
+     },
+     {
+      "$ref": "pure_int"
+     }
+    ]
+   },
+   "type_time_callee": {
+    "$call": [
+     "type_time",
+     {
+      "$call": [
+       "arith",
+       4
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

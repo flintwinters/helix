@@ -468,11 +468,11 @@ impl Request {
                 },
                 vec![("operation", operation.view(g))],
             ),
-            Self::SignatureOf(site, f) => object(
+            Self::SignatureOf(site, f, _) => object(
                 "signature",
                 vec![("site", g.reference(*site)), ("function", function(f))],
             ),
-            Self::SignatureSlot(f, found) => object(
+            Self::SignatureSlot(f, found, _) => object(
                 "signature_slot",
                 vec![("function", function(f)), ("declared", values(found))],
             ),

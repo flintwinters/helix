@@ -98,23 +98,6 @@ impl Evaluator {
         let node = self.named_node(from, name)?;
         (self.graph().form(node) == Some("fn")).then_some(node)
     }
-    fn named_node(&self, from: NodeId, name: &str) -> Option<NodeId> {
-        let (head, rest) = match name.split_once('.') {
-            Some((head, rest)) => (head, Some(rest)),
-            None => (name, None),
-        };
-        let Some(Site::Entry(mut node)) = self.lexical_site(from, head) else {
-            return None;
-        };
-        for part in rest.into_iter().flat_map(|rest| rest.split('.')) {
-            node = self.program.modules.root_of(node).unwrap_or(node);
-            let Syntax::Mapping(entries) = self.graph().syntax(node) else {
-                return None;
-            };
-            node = entries.iter().find(|(key, _)| key == part)?.1;
-        }
-        Some(node)
-    }
     /// A region reads no parameter, directly or through any binding it names: its result is the
     /// same whichever call reaches it.
     fn closed(&self, region: NodeId) -> bool {

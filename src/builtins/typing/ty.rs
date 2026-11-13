@@ -13,7 +13,8 @@ pub enum Ask<'a> {
     /// Run a predicate's `{$call: [fn, [value], body]}` source on a value: answers a boolean.
     Predicate(&'a Value, &'a Value),
     /// Evaluate a function's declared parameter and result annotations: answers its signature type.
-    Signature(&'a Value),
+    /// The flag also asks whether the function is provably free of effects.
+    Signature(&'a Value, bool),
 }
 
 /// Answers an `Ask`. `Err` is a failure inside the requested work, reported as a violation rather
@@ -51,8 +52,9 @@ pub(super) enum Ty {
     Secret,
     /// Any function: the top of the function types, and all that `function` says.
     Function,
-    /// A function declared to take these parameters and return this result.
-    Fn(Vec<Ty>, Box<Ty>),
+    /// A function declared to take these parameters and return this result; `true` also requires
+    /// it to be provably free of effects.
+    Fn(Vec<Ty>, Box<Ty>, bool),
     Vm,
     List(Box<Ty>),
     Map(Box<Ty>),
@@ -144,7 +146,12 @@ impl Ty {
                     "literal" => Ok(Ty::Enum(vec![member(map, "value")?.clone()])),
                     "function" => {
                         let Value::Array(params) = member(map, "params")? else { return Err("a `function` type needs a list of `params` types".into()) };
-                        Ok(Ty::Fn(params.iter().map(Ty::parse).collect::<Result<_, _>>()?, Box::new(Ty::parse(member(map, "result")?)?)))
+                        let pure = match map.get(&s("pure")) {
+                            None => false,
+                            Some(Value::Boolean(pure)) => *pure,
+                            Some(_) => return Err("a `function` type's `pure` must be a boolean".into()),
+                        };
+                        Ok(Ty::Fn(params.iter().map(Ty::parse).collect::<Result<_, _>>()?, Box::new(Ty::parse(member(map, "result")?)?), pure))
                     }
                     "refine" => {
                         let base = Ty::parse(member(map, "of")?)?;
@@ -169,6 +176,15 @@ impl Ty {
         }
     }
 
+    /// This function type with the purity requirement met, so a failed check can say whether purity
+    /// alone was the difference.
+    fn purely(&self) -> Ty {
+        match self {
+            Ty::Fn(params, result, _) => Ty::Fn(params.clone(), result.clone(), true),
+            other => other.clone(),
+        }
+    }
+
     /// Short human description used in violation messages.
     pub(super) fn name(&self) -> String {
         match self {
@@ -181,7 +197,7 @@ impl Ty {
             Ty::Null => "null".into(),
             Ty::Secret => "secret".into(),
             Ty::Function => "function".into(),
-            Ty::Fn(params, result) => format!("function ({}) -> {}", params.iter().map(Ty::name).collect::<Vec<_>>().join(", "), result.name()),
+            Ty::Fn(params, result, pure) => format!("{}function ({}) -> {}", if *pure { "pure " } else { "" }, params.iter().map(Ty::name).collect::<Vec<_>>().join(", "), result.name()),
             Ty::Vm => "vm".into(),
             Ty::List(of) if **of == Ty::Any => "list".into(),
             Ty::List(of) => format!("list of {}", of.name()),
@@ -255,9 +271,13 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
     match (ty, value) {
         (Ty::Any, _) | (Ty::Int, Value::Integer(_)) | (Ty::Float, Value::Float(_)) | (Ty::Str, Value::String(_)) | (Ty::Bool, Value::Boolean(_)) | (Ty::Null, Value::Null) => {}
         (Ty::Function, _) if is_function(value) => {}
-        (Ty::Fn(..), _) if is_function(value) => match pred(Ask::Signature(value)).and_then(|declared| Ty::parse(&declared)) {
+        (Ty::Fn(..), _) if is_function(value) => match pred(Ask::Signature(value, matches!(ty, Ty::Fn(.., true)))).and_then(|declared| Ty::parse(&declared)) {
             Ok(declared) if subtype(&declared, ty, pred) => {}
-            Ok(declared) => out.push(Violation { at: at.into(), message: format!("expected {}, got {}", ty.name(), declared.name()) }),
+            Ok(declared) => {
+                let unproven = matches!((&declared, ty), (Ty::Fn(.., false), Ty::Fn(.., true))) && subtype(&declared.purely(), ty, pred);
+                let note = if unproven { " (not provably pure)" } else { "" };
+                out.push(Violation { at: at.into(), message: format!("expected {}, got {}{note}", ty.name(), declared.name()) })
+            }
             Err(why) => out.push(Violation { at: at.into(), message: format!("signature check failed to run: {why}") }),
         },
         (Ty::Vm, Value::Machine(_)) => {}
@@ -349,7 +369,8 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
         (Ty::Fn(..), Ty::Function) => true,
         // Parameters are contravariant, the result covariant: a function that accepts more and
         // promises more can stand wherever the narrower signature is expected.
-        (Ty::Fn(pa, ra), Ty::Fn(pb, rb)) => pa.len() == pb.len() && pa.iter().zip(pb).all(|(x, y)| subtype(y, x, pred)) && subtype(ra, rb, pred),
+        // A pure function stands wherever an unconstrained one is expected, never the reverse.
+        (Ty::Fn(pa, ra, ea), Ty::Fn(pb, rb, eb)) => (*ea || !*eb) && pa.len() == pb.len() && pa.iter().zip(pb).all(|(x, y)| subtype(y, x, pred)) && subtype(ra, rb, pred),
         (Ty::List(x), Ty::List(y)) | (Ty::Map(x), Ty::Map(y)) => subtype(x, y, pred),
         (Ty::Record(fa) | Ty::Class(fa, ..), Ty::Record(fb)) => record_subtype(fa, fb, pred),
         (Ty::Class(fa, xa, ca), Ty::Class(fb, xb, cb)) => {
