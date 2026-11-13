@@ -202,7 +202,13 @@ containing commas, quotes or newlines. Empty rows and non-string cells raise
 
 `std:nginx` composes the existing provider and orchestration modules for one
 Debian container workload. It exports `resolve`, `observe`, `plan`, `check`,
-`apply`, `verify`, and its input/observation schemas. Optional `ssh_target` selects
+`apply`, `verify`, `explain`, the composable `configuration` class, and its
+input/observation schemas. Every public operation realizes map or class inputs in
+a pure region before planning or requesting observation. The class reuses the
+input schema, defaults `port` to 8080 and `state` to `present`, and retains class
+constraints. `explain` emits versioned ordinary data with resolved `values` and
+field `provenance`; the latter records class labels and explicit/default origins,
+not full declaration source spans. Optional `ssh_target` selects
 a caller-granted SSH alias; otherwise it uses local commands. Both paths share
 pure planning, exact fresh-review matching and observed postconditions. This is
 a fixture-qualified workload, not a generic service manager. Inputs, entrypoint,

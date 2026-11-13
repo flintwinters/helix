@@ -420,6 +420,13 @@ def baseline(d):
     actions = d.actions()
     resolved = d.controller("resolve", inputs)
     assert resolved == inputs, resolved
+    explained = d.controller("explain", inputs)
+    assert explained["format"] == "helix.nginx.configuration.v1" and explained["values"] == inputs, explained
+    assert all(row["value_kind"] == "explicit" for row in explained["provenance"].values() if "value" in row), explained
+    defaulted = {key: value for key, value in inputs.items() if key not in ("port", "state")}
+    explained_defaults = d.controller("explain", defaulted)
+    assert explained_defaults["values"] == {**defaulted, "port": 8080, "state": "present"}, explained_defaults
+    assert explained_defaults["provenance"]["port"]["value_kind"] == "default", explained_defaults
     observation = d.controller("observe", inputs)
     assert {"target", "package_version", "files", "service", "response"} <= observation.keys(), observation
     pure = d.controller("plan", inputs, observation)
@@ -428,7 +435,8 @@ def baseline(d):
     assert first == second and first["status"] == "changed", (first, second)
     assert first["dependencies"] == expected_dependencies(), first
     assert d.probe() == before and d.actions() == actions
-    d.apply(inputs, review=first)
+    # Apply omitted defaults against the review of the same resolved values.
+    d.apply(defaulted, review=first)
     d.converged(inputs)
     for _ in range(2):
         before, actions = d.probe(), d.actions()

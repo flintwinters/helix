@@ -257,14 +257,1553 @@ annotations:
     value: true
   - declaration:
       code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: integer
+    value: 12
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:nginx"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - "$call"
+          - 1
+          - server_name_type
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:nginx"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: integer
+    value: 12
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:nginx"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - "$call"
+          - 1
+          - server_name_type
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:nginx"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: integer
+    value: 12
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:nginx"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - "$call"
+          - 1
+          - server_name_type
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:nginx"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: integer
+    value: 12
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:nginx"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - "$call"
+          - 1
+          - server_name_type
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:nginx"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: integer
+    value: 12
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:nginx"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - "$call"
+          - 1
+          - server_name_type
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:nginx"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: integer
+    value: 12
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:nginx"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - "$call"
+        - 1
+        - server_name_type
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:nginx"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - "$call"
+          - 1
+          - server_name_type
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:nginx"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
         "$ref": input
       location:
         path:
           - "$call"
           - 1
-          - resolve
+          - explain
           - "$call"
           - 2
+          - "$call"
+          - 2
+          - values
           - "$call"
           - 2
         source: "std:nginx"
@@ -274,9 +1813,12 @@ annotations:
       path:
         - "$call"
         - 1
-        - resolve
+        - explain
         - "$call"
         - 2
+        - "$call"
+        - 2
+        - values
         - "$call"
         - 1
       source: "std:nginx"
@@ -783,864 +2325,7 @@ annotations:
       - 9
       - 10
       - 11
-  - declaration:
-      code:
-        "$ref": function
-      location:
-        path:
-          - find_index
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:list"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - all
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-      source: "std:list"
-    type: function
-    value:
-      kind: function
-      location:
-        path:
-          - all
-          - "$call"
-          - 2
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-        source: "std:list"
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - find_index
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - find_index
-        - "$call"
-        - 2
-      source: "std:list"
-    type: integer
-    value: -1
-  - declaration:
-      code:
-        "$ref": boolean
-      location:
-        path:
-          - all
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - all
-        - "$call"
-        - 2
-      source: "std:list"
-    type: boolean
-    value: true
-  - declaration:
-      code:
-        "$call":
-          - get
-          - "$ref": p
-          - arguments
-      location:
-        path:
-          - checked
-          - "$call"
-          - 2
-          - "$call"
-          - 2
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-        source: "std:provider"
-    kind: expect
-    runtime_values_omitted: true
-    target:
-      path:
-        - checked
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:provider"
-    type:
-      fields:
-        content: string
-        package_version:
-          check:
-            kind: function
-            location:
-              path:
-                - name
-                - "$call"
-                - 2
-              source: "std:provider"
-          of: string
-          type: refine
-        port:
-          check:
-            kind: function
-            location:
-              path:
-                - port
-                - "$call"
-                - 2
-              source: "std:machine"
-          of: integer
-          type: refine
-        server_name:
-          check:
-            kind: function
-            location:
-              path:
-                - "$call"
-                - 1
-                - server_name_type
-                - "$call"
-                - 2
-              source: "std:nginx"
-          of:
-            check:
-              kind: function
-              location:
-                path:
-                  - name
-                  - "$call"
-                  - 2
-                source: "std:provider"
-            of: string
-            type: refine
-          type: refine
-        ssh_target:
-          of:
-            check:
-              kind: function
-              location:
-                path:
-                  - name
-                  - "$call"
-                  - 2
-                source: "std:provider"
-            of: string
-            type: refine
-          type: optional
-        state:
-          type: enum
-          values:
-            - present
-            - absent
-      type: record
-    value:
-      content: "Hello over SSH\n"
-      package_version: pinned-test-version
-      port: 8080
-      server_name: helix.remote
-      ssh_target: fixture
-      state: present
-  - declaration:
-      code:
-        "$ref": context_type
-      location:
-        path:
-          - checked
-          - "$call"
-          - 2
-          - "$call"
-          - 3
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-        source: "std:provider"
-    kind: expect
-    runtime_values_omitted: true
-    target:
-      path:
-        - checked
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:provider"
-    type:
-      fields:
-        allow_remove: boolean
-        capabilities:
-          of:
-            check:
-              kind: function
-              location:
-                path:
-                  - name
-                  - "$call"
-                  - 2
-                source: "std:provider"
-            of: string
-            type: refine
-          type: list
-        managed: boolean
-        platform:
-          check:
-            kind: function
-            location:
-              path:
-                - name
-                - "$call"
-                - 2
-              source: "std:provider"
-          of: string
-          type: refine
-      type: record
-    value:
-      allow_remove: false
-      capabilities:
-        - ssh_command
-      managed: true
-      platform: debian-container
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - all
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - checked_types
-        - "$call"
-        - 2
-        - "$call"
-        - 5
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:provider"
-    type: list
-    value:
-      - ssh_command
-  - declaration:
-      code:
-        "$ref": function
-      location:
-        path:
-          - all
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:list"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - checked_types
-        - "$call"
-        - 2
-        - "$call"
-        - 5
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-      source: "std:provider"
-    type: function
-    value:
-      kind: function
-      location:
-        path:
-          - checked_types
-          - "$call"
-          - 2
-          - "$call"
-          - 5
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-        source: "std:provider"
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - find_index
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - all
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:list"
-    type: list
-    value:
-      - ssh_command
-  - declaration:
-      code:
-        "$ref": function
-      location:
-        path:
-          - find_index
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:list"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - all
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-      source: "std:list"
-    type: function
-    value:
-      kind: function
-      location:
-        path:
-          - all
-          - "$call"
-          - 2
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-        source: "std:list"
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - find_index
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - find_index
-        - "$call"
-        - 2
-      source: "std:list"
-    type: integer
-    value: -1
-  - declaration:
-      code:
-        "$ref": boolean
-      location:
-        path:
-          - all
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - all
-        - "$call"
-        - 2
-      source: "std:list"
-    type: boolean
-    value: true
-  - declaration:
-      code:
-        "$call":
-          - get
-          - "$ref": p
-          - observation
-      location:
-        path:
-          - plan_checked
-          - "$call"
-          - 2
-          - "$call"
-          - 2
-          - "$call"
-          - 3
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-        source: "std:provider"
-    kind: expect
-    runtime_values_omitted: true
-    target:
-      path:
-        - plan_checked
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:provider"
-    type:
-      fields:
-        files:
-          of:
-            of:
-              - fields:
-                  content: string
-                  gid: integer
-                  mode: integer
-                  uid: integer
-                type: record
-              - type: literal
-                value: ~
-            type: union
-          type: map
-        package_version:
-          of:
-            - string
-            - type: literal
-              value: ~
-          type: union
-        response:
-          of:
-            - fields:
-                body: string
-                status: integer
-              type: record
-            - type: literal
-              value: ~
-          type: union
-        service:
-          fields:
-            activation:
-              of:
-                - string
-                - type: literal
-                  value: ~
-              type: union
-            running: boolean
-          type: record
-        target:
-          check:
-            kind: function
-            location:
-              path:
-                - name
-                - "$call"
-                - 2
-              source: "std:provider"
-          of: string
-          type: refine
-      type: record
-    value:
-      files:
-        /etc/helix-nginx/nginx.conf: ~
-        /etc/helix-nginx/server.conf: ~
-        /var/lib/helix-nginx/index.html: ~
-      package_version: ~
-      response: ~
-      service:
-        activation: ~
-        running: false
-      target: remote-fixture-one
-  - declaration:
-      code:
-        "$ref": steps_type
-      location:
-        path:
-          - planned
-          - "$call"
-          - 2
-          - "$call"
-          - 5
-          - "$call"
-          - 1
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-        source: "std:provider"
-    kind: expect
-    runtime_values_omitted: true
-    target:
-      path:
-        - planned
-        - "$call"
-        - 2
-        - "$call"
-        - 5
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:provider"
-    type:
-      of:
-        fields:
-          field:
-            check:
-              kind: function
-              location:
-                path:
-                  - name
-                  - "$call"
-                  - 2
-                source: "std:provider"
-            of: string
-            type: refine
-          from:
-            of: any
-            type: optional
-          op:
-            type: enum
-            values:
-              - set
-              - remove
-          to: any
-        type: record
-      type: list
-    value:
-      - field: package
-        from: ~
-        op: set
-        to: pinned-test-version
-      - field: configuration
-        from:
-          /etc/helix-nginx/nginx.conf: ~
-          /etc/helix-nginx/server.conf: ~
-        op: set
-        to:
-          /etc/helix-nginx/nginx.conf:
-            content: "# helix.remote\nworker_processes 1;\npid /run/helix-nginx/nginx.pid;\nerror_log stderr;\nevents { worker_connections 64; }\nhttp { include /etc/helix-nginx/server.conf; }\n"
-            gid: 0
-            mode: 420
-            uid: 0
-          /etc/helix-nginx/server.conf:
-            content: "server { listen 8080; server_name helix.remote; add_header X-Helix-Activation \"1:helix.remote:8080\" always; root /var/lib/helix-nginx; location / { try_files /index.html =404; } }\n"
-            gid: 0
-            mode: 420
-            uid: 0
-      - field: content
-        from: ~
-        op: set
-        to:
-          content: "Hello over SSH\n"
-          gid: 0
-          mode: 420
-          uid: 0
-      - field: service
-        from:
-          activation: ~
-          configuration_pending: false
-          response: ~
-          running: false
-        op: set
-        to:
-          activation: "1:helix.remote:8080"
-          configuration_pending: false
-          response:
-            body: "Hello over SSH\n"
-            status: 200
-          running: true
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - all
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - valid_steps
-        - "$call"
-        - 2
-        - "$call"
-        - 4
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:provider"
-    type: list
-    value:
-      - field: package
-        from: ~
-        op: set
-        to: pinned-test-version
-      - field: configuration
-        from:
-          /etc/helix-nginx/nginx.conf: ~
-          /etc/helix-nginx/server.conf: ~
-        op: set
-        to:
-          /etc/helix-nginx/nginx.conf:
-            content: "# helix.remote\nworker_processes 1;\npid /run/helix-nginx/nginx.pid;\nerror_log stderr;\nevents { worker_connections 64; }\nhttp { include /etc/helix-nginx/server.conf; }\n"
-            gid: 0
-            mode: 420
-            uid: 0
-          /etc/helix-nginx/server.conf:
-            content: "server { listen 8080; server_name helix.remote; add_header X-Helix-Activation \"1:helix.remote:8080\" always; root /var/lib/helix-nginx; location / { try_files /index.html =404; } }\n"
-            gid: 0
-            mode: 420
-            uid: 0
-      - field: content
-        from: ~
-        op: set
-        to:
-          content: "Hello over SSH\n"
-          gid: 0
-          mode: 420
-          uid: 0
-      - field: service
-        from:
-          activation: ~
-          configuration_pending: false
-          response: ~
-          running: false
-        op: set
-        to:
-          activation: "1:helix.remote:8080"
-          configuration_pending: false
-          response:
-            body: "Hello over SSH\n"
-            status: 200
-          running: true
-  - declaration:
-      code:
-        "$ref": function
-      location:
-        path:
-          - all
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:list"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - valid_steps
-        - "$call"
-        - 2
-        - "$call"
-        - 4
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:provider"
-    type: function
-    value:
-      kind: function
-      location:
-        path:
-          - valid_steps
-          - "$call"
-          - 2
-          - "$call"
-          - 4
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-          - "$call"
-          - 2
-        source: "std:provider"
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - find_index
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - all
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:list"
-    type: list
-    value:
-      - field: package
-        from: ~
-        op: set
-        to: pinned-test-version
-      - field: configuration
-        from:
-          /etc/helix-nginx/nginx.conf: ~
-          /etc/helix-nginx/server.conf: ~
-        op: set
-        to:
-          /etc/helix-nginx/nginx.conf:
-            content: "# helix.remote\nworker_processes 1;\npid /run/helix-nginx/nginx.pid;\nerror_log stderr;\nevents { worker_connections 64; }\nhttp { include /etc/helix-nginx/server.conf; }\n"
-            gid: 0
-            mode: 420
-            uid: 0
-          /etc/helix-nginx/server.conf:
-            content: "server { listen 8080; server_name helix.remote; add_header X-Helix-Activation \"1:helix.remote:8080\" always; root /var/lib/helix-nginx; location / { try_files /index.html =404; } }\n"
-            gid: 0
-            mode: 420
-            uid: 0
-      - field: content
-        from: ~
-        op: set
-        to:
-          content: "Hello over SSH\n"
-          gid: 0
-          mode: 420
-          uid: 0
-      - field: service
-        from:
-          activation: ~
-          configuration_pending: false
-          response: ~
-          running: false
-        op: set
-        to:
-          activation: "1:helix.remote:8080"
-          configuration_pending: false
-          response:
-            body: "Hello over SSH\n"
-            status: 200
-          running: true
-  - declaration:
-      code:
-        "$ref": function
-      location:
-        path:
-          - find_index
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:list"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - all
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-      source: "std:list"
-    type: function
-    value:
-      kind: function
-      location:
-        path:
-          - all
-          - "$call"
-          - 2
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-        source: "std:list"
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - find_index
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - find_index
-        - "$call"
-        - 2
-      source: "std:list"
-    type: integer
-    value: -1
-  - declaration:
-      code:
-        "$ref": boolean
-      location:
-        path:
-          - all
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - all
-        - "$call"
-        - 2
-      source: "std:list"
-    type: boolean
-    value: true
+annotations_truncated: true
 root:
   applied: false
   args:
@@ -1739,6 +2424,22 @@ root:
   version: 1
 status: finished
 type_time_inputs:
+  - location:
+      path:
+        - "$call"
+        - 1
+        - realize_config
+        - "$call"
+        - 2
+      source: "std:nginx"
+    reads:
+      - function:
+          path:
+            - "$call"
+            - 1
+            - realize_config
+          source: "std:nginx"
+        name: config
   - location:
       path:
         - plan

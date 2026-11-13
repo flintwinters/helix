@@ -24,7 +24,14 @@ followed by the entrypoint path. Its single JSON stdin request uses this shape:
 {"mode":"check","config":{"package_version":"1.22.1-9+deb12u3","port":8080,"server_name":"helix.test","content":"hello from Helix\n","state":"present"}}
 ```
 
-Modes are `resolve`, `observe`, `plan`, `check`, `apply` and `verify`. Pure `plan`
+Modes are `resolve`, `explain`, `observe`, `plan`, `check`, `apply` and `verify`.
+`port` and `state` may be omitted: the shared nginx configuration class supplies
+8080 and `present`. Other required fields remain explicit. All operations resolve
+and validate purely before observing or changing the target. `explain` returns
+`format: helix.nginx.configuration.v1`, resolved `values`, and per-field class
+`provenance`, distinguishing explicit values from defaults. Helix callers may
+also inherit from `nginx.configuration`, add constraints, and pass that class to
+the same library operations; the JSON entrypoint is for ordinary input data. Pure `plan`
 also requires a `before` observation; `check` observes then plans. Save the
 returned plan and supply that complete value as `review` alongside the same
 configuration for `apply`; application re-observes and rejects stale reviews.

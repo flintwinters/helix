@@ -31,9 +31,12 @@ Completion audit: sections 3 and 6, and section 8's declarative/first-class type
 subsections, now explicitly mark their already-tested scopes complete. The open
 parents in sections 2, 8 and 11 are blocked by general guarantees or operational
 acceptance, not just unchecked bookkeeping. Section 12's completed audits do not
-retire its continuing admission rules. The next bounded milestone is safe secret
-handling, target coordination, operator recovery and type-driven application for
-the existing single-host workload; broader fleet and formal-proof promises stay open.
+retire its continuing admission rules. The four bounded operational priorities now have implemented contracts: opaque
+host-only secret inputs, persistent target coordination in one shared lock domain,
+read-only recovery inspection, and pure class-driven nginx configuration with
+provenance. Maintained host and class suites plus repeated Docker baseline
+acceptance qualify these scopes; external secret managers, remote fencing, fleet
+recovery and general type/machine equivalence remain open.
 
 **Admission rule:** unchecked items are possibilities, not authorization to expand the language. Section 12 governs additions across this charter. Prefer completing a defining workload and simplifying existing semantics over opening another feature family.
 
@@ -393,12 +396,14 @@ The config is the type; the real machine is the value. "Is this machine configur
 - [ ] A machine config is a concrete type inheriting from abstract machine classes; it is fully resolved at type time with no machine contact
   - [x] A small standard vocabulary of machine classes (packages, files, services, users), declared in Helix itself (`std:machine`, `std_machine` golden case)
   - [ ] A config with an unfilled or conflicting field fails at type time with the class errors above
+    - [x] The nginx configuration class reuses its input schema, realizes defaults and inherited constraints purely, and rejects incomplete/invalid/effectful declarations before requesting observation (`nginx_types`).
   - [ ] Resolution makes no contact with any machine or network, enforced by the type-time contract and not by convention
   - [ ] Facts that only a machine knows are declared as typed inputs to realization, never read during resolution
 - [ ] The resolved config serializes to YAML that reads as the complete, flattened description of the machine and diffs well in `git diff`
   - [ ] Stable key order and formatting, so an unchanged config produces no diff
   - [ ] A one-field change in a class shows as a one-line change in every machine that inherits it
   - [ ] Provenance is available without drowning the description (separable or opt-in)
+    - [x] `nginx.resolve` returns only complete values; optional `nginx.explain` returns versioned values and explicit/default class provenance. The repeated Docker baseline applies omitted defaults against an equivalent complete review and independently verifies convergence.
 - [ ] Same inputs, same resolved config: resolution is deterministic and pinned (imports, versions) so a config is reproducible
   - [ ] Imports are pinned (section 5) and the pins are recorded in the resolved config
   - [ ] The Helix version and state format version are recorded
@@ -537,7 +542,7 @@ The runtime supports types, classes and callable values beyond the established p
 
 - [ ] Type validation and checking: move descriptor traversal, nested violation collection, unions, records and refinement orchestration from `src/builtins/typing/ty.rs` into Helix. Needs dependable primitive type inspection and first-class predicate calls; preserve declaration errors versus rejected values versus failed predicates, bounded traversal, deterministic diagnostics and source blame. Keep one authoritative checker used by both annotations and explicit checks.
 - [ ] Class composition and realization: implement inheritance conflict detection, defaults, required-field checks, flattening and provenance from `src/builtins/typing/class.rs` in Helix, building on the shared checker and the supported subtype rules. Requires callable predicates and sufficient provenance reflection; preserve explicit conflict resolution and parent-order independence. Future algebra and subtyping policy should live beside this code rather than grow another Rust policy engine.
-  - Realization migration remains deferred: the existing embedded-policy call returns its result directly, while realization must validate filled defaults, collect predicate failures through the shared checker, and preserve original builtin argument/call blame. Moving only default assembly would add cross-language sequencing without removing that responsibility. Use the concrete `std:types.redeclare` and `std:machine` workload and focused ordering/provenance contracts to assess a future migration; current nginx and test-report policy do not exercise class realization.
+  - Realization migration remains deferred: the existing embedded-policy call returns its result directly, while realization must validate filled defaults, collect predicate failures through the shared checker, and preserve original builtin argument/call blame. Moving only default assembly would add cross-language sequencing without removing that responsibility. Use the concrete `std:types.redeclare` and `std:machine` workload and focused ordering/provenance contracts to assess a future migration; nginx now exercises ordinary class realization, defaults and provenance before provider planning; test-report policy still does not. This supplies a concrete workload for assessing future migration, not an automatic reason to move the checker.
 - [ ] Machine vocabulary and planning policy: declare packages/files/services/users, fleet constraints, dependency ordering and plan validation in Helix (section 8). Given typed observations, compute the complete plan as data; host adapters expose narrowly defined effects. Versioned snapshots and caller-owned journals now preserve pending effects and continuations (section 2); each application must still establish its own reconciliation and target-coordination contract.
 
 ### With a few explicit runtime services
@@ -907,9 +912,11 @@ does not complete the broader audits below:
   a successful command or one response from a new worker cannot establish the
   whole postcondition. Per-file atomic replacement remains partial progress,
   not a transaction or rollback mechanism.
-- Typed records and the existing port type suffice for this fixed workload.
-  General class realization, a generic package/file/service API and additional
-  managers remain deferred for this workload. Optional `ssh_target` reuses the
+- The workload's configuration class now reuses its typed input schema and the
+  existing port type. Ordinary class realization provides defaults, constraints
+  and separately inspectable provenance before the unchanged provider plan.
+  The `nginx_types` suite and repeated Docker baseline exercise that concrete
+  benefit. A generic package/file/service API and additional managers remain deferred. Optional `ssh_target` reuses the
   existing SSH effect and provider lifecycle; disposable-host acceptance now
   qualifies that transport and durable recovery. No new actor, resource protocol
   or service-manager abstraction was needed. General platform obligations remain open.

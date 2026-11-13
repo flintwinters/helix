@@ -33,6 +33,7 @@ SUITES = {
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
     "interactive": "REPL, dependency watch, completion and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
+    "nginx_types": "Pure class realization, defaults and provenance feeding the existing nginx lifecycle",
     "target_coordination": "Cross-journal target exclusion and persistent crash uncertainty for cooperating controllers",
     "secret_effects": "Opaque host secret inputs, suppressed captures, fresh grants and safe durable reconciliation",
     "durable_effects": "Disk effect recovery, controller death, uncertain-outcome reconciliation and fresh grants",
