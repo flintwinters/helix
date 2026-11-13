@@ -1,0 +1,88 @@
+{
+  "format": "helix-execution",
+  "version": 1,
+  "runtime": "0.1.0",
+  "machine": "machine-0",
+  "objects": {
+    "evaluator-1": {
+      "kind": "evaluator",
+      "value": {
+        "program": "program-2",
+        "environment": [],
+        "memo": [],
+        "active": [],
+        "requests": [
+          {
+            "kind": "Eval",
+            "node": {
+              "source": "<root>",
+              "path": []
+            }
+          }
+        ],
+        "answer": null,
+        "depth": 0,
+        "limits": {
+          "max_depth": 200,
+          "max_iterations": 100000,
+          "max_work": 2000000,
+          "max_values": 128000000,
+          "max_value_size": 1000000,
+          "max_eval_depth": 512
+        },
+        "type_time": false,
+        "inherited_type_time": false,
+        "pending_effect": null,
+        "effects": [],
+        "type_inputs": [],
+        "annotations": [],
+        "annotation_units": 0,
+        "annotations_truncated": false,
+        "region": null,
+        "scopes": 0,
+        "effects_allowed": true,
+        "signal": null,
+        "remaining_work": 2000000,
+        "remaining_values": 128000000
+      }
+    },
+    "machine-0": {
+      "kind": "machine",
+      "value": {
+        "evaluator": "evaluator-1",
+        "source_file": null,
+        "status": "ready",
+        "result": null,
+        "error": null,
+        "checking": false,
+        "errors": []
+      }
+    },
+    "program-2": {
+      "kind": "program",
+      "value": {
+        "nodes": [
+          {
+            "location": {
+              "source": "<root>",
+              "path": []
+            },
+            "span": {
+              "line": 1,
+              "col": 1
+            },
+            "kind": {
+              "scalar": {
+                "integer": 42
+              }
+            }
+          }
+        ],
+        "linked": [],
+        "policies": {},
+        "roots": [],
+        "visible_roots": []
+      }
+    }
+  }
+}

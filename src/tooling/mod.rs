@@ -4,3 +4,5 @@ pub mod cli;
 pub mod inspection;
 pub mod interactive;
 pub mod perform;
+
+pub mod snapshots;

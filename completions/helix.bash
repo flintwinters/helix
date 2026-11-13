@@ -12,7 +12,7 @@ _helix_complete() {
             exec) COMPREPLY=( $(compgen -W '--json --yaml --help' -- "$cur") ) ;;
             watch) COMPREPLY=( $(compgen -W '--interval-ms --iterations --help' -- "$cur") ) ;;
             check) COMPREPLY=( $(compgen -W '--evaluate --help' -- "$cur") ) ;;
-            step) COMPREPLY=( $(compgen -W '--steps --help' -- "$cur") ) ;;
+            step|snapshot|restore) COMPREPLY=( $(compgen -W '--steps --help' -- "$cur") ) ;;
             trace) COMPREPLY=( $(compgen -W '--limit --help' -- "$cur") ) ;;
             *) COMPREPLY=( $(compgen -W '--help' -- "$cur") ) ;;
         esac

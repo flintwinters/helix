@@ -6,6 +6,11 @@ milestones, not stable releases; compatibility boundaries live in
 
 ## Current development
 
+- Versioned executable snapshots preserve complete bounded continuations, captures,
+  linked source graphs and pending effects across processes. Explicit snapshot and
+  restore commands support live-local edits and reject unsupported versions;
+  inspection and pure source recovery keep their existing separate formats.
+
 - Declarative types now validate nested defaults before membership and report
   expected values, actual values, missing-field presence and predicate failures
   with source blame. Direct function arguments retain their own locations.

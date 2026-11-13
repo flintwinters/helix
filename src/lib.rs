@@ -10,6 +10,7 @@ mod vm;
 mod value;
 mod model;
 mod inspect;
+mod snapshot;
 
 pub use library::names as std_modules;
 pub use library::source as std_source;

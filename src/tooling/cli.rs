@@ -27,6 +27,12 @@ pub fn dispatch(args: &[String]) -> Option<ExitCode> {
         },
         ["repl"] => interactive::repl(),
         ["completion", shell] => interactive::completion(shell),
+        ["snapshot", path] => super::snapshots::command(path, false, Some(0)),
+        ["restore", path] => super::snapshots::command(path, true, None),
+        [mode @ ("snapshot" | "restore"), path, "--steps", count] => match count.parse() {
+            Ok(count) => super::snapshots::command(path, *mode == "restore", Some(count)),
+            Err(_) => usage("--steps requires a nonnegative integer"),
+        },
         ["inspect", path] => inspection::inspect(path),
         ["step", path] => inspection::step(path, 1),
         ["step", path, "--steps", count] => match count.parse() {

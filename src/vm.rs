@@ -77,6 +77,10 @@ impl Vm {
         // Descend through child requests using a host vector, never nested interpreter calls.
         let mut parents = Vec::new();
         loop {
+            if let Err(message) = crate::snapshot::validate::next(self.evaluator.as_ref().unwrap()) {
+                self.fail(self.evaluator.as_ref().unwrap().program.graph.error(ROOT, "snapshot", message));
+                break;
+            }
             let child = Arc::make_mut(
                 self.evaluator
                     .as_mut()

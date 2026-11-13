@@ -213,3 +213,6 @@ fn failing_or_panicking_progress_callbacks_reap_running_commands() {
     }
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[path = "snapshots.rs"]
+mod snapshots;

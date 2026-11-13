@@ -33,6 +33,7 @@ SUITES = {
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
     "interactive": "REPL, dependency watch, completion and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
+    "snapshots": "Fresh-process executable restoration, editable locals, imported sources and malformed snapshots",
     "long_commands": "Bounded command deadlines, capture, progress, retry classification and process-group cancellation",
     "ssh_host": "Real OpenSSH remote commands: host-key verification, exact argument transport and classified connection, authentication and privilege failures",
     "effects": "Capability-controlled host effects, deterministic inputs, failures and pending requests",
@@ -123,11 +124,15 @@ def parser():
     for name, description in {
         "fmt": "Emit canonical YAML source without executing",
         "step": "Inspect a program after a bounded number of transitions",
+        "snapshot": "Save executable state after a bounded number of transitions",
+        "restore": "Restore executable state; optionally save after more transitions",
         "trace": "Stream evaluation transitions as YAML documents",
         "watch": "Re-run when program or transitive import contents change",
     }.items():
         leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} program.yaml")
         leaf.add_argument("file", metavar="FILE", help="source file (or - except for watch)")
+        if name in ("snapshot", "restore"):
+            leaf.add_argument("--steps", type=int, default=0 if name == "snapshot" else None, help="transitions before saving; restore runs to completion when omitted")
         if name == "step":
             leaf.add_argument("--steps", type=int, default=1, help="number of transitions (default: 1)")
         if name == "trace":

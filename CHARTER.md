@@ -23,7 +23,7 @@ expansion remain deferred under section 12.
 
 **Where it is headed:** the niche Nix and Ansible occupy, declarative machine configuration, approached through types. A machine config is a type, fully resolved at type time and inheriting from abstract machine type classes; section 8 holds that road. Daily-driver scripting comes first because the config language has to be a language worth using.
 
-**Where we are:** a resource-bounded expression language with a pure core, first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. Caller-authorized host effects, in-memory interruption, file imports and pure error recovery work; disk suspend/resume and declarative machine application remain ahead.
+**Where we are:** a resource-bounded expression language with a pure core, first-class functions, declarative types, annotations, class composition and explicit type-time evaluation. Caller-authorized host effects, in-memory interruption, file imports and pure error recovery work; bounded versioned disk suspend/resume now works through explicit snapshot APIs; the reversibility promise type and general declarative machine application remain ahead.
 
 **Admission rule:** unchecked items are possibilities, not authorization to expand the language. Section 12 governs additions across this charter. Prefer completing a defining workload and simplifying existing semantics over opening another feature family.
 
@@ -50,14 +50,14 @@ Reversibility is a promise type. A machine that mixes in this promise must expos
 
 - [ ] A reversibility promise type enforces complete behavioral and state exposure on machines that mix it in
 - [ ] Serialization captures the whole promised machine, including nested calls and live allocations, without dependence on the original process
-- [ ] **Suspend/resume:** a run can pause, save to YAML, and continue later from that file
-- [ ] Execution position persisted as root-relative paths, never opaque pointers
-- [ ] All five statuses actually occur and round-trip: `ready`, `running`, `finished`, `error`, `signaled`
-- [ ] Hand-edit a suspended state file, resume it, and the edit takes effect
-- [ ] Deterministic replay: same state in, same state out
+- [x] **Suspend/resume:** explicit `snapshot`/`restore` save and continue complete bounded execution in fresh processes; version 1 uses canonical JSON (a YAML subset), separate from inspection and pure recovery (`snapshots`, public VM boundary tests)
+- [x] Execution position persisted as source-qualified root-relative paths; embedded graph topology validates references, and object-table names preserve sharing without exposing addresses (`snapshots`)
+- [x] All five statuses round-trip: `ready`, `running`, `finished`, `error`, `signaled`; public snapshot tests cover intermediate, failed, pending-effect and interrupted machines
+- [x] Edit a suspended live parameter and resume a different result (`snapshots`). Completed memoized work remains completed; arbitrary source edits do not invalidate dependencies automatically
+- [x] Pure continuation replay: the same saved state produces the same result and annotation evidence. Future effect replies are explicit external inputs; this does not promise identical external execution (`library`, `snapshots`)
 - [ ] Source locations preserved on evaluated values, not only on errors
 - [ ] State diffs read well in `git diff` (stable key order, minimal churn)
-- [ ] Versioned state format with a clear migration story
+- [x] Versioned execution format with compatibility fixtures and explicit rejection of unsupported format/runtime versions; future incompatible changes require a migration or documented rejection (`LANGUAGE.md#executable-disk-snapshots`)
 - [x] YAML representation boundaries decided: bounded acyclic aliases and standard tags are supported; cyclic aliases, custom tags and non-string keys are rejected (`yaml_model` golden and conformance suite).
 
 ---
@@ -81,7 +81,7 @@ installed `curl`. Signals are explicit host event APIs, not OS signal handlers.
 Suspension and interruption preserve live continuations in memory; emitted
 inspection state is not a restorable disk snapshot. Retained branches require
 explicit host handling and do not share a global effect deduplication service.
-These limits leave section 2's restoration and replay obligations open.
+Executable snapshot restoration now has its own versioned API; the general reversibility promise and durable external-effect recovery remain separate obligations.
 
 ---
 
@@ -144,11 +144,11 @@ Completed coverage spans:
 
 ### Obligations activated by later milestones
 
-These require features from sections 2–3 and a versioned state format. They remain explicit obligations, not claims that disk restoration, effect replay or state migration already works. Today's immutable in-memory pause points, pure recovery and ordinary-data finished-root fixpoints are covered separately; named function and machine inspection graphs are not executable disk snapshots.
+Versioned execution snapshots now activate the restoration and compatibility obligations. Effect-boundary recovery remains open until its host acceptance evidence lands. Immutable pause points, pure source recovery and ordinary-data fixpoints retain separate contracts; inspection graphs remain non-restorable.
 
-- [ ] When suspension lands, compare uninterrupted execution with save/resume at every supported boundary, including nested calls, live locals, hand-edited states and fresh-process restoration
+- [x] Compare uninterrupted execution with save/resume at every transition of bounded nested-call, iteration, annotation, refinement, handler and child-machine programs; fresh CLI processes additionally cover live-local edits, embedded imports and representative existing golden workloads (`library`, `snapshots`, `execution`)
 - [ ] Extend the existing controlled-adapter failure, retry, cleanup, permission and in-memory interruption tests to fresh-process disk resume; prove completed effects are not accidentally repeated after restoration
-- [ ] Keep compatibility fixtures for persisted states and public errors; test supported upgrades and explicit rejection of unsupported versions as versioning lands
+- [x] Keep committed version-1 ready/error snapshots and exact public error expectations; test restoration and explicit unsupported-version rejection. No earlier executable format exists to upgrade; future version changes must extend these fixtures (`snapshots`)
 
 ---
 

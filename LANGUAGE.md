@@ -457,3 +457,40 @@ See [Host effects and explicit grants](HOST.md#host-effects-and-explicit-grants)
 #### Bounded command operations
 
 See [Bounded command operations](HOST.md#bounded-command-operations).
+
+
+## Executable disk snapshots
+
+`./manage.py runtime snapshot program.yaml --steps 20` emits a versioned
+executable checkpoint. `./manage.py runtime restore checkpoint.json` runs it in a
+fresh process; adding `--steps N` saves another checkpoint after at most N
+transitions. JSON is the canonical YAML-compatible wire spelling for version 1;
+the loader currently accepts that spelling. Existing `step`/`inspect` documents
+remain observational, and `resume` still means pure source recovery.
+
+The snapshot embeds linked representation graphs, source-qualified path
+references, captured environments, intermediate values, pending continuations,
+iteration and predicate progress, phase/memo state, resource budgets, annotation
+history, nested machines and effect outcomes. Restoration neither reparses
+function source nor opens imports. Object-table names express sharing within a
+snapshot and are not operating-system addresses. Source locations are preserved
+from the embedded graph. A live parameter's `environment` argument values can be
+edited; doing so branches the computation. Completed memoized work is retained,
+so editing source alone does not invalidate dependent completed work.
+
+Version 1 requires the matching runtime package version and rejects unknown
+formats, fields, references, cycles, invalid graph topology and out-of-bounds
+continuations. Compatibility fixtures live in `tests/fixtures/snapshots/`.
+There is no older execution format to migrate: ordinary inspection and pure
+recovery documents are rejected. Future incompatible schema changes require a
+version increment and an explicit migration or rejection path. Snapshot budgets
+are 32 MiB, 100,000 shared objects and 128 codec levels; these supplement existing
+execution limits. Exceeding a snapshot budget fails saving without changing the
+machine. This bounded API is not yet the charter's general reversibility promise
+syntax, arbitrary source-edit invalidation, or secret-safe serialization.
+
+A snapshot is executable input. Its data carries no host grants. Restoring and
+running yields pending effects without applying them; a caller must supply a
+fresh authorized host. Completed outcomes stay completed. An externally started
+operation whose reply was never recorded is uncertain, and must not be blindly
+replayed merely because its VM request is still pending.

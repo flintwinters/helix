@@ -406,3 +406,12 @@ application rollback or restoration of serialized execution. Controller-death
 cases start a fresh observed/reviewed application instead of replaying old effects.
 The `harness` suite checks opt-in authorization, prerequisite failure, cleanup
 ownership and independent-observer sensitivity without Docker.
+
+
+Executable snapshots: `./manage.py test --suite snapshots --suite library
+--suite execution` covers fresh-process restoration, edits to live parameters,
+embedded imports after source removal, version/schema rejection, retained
+branches and restoration at every transition of bounded nested-call, annotation,
+predicate and iteration examples. The committed version-1 compatibility fixture
+is independent of freshly generated snapshots. Existing inspection tests retain
+their separate non-restorable format contract.

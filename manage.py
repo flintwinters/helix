@@ -268,7 +268,7 @@ def runtime(args, binary) -> int:
         return inventory(replace(test_context(), binary=binary).helix, ROOT)
     if command in ("run", "recover", "resume", "check"):
         return subprocess.call([str(binary), command, *(["--evaluate"] if command == "check" and args.evaluate else []), args.file], cwd=ROOT)
-    if command in ("fmt", "step", "trace", "watch", "state", "repl", "schema", "lsp", "completion"):
+    if command in ("fmt", "step", "snapshot", "restore", "trace", "watch", "state", "repl", "schema", "lsp", "completion"):
         extra = [args.file] if hasattr(args, "file") else []
         for name in ("steps", "limit", "interval_ms", "iterations"):
             value = getattr(args, name, None)

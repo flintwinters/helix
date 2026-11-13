@@ -15,6 +15,8 @@ pub const COMMANDS: &[&str] = &[
     "perform",
     "recover",
     "resume",
+    "snapshot",
+    "restore",
     "check",
     "std",
     "fmt",
