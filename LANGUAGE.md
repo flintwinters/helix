@@ -581,7 +581,9 @@ version increment and an explicit migration or rejection path. Snapshot budgets
 are 32 MiB, 100,000 shared objects and 128 codec levels; these supplement existing
 execution limits. Exceeding a snapshot budget fails saving without changing the
 machine. Promised machines enforce these bounds at admission and transitions;
-arbitrary source-edit invalidation and secret-safe serialization remain separate.
+source edits do not invalidate completed work. Retained provenance records prior
+execution, not proof that an externally edited value arose from it. Secret-safe
+serialization of arbitrary ordinary data remains outside this contract.
 
 A snapshot is executable input. Its data carries no host grants. Restoring and
 running yields pending effects without applying them; a caller must supply a

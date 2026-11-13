@@ -60,7 +60,21 @@ YAML representation graphs retain parent links, source spans and root-relative p
 
 If these are not great, there is no reason to use Helix over anything else.
 
-Reversibility is a promise type. A machine that mixes in this promise must expose all of its behavior and complete execution state so it can always be serialized and restored. This includes stack, heap, local bindings, continuations, iteration progress and pending effects wherever they determine execution; hidden host state cannot carry part of the continuation. Suspend/resume follows from satisfying this promise. The runtime enforces this through named, composable `promise` types and immutable `mixin` application. The initial registered obligation is `reversible`: admission and subsequent transitions preserve bounded executable serialization, refusing a transition before losing the previous continuation. Promised machines refuse ordinary host dispatch and arbitrary effect replies. `PromisedSystem` composes promised participants through atomic `peer_send`/`peer_receive` rendezvous, retaining both continuations, exact delivery receipts and scheduler position in one checkpoint. The complete system is the restoration boundary; independently hosted remote participants and effects outside it remain separate work. This is state restoration, not external rollback, arbitrary source-edit invalidation or secret-safe serialization.
+Reversibility is a promise type. A machine that mixes in this promise must expose all of its behavior and complete execution state so it can always be serialized and restored. This includes stack, heap, local bindings, continuations, iteration progress and pending effects wherever they determine execution; hidden host state cannot carry part of the continuation. Suspend/resume follows from satisfying this promise. The runtime enforces this through named, composable `promise` types and immutable `mixin` application. The initial registered obligation is `reversible`: admission and subsequent transitions preserve bounded executable serialization, refusing a transition before losing the previous continuation. Promised machines refuse ordinary host dispatch and arbitrary effect replies. `PromisedSystem` composes promised participants through atomic `peer_send`/`peer_receive` rendezvous, retaining both continuations, exact delivery receipts and scheduler position in one checkpoint. The complete system is the restoration boundary; independently hosted remote participants and effects outside it remain separate work. This is state restoration, not external rollback or secret-safe serialization.
+
+Design decisions beyond that implemented boundary:
+
+- Edits are externally supplied state changes: from the VM's perspective they
+  simply appeared, like cosmic rays. Continue from the supplied state without
+  invalidating or recomputing completed work to make it agree with edited source.
+  Retained provenance describes recorded execution; it does not certify that an
+  edited value was produced by that execution. Structural snapshot validation
+  still applies; this decision does not promise acceptance of malformed states.
+- Use monadic composition as the direction for independently hosted reversible
+  computations. The concrete representation, sequencing laws and transport/
+  restoration protocol still need a workload and acceptance evidence. Monadic
+  composition alone does not establish agreement about already-delivered messages
+  when peers restore independently; the current joint boundary remains in force.
 
 - [x] A reversibility promise type enforces complete behavioral and state exposure on machines that mix it in, within the documented snapshot budgets; composed promises participate in membership, annotations and subtyping (`library`, `semantics`, `promises` golden)
 - [x] Promised participants communicate within a joint reversible system: receipt histories correspond exactly to completed peer effects, duplicate deliveries are idempotent, and failed deliveries preserve both previous participants. Fresh-process restoration covers request acceptance before reply; omitted receipts and mismatched participant histories are rejected (`library`, `snapshots`). This does not establish distributed rollback or remote fencing.
@@ -68,7 +82,7 @@ Reversibility is a promise type. A machine that mixes in this promise must expos
 - [x] **Suspend/resume:** explicit `snapshot`/`restore` save and continue complete bounded execution in fresh processes; version 2 uses canonical JSON (a YAML subset), separate from inspection and pure recovery (`snapshots`, public VM boundary tests)
 - [x] Execution position persisted as source-qualified root-relative paths; embedded graph topology validates references, and object-table names preserve sharing without exposing addresses (`snapshots`)
 - [x] All five statuses round-trip: `ready`, `running`, `finished`, `error`, `signaled`; public snapshot tests cover intermediate, failed, pending-effect and interrupted machines
-- [x] Edit a suspended live parameter and resume a different result (`snapshots`). Completed memoized work remains completed; arbitrary source edits do not invalidate dependencies automatically
+- [x] Edit a suspended live parameter and resume a different result (`snapshots`). Completed memoized work remains completed; source edits are not requests for dependency invalidation
 - [x] Pure continuation replay: the same saved state produces the same result and annotation evidence. Future effect replies are explicit external inputs; this does not promise identical external execution (`library`, `snapshots`)
 - [x] Latest retained evaluated-value evidence includes producing source paths and spans, including local computed results; bounded ordinary-data summaries persist through snapshots and explicitly report truncation (`library`, `memory`). This is not an unbounded per-invocation trace
 - [x] Canonical key order, byte-stable zero-step restoration, localized live-parameter edits, and a bounded nested-call transition diff with unchanged embedded source objects are qualified (`snapshots`). Object names preserve sharing within a checkpoint; they are not persistent global identities across arbitrary graph changes
@@ -1001,19 +1015,25 @@ navigation paths without duplicate contract descriptions.
 Resolve these only when a concrete workload depends on them; section 12 still
 controls admission.
 
-- [ ] How should independently hosted reversible participants coordinate restoration
-  without the joint snapshot boundary of section 2?
-- [ ] How should arbitrary source edits invalidate completed work in a suspended
-  execution while preserving trustworthy provenance?
+- [ ] What concrete monadic composition and transport/restoration protocol lets
+  independently hosted participants preserve the reversibility promise? Section 2
+  records the design direction; independent restoration remains unqualified.
 - [ ] How should secret-bearing observations and external secret managers extend
   the current opaque-input boundary without persisting plaintext?
 - [ ] Which real migration workload justifies the next provider/platform scope,
   and what recovery and target-coordination guarantees does it require?
-- [ ] Which parts of `flintwinters/helixcpp` solve an admitted workload better than
-  the existing implementation?
 
 Actor declarations, explicit effect yield, opt-in annotations, type-time regions,
 structural class membership and merge rules are decided in
 [LANGUAGE.md](LANGUAGE.md). Executable persistence uses versioned snapshots;
 inspection and pure failed-run recovery remain separate formats. Remaining type
 proofs, richer algebra and composition experiments stay in section 8.
+
+Legacy reuse decision: use `flintwinters/helixcpp` as a reference for the planned
+interactive debugger, especially literal-YAML navigation, child-VM stepping,
+manual-edit forks and Git-backed execution history (`HUI.md`,
+`tui/helix_step.py`, `tui/tests/` in that repository). Adapt interaction contracts
+and regression scenarios to the current VM and snapshot APIs; do not import a
+second evaluator or assume the legacy state format is compatible. C compilation,
+embedded targets and graphics bindings remain deferred until a concrete workload
+justifies them. There is no blanket porting milestone.
