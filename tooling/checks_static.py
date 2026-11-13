@@ -9,6 +9,9 @@ def check(ctx):
     try:
         verify_checks(ctx)
         verify_bodies(ctx)
+        verify_policy_result_fields(ctx)
+        verify_record_boundaries(ctx)
+        verify_annotation_bounds(ctx)
         verify_numeric_enum_overlap(ctx)
         verify_computed_heads(ctx)
         verify_repository_modules(ctx)
@@ -123,6 +126,163 @@ def verify_bodies(ctx):
     code, report = static_report(ctx, json.dumps({'f': fn([['x', 'integer']], {'$ref': 'x'}),
         'g': fn([['y', {'$call': ['union', 'integer', 'string']}], ], {'$call': ['f', {'$ref': 'y'}]})}))
     assert code == 0 and report['diagnostics'] == [] and [d['kind'] for d in report['unchecked']] == ['unchecked'], report
+
+
+def verify_policy_result_fields(ctx):
+    """Plain check catches malformed report fields in the actual development policy."""
+    import copy
+
+    original = ctx.root / 'tooling' / 'test_policy.yaml'
+    process = ctx.helix('check', str(original.relative_to(ctx.root)))
+    report = yaml.safe_load(process.stdout)
+    assert process.returncode == 0 and report['mode'] == 'static' and report['diagnostics'] == [], report
+    policy = yaml.safe_load(original.read_text())
+    destination = ctx.root / 'runtime' / 'static' / 'policy-mutations'
+    destination.mkdir(parents=True, exist_ok=True)
+    for operation, field, value in [('result', 'status', 17), ('report', 'exit_code', 'zero')]:
+        mutated = copy.deepcopy(policy)
+        body = mutated[operation]['$call'][2]['$call']
+        if operation == 'result':
+            assert body[0] == 'set' and body[2] == field, body
+            body[3] = value
+        else:
+            assert body[0] == 'let' and field in body[2], body
+            body[2][field] = value
+        source = destination / f'{operation}-{field}.yaml'
+        source.write_text(yaml.safe_dump(mutated, sort_keys=False))
+        process = ctx.helix('check', str(source.relative_to(ctx.root)))
+        source.with_suffix('.report.yaml').write_text(process.stdout)
+        report = yaml.safe_load(process.stdout)
+        assert report['mode'] == 'static', (operation, report)
+        relevant = [item for item in report['diagnostics']
+                    if item['kind'] == 'type' and item.get('path', '').startswith(f'/{operation}/$call/2')
+                    and (field in item['message'] or field in item.get('path', ''))]
+        assert process.returncode == 1 and relevant, (operation, field, report)
+        assert all(item['line'] > 0 and item['column'] > 0 for item in relevant), relevant
+
+
+def verify_record_boundaries(ctx):
+    """Closed records expose definite field errors without treating uncertainty as failure."""
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    def fn(params, body, result):
+        return call('fn', params, body, result)
+
+    def record(**fields):
+        return call('record', *(item for pair in fields.items() for item in pair))
+
+    row = {'$ref': 'row'}
+    key = {'$ref': 'key'}
+    incompatible = [
+        ('required_field', fn([['row', record(x='integer')]], row, record(x='string'))),
+        ('required_missing', fn([['row', record()]], row, record(x='integer'))),
+        ('required_extra', fn([['row', record(x='integer')]], row, record())),
+    ]
+    for name, source in incompatible:
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 1 and any(item['kind'] == 'type' and item['path'] == '/$call/2'
+                                 for item in report['diagnostics']), (name, report)
+
+    source = fn([['row', 'map'], ['key', 'string']],
+                {'bad': 'wrong', 'unknown': call('get', row, key)},
+                record(bad='integer', unknown='any'))
+    code, report = static_report(ctx, json.dumps(source))
+    relevant = [item for item in report['diagnostics']
+                if item['kind'] == 'type' and item['path'] == '/$call/2/bad']
+    assert code == 1 and relevant, ('unknown sibling must not hide bad field', report)
+    assert all(item['line'] > 0 and item['column'] > 0 for item in relevant), relevant
+
+    # Each witness inhabits the overlap or supplies a value the checker cannot know.
+    # The literal case also guards against interpreting data as a malformed add call.
+    literal_data = {'bad': {'$call': ['add', 1]}}
+    possible = [
+        ('optional_overlap', fn([['row', record(x=call('optional', 'integer'))]],
+                                row, record(x=call('optional', 'string'))), [{}], {}, True),
+        ('optional_extra', fn([['row', record(x=call('optional', 'integer'))]],
+                              row, record()), [{}], {}, True),
+        ('unknown_get_key', fn([['key', 'string']], call('get', {'x': 1}, key), 'integer'),
+         ['x'], 1, True),
+        ('unknown_set_key', fn([['key', 'string'], ['value', 'any']],
+                              call('set', {'x': 1}, key, {'$ref': 'value'}), record(x='integer')),
+         ['x', 1], {'x': 1}, True),
+        ('literal_boundary', fn([], {'$literal': literal_data}, record(bad='map')),
+         [], literal_data, True),
+        ('with_field', fn([], {'x': 1, 'y': 'ok'},
+                          call('with_field', record(x='integer'), 'y', 'string')),
+         [], {'x': 1, 'y': 'ok'}, False),
+        ('secret_shape', fn([], {'type': 'secret', 'ref': 'credentials/test'}, 'secret'),
+         [], {'type': 'secret', 'ref': 'credentials/test'}, True),
+    ]
+    for name, function, arguments, expected, uncertain in possible:
+        code, report = static_report(ctx, json.dumps(function))
+        assert code == 0 and report['diagnostics'] == [], (name, report)
+        assert bool(report['unchecked']) == uncertain, (name, report)
+        source = call('let', {'produce': function}, call('produce', *arguments))
+        process = ctx.helix('run', '-', stdin=json.dumps(source))
+        assert process.returncode == 0 and yaml.safe_load(process.stdout)['root'] == expected, (name, process)
+
+
+def verify_annotation_bounds(ctx):
+    """Aliases preserve ordinary proofs; cycles and oversized expansions stay unproved."""
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    def ref(name):
+        return {'$ref': name}
+
+    def annotated(aliases, annotation, *, identity=False):
+        params = [['value', annotation]] if identity else []
+        body = ref('value') if identity else 1
+        return {**aliases, 'produce': call('fn', params, body, annotation)}
+
+    # Bare strings are data; only explicit references follow lexical aliases.
+    for name, annotation, body in [('literal_primitive', 'integer', 1),
+                                   ('reference_primitive', ref('integer'), 'ok')]:
+        source = {'integer': 'string', 'produce': call('fn', [], body, annotation),
+                  'answer': call('produce')}
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 0 and report['diagnostics'] == [] and report['unchecked'] == [], (name, report)
+        result = ctx.helix('run', '-', stdin=json.dumps(source))
+        assert result.returncode == 0 and yaml.safe_load(result.stdout)['root']['answer'] == body, (name, result)
+    source = annotated({'Alias': 'integer'}, 'Alias')
+    code, report = static_report(ctx, json.dumps(source))
+    assert code == 0 and report['diagnostics'] == [] and any(
+        item['path'] == '/produce/$call/3' for item in report['unchecked']), report
+
+    aliases = {'alias0': 'integer'}
+    aliases.update({f'alias{i}': ref(f'alias{i - 1}') for i in range(1, 80)})
+    proved = [('long_alias_chain', annotated(aliases, ref('alias79')))]
+
+    def shared_records(levels, leaf):
+        aliases = {'shape0': leaf}
+        for level in range(1, levels + 1):
+            fields = [part for key in ('a', 'b', 'c', 'd')
+                      for part in (key, ref(f'shape{level - 1}'))]
+            aliases[f'shape{level}'] = call('record', *fields)
+        return aliases, ref(f'shape{levels}')
+
+    ordinary, annotation = shared_records(2, 'integer')
+    proved.append(('shared_record_proof', annotated(ordinary, annotation, identity=True)))
+    for name, source in proved:
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 0 and report['diagnostics'] == [] and report['unchecked'] == [], (name, report)
+
+    large_shape, annotation = shared_records(6, 'integer')
+    # 4**4 copies of a 4096-byte literal exceed the expanded string budget,
+    # while the descriptor node count and original source remain small.
+    large_strings, string_annotation = shared_records(4, call('literal', 'x' * 4096))
+    unproved = [
+        ('alias_cycle', annotated({'a': ref('b'), 'b': ref('a')}, ref('a'))),
+        ('constructor_cycle', annotated({'a': call('list_of', ref('a'))}, ref('a'))),
+        ('expanded_shape_budget', annotated(large_shape, annotation)),
+        ('expanded_string_budget', annotated(large_strings, string_annotation)),
+    ]
+    for name, source in unproved:
+        code, report = static_report(ctx, json.dumps(source))
+        assert code == 0 and report['diagnostics'] == [], (name, report)
+        assert any(item['path'] == '/produce/$call/3' and 'outside the supported' in item['message']
+                   for item in report['unchecked']), (name, report)
 
 
 def verify_computed_heads(ctx):

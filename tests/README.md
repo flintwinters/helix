@@ -91,9 +91,12 @@ lists, task records, observation metadata, compact retry selections and reports.
 `harness` checks rejected inputs, preserved metadata and deliberately malformed
 return values against those real annotations. The independent host checks still
 own count/status consistency, retained evidence and execution authority. Runtime
-shape checks do not prove the whole policy statically: record construction and
-higher-order operations can remain explicit `unchecked` obligations in
-`runtime/static/tooling-test_policy.yaml`.
+shape checks do not prove the whole policy statically. The static suite mutates
+the real policy to return an integer status or string exit code and requires
+field diagnostics before execution. Unknown higher-order operations and partially
+proved results remain explicit `unchecked` obligations in
+`runtime/static/tooling-test_policy.yaml`. Mutation sources and diagnostics are
+retained in `runtime/static/policy-mutations/`.
 
 The charter acceptance cases `host_inventory`, `provider_contract`,
 `command_provider`, `resource_composition` and `resource_composition_module`
@@ -245,7 +248,9 @@ stay in `runtime/`. Evaluation golden fixtures under `tests/check/` explicitly
 use `check --evaluate`; plain `check` never evaluates a program. The static suite
 also checks every production YAML module in `std/` and `tooling/`, retaining
 reports in `runtime/static/`. Diagnostics fail the gate; `unchecked` obligations
-remain visible and do not claim proven correctness.
+remain visible and do not claim proven correctness. Structural controls cover optional
+fields, unknown siblings/keys, literal data and secret handles; bounded annotation
+controls cover long aliases, cycles and expanded descriptor limits.
 
 Resource regressions grow function and machine capture graphs from shallow source until an enforced limit. They must emit structured errors and exit cleanly when releasing the retained graph. Public execution tests also release captured graphs on a small-stack thread and through thread-local teardown, preserving retained machine versions.
 

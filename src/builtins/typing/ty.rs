@@ -242,8 +242,21 @@ impl Ty {
         subtype(self, other, &mut |_| Err("static".into()))
     }
 
-    /// Whether some value could inhabit both: `false` only when the types are clearly disjoint.
-    /// Refinements are taken at their base, records and element types are not compared deeply.
+    /// A required field witnessing disjoint closed record shapes. This is also the
+    /// overlap decision used below; diagnostics must not invent another field checker.
+    pub(crate) fn disjoint_field(&self, other: &Ty) -> Option<String> {
+        match (self, other) {
+            (Ty::Refine(base, _), _) => base.disjoint_field(other),
+            (_, Ty::Refine(base, _)) => self.disjoint_field(base),
+            (Ty::Record(a) | Ty::Class(a, ..), Ty::Record(b) | Ty::Class(b, ..)) =>
+                record_disjoint_field(a, b).map(str::to_owned),
+            _ => None,
+        }
+    }
+
+    /// Whether some value could inhabit both: false only for definite disjointness.
+    /// Required record fields recurse; list/map element types and predicate obligations
+    /// remain conservative because empty collections or unproved predicates may overlap.
     pub(crate) fn overlaps(&self, other: &Ty) -> bool {
         match (self, other) {
             (Ty::Never, _) | (_, Ty::Never) => false,
@@ -256,7 +269,11 @@ impl Ty {
             (_, Ty::Enum(values)) => values.iter().any(|v| super::literal::may_overlap(v, self)),
             (Ty::List(_), Ty::List(_)) | (Ty::Map(_), Ty::Map(_)) => true,
             (Ty::Map(_), Ty::Record(_) | Ty::Class(..)) | (Ty::Record(_) | Ty::Class(..), Ty::Map(_)) => true,
-            (Ty::Record(_) | Ty::Class(..), Ty::Record(_) | Ty::Class(..)) => true,
+            (Ty::Record(a) | Ty::Class(a, ..), Ty::Record(b) | Ty::Class(b, ..)) => record_disjoint_field(a, b).is_none(),
+            // Secret handles are ordinary maps. Shape inference must not turn an
+            // unproved relation with their specialized schema into definite failure.
+            (Ty::Secret, Ty::Map(_) | Ty::Record(_) | Ty::Class(..))
+                | (Ty::Map(_) | Ty::Record(_) | Ty::Class(..), Ty::Secret) => true,
             (Ty::Function | Ty::Fn(..), Ty::Function | Ty::Fn(..)) => true,
             (Ty::Int, Ty::Int) | (Ty::Float, Ty::Float) | (Ty::Str, Ty::Str) | (Ty::Bool, Ty::Bool) | (Ty::Null, Ty::Null) | (Ty::Secret, Ty::Secret) | (Ty::Vm, Ty::Vm) => true,
             _ => false,
@@ -481,4 +498,64 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
 pub(super) fn record_subtype(fa: &[(String, Field)], fb: &[(String, Field)], pred: &mut Pred) -> bool {
     let fits = |(name, f): &(String, Field)| fb.iter().find(|(n, _)| n == name).is_some_and(|(_, g)| subtype(&f.ty, &g.ty, pred) && (f.required || !g.required));
     fa.iter().all(fits) && fb.iter().filter(|(_, g)| g.required).all(|(n, _)| fa.iter().any(|(m, f)| m == n && f.required))
+}
+
+/// Optional fields may be omitted, including when their types disagree. Every field
+/// required by either closed schema must be admitted by both. Pins and predicates
+/// only restrict these schemas further, so ignoring them conservatively permits overlap.
+fn record_disjoint_field<'a>(a: &'a [(String, Field)], b: &'a [(String, Field)]) -> Option<&'a str> {
+    for (required, other) in [(a, b), (b, a)] {
+        for (name, field) in required.iter().filter(|(_, field)| field.required) {
+            if !other.iter().find(|(key, _)| key == name)
+                .is_some_and(|(_, target)| field.ty.overlaps(&target.ty)) {
+                return Some(name);
+            }
+        }
+    }
+    None
+}
+
+#[cfg(test)]
+mod overlap_tests {
+    use super::{Field, Ty};
+
+    fn field(ty: Ty, required: bool) -> Ty {
+        Ty::Record(vec![("x".into(), Field { ty, required, default: None })])
+    }
+
+    #[test]
+    fn closed_record_overlap_respects_presence_and_optional_omission() {
+        let empty = Ty::Record(vec![]);
+        for (a, b, expected) in [
+            (field(Ty::Int, true), field(Ty::Str, true), false),
+            (field(Ty::Int, true), field(Ty::Str, false), false),
+            (field(Ty::Int, false), field(Ty::Str, false), true),
+            (field(Ty::Int, true), empty.clone(), false),
+            (field(Ty::Int, false), empty, true),
+            (field(Ty::Any, true), field(Ty::Str, true), true),
+            (field(field(Ty::Int, true), true), field(field(Ty::Str, true), true), false),
+            (field(Ty::Union(vec![Ty::Int, Ty::Str]), true), field(Ty::Str, true), true),
+            (field(Ty::List(Box::new(Ty::Int)), true), field(Ty::List(Box::new(Ty::Str)), true), true),
+        ] {
+            assert_eq!(a.overlaps(&b), expected);
+            assert_eq!(b.overlaps(&a), expected);
+            assert_eq!(a.disjoint_field(&b).is_some(), !expected);
+        }
+    }
+
+    #[test]
+    fn record_overlap_keeps_unknowns_and_specialized_maps_conservative() {
+        let required = |ty| Field { ty, required: true, default: None };
+        let actual = Ty::Record(vec![("known".into(), required(Ty::Int)), ("unknown".into(), required(Ty::Any))]);
+        let expected = Ty::Record(vec![("known".into(), required(Ty::Str)), ("unknown".into(), required(Ty::Str))]);
+        assert_eq!(actual.disjoint_field(&expected).as_deref(), Some("known"));
+        assert!(!actual.overlaps(&expected));
+        for map in [actual, Ty::Map(Box::new(Ty::Any)), Ty::Class(vec![], vec![], vec![])] {
+            assert!(map.overlaps(&Ty::Secret));
+            assert!(Ty::Secret.overlaps(&map));
+        }
+        // Fixed values and predicate obligations are deliberately not executed here.
+        let class = Ty::Class(vec![], vec![("x".into(), crate::value::Value::Integer(1))], vec![]);
+        assert!(class.overlaps(&Ty::Record(vec![])));
+    }
 }

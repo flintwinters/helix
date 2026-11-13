@@ -13,7 +13,7 @@ use crate::value::Value;
 use super::fault::Fault;
 pub use construct::refine;
 pub(crate) use construct::{descriptor as describe, function_type};
-pub(crate) use ty::Ty;
+pub(crate) use ty::{Field, Ty};
 pub use ty::{is_primitive, violations, Ask, Pred, Violation};
 
 pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault> {

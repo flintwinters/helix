@@ -18,7 +18,7 @@ mod value;
 
 pub use fault::Fault;
 pub use typing::{is_primitive, refine, violations, Ask, Violation};
-pub(crate) use typing::{describe, function_type, Ty};
+pub(crate) use typing::{describe, function_type, Field, Ty};
 use typing::Pred;
 use value::{equal, type_name};
 

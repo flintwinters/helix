@@ -1,17 +1,21 @@
 //! Static checking of function bodies and call sites without running anything. It covers a
 //! deliberately small fragment: literals, annotated parameters, arithmetic and comparison,
-//! conditions, calls of named functions with annotated parameters, and annotation expressions made
-//! of literal type constructors. Everything else has no static type.
+//! conditions, structural records and constant-key access/update, calls of named functions with
+//! annotated parameters, and annotation expressions made of literal type constructors.
+//! Unknown record fields retain `any`; other unsupported expressions have no static type.
 //!
 //! A finding is an `error` only when the program is certain to fail: the inferred type and the
 //! expected type have no value in common. When they might agree at run time, or an expression
 //! has no static type, the obligation is reported `unchecked` instead of passing silently.
-use crate::builtins::{self, describe, function_type, Ty};
+use crate::builtins::{self, describe, function_type, Field, Ty};
 use crate::graph::{Effects, Graph, NodeId, Site, Syntax, ROOT};
 use crate::model::{string as s, HelixError};
-use crate::value::Value;
+use crate::value::{Hash, Value};
 use std::collections::{HashMap, HashSet};
 use yaml_rust2::Yaml;
+
+const MAX_TYPE_CONSTRUCTOR_DEPTH: usize = 8;
+const MAX_TYPE_SHAPE_NODES: usize = 4096;
 
 /// What the checks found: definite failures, and obligations they could not settle.
 #[derive(Default)]
@@ -21,7 +25,7 @@ pub(super) struct Findings {
 }
 
 pub(super) fn check(graph: &Graph) -> Findings {
-    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default() };
+    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new() };
     let mut pending = vec![ROOT];
     while let Some(id) = pending.pop() {
         match graph.syntax(id) {
@@ -48,6 +52,7 @@ struct Checker<'g> {
     memo: HashMap<NodeId, Option<Ty>>,
     active: HashSet<NodeId>,
     findings: Findings,
+    type_memo: HashMap<(NodeId, usize), Option<Value>>,
 }
 
 impl Checker<'_> {
@@ -84,11 +89,14 @@ impl Checker<'_> {
                 Site::Entry(target) => self.infer(target),
             },
             Syntax::Call(items) => self.infer_call(id, items),
+            Syntax::Mapping(entries) => Some(Ty::Record(entries.iter().map(|(name, node)| {
+                (name.clone(), Field { ty: self.infer(*node).unwrap_or(Ty::Any), required: true, default: None })
+            }).collect())),
             _ => None,
         }
     }
 
-    fn parameter_type(&self, function: NodeId, index: usize) -> Option<Ty> {
+    fn parameter_type(&mut self, function: NodeId, index: usize) -> Option<Ty> {
         let (_, annotation) = self.graph.parameters(function).ok()?.into_iter().nth(index)?;
         self.annotation(annotation?)
     }
@@ -125,6 +133,22 @@ impl Checker<'_> {
             }
             "let" => self.infer(operands[1]),
             "type_time" => self.infer(operands[0]),
+            "get" if operands.len() == 2 => {
+                let Value::String(key) = self.scalar(operands[1])? else { return None };
+                let Ty::Record(fields) = self.infer(operands[0])? else { return None };
+                fields.into_iter().find(|(name, field)| name == &key && field.required).map(|(_, field)| field.ty)
+            }
+            "set" if operands.len() == 3 => {
+                let Value::String(key) = self.scalar(operands[1])? else { return None };
+                let Ty::Record(mut fields) = self.infer(operands[0])? else { return None };
+                let field = Field { ty: self.infer(operands[2]).unwrap_or(Ty::Any), required: true, default: None };
+                if let Some((_, previous)) = fields.iter_mut().find(|(name, _)| name == &key) {
+                    *previous = field;
+                } else {
+                    fields.push((key, field));
+                }
+                Some(Ty::Record(fields))
+            }
             "eq" | "ne" | "is" | "has" | "subtype" => Some(Ty::Bool),
             "str" | "type" => Some(Ty::Str),
             "int" | "len" => Some(Ty::Int),
@@ -209,7 +233,15 @@ impl Checker<'_> {
         };
         let path = self.graph.path(function);
         match self.infer(body) {
-            Some(actual) if !actual.overlaps(&declared) => self.error(body, format!("the body of `{path}` is {}, declared {}", actual.name(), declared.name())),
+            Some(actual) if !actual.overlaps(&declared) => {
+                let field = actual.disjoint_field(&declared);
+                let at = match (self.graph.syntax(body), field.as_ref()) {
+                    (Syntax::Mapping(entries), Some(field)) => entries.iter().find(|(name, _)| name == field).map_or(body, |(_, node)| *node),
+                    _ => body,
+                };
+                let field = field.map_or(String::new(), |name| format!(" at field `{name}`"));
+                self.error(at, format!("the body of `{path}` is {}, declared {}{field}", actual.name(), declared.name()));
+            }
             Some(actual) if !actual.below(&declared) => self.unchecked(body, format!("the body of `{path}` may not be {}; it is {}", declared.name(), actual.name())),
             Some(_) => {}
             None => self.unchecked(body, format!("the body of `{path}` has no static type; declared {}", declared.name())),
@@ -226,45 +258,106 @@ impl Checker<'_> {
     }
 
     /// The type a literal annotation expression denotes.
-    fn annotation(&self, id: NodeId) -> Option<Ty> {
-        Ty::parse(&self.type_value(id, 0)?).ok()
+    fn annotation(&mut self, id: NodeId) -> Option<Ty> {
+        let value = self.type_value(id, 0)?;
+        // Descriptor DAGs share values, but Ty::parse expands their structure.
+        // Bound that expanded work before asking the authoritative parser.
+        let mut pending = vec![&value];
+        let mut remaining = MAX_TYPE_SHAPE_NODES;
+        let mut remaining_bytes = crate::model::MAX_VALUE_SIZE;
+        while let Some(value) = pending.pop() {
+            remaining = remaining.checked_sub(1)?;
+            match value {
+                Value::Array(items) => {
+                    if items.len() > remaining.saturating_sub(pending.len()) { return None; }
+                    pending.extend(items.iter());
+                }
+                Value::Hash(entries) => {
+                    if entries.len().checked_mul(2)? > remaining.saturating_sub(pending.len()) { return None; }
+                    pending.extend(entries.iter().flat_map(|(key, value)| [key, value]));
+                }
+                Value::String(text) => remaining_bytes = remaining_bytes.checked_sub(text.len())?,
+                _ => {}
+            }
+        }
+        Ty::parse(&value).ok()
     }
 
-    fn type_value(&self, id: NodeId, depth: usize) -> Option<Value> {
-        if depth > 8 {
+    fn type_value(&mut self, id: NodeId, depth: usize) -> Option<Value> {
+        if depth > MAX_TYPE_CONSTRUCTOR_DEPTH {
             return None;
         }
-        let ty = |node| self.type_value(node, depth + 1);
+        if let Some(value) = self.type_memo.get(&(id, depth)) {
+            return value.clone();
+        }
+        let mut target = id;
+        let mut aliases = HashSet::new();
+        let value = loop {
+            if !aliases.insert(target) {
+                break None;
+            }
+            let name = match self.graph.syntax(target) {
+                Syntax::Reference(name) => name,
+                // Ordinary strings are type values, never implicit lexical references.
+                Syntax::Scalar(Yaml::String(name)) => break Some(s(name)),
+                _ => break self.type_constructor(target, depth),
+            };
+            match self.graph.lexical_site(target, name) {
+                None if builtins::is_primitive(name) => break Some(s(name)),
+                Some(Site::Entry(next)) => {
+                    if let Some(value) = self.type_memo.get(&(next, depth)) {
+                        break value.clone();
+                    }
+                    target = next;
+                }
+                _ => break None,
+            }
+        };
+        for alias in aliases {
+            self.type_memo.insert((alias, depth), value.clone());
+        }
+        value
+    }
+
+    fn type_constructor(&mut self, id: NodeId, depth: usize) -> Option<Value> {
         match self.graph.syntax(id) {
-            Syntax::Reference(name) => self.named_type(id, name, depth),
-            Syntax::Scalar(Yaml::String(name)) => self.named_type(id, name, depth),
             Syntax::Call(items) => {
                 let args = &items[1..];
-                let all = || args.iter().map(|&arg| ty(arg)).collect::<Option<Vec<_>>>();
                 match (self.graph.identifier(items[0])?, args.len()) {
-                    ("list_of", 1) => Some(describe("list", [("of", ty(args[0])?)])),
-                    ("map_of", 1) => Some(describe("map", [("of", ty(args[0])?)])),
-                    ("optional", 1) => Some(describe("optional", [("of", ty(args[0])?)])),
-                    ("union", 1..) => Some(describe("union", [("of", Value::Array(all()?.into()))])),
+                    ("record", count) if count % 2 == 0 => {
+                        let mut fields = Hash::new();
+                        for pair in args.chunks_exact(2) {
+                            let name @ Value::String(_) = self.scalar(pair[0])? else { return None };
+                            if fields.insert(name, self.type_value(pair[1], depth + 1)?).is_some() {
+                                return None;
+                            }
+                        }
+                        Some(describe("record", [("fields", Value::Hash(fields))]))
+                    }
+                    ("with_field", 3) => {
+                        let Value::Hash(record) = self.type_value(args[0], depth + 1)? else { return None };
+                        if record.get(&s("type")) != Some(&s("record")) {
+                            return None;
+                        }
+                        let Value::Hash(mut fields) = record.get(&s("fields"))?.clone() else { return None };
+                        let name @ Value::String(_) = self.scalar(args[1])? else { return None };
+                        fields.insert(name, self.type_value(args[2], depth + 1)?);
+                        Some(describe("record", [("fields", Value::Hash(fields))]))
+                    }
+                    ("list_of", 1) => Some(describe("list", [("of", self.type_value(args[0], depth + 1)?)])),
+                    ("map_of", 1) => Some(describe("map", [("of", self.type_value(args[0], depth + 1)?)])),
+                    ("optional", 1) => Some(describe("optional", [("of", self.type_value(args[0], depth + 1)?)])),
+                    ("union", 1..) => Some(describe("union", [("of", Value::Array(args.iter().map(|&arg| self.type_value(arg, depth + 1)).collect::<Option<Vec<_>>>()?.into()))])),
                     ("enum", 1..) => Some(describe("enum", [("values", Value::Array(args.iter().map(|&arg| self.scalar(arg)).collect::<Option<Vec<_>>>()?.into()))])),
                     ("literal", 1) => Some(describe("literal", [("value", self.scalar(args[0])?)])),
                     (kind @ ("function_of" | "pure_function_of"), 2) => {
                         let Syntax::Sequence(params) = self.graph.syntax(args[0]) else { return None };
-                        let params = params.iter().map(|&param| ty(param)).collect::<Option<Vec<_>>>()?;
-                        Some(function_type(params, ty(args[1])?, kind == "pure_function_of"))
+                        let params = params.iter().map(|&param| self.type_value(param, depth + 1)).collect::<Option<Vec<_>>>()?;
+                        Some(function_type(params, self.type_value(args[1], depth + 1)?, kind == "pure_function_of"))
                     }
                     _ => None,
                 }
             }
-            _ => None,
-        }
-    }
-
-    /// A primitive name nothing shadows, or a declaration that is itself a literal type.
-    fn named_type(&self, from: NodeId, name: &str, depth: usize) -> Option<Value> {
-        match self.graph.lexical_site(from, name) {
-            None if builtins::is_primitive(name) => Some(s(name)),
-            Some(Site::Entry(target)) => self.type_value(target, depth + 1),
             _ => None,
         }
     }
