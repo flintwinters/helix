@@ -255,8 +255,10 @@ suite. They measure the debug CLI (startup, loading, evaluation and emission),
 excluding compilation and Python YAML decoding. Each workload gets one warmup
 and five measured runs, checked against its expected result. Arithmetic maps,
 function loops, ASCII/Unicode slicing, and long-key map reads/replacements run
-alongside actual `std:types.from_fields` reconstruction and production test-report
-assembly. Report inputs use the suite catalog with retained logs, mixed outcomes
+alongside actual `std:types.from_fields` reconstruction, `std:types.redeclare` over
+16 concrete `std:machine` declarations, and production test-report assembly. The
+machine workload checks complete descriptors, including defaults, fixed values,
+provenance and parent names. Report inputs use the suite catalog with retained logs, mixed outcomes
 and a failure-heavy variant; Python checks every output row and summary. The
 workloads save raw samples, median/range, throughput, platform and binary hash to
 `runtime/speed/report.json`; unique run directories retain inputs and states.

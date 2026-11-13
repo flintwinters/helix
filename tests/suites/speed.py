@@ -42,6 +42,37 @@ def workloads():
                         {"$call": ["types.from_fields", fields]}]}
     yield "types-from-fields-256", json.dumps(source), {"type": "record", "fields": fields}, len(fields)
 
+    # Exercise reconstruction of concrete standard-library machine declarations. The
+    # oracle is ordinary data, independent of the runtime's realization helpers.
+    machine_fields = {
+        "hostname": "string",
+        "packages": {"type": "default", "of": {"type": "list", "of": "string"}, "default": []},
+        "files": {"type": "default", "of": {"type": "map", "of": "string"}, "default": {}},
+        "services": {"type": "default", "of": {"type": "map", "of": {
+            "type": "enum", "values": ["running", "stopped"]}}, "default": {}},
+        "users": {"type": "default", "of": {"type": "list", "of": "string"}, "default": []},
+    }
+    fleet_size = 16
+    declarations, expected_fleet = [], []
+    for index in range(fleet_size):
+        name = f"node-{index:02}"
+        fixed = {"hostname": f"{name}.example", "packages": ["nginx", "curl"]}
+        declarations.append({"$call": ["inherit", name,
+            [{"$ref": "machine.machine"}], fixed]})
+        provenance = {field: {"type": "host" if field == "hostname" else field,
+            "value": name if field in fixed else f"default of {field}",
+            "value_kind": "explicit" if field in fixed else "default"}
+            for field in machine_fields}
+        expected_fleet.append({"type": "class", "name": name, "parents": ["machine"],
+            "fields": machine_fields, "values": {**fixed, "files": {}, "services": {}, "users": []},
+            "provenance": provenance, "concrete": True})
+    source = {"$call": ["let", {"types": {"$call": ["import", "std:types"]},
+        "machine": {"$call": ["import", "std:machine"]}},
+        {"$call": ["map", {"$call": ["fn", ["declaration"],
+            {"$call": ["types.redeclare", {"$ref": "declaration"},
+                [{"$ref": "machine.machine"}]]}]}, declarations]}]}
+    yield "types-redeclare-machine-fleet", json.dumps(source), expected_fleet, fleet_size
+
     # Use the actual manage.py policy and catalog, retaining process logs rather
     # than replacing production report assembly with a small arithmetic proxy.
     from tooling.cli import SUITES
@@ -131,6 +162,8 @@ def verify(h):
                            "operations_per_run": operations, "seconds": samples}
             if name in {"types-from-fields-256", "test-policy-report", "test-policy-report-failures"}:
                 measurement["operation_unit"] = "fields" if name == "types-from-fields-256" else "suite observations"
+            elif name == "types-redeclare-machine-fleet":
+                measurement["operation_unit"] = "machine declarations"
             report["measurements"].append(measurement)
             for index in range(WARMUPS + SAMPLES):
                 started = time.perf_counter_ns()
