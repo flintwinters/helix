@@ -57,6 +57,10 @@ impl Evaluator {
             effects: Vec::new().into(),
             type_inputs: Vec::new().into(),
             annotations: Vec::new().into(),
+            evaluated: Vec::new().into(),
+            evaluated_index: Default::default(),
+            evaluated_units: 0,
+            evaluated_truncated: false,
             annotation_units: 0,
             annotations_truncated: false,
             region: None,
@@ -169,6 +173,7 @@ impl Evaluator {
                 if let Some(Ok(value)) = &self.answer {
                     let value = value.clone();
                     self.charge_value(id, &value)?;
+                    self.note_evaluated(id, &value);
                 }
                 if !local {
                     if let Some(Ok(value)) = &self.answer {

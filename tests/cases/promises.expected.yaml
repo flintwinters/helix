@@ -1,0 +1,41 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": base
+      location:
+        path:
+          - "$call"
+          - 2
+          - annotated
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - "$call"
+        - 2
+        - annotated
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      name: durable
+      requires:
+        - reversible
+      type: promise
+    value:
+      kind: vm
+      status: ready
+root:
+  annotated: true
+  base_member: true
+  composed_member: true
+  plain_member: false
+  subtype: true
+status: finished

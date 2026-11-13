@@ -61,7 +61,7 @@ impl Wire for CallOrigin {
 impl Wire for Arc<Vm> {
     fn put(&self, e: &mut Encoder) -> R<J> {
         e.object("machine",self,|v,e|Ok(serde_json::json!({
-        "evaluator":e.v(&v.evaluator)?,"source_file":e.v(&v.source_file)?,"status":e.v(&v.status)?,
+        "promises":e.v(&v.promises)?,"evaluator":e.v(&v.evaluator)?,"source_file":e.v(&v.source_file)?,"status":e.v(&v.status)?,
         "result":e.v(&v.result)?,"error":e.v(&v.error)?,"checking":e.v(&v.checking)?,"errors":e.v(&v.errors)?
     })))
     }
@@ -70,6 +70,7 @@ impl Wire for Arc<Vm> {
             keys(
                 j,
                 &[
+                    "promises",
                     "evaluator",
                     "source_file",
                     "status",
@@ -80,6 +81,7 @@ impl Wire for Arc<Vm> {
                 ],
             )?;
             let v = Vm {
+                promises: d.v(field(j, "promises")?)?,
                 evaluator: d.v(field(j, "evaluator")?)?,
                 source_file: d.v(field(j, "source_file")?)?,
                 status: d.v(field(j, "status")?)?,
@@ -88,6 +90,7 @@ impl Wire for Arc<Vm> {
                 checking: d.v(field(j, "checking")?)?,
                 errors: d.v(field(j, "errors")?)?,
             };
+            for promise in &v.promises { crate::builtins::typing::promise::validate(promise)?; }
             if matches!(v.status, Status::Ready | Status::Running | Status::Signaled)
                 && v.evaluator.is_none()
             {
@@ -113,6 +116,7 @@ impl Wire for Arc<Vm> {
             if v.status == Status::Error && v.error.is_none() && v.errors.is_empty() {
                 return Err("error machine requires diagnostic".into());
             }
+            v.verify_promises()?;
             Ok(Object::Machine(Arc::new(v)))
         })? {
             Object::Machine(v) => Ok(v),
@@ -154,6 +158,7 @@ fn put_evaluator(v: &Evaluator, e: &mut Encoder) -> R<J> {
         serde_json::json!({"program":program,"environment":e.v(&v.environment)?,"memo":e.memo(&v.memo)?,"active":active,
         "requests":requests,"answer":e.v(&v.answer)?,"depth":v.depth,"limits":e.v(&v.limits)?,"type_time":v.type_time,
         "inherited_type_time":v.inherited_type_time,"pending_effect":pending,"effects":e.v(&v.effects)?,"type_inputs":e.v(&v.type_inputs)?,
+        "evaluated":e.v(&v.evaluated)?,"evaluated_units":v.evaluated_units,"evaluated_truncated":v.evaluated_truncated,
         "annotations":e.v(&v.annotations)?,"annotation_units":v.annotation_units,"annotations_truncated":v.annotations_truncated,
         "region":e.v(&v.region)?,"scopes":v.scopes,"effects_allowed":v.effects_allowed,"signal":e.v(&v.signal)?,
         "remaining_work":v.remaining_work,"remaining_values":v.remaining_values}),
@@ -162,9 +167,7 @@ fn put_evaluator(v: &Evaluator, e: &mut Encoder) -> R<J> {
     result
 }
 fn get_evaluator(j: &J, d: &mut Decoder) -> R<Evaluator> {
-    keys(
-        j,
-        &[
+    let mut names = vec![
             "program",
             "environment",
             "memo",
@@ -187,8 +190,9 @@ fn get_evaluator(j: &J, d: &mut Decoder) -> R<Evaluator> {
             "signal",
             "remaining_work",
             "remaining_values",
-        ],
-    )?;
+        ];
+    names.extend(["evaluated", "evaluated_units", "evaluated_truncated"]);
+    keys(j, &names)?;
     let program: Arc<Program> = d.v(field(j, "program")?)?;
     let previous = d.program.replace(program.clone());
     let mut requests = Vec::new();
@@ -226,7 +230,7 @@ fn get_evaluator(j: &J, d: &mut Decoder) -> R<Evaluator> {
             d.v(field(pending, "request")?)?,
         ))
     };
-    let v = Evaluator {
+    let mut v = Evaluator {
         program,
         environment: d.v(field(j, "environment")?)?,
         memo: d.memo(field(j, "memo")?)?,
@@ -241,6 +245,10 @@ fn get_evaluator(j: &J, d: &mut Decoder) -> R<Evaluator> {
         effects: d.v(field(j, "effects")?)?,
         type_inputs: d.v(field(j, "type_inputs")?)?,
         annotations: d.v(field(j, "annotations")?)?,
+        evaluated: d.v(field(j, "evaluated")?)?,
+        evaluated_index: Default::default(),
+        evaluated_units: d.v(field(j, "evaluated_units")?)?,
+        evaluated_truncated: d.v(field(j, "evaluated_truncated")?)?,
         annotation_units: d.v(field(j, "annotation_units")?)?,
         annotations_truncated: d.v(field(j, "annotations_truncated")?)?,
         region: d.v(field(j, "region")?)?,
@@ -263,6 +271,12 @@ fn get_evaluator(j: &J, d: &mut Decoder) -> R<Evaluator> {
     {
         return Err("snapshot exceeds execution limits".into());
     }
+    v.validate_evaluated(|location| {
+        let data = location.plain_yaml().ok_or("evaluated location must be ordinary data")?;
+        let text = crate::emit::json_document(&data).map_err(str::to_owned)?;
+        let reference: J = serde_json::from_str(&text).map_err(|error| error.to_string())?;
+        d.n(&reference)
+    })?;
     super::validate::evaluator(&v)?;
     d.program = previous;
     Ok(v)

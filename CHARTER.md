@@ -20,7 +20,7 @@ formal-proof commitments below remain open even when component tests exist.
 Pure disk resume, caller-owned effect-boundary recovery and the existing nginx
 workload over SSH now have independent acceptance evidence. Section 7 is complete
 within those documented bounds. Next work must address a concrete remaining
-obligation—secret-safe persistence, the general reversibility promise or a real
+obligation—secret-safe persistence, effectful reversibility beyond section 2's bounded promise or a real
 migration trial—rather than automatically expanding algebra or providers.
 
 **Where it is headed:** the niche Nix and Ansible occupy, declarative machine configuration, approached through types. A machine config is a type, fully resolved at type time and inheriting from abstract machine type classes; section 8 holds that road. Daily-driver scripting comes first because the config language has to be a language worth using.
@@ -55,23 +55,22 @@ YAML representation graphs retain parent links, source spans and root-relative p
 
 ---
 
-## 2. The thing that makes Helix Helix: state you can read and resume
+## 2. The thing that makes Helix Helix: state you can read and resume — complete within bounded runtime contracts
 
 If these are not great, there is no reason to use Helix over anything else.
 
-Reversibility is a promise type. A machine that mixes in this promise must expose all of its behavior and complete execution state so it can always be serialized and restored. This includes stack, heap, local bindings, continuations, iteration progress and pending effects wherever they determine execution; hidden host state cannot carry part of the continuation. Suspend/resume follows from satisfying this promise. The runtime representation must serve that contract; its concrete layout and the promise syntax remain undecided.
+Reversibility is a promise type. A machine that mixes in this promise must expose all of its behavior and complete execution state so it can always be serialized and restored. This includes stack, heap, local bindings, continuations, iteration progress and pending effects wherever they determine execution; hidden host state cannot carry part of the continuation. Suspend/resume follows from satisfying this promise. The runtime enforces this through named, composable `promise` types and immutable `mixin` application. The initial registered obligation is `reversible`: admission and subsequent transitions preserve bounded executable serialization, refusing a transition before losing the previous continuation. Promised machines expose pending effects but refuse host dispatch and effect resolution; effectful reversible execution remains a separate extension. This is state restoration, not external rollback, arbitrary source-edit invalidation or secret-safe serialization.
 
-- [ ] A reversibility promise type enforces complete behavioral and state exposure on machines that mix it in
-- [ ] Serialization captures the whole promised machine, including nested calls and live allocations, without dependence on the original process
-- [x] **Suspend/resume:** explicit `snapshot`/`restore` save and continue complete bounded execution in fresh processes; version 1 uses canonical JSON (a YAML subset), separate from inspection and pure recovery (`snapshots`, public VM boundary tests)
+- [x] A reversibility promise type enforces complete behavioral and state exposure on machines that mix it in, within the documented snapshot budgets; composed promises participate in membership, annotations and subtyping (`library`, `semantics`, `promises` golden)
+- [x] Serialization captures the whole promised machine, including nested calls, live allocations and attached obligations, without dependence on the original process (`library`, `snapshots`); unsupported growth leaves a serializable refusal state
+- [x] **Suspend/resume:** explicit `snapshot`/`restore` save and continue complete bounded execution in fresh processes; version 2 uses canonical JSON (a YAML subset), separate from inspection and pure recovery (`snapshots`, public VM boundary tests)
 - [x] Execution position persisted as source-qualified root-relative paths; embedded graph topology validates references, and object-table names preserve sharing without exposing addresses (`snapshots`)
 - [x] All five statuses round-trip: `ready`, `running`, `finished`, `error`, `signaled`; public snapshot tests cover intermediate, failed, pending-effect and interrupted machines
 - [x] Edit a suspended live parameter and resume a different result (`snapshots`). Completed memoized work remains completed; arbitrary source edits do not invalidate dependencies automatically
 - [x] Pure continuation replay: the same saved state produces the same result and annotation evidence. Future effect replies are explicit external inputs; this does not promise identical external execution (`library`, `snapshots`)
-- [ ] Source locations preserved on evaluated values, not only on errors
-- [ ] State diffs read well in `git diff` (stable key order, minimal churn)
-  - [x] Fresh-process zero-step restoration preserves snapshot bytes; editing a live parameter changes only its value lines, and both branches finish with independently checked results (`snapshots`). Minimal churn across execution transitions remains to qualify.
-- [x] Versioned execution format with compatibility fixtures and explicit rejection of unsupported format/runtime versions; future incompatible changes require a migration or documented rejection (`LANGUAGE.md#executable-disk-snapshots`)
+- [x] Latest retained evaluated-value evidence includes producing source paths and spans, including local computed results; bounded ordinary-data summaries persist through snapshots and explicitly report truncation (`library`, `memory`). This is not an unbounded per-invocation trace
+- [x] Canonical key order, byte-stable zero-step restoration, localized live-parameter edits, and a bounded nested-call transition diff with unchanged embedded source objects are qualified (`snapshots`). Object names preserve sharing within a checkpoint; they are not persistent global identities across arbitrary graph changes
+- [x] Versioned execution format with compatibility fixtures and explicit rejection of unsupported format/runtime versions; version 1 migrates explicitly to version 2; future incompatible changes require a migration or documented rejection (`LANGUAGE.md#executable-disk-snapshots`)
 - [x] YAML representation boundaries decided: bounded acyclic aliases and standard tags are supported; cyclic aliases, custom tags and non-string keys are rejected (`yaml_model` golden and conformance suite).
 
 ---
@@ -95,7 +94,7 @@ installed `curl`. VM signals are explicit host event APIs; the command host maps
 Suspension and interruption preserve live continuations in memory; emitted
 inspection state is not a restorable disk snapshot. Retained branches require
 explicit host handling and do not share a global effect deduplication service.
-Executable snapshot restoration has its own versioned API. Caller-owned journals preserve completed effects and require explicit reconciliation of uncertain requests; distributed recovery and the general reversibility promise remain open.
+Executable snapshot restoration has its own versioned API. Caller-owned journals preserve completed effects and require explicit reconciliation of uncertain requests; distributed recovery and effectful reversibility beyond section 2's bounded promise remain open.
 
 ---
 
@@ -158,11 +157,11 @@ Completed coverage spans:
 
 ### Persistence obligations and evidence
 
-Versioned execution snapshots now activate the restoration and compatibility obligations. Caller-owned effect journals now add crash/uncertainty acceptance; distributed recovery and the general reversibility promise remain open. Immutable pause points, pure source recovery and ordinary-data fixpoints retain separate contracts; inspection graphs remain non-restorable.
+Versioned execution snapshots now activate the restoration and compatibility obligations. Caller-owned effect journals now add crash/uncertainty acceptance; distributed recovery and effectful reversibility beyond section 2's bounded promise remain open. Immutable pause points, pure source recovery and ordinary-data fixpoints retain separate contracts; inspection graphs remain non-restorable.
 
 - [x] Compare uninterrupted execution with save/resume at every transition of bounded nested-call, iteration, annotation, refinement, handler and child-machine programs; fresh CLI processes additionally cover live-local edits, embedded imports and representative existing golden workloads (`library`, `snapshots`, `execution`)
 - [x] Fresh-process effect journals retain completed outcomes, require fresh grants and refuse uncertain replay after controller death. Exact-request reconciliation records independently observed outcomes; real command/counter tests prove completed work is not repeated (`durable_effects`), while `effects` and `long_commands` retain shared adapter failure/retry/cancellation coverage. This does not establish exactly-once external execution or distributed recovery
-- [x] Keep committed version-1 ready/error snapshots and exact public error expectations; test restoration and explicit unsupported-version rejection. No earlier executable format exists to upgrade; future version changes must extend these fixtures (`snapshots`)
+- [x] Keep committed version-1 ready/error snapshots and exact public error expectations; test their explicit migration to version 2 and unsupported-version rejection. Future version changes must extend these fixtures (`snapshots`)
 
 ---
 
@@ -475,11 +474,11 @@ Friction: lazy bindings require assertions in the result dependency chain; wrapp
 
 ### With suspend/resume (section 2)
 - [ ] A long computation stopped midway, its state read in `git diff`, resumed to the same result as an uninterrupted run
-- [ ] Fix a mistake by hand-editing a suspended state and resuming it
+- [x] Fix a mistake by hand-editing a suspended live parameter and resuming it (`snapshots`); this does not invalidate completed memoized work
 - [ ] Resume a run that stopped on an error after fixing its cause by hand, without redoing the work that preceded it
-- [ ] Stop and resume inside nested function calls and iteration; inspect the saved locals and remaining work without consulting a trace
-- [ ] Move a suspended run to another checkout or machine and finish it using only its state and declared dependencies
-- [ ] Keep two edited branches of one suspended run, finish both, and use their state diff to explain why the results differ
+- [x] Stop and resume inside nested function calls and iteration; inspect the saved locals, accumulated outputs and remaining work without consulting a trace (`snapshots`)
+- [x] Move a suspended run to another directory and finish it using only its state after deleting its original source and imported file (`snapshots`); the documented runtime version remains required
+- [x] Keep original and edited branches of one suspended run, finish both, and use their live-parameter state diff to explain why the results differ (`snapshots`)
 
 ### With effects and imports (sections 3–5)
 - [ ] Replace one small shell script with Helix
@@ -885,7 +884,7 @@ These rules apply continuously, including to features already listed above. Reco
 
 ### Finish one defining workload before broadening
 
-- [x] Select one active consolidation target: section 11's Docker nginx acceptance specification. Its smallest useful sequence is clean preview, reviewed installation/configuration/start, independently verified HTTP response, no-op reapplication and drift repair. The full specification adds failure and fresh-reconciliation evidence before completion. Implementation and local Docker acceptance are complete; the qualification record above bounds that claim. Fresh-process continuation restoration now has separate section 2 acceptance evidence; the general reversibility promise remains open.
+- [x] Select one active consolidation target: section 11's Docker nginx acceptance specification. Its smallest useful sequence is clean preview, reviewed installation/configuration/start, independently verified HTTP response, no-op reapplication and drift repair. The full specification adds failure and fresh-reconciliation evidence before completion. Implementation and local Docker acceptance are complete; the qualification record above bounds that claim. Fresh-process continuation restoration now has separate section 2 acceptance evidence; effectful reversibility beyond section 2's bounded promise remains open.
 - [x] Complete that target using the existing architecture wherever possible, with repeatable acceptance evidence through `./manage.py`, an example a user can follow and explicit remaining limitations. Supporting frameworks alone do not close this item.
 - [x] Until that evidence exists, defer unrelated language expansion, provider/platform breadth and dogfooding migrations pursued only to increase the amount of Helix code. Keep the independent bootstrap and host failure detection. Replacing the active target requires recording why it failed to provide useful evidence and what work is being deferred.
 - [x] After completion, review which mechanisms the workload used, which complicated it and which remain speculative. Remove, consolidate or explicitly defer unnecessary surface before selecting the next expansion. Completion does not automatically authorize the rest of the roadmap.

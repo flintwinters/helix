@@ -94,3 +94,148 @@ fn expanded_source_references_obey_the_snapshot_budget() {
     assert!(vm.snapshot().unwrap_err().contains("budget"));
     assert_eq!(vm.status(), Status::Ready);
 }
+
+#[test]
+fn evaluated_values_preserve_local_sources_without_live_captures() {
+    let mut vm = Vm::load(r#"{$call: [let, {f: {$call: [fn, [x], {$call: [add, {$ref: x}, 3]}]}}, {$call: [map, {$ref: f}, [7, 11]]}]}"#);
+    vm.run();
+    assert_eq!(vm.status(), Status::Finished);
+    let evidence = vm.evaluated_values();
+    assert_eq!(evidence["truncated"].as_bool(), Some(false));
+    let rows = evidence["values"].as_vec().unwrap();
+    assert!(rows.iter().any(|row| row["value"].as_i64() == Some(14)
+        && row["location"]["path"].as_vec().is_some_and(|path| !path.is_empty())
+        && row["line"].as_i64() == Some(1)));
+    assert!(rows.iter().any(|row| row["runtime_values_omitted"].as_bool() == Some(true)));
+    assert_eq!(Vm::restore(&vm.snapshot().unwrap()).unwrap().evaluated_values(), evidence);
+    assert_eq!(Vm::load("42").evaluated_values()["values"].as_vec().unwrap().len(), 0);
+}
+
+#[test]
+fn evaluated_evidence_is_bounded_and_rejects_forged_metadata() {
+    let source = (0..500).map(|i| format!("value_{i}: {i}\n")).collect::<String>();
+    let mut vm = Vm::load(&source);
+    vm.run();
+    assert_eq!(vm.status(), Status::Finished);
+    assert_eq!(vm.evaluated_values()["truncated"].as_bool(), Some(true));
+    let saved: serde_json::Value = serde_json::from_str(&vm.snapshot().unwrap()).unwrap();
+    for (field, value) in [("evaluated_units", serde_json::json!(0)),
+        ("evaluated", serde_json::json!([]))] {
+        let mut changed = saved.clone();
+        for row in changed["objects"].as_object_mut().unwrap().values_mut() {
+            if row["kind"] == "evaluator" { row["value"][field] = value.clone(); }
+        }
+        assert!(Vm::restore(&changed.to_string()).is_err(), "accepted forged {field}");
+    }
+    assert_eq!(Vm::restore(&vm.snapshot().unwrap()).unwrap().evaluated_values(), vm.evaluated_values());
+}
+
+fn reversible_promise() -> yaml_rust2::Yaml {
+    yaml_rust2::YamlLoader::load_from_str("{type: promise, name: durable, requires: [reversible]}").unwrap().remove(0)
+}
+
+#[test]
+fn promised_execution_keeps_obligations_across_process_boundaries() {
+    let mut machine = Vm::load("{$call: [add, 20, 22]}").with_promise(reversible_promise()).unwrap();
+    assert!(helix::yaml_document(&machine.inspect()).contains("durable"));
+    for _ in 0..100 {
+        let saved = machine.snapshot().unwrap();
+        assert!(saved.contains("durable"));
+        machine = Vm::restore(&saved).unwrap();
+        if machine.status() == Status::Finished { break; }
+        machine = machine.step();
+    }
+    assert_eq!(machine.status(), Status::Finished);
+    assert_eq!(machine.state()["root"].as_i64(), Some(42));
+}
+
+#[test]
+fn promise_types_compose_and_reject_unregistered_behavior() {
+    let mut machine = Vm::load(r#"
+base: {$call: [promise, durable, [reversible]]}
+child: {$call: [promise, child, [{$ref: base}]]}
+machine: {$call: [mixin, {$call: [vm, {$call: [fn, [], 42]}]}, {$ref: child}]}
+member: {$call: [is, {$ref: machine}, {$ref: base}]}
+subtype: {$call: [subtype, {$ref: child}, {$ref: base}]}
+plain: {$call: [is, {$call: [vm, {$call: [fn, [], 42]}]}, {$ref: base}]}
+"#);
+    machine.run();
+    assert_eq!(machine.status(), Status::Finished, "{}", machine.state_string());
+    assert_eq!(machine.state()["root"]["member"].as_bool(), Some(true));
+    assert_eq!(machine.state()["root"]["subtype"].as_bool(), Some(true));
+    assert_eq!(machine.state()["root"]["plain"].as_bool(), Some(false));
+    let mut bad = Vm::load("{$call: [promise, dishonest, [unregistered]]}");
+    bad.run();
+    assert_eq!(bad.status(), Status::Error);
+}
+
+#[test]
+fn promised_effects_are_refused_before_host_dispatch() {
+    let mut machine = Vm::load("{$call: [effect, exit, 17]}").with_promise(reversible_promise()).unwrap();
+    let mut host = helix::EffectHost::default();
+    host.run(&mut machine);
+    assert_eq!(machine.status(), Status::Error);
+    assert_eq!(host.exit_code, 0);
+    assert!(machine.pending_effect().is_some());
+    assert!(Vm::restore(&machine.snapshot().unwrap()).is_ok());
+}
+
+#[test]
+fn promise_refuses_oversized_external_state_without_losing_serializability() {
+    let machine = Vm::load("42").with_promise(reversible_promise()).unwrap();
+    let huge = yaml_rust2::Yaml::Array(vec![yaml_rust2::Yaml::String("x".repeat(1024 * 1024)); 40]);
+    let refused = machine.signal(huge);
+    assert_eq!(refused.status(), Status::Error);
+    assert!(Vm::restore(&refused.snapshot().unwrap()).is_ok());
+    assert_eq!(run(machine).state()["root"].as_i64(), Some(42));
+}
+
+#[test]
+fn restored_promises_cannot_claim_unregistered_behavior() {
+    let machine = Vm::load("42").with_promise(reversible_promise()).unwrap();
+    let mut document: serde_json::Value = serde_json::from_str(&machine.snapshot().unwrap()).unwrap();
+    let root = document["machine"].as_str().unwrap().to_owned();
+    // Mutate through the ordinary value codec rather than relying on internal
+    // pointer identities: promise strings must still undergo declaration validation.
+    let encoded = document["objects"][&root]["value"]["promises"].to_string();
+    document["objects"][&root]["value"]["promises"] = serde_json::from_str(&encoded.replace("reversible", "unregistered")).unwrap();
+    assert!(Vm::restore(&document.to_string()).unwrap_err().contains("unsupported promise obligation"));
+}
+
+#[test]
+fn promise_rolls_back_a_transition_that_exceeds_snapshot_depth() {
+    // The source is shallow and admissible. Each iteration adds live collection
+    // layers; runtime values permit more depth than the wire codec.
+    let source = growing_state_program().to_string();
+    let mut machine = Vm::load(&source).with_promise(reversible_promise()).unwrap();
+    machine.run();
+    assert_eq!(machine.status(), Status::Error);
+    assert!(machine.state_string().contains("operation violates reversible state bounds"), "{}", machine.state_string());
+    let restored = Vm::restore(&machine.snapshot().unwrap()).unwrap();
+    assert_eq!(restored.state_string(), machine.state_string());
+}
+
+#[test]
+fn promised_nested_child_preserves_parent_continuation() {
+    let source = serde_json::json!({"$call": ["step",
+        {"$call": ["mixin", {"$call": ["vm", {"$call": ["fn", [], {"$call": ["add", 20, 22]}]}]},
+            {"$call": ["promise", "durable", ["reversible"]]}]}
+    ]});
+    let mut machine = Vm::load(&source.to_string()).with_promise(reversible_promise()).unwrap();
+    for _ in 0..100 {
+        let saved = machine.snapshot().unwrap();
+        let restored = Vm::restore(&saved).unwrap();
+        assert_eq!(restored.state_string(), machine.state_string());
+        if machine.status() == Status::Finished { return; }
+        machine = restored.step();
+    }
+    panic!("nested promised step did not finish");
+}
+
+fn growing_state_program() -> serde_json::Value {
+    let mut body = serde_json::json!({"$ref": "acc"});
+    for _ in 0..32 { body = serde_json::json!([body]); }
+    serde_json::json!({"$call": ["until",
+        {"$call": ["fn", ["acc"], false]},
+        {"$call": ["fn", ["acc"], body]}, 0]})
+}

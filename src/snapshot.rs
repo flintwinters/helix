@@ -10,7 +10,7 @@ mod state;
 pub(crate) mod validate;
 use codec::Wire;
 type R<T> = Result<T, String>;
-const VERSION: u64 = 1;
+const VERSION: u64 = 2;
 const MAX_BYTES: usize = 32 * 1024 * 1024;
 const MAX_OBJECTS: usize = 100_000;
 const MAX_DEPTH: usize = 128;
@@ -268,7 +268,7 @@ impl Vm {
         if snapshot.len() > MAX_BYTES {
             return Err("snapshot exceeds byte budget".into());
         }
-        let doc: J = match serde_json::from_str(snapshot) {
+        let mut doc: J = match serde_json::from_str(snapshot) {
             Ok(doc) => doc,
             Err(_) => {
                 let graph = Graph::parse_data(snapshot)
@@ -286,12 +286,29 @@ impl Vm {
             &["format", "version", "runtime", "machine", "objects"],
         )?;
         if field(&doc, "format")?.as_str() != Some("helix-execution")
-            || field(&doc, "version")?.as_u64() != Some(VERSION)
+            || !matches!(field(&doc, "version")?.as_u64(), Some(1 | VERSION))
         {
             return Err("unsupported execution snapshot format/version".into());
         }
         if field(&doc, "runtime")?.as_str() != Some(env!("CARGO_PKG_VERSION")) {
             return Err("unsupported snapshot runtime version".into());
+        }
+        if doc["version"] == 1 {
+            let objects = doc["objects"].as_object_mut().ok_or("expected objects map")?;
+            for row in objects.values_mut() {
+                let kind = row["kind"].as_str().unwrap_or("").to_owned();
+                if let Some(value) = row["value"].as_object_mut() {
+                    let additions: &[(&str, J)] = match kind.as_str() {
+                        "machine" => &[("promises", serde_json::json!([]))],
+                        "evaluator" => &[("evaluated", serde_json::json!([])), ("evaluated_units", serde_json::json!(0)), ("evaluated_truncated", serde_json::json!(false))],
+                        _ => &[],
+                    };
+                    for (key, value_to_add) in additions {
+                        if value.contains_key(*key) { return Err("version 1 snapshot contains version 2 fields".into()); }
+                        value.insert((*key).into(), value_to_add.clone());
+                    }
+                }
+            }
         }
         let objects = field(&doc, "objects")?
             .as_object()
@@ -313,6 +330,7 @@ impl Vm {
             units: 0,
         };
         let machine: Arc<Vm> = d.v(field(&doc, "machine")?)?;
+        machine.verify_promises()?;
         Ok((*machine).clone())
     }
 }

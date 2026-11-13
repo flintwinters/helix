@@ -61,7 +61,7 @@ fn type_cost(ty: &Ty, limit: usize, byte_limit: usize) -> Option<(usize, usize)>
                 }
             }
             Ty::Any | Ty::Never | Ty::Int | Ty::Float | Ty::Str | Ty::Bool
-                | Ty::Null | Ty::Secret | Ty::Function | Ty::Vm => {}
+                | Ty::Null | Ty::Secret | Ty::Function | Ty::Vm | Ty::Promise(_) => {}
         }
         if size > limit || bytes > byte_limit { return None; }
         if pending.len() > limit - size { return None; }

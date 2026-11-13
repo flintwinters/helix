@@ -87,6 +87,7 @@ pub(crate) enum Ty {
     /// it to be provably free of effects.
     Fn(Vec<Ty>, Box<Ty>, bool),
     Vm,
+    Promise(Value),
     List(Box<Ty>),
     Map(Box<Ty>),
     /// Closed: a value may not carry fields the record does not declare.
@@ -114,6 +115,7 @@ impl PartialEq for Ty {
             | (Self::Str, Self::Str) | (Self::Bool, Self::Bool)
             | (Self::Null, Self::Null) | (Self::Secret, Self::Secret)
             | (Self::Function, Self::Function) | (Self::Vm, Self::Vm) => true,
+            (Self::Promise(a), Self::Promise(b)) => a.same_view(b),
             (Self::Fn(pa, ra, ea), Self::Fn(pb, rb, eb)) => pa == pb && ra == rb && ea == eb,
             (Self::List(a), Self::List(b)) | (Self::Map(a), Self::Map(b)) => a == b,
             (Self::Record(a), Self::Record(b)) => a == b,
@@ -226,6 +228,10 @@ impl Ty {
             Value::Hash(map) => {
                 let kind = text(map, "type").ok_or("a type map needs a string `type`")?;
                 match kind {
+                    "promise" => {
+                        super::promise::validate(ty)?;
+                        Ok(Ty::Promise(ty.clone()))
+                    }
                     "list" => Ok(Ty::List(Box::new(Ty::parse(member(map, "of")?)?))),
                     "map" => Ok(Ty::Map(Box::new(Ty::parse(member(map, "of")?)?))),
                     "union" => match member(map, "of")? {
@@ -290,6 +296,7 @@ impl Ty {
     pub(crate) fn overlaps(&self, other: &Ty) -> bool {
         match (self, other) {
             (Ty::Never, _) | (_, Ty::Never) => false,
+            (Ty::Promise(_), Ty::Vm | Ty::Promise(_)) | (Ty::Vm, Ty::Promise(_)) => true,
             (Ty::Any, _) | (_, Ty::Any) => true,
             (Ty::Union(members), _) => members.iter().any(|m| m.overlaps(other)),
             (_, Ty::Union(members)) => members.iter().any(|m| self.overlaps(m)),
@@ -333,6 +340,7 @@ impl Ty {
             Ty::Function => "function".into(),
             Ty::Fn(params, result, pure) => format!("{}function ({}) -> {}", if *pure { "pure " } else { "" }, params.iter().map(Ty::name).collect::<Vec<_>>().join(", "), result.name()),
             Ty::Vm => "vm".into(),
+            Ty::Promise(_) => "promised vm".into(),
             Ty::List(of) if **of == Ty::Any => "list".into(),
             Ty::List(of) => format!("list of {}", of.name()),
             Ty::Map(of) if **of == Ty::Any => "map".into(),
@@ -431,6 +439,7 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
             Err(why) => out.push(Violation::new(at, ty, Some(value), "signature_error", format!("signature check failed to run: {why}"))),
         },
         (Ty::Vm, Value::Machine(_)) => {}
+        (Ty::Promise(promise), Value::Machine(machine)) if machine.promises().iter().any(|p| super::promise::includes(p, promise)) => {}
         (Ty::Secret, Value::Hash(h)) if h.len() == 2 && text(h, "type") == Some("secret") && text(h, "ref").is_some() => {}
         (Ty::Secret, Value::String(_)) => out.push(Violation::new(at, ty, Some(value), "secret", "a secret is a handle (`[secret, ref]`), not an inline string".into())),
         (Ty::List(of), Value::Array(items)) => items.iter().enumerate().for_each(|(i, item)| check(item, of, &inside(at, &i.to_string()), pred, out)),
@@ -565,6 +574,8 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
         (Ty::Enum(values), _) => values.iter().all(|v| super::literal::covered_by(v, b, pred)),
         (_, Ty::Union(members)) => members.iter().any(|m| subtype(a, m, pred)),
         (Ty::Refine(base, _), _) => subtype(base, b, pred),
+        (Ty::Promise(a), Ty::Promise(b)) => super::promise::includes(a, b),
+        (Ty::Promise(_), Ty::Vm) => true,
         (Ty::Fn(..), Ty::Function) => true,
         // Parameters are contravariant, the result covariant: a function that accepts more and
         // promises more can stand wherever the narrower signature is expected.

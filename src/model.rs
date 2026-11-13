@@ -230,6 +230,13 @@ pub(crate) struct Limits {
     pub max_eval_depth: usize,
 }
 
+/// Derived acceleration only: allocation identities never enter observable state.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct EvidenceIndex(pub(crate) HashMap<(usize, NodeId), (usize, usize, Arc<Program>)>);
+impl PartialEq for EvidenceIndex {
+    fn eq(&self, _: &Self) -> bool { true }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct Evaluator {
     pub program: Arc<Program>,
@@ -248,6 +255,10 @@ pub(crate) struct Evaluator {
     pub(crate) type_inputs: List,
     /// Bounded successful annotation evidence; ordinary values remain unwrapped.
     pub(crate) annotations: List,
+    pub(crate) evaluated: List,
+    pub(crate) evaluated_index: EvidenceIndex,
+    pub(crate) evaluated_units: usize,
+    pub(crate) evaluated_truncated: bool,
     pub(crate) annotation_units: usize,
     pub(crate) annotations_truncated: bool,
     pub(crate) region: Option<Region>,
@@ -323,6 +334,7 @@ pub enum Status {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Vm {
+    pub(crate) promises: Vec<Value>,
     pub(crate) evaluator: Option<Arc<Evaluator>>,
     pub(crate) source_file: Option<PathBuf>,
     pub(crate) status: Status,

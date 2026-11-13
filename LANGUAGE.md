@@ -115,7 +115,7 @@ checks have no such metadata. This is inspection evidence, not executable snapsh
 restoration: data-only types still round-trip through a `$literal` root, while
 predicate functions and machine graphs require their original sources to execute.
 
-The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Executable disk snapshots and restoration validation use the separate versioned format described below. Reversibility-promise syntax and debugger UI remain future work. Explicit host effects are described below.
+The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Executable disk snapshots and restoration validation use the separate versioned format described below. Machine promises enforce bounded reversibility as described below; debugger UI remains future work. Explicit host effects are described below.
 
 ## Type rules
 
@@ -459,12 +459,58 @@ See [Host effects and explicit grants](HOST.md#host-effects-and-explicit-grants)
 See [Bounded command operations](HOST.md#bounded-command-operations).
 
 
+## Evaluated-value source evidence
+
+The Rust API `Vm::evaluated_values()` returns ordinary data with `values` and
+`truncated` fields, independently of errors and machine inspection. Each row
+associates a completed expression's value with its source-qualified `location`,
+`line`, and `column`. This includes computed function-body results and local
+iteration results; later evaluations of the same source expression replace its
+earlier retained result. References retain the producing expression's evidence,
+not a separate history of every lexical read. Equal values at different source
+locations remain distinct rows.
+
+Evidence has a separate 16,384-unit cap (also bounded by the machine's value-size
+limit). If a row cannot fit, `truncated` becomes true and earlier evidence remains;
+this is the latest **retained** value per expression, not an execution trace or
+complete per-occurrence dataflow. Functions and machines become shallow ordinary
+summaries with `runtime_values_omitted: true`; evidence never retains their live
+captures or continuations. Value equality, ordinary output, and execution budgets
+retain their existing semantics. Executable snapshots persist this evidence and
+validate its source locations and storage accounting on restore. Version 1 states
+migrate with empty evidence because it was not recorded by that runtime.
+
+## Machine promises
+
+`{$call: [promise, durable, [reversible]]}` constructs a first-class promise type.
+Its ordinary-data descriptor is `{type: promise, name: durable, requires: [reversible]}`.
+Requirements may include other promise descriptors, composing their named
+obligations. Unknown behavioral requirements are rejected; `reversible` is the
+first registered obligation. Names alone do not establish membership.
+
+`{$call: [mixin, machine, promise_type]}` returns an independent machine version
+with that promise attached. Admission checks complete snapshot representability.
+Every subsequent transition preserves representability or stops with a bounded
+promise error and the previous continuation. The original machine remains usable.
+Promise types work with annotations, `is`, `expect` and `subtype`; a composed promise
+includes its declared parents and every promise type is a subtype of `vm`.
+Snapshots preserve attached obligations. The Rust API accepts the same descriptor
+through `Vm::with_promise(Yaml)`.
+
+This initial behavioral contract covers bounded execution and explicit interruption
+inputs. Promised machines may expose pending effects, but host dispatch and effect
+resolution are refused: an externally completed action cannot be rolled back if
+its reply exceeds the serialization budget. Independent-error checking is also
+refused on promised machines. Ordinary machines retain their existing effect and
+checking contracts. Promises do not grant authority, encrypt ordinary data, undo
+effects, or automatically invalidate memoized results after source edits.
+
 ## Executable disk snapshots
 
 `./manage.py runtime snapshot program.yaml --steps 20` emits a versioned
 executable checkpoint. `./manage.py runtime restore checkpoint.json` runs it in a
 fresh process; adding `--steps N` saves another checkpoint after at most N
-transitions. JSON is the canonical YAML-compatible wire spelling for version 1;
+transitions. JSON is the canonical YAML-compatible wire spelling for version 2;
 the loader also accepts ordinary YAML within the existing data-parser size/depth bounds. Mapping presentation order has no execution meaning. Existing `step`/`inspect` documents
 remain observational, and `resume` still means pure source recovery. Without
 `--steps`, restore follows `run` exit statuses: only finished execution succeeds.
@@ -480,16 +526,17 @@ from the embedded graph. A live parameter's `environment` argument values can be
 edited; doing so branches the computation. Completed memoized work is retained,
 so editing source alone does not invalidate dependent completed work.
 
-Version 1 requires the matching runtime package version and rejects unknown
+Version 2 requires the matching runtime package version and rejects unknown
 formats, fields, references, cycles, invalid graph topology and out-of-bounds
 continuations. Compatibility fixtures live in `tests/fixtures/snapshots/`.
-There is no older execution format to migrate: ordinary inspection and pure
-recovery documents are rejected. Future incompatible schema changes require a
+Version 1 execution documents migrate with empty promise and evaluated-value
+evidence fields; their existing continuations are preserved. Ordinary inspection
+and pure recovery documents are rejected. Future incompatible schema changes require a
 version increment and an explicit migration or rejection path. Snapshot budgets
 are 32 MiB, 100,000 shared objects and 128 codec levels; these supplement existing
 execution limits. Exceeding a snapshot budget fails saving without changing the
-machine. This bounded API is not yet the charter's general reversibility promise
-syntax, arbitrary source-edit invalidation, or secret-safe serialization.
+machine. Promised machines enforce these bounds at admission and transitions;
+arbitrary source-edit invalidation and secret-safe serialization remain separate.
 
 A snapshot is executable input. Its data carries no host grants. Restoring and
 running yields pending effects without applying them; a caller must supply a

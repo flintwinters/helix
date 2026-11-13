@@ -68,6 +68,13 @@ impl EffectHost {
     /// Shared dispatch boundary for ephemeral and journaled controllers.
     fn resolve_pending(&mut self, vm: &mut Vm) -> bool {
         if vm.status() != Status::Signaled || vm.is_interrupted() { return false; }
+        // Promise enforcement must happen before dispatch: an external action
+        // cannot be rolled back when its reply exceeds a serialization budget.
+        if !vm.promises().is_empty() && vm.pending_effect().is_some() {
+            *vm = vm.resolve_effect(Err(("promise".into(),
+                "host dispatch is unavailable for promised machines".into())));
+            return false;
+        }
         let Some(request) = vm.pending_effect() else { return false; };
         if self.cancellation.load(Ordering::Relaxed)
             || self.cancellation_signal.is_some_and(|flag| flag.load(Ordering::Relaxed)) {

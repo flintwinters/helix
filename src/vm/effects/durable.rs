@@ -230,6 +230,11 @@ impl EffectHost {
             {
                 return Ok(());
             }
+            if !vm.promises().is_empty() {
+                self.resolve_pending(vm);
+                checkpoint.save(vm, "ready", self)?;
+                return Ok(());
+            }
             checkpoint.save(vm, "in_flight", self)?;
             let handled = self.resolve_pending(vm);
             checkpoint.save(vm, "ready", self)?;
