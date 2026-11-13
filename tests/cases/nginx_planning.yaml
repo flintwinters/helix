@@ -11,8 +11,40 @@ $call:
   settled:
     target: fixture-one
     package_version: pinned-test-version
-    files: {$call: [set, {$call: [nginx.configuration, {$ref: config}]}, /var/lib/helix-nginx/index.html, {$call: [nginx.file, "Hello\n"]}]}
-    service: {running: true, activation: 'helix.local:8080'}
+    files:
+      /etc/helix-nginx/nginx.conf:
+        content: '# helix.local
+
+          worker_processes 1;
+
+          pid /run/helix-nginx/nginx.pid;
+
+          error_log stderr;
+
+          events { worker_connections 64; }
+
+          http { include /etc/helix-nginx/server.conf; }
+
+          '
+        uid: 0
+        gid: 0
+        mode: 420
+      /etc/helix-nginx/server.conf:
+        content: 'server { listen 8080; server_name helix.local; add_header X-Helix-Activation "1:helix.local:8080"
+          always; root /var/lib/helix-nginx; location / { try_files /index.html =404; } }
+
+          '
+        uid: 0
+        gid: 0
+        mode: 420
+      /var/lib/helix-nginx/index.html:
+        content: 'Hello
+
+          '
+        uid: 0
+        gid: 0
+        mode: 420
+    service: {running: true, activation: '1:helix.local:8080'}
     response: {status: 200, body: "Hello\n"}
   step_names: {$call: [fn, [report], {$call: [if, {$call: [has, [changed, unchanged], {$ref: report.status}]}, {$call: [map, {$call: [fn, [step], {$ref: step.field}]}, {$ref: report.steps}]}, {$ref: report}]}]}
 - initial: {$call: [step_names, {$call: [nginx.plan, {$ref: config}, {$ref: empty}]}]}
