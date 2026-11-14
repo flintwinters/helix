@@ -1,29 +1,77 @@
 root:
   nested:
-    - at: /a
+    - actual: ~
+      actual_present: false
+      at: /a
+      expected: string
       message: "missing field `a`"
-    - at: /b/0/x
+      rule: required
+    - actual: false
+      actual_present: true
+      at: /b/0/x
+      expected: integer
       message: "expected integer, got boolean"
-    - at: /b/0/y
+      rule: type
+    - actual: 1
+      actual_present: true
+      at: /b/0/y
+      expected: boolean
       message: "expected boolean, got integer"
-    - at: /b/0/a_extra
+      rule: type
+    - actual: 0
+      actual_present: true
+      at: /b/0/a_extra
+      expected: never
       message: "unexpected field `a_extra`"
-    - at: /b/1/x
+      rule: closed_record
+    - actual: ~
+      actual_present: false
+      at: /b/1/x
+      expected: integer
       message: "missing field `x`"
-    - at: /b/1/y
+      rule: required
+    - actual: 1
+      actual_present: true
+      at: /b/1/y
+      expected: boolean
       message: "expected boolean, got integer"
-    - at: /z/a
+      rule: type
+    - actual: false
+      actual_present: true
+      at: /z/a
+      expected: integer
       message: "expected integer, got boolean"
-    - at: /z/z
+      rule: type
+    - actual: false
+      actual_present: true
+      at: /z/z
+      expected: integer
       message: "expected integer, got boolean"
-    - at: /a_extra
+      rule: type
+    - actual: ~
+      actual_present: true
+      at: /a_extra
+      expected: never
       message: "unexpected field `a_extra`"
-    - at: /z_extra
+      rule: closed_record
+    - actual: ~
+      actual_present: true
+      at: /z_extra
+      expected: never
       message: "unexpected field `z_extra`"
+      rule: closed_record
   root:
-    - at: /
+    - actual: []
+      actual_present: true
+      at: /
+      expected: record
       message: "expected record, got list"
+      rule: type
   union:
-    - at: /
+    - actual: ~
+      actual_present: true
+      at: /
+      expected: "string | integer"
       message: "expected string | integer, got null"
+      rule: type
 status: finished

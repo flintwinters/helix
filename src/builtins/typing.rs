@@ -6,6 +6,7 @@ mod class;
 mod construct;
 mod machine;
 mod literal;
+pub(crate) mod promise;
 mod ty;
 
 use crate::value::Value;
@@ -18,6 +19,7 @@ pub use ty::{is_primitive, violations, Ask, Pred, Violation};
 
 pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault> {
     match actor {
+        "promise" | "mixin" => promise::apply(actor, args),
         "class" | "extend" | "inherit" | "realize" | "parents" | "open_fields" | "constrain" => class::apply(actor, args, pred),
         "drift" | "converge" => unreachable!("machine policy is scheduled by the evaluator"),
         _ => construct::apply(actor, args, pred),

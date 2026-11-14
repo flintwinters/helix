@@ -62,7 +62,7 @@ impl Graph {
                 Syntax::Call(items) => {
                     let head = self.identifier(items[0]);
                     match head {
-                        Some("effect") => return Effects::Requests(id),
+                        Some("effect" | "http_serve") => return Effects::Requests(id),
                         Some("step") => unproven = unproven.or(Some(id)),
                         Some("import") => pending.extend(module(id).map(|node| (node, false))),
                         _ => {}
@@ -118,7 +118,7 @@ impl Graph {
                 // A member of something that does not link, such as an unresolved import.
                 None => false,
             },
-            None => builtins::descriptor(name).is_some_and(|actor| !matches!(actor.name, "effect" | "step")),
+            None => builtins::descriptor(name).is_some_and(|actor| !matches!(actor.name, "effect" | "http_serve" | "step")),
         }
     }
 

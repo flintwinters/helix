@@ -1,3 +1,714 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - id: first
+        priority: -2
+      - id: second
+        priority: 0
+      - id: third
+        priority: 4
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - sort_queue
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - sort_by
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - id: first
+        priority: -2
+      - id: second
+        priority: 0
+      - id: third
+        priority: 4
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - id: docs
+        owner: writer
+        priority: 3
+      - id: parser-fix
+        owner: runtime
+        priority: 1
+      - id: release
+        owner: tools
+        priority: 2
+      - id: evaluator-fix
+        owner: runtime
+        priority: 1
+      - id: security
+        owner: runtime
+        priority: -1
+      - id: cleanup
+        owner: tools
+        priority: 3
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - sort_queue
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - sort_by
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - id: security
+        owner: runtime
+        priority: -1
+      - id: parser-fix
+        owner: runtime
+        priority: 1
+      - id: evaluator-fix
+        owner: runtime
+        priority: 1
+      - id: release
+        owner: tools
+        priority: 2
+      - id: docs
+        owner: writer
+        priority: 3
+      - id: cleanup
+        owner: tools
+        priority: 3
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - sort_queue
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - sort_by
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - id: arrived-first
+        payload:
+          attempts: 0
+        priority: 2
+      - id: arrived-second
+        payload:
+          attempts: 1
+        priority: 2
+      - id: arrived-third
+        payload:
+          attempts: 2
+        priority: 2
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - sort_queue
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - sort_by
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - id: arrived-first
+        payload:
+          attempts: 0
+        priority: 2
+      - id: arrived-second
+        payload:
+          attempts: 1
+        priority: 2
+      - id: arrived-third
+        payload:
+          attempts: 2
+        priority: 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - id: security
+        owner: runtime
+        priority: -1
+      - id: parser-fix
+        owner: runtime
+        priority: 1
+      - id: evaluator-fix
+        owner: runtime
+        priority: 1
+      - id: release
+        owner: tools
+        priority: 2
+      - id: docs
+        owner: writer
+        priority: 3
+      - id: cleanup
+        owner: tools
+        priority: 3
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - sort_queue
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - sort_by
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - id: security
+        owner: runtime
+        priority: -1
+      - id: parser-fix
+        owner: runtime
+        priority: 1
+      - id: evaluator-fix
+        owner: runtime
+        priority: 1
+      - id: release
+        owner: tools
+        priority: 2
+      - id: docs
+        owner: writer
+        priority: 3
+      - id: cleanup
+        owner: tools
+        priority: 3
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - id: third
+        priority: 4
+      - id: second
+        priority: 0
+      - id: first
+        priority: -2
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - sort_queue
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - sort_by
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - id: first
+        priority: -2
+      - id: second
+        priority: 0
+      - id: third
+        priority: 4
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - id: later
+        priority: 10
+      - id: earlier
+        priority: -10
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - sort_queue
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - sort_by
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - id: earlier
+        priority: -10
+      - id: later
+        priority: 10
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - id: only
+        owner: tools
+        priority: 0
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - sort_queue
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - sort_queue
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - sort_by
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - id: only
+        owner: tools
+        priority: 0
 objects:
   object0:
     bindings:

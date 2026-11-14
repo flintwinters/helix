@@ -1,3 +1,556 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - callback_error
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - callback_error
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - callback_error
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - closure
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - "n": 1
+        team: b
+      - "n": 2
+        team: a
+      - "n": 3
+        team: b
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - closure
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - closure
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      "team:a":
+        - "n": 2
+          team: a
+      "team:b":
+        - "n": 1
+          team: b
+        - "n": 3
+          team: b
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - constant
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - ~
+      - false
+      - - 1
+        - 2
+      - x: 1
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - constant
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - constant
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      all:
+        - ~
+        - false
+        - - 1
+          - 2
+        - x: 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - empty
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - empty
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - empty
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - groups
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - "n": 1
+        team: b
+      - "n": 2
+        team: a
+      - "n": 3
+        team: b
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - groups
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - groups
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      a:
+        - "n": 2
+          team: a
+      b:
+        - "n": 1
+          team: b
+        - "n": 3
+          team: b
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - keys
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - ""
+      - "é"
+      - ""
+      - "🙂"
+      - "é"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - keys
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - keys
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value:
+      "":
+        - ""
+        - ""
+      "é":
+        - "é"
+        - "é"
+      "🙂":
+        - "🙂"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - wrong_callback
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - wrong_key
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - wrong_key
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - wrong_key
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - wrong_list
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - wrong_list
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
 objects:
   object0:
     bindings: {}

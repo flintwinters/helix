@@ -2,6 +2,7 @@
 //! Parent links define lexical/object resolution; paths are always root-relative.
 
 mod effects;
+pub(crate) mod http;
 mod scope;
 mod syntax;
 pub(crate) use effects::Effects;

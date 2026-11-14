@@ -289,9 +289,26 @@ and independently inspects project-local files. This supports the bundled local
 adapter; it does not supply SSH transport or qualify arbitrary programs as safe,
 idempotent resource implementations.
 
+## Promised participant communication
+
+Communication inside a `PromisedSystem` uses `peer_send` and `peer_receive`
+requests rather than an OS or network adapter. Both participants must carry a
+promise, and matching request identities resolve together in one immutable,
+serializable system transition. Delivery receipts make duplicate submission of
+that committed rendezvous a no-op. See [communication between promised
+machines](LANGUAGE.md#communication-between-promised-machines) for syntax and
+restoration semantics.
+
+The complete participant set and its receipts form the checkpoint boundary.
+Rewinding that aggregate does not undo operations in an independent server or
+external service. The bundled `EffectHost` continues to refuse host dispatch for
+promised VMs; placing a host operation inside a participant does not bypass
+that boundary. The current aggregate is local and coordinated, not remote
+fencing or an exactly-once transport service.
+
 ## Host effects and explicit grants
 
-`{$call: [effect, {$ref: operation}, {$ref: payload}]}` yields an explicit request after evaluating its two arguments. Type time rejects effects before yielding. `Vm::run()` stops with `status: signaled`; the state contains `pending_effect` (identity, operation and payload). A host supplies a success value or structured failure through `resolve_effect`. Completed requests and outcomes remain in `effects`; resolving an already completed request does not execute it again. This is in-memory continuation support, not disk snapshot restoration.
+`{$call: [effect, {$ref: operation}, {$ref: payload}]}` yields an explicit request after evaluating its two arguments. Type time rejects effects before yielding. `Vm::run()` stops with `status: signaled`; the state contains `pending_effect` (identity, operation and payload). A host supplies a success value or structured failure through `resolve_effect`. Completed requests and outcomes remain in `effects`; resolving an already completed request does not execute it again. The versioned execution snapshot preserves this state across processes; durable host dispatch additionally requires the journal described below.
 
 Host applications use `Vm::signal(event)` to interrupt an active machine and
 `resume_signal()` to continue it. Events are bounded ordinary YAML data, visible
@@ -320,6 +337,7 @@ repeat those actions.
 | `stdin` | `null` | UTF-8 text read until EOF | `--allow-stdin` |
 | `stdout` | Text string | `null` | `--allow-stdout` |
 | `command` | `{program: string, args: list_of_strings}` | `{code, stdout, stderr}` | `--allow-command EXECUTABLE` |
+| `ssh_command`, `ssh_file_read`, `ssh_file_write` | See [SSH remote commands](#ssh-remote-commands) | See below | `--allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U]`, optional `--ssh-control-dir DIR` |
 | `http` | Absolute HTTP(S) URL string | `{status, body}` | `--allow-http ORIGIN` |
 | `sqlite` | `{path: string, sql: string, params?: list, write?: boolean}` | `{columns, rows, changes}` | `--allow-read ROOT`, or `--allow-write ROOT` when `write: true` |
 | `time` | `null` | Unix epoch milliseconds | `--allow-time` |
@@ -330,6 +348,28 @@ File imports under `perform` require the same `--allow-read` roots (embedded sta
 `sqlite` runs one statement (bound `params` of null, boolean, number or string) against a database inside the granted roots, with the bundled SQLite. A read request opens the file read-only; `write: true` may create it and reports `changes`. `ATTACH`/`DETACH` are denied so a statement cannot leave the authorized path, multiple statements and blob results are errors (kind `sqlite`, `conversion`), results are limited to 1 MiB and failures are catchable. The database must exist for a read request. Each request opens its own connection, so transactions across requests, rollback and concurrent-writer coordination beyond a ten-second busy timeout are the caller's concern. `std:sqlite` wraps this effect.
 
 HTTP uses the installed `curl` executable for GET requests, disables curl configuration, proxies, URL globbing and redirects, and restricts protocols to HTTP(S). An origin grant includes scheme, authority and explicit port exactly as written. HTTP error statuses remain result data. File text and HTTP responses are limited to 1 MiB. HTTP retains an eight-second request deadline and a ten-second process deadline, independently of command policy. Stdin waits for EOF.
+
+### SSH remote commands
+
+Three operations reach a granted target through the installed OpenSSH client under the same command policy (total timeout, output bounds, progress, cancellation, explicitly classified retries) as local commands:
+
+| Operation | Payload | Result |
+| --- | --- | --- |
+| `ssh_command` | `{host: alias, program: string, args: list_of_strings, stdin?: string, become?: user}` | `{code, stdout, stderr}` |
+| `ssh_file_read` | `{host, path, become?}` (absolute path) | UTF-8 text |
+| `ssh_file_write` | `{host, path, text, mode?: "0644", become?}` (absolute path) | `null` |
+
+Source names only an alias. The caller's `--allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=[U@]H[:P]][,become=U]` grant fixes host, port, user, identity file, optional jump host and the allowed `become` users. A grant must supply `known_hosts`: keys are verified strictly against that file only, never trusted on first use, and user or system ssh configuration, agent and X11 forwarding and port forwards are disabled. Authentication is non-interactive (`BatchMode`) with the granted identity or the caller's agent. A `jump` hop runs under the same host-key file, identity and `BatchMode` policy (the file must list the jump host's key too). The grant is a connection and execution authority, not an OS sandbox: it authorizes whatever the remote account may run.
+
+The remote command line quotes every word, so arguments reach the remote program byte-for-byte without shell interpretation, word splitting or expansion; a NUL byte is a type error. `stdin` supplies text (at most 1 MiB) on the remote program's standard input. `ssh_file_write` streams `text` on stdin to a temporary file beside the target, verifies the received byte count, applies the mode and renames it into place, so readers never see a partial file and a failed or truncated transfer leaves the previous file untouched and removes the temporary one; it is per-file atomic, not a multi-file transaction. New files are owned by the account that executed the command, and default mode is `0644`. Reads and writes are UTF-8 text only (non-UTF-8 content is an `io` error); there is no binary or directory transfer. The remote host needs `sh`, `cat`, `mktemp`, `wc`, `chmod`, `mv` and `rm`; `std:ssh` checks and can bootstrap them (see [LIBRARY.md](LIBRARY.md)).
+
+Every request uses a remote `sh` wrapper to report command completion with a per-request nonce. Remote exit codes, including 255, remain result data rather than SSH failures. With `become`, `sudo -n -u USER -- sh -c ...` runs the reporting wrapper and command together; policy must authorize this shell wrapper. There is no separate `sudo true` precheck. A sudo invocation without a completed inner report is `ssh_privilege`; missing remote completion is `ssh_remote`. A failed file operation is `ssh_file`, and an ungranted target or identity is `capability`. The framing distinguishes ordinary output from reports; it is not a security boundary against a remote program that can inspect its parent process arguments or manipulate the reporting shell.
+
+OpenSSH exposes pre-session host-key, authentication and connection failures through the same exit status 255. Their current `ssh_host_key`, `ssh_auth` and `ssh_connection` subdivisions still parse client diagnostics and are heuristic; unrecognized diagnostics retain the raw message as `ssh_connection`. Reliable typed pre-session errors require an SSH protocol API rather than the OpenSSH command's exit status. Timeouts and cancellation retain the local command rules; the remote host may already have changed.
+
+`--ssh-control-dir PRIVATE_DIR` enables connection reuse. The directory is created owner-only if absent and refused if group- or world-accessible. Each `perform` invocation creates a private session subdirectory, so restored or concurrent controllers never inherit earlier authenticated sockets. Requests within that session share connections only for identical grants (`ControlMaster=auto`, keyed by the full grant and OpenSSH target identity, kept alive at most 30 seconds), and `perform` tears the masters down when the session ends. Reuse is a caller opt-in because a socket confers the authenticated session on anyone who can open it. The directory must be on a local filesystem that allows hard-linking sockets: OpenSSH creates them with `link(2)`, which NFS refuses, and the request then fails with `ssh_connection`. If the controller itself is killed, a master may outlive it for up to 30 seconds.
+
+Not provided: password or interactive authentication, binary transfer, directory synchronization, remote environment control and fact gathering. `tests/suites/ssh_host.py` verifies the contract against unprivileged loopback `sshd` servers, including a jump hop and independently counted authentications (`./manage.py test --suite ssh_host`), look-alike remote output and remote exit 255. `HELIX_SSH_DOCKER=1 ./manage.py test --suite ssh_host` additionally provisions a disposable Debian SSH host and verifies root execution, stdin, file ownership and real sudo-policy refusal. It uses `sudo -n docker` and removes its container and image afterwards.
 
 ### Bounded command operations
 
@@ -386,8 +426,140 @@ a pure value, in which case the emitted VM state can still be `finished`.
 This is local process lifecycle control, not an OS sandbox or rollback. It cannot
 clean up after SIGKILL or controller crashes, contain descendants that deliberately
 leave the process group, or establish whether remote mutations survived a broken
-SSH connection. Cancellation does not undo completed external changes. Durable
-recovery, remote adapters and provider-specific reconciliation remain separate
-roadmap work.
+SSH connection. Cancellation does not undo completed external changes. Caller-owned journals below retain uncertain requests for explicit reconciliation;
+provider-specific observation is still needed to establish what happened remotely.
 
-`--fixed-time MILLISECONDS` fixes the clock response. `--seed INTEGER` selects a reproducible random sequence, advanced once per request; both still require their grants. Without these options the host reads the system clock and `/dev/urandom`. The deterministic generator is intended for tests and replay inputs, not cryptographic randomness. Effect request/outcome histories expose nondeterministic inputs for inspection; full fresh-process replay of active continuations remains future work. Capability failures occur before host actions and can be handled with `try`/`finally` through the ordinary evaluator.
+`--fixed-time MILLISECONDS` fixes the clock response. `--seed INTEGER` selects a reproducible random sequence, advanced once per request; both still require their grants. Without these options the host reads the system clock and `/dev/urandom`. The deterministic generator is intended for tests and replay inputs, not cryptographic randomness. Effect request/outcome histories expose nondeterministic inputs for inspection; versioned snapshots preserve active continuations across processes, and journals retain completed outcomes without re-executing them. Capability failures occur before host actions and can be handled with `try`/`finally` through the ordinary evaluator.
+
+
+## Opaque secret inputs
+
+`perform --allow-secret NAME=FILE` grants a handle access to one caller-owned,
+private regular UTF-8 file (at most 1 MiB). The source carries
+`{$call: [secret, NAME]}` or its ordinary `{type: secret, ref: NAME}` descriptor.
+Use the handle as `command.stdin`, `ssh_command.stdin`, or `ssh_file_write.text`.
+Command/SSH grants are still required. Local commands now accept the same bounded
+optional UTF-8 stdin as SSH commands. Handles are never expanded in command arguments.
+Secret SSH writes default to mode `0600`; an explicit mode remains the caller's decision.
+
+The host resolves the handle immediately before dispatch, outside the VM. Requests,
+plans, snapshots and journals retain only the handle. For a secret-consuming command,
+both captured streams are replaced with empty strings, including transformed or
+encoded output; the exit code is retained. Failures use a fixed `secret` diagnostic
+without adapter details. Reconciliation applies the same suppression before saving
+an observed reply. Progress records contain metadata only. Grants and credential
+file paths are not restored; resume needs fresh authority. Choose immutable,
+versioned references when a changed credential would change the intended operation.
+
+This contract protects credentials supplied through these handle inputs. Ordinary
+plaintext in source, environment reads, file reads, arguments or later observations
+remains ordinary execution data and may be emitted or persisted. Authorized programs
+can write their inputs elsewhere; this is not process containment, memory erasure or
+an external secret-manager protocol. The caller must keep credential sources private
+and ensure providers do not subsequently read deployed secrets back into the VM.
+
+## Coordinating one target across journals
+
+Add `--target-lock PATH` to every `perform` invocation that can mutate the same
+target. This is a caller-selected coordination domain, independent of checkpoint
+paths and SSH aliases. Cooperating controllers sharing that filesystem path and
+working Unix lock semantics cannot run simultaneously, even with different
+journals. Use a protected directory and never unlink or replace a live lock file.
+No source, inventory entry or restored journal grants this coordination authority;
+the caller must supply the same target lock again when resuming.
+
+Before dispatch, the controller durably marks the target held. Successful terminal
+execution with no failed effect outcomes releases it. Process death, interruption,
+failed effects (including caught failures) or persistence failure retain the marker.
+A later controller refuses it even after the OS lock becomes free. This deliberately
+fails closed, including failures that happened before any actual mutation.
+
+For recovery, inspect the journal, independently establish that any surviving local
+or remote mutator has stopped, observe partial state, and reconcile the exact
+uncertain request. Then run `./manage.py runtime target-release PATH` to acknowledge
+that observation, and resume with fresh grants and the same `--target-lock PATH`.
+Release cannot steal a live controller's OS lock. It cannot prove the observation,
+choose compensation or reconcile a journal on the operator's behalf.
+
+This qualifies one shared lock domain, not a remote lease/fencing service. Controllers
+using different paths or bypassing the flag, unrelated administrators, broken lock
+semantics and filesystem partitions are outside the contract. General multi-controller
+remote fencing remains a separate obligation. Fresh provider observations and review
+matching remain necessary after obtaining the lock.
+
+## Durable effect checkpoints
+
+`./manage.py runtime perform --checkpoint run.json [grants] program.yaml`
+creates a new, private execution journal. Resume with
+`./manage.py runtime perform [fresh grants] --resume-checkpoint run.json`.
+An explicit resume acknowledges a saved interruption before continuing.
+The host exclusively locks that checkpoint path, flushes an `in_flight` record
+before each effect, then atomically replaces and flushes it with the completed
+outcome. Completed effects are retained in the machine. Exit status and seeded
+random-generator progress are host bookkeeping stored alongside the snapshot;
+command, file, SSH and other grants are never stored or restored.
+
+Inspect a journal with `./manage.py runtime checkpoint run.json`. The versioned
+`helix.recovery.v1` report includes completed effect outcomes, source locations,
+the exact pending request, and the next action. It validates the embedded snapshot
+without running code, acquiring the writer lock, or creating files; it can inspect
+a live controller's last durable version. `observe_and_reconcile` means resume is
+blocked by uncertainty. `resume_with_fresh_grants` means no uncertain outcome is
+recorded, not that the target is unchanged or that another controller has stopped.
+`complete` and `failed` describe terminal execution. Inspection is a point-in-time
+view; reconciliation still validates the exact request under the exclusive lock.
+
+A controller that dies after dispatch but before acknowledging the result leaves
+an uncertain request. Resume refuses to repeat it. Observe the target independently,
+then supply `./manage.py runtime reconcile run.json observed.yaml`, for example:
+
+```yaml
+request:
+  id: 2
+  operation: command
+  payload: {program: /path/to/helper, args: [apply]}
+outcome:
+  ok: {code: 0, stdout: '', stderr: ''}
+```
+
+The entire request (id, operation and payload) must match. Alternatively use
+`outcome: {error: {kind: interrupted, message: 'Observed partial application'}}`.
+Reconciliation records that caller-supplied observation without performing the
+original effect; the next resume continues ordinary success or error handling.
+It cannot certify that the observation is true. Seeded random reconciliation
+checks the supplied result against the saved deterministic generator state.
+
+These are Unix controller journals, not distributed transactions. A checkpoint file lock
+protects one journal. The separate target lock above coordinates cooperating
+controllers across journals in an explicitly shared lock domain. Copying a journal
+creates an independent branch and may repeat future effects. An uncertain remote
+operation may still be running; observing it and choosing a safe outcome remain
+provider/operator responsibilities. Immutable VM state does not roll back host
+mutations. Checkpoint files can contain captured data and command output; private
+file permissions do not redact ordinary data. Use opaque secret inputs above for
+credentials that must remain outside execution state.
+Disk-full, rename and flush failures stop the controller; an already dispatched
+effect remains uncertain when its outcome could not be durably saved.
+
+
+### Facts observation authority
+
+[`std:facts`](LIBRARY.md#ubuntu-facts-and-reviewed-configuration) uses existing
+`command` and `ssh_command` effects, never a collector effect or implicit grants.
+Local builtin observations require caller grants for `date`, `cat`, `sh`, and
+selected `ip`, `findmnt`, `lsblk`, `getconf`, `awk` or `dpkg-query` commands.
+`sh` authorizes the fixed scripts and their subprocesses, with the existing
+ambient-access contract. Custom commands require their own normal grants.
+SSH uses the caller's existing alias and connection identity, without inferred
+escalation. All observations share host timeout, output, cancellation and VM
+budgets; there is no truncation or global limit increase. Grant refusal, missing
+tools, output overflow and timeout remain explicit diagnostics.
+
+Commands and callbacks are trusted observation code, not an OS read-only sandbox.
+Fresh fact evidence supplements the provider review; it is not target locking,
+fencing, rollback or an atomic observation of a concurrently changing host.
+
+## Native HTTP listeners
+
+See [HTTP.md](HTTP.md) for `std:http`, exact loopback listener grants, supervised
+request machines and caller-owned transport ceilings.

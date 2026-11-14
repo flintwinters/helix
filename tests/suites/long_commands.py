@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -129,11 +130,13 @@ def verify(h):
             except FileNotFoundError:
                 return False
 
-        def await_condition(predicate, seconds=3):
+        def await_condition(predicate, seconds=3, controller=None):
             deadline = time.monotonic() + seconds
             while time.monotonic() < deadline:
                 if predicate():
                     return
+                if controller is not None and controller.poll() is not None:
+                    raise AssertionError(f'controller exited before subprocess evidence (exit {controller.returncode})')
                 time.sleep(0.01)
             assert predicate(), 'timed out waiting for subprocess evidence'
 
@@ -177,11 +180,15 @@ def verify(h):
                     ({'$call': ['effect', 'file_write', {'path': str(marker), 'text': 'bad'}]}
                      if catch == 'effect' else 'caught')]}]}))
             prefix = [sys.executable, str(h.root / 'manage.py')] if wrapper else [str(h.binary)]
-            with subprocess.Popen([*prefix, 'perform', *grants, *flags, str(program)],
+            arguments = [*prefix, 'perform', *grants, *flags, str(program)]
+            with subprocess.Popen(arguments,
                                   cwd=h.root, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                   text=True, start_new_session=True) as controller:
+                phase = 'startup'
+                stdout = stderr = ''
                 try:
-                    await_condition(wait_for, seconds=60 if wrapper else 3)
+                    await_condition(wait_for, seconds=60 if wrapper else 3, controller=controller)
+                    phase = 'cancellation'
                     controller.send_signal(signal_number)
                     stdout, stderr = controller.communicate(timeout=3)
                     state = yaml.safe_load(stderr)
@@ -190,6 +197,30 @@ def verify(h):
                         assert state['status'] == ('signaled' if catch == 'effect' else 'finished') and not marker.exists(), state
                     else:
                         assert state['error']['kind'] == 'cancelled', state
+                except (AssertionError, subprocess.TimeoutExpired, OSError, yaml.YAMLError, KeyError, TypeError) as error:
+                    from tooling.test_reports import failure
+                    # A wrapper may still have build/runtime children holding its
+                    # output pipes. End its session before draining retained output.
+                    try:
+                        os.killpg(controller.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    try:
+                        stdout, stderr = controller.communicate(timeout=3)
+                    except subprocess.TimeoutExpired as drain_error:
+                        def text(value):
+                            return value.decode('utf-8', errors='replace') if isinstance(value, bytes) else value or ''
+                        stdout, stderr = text(drain_error.output), text(drain_error.stderr)
+                        stderr += '\ncontroller output drain timed out after cleanup\n'
+                    result = subprocess.CompletedProcess(arguments, controller.returncode
+                                                         if controller.returncode is not None else 124, stdout, stderr)
+                    reason = (f'{phase} failed; wrapper={wrapper}, signal={signal_number}, '
+                              f'exception={type(error).__name__}, exit={controller.returncode}')
+                    if phase == 'startup':
+                        reason += f': {error}'
+                    raise AssertionError(failure(h.root, program, f'cancel-{phase}', reason,
+                        shlex.join(['perform', *grants, *flags]), result,
+                        source=program.read_text())) from None
                 finally:
                     if controller.poll() is None:
                         controller.kill()

@@ -1,0 +1,6 @@
+# The normal evaluator yields a request; no transport runs without caller grants.
+$call:
+- let
+- nginx: {$call: [import, 'std:nginx']}
+  config: {package_version: pinned-test-version, port: 8080, server_name: helix.remote, content: "Hello over SSH\n", state: present, ssh_target: fixture}
+- {$call: [nginx.observe, {$ref: config}]}

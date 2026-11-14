@@ -64,7 +64,7 @@ def fault_mode(operation):
 
 
 def pause(operation, phase):
-    (RUN / 'fault-reached.json').write_text(json.dumps({'operation': operation, 'phase': phase}))
+    (RUN / 'fault-reached.json').write_text(json.dumps({'operation': operation, 'phase': phase, 'pid': os.getpid()}))
     deadline = time.monotonic() + 120
     while not (RUN / 'fault-release').exists():
         if time.monotonic() > deadline:

@@ -1,3 +1,1888 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - suite
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - basics
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - name: equality
+        run:
+          kind: function
+          location:
+            path:
+              - basics
+              - "$call"
+              - 1
+              - 0
+              - run
+            source: "<root>"
+      - name: expected_error
+        run:
+          kind: function
+          location:
+            path:
+              - basics
+              - "$call"
+              - 1
+              - 1
+              - run
+            source: "<root>"
+      - name: captured_fixture
+        run:
+          kind: function
+          location:
+            path:
+              - basics
+              - "$call"
+              - 1
+              - 2
+              - run
+            source: "<root>"
+      - name: lazy_branch
+        run:
+          kind: function
+          location:
+            path:
+              - basics
+              - "$call"
+              - 1
+              - 3
+              - run
+            source: "<root>"
+      - name: cleanup_on_success
+        run:
+          kind: function
+          location:
+            path:
+              - basics
+              - "$call"
+              - 1
+              - 4
+              - run
+            source: "<root>"
+      - name: cleanup_on_failure
+        run:
+          kind: function
+          location:
+            path:
+              - basics
+              - "$call"
+              - 1
+              - 5
+              - run
+            source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      name: equality
+      run:
+        kind: function
+        location:
+          path:
+            - basics
+            - "$call"
+            - 1
+            - 0
+            - run
+          source: "<root>"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 0
+          - run
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input: ~
+      name: equality
+      outcome: passed
+      value: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      name: expected_error
+      run:
+        kind: function
+        location:
+          path:
+            - basics
+            - "$call"
+            - 1
+            - 1
+            - run
+          source: "<root>"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 1
+          - run
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - throws
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - basics
+        - "$call"
+        - 1
+        - 1
+        - run
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 1
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - throws
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - basics
+        - "$call"
+        - 1
+        - 1
+        - run
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: divide_by_zero
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - result
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 1
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1"
+            function_column: 38
+            function_line: 26
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 59
+        kind: divide_by_zero
+        line: 26
+        message: "`div` by zero"
+        path: "/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 1
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - result
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 1
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1"
+            function_column: 38
+            function_line: 26
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 59
+        kind: divide_by_zero
+        line: 26
+        message: "`div` by zero"
+        path: "/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 1
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - result
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 1
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1"
+            function_column: 38
+            function_line: 26
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 59
+        kind: divide_by_zero
+        line: 26
+        message: "`div` by zero"
+        path: "/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 1
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - throws
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      calls:
+        - column: 75
+          file: "std:test"
+          function: "/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1"
+          function_column: 38
+          function_line: 26
+          line: 12
+          path: "/capture/$call/2/$call/1/$call/4/$call/1"
+      column: 59
+      kind: divide_by_zero
+      line: 26
+      message: "`div` by zero"
+      path: "/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1/$call/2"
+      reference:
+        - basics
+        - "$call"
+        - 1
+        - 1
+        - run
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input: ~
+      name: expected_error
+      outcome: passed
+      value: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      name: captured_fixture
+      run:
+        kind: function
+        location:
+          path:
+            - basics
+            - "$call"
+            - 1
+            - 2
+            - run
+          source: "<root>"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 2
+          - run
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input: ~
+      name: captured_fixture
+      outcome: passed
+      value: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      name: lazy_branch
+      run:
+        kind: function
+        location:
+          path:
+            - basics
+            - "$call"
+            - 1
+            - 3
+            - run
+          source: "<root>"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 3
+          - run
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input: ~
+      name: lazy_branch
+      outcome: passed
+      value: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      name: cleanup_on_success
+      run:
+        kind: function
+        location:
+          path:
+            - basics
+            - "$call"
+            - 1
+            - 4
+            - run
+          source: "<root>"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 4
+          - run
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - throws
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - basics
+        - "$call"
+        - 1
+        - 4
+        - run
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 4
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - throws
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - basics
+        - "$call"
+        - 1
+        - 4
+        - run
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: cleanup
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - result
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 4
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/4/run/$call/2/$call/1"
+            function_column: 13
+            function_line: 54
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 60
+        kind: cleanup
+        line: 54
+        message: ran
+        path: "/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 4
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - result
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 4
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/4/run/$call/2/$call/1"
+            function_column: 13
+            function_line: 54
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 60
+        kind: cleanup
+        line: 54
+        message: ran
+        path: "/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 4
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - result
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 4
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/4/run/$call/2/$call/1"
+            function_column: 13
+            function_line: 54
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 60
+        kind: cleanup
+        line: 54
+        message: ran
+        path: "/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 4
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - throws
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      calls:
+        - column: 75
+          file: "std:test"
+          function: "/basics/$call/1/4/run/$call/2/$call/1"
+          function_column: 13
+          function_line: 54
+          line: 12
+          path: "/capture/$call/2/$call/1/$call/4/$call/1"
+      column: 60
+      kind: cleanup
+      line: 54
+      message: ran
+      path: "/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
+      reference:
+        - basics
+        - "$call"
+        - 1
+        - 4
+        - run
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/4/run/$call/2/$call/1"
+            function_column: 13
+            function_line: 54
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 60
+        kind: cleanup
+        line: 54
+        message: ran
+        path: "/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 4
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input: ~
+      name: cleanup_on_success
+      outcome: passed
+      value:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/4/run/$call/2/$call/1"
+            function_column: 13
+            function_line: 54
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 60
+        kind: cleanup
+        line: 54
+        message: ran
+        path: "/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 4
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      name: cleanup_on_failure
+      run:
+        kind: function
+        location:
+          path:
+            - basics
+            - "$call"
+            - 1
+            - 5
+            - run
+          source: "<root>"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - throws
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - basics
+        - "$call"
+        - 1
+        - 5
+        - run
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - throws
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - basics
+        - "$call"
+        - 1
+        - 5
+        - run
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: cleanup
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - result
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/5/run/$call/2/$call/1"
+            function_column: 20
+            function_line: 63
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 77
+        kind: cleanup
+        line: 66
+        message: ran
+        path: "/basics/$call/1/5/run/$call/2/$call/1/$call/2/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - result
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/5/run/$call/2/$call/1"
+            function_column: 20
+            function_line: 63
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 77
+        kind: cleanup
+        line: 66
+        message: ran
+        path: "/basics/$call/1/5/run/$call/2/$call/1/$call/2/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - result
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 75
+            file: "std:test"
+            function: "/basics/$call/1/5/run/$call/2/$call/1"
+            function_column: 20
+            function_line: 63
+            line: 12
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 77
+        kind: cleanup
+        line: 66
+        message: ran
+        path: "/basics/$call/1/5/run/$call/2/$call/1/$call/2/$call/2"
+        reference:
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+      outcome: failed
+annotations_truncated: true
 objects:
   object0:
     bindings:

@@ -1,6 +1,6 @@
-# One local Debian nginx workload. Host commands supply mechanisms, not plans.
+# One Debian nginx workload over local commands or a caller-granted SSH target. Host commands supply mechanisms, not plans.
 # Embedded as the standard-library entrypoint for the scoped workload.
-# Keep the public surface to operations and their two input schemas.
+# Public operations share pure class resolution before provider planning or effects.
 $call:
 - let
 - provider: {$call: [import, 'std:provider']}
@@ -45,7 +45,8 @@ $call:
                   - add
                   - $ref: index
                   - 1
-  input: {$call: [record, package_version, {$ref: provider.name}, port, {$ref: machine.port}, server_name, {$ref: server_name_type}, content, {$ref: string}, state, {$call: [enum, present, absent]}]}
+  state_type: {$call: [enum, present, absent]}
+  input: {$call: [record, package_version, {$ref: provider.name}, port, {$ref: machine.port}, server_name, {$ref: server_name_type}, content, {$ref: string}, state, {$ref: state_type}, ssh_target, {$call: [optional, {$ref: provider.name}]}]}
   null_type: {$call: [literal, null]}
   file_type: {$call: [record, content, {$ref: string}, uid, {$ref: integer}, gid, {$ref: integer}, mode, {$ref: integer}]}
   observation_type: {$call: [record, target, {$ref: provider.name}, package_version, {$call: [union, {$ref: string}, {$ref: null_type}]}, files, {$call: [map_of, {$call: [union, {$ref: file_type}, {$ref: null_type}]}]}, service, {$call: [record, running, {$ref: boolean}, activation, {$call: [union, {$ref: string}, {$ref: null_type}]}]}, response, {$call: [union, {$call: [record, status, {$ref: integer}, body, {$ref: string}]}, {$ref: null_type}]}]}
@@ -53,7 +54,24 @@ $call:
   main_path: /etc/helix-nginx/nginx.conf
   server_path: /etc/helix-nginx/server.conf
   content_path: /var/lib/helix-nginx/index.html
-  resolve: {$call: [fn, [config], {$call: [expect, {$ref: config}, {$ref: input}]}]}
+  # Reuse the authoritative input schema; only these workload defaults differ.
+  configuration: {$call: [class, nginx, {$call: [with_field, {$call: [with_field, {$ref: input}, port, {$call: [default, {$ref: machine.port}, 8080]}]}, state, {$call: [default, {$ref: state_type}, present]}]}]}
+  realize_config:
+    $call: [fn, [config], {$call: [type_time, {$call: [realize, {$call: [if, {$call: [eq, {$call: [get, {$ref: config}, type, null]}, class]}, {$ref: config}, {$call: [inherit, 'nginx input', [{$ref: configuration}], {$ref: config}]}]}]}]}]
+  explain:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - let
+      - realized: {$call: [realize_config, {$ref: config}]}
+      - format: helix.nginx.configuration.v1
+        values: {$call: [expect, {$ref: realized.values}, {$ref: input}]}
+        provenance: {$ref: realized.provenance}
+  resolve: {$call: [fn, [config], {$call: [get, {$call: [explain, {$ref: config}]}, values]}]}
+  # Normalize once at each public boundary, before internal helpers inspect fields.
+  with_config: {$call: [fn, [operation], {$call: [fn, [config], {$call: [operation, {$call: [resolve, {$ref: config}]}]}]}]}
+  with_config_argument: {$call: [fn, [operation], {$call: [fn, [config, argument], {$call: [operation, {$call: [resolve, {$ref: config}]}, {$ref: argument}]}]}]}
   activation_token: {$call: [fn, [config], {$call: [concat, {$ref: provider_revision}, ':', {$ref: config.server_name}, ':', {$call: [str, {$ref: config.port}]}]}]}
   file: {$call: [fn, [text], {content: {$ref: text}, uid: 0, gid: 0, mode: 420}]}
   render_configuration:
@@ -149,8 +167,10 @@ $call:
   host:
     $call:
     - fn
-    - [operation, payload]
-    - {$call: [host_reply, {$ref: operation}, {$call: [effect, command, {program: /usr/local/bin/helix-nginx-host, args: {$call: [list, {$ref: operation}, {$call: [json_dump, {$ref: payload}]}]}}]}]}
+    - [config, operation, payload]
+    - {$call: [host_reply, {$ref: operation}, {$call: [host_command, {$ref: config}, {program: /usr/local/bin/helix-nginx-host, args: {$call: [list, {$ref: operation}, {$call: [json_dump, {$ref: payload}]}]}}]}]}
+  host_command: {$call: [fn, [config, request], {$call: [if, {$call: [has, {$ref: config}, ssh_target]}, {$call: [effect, ssh_command, {$call: [set, {$ref: request}, host, {$ref: config.ssh_target}]}]}, {$call: [effect, command, {$ref: request}]}]}]}
+  capability: {$call: [fn, [config], {$call: [if, {$call: [has, {$ref: config}, ssh_target]}, ssh_command, command]}]}
   # Expose partial host progress without losing the raw command evidence.
   # A malformed failure payload must not replace the original command failure.
   decode_host_error:
@@ -205,9 +225,8 @@ $call:
           - $call:
             - decode_host_error
             - $ref: reply.stdout
-  observe_state: {$call: [fn, [config], {$call: [host, observe, {port: {$ref: config.port}}]}]}
-  observe: {$call: [fn, [config], {$call: [observe_state, {$call: [resolve, {$ref: config}]}]}]}
-  context: {$call: [fn, [config], {platform: debian-container, capabilities: [command], managed: true, allow_remove: {$call: [eq, {$ref: config.state}, absent]}}]}
+  observe_state: {$call: [fn, [config], {$call: [host, {$ref: config}, observe, {port: {$ref: config.port}}]}]}
+  context: {$call: [fn, [config], {platform: debian-container, capabilities: [{$call: [capability, {$ref: config}]}], managed: true, allow_remove: {$call: [eq, {$ref: config.state}, absent]}}]}
   # The full observation (including target identity) participates in review matching.
   descriptor:
     version: 1
@@ -224,6 +243,7 @@ $call:
     observe: {$ref: observe_state}
     plan: {$ref: steps}
     apply: {$ref: execute}
+  descriptor_for: {$call: [fn, [config], {$call: [if, {$call: [has, {$ref: config}, ssh_target]}, {$call: [set, {$call: [set, {$ref: descriptor}, id, ssh.debian.nginx]}, capabilities, [ssh_command]]}, {$ref: descriptor}]}]}
   # Review includes the exact graph; remove only that verified decoration before
   # handing the remaining report to the provider's strict fresh-review comparison.
   with_dependencies:
@@ -248,10 +268,8 @@ $call:
       - $ref: config
       - $call:
         - provider.plan
-        - $ref: descriptor
-        - $call:
-          - resolve
-          - $ref: config
+        - {$call: [descriptor_for, {$ref: config}]}
+        - $ref: config
         - $ref: before
         - $call:
           - context
@@ -265,10 +283,8 @@ $call:
       - $ref: config
       - $call:
         - provider.check
-        - $ref: descriptor
-        - $call:
-          - resolve
-          - $ref: config
+        - {$call: [descriptor_for, {$ref: config}]}
+        - $ref: config
         - $call:
           - context
           - $ref: config
@@ -304,9 +320,7 @@ $call:
       - review
     - $call:
       - apply_config
-      - $call:
-        - resolve
-        - $ref: config
+      - $ref: config
       - $ref: review
   apply_config:
     $call:
@@ -320,7 +334,7 @@ $call:
         - $ref: config
         - $call:
           - provider.apply
-          - $ref: descriptor
+          - {$call: [descriptor_for, {$ref: config}]}
           - $ref: config
           - $call:
             - context
@@ -388,7 +402,7 @@ $call:
     $call:
     - fn
     - [config, id, step]
-    - {$call: [if, {$call: [eq, {$ref: config.state}, absent]}, {$call: [remove, {$ref: id}]}, {$call: [install, {$ref: config}, {$ref: id}, {$ref: step}]}]}
+    - {$call: [if, {$call: [eq, {$ref: config.state}, absent]}, {$call: [remove, {$ref: config}, {$ref: id}]}, {$call: [install, {$ref: config}, {$ref: id}, {$ref: step}]}]}
   install:
     $call:
     - fn
@@ -396,38 +410,42 @@ $call:
     - $call:
       - cond
       - {$call: [eq, {$ref: id}, package]}
-      - {$call: [host, package-install, {version: {$ref: config.package_version}}]}
+      - {$call: [host, {$ref: config}, package-install, {version: {$ref: config.package_version}}]}
       - {$call: [eq, {$ref: id}, configuration]}
-      - {$call: [host, files-install, {files: {$call: [render_configuration, {$ref: config}]}, validate: true}]}
+      - {$call: [host, {$ref: config}, files-install, {files: {$call: [render_configuration, {$ref: config}]}, validate: true}]}
       - {$call: [eq, {$ref: id}, content]}
-      - {$call: [host, files-install, {files: {$call: [dict, {$ref: content_path}, {$call: [file, {$ref: config.content}]}]}, validate: false}]}
-      - {$call: [host, {$call: [if, {$ref: step.from.running}, service-reload, service-start]}, {port: {$ref: config.port}, body: {$ref: config.content}, activation: {$call: [activation_token, {$ref: config}]}}]}
+      - {$call: [host, {$ref: config}, files-install, {files: {$call: [dict, {$ref: content_path}, {$call: [file, {$ref: config.content}]}]}, validate: false}]}
+      - {$call: [host, {$ref: config}, {$call: [if, {$ref: step.from.running}, service-reload, service-start]}, {port: {$ref: config.port}, body: {$ref: config.content}, activation: {$call: [activation_token, {$ref: config}]}}]}
   remove:
     $call:
     - fn
-    - [id]
+    - [config, id]
     - $call:
       - cond
       - {$call: [eq, {$ref: id}, service]}
-      - {$call: [host, service-stop, {}]}
+      - {$call: [host, {$ref: config}, service-stop, {}]}
       - {$call: [eq, {$ref: id}, package]}
-      - {$call: [host, package-remove, {}]}
-      - {$call: [host, files-remove, {paths: {$call: [if, {$call: [eq, {$ref: id}, content]}, {$call: [list, {$ref: content_path}]}, {$call: [list, {$ref: main_path}, {$ref: server_path}]}]}}]}
+      - {$call: [host, {$ref: config}, package-remove, {}]}
+      - {$call: [host, {$ref: config}, files-remove, {paths: {$call: [if, {$call: [eq, {$ref: id}, content]}, {$call: [list, {$ref: content_path}]}, {$call: [list, {$ref: main_path}, {$ref: server_path}]}]}}]}
 - $call:
   - dict
   - resolve
   - {$ref: resolve}
   - observe
-  - {$ref: observe}
+  - {$call: [with_config, {$ref: observe_state}]}
   - plan
-  - {$ref: plan}
+  - {$call: [with_config_argument, {$ref: plan}]}
   - check
-  - {$ref: check}
+  - {$call: [with_config, {$ref: check}]}
   - apply
-  - {$ref: apply}
+  - {$call: [with_config_argument, {$ref: apply}]}
   - verify
-  - {$ref: verify}
+  - {$call: [with_config, {$ref: verify}]}
   - input
   - {$ref: input}
   - observation_type
   - {$ref: observation_type}
+  - configuration
+  - {$ref: configuration}
+  - explain
+  - {$ref: explain}

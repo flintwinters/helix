@@ -253,8 +253,9 @@ def verify_decision_projection(h):
         for observation, facts, _ in cases])
     result = h.helix('run', '-', stdin=yaml.safe_dump(program))
     assert result.returncode == 0 and not result.stderr, result
-    assert yaml.safe_load(result.stdout) == {'status': 'finished', 'root': [
-        [expected, expected] for _, _, expected in cases]}, result.stdout
+    state = yaml.safe_load(result.stdout)
+    assert state['status'] == 'finished' and state['root'] == [
+        [expected, expected] for _, _, expected in cases], state.get('root')
 
     for observation, facts, expected in cases:
         # The full API can describe combinations the host lifecycle never emits;

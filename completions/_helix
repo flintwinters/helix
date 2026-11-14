@@ -13,7 +13,7 @@ _helix() {
             exec) _arguments '--json[emit JSON]' '--yaml[emit YAML]' '--help[show help]' ;;
             watch) _arguments '--interval-ms[poll interval]:milliseconds:' '--iterations[stop after runs]:count:' '*:program:_files' ;;
             check) _arguments '--evaluate[collect runtime errors]' '*:program:_files' ;;
-            step) _arguments '--steps[number of transitions]:count:' '*:program:_files' ;;
+            step|snapshot|restore) _arguments '--steps[number of transitions]:count:' '*:program:_files' ;;
             trace) _arguments '--limit[maximum transitions]:count:' '*:program:_files' ;;
             *) _files ;;
         esac

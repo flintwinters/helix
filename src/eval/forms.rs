@@ -161,7 +161,7 @@ impl Evaluator {
             return Ok(());
         }
         match name.as_str() {
-            "call" => self.push(Request::CallArgument(args[0], values)),
+            "call" => self.push(Request::CallArgument(args[0], values, args[1..].to_vec())),
             "vm" => {
                 let Value::Function(function) = &values[0] else {
                     return Err(self.err(

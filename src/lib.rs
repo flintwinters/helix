@@ -10,6 +10,7 @@ mod vm;
 mod value;
 mod model;
 mod inspect;
+mod snapshot;
 
 pub use library::names as std_modules;
 pub use library::source as std_source;
@@ -18,4 +19,6 @@ pub use emit::{document as yaml_document, json_document};
 
 
 pub mod tooling;
-pub use vm::effects::{EffectHost, CommandPolicy, CommandProgress, ProgressCallback};
+pub use vm::effects::{EffectHost, ServerPolicy, ServerProgress, SshTarget, CommandPolicy, CommandProgress, ProgressCallback};
+
+pub use vm::peers::PromisedSystem;

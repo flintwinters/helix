@@ -1,33 +1,168 @@
 root:
   base_short_circuit:
-    - at: /
+    - actual: 0
+      actual_present: true
+      at: /
+      expected: refined integer
       message: failed its refinement check
+      predicate:
+        column: 49
+        line: 4
+        path: "/$call/1/positive/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - positive
+          - "$call"
+          - 2
+        source: "<root>"
+      rule: refinement
   bottom_rejection: false
   class_realized:
     count: 2
   class_rejected:
     violations:
-      - at: /count
+      - actual: 10
+        actual_present: true
+        at: /count
+        expected: refined refined integer
         message: failed its refinement check
+        predicate:
+          column: 47
+          line: 5
+          path: "/$call/1/small/$call/2"
+          reference:
+            - "$call"
+            - 1
+            - small
+            - "$call"
+            - 2
+          source: "<root>"
+        rule: refinement
   enum_rejection: false
   fields:
-    - at: /defaulted
+    - actual: 0
+      actual_present: true
+      at: /defaulted
+      expected: refined integer
       message: failed its refinement check
-    - at: /optional
+      predicate:
+        column: 49
+        line: 4
+        path: "/$call/1/positive/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - positive
+          - "$call"
+          - 2
+        source: "<root>"
+      rule: refinement
+    - actual: 10
+      actual_present: true
+      at: /optional
+      expected: refined refined integer
       message: failed its refinement check
-    - at: /required
+      predicate:
+        column: 47
+        line: 5
+        path: "/$call/1/small/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - small
+          - "$call"
+          - 2
+        source: "<root>"
+      rule: refinement
+    - actual: 0
+      actual_present: true
+      at: /required
+      expected: refined integer
       message: failed its refinement check
+      predicate:
+        column: 49
+        line: 4
+        path: "/$call/1/positive/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - positive
+          - "$call"
+          - 2
+        source: "<root>"
+      rule: refinement
   literal_rejection: false
   nested_list:
-    - at: /1
+    - actual: 0
+      actual_present: true
+      at: /1
+      expected: refined integer
       message: failed its refinement check
-    - at: /2
+      predicate:
+        column: 49
+        line: 4
+        path: "/$call/1/positive/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - positive
+          - "$call"
+          - 2
+        source: "<root>"
+      rule: refinement
+    - actual: 10
+      actual_present: true
+      at: /2
+      expected: refined refined integer
       message: failed its refinement check
+      predicate:
+        column: 47
+        line: 5
+        path: "/$call/1/small/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - small
+          - "$call"
+          - 2
+        source: "<root>"
+      rule: refinement
   nested_map:
-    - at: /a
+    - actual: 0
+      actual_present: true
+      at: /a
+      expected: refined integer
       message: failed its refinement check
-    - at: /z
+      predicate:
+        column: 49
+        line: 4
+        path: "/$call/1/positive/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - positive
+          - "$call"
+          - 2
+        source: "<root>"
+      rule: refinement
+    - actual: 10
+      actual_present: true
+      at: /z
+      expected: refined refined integer
       message: failed its refinement check
+      predicate:
+        column: 47
+        line: 5
+        path: "/$call/1/small/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - small
+          - "$call"
+          - 2
+        source: "<root>"
+      rule: refinement
   refined_bases:
     - true
     - true

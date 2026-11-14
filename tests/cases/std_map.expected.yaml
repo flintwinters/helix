@@ -1,3 +1,914 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_merge
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_merge
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - merge
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_remove
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_remove
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: x
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - remove
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - merged
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      absent: ~
+      shared:
+        old: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - merged
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value:
+      a: false
+      shared:
+        new: true
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - merge
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      a: false
+      absent: ~
+      shared:
+        new: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - removed
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      a: false
+      absent: ~
+      shared:
+        new: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - removed
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: shared
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - remove
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      a: false
+      absent: ~
+      z: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - idempotent
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      a: false
+      absent: ~
+      z: 1
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - idempotent
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: shared
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - remove
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      a: false
+      absent: ~
+      z: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - left_identity
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - left_identity
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value:
+      absent: ~
+      shared:
+        old: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - merge
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      absent: ~
+      shared:
+        old: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - missing
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      absent: ~
+      shared:
+        old: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - missing
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: missing
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - remove
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      absent: ~
+      shared:
+        old: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - only_key
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      x: 1
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - only_key
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: x
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - remove
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - remove_null
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      absent: ~
+      shared:
+        old: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - remove_null
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: absent
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - remove
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      shared:
+        old: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - right_identity
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      absent: ~
+      shared:
+        old: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - right_identity
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - merge
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      absent: ~
+      shared:
+        old: true
+      z: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - unicode
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "": 1
+      "é": 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - unicode
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value:
+      "é":
+        - ~
+        - false
+      "🙂": 3
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - merge
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      "": 1
+      "é":
+        - ~
+        - false
+      "🙂": 3
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - unicode
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "": 1
+      "é":
+        - ~
+        - false
+      "🙂": 3
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - unicode
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ""
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - remove
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      "é":
+        - ~
+        - false
+      "🙂": 3
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - wrong_key
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - wrong_left
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - wrong_right
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - remove
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - wrong_source
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: x
 objects:
   object0:
     bindings: {}

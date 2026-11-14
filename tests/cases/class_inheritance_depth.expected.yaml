@@ -254,8 +254,12 @@ objects:
         source: "<root>"
 root:
   as_element_type:
-    - at: /1/hostname
+    - actual: 2
+      actual_present: true
+      at: /1/hostname
+      expected: string
       message: "expected string, got integer"
+      rule: type
   deep:
     concrete: true
     fields:

@@ -1,3 +1,1007 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - basic
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "one::two::three"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - basic
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "::"
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - split
+        - "$call"
+        - 2
+      source: "std:text"
+    type:
+      of: string
+      type: list
+    value:
+      - one
+      - two
+      - three
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - combining
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "é/é"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - combining
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: /
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - split
+        - "$call"
+        - 2
+      source: "std:text"
+    type:
+      of: string
+      type: list
+    value:
+      - "é"
+      - "é"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - empty_fields
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "::a::::"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - empty_fields
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "::"
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - split
+        - "$call"
+        - 2
+      source: "std:text"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+      - a
+      - ""
+      - ""
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - empty_join
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - empty_join
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "|"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - join
+        - "$call"
+        - 2
+      source: "std:text"
+    type: string
+    value: ""
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - empty_separator
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - "🙂"
+      - "世界"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - empty_separator
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ""
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - join
+        - "$call"
+        - 2
+      source: "std:text"
+    type: string
+    value: "🙂世界"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - empty_source
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: ""
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - empty_source
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ","
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - split
+        - "$call"
+        - 2
+      source: "std:text"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - empty_split_separator
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: abc
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - empty_split_separator
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ""
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - joined
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - one
+      - two
+      - three
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - joined
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "::"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - join
+        - "$call"
+        - 2
+      source: "std:text"
+    type: string
+    value: "one::two::three"
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - leading_empty
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+      - a
+      - ""
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - leading_empty
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ":"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - join
+        - "$call"
+        - 2
+      source: "std:text"
+    type: string
+    value: ":a:"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - no_match
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: abc
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - no_match
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: abcd
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - split
+        - "$call"
+        - 2
+      source: "std:text"
+    type:
+      of: string
+      type: list
+    value:
+      - abc
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - overlap
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: aaaaa
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - overlap
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: aa
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - split
+        - "$call"
+        - 2
+      source: "std:text"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+      - ""
+      - a
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - roundtrip
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+      - a
+      - ""
+      - ""
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - roundtrip
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "::"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - join
+        - "$call"
+        - 2
+      source: "std:text"
+    type: string
+    value: "::a::::"
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - single
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - hello
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - single
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "|"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - join
+        - "$call"
+        - 2
+      source: "std:text"
+    type: string
+    value: hello
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - unicode
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "🙂é🙂世界🙂"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - unicode
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "🙂"
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - split
+        - "$call"
+        - 2
+      source: "std:text"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+      - "é"
+      - "世界"
+      - ""
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - wrong_element
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ","
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - wrong_empty_join_separator
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - wrong_parts
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ","
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - wrong_separator
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: abc
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - wrong_source
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ","
 objects:
   object0:
     bindings: {}

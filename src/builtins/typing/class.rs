@@ -14,8 +14,8 @@
 use crate::value::Hash;
 use crate::value::Value;
 
-use super::construct::{descriptor, reflect};
-use super::ty::{check_ty, constraints, mapping, predicate, same_predicate, subtype, value_kind, Field, Pred, Ty, ValueKind, DEFAULT_SOURCE};
+use super::construct::{descriptor, reflect, validate_field};
+use super::ty::{check_ty, constraints, mapping, predicate, predicate_shape, same_predicate, subtype, value_kind, Field, Pred, Ty, ValueKind, Violation, DEFAULT_SOURCE};
 use crate::builtins::fault::Fault;
 use crate::builtins::value::{equal, is_function};
 use crate::model::string as s;
@@ -64,6 +64,7 @@ pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Valu
             if !is_function(&args[1]) {
                 return Err(Fault::expected(1, "function", &args[1]));
             }
+            predicate_shape(&args[1]).map_err(|why| Fault::at(1, "type", why))?;
             class.constraints.push(args[1].clone());
             // A stronger declaration needs explicit realization before its values are planned.
             class.concrete = false;
@@ -260,7 +261,7 @@ fn extend(name: &str, parents: &[Class], fields: &Hash, values: &Hash, at: Where
         }
     }
     let class = Class { name: name.to_string(), parents: parents.iter().map(|p| p.name.clone()).collect(), slots, constraints, concrete: false };
-    validate(&class, pred)?;
+    validate(&class, Some(at.fields), pred)?;
     Ok(class)
 }
 
@@ -279,18 +280,22 @@ fn narrow(field: &str, spec: &Value, inherited: &[&Slot], name: &str, arg: usize
 }
 
 /// Every set value must fit its field's type; all misfits are reported together.
-fn validate(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
+fn validate(class: &Class, declaration_arg: Option<usize>, pred: &mut Pred) -> Result<(), Fault> {
     let mut found = Vec::new();
     for slot in &class.slots {
+        let field = Field::parse(&slot.spec).map_err(|why| Fault { arg: declaration_arg, ..Fault::whole("type", why) })?;
+        validate_field(&field, declaration_arg.unwrap_or(0), pred)
+            .map_err(|fault| Fault { arg: declaration_arg, ..fault })?;
         let Some((value, _, _)) = &slot.value else { continue };
-        let ty = Field::parse(&slot.spec).map_err(|why| Fault::at(2, "type", why))?.ty;
+        let ty = field.ty;
         found.extend(check_slot(&slot.name, value, &ty, pred));
     }
     if found.is_empty() {
         return Ok(());
     }
     let message = format!("{} misfit{} in the values of `{}`: {}", found.len(), if found.len() == 1 { "" } else { "s" }, class.name, found[0].1);
-    Err(Fault { cause: None, kind: "type".into(), message, arg: None, data: Some(mapping([("violations", Value::Array(found.into_iter().map(|f| f.0).collect()))])) })
+    let broken = found.iter().any(|(v, _)| matches!(v, Value::Hash(h) if h.get(&s("rule")).and_then(Value::as_str) == Some("predicate_error")));
+    Err(Fault { cause: None, kind: if broken { "predicate" } else { "type" }.into(), message, arg: None, data: Some(mapping([("violations", Value::Array(found.into_iter().map(|f| f.0).collect()))])) })
 }
 
 fn check_slot(field: &str, value: &Value, ty: &Ty, pred: &mut Pred) -> Vec<(Value, String)> {
@@ -298,7 +303,9 @@ fn check_slot(field: &str, value: &Value, ty: &Ty, pred: &mut Pred) -> Vec<(Valu
         .into_iter()
         .map(|v| {
             let at = format!("/{field}{}", if v.at() == "/" { String::new() } else { v.at().to_string() });
-            (mapping([("at", s(&at)), ("message", s(v.message()))]), format!("{at}: {}", v.message()))
+            let Value::Hash(mut fields) = v.to_value() else { unreachable!() };
+            fields.insert(s("at"), s(&at));
+            (Value::Hash(fields), format!("{at}: {}", v.message()))
         })
         .collect()
 }
@@ -308,18 +315,19 @@ fn constrained(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
     let values = Value::Hash(class.slots.iter().filter_map(|slot| slot.value.as_ref().map(|(v, _, _)| (s(&slot.name), v.clone()))).collect());
     let mut found = Vec::new();
     for (i, check) in class.constraints.iter().enumerate() {
-        let why = match predicate(pred, check, &values) {
+        let (rule, why) = match predicate(pred, check, &values) {
             Ok(true) => continue,
-            Ok(false) => format!("constraint {i} of `{}` does not hold", class.name),
-            Err(why) => format!("constraint {i} of `{}` failed to run: {why}", class.name),
+            Ok(false) => ("constraint", format!("constraint {i} of `{}` does not hold", class.name)),
+            Err(why) => ("predicate_error", format!("constraint {i} of `{}` failed to run: {why}", class.name)),
         };
-        found.push(why);
+        found.push(Violation::new("/", &Ty::Class(Vec::new(), Vec::new(), Vec::new()), Some(&values), rule, why).predicate(check));
     }
     if found.is_empty() {
         return Ok(());
     }
-    let entries:Vec<_> = found.iter().map(|why| mapping([("at", s("/")), ("message", s(why))])).collect();
-    Err(Fault { cause: None, kind: "type".into(), message: found[0].clone(), arg: None, data: Some(mapping([("violations", Value::Array(entries.into()))])) })
+    let entries:Vec<_> = found.iter().map(Violation::to_value).collect();
+    let kind = if found.iter().any(|v| v.rule() == "predicate_error") { "predicate" } else { "type" };
+    Err(Fault { cause: None, kind: kind.into(), message: found[0].message().into(), arg: None, data: Some(mapping([("violations", Value::Array(entries.into()))])) })
 }
 
 /// Fill defaults and mark the class concrete, or fail listing every required field still open.
@@ -342,7 +350,7 @@ fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Clas
         let message = format!("class `{}` is abstract: missing {list}", class.name);
         return Err(Fault { cause: None, kind: "abstract".into(), message, arg, data: Some(mapping([("missing", Value::Array(entries.into()))])) });
     }
-    validate(&class, pred)?;
+    validate(&class, arg, pred)?;
     constrained(&class, pred)?;
     class.concrete = true;
     Ok(class)

@@ -169,6 +169,19 @@ root:
     values: {}
   violated:
     violations:
-      - at: /
+      - actual:
+          max: 5
+          min: 9
+        actual_present: true
+        at: /
+        expected: class
         message: "constraint 0 of `bad` does not hold"
+        predicate:
+          column: 10
+          line: 4
+          path: /ordered
+          reference:
+            - ordered
+          source: "<root>"
+        rule: constraint
 status: finished

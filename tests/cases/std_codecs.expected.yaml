@@ -1,3 +1,492 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:json"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - pure
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "[1,2,3]"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:csv"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - after_quote
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "\"a\"b"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:csv"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - bare_quote
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "a\"b"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:csv"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - csv
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "name,note\r\n雪,\"a,b\"\r\n\"\",\"line1\nline2\"\r\n\"quote\"\"here\",last"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:csv"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - csv_blank
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - dump
+          - "$call"
+          - 3
+        source: "std:csv"
+    kind: result
+    target:
+      path:
+        - dump
+        - "$call"
+        - 2
+      source: "std:csv"
+    type: string
+    value: "name,note\r\n雪,\"a,b\"\r\n\"\",\"a\"\"b\"\r\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:csv"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - csv_empty
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: ""
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - dump
+          - "$call"
+          - 3
+        source: "std:csv"
+    kind: result
+    target:
+      path:
+        - dump
+        - "$call"
+        - 2
+      source: "std:csv"
+    type: string
+    value: "\"\",\"a\nb\",雪\r\nragged\r\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:csv"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - csv_roundtrip
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "\"\",\"a\nb\",雪\r\nragged\r\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:csv"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - csv_trailing
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "a,"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:json"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - huge_float
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "1e999"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:json"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - huge_integer
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "999999999999999999999999999999999999"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:json"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - invalid_json
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{bad}"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:json"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - json
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{\"z\":[\"add\",true,null],\"a\":\"雪🙂\",\"n\":-9223372036854775808,\"float\":1.25}"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - dump
+          - "$call"
+          - 3
+        source: "std:json"
+    kind: result
+    target:
+      path:
+        - dump
+        - "$call"
+        - 2
+      source: "std:json"
+    type: string
+    value: "{\"a\":\"雪\",\"z\":[1,false]}\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:json"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - json_duplicate
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{\"x\":1,\"x\":2}"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:json"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - json_order
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{\"z\":1,\"a\":2}"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - dump
+          - "$call"
+          - 3
+        source: "std:json"
+    kind: result
+    target:
+      path:
+        - dump
+        - "$call"
+        - 2
+      source: "std:json"
+    type: string
+    value: "{\"x\":[1,null,\"hello\\nworld\"]}\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:json"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - json_roundtrip
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{\"x\":[1,null,\"hello\\nworld\"]}\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:json"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - large_integer
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "9223372036854775808"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:csv"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - open_quote
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "\"oops"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:json"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - trailing_json
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "1 2"
 root:
   after_quote: parse
   bare_quote: parse

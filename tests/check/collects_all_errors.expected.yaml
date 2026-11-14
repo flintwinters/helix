@@ -1,9 +1,54 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": endpoint
+      location:
+        path:
+          - good
+          - "$call"
+          - 2
+        source: "<root>"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - good
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      fields:
+        host: string
+        port:
+          check:
+            kind: function
+            location:
+              path:
+                - in_port
+              source: "<root>"
+          of: integer
+          type: refine
+      type: record
+    value:
+      host: a
+      port: 22
 errors:
   - column: 34
     data:
       violations:
-        - at: /port
+        - actual: 0
+          actual_present: true
+          at: /port
+          expected: refined integer
           message: failed its refinement check
+          predicate:
+            column: 10
+            line: 3
+            path: /in_port
+            reference:
+              - in_port
+            source: "<root>"
+          rule: refinement
     kind: type
     line: 10
     message: "1 type violation: failed its refinement check"
@@ -23,8 +68,12 @@ errors:
   - column: 33
     data:
       violations:
-        - at: /
+        - actual: 7
+          actual_present: true
+          at: /
+          expected: string
           message: "expected string, got integer"
+          rule: type
     kind: type
     line: 15
     message: "1 type violation: expected string, got integer"

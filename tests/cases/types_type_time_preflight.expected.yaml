@@ -2,8 +2,12 @@ error:
   column: 26
   data:
     violations:
-      - at: /port
+      - actual: http
+        actual_present: true
+        at: /port
+        expected: integer
         message: "expected integer, got string"
+        rule: type
   kind: type
   line: 7
   message: "1 type violation: expected integer, got string"

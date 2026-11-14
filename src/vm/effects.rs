@@ -1,62 +1,72 @@
 //! Caller-owned host capabilities. Source and saved state cannot grant authority.
-use std::collections::BTreeSet;
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+use std::sync::atomic::Ordering;
 #[path = "effects/failure.rs"]
 mod failure;
-use failure::{Failure, fault, io_fault};
+#[path = "effects/http.rs"]
+pub(crate) mod http;
+use failure::{Failure, Reply, fault, io_fault};
+#[path = "effects/host.rs"]
+mod host;
+use host::{require, object, authorized};
 #[path = "effects/sqlite.rs"]
 mod sqlite;
 #[path = "effects/command.rs"]
 mod command;
+#[path = "effects/ssh.rs"]
+mod ssh;
+#[path = "effects/locks.rs"]
+pub mod locks;
+#[path = "effects/secrets.rs"]
+mod secrets;
+#[path = "effects/durable.rs"]
+pub mod durable;
+pub use host::{EffectHost, ServerPolicy, ServerProgress};
+pub use ssh::SshTarget;
 pub use command::{CommandPolicy, CommandProgress, ProgressCallback};
 use yaml_rust2::Yaml;
 use crate::model::{Status, Vm};
 
-type Reply = Result<Yaml, Failure>;
 const LIMIT: usize = 1024 * 1024;
 
-/// A host is deliberately separate from immutable machine values. Grants never come from source.
-#[derive(Default)]
-pub struct EffectHost {
-    pub read_roots: Vec<PathBuf>,
-    pub write_roots: Vec<PathBuf>,
-    pub env_names: BTreeSet<String>,
-    pub commands: BTreeSet<String>,
-    pub command_policy: CommandPolicy,
-    pub cancellation: Arc<AtomicBool>,
-    pub cancellation_signal: Option<&'static AtomicBool>,
-    pub command_progress: Option<ProgressCallback>,
-    pub http_origins: BTreeSet<String>,
-    pub allow_stdin: bool,
-    pub allow_stdout: bool,
-    pub allow_time: bool,
-    pub allow_random: bool,
-    pub args: Vec<String>,
-    pub fixed_time: Option<i64>,
-    pub random_seed: Option<u64>,
-    pub exit_code: u8,
-}
-
 impl EffectHost {
+    /// Stop persistent SSH connections this host may have started; call once when the session ends.
+    pub fn close_ssh_connections(&self) {
+        if let Some(dir) = &self.ssh_control_dir { ssh::close_all(&self.ssh_targets, dir); }
+    }
     pub fn run(&mut self, vm: &mut Vm) {
         loop {
             vm.run();
-            if vm.status() != Status::Signaled { break; }
-            if vm.is_interrupted() { break; }
-            let Some(request) = vm.pending_effect() else { break };
-            if self.cancellation.load(Ordering::Relaxed)
-                || self.cancellation_signal.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
-                *vm = vm.signal(object([("kind", Yaml::String("cancelled".into()))]));
-                break;
-            }
-            let reply = self.handle(request.id, &request.operation, &request.payload);
-            *vm = vm.resolve_effect(reply);
+            if !self.resolve_pending(vm) { break; }
         }
     }
-    fn handle(&mut self, effect_id: u64, operation: &str, payload: &Yaml) -> Reply {
+    /// Shared dispatch boundary for ephemeral and journaled controllers.
+    fn resolve_pending(&mut self, vm: &mut Vm) -> bool {
+        if vm.status() != Status::Signaled || vm.is_interrupted() { return false; }
+        // Promise enforcement must happen before dispatch: an external action
+        // cannot be rolled back when its reply exceeds a serialization budget.
+        if vm.pending_effect().is_some_and(|request| !vm.can_dispatch_effect(&request.operation)) {
+            *vm = vm.resolve_effect(Err(("promise".into(),
+                "host dispatch is unavailable for promised machines".into())));
+            return false;
+        }
+        let Some(request) = vm.pending_effect() else { return false; };
+        if self.cancellation.load(Ordering::Relaxed)
+            || self.cancellation_signal.is_some_and(|flag| flag.load(Ordering::Relaxed)) {
+            *vm = vm.signal(object([("kind", Yaml::String("cancelled".into()))]));
+            return false;
+        }
+        let reply = if request.operation == "http_serve" {
+            http::serve(self, vm)
+        } else {
+            self.handle_secret(request.id, &request.operation, &request.payload)
+        };
+        *vm = vm.resolve_effect(reply);
+        true
+    }
+
+    fn handle_plain(&mut self, effect_id: u64, operation: &str, payload: &Yaml) -> Reply {
         match operation {
             "args" => Ok(Yaml::Array(self.args.iter().cloned().map(Yaml::String).collect())),
             "exit" => {
@@ -115,8 +125,18 @@ impl EffectHost {
                 let (code, stdout, stderr) = command::capture(program, &args, command::Control {
                     policy: &self.command_policy, cancellation: &self.cancellation,
                     cancellation_signal: self.cancellation_signal, progress: &mut self.command_progress, effect_id,
+                    cwd: None, stdin: command_input(&payload["stdin"])?,
                 })?;
                 Ok(object([("code", Yaml::Integer(code)), ("stdout", Yaml::String(stdout)), ("stderr", Yaml::String(stderr))]))
+            }
+            "ssh_command" | "ssh_file_read" | "ssh_file_write" => {
+                let alias = text(&payload["host"])?;
+                let target = self.ssh_targets.get(alias).ok_or_else(|| fault("capability", "SSH target capability not granted"))?;
+                ssh::run(operation, target, ssh::Mux { dir: self.ssh_control_dir.as_deref() }, payload, command::Control {
+                    policy: &self.command_policy, cancellation: &self.cancellation,
+                    cancellation_signal: self.cancellation_signal, progress: &mut self.command_progress, effect_id,
+                    cwd: None, stdin: None,
+                })
             }
             "http" => {
                 let url = text(payload)?;
@@ -125,7 +145,7 @@ impl EffectHost {
                 // No redirects, proxies, curl config, cookies or URL globbing. Grant is exact origin.
                 let (code, mut output, error) = command::capture("curl", &["-q", "--silent", "--show-error", "--globoff", "--noproxy", "*", "--proto", "=http,https", "--max-time", "8", "--max-filesize", "1048576", "--write-out", "\n%{http_code}", "--url", url], command::Control { policy: &CommandPolicy::default(),
                     cancellation: &self.cancellation, cancellation_signal: self.cancellation_signal,
-                    progress: &mut None, effect_id })?;
+                    progress: &mut None, effect_id, cwd: None, stdin: None })?;
                 if code != 0 { return Err(fault("http", &error)); }
                 let (body, status) = output.rsplit_once('\n').ok_or_else(|| fault("http", "missing HTTP status"))?;
                 let status = status.parse::<i64>().map_err(io_fault)?;
@@ -140,8 +160,7 @@ impl EffectHost {
             "random" => {
                 require(self.allow_random, "random")?;
                 let value = if let Some(seed) = self.random_seed.as_mut() {
-                    *seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
-                    *seed >> 1
+                    next_random(seed)
                 } else {
                     let mut bytes = [0; 8];
                     std::fs::File::open("/dev/urandom").and_then(|mut f| f.read_exact(&mut bytes)).map_err(io_fault)?;
@@ -153,31 +172,31 @@ impl EffectHost {
         }
     }
 }
-fn require(granted: bool, name: &str) -> Result<(), Failure> {
-    if granted { Ok(()) } else { Err(fault("capability", &format!("{name} capability not granted"))) }
-}
 fn text(value: &Yaml) -> Result<&str, Failure> { value.as_str().ok_or_else(|| fault("type", "effect payload must be a string")) }
-fn object<const N: usize>(fields: [(&str, Yaml); N]) -> Yaml {
-    Yaml::Hash(fields.into_iter().map(|(key, value)| (Yaml::String(key.into()), value)).collect())
-}
 fn read_text(reader: impl Read) -> Result<String, Failure> {
     let mut bytes = Vec::new();
     reader.take((LIMIT + 1) as u64).read_to_end(&mut bytes).map_err(io_fault)?;
     if bytes.len() > LIMIT { return Err(fault("resource", "effect input exceeds 1 MiB")); }
     String::from_utf8(bytes).map_err(io_fault)
 }
-fn authorized(path: &str, roots: &[PathBuf], write: bool) -> Result<PathBuf, Failure> {
-    let path = Path::new(path);
-    let resolved = if write && matches!(std::fs::symlink_metadata(path), Err(ref error) if error.kind() == std::io::ErrorKind::NotFound) {
-        let parent = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
-        parent.canonicalize().map_err(io_fault)?.join(path.file_name().ok_or_else(|| fault("io", "missing filename"))?)
-    } else { path.canonicalize().map_err(io_fault)? };
-    require(roots.iter().any(|root| root.canonicalize().is_ok_and(|root| resolved.starts_with(root))), "file path")?;
-    Ok(resolved)
-}
 fn origin(url: &str) -> Result<&str, Failure> {
     let rest = url.strip_prefix("http://").or_else(|| url.strip_prefix("https://")).ok_or_else(|| fault("type", "HTTP URL must use http or https"))?;
     let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
     if authority.is_empty() || authority.contains(['@', '\\']) || url.chars().any(char::is_whitespace) { return Err(fault("type", "invalid HTTP authority")); }
     Ok(&url[..url.len() - rest.len() + authority.len()])
+}
+
+fn next_random(seed: &mut u64) -> u64 {
+    *seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+    *seed >> 1
+}
+
+/// Local and SSH commands share the same bounded optional UTF-8 stdin contract.
+fn command_input(value: &Yaml) -> Result<Option<&[u8]>, Failure> {
+    match value {
+        Yaml::BadValue | Yaml::Null => Ok(None),
+        Yaml::String(text) if text.len() <= LIMIT => Ok(Some(text.as_bytes())),
+        Yaml::String(_) => Err(fault("resource", "command stdin exceeds 1 MiB")),
+        _ => Err(fault("type", "command stdin must be a string or granted secret handle")),
+    }
 }

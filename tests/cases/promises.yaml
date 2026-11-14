@@ -1,0 +1,10 @@
+$call:
+  - let
+  - base: {$call: [promise, durable, [reversible]]}
+    composed: {$call: [promise, reviewed, [{$ref: base}]]}
+    machine: {$call: [mixin, {$call: [vm, {$call: [fn, [], 42]}]}, {$ref: composed}]}
+  - base_member: {$call: [is, {$ref: machine}, {$ref: base}]}
+    composed_member: {$call: [is, {$ref: machine}, {$ref: composed}]}
+    subtype: {$call: [subtype, {$ref: composed}, {$ref: base}]}
+    plain_member: {$call: [is, {$call: [vm, {$call: [fn, [], 42]}]}, {$ref: base}]}
+    annotated: {$call: [call, {$call: [fn, [[m, {$ref: base}]], true]}, {$ref: machine}]}

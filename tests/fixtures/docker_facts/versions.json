@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "platform": "linux/amd64",
+  "distribution": "Ubuntu 26.10",
+  "image": "ubuntu:26.10@sha256:b5194b8e58989da0865ebc80078bf9f5f8742ec6a867c53f6ae699f6036756f7"
+}

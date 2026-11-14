@@ -17,7 +17,7 @@ impl Evaluator {
             let callback = iteration.args[0];
             let arg = iteration.state.clone();
             self.push(Request::UntilTest(iteration));
-            self.push(Request::CallArgument(callback, vec![arg]));
+            self.push(Request::CallArgument(callback, vec![arg], Vec::new()));
         } else if let Some(item) = iteration.values.get(iteration.index).cloned() {
             let callback = iteration.args[0];
             let arguments = if iteration.name == "fold" {
@@ -26,7 +26,7 @@ impl Evaluator {
                 vec![item.clone()]
             };
             self.push(Request::Iterated { iteration, item });
-            self.push(Request::CallArgument(callback, arguments));
+            self.push(Request::CallArgument(callback, arguments, Vec::new()));
         } else {
             self.finish(match iteration.name.as_str() {
                 "fold" => iteration.state,
@@ -66,7 +66,7 @@ impl Evaluator {
             let callback = iteration.args[1];
             let arg = iteration.state.clone();
             self.push(Request::UntilNext(iteration));
-            self.push(Request::CallArgument(callback, vec![arg]));
+            self.push(Request::CallArgument(callback, vec![arg], Vec::new()));
         }
         Ok(())
     }

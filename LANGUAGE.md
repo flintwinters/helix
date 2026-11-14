@@ -96,7 +96,26 @@ objects:
 
 Ordinary data retains its compact representation. An inspection graph keeps the normal `root` or `error` projection and places its named `objects` table beside it in the state envelope, so recursive lexical references stay finite and ordinary user keys cannot collide with metadata. It is **not a resumable file format**; loading this output yields ordinary data, not reconstructed functions or machines. Machines compare by logical execution state rather than allocation identity. Transition counts and continuation details are implementation details: wait for a status or observable condition rather than counting steps.
 
-The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Disk snapshots, restoration validation, reversibility-promise syntax and debugger UI are separate future work. Explicit host effects are described below.
+Successful `expect`, function parameter and result checks add an optional
+`annotations` history beside the ordinary state projection and in machine
+inspection. Each entry records its kind, target source reference, governing
+declaration's source reference and original code, evaluated type, and checked
+value. Thus a named or computed declaration remains distinguishable from the
+descriptor it produced; ordinary values are not wrapped or changed. Retained
+machine versions preserve their own histories. Ordinary data is exact; runtime
+functions are summarized by kind and source location, and machines by kind and
+status. Such rows carry `runtime_values_omitted: true`: captured environments and
+continuations are neither traversed nor retained by the evidence. Ordinary maps
+are not object summaries merely because their fields resemble these markers.
+The retained prefix uses at most 16,384 value/string-byte units (or the smaller
+configured per-value budget), with the existing nesting limit;
+`annotations_truncated: true` explicitly marks omitted later evidence, without
+turning a successful computation into failure. Programs that perform no annotation
+checks have no such metadata. This is inspection evidence, not executable snapshot
+restoration: data-only types still round-trip through a `$literal` root, while
+predicate functions and machine graphs require their original sources to execute.
+
+The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Executable disk snapshots and restoration validation use the separate versioned format described below. Machine promises enforce bounded reversibility as described below. Explicit host effects are described below.
 
 ## Type rules
 
@@ -145,8 +164,13 @@ copying costs and all policy execution shares the caller's resource budgets.
 same field parser as `record`. A malformed retained field raises `type` at the
 input record argument; replacing that malformed field itself is allowed because
 its old spec is discarded. Migration: repair or remove malformed sibling specs
-before extending a hand-built record. Validation checks declaration shape without
-running refinement predicates or rechecking default values against their types.
+before extending a hand-built record. Record construction and value checking also
+validate declared defaults through the ordinary predicate engine, even when a
+supplied field hides a default or an empty collection hides its element type.
+Invalid defaults are declaration errors with structured expected/actual values and
+`declaration_path`, not ordinary membership rejection. Checking never inserts a
+default into the supplied value. Structural parsing and `subtype` remain proof-only:
+they validate descriptor shape but do not execute default predicates or certify defaults.
 Repeated extensions also reparse growing field sets; they do not certify or cache
 the validity of arbitrary descriptor data.
 
@@ -172,6 +196,16 @@ order (including missing required fields), then unexpected fields in canonical
 key order. Nested violations stay together at their field or index. A rejected
 union emits one violation at the checked value, with alternatives named in
 declaration order, rather than concatenating each alternative's violations.
+Each entry contains `at` (inside the checked value), a readable `expected` type
+label, the original `actual` value, `actual_present`, a stable `rule`, and
+`message`. Missing fields have `actual_present: false`; a present null has
+`actual_present: true`. Predicate entries also carry `predicate` source, path,
+reference segments and line/column, identifying the named or inline rule.
+Predicate rejection is a normal violation. A raised error or non-boolean result
+raises `predicate` from `is`, `violations`, `expect`, annotations or default
+validation, blamed on the predicate with collected violations and, for a raised
+error, its original `cause`. Unions retain failures from predicates they reached;
+they skip later alternatives after an accepting alternative.
 Refinements check the base first and only run their predicate if the base passes;
 this also applies when the base is another refinement. Refinements can wrap the
 existing type constructors and serve as collection elements or required,
@@ -303,7 +337,7 @@ are not expressions. Migration: unresolved names that previously passed plain
 `check` now fail it, including in uncalled bodies; fix the name or provide the
 lexical binding. LSP diagnostics use the same check and source locations.
 
-Plain `check` also runs a small non-executing type check (`src/tooling/analysis/body.rs`) over literals, annotated parameters, arithmetic, comparison, `if`, structural maps, constant-key record `get`/`set`, calls of named functions and literal annotation expressions (including `record` and `with_field`). It traverses computed call heads as well as operands, so annotated inline function bodies and nested `type_time` regions are checked even when the call target itself is unproved. Literal data remains opaque. It compares annotated function bodies with their declared results, call arguments with parameter types, and `type_time` regions for effectful execution. Constructing or returning a function does not execute its body; invoking a visible function does. Computed callees remain unproved, while `pure_function_of` retains its stronger transitive contract. A mismatch whose types share no value, or an `effect` inside a region, is a `type` diagnostic. A mismatch that may or may not hold, or an expression outside the fragment, is listed in the report's `unchecked` list and does not fail the check; the LSP shows only definite errors.
+Plain `check` also runs a small non-executing type check (`src/tooling/analysis/body.rs`) over literals, annotated parameters, arithmetic, comparison, `if`, structural maps, constant-key record `get`/`set`, calls of named functions and literal annotation expressions (including `record` and `with_field`). It traverses computed call heads as well as operands, so annotated inline function bodies and nested `type_time` regions are checked even when the call target itself is unproved. Literal data remains opaque. It checks explicit `expect(value, type)` annotations, annotated function bodies against their declared results, call arguments against parameter types, and `type_time` regions for effectful execution. Every written function parameter annotation is inspected even when the function is uncalled; supported declarations are validated, and unsupported declarations receive an explicit `unchecked` obligation. Constructing or returning a function does not execute its body; invoking a visible function does. Computed callees remain unproved, while `pure_function_of` retains its stronger transitive contract. A mismatch whose types share no value, or an `effect` inside a region, is a `type` diagnostic. A mismatch that may or may not hold, or an expression outside the fragment, is listed in the report's `unchecked` list and does not fail the check; the LSP shows only definite errors.
 
 Structural map inference retains known fields even when a sibling expression is unknown. Every written field is present; unknown field types remain `any`. Required fields with incompatible types or missing required fields establish definite failure, while incompatible optional fields may overlap by omission. Dynamic keys, optional-key reads, unsupported callbacks and `$literal` data remain outside this structural fragment. The production test-policy regressions require plain `check` to reject an integer `status` or string `exit_code` without executing orchestration; this does not prove the entire policy or replace independent host validation.
 
@@ -311,7 +345,7 @@ Sequence inference combines element types, retaining `any` for unknown elements.
 
 Strings up to 256 UTF-8 bytes retain their exact literal type, allowing plain `check` to reject a misspelled constant against a literal or enum annotation. Longer strings widen to `string`. Sequences retain at most 32 type alternatives, collapsing adjacent repeats. Inferred type trees use the same 4096-node limit as annotation shapes, with field names and direct literal strings limited to the runtime value-size budget. Collection and function-signature construction account for expanded child types before retaining them, so compact alias graphs cannot expand into unbounded inferred trees. Oversized collections widen to `list` or `map`; other oversized results remain unknown. Widening still checks child expressions and reports unresolved obligations where a contract cannot be proved. These are analysis precision limits, not total process-memory limits or changes to execution semantics.
 
-Annotation aliases follow explicit `$ref` lookups without executing them; scalar strings remain literal type names even when a binding has the same spelling. Cycles, more than eight constructor levels, expanded descriptors beyond 4096 values/keys, or expanded strings beyond the runtime value-size limit remain unchecked. Memoized alias resolution prevents repeated source expansion; the descriptor budget also bounds the work passed to the shared type parser. These limits affect analysis only, not runtime type semantics.
+Annotation aliases follow explicit `$ref` lookups without executing them; scalar strings remain literal type names even when a binding has the same spelling. Safely materialized malformed declarations, including unknown literal type names, produce structured `type` diagnostics at the annotation expression. Computed annotations outside this fragment remain `unchecked`; the checker does not evaluate arbitrary expressions, load imports or execute predicates to decide them. Cycles, more than eight constructor levels, expanded descriptors beyond 4096 values/keys, or expanded strings beyond the runtime value-size limit remain unchecked. Memoized alias resolution prevents repeated source expansion; the descriptor budget also bounds the work passed to the shared type parser. These limits affect analysis only, not runtime type semantics. All independent annotation obligations in the written source are visited; a failed declaration or value does not stop checks of sibling annotations. This is bounded static analysis, not a promise to compute every terminating type-time expression. Plain `check` preserves its versioned `mode: static` report (`status: ok` or `error`, `diagnostics` and `unchecked`), rather than emitting an evaluated VM root. Exit codes are 0 without definite errors, 1 with diagnostics and 2 for usage or input-file failures; a zero exit does not discharge listed `unchecked` obligations. The maintained static suite applies the production mutation generator to annotated source and checks this report contract without executing the damaged programs.
 
 `./manage.py check --evaluate FILE` (or `helix check --evaluate FILE`) evaluates the current pure language and collects independent errors across sequence entries in order and mapping fields by canonical key, deduplicating failures reached through multiple dependents. It uses the same annotations, evaluator, and import policy as `run`; it does not enter type time or statically analyze uncalled function bodies or unchosen branches. Output includes `mode: check`, with `root` on success or an `errors` list on failure. Only errors raised inside explicit `type_time` regions carry `phase: type`; repeated failures of the same dependency are deduplicated within each phase. This replaces the former top-level `phase: type` marker on check output; consumers should inspect `mode` for collection mode and each error’s `phase` for type-time origin. Exit codes are 0 for success, 1 for program errors and 2 for usage or input-file failures. Successful ordinary-data roots retain the YAML round-trip contract; function/machine roots use the named inspection contract.
 
@@ -362,7 +396,7 @@ budgets; this migration does not add observation, application or disk recovery.
 
 ## Error kinds
 
-`permission` (a denied file import), `effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `conflict` (incompatible class parents), `abstract` (unfilled required fields on realization), `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (syntax/value, call, dependency or import nesting), `limit` (work/data/graph or iteration budgets), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
+`permission` (a denied file import), `effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `predicate` (a type predicate raised or returned a non-boolean), `conflict` (incompatible class parents), `abstract` (unfilled required fields on realization), `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (syntax/value, call, dependency or import nesting), `limit` (work/data/graph or iteration budgets), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
 
 ## Testing in Helix
 
@@ -423,3 +457,140 @@ See [Host effects and explicit grants](HOST.md#host-effects-and-explicit-grants)
 #### Bounded command operations
 
 See [Bounded command operations](HOST.md#bounded-command-operations).
+
+
+## Evaluated-value source evidence
+
+The Rust API `Vm::evaluated_values()` returns ordinary data with `values` and
+`truncated` fields, independently of errors and machine inspection. Each row
+associates a completed expression's value with its source-qualified `location`,
+`line`, and `column`. This includes computed function-body results and local
+iteration results; later evaluations of the same source expression replace its
+earlier retained result. References retain the producing expression's evidence,
+not a separate history of every lexical read. Equal values at different source
+locations remain distinct rows.
+
+Evidence has a separate 16,384-unit cap (also bounded by the machine's value-size
+limit). If a row cannot fit, `truncated` becomes true and earlier evidence remains;
+this is the latest **retained** value per expression, not an execution trace or
+complete per-occurrence dataflow. Functions and machines become shallow ordinary
+summaries with `runtime_values_omitted: true`; evidence never retains their live
+captures or continuations. Value equality, ordinary output, and execution budgets
+retain their existing semantics. Executable snapshots persist this evidence and
+validate its source locations and storage accounting on restore. Version 1 states
+migrate with empty evidence because it was not recorded by that runtime.
+
+## Machine promises
+
+`{$call: [promise, durable, [reversible]]}` constructs a first-class promise type.
+Its ordinary-data descriptor is `{type: promise, name: durable, requires: [reversible]}`.
+Requirements may include other promise descriptors, composing their named
+obligations. Requirements also accept `{effects: [operation, ...]}`. Every list
+applies, so composition intersects the permitted operations; an empty list forbids
+all effects. Admission and restoration check completed history and pending work,
+and transitions reject prohibited requests before host dispatch. Effect permissions
+never grant authority to a target. Unknown behavioral requirements are rejected.
+Names alone do not establish membership.
+
+`{$call: [mixin, machine, promise_type]}` returns an independent machine version
+with that promise attached. For `reversible`, admission checks complete snapshot
+representability. Every subsequent transition preserves representability or stops with a bounded
+promise error and the previous continuation. The original machine remains usable.
+Promise types work with annotations, `is`, `expect` and `subtype`; a composed promise
+includes its declared parents and every promise type is a subtype of `vm`.
+Snapshots preserve attached obligations. The Rust API accepts the same descriptor
+through `Vm::with_promise(Yaml)`.
+
+The `reversible` behavioral contract covers bounded execution, explicit interruption inputs,
+and communication inside a coordinated promised system. Arbitrary host dispatch
+and direct `Vm::resolve_effect` remain refused: an externally completed action
+cannot be rolled back if its reply exceeds the serialization budget.
+Independent-error checking is also refused on promised machines. Ordinary
+machines retain their existing effect and checking contracts. Promises do not
+grant authority, encrypt ordinary data, undo effects outside their system, or
+automatically invalidate memoized results after source edits.
+
+### Communication between promised machines
+
+`PromisedSystem` owns named promised VM versions and their committed delivery
+receipts. The complete system is the restoration boundary: both participants and
+communication history rewind together. Restoring just a client cannot rewind a
+server that continues outside that snapshot.
+
+A sender yields `{$call: [effect, peer_send, {to: server, value: DATA}]}` and the
+receiver yields `{$call: [effect, peer_receive, {from: client}]}`. Their explicit
+participant names must match. A rendezvous resolves the sender with `null` and
+the receiver with the sent ordinary value, recording both request identities.
+Both new machine states and the receipt are checked for serializability before
+publishing the new immutable system version. Rejection leaves the previous
+system intact; there is no partially committed delivery.
+
+The Rust API `PromisedSystem::deliver(sender, send_id, receiver, receive_id)`
+requires the expected request IDs. Repeating an already committed delivery is a
+no-op within that system history. The receiver may compute a result and send it
+back in another rendezvous. A checkpoint between request acceptance and reply
+therefore retains the server's progress without repeating the accepted request.
+Retained system branches remain independent.
+
+`./manage.py runtime system-snapshot system.yaml --steps N` creates a joint
+checkpoint from `{participants: {name: SOURCE_STRING, ...}}`. Each source is
+explicitly admitted with the reversible promise. `system-restore checkpoint.json`
+continues the aggregate; `--steps N` emits another checkpoint. Source files are
+not needed after the initial checkpoint. The deterministic round-robin scheduler
+persists its cursor and shares progress among runnable machines and matching
+rendezvous. An unfinished, nonfailed system with no available transition reports `blocked`,
+not success; terminal systems retain `finished` or `error`.
+The ordinary state report contains `status`, `machines`, and `delivery_count`.
+The versioned joint format is separate from a single-machine execution snapshot.
+The aggregate is bounded to 128 participants, 100,000 delivery receipts and
+32 MiB of serialized state, including its trailing newline. Receipt history is
+retained with participant effect outcomes and validated for consistency on
+restore. `PromisedSystem::signal(name, event)` and `resume_signal(name)` retain
+interruption state within the same aggregate; an interrupted participant cannot
+rendezvous until resumed. Extracting a participant does not create a new valid
+communication history from already completed peer effects.
+
+This implements a coordinated local execution boundary, not a network transport
+or independent checkpoint protocol between remote processes. Communication with
+an unpromised external system still requires the existing host effect contracts.
+
+## Executable disk snapshots
+
+`./manage.py runtime snapshot program.yaml --steps 20` emits a versioned
+executable checkpoint. `./manage.py runtime restore checkpoint.json` runs it in a
+fresh process; adding `--steps N` saves another checkpoint after at most N
+transitions. JSON is the canonical YAML-compatible wire spelling for version 2;
+the loader also accepts ordinary YAML within the existing data-parser size/depth bounds. Mapping presentation order has no execution meaning. Existing `step`/`inspect` documents
+remain observational, and `resume` still means pure source recovery. Without
+`--steps`, restore follows `run` exit statuses: only finished execution succeeds.
+Saving a valid unfinished checkpoint succeeds; a saved error state still exits 1.
+
+The snapshot embeds linked representation graphs, source-qualified path
+references, captured environments, intermediate values, pending continuations,
+iteration and predicate progress, phase/memo state, resource budgets, annotation
+history, nested machines and effect outcomes. Restoration neither reparses
+function source nor opens imports. Object-table names express sharing within a
+snapshot and are not operating-system addresses. Source locations are preserved
+from the embedded graph. A live parameter's `environment` argument values can be
+edited; doing so branches the computation. Completed memoized work is retained,
+so editing source alone does not invalidate dependent completed work.
+
+Version 2 requires the matching runtime package version and rejects unknown
+formats, fields, references, cycles, invalid graph topology and out-of-bounds
+continuations. Compatibility fixtures live in `tests/fixtures/snapshots/`.
+Version 1 execution documents migrate with empty promise and evaluated-value
+evidence fields; their existing continuations are preserved. Ordinary inspection
+and pure recovery documents are rejected. Future incompatible schema changes require a
+version increment and an explicit migration or rejection path. Snapshot budgets
+are 32 MiB, 100,000 shared objects and 128 codec levels; these supplement existing
+execution limits. Exceeding a snapshot budget fails saving without changing the
+machine. Promised machines enforce these bounds at admission and transitions;
+source edits do not invalidate completed work. Retained provenance records prior
+execution, not proof that an externally edited value arose from it. Secret-safe
+serialization of arbitrary ordinary data remains outside this contract.
+
+A snapshot is executable input. Its data carries no host grants. Restoring and
+running yields pending effects without applying them; a caller must supply a
+fresh authorized host. Completed outcomes stay completed. An externally started
+operation whose reply was never recorded is uncertain, and must not be blindly
+replayed merely because its VM request is still pending.

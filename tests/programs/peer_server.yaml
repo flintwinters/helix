@@ -1,0 +1,4 @@
+$call:
+  - let
+  - request: {$call: [effect, peer_receive, {from: client}]}
+  - $call: [effect, peer_send, {to: client, value: {$call: [add, {$ref: request}, 1]}}]

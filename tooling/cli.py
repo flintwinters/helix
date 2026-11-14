@@ -33,14 +33,24 @@ SUITES = {
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
     "interactive": "REPL, dependency watch, completion and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
+    "nginx_types": "Pure class realization, defaults and provenance feeding the existing nginx lifecycle",
+    "target_coordination": "Cross-journal target exclusion and persistent crash uncertainty for cooperating controllers",
+    "secret_effects": "Opaque host secret inputs, suppressed captures, fresh grants and safe durable reconciliation",
+    "durable_effects": "Disk effect recovery, controller death, uncertain-outcome reconciliation and fresh grants",
+    "snapshots": "Fresh-process executable restoration, editable locals, imported sources and malformed snapshots",
     "long_commands": "Bounded command deadlines, capture, progress, retry classification and process-group cancellation",
+    "ssh_host": "Real OpenSSH remote commands: host-key verification, exact argument transport and classified connection, authentication and privilege failures",
     "effects": "Capability-controlled host effects, deterministic inputs, failures and pending requests",
     "startup": "Build-free discovery stays independent of execution and test-only imports",
     "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
+    "docker_facts": "Opt-in pinned Ubuntu 26.10 local and real SSH facts acceptance",
+    "facts_smoke": "Opt-in read-only Ubuntu workstation facts smoke check",
+    "host_facts": "Typed explicit local/SSH observations, custom facts and reviewed dependencies",
     "host_inventory": "Pure typed host inventory, explicit override provenance, validated dynamic inputs and target selection",
     "resource_composition": "Validated resource dependencies, coalesced change handlers, failure gating and typed pinned modules",
     "provider_contract": "Typed provider lifecycle, pure previews, explicit ownership and independently verified mutations",
     "command_provider": "Guarded command resources, explicit result predicates, fresh reviews and real subprocess postconditions",
+    "ssh_nginx": "Opt-in disposable SSH nginx convergence, review, drift and durable recovery acceptance",
     "docker_nginx": "Opt-in Docker nginx convergence, drift and failure acceptance against independently observed Linux state",
     "golden": "Exact YAML states, deterministic evaluation, and finished-root round trips",
     "robustness": "Damaged variants of every golden input remain structured states",
@@ -122,11 +132,21 @@ def parser():
     for name, description in {
         "fmt": "Emit canonical YAML source without executing",
         "step": "Inspect a program after a bounded number of transitions",
+        "system-snapshot": "Form promised participants and save their coordinated execution state",
+        "system-restore": "Restore all promised participants and communication together",
+        "snapshot": "Save executable state after a bounded number of transitions",
+        "restore": "Restore executable state; optionally save after more transitions",
+        "checkpoint": "Inspect durable effects and recovery action without execution",
+        "target-release": "Acknowledge independently established target quiescence after recovery",
         "trace": "Stream evaluation transitions as YAML documents",
         "watch": "Re-run when program or transitive import contents change",
     }.items():
         leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} program.yaml")
-        leaf.add_argument("file", metavar="FILE", help="source file (or - except for watch)")
+        file_help = {"system-snapshot": "participant source manifest, or - for stdin",
+                     "system-restore": "complete promised-system checkpoint, or - for stdin"}.get(name, "source file (or - except for watch)")
+        leaf.add_argument("file", metavar="FILE", help=file_help)
+        if name in ("snapshot", "restore", "system-snapshot", "system-restore"):
+            leaf.add_argument("--steps", type=int, default=0 if name in ("snapshot", "system-snapshot") else None, help="transitions before saving; restore runs to completion when omitted")
         if name == "step":
             leaf.add_argument("--steps", type=int, default=1, help="number of transitions (default: 1)")
         if name == "trace":
@@ -134,6 +154,9 @@ def parser():
         if name == "watch":
             leaf.add_argument("--interval-ms", type=int, default=250, help="poll interval in milliseconds")
             leaf.add_argument("--iterations", type=int, help="exit after this many run attempts")
+    reconcile = command(runtime, "reconcile", "Record an independently observed uncertain-effect outcome", ["runtime", "reconcile"], "runtime reconcile checkpoint.json observed.yaml")
+    reconcile.add_argument("file", help="effect checkpoint file")
+    reconcile.add_argument("outcome", help="exact request and observed ok/error outcome")
     for name, description in {"repl": "Evaluate one YAML document per input line",
                               "lsp": "Serve the Language Server Protocol over stdio",
                               "schema": "Print the program JSON Schema"}.items():

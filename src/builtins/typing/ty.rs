@@ -87,6 +87,7 @@ pub(crate) enum Ty {
     /// it to be provably free of effects.
     Fn(Vec<Ty>, Box<Ty>, bool),
     Vm,
+    Promise(Value),
     List(Box<Ty>),
     Map(Box<Ty>),
     /// Closed: a value may not carry fields the record does not declare.
@@ -114,6 +115,7 @@ impl PartialEq for Ty {
             | (Self::Str, Self::Str) | (Self::Bool, Self::Bool)
             | (Self::Null, Self::Null) | (Self::Secret, Self::Secret)
             | (Self::Function, Self::Function) | (Self::Vm, Self::Vm) => true,
+            (Self::Promise(a), Self::Promise(b)) => a.same_view(b),
             (Self::Fn(pa, ra, ea), Self::Fn(pb, rb, eb)) => pa == pb && ra == rb && ea == eb,
             (Self::List(a), Self::List(b)) | (Self::Map(a), Self::Map(b)) => a == b,
             (Self::Record(a), Self::Record(b)) => a == b,
@@ -141,6 +143,11 @@ pub(crate) struct Field {
 pub struct Violation {
     at: String,
     message: String,
+    expected: String,
+    actual: Option<Value>,
+    rule: &'static str,
+    predicate: Option<Value>,
+    declaration_path: Option<String>,
 }
 
 pub(super) fn mapping<const N: usize>(entries: [(&str, Value); N]) -> Value {
@@ -148,16 +155,43 @@ pub(super) fn mapping<const N: usize>(entries: [(&str, Value); N]) -> Value {
 }
 
 impl Violation {
+    pub(super) fn new(at: &str, expected: &Ty, actual: Option<&Value>, rule: &'static str, message: String) -> Self {
+        Self { at: at.into(), message, expected: expected.name(), actual: actual.cloned(), rule, predicate: None, declaration_path: None }
+    }
+
+    pub(super) fn predicate(mut self, predicate: &Value) -> Self {
+        if let Value::Function(function) = predicate {
+            let graph = &function.program.graph;
+            let mut location = match graph.reference(function.node) { Value::Hash(h) => h, _ => unreachable!() };
+            location.insert(s("reference"), location.get(&s("path")).unwrap().clone());
+            location.insert(s("path"), s(&graph.path(function.node)));
+            location.insert(s("line"), Value::Integer(graph.span(function.node).line as i64));
+            location.insert(s("column"), Value::Integer(graph.span(function.node).col as i64));
+            self.predicate = Some(Value::Hash(location));
+        }
+        self
+    }
     pub fn at(&self) -> &str {
         &self.at
     }
+
+    pub fn is_declaration(&self) -> bool { self.declaration_path.is_some() }
+
+    pub fn rule(&self) -> &str { self.rule }
 
     pub fn message(&self) -> &str {
         &self.message
     }
 
     pub fn to_value(&self) -> Value {
-        mapping([("at", s(&self.at)), ("message", s(&self.message))])
+        let Value::Hash(mut fields) = mapping([
+            ("at", s(&self.at)), ("message", s(&self.message)),
+            ("expected", s(&self.expected)), ("actual", self.actual.clone().unwrap_or(Value::Null)),
+            ("actual_present", Value::Boolean(self.actual.is_some())), ("rule", s(self.rule)),
+        ]) else { unreachable!() };
+        if let Some(path) = &self.declaration_path { fields.insert(s("declaration_path"), s(path)); }
+        if let Some(predicate) = &self.predicate { fields.insert(s("predicate"), predicate.clone()); }
+        Value::Hash(fields)
     }
 }
 
@@ -194,6 +228,10 @@ impl Ty {
             Value::Hash(map) => {
                 let kind = text(map, "type").ok_or("a type map needs a string `type`")?;
                 match kind {
+                    "promise" => {
+                        super::promise::validate(ty)?;
+                        Ok(Ty::Promise(ty.clone()))
+                    }
                     "list" => Ok(Ty::List(Box::new(Ty::parse(member(map, "of")?)?))),
                     "map" => Ok(Ty::Map(Box::new(Ty::parse(member(map, "of")?)?))),
                     "union" => match member(map, "of")? {
@@ -217,9 +255,7 @@ impl Ty {
                     "refine" => {
                         let base = Ty::parse(member(map, "of")?)?;
                         let predicate = member(map, "check")?;
-                        if !is_function(predicate) {
-                            return Err("a `refine` type needs a function `check`".into());
-                        }
+                        predicate_shape(predicate).map_err(|why| format!("a `refine` type's `check`: {why}"))?;
                         Ok(Ty::Refine(Box::new(base), predicate.clone()))
                     }
                     "record" | "class" => {
@@ -260,6 +296,7 @@ impl Ty {
     pub(crate) fn overlaps(&self, other: &Ty) -> bool {
         match (self, other) {
             (Ty::Never, _) | (_, Ty::Never) => false,
+            (Ty::Promise(_), Ty::Vm | Ty::Promise(_)) | (Ty::Vm, Ty::Promise(_)) => true,
             (Ty::Any, _) | (_, Ty::Any) => true,
             (Ty::Union(members), _) => members.iter().any(|m| m.overlaps(other)),
             (_, Ty::Union(members)) => members.iter().any(|m| self.overlaps(m)),
@@ -303,6 +340,7 @@ impl Ty {
             Ty::Function => "function".into(),
             Ty::Fn(params, result, pure) => format!("{}function ({}) -> {}", if *pure { "pure " } else { "" }, params.iter().map(Ty::name).collect::<Vec<_>>().join(", "), result.name()),
             Ty::Vm => "vm".into(),
+            Ty::Promise(_) => "promised vm".into(),
             Ty::List(of) if **of == Ty::Any => "list".into(),
             Ty::List(of) => format!("list of {}", of.name()),
             Ty::Map(of) if **of == Ty::Any => "map".into(),
@@ -329,16 +367,21 @@ fn fixed_values(class: &Hash) -> Result<Vec<(String, Value)>, String> {
     Ok(fixed)
 }
 
+pub(super) fn predicate_shape(value: &Value) -> Result<(), String> {
+    let Value::Function(function) = value else { return Err("must be a function".into()); };
+    let parameters = function.program.graph.parameters(function.node)
+        .map_err(|_| "must have a valid parameter declaration".to_string())?;
+    if parameters.len() != 1 { return Err("must take exactly 1 parameter".into()); }
+    Ok(())
+}
+
 /// Validate declaration shape independently of whether a value reaches its predicates.
 pub(super) fn constraints(class: &Hash) -> Result<Vec<Value>, String> {
     match class.get(&s("constraints")) {
         None => Ok(Vec::new()),
         Some(Value::Array(items)) => items.iter().enumerate().map(|(index, item)| {
-            if is_function(item) {
-                Ok(item.clone())
-            } else {
-                Err(format!("class constraint {index} must be a function"))
-            }
+            predicate_shape(item).map_err(|why| format!("class constraint {index}: {why}"))?;
+            Ok(item.clone())
         }).collect(),
         Some(_) => Err("class `constraints` must be a list of functions".into()),
     }
@@ -382,7 +425,7 @@ fn inside(at: &str, key: &str) -> String {
 }
 
 fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violation>) {
-    let mismatch = |out: &mut Vec<Violation>| out.push(Violation { at: at.into(), message: format!("expected {}, got {}", ty.name(), type_name(value)) });
+    let mismatch = |out: &mut Vec<Violation>| out.push(Violation::new(at, ty, Some(value), "type", format!("expected {}, got {}", ty.name(), type_name(value))));
     match (ty, value) {
         (Ty::Any, _) | (Ty::Int, Value::Integer(_)) | (Ty::Float, Value::Float(_)) | (Ty::Str, Value::String(_)) | (Ty::Bool, Value::Boolean(_)) | (Ty::Null, Value::Null) => {}
         (Ty::Function, _) if is_function(value) => {}
@@ -391,13 +434,14 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
             Ok(declared) => {
                 let unproven = matches!((&declared, ty), (Ty::Fn(.., false), Ty::Fn(.., true))) && subtype(&declared.purely(), ty, pred);
                 let note = if unproven { " (not provably pure)" } else { "" };
-                out.push(Violation { at: at.into(), message: format!("expected {}, got {}{note}", ty.name(), declared.name()) })
+                out.push(Violation::new(at, ty, Some(value), "signature", format!("expected {}, got {}{note}", ty.name(), declared.name())))
             }
-            Err(why) => out.push(Violation { at: at.into(), message: format!("signature check failed to run: {why}") }),
+            Err(why) => out.push(Violation::new(at, ty, Some(value), "signature_error", format!("signature check failed to run: {why}"))),
         },
         (Ty::Vm, Value::Machine(_)) => {}
+        (Ty::Promise(promise), Value::Machine(machine)) if machine.promises().iter().any(|p| super::promise::includes(p, promise)) => {}
         (Ty::Secret, Value::Hash(h)) if h.len() == 2 && text(h, "type") == Some("secret") && text(h, "ref").is_some() => {}
-        (Ty::Secret, Value::String(_)) => out.push(Violation { at: at.into(), message: "a secret is a handle (`[secret, ref]`), not an inline string".into() }),
+        (Ty::Secret, Value::String(_)) => out.push(Violation::new(at, ty, Some(value), "secret", "a secret is a handle (`[secret, ref]`), not an inline string".into())),
         (Ty::List(of), Value::Array(items)) => items.iter().enumerate().for_each(|(i, item)| check(item, of, &inside(at, &i.to_string()), pred, out)),
         (Ty::Map(of), Value::Hash(h)) => h.iter().for_each(|(k, v)| check(v, of, &inside(at, &show(k)), pred, out)),
         (Ty::Record(fields), Value::Hash(h)) => check_record(fields, h, at, pred, out),
@@ -407,20 +451,32 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
             for (name, pinned) in fixed {
                 let (here, reported) = (inside(at, name), out.iter().any(|v| v.at == inside(at, name)));
                 if !reported && !h.get(&s(name)).is_some_and(|v| equal(v, pinned)) {
-                    out.push(Violation { at: here, message: format!("field `{name}` must equal {}", show(pinned)) });
+                    out.push(Violation::new(&here, &Ty::Enum(vec![pinned.clone()]), h.get(&s(name)), "fixed", format!("field `{name}` must equal {}", show(pinned))));
                 }
             }
             if out.len() == before {
                 for (i, constraint) in constraints.iter().enumerate() {
                     match predicate(pred, constraint, value) {
                         Ok(true) => {}
-                        Ok(false) => out.push(Violation { at: at.into(), message: format!("constraint {i} does not hold") }),
-                        Err(why) => out.push(Violation { at: at.into(), message: format!("constraint {i} failed to run: {why}") }),
+                        Ok(false) => out.push(Violation::new(at, ty, Some(value), "constraint", format!("constraint {i} does not hold")).predicate(constraint)),
+                        Err(why) => out.push(Violation::new(at, ty, Some(value), "predicate_error", format!("constraint {i} failed to run: {why}")).predicate(constraint)),
                     }
                 }
             }
         }
-        (Ty::Union(members), _) if members.iter().any(|m| holds(value, m, pred)) => {}
+        (Ty::Union(members), _) => {
+            let before = out.len();
+            let mut accepted = false;
+            for member in members {
+                let mut branch = Vec::new();
+                check(value, member, at, pred, &mut branch);
+                if branch.is_empty() { accepted = true; break; }
+                // A rejected alternative is ordinary union behavior. A broken predicate
+                // is not evidence that an alternative excludes this value.
+                out.extend(branch.into_iter().filter(|v| v.rule == "predicate_error"));
+            }
+            if !accepted && out.len() == before { mismatch(out); }
+        }
         (Ty::Enum(values), _) if values.iter().any(|v| equal(v, value)) => {}
         (Ty::Refine(base, check_fn), _) => {
             let before = out.len();
@@ -428,8 +484,8 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
             if out.len() == before {
                 match predicate(pred, check_fn, value) {
                     Ok(true) => {}
-                    Ok(false) => out.push(Violation { at: at.into(), message: "failed its refinement check".into() }),
-                    Err(why) => out.push(Violation { at: at.into(), message: format!("refinement check failed to run: {why}") }),
+                    Ok(false) => out.push(Violation::new(at, ty, Some(value), "refinement", "failed its refinement check".into()).predicate(check_fn)),
+                    Err(why) => out.push(Violation::new(at, ty, Some(value), "predicate_error", format!("refinement check failed to run: {why}")).predicate(check_fn)),
                 }
             }
         }
@@ -441,12 +497,12 @@ fn check_record(fields: &[(String, Field)], h: &Hash, at: &str, pred: &mut Pred,
     for (name, field) in fields {
         match h.get(&s(name)) {
             Some(v) => check(v, &field.ty, &inside(at, name), pred, out),
-            None if field.required => out.push(Violation { at: inside(at, name), message: format!("missing field `{name}`") }),
+            None if field.required => out.push(Violation::new(&inside(at, name), &field.ty, None, "required", format!("missing field `{name}`"))),
             None => {}
         }
     }
     for k in h.keys().filter(|k| !fields.iter().any(|(name, _)| s(name) == **k)) {
-        out.push(Violation { at: inside(at, &show(k)), message: format!("unexpected field `{}`", show(k)) });
+        out.push(Violation::new(&inside(at, &show(k)), &Ty::Never, h.get(k), "closed_record", format!("unexpected field `{}`", show(k))));
     }
 }
 
@@ -456,18 +512,55 @@ pub(super) fn holds(value: &Value, ty: &Ty, pred: &mut Pred) -> bool {
     out.is_empty()
 }
 
+/// Check declared defaults independently of supplied values. Parsing remains structural;
+/// predicates use the caller's existing resumable predicate engine.
+pub(super) fn validate_defaults(ty: &Ty, pred: &mut Pred) -> Vec<Violation> {
+    enum Work<'a> { Type(String, &'a Ty), Default(String, &'a Ty, &'a Value) }
+    let mut out = Vec::new();
+    let mut pending = vec![Work::Type("/".to_string(), ty)];
+    while let Some(work) = pending.pop() {
+        let (at, ty) = match work {
+            Work::Type(at, ty) => (at, ty),
+            Work::Default(path, ty, value) => {
+                let start = out.len();
+                check(value, ty, &path, pred, &mut out);
+                for violation in &mut out[start..] { violation.declaration_path = Some(path.clone()); }
+                continue;
+            }
+        };
+        match ty {
+            Ty::Record(fields) | Ty::Class(fields, ..) => {
+                for (name, field) in fields.iter().rev() {
+                    let path = inside(&at, name);
+                    pending.push(Work::Type(path.clone(), &field.ty));
+                    if let Some(value) = &field.default {
+                        pending.push(Work::Default(inside(&path, "default"), &field.ty, value));
+                    }
+                }
+            }
+            Ty::List(inner) | Ty::Map(inner) | Ty::Refine(inner, _) => pending.push(Work::Type(at, inner)),
+            Ty::Union(members) => pending.extend(members.iter().rev().map(|member| Work::Type(at.clone(), member))),
+            Ty::Fn(params, result, _) => {
+                pending.push(Work::Type(inside(&at, "result"), result));
+                pending.extend(params.iter().enumerate().rev().map(|(i, param)| Work::Type(inside(&at, &i.to_string()), param)));
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
 /// Every place `value` does not fit the parsed type.
 pub(super) fn check_ty(value: &Value, ty: &Ty, pred: &mut Pred) -> Vec<Violation> {
-    let mut out = Vec::new();
+    let mut out = validate_defaults(ty, pred);
+    if !out.is_empty() { return out; }
     check(value, ty, "/", pred, &mut out);
     out
 }
 
 /// Every place `value` does not fit `ty`; `Err` when `ty` is not a type at all.
 pub fn violations(value: &Value, ty: &Value, pred: &mut Pred) -> Result<Vec<Violation>, String> {
-    let mut out = Vec::new();
-    check(value, &Ty::parse(ty)?, "/", pred, &mut out);
-    Ok(out)
+    Ok(check_ty(value, &Ty::parse(ty)?, pred))
 }
 
 /// Whether every value of `a` is a value of `b`. Sound but incomplete: a refinement of `b` is only
@@ -481,6 +574,8 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
         (Ty::Enum(values), _) => values.iter().all(|v| super::literal::covered_by(v, b, pred)),
         (_, Ty::Union(members)) => members.iter().any(|m| subtype(a, m, pred)),
         (Ty::Refine(base, _), _) => subtype(base, b, pred),
+        (Ty::Promise(a), Ty::Promise(b)) => super::promise::includes(a, b),
+        (Ty::Promise(_), Ty::Vm) => true,
         (Ty::Fn(..), Ty::Function) => true,
         // Parameters are contravariant, the result covariant: a function that accepts more and
         // promises more can stand wherever the narrower signature is expected.

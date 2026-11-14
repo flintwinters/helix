@@ -159,8 +159,12 @@ objects:
         source: "<root>"
 root:
   absent_fixed:
-    - at: /max
+    - actual: ~
+      actual_present: false
+      at: /max
+      expected: integer
       message: "missing field `max`"
+      rule: required
   class_below_record: true
   defaults_not_demanded: true
   fits_fixed: true
@@ -272,9 +276,26 @@ root:
     values: {}
   unconstrained_ok: true
   violates_constraint:
-    - at: /
+    - actual:
+        max: 5
+        min: 9
+      actual_present: true
+      at: /
+      expected: class
       message: constraint 0 does not hold
+      predicate:
+        column: 10
+        line: 5
+        path: /ordered
+        reference:
+          - ordered
+        source: "<root>"
+      rule: constraint
   wrong_fixed:
-    - at: /max
+    - actual: 6
+      actual_present: true
+      at: /max
+      expected: "one of [5]"
       message: "field `max` must equal 5"
+      rule: fixed
 status: finished

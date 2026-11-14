@@ -213,3 +213,30 @@ fn failing_or_panicking_progress_callbacks_reap_running_commands() {
     }
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[path = "snapshots.rs"]
+mod snapshots;
+
+#[path = "peers.rs"]
+mod peers;
+
+#[test]
+fn caller_server_policy_is_validated_before_transport_or_progress() {
+    use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+    let called = Arc::new(AtomicBool::new(false));
+    let observed = called.clone();
+    let progress: helix::ServerProgress = Box::new(move |_| {
+        observed.store(true, Ordering::Relaxed);
+        Ok(yaml_rust2::Yaml::Null)
+    });
+    let mut host = helix::EffectHost {
+        server_policy: helix::ServerPolicy { connections: 0, ..Default::default() },
+        server_progress: Some(progress),
+        ..Default::default()
+    };
+    let mut vm = Vm::load("{$call: [http_serve, {bind: '127.0.0.1:0'}, {$call: [fn, [request], null]}]}");
+    host.run(&mut vm);
+    assert_eq!(vm.status(), Status::Error);
+    assert_eq!(vm.state()["error"]["kind"].as_str(), Some("resource"));
+    assert!(!called.load(Ordering::Relaxed));
+}

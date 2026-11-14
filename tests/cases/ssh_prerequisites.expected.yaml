@@ -1,0 +1,25 @@
+pending_effect:
+  id: 1
+  location:
+    path:
+      - run
+      - "$call"
+      - 2
+    source: "std:ssh"
+  operation: ssh_command
+  payload:
+    args:
+      - "-c"
+      - "for tool do command -v \"$tool\" >/dev/null 2>&1 || printf '%s\\n' \"$tool\"; done"
+      - helix-check
+      - sh
+      - cat
+      - mktemp
+      - wc
+      - chmod
+      - mv
+      - rm
+      - /usr/local/bin/helix-nginx-host
+    host: fixture
+    program: sh
+status: signaled

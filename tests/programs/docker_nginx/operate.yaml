@@ -4,7 +4,7 @@
 $call:
 - let
 - nginx: {$call: [import, 'std:nginx']}
-  request_type: {$call: [record, mode, {$call: [enum, resolve, observe, plan, check, apply, verify]}, config, {$ref: nginx.input}, before, {$call: [optional, {$ref: nginx.observation_type}]}, review, {$call: [optional, {$ref: map}]}]}
+  request_type: {$call: [record, mode, {$call: [enum, resolve, explain, observe, plan, check, apply, verify]}, config, {$ref: map}, before, {$call: [optional, {$ref: nginx.observation_type}]}, review, {$call: [optional, {$ref: map}]}]}
   dispatch:
     $call:
     - fn
@@ -13,6 +13,8 @@ $call:
       - cond
       - {$call: [eq, {$ref: request.mode}, resolve]}
       - {$call: [nginx.resolve, {$ref: request.config}]}
+      - {$call: [eq, {$ref: request.mode}, explain]}
+      - {$call: [nginx.explain, {$ref: request.config}]}
       - {$call: [eq, {$ref: request.mode}, observe]}
       - {$call: [nginx.observe, {$ref: request.config}]}
       - {$call: [eq, {$ref: request.mode}, plan]}
