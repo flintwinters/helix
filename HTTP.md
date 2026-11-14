@@ -59,7 +59,8 @@ actor data persistence does not restore active requests, mailboxes or connection
 Promises and grants remain independent. The parent VM's effect restrictions apply
 to workers, and a handler promise can narrow them. `{effects: []}` forbids effects;
 composed effect lists intersect. A reversible handler can compute a pure response;
-transport sends it outside that machine. Ordinary host dispatch from reversible
+transport sends it outside that machine. Reversible snapshot verification also
+uses elapsed request time; large linked programs may need a larger caller deadline. Ordinary host dispatch from reversible
 machines remains forbidden.
 
 ## Actors and persistence
@@ -85,3 +86,23 @@ The maintained HTTP acceptance test uses the same counter actor with JSON-file
 and SQLite storage, then starts a fresh server and independently checks the saved
 acknowledged count. These backends use existing file and SQLite effects. Neither
 is built into the server or required by another actor.
+
+## Static files and policy
+
+`http.static_directory(directory)` returns a GET/HEAD handler. A response may also
+use `body: {file: {directory: PATH, path: REQUEST_PATH}}`. Static transport reads
+binary bytes directly without a language byte type. It requires an existing read
+grant covering the directory. Unix descriptor-relative traversal rejects all
+symlinks, dot segments, encoded paths, nonregular files and files exceeding the
+static ceiling. Failed transfers return a bounded 403. Directory listings are not
+provided. Static transport is currently qualified on Unix.
+
+Caller flags are `--server-connections`, `--server-handlers`, `--server-actors`,
+`--server-mailbox`, `--server-header-limit`, `--server-body-limit`,
+`--server-static-limit` and `--server-deadline-ms`. Limits are validated before
+execution and source cannot raise them. A handler or static transfer retains its
+capacity until started blocking work settles, even if its client disconnects.
+
+Run `python manage.py test --suite effects` for independent HTTP, actor, persistence,
+static containment, promise, retention and lifecycle acceptance. Broader compatibility
+checks live in the existing library, snapshot, execution, golden and static suites.

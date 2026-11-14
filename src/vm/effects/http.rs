@@ -1,5 +1,6 @@
 //! Live HTTP transport. Authority and ceilings belong to the caller, never source.
-use super::{EffectHost, Reply, fault, io_fault, object};
+use super::host::{EffectHost, ServerPolicy, object};
+use super::failure::{Reply, Failure, fault, io_fault};
 use crate::model::{Value, Function, Request, Vm, Status, string as s};
 use std::{sync::{Arc, atomic::{AtomicU64, Ordering}}, time::Duration, net::SocketAddr, convert::Infallible};
 use bytes::Bytes;
@@ -8,55 +9,11 @@ use http_body_util::{BodyExt, Full};
 use hyper_util::rt::{TokioIo, TokioTimer};
 use tokio::{sync::Semaphore, task::JoinSet, time::Instant};
 use yaml_rust2::Yaml;
+use crate::graph::http::{validate_function, validate_options};
 #[path = "http/actors.rs"]
 mod actors;
-
-#[derive(Clone, Debug)]
-pub struct ServerPolicy {
-    pub connections: usize,
-    pub handlers: usize,
-    pub actors: usize,
-    pub mailbox: usize,
-    pub headers: usize,
-    pub body: usize,
-    pub static_file: usize,
-    pub deadline_ms: u64,
-}
-impl Default for ServerPolicy {
-    fn default() -> Self {
-        Self { connections: 32, handlers: 8, actors: 8, mailbox: 64, headers: 16 * 1024,
-            body: 256 * 1024, static_file: 1024 * 1024, deadline_ms: 10_000 }
-    }
-}
-impl ServerPolicy {
-    pub fn validate(&self) -> Result<(), String> {
-        if self.connections == 0 || self.connections > 4096 || self.handlers == 0 || self.handlers > 256
-            || self.actors > 256 || self.mailbox == 0 || self.mailbox > 4096 || self.headers < 8192
-            || self.headers > 1024 * 1024 || self.body == 0 || self.body > 1024 * 1024
-            || self.static_file == 0 || self.static_file > 16 * 1024 * 1024
-            || self.deadline_ms == 0 || self.deadline_ms > 86_400_000 {
-            Err("invalid HTTP server policy bounds".into())
-        } else { Ok(()) }
-    }
-}
-pub type ServerProgress = Box<dyn FnMut(&serde_json::Value) -> Reply + Send>;
-
-pub(crate) fn validate_options(options: &Value) -> Result<(), String> {
-    let Value::Hash(fields) = options else { return Err("HTTP options must be a map".into()) };
-    let Some(Value::String(bind)) = fields.get(&s("bind")) else { return Err("HTTP options require bind".into()) };
-    let address: SocketAddr = bind.parse().map_err(|_| "bind must be a numeric loopback address")?;
-    if !address.ip().is_loopback() { return Err("only numeric loopback listeners are supported".into()); }
-    for (key, value) in fields.iter() {
-        match key.as_str() {
-            Some("bind") => {},
-            Some("requests") if matches!(value, Value::Integer(n) if *n > 0) => {},
-            Some("promise") => crate::builtins::typing::promise::validate(value)?,
-            Some("actors") if matches!(value, Value::Hash(_)) => {},
-            _ => return Err("unknown or invalid HTTP option".into()),
-        }
-    }
-    Ok(())
-}
+#[path = "http/static_files.rs"]
+mod static_files;
 
 fn worker_host(parent: &EffectHost) -> EffectHost {
     EffectHost {
@@ -75,6 +32,7 @@ fn cancelled(host: &EffectHost) -> bool {
     host.cancellation.load(Ordering::Relaxed) || host.cancellation_signal.is_some_and(|flag| flag.load(Ordering::Relaxed))
 }
 fn invoke(function: Arc<Function>, args: Vec<Value>, promises: &[Value]) -> Result<Vm, String> {
+    validate_function(&function,args.len())?;
     let mut vm = Vm::from_function(function.clone());
     vm.evaluator = Some(Arc::new(crate::eval::Evaluator::invoke(function, args)));
     for promise in promises { vm = vm.with_promise_value(promise.clone())?; }
@@ -121,15 +79,32 @@ async fn execute(mut vm: Vm, mut host: EffectHost, deadline: Instant, actors: Op
 fn response(status: u16, body: impl Into<Bytes>) -> Response<Full<Bytes>> {
     Response::builder().status(status).header("connection", "close").body(Full::new(body.into())).unwrap()
 }
-fn checked_response(value: Value, limit: usize, head: bool) -> Result<Response<Full<Bytes>>, String> {
+fn checked_response(value: Value, policy: &ServerPolicy, roots: &[std::path::PathBuf], head: bool) -> Result<Response<Full<Bytes>>, String> {
     let data = value.plain_yaml().ok_or("response must be ordinary data")?;
+    let fields = data.as_hash().ok_or("response must be a map")?;
+    if fields.len() != 3 { return Err("response requires exactly status, headers and body".into()); }
     let status = data["status"].as_i64().filter(|n| (200..=599).contains(n)).ok_or("invalid HTTP status")? as u16;
     let headers = data["headers"].as_vec().ok_or("response headers must be ordered pairs")?;
-    let text = data["body"].as_str().ok_or("response body must be text")?;
-    if text.len() > limit { return Err("response body exceeds policy".into()); }
-    let mut result = response(status, if head { Bytes::new() } else { Bytes::copy_from_slice(text.as_bytes()) });
+    let bytes = if let Some(text) = data["body"].as_str() {
+        if text.len() > policy.body { return Err("response body exceeds policy".into()); }
+        text.as_bytes().to_vec()
+    } else {
+        let body = data["body"].as_hash().ok_or("invalid response body")?;
+        if body.len() != 1 || data["body"]["file"].as_hash().is_none_or(|fields| fields.len() != 2) {
+            return Err("invalid static descriptor".into());
+        }
+        match static_files::read(&data["body"]["file"],roots,policy.static_file) {
+            Ok(bytes) => bytes,
+            Err(_) => return Ok(response(403,"static file unavailable")),
+        }
+    };
+    let length = bytes.len();
+    let mut result = response(status, if head { Bytes::new() } else { Bytes::from(bytes) });
+    let mut header_bytes = 0;
     for pair in headers {
         let pair = pair.as_vec().filter(|p| p.len() == 2).ok_or("header must be a pair")?;
+        header_bytes += pair.iter().filter_map(Yaml::as_str).map(str::len).sum::<usize>() + 4;
+        if header_bytes > policy.headers { return Err("response headers exceed policy".into()); }
         let name = hyper::header::HeaderName::from_bytes(pair[0].as_str().ok_or("header name must be text")?.as_bytes()).map_err(|e| e.to_string())?;
         if matches!(name.as_str(), "connection" | "content-length" | "transfer-encoding" | "trailer" | "upgrade") {
             return Err("transport framing headers are caller-owned".into());
@@ -137,7 +112,7 @@ fn checked_response(value: Value, limit: usize, head: bool) -> Result<Response<F
         let value = hyper::header::HeaderValue::from_str(pair[1].as_str().ok_or("header value must be text")?).map_err(|e| e.to_string())?;
         result.headers_mut().append(name, value);
     }
-    result.headers_mut().insert(hyper::header::CONTENT_LENGTH, text.len().into());
+    result.headers_mut().insert(hyper::header::CONTENT_LENGTH, length.into());
     Ok(result)
 }
 
@@ -174,13 +149,13 @@ pub(super) fn serve(host: &mut EffectHost, vm: &Vm) -> Reply {
         let capacity = Arc::new(Semaphore::new(policy.handlers));
         let mut connections = JoinSet::new();
         let mut workers = JoinSet::new();
-        let (work_tx, mut work_rx) = tokio::sync::mpsc::channel::<(Vm, EffectHost, Instant, tokio::sync::oneshot::Sender<Result<Value, String>>, tokio::sync::OwnedSemaphorePermit)>(policy.handlers);
+        let (work_tx, mut work_rx) = tokio::sync::mpsc::channel::<(Vm, EffectHost, Instant, tokio::sync::oneshot::Sender<Result<(Value, tokio::sync::OwnedSemaphorePermit), String>>, tokio::sync::OwnedSemaphorePermit)>(policy.handlers);
         loop {
             if cancelled(&template) || max_requests.is_some_and(|max| count.load(Ordering::Relaxed) >= max) { break; }
             tokio::select! {
                 Some((machine, worker, deadline, reply, permit)) = work_rx.recv() => {
                     let actors = actors.clone();
-                    workers.spawn(async move { let result = execute(machine, worker, deadline, Some(actors), None).await; let _ = reply.send(result); drop(permit); });
+                    workers.spawn(async move { let result = execute(machine, worker, deadline, Some(actors), None).await; let _ = reply.send(result.map(|value| (value,permit))); });
                 }
                 Some(_) = connections.join_next(), if !connections.is_empty() => {},
                 Some(_) = workers.join_next(), if !workers.is_empty() => {},
@@ -215,12 +190,17 @@ pub(super) fn serve(host: &mut EffectHost, vm: &Vm) -> Reply {
                                 let body = match collected { Err(_) => return Ok(response(504,"deadline exceeded")), Ok(Err(_)) => return Ok(response(413,"body too large or invalid")), Ok(Ok(body)) => body.to_bytes() };
                                 let Ok(body) = String::from_utf8(body.to_vec()) else { return Ok(response(400,"body must be UTF-8")) };
                                 let request = Value::from_yaml(&object([("method",Yaml::String(method)),("target",Yaml::String(target)),("path",Yaml::String(path)),("query",Yaml::String(query)),("headers",Yaml::Array(headers)),("body",Yaml::String(body))]));
+                                let read_roots = worker.read_roots.clone();
                                 let machine = match invoke(handler, vec![request], &promises) { Ok(machine) => machine, Err(_) => return Ok(response(500,"handler failed")) };
                                 let (reply, receive) = tokio::sync::oneshot::channel();
                                 if tx.send((machine,worker,deadline,reply,permit)).await.is_err() { return Ok(response(503,"server stopping")) }
                                 let result = match tokio::time::timeout_at(deadline,receive).await {
                                     Err(_) => response(504,"deadline exceeded"),
-                                    Ok(Ok(Ok(value))) => checked_response(value,policy.body,head).unwrap_or_else(|_| response(500,"invalid response")),
+                                    Ok(Ok(Ok((value,permit)))) => match tokio::time::timeout_at(deadline,tokio::task::spawn_blocking(move || { let _permit = permit; checked_response(value,&policy,&read_roots,head) })).await {
+                                        Ok(Ok(Ok(response))) => response,
+                                        Err(_) => response(504,"deadline exceeded"),
+                                        _ => { failures.fetch_add(1,Ordering::Relaxed); response(500,"invalid response") },
+                                    },
                                     _ => { failures.fetch_add(1,Ordering::Relaxed); response(500,"handler failed") }
                                 };
                                 Ok(result)
@@ -230,7 +210,7 @@ pub(super) fn serve(host: &mut EffectHost, vm: &Vm) -> Reply {
                         let policy = connection_policy;
                         builder.keep_alive(false).half_close(false).max_headers(128).max_buf_size(policy.headers)
                             .max_header_size(policy.headers).timer(TokioTimer::new()).header_read_timeout(Duration::from_millis(policy.deadline_ms));
-                        let _ = tokio::time::timeout(Duration::from_millis(policy.deadline_ms), builder.serve_connection(TokioIo::new(stream), service)).await;
+                        let _ = tokio::time::timeout(Duration::from_millis(policy.deadline_ms + 100), builder.serve_connection(TokioIo::new(stream), service)).await;
                     });
                 }
                 _ = tokio::time::sleep(Duration::from_millis(10)) => {},
@@ -238,11 +218,11 @@ pub(super) fn serve(host: &mut EffectHost, vm: &Vm) -> Reply {
         }
         drop(listener);
         // Accepted work retains capacity until blocking effects settle, even after a timeout.
-        while !connections.is_empty() || !workers.is_empty() || !work_rx.is_empty() {
+        while !connections.is_empty() || !workers.is_empty() || !work_rx.is_empty() || capacity.available_permits() != policy.handlers {
             tokio::select! {
                 Some((machine,worker,deadline,reply,permit)) = work_rx.recv(), if !work_rx.is_empty() => {
                     let actors = actors.clone();
-                    workers.spawn(async move { let _ = reply.send(execute(machine,worker,deadline,Some(actors),None).await); drop(permit); });
+                    workers.spawn(async move { let _ = reply.send(execute(machine,worker,deadline,Some(actors),None).await.map(|value| (value,permit))); });
                 }
                 Some(_) = connections.join_next(), if !connections.is_empty() => {},
                 Some(_) = workers.join_next(), if !workers.is_empty() => {},
@@ -251,10 +231,32 @@ pub(super) fn serve(host: &mut EffectHost, vm: &Vm) -> Reply {
         }
         actors.stopping.store(true,Ordering::Relaxed);
         while actor_tasks.join_next().await.is_some() {}
-        Ok::<_, super::Failure>(())
+        Ok::<_, Failure>(())
     });
     result?;
     let counts = serde_json::json!({"version":1,"event":"shutdown","address":actual.to_string(),"requests":count.load(Ordering::Relaxed),"failures":failures.load(Ordering::Relaxed)});
     if let Some(progress) = host.server_progress.as_mut() { progress(&counts)?; }
     Ok(object([("address",Yaml::String(actual.to_string())),("requests",Yaml::Integer(count.load(Ordering::Relaxed) as i64)),("failures",Yaml::Integer(failures.load(Ordering::Relaxed) as i64))]))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn reversible_request_invocation_preserves_synthesized_arguments() {
+        let mut source = Vm::load(r#"
+http: {$call: [import, 'std:http']}
+actor: {$call: [import, 'std:actor']}
+json: {$call: [import, 'std:json']}
+sqlite: {$call: [import, 'std:sqlite']}
+handler: {$call: [fn, [request], {status: 200, headers: [], body: pure}]}
+"#);
+        source.run();
+        let Value::Hash(fields) = source.result.as_ref().unwrap() else { panic!("missing source result") };
+        let Value::Function(function) = fields.get(&s("handler")).unwrap() else { panic!("missing handler") };
+        let promise = Value::from_yaml(&yaml_rust2::YamlLoader::load_from_str("{type: promise, name: reversible, requires: [reversible]}").unwrap().remove(0));
+        let mut worker = invoke(function.clone(),vec![Value::Null],&[promise]).unwrap();
+        worker.run();
+        assert_eq!(worker.status(),Status::Finished,"{}",worker.state_string());
+    }
 }

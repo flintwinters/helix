@@ -12,7 +12,7 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut resume_checkpoint = None;
     let mut index = 0;
     while let Some(option) = args.get(index).filter(|arg| arg.starts_with("--")) {
-        let takes_value = matches!(option.as_str(), "--allow-listen" | "--server-progress" | "--server-handlers" | "--server-connections" | "--server-deadline-ms" | "--allow-secret" | "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--allow-ssh" | "--ssh-control-dir" | "--fixed-time" | "--seed" | "--command-timeout-ms" | "--command-output-limit" | "--command-attempts" | "--command-retry-delay-ms" | "--command-retry-exit-code" | "--command-progress" | "--target-lock" | "--checkpoint" | "--resume-checkpoint");
+        let takes_value = matches!(option.as_str(), "--allow-listen" | "--server-progress" | "--server-actors" | "--server-mailbox" | "--server-header-limit" | "--server-body-limit" | "--server-static-limit" | "--server-handlers" | "--server-connections" | "--server-deadline-ms" | "--allow-secret" | "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--allow-ssh" | "--ssh-control-dir" | "--fixed-time" | "--seed" | "--command-timeout-ms" | "--command-output-limit" | "--command-attempts" | "--command-retry-delay-ms" | "--command-retry-exit-code" | "--command-progress" | "--target-lock" | "--checkpoint" | "--resume-checkpoint");
         let value = if takes_value {
             index += 1;
             let Some(value) = args.get(index) else { eprintln!("missing value for {option}"); return ExitCode::from(2); };
@@ -55,6 +55,16 @@ pub fn run(args: &[String]) -> ExitCode {
                 Ok(address) if address.ip().is_loopback() => { host.listen_addresses.insert(address); }
                 _ => return usage("listener grant must be an exact numeric loopback socket address"),
             },
+            "--server-actors" | "--server-mailbox" | "--server-header-limit" | "--server-body-limit" | "--server-static-limit" => {
+                let n = match value.parse() { Ok(n) => n, Err(_) => return usage("invalid server resource limit") };
+                match option.as_str() {
+                    "--server-actors" => host.server_policy.actors = n,
+                    "--server-mailbox" => host.server_policy.mailbox = n,
+                    "--server-header-limit" => host.server_policy.headers = n,
+                    "--server-body-limit" => host.server_policy.body = n,
+                    _ => host.server_policy.static_file = n,
+                }
+            },
             "--server-handlers" => match value.parse() { Ok(n) => host.server_policy.handlers = n, Err(_) => return usage("invalid handler capacity") },
             "--server-connections" => match value.parse() { Ok(n) => host.server_policy.connections = n, Err(_) => return usage("invalid connection capacity") },
             "--server-deadline-ms" => match value.parse() { Ok(n) => host.server_policy.deadline_ms = n, Err(_) => return usage("invalid request deadline") },
@@ -94,7 +104,7 @@ pub fn run(args: &[String]) -> ExitCode {
                 Err(_) => { eprintln!("seed must be an unsigned integer"); return ExitCode::from(2); }
             },
             "--help" => {
-                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-secret NAME=FILE (private UTF-8 input; command output suppressed), --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U], --ssh-control-dir PRIVATE_DIR (reuse connections), --allow-stdin, --allow-stdout, --allow-time, --allow-random\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nCommand policy (caller grants, not source): --command-timeout-ms N (1..86400000, default 10000; total across retries), --command-output-limit N (1..16777216 bytes per stream across retries, default 1048576), --command-attempts N (1..32, default 1), --command-retry-delay-ms N (0..60000), repeatable --command-retry-exit-code N (1..255; only explicitly classified exit codes retry)\n--command-progress NEW_FILE writes versioned JSONL metadata, never command output; existing files are refused. SIGINT/SIGTERM cancel commands and clean up their Unix process group.\n--target-lock FILE coordinates cooperating controllers across journals; crashes/errors retain a marker until explicit helix target-release FILE after independent quiescence/reconciliation. All controllers must use the same path; this is not a remote fencing service.\n--checkpoint NEW_FILE journals before and after each effect; --resume-checkpoint FILE restores with fresh grants and refuses uncertain outcomes. helix reconcile FILE OUTCOME records an independently observed outcome for the exact uncertain request.\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
+                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-listen ADDRESS (exact numeric loopback; port 0 explicit), --allow-secret NAME=FILE (private UTF-8 input; command output suppressed), --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U], --ssh-control-dir PRIVATE_DIR (reuse connections), --allow-stdin, --allow-stdout, --allow-time, --allow-random\nHTTP policy: --server-connections N, --server-handlers N, --server-actors N, --server-mailbox N, --server-header-limit BYTES, --server-body-limit BYTES, --server-static-limit BYTES, --server-deadline-ms N. --server-progress NEW_FILE writes readiness/address and shutdown metadata. See HTTP.md for defaults and scope.\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nCommand policy (caller grants, not source): --command-timeout-ms N (1..86400000, default 10000; total across retries), --command-output-limit N (1..16777216 bytes per stream across retries, default 1048576), --command-attempts N (1..32, default 1), --command-retry-delay-ms N (0..60000), repeatable --command-retry-exit-code N (1..255; only explicitly classified exit codes retry)\n--command-progress NEW_FILE writes versioned JSONL metadata, never command output; existing files are refused. SIGINT/SIGTERM cancel commands and clean up their Unix process group.\n--target-lock FILE coordinates cooperating controllers across journals; crashes/errors retain a marker until explicit helix target-release FILE after independent quiescence/reconciliation. All controllers must use the same path; this is not a remote fencing service.\n--checkpoint NEW_FILE journals before and after each effect; --resume-checkpoint FILE restores with fresh grants and refuses uncertain outcomes. helix reconcile FILE OUTCOME records an independently observed outcome for the exact uncertain request.\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
                 return ExitCode::SUCCESS;
             }
             _ => { eprintln!("unknown perform option {option}"); return ExitCode::from(2); }
@@ -102,6 +112,7 @@ pub fn run(args: &[String]) -> ExitCode {
         index += 1;
     }
     if let Err((_, message)) = host.command_policy.validate() { return usage(&message); }
+    if let Err(message) = host.server_policy.validate() { return usage(&message); }
     if checkpoint_path.is_some() && resume_checkpoint.is_some() { return usage("choose --checkpoint or --resume-checkpoint"); }
     let mut restored = None;
     let checkpoint = if let Some(path) = resume_checkpoint {

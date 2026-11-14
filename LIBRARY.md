@@ -277,3 +277,9 @@ command grants. [Ubuntu acceptance](tests/README.md#ubuntu-facts-qualification)
 qualifies local and SSH collection and a disposable fixture resource. It does
 not extend the Debian-specific `std:linux` provider to Ubuntu, qualify normally
 booted systemd services, or migrate this workstation's Ansible configuration.
+
+## HTTP and actors
+
+[HTTP.md](HTTP.md) documents `std:http` response helpers, exact routing and static
+files, plus `std:actor` serialized turns and interchangeable persistence callbacks.
+Listening and external storage still require caller-owned host grants.

@@ -1,14 +1,15 @@
 //! Caller-owned host capabilities. Source and saved state cannot grant authority.
-use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+use std::sync::atomic::Ordering;
 #[path = "effects/failure.rs"]
 mod failure;
 #[path = "effects/http.rs"]
 pub(crate) mod http;
-use failure::{Failure, fault, io_fault};
+use failure::{Failure, Reply, fault, io_fault};
+#[path = "effects/host.rs"]
+mod host;
+use host::{require, object, authorized};
 #[path = "effects/sqlite.rs"]
 mod sqlite;
 #[path = "effects/command.rs"]
@@ -21,44 +22,13 @@ pub mod locks;
 mod secrets;
 #[path = "effects/durable.rs"]
 pub mod durable;
-pub use http::{ServerPolicy, ServerProgress};
+pub use host::{EffectHost, ServerPolicy, ServerProgress};
 pub use ssh::SshTarget;
 pub use command::{CommandPolicy, CommandProgress, ProgressCallback};
 use yaml_rust2::Yaml;
 use crate::model::{Status, Vm};
 
-type Reply = Result<Yaml, Failure>;
 const LIMIT: usize = 1024 * 1024;
-
-/// A host is deliberately separate from immutable machine values. Grants never come from source.
-#[derive(Default)]
-pub struct EffectHost {
-    pub read_roots: Vec<PathBuf>,
-    pub write_roots: Vec<PathBuf>,
-    pub env_names: BTreeSet<String>,
-    pub commands: BTreeSet<String>,
-    /// Caller-owned opaque secret references; credential bytes never enter the VM.
-    pub secret_files: BTreeMap<String, PathBuf>,
-    pub command_policy: CommandPolicy,
-    pub cancellation: Arc<AtomicBool>,
-    pub cancellation_signal: Option<&'static AtomicBool>,
-    pub command_progress: Option<ProgressCallback>,
-    pub listen_addresses: BTreeSet<std::net::SocketAddr>,
-    pub server_policy: http::ServerPolicy,
-    pub server_progress: Option<http::ServerProgress>,
-    pub http_origins: BTreeSet<String>,
-    pub ssh_targets: BTreeMap<String, SshTarget>,
-    /// Private directory for connection-reuse sockets; `None` disables reuse.
-    pub ssh_control_dir: Option<PathBuf>,
-    pub allow_stdin: bool,
-    pub allow_stdout: bool,
-    pub allow_time: bool,
-    pub allow_random: bool,
-    pub args: Vec<String>,
-    pub fixed_time: Option<i64>,
-    pub random_seed: Option<u64>,
-    pub exit_code: u8,
-}
 
 impl EffectHost {
     /// Stop persistent SSH connections this host may have started; call once when the session ends.
@@ -202,27 +172,12 @@ impl EffectHost {
         }
     }
 }
-fn require(granted: bool, name: &str) -> Result<(), Failure> {
-    if granted { Ok(()) } else { Err(fault("capability", &format!("{name} capability not granted"))) }
-}
 fn text(value: &Yaml) -> Result<&str, Failure> { value.as_str().ok_or_else(|| fault("type", "effect payload must be a string")) }
-fn object<const N: usize>(fields: [(&str, Yaml); N]) -> Yaml {
-    Yaml::Hash(fields.into_iter().map(|(key, value)| (Yaml::String(key.into()), value)).collect())
-}
 fn read_text(reader: impl Read) -> Result<String, Failure> {
     let mut bytes = Vec::new();
     reader.take((LIMIT + 1) as u64).read_to_end(&mut bytes).map_err(io_fault)?;
     if bytes.len() > LIMIT { return Err(fault("resource", "effect input exceeds 1 MiB")); }
     String::from_utf8(bytes).map_err(io_fault)
-}
-fn authorized(path: &str, roots: &[PathBuf], write: bool) -> Result<PathBuf, Failure> {
-    let path = Path::new(path);
-    let resolved = if write && matches!(std::fs::symlink_metadata(path), Err(ref error) if error.kind() == std::io::ErrorKind::NotFound) {
-        let parent = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
-        parent.canonicalize().map_err(io_fault)?.join(path.file_name().ok_or_else(|| fault("io", "missing filename"))?)
-    } else { path.canonicalize().map_err(io_fault)? };
-    require(roots.iter().any(|root| root.canonicalize().is_ok_and(|root| resolved.starts_with(root))), "file path")?;
-    Ok(resolved)
 }
 fn origin(url: &str) -> Result<&str, Failure> {
     let rest = url.strip_prefix("http://").or_else(|| url.strip_prefix("https://")).ok_or_else(|| fault("type", "HTTP URL must use http or https"))?;

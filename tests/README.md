@@ -503,3 +503,8 @@ It changes no workstation configuration. Normally booted systemd service facts,
 other Ubuntu releases, Ubuntu Linux-resource management and Ansible migration are
 outside this qualification. Inspect saved source/state and Docker command records
 in `runtime/host-facts/`, `runtime/docker-facts/` and `runtime/facts-smoke/`.
+
+Native HTTP acceptance runs within `python manage.py test --suite effects`.
+Independent clients exercise dynamic and binary responses, concurrent handlers,
+serialized actors, JSON/SQLite restart, failures, promise enforcement and bounded
+retention. Fixtures and progress artifacts stay under `runtime/`.

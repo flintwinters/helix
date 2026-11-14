@@ -229,7 +229,8 @@ impl Evaluator {
                     let Value::Function(handler) = &values[1] else {
                         return Err(self.err(site, "type", "HTTP handler must be a function"));
                     };
-                    crate::vm::effects::http::validate_options(&values[0])
+                    crate::graph::http::validate_function(handler,1).map_err(|why| self.err(site,"type",why))?;
+                    crate::graph::http::validate_options(&values[0])
                         .map_err(|why| self.err(site, "type", why))?;
                     let Value::Hash(options) = &values[0] else { unreachable!() };
                     let bind = options.get(&s("bind")).unwrap().clone();

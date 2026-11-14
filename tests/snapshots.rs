@@ -298,3 +298,18 @@ fn effect_promises_validate_pending_work_and_preserve_reversible_dispatch_refusa
         assert!(Vm::load("42").with_promise(descriptor).is_err());
     }
 }
+
+#[test]
+fn pending_server_startup_roundtrips_without_host_authority() {
+    let mut machine = Vm::load("{$call: [http_serve, {bind: '127.0.0.1:0', requests: 1}, {$call: [fn, [request], null]}]}");
+    machine.run();
+    assert_eq!(machine.status(), Status::Signaled);
+    let saved = machine.snapshot().unwrap();
+    assert_eq!(Vm::restore(&saved).unwrap().state(), machine.state());
+    let damaged = saved.replace("127.0.0.1:0", "0.0.0.0:0");
+    assert!(Vm::restore(&damaged).is_err());
+    let mut restored = Vm::restore(&saved).unwrap();
+    helix::EffectHost::default().run(&mut restored);
+    assert_eq!(restored.status(), Status::Error);
+    assert_eq!(restored.state()["error"]["kind"].as_str(), Some("permission"));
+}

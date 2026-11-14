@@ -29,7 +29,31 @@
       },
       "body",
       {
-        "$ref": "string"
+        "$call": [
+          "union",
+          {
+            "$ref": "string"
+          },
+          {
+            "$call": [
+              "record",
+              "file",
+              {
+                "$call": [
+                  "record",
+                  "directory",
+                  {
+                    "$ref": "string"
+                  },
+                  "path",
+                  {
+                    "$ref": "string"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     ]
   },
@@ -321,6 +345,80 @@
                   {
                     "$ref": "request"
                   }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "static_directory": {
+    "$call": [
+      "fn",
+      [
+        "directory"
+      ],
+      {
+        "$call": [
+          "fn",
+          [
+            "request"
+          ],
+          {
+            "$call": [
+              "if",
+              {
+                "$call": [
+                  "has",
+                  [
+                    "GET",
+                    "HEAD"
+                  ],
+                  {
+                    "$ref": "request.method"
+                  }
+                ]
+              },
+              {
+                "$call": [
+                  "dict",
+                  "status",
+                  200,
+                  "headers",
+                  [
+                    [
+                      "content-type",
+                      "application/octet-stream"
+                    ]
+                  ],
+                  "body",
+                  {
+                    "$call": [
+                      "dict",
+                      "file",
+                      {
+                        "$call": [
+                          "dict",
+                          "directory",
+                          {
+                            "$ref": "directory"
+                          },
+                          "path",
+                          {
+                            "$ref": "request.path"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "$call": [
+                  "text",
+                  405,
+                  "method not allowed"
                 ]
               }
             ]

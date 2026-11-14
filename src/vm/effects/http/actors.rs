@@ -1,5 +1,6 @@
 //! Serialized actor turns; persistence remains an ordinary captured Helix function.
 use super::*;
+use crate::graph::http::{definition, Definition};
 use std::collections::{BTreeMap, BTreeSet};
 use tokio::sync::{mpsc, oneshot};
 
@@ -43,7 +44,7 @@ impl Actors {
 }
 
 pub(super) async fn start(options: &Value, parent_promises: &[Value], host: &EffectHost, policy: &ServerPolicy,
-    tasks: &mut JoinSet<()>) -> Result<Arc<Actors>, super::super::Failure> {
+    tasks: &mut JoinSet<()>) -> Result<Arc<Actors>, super::super::failure::Failure> {
     let Value::Hash(options) = options else { unreachable!() };
     let definitions = match options.get(&s("actors")) {
         Some(Value::Hash(definitions)) => definitions.iter().map(|(k,v)| (k.as_str().unwrap().to_owned(),v.clone())).collect::<Vec<_>>(),
@@ -52,30 +53,20 @@ pub(super) async fn start(options: &Value, parent_promises: &[Value], host: &Eff
     if definitions.len() > policy.actors { return Err(fault("resource", "actor capacity exceeded")); }
     let mut mailboxes = BTreeMap::new();
     let mut pending = Vec::new();
-    for (name, definition) in definitions {
-        if name.is_empty() { return Err(fault("type", "actor name must be nonempty")); }
-        let Value::Hash(fields) = &definition else { return Err(fault("type", "actor definition must be a map")) };
-        if fields.iter().any(|(key,_)| !matches!(key.as_str(),Some("initial" | "receive" | "initialize" | "promise"))) {
-            return Err(fault("type", "unknown actor definition field"));
-        }
-        let mut state = fields.get(&s("initial")).cloned().ok_or_else(|| fault("type", "actor requires initial state"))?;
-        if state.plain_yaml().is_none() { return Err(fault("type", "actor state must be ordinary data")); }
-        let Some(Value::Function(receive)) = fields.get(&s("receive")) else { return Err(fault("type", "actor receive must be a function")) };
+    for (name, value) in definitions {
+        let definition: Definition = definition(&value).map_err(|why| fault("type",&why))?;
+        let mut state = definition.initial;
         let mut promises = parent_promises.to_vec();
-        if let Some(promise) = fields.get(&s("promise")) {
-            crate::builtins::typing::promise::validate(promise).map_err(|why| fault("type", &why))?;
-            promises.push(promise.clone());
-        }
-        if let Some(initialize) = fields.get(&s("initialize")) {
-            let Value::Function(initialize) = initialize else { return Err(fault("type", "actor initialize must be a function")) };
-            let machine = invoke(initialize.clone(),vec![state],&promises).map_err(|why| fault("promise", &why))?;
+        if let Some(promise) = definition.promise { promises.push(promise); }
+        if let Some(initialize) = definition.initialize {
+            let machine = invoke(initialize,vec![state],&promises).map_err(|why| fault("promise", &why))?;
             state = execute(machine,worker_host(host),Instant::now()+Duration::from_millis(policy.deadline_ms),None,None).await
                 .map_err(|why| fault("actor", &why))?;
             if state.plain_yaml().is_none() { return Err(fault("type", "loaded actor state must be ordinary data")); }
         }
         let (send, receive_messages) = mpsc::channel(policy.mailbox);
         mailboxes.insert(name.clone(),send);
-        pending.push((name,state,receive.clone(),promises,receive_messages,worker_host(host)));
+        pending.push((name,state,definition.receive,promises,receive_messages,worker_host(host)));
     }
     let actors = Arc::new(Actors { mailboxes, waits: Default::default(), stopping: Default::default() });
     for (name,mut state,receive,promises,mut messages,host) in pending {

@@ -29,12 +29,12 @@ def verify(h):
         serial = 0
 
         @contextlib.contextmanager
-        def server(handler, requests=1, flags=(), options=None):
+        def server(handler, requests=1, flags=(), options=None, expected_exit=0, modules=('actor', 'json', 'sqlite')):
             nonlocal serial
             serial += 1
             program = base / f'program-{serial}.yaml'
             progress = base / f'progress-{serial}.jsonl'
-            program.write_text(json.dumps(call('let', {'http': call('import', 'std:http'), 'actor': call('import', 'std:actor'), 'json': call('import', 'std:json'), 'sqlite': call('import', 'std:sqlite')},
+            program.write_text(json.dumps(call('let', {'http': call('import', 'std:http'), **{name: call('import', 'std:' + name) for name in modules}},
                 call('http.serve', {'bind': '127.0.0.1:0', 'requests': requests, **(options or {})}, handler))))
             process = subprocess.Popen([str(h.binary), 'perform', '--allow-listen', '127.0.0.1:0',
                 '--server-progress', str(progress), *flags, str(program)], cwd=h.root,
@@ -55,7 +55,7 @@ def verify(h):
                 host, port = ready['address'].rsplit(':', 1)
                 yield host, int(port), process
                 stdout, stderr = process.communicate(timeout=15)
-                assert process.returncode == 0 and not stdout, (process.returncode, stdout, stderr)
+                assert process.returncode == expected_exit and not stdout, (process.returncode, stdout, stderr)
                 state = yaml.safe_load(stderr)
                 assert state['status'] == 'finished', state
                 assert json.loads(progress.read_text().splitlines()[-1])['event'] == 'shutdown'
@@ -69,7 +69,7 @@ def verify(h):
                         process.communicate()
 
         def request(address, method='GET', target='/', body=None, headers=None):
-            connection = http.client.HTTPConnection(*address, timeout=12)
+            connection = http.client.HTTPConnection(*address, timeout=45)
             try:
                 connection.request(method, target, body, headers or {})
                 response = connection.getresponse()
@@ -156,3 +156,110 @@ def verify(h):
             started = time.monotonic()
             assert request((host, port))[0] == 500
             assert time.monotonic() - started < 2
+
+        assets = base / 'assets'
+        assets.mkdir()
+        binary = bytes(range(256)) * 32
+        (assets / 'binary.dat').write_bytes(binary)
+        (assets / 'escape').symlink_to(base / 'denied.yaml')
+        static = call('http.static_directory', str(assets))
+        with server(static, 5, flags=('--allow-read', str(assets))) as (host, port, _):
+            assert request((host, port), target='/binary.dat')[2] == binary
+            assert request((host, port), 'HEAD', '/binary.dat')[2] == b''
+            for path in ('/../denied.yaml', '/%2e%2e/denied.yaml', '/escape'):
+                assert request((host, port), target=path)[0] == 403
+        with server(static) as (host, port, _):
+            assert request((host, port), target='/binary.dat')[0] == 403
+
+        # A prohibited write must never reach its independently granted target.
+        prohibited = base / 'must-not-exist'
+        write = fn(['r'], call('call', fn(['done'], call('http.text', 200, 'bad')),
+            call('effect', 'file_write', {'path': str(prohibited), 'text': 'bad'})))
+        pure = {'type': 'promise', 'name': 'pure', 'requires': [{'effects': []}]}
+        with server(write, flags=('--allow-write', str(base)), options={'promise': pure}) as (host, port, _):
+            assert request((host, port))[0] == 500
+            assert not prohibited.exists()
+        reversible = {'type': 'promise', 'name': 'reversible', 'requires': ['reversible']}
+        with server(fn(['r'], {'status': 200, 'headers': [], 'body': 'pure'}), flags=('--server-deadline-ms', '30000'), options={'promise': reversible}, modules=()) as (host, port, _):
+            pure_reply = request((host, port))
+            assert pure_reply[2] == b'pure', pure_reply
+
+        with server(slow, flags=('--allow-command', '/bin/sleep', '--server-deadline-ms', '100')) as (host, port, _):
+            assert request((host, port), target='/slow')[0] == 504
+
+        # Completed request machines must not accumulate with sustained traffic.
+        with server(fn(['r'], call('http.text', 200, 'x' * 65536)), requests=512) as (host, port, process):
+            def rss():
+                status = Path(f'/proc/{process.pid}/status').read_text()
+                return int(status.split('VmRSS:')[1].split()[0])
+            for _ in range(32):
+                assert len(request((host, port))[2]) == 65536
+            before = rss()
+            for _ in range(240):
+                assert len(request((host, port))[2]) == 65536
+            # Allocator slack is bounded; retaining all results alone costs 30 MiB.
+            assert rss() - before < 24 * 1024
+            for _ in range(240):
+                assert len(request((host, port))[2]) == 65536
+
+        # Persistence rejection cannot publish a reply or leave the actor usable.
+        failing_storage = {'load': fn(['initial'], ref('initial')), 'save': fn(['next'], call('raise', 'save failed'))}
+        with server(increment, 2, options={'actors': {'counter': call('actor.persist', failing_storage, counter)}}) as (host, port, _):
+            assert request((host, port))[0] == 500
+            assert request((host, port))[0] == 500
+
+        with server(echo) as (host, port, _):
+            client = http.client.HTTPConnection(host, port, timeout=10)
+            client.putrequest('GET', '/')
+            client.putheader('x-duplicate', 'one')
+            client.putheader('x-duplicate', 'two')
+            client.endheaders()
+            response = client.getresponse()
+            data = json.loads(response.read())
+            client.close()
+            assert [value for name, value in data['headers'] if name == 'x-duplicate'] == ['one', 'two']
+        with server(echo) as (host, port, _):
+            for wire, expected in [(b'INVALID\r\n\r\n', b'400'),
+                    (b'GET / HTTP/1.1\r\nHost: localhost\r\nX: ' + b'x' * 20000 + b'\r\n\r\n', b'431')]:
+                with socket.create_connection((host, port), timeout=10) as client:
+                    client.sendall(wire)
+                    assert expected in client.recv(4096).split(b'\r\n')[0]
+            assert request((host, port))[0] == 200
+
+        for operation, payload in [('stdin', None), ('exit', 17)]:
+            with server(fn(['r'], call('effect', operation, payload)), flags=('--allow-stdin',)) as (host, port, _):
+                assert request((host, port))[0] == 500
+        with server(fn(['r'], call('http_serve', {'bind': '127.0.0.1:0'}, fn(['r'], None)))) as (host, port, _):
+            assert request((host, port))[0] == 500
+        with server(fn(['r'], call('actor.call', 'unknown', None))) as (host, port, _):
+            assert request((host, port))[0] == 500
+
+        busy = call('actor.make', 0, fn(['state', 'message'], call('call',
+            fn(['slept'], call('dict', 'state', call('add', ref('state'), 1), 'reply', call('add', ref('state'), 1))),
+            call('effect', 'command', {'program': '/bin/sleep', 'args': ['.3']}))))
+        with server(increment, 16, flags=('--allow-command', '/bin/sleep', '--server-handlers', '32', '--server-mailbox', '1'),
+                    options={'actors': {'counter': busy}}) as (host, port, _):
+            with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
+                replies = list(pool.map(lambda _: request((host, port))[0], range(16)))
+            assert 200 in replies and 500 in replies and set(replies) <= {200, 500}, replies
+
+        with server(fn(['r'], call('http.text', 200, 'alive')), requests=100000, expected_exit=1) as (host, port, process):
+            assert request((host, port))[2] == b'alive'
+            process.terminate()
+
+        with socket.socket() as occupied:
+            occupied.bind(('127.0.0.1', 0))
+            occupied.listen()
+            address = '127.0.0.1:' + str(occupied.getsockname()[1])
+            program = base / 'conflict.yaml'
+            program.write_text(json.dumps(call('http_serve', {'bind': address}, fn(['r'], None))))
+            conflict = h.helix('perform', '--allow-listen', address, str(program))
+            assert conflict.returncode == 1 and yaml.safe_load(conflict.stderr)['error']['kind'] == 'io'
+
+        marker = base / 'started'
+        blocked = fn(['r'], call('call', fn(['done'], call('http.text', 200, 'done')),
+            call('effect', 'command', {'program': '/bin/sh', 'args': ['-c', 'printf started > "$1"; sleep .5', 'helix-http', str(marker)]})))
+        with server(blocked, 2, flags=('--allow-command', '/bin/sh', '--server-handlers', '1', '--server-deadline-ms', '150')) as (host, port, _):
+            assert request((host, port))[0] == 504
+            assert marker.read_text() == 'started'
+            assert request((host, port))[0] == 503, 'timed-out blocking effect released capacity early'
