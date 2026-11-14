@@ -24,6 +24,15 @@ pub(crate) fn validate(value: &Value) -> Result<(), String> {
                     *remaining = remaining.checked_sub(1).ok_or("promise composition exceeds 4096 obligations")?;
                 },
                 Value::String(name) => return Err(format!("unsupported promise obligation `{name}`")),
+                Value::Hash(fields) if fields.contains_key(&s("effects")) => {
+                    *remaining = remaining.checked_sub(1).ok_or("promise composition exceeds 4096 obligations")?;
+                    let Some(Value::Array(operations)) = fields.get(&s("effects")) else {
+                        return Err("promise effects must be a list of nonempty operation names".into());
+                    };
+                    if fields.len() != 1 || operations.iter().any(|op| !matches!(op, Value::String(name) if !name.is_empty())) {
+                        return Err("promise effects requires exactly a list of nonempty operation names".into());
+                    }
+                },
                 _ => visit(item, depth + 1, remaining)?,
             }
         }
@@ -51,4 +60,23 @@ pub(crate) fn includes(composed: &Value, required: &Value) -> bool {
     let Value::Hash(map) = composed else { return false; };
     let Some(Value::Array(parents)) = map.get(&s("requires")) else { return false; };
     parents.iter().any(|parent| includes(parent, required))
+}
+
+/// Every composed restriction applies; names do not confer host authority.
+pub(crate) fn allows(value: &Value, operation: &str) -> bool {
+    let Value::Hash(map) = value else { return false };
+    if let Some(Value::Array(operations)) = map.get(&s("effects")) {
+        return operations.iter().any(|op| op == &s(operation));
+    }
+    let Some(Value::Array(items)) = map.get(&s("requires")) else { return false };
+    items.iter().all(|item| match item {
+        Value::String(name) if name == "reversible" => true,
+        other => allows(other, operation),
+    })
+}
+
+pub(crate) fn reversible(value: &Value) -> bool {
+    let Value::Hash(map) = value else { return false };
+    let Some(Value::Array(items)) = map.get(&s("requires")) else { return false };
+    items.iter().any(|item| item == &s("reversible") || reversible(item))
 }

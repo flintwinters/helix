@@ -230,7 +230,7 @@ impl EffectHost {
             {
                 return Ok(());
             }
-            if !vm.promises().is_empty() {
+            if vm.pending_effect().is_some_and(|request| !vm.can_dispatch_effect(&request.operation)) {
                 self.resolve_pending(vm);
                 checkpoint.save(vm, "ready", self)?;
                 return Ok(());

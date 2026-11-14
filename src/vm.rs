@@ -94,6 +94,19 @@ impl Vm {
     }
     pub(crate) fn verify_promises(&self) -> Result<(), String> {
         if self.promises.is_empty() { return Ok(()); }
+        if let Some(evaluator) = &self.evaluator {
+            for record in &evaluator.effects {
+                let Value::Hash(fields) = record else { return Err("invalid effect history".into()) };
+                let Some(Value::String(operation)) = fields.get(&crate::model::string("operation")) else {
+                    return Err("invalid effect history operation".into());
+                };
+                if !self.allows_effect(operation) { return Err("effect history violates promise".into()); }
+            }
+            if let Some(request) = self.pending_effect() {
+                if !self.allows_effect(&request.operation) { return Err("pending effect violates promise".into()); }
+            }
+        }
+        if !self.promises.iter().any(crate::builtins::typing::promise::reversible) { return Ok(()); }
         self.snapshot()?;
         // Reserve enough representable state to report refusal without discarding
         // the last complete continuation or creating an unserializable error.
@@ -101,6 +114,12 @@ impl Vm {
         refused.promise_failure();
         refused.snapshot()?;
         Ok(())
+    }
+    pub(crate) fn allows_effect(&self, operation: &str) -> bool {
+        self.promises.iter().all(|promise| crate::builtins::typing::promise::allows(promise, operation))
+    }
+    pub(crate) fn can_dispatch_effect(&self, operation: &str) -> bool {
+        self.allows_effect(operation) && !self.promises.iter().any(crate::builtins::typing::promise::reversible)
     }
     fn enforce_promises(&mut self, previous: Option<Self>) {
         if let Some(previous) = previous {
@@ -179,7 +198,7 @@ impl Vm {
     /// Resolve only the current request; stepping or running a completed version never repeats it.
     pub fn resolve_effect(&self, result: Result<Yaml, (String, String)>) -> Self {
         let mut next = self.clone();
-        if !self.promises.is_empty() && self.pending_effect().is_some() {
+        if self.pending_effect().is_some_and(|request| !self.can_dispatch_effect(&request.operation)) {
             next.promise_failure();
             return next;
         }

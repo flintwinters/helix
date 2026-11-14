@@ -239,3 +239,62 @@ fn growing_state_program() -> serde_json::Value {
         {"$call": ["fn", ["acc"], false]},
         {"$call": ["fn", ["acc"], body]}, 0]})
 }
+
+fn effects_promise(operations: &[&str]) -> yaml_rust2::Yaml {
+    yaml_rust2::YamlLoader::load_from_str(&serde_json::json!({
+        "type": "promise", "name": "effects", "requires": [{"effects": operations}]
+    }).to_string()).unwrap().remove(0)
+}
+
+#[test]
+fn effect_promises_intersect_without_granting_authority() {
+    let source = "{$call: [effect, time, null]}";
+    let mut allowed = Vm::load(source).with_promise(effects_promise(&["time"])).unwrap();
+    let mut host = helix::EffectHost::default();
+    host.run(&mut allowed);
+    assert_eq!(allowed.status(), helix::Status::Error);
+    assert_ne!(allowed.state()["error"]["kind"].as_str(), Some("promise"));
+
+    let mut allowed = Vm::load(source).with_promise(effects_promise(&["time"])).unwrap();
+    host.allow_time = true;
+    host.fixed_time = Some(123);
+    host.run(&mut allowed);
+    assert_eq!(allowed.status(), helix::Status::Finished);
+    assert_eq!(allowed.state()["root"].as_i64(), Some(123));
+    assert!(allowed.with_promise(effects_promise(&[])).is_err());
+    let restored = Vm::restore(&allowed.snapshot().unwrap()).unwrap();
+    assert_eq!(restored.state(), allowed.state());
+    let mut damaged: serde_json::Value = serde_json::from_str(&allowed.snapshot().unwrap()).unwrap();
+    let root = damaged["machine"].as_str().unwrap().to_owned();
+    let promises = &mut damaged["objects"][&root]["value"]["promises"];
+    *promises = serde_json::from_str(&promises.to_string().replace("\"time\"", "\"exit\"")).unwrap();
+    assert!(Vm::restore(&damaged.to_string()).is_err());
+
+    let mut denied = Vm::load("{$call: [effect, exit, 17]}")
+        .with_promise(effects_promise(&["time", "exit"])).unwrap()
+        .with_promise(effects_promise(&["time"])).unwrap();
+    host.run(&mut denied);
+    assert_eq!(denied.status(), helix::Status::Error);
+    assert_eq!(host.exit_code, 0);
+    assert_eq!(denied.state()["error"]["kind"].as_str(), Some("promise"));
+}
+
+#[test]
+fn effect_promises_validate_pending_work_and_preserve_reversible_dispatch_refusal() {
+    let mut pending = Vm::load("{$call: [effect, exit, 17]}");
+    pending.run();
+    assert!(pending.with_promise(effects_promise(&[])).is_err());
+    assert!(pending.with_promise(effects_promise(&["exit"])).is_ok());
+    let mut reversible = pending.with_promise(effects_promise(&["exit"])).unwrap()
+        .with_promise(reversible_promise()).unwrap();
+    let mut host = helix::EffectHost::default();
+    host.run(&mut reversible);
+    assert_eq!(reversible.status(), helix::Status::Error);
+    assert_eq!(host.exit_code, 0);
+    for requires in ["[{effects: null}]", "[{effects: [1]}]", "[{effects: ['']}]", "[{effects: [], extra: true}]"] {
+        let descriptor = yaml_rust2::YamlLoader::load_from_str(&format!(
+            "{{type: promise, name: invalid, requires: {requires}}}"
+        )).unwrap().remove(0);
+        assert!(Vm::load("42").with_promise(descriptor).is_err());
+    }
+}

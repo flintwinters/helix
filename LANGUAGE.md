@@ -485,19 +485,23 @@ migrate with empty evidence because it was not recorded by that runtime.
 `{$call: [promise, durable, [reversible]]}` constructs a first-class promise type.
 Its ordinary-data descriptor is `{type: promise, name: durable, requires: [reversible]}`.
 Requirements may include other promise descriptors, composing their named
-obligations. Unknown behavioral requirements are rejected; `reversible` is the
-first registered obligation. Names alone do not establish membership.
+obligations. Requirements also accept `{effects: [operation, ...]}`. Every list
+applies, so composition intersects the permitted operations; an empty list forbids
+all effects. Admission and restoration check completed history and pending work,
+and transitions reject prohibited requests before host dispatch. Effect permissions
+never grant authority to a target. Unknown behavioral requirements are rejected.
+Names alone do not establish membership.
 
 `{$call: [mixin, machine, promise_type]}` returns an independent machine version
-with that promise attached. Admission checks complete snapshot representability.
-Every subsequent transition preserves representability or stops with a bounded
+with that promise attached. For `reversible`, admission checks complete snapshot
+representability. Every subsequent transition preserves representability or stops with a bounded
 promise error and the previous continuation. The original machine remains usable.
 Promise types work with annotations, `is`, `expect` and `subtype`; a composed promise
 includes its declared parents and every promise type is a subtype of `vm`.
 Snapshots preserve attached obligations. The Rust API accepts the same descriptor
 through `Vm::with_promise(Yaml)`.
 
-The behavioral contract covers bounded execution, explicit interruption inputs,
+The `reversible` behavioral contract covers bounded execution, explicit interruption inputs,
 and communication inside a coordinated promised system. Arbitrary host dispatch
 and direct `Vm::resolve_effect` remain refused: an externally completed action
 cannot be rolled back if its reply exceeds the serialization budget.
