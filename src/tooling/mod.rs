@@ -11,3 +11,4 @@ pub mod peers;
 pub mod stream;
 pub mod source;
 pub mod search;
+pub mod probe;

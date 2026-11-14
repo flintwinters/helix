@@ -249,6 +249,13 @@ impl Vm {
         next.enforce_promises((!self.promises.is_empty()).then(|| self.clone()));
         next
     }
+    /// Advance owned execution without retaining a version per transition.
+    pub(crate) fn run_budgeted(&mut self, remaining: &mut usize) {
+        while !self.terminal() && *remaining > 0 {
+            *remaining -= 1;
+            self.advance();
+        }
+    }
     pub fn run(&mut self) {
         while !self.terminal() {
             self.advance();

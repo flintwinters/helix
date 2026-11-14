@@ -503,3 +503,10 @@ It changes no workstation configuration. Normally booted systemd service facts,
 other Ubuntu releases, Ubuntu Linux-resource management and Ansible migration are
 outside this qualification. Inspect saved source/state and Docker command records
 in `runtime/host-facts/`, `runtime/docker-facts/` and `runtime/facts-smoke/`.
+
+Source discovery and composable queries are exercised by `./manage.py test
+--suite search`; streaming execution contracts also live in `--suite pipeline`.
+The search suite creates its fixture projects under `runtime/`, exercises actual
+OS pipelines and reports indexing timing observations. It covers typed paths,
+literal boundaries, discovery completeness, imported effect findings, explicit
+probes, changed-source refusal, Unicode regex and output before input EOF.

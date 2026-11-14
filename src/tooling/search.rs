@@ -208,6 +208,9 @@ pub fn command(args: &[String]) -> ExitCode {
     }
 }
 fn run(args: &[String]) -> Result<bool, (u8, String)> {
+    if args.first().is_some_and(|s| s == "probe") {
+        return super::probe::run(&args[1..]);
+    }
     if args.first().is_some_and(|s| s == "parse") {
         if args.len() != 2 {
             return Err((2, "search parse requires FILE or -".into()));

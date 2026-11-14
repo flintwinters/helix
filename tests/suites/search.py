@@ -56,6 +56,14 @@ quoted: {$literal: {$call: [fn, [], 7]}}
         broken = records(h.helix("search", "index", str(root), "--no-std"), 1)
         assert any(r["kind"] == "diagnostic" for r in broken) and not broken[-1]["complete"]
         (root / "bad.yaml").unlink()
+        casefile = root / "cases.yaml"
+        casefile.write_text("- args: [2]\n  expected: 3\n- args: [2]\n  expected: 4\n")
+        selected = json.dumps(functions[0]) + "\n"
+        probes = records(h.helix("search", "probe", "--cases", str(casefile), stdin=selected))
+        assert [p["status"] for p in probes] == ["matched", "mismatch"], probes
+        module.write_text(module.read_text() + "# changed\n")
+        changed = records(h.helix("search", "probe", "--cases", str(casefile), stdin=selected))
+        assert all(p["status"] == "source_changed" for p in changed), changed
         # A real multistage pipe preserves diagnostic/summary control records.
         query = root / "query.yaml"
         query.write_text('''$call: [let, {s: {$call: [import, 'std:search']}}, {$call: [fn, [record], {$call: [s.keep, {$ref: record}, {$ref: s.functions}]}]}]
@@ -72,10 +80,13 @@ quoted: {$literal: {$call: [fn, [], 7]}}
         print(json.dumps({"measurement": "small_project", "seconds": round(time.monotonic()-start, 3), "records": len(index)}))
         verify_queries(h, source)
         verify_audit(h, root)
+        verify_probes(h, root)
         verify_streaming(h, root)
         verify_scale(h, root)
         verify_production_query(h, root)
         verify_standard_stream(h, root)
+        verify_additional_roots(h, root)
+        verify_stream_memory(h, root)
 
 
 def verify_queries(h, source):
@@ -131,7 +142,37 @@ recursive: {$call: [fn, [], {$call: [recursive]}]}
     assert functions["dynamic"]["effects"]["state"] == "unresolved", functions
     assert functions["recursive"]["effects"]["state"] == "none_found", functions
     assert any(r["kind"] == "call" and r.get("target", {}).get("source") == str(dependency) for r in indexed if isinstance(r.get("target"), dict)), indexed
+    cases = root / "import-cases.yaml"
+    cases.write_text("- args: []\n")
+    selected = json.dumps(functions["run"]) + "\n"
+    denied = records(h.helix("search", "probe", "--cases", str(cases), stdin=selected))
+    assert denied[0]["status"] == "execution_error" and "import" in denied[0]["detail"], denied
+    allowed = records(h.helix("search", "probe", "--cases", str(cases), "--root", str(root), stdin=selected))
+    assert allowed[0]["status"] == "attempted_effect", allowed
 
+
+
+def verify_probes(h, root):
+    module = root / "probes.yaml"
+    module.write_text('''effectful: {$call: [fn, [], {$call: [effect, time, {}]}]}
+factory: {$call: [fn, [x], {$call: [fn, [], {$ref: x}]}]}
+error: {$call: [fn, [], {$call: [raise, example, failed]}]}
+loop: {$call: [fn, [], {$call: [until, {$call: [fn, [x], false]}, {$call: [fn, [x], {$ref: x}]}, 0]}]}
+''')
+    functions = {r["name"]: r for r in records(h.helix("search", "index", str(module), "--no-std")) if r["kind"] == "function" and len(r["reference"]["path"]) == 1}
+    cases = root / "probe-cases.yaml"
+    cases.write_text("- args: []\n")
+    result = records(h.helix("search", "probe", "--cases", str(cases), stdin=json.dumps(functions["effectful"])+"\n"))
+    assert result[0]["status"] == "attempted_effect", result
+    result = records(h.helix("search", "probe", "--cases", str(cases), stdin=json.dumps(functions["error"])+"\n"))
+    assert result[0]["status"] == "execution_error", result
+    result = records(h.helix("search", "probe", "--cases", str(cases), "--max-steps", "5000", stdin=json.dumps(functions["loop"])+"\n"))
+    assert result[0]["status"] == "exhausted_budget", result
+    harness = root / "harness.yaml"
+    harness.write_text('{$call: [fn, [candidate, args], {$call: [call, {$ref: candidate}, {$call: [get, {$ref: args}, 0]}]}]}')
+    cases.write_text("- args: [7]\n  expected: 7\n")
+    result = records(h.helix("search", "probe", "--cases", str(cases), "--harness", str(harness), stdin=json.dumps(functions["factory"])+"\n"))
+    assert result[0]["status"] == "matched", result
 
 
 def verify_streaming(h, root):
@@ -209,3 +250,43 @@ def verify_standard_stream(h, root):
     rows = records(result)
     assert rows[-1]["complete"] and any(row.get("source") == "std:search" for row in rows), rows[-1:]
     print(json.dumps({"measurement": "embedded_library_stream", "seconds": round(time.monotonic()-start, 3), "records": len(rows)}))
+
+
+def verify_additional_roots(h, root):
+    project, library = root / "project", root / "library"
+    project.mkdir()
+    library.mkdir()
+    (library / "lib.yaml").write_text('answer: {$call: [fn, [], 42]}\n')
+    main = project / "main.yaml"
+    main.write_text('library: {$call: [import, ../library/lib.yaml]}\nuse: {$call: [fn, [], {$call: [library.answer]}]}\n')
+    denied = records(h.helix("search", "index", str(main), "--no-std"), 1)
+    assert not denied[-1]["complete"], denied[-1]
+    allowed = records(h.helix("search", "index", str(main), "--library", str(library), "--no-std"))
+    assert allowed[-1]["complete"] and allowed[-1]["sources"] == 2, allowed[-1]
+
+
+def verify_stream_memory(h, root):
+    query = root / "identity.yaml"
+    process = subprocess.Popen([str(h.binary), "exec", "--stream", "--file", str(query)],
+                               stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               text=True, cwd=root)
+    samples = []
+    try:
+        for index in range(256):
+            value = {"index": index, "text": "x" * 2048}
+            process.stdin.write(json.dumps(value) + "\n")
+            process.stdin.flush()
+            assert json.loads(process.stdout.readline()) == value
+            if index in (31, 255):
+                status = Path(f"/proc/{process.pid}/status")
+                if status.exists():
+                    samples.append(next(int(line.split()[1]) for line in status.read_text().splitlines() if line.startswith("VmRSS:")))
+        process.stdin.close()
+        assert process.wait(timeout=10) == 0, process.stderr.read()
+        if len(samples) == 2:
+            assert samples[1] - samples[0] <= 8192, samples
+            print(json.dumps({"measurement": "stream_memory", "records": 256, "rss_kib": samples}))
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
