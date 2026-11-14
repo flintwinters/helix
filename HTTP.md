@@ -61,3 +61,27 @@ to workers, and a handler promise can narrow them. `{effects: []}` forbids effec
 composed effect lists intersect. A reversible handler can compute a pure response;
 transport sends it outside that machine. Ordinary host dispatch from reversible
 machines remains forbidden.
+
+## Actors and persistence
+
+Import `std:actor`. `actor.make(initial, receive)` creates a definition, and
+`receive(state, message)` returns exactly `{state, reply}`. Register definitions
+by name in `serve`'s `actors` map. `actor.call(name, message)` suspends the calling
+machine while the receiving actor processes its bounded FIFO mailbox. Messages,
+state and replies must be ordinary data. Actor definitions may have a `promise`;
+parent restrictions also apply. Receiving actor restrictions govern a turn;
+caller grants still govern its external targets. Unknown actors, full mailboxes
+and actor wait cycles fail explicitly. An unsuccessful turn makes that actor
+unavailable for the remainder of the server session.
+
+`actor.persist(storage, definition)` composes a storage interface with `load(initial)`
+and `save(next)` functions. Loading finishes before listener readiness. A turn
+runs its original receive function, saves the resulting state, and then returns
+its transition. The supervisor publishes state and reply only when that whole
+function succeeds. Storage errors propagate; a timeout or lost reply cannot prove
+that a save failed. Storage supplies its own durability guarantees.
+
+The maintained HTTP acceptance test uses the same counter actor with JSON-file
+and SQLite storage, then starts a fresh server and independently checks the saved
+acknowledged count. These backends use existing file and SQLite effects. Neither
+is built into the server or required by another actor.

@@ -8,7 +8,8 @@ use http_body_util::{BodyExt, Full};
 use hyper_util::rt::{TokioIo, TokioTimer};
 use tokio::{sync::Semaphore, task::JoinSet, time::Instant};
 use yaml_rust2::Yaml;
-
+#[path = "http/actors.rs"]
+mod actors;
 
 #[derive(Clone, Debug)]
 pub struct ServerPolicy {
@@ -79,7 +80,7 @@ fn invoke(function: Arc<Function>, args: Vec<Value>, promises: &[Value]) -> Resu
     for promise in promises { vm = vm.with_promise_value(promise.clone())?; }
     Ok(vm)
 }
-async fn execute(mut vm: Vm, mut host: EffectHost, deadline: Instant) -> Result<Value, String> {
+async fn execute(mut vm: Vm, mut host: EffectHost, deadline: Instant, actors: Option<Arc<actors::Actors>>, owner: Option<String>) -> Result<Value, String> {
     loop {
         if cancelled(&host) || Instant::now() >= deadline { return Err("worker cancelled or deadline exceeded".into()); }
         // Bounded quanta let transport and other workers progress even on one core.
@@ -92,7 +93,18 @@ async fn execute(mut vm: Vm, mut host: EffectHost, deadline: Instant) -> Result<
             Status::Error => return Err(vm.state_string()),
             Status::Signaled => {
                 let Some(request) = vm.pending_effect() else { return Err("worker interrupted".into()) };
-                if matches!(request.operation.as_str(), "stdin" | "exit" | "http_serve") {
+                if request.operation == "actor_call" {
+                    let result = if !vm.can_dispatch_effect("actor_call") {
+                        Err(fault("promise", "actor calls violate worker promise"))
+                    } else if let Some(actors) = &actors {
+                        match request.payload["name"].as_str() {
+                            Some(name) => actors.call(owner.as_deref(),name,Value::from_yaml(&request.payload["message"]),deadline).await
+                                .and_then(|value| value.plain_yaml().ok_or_else(|| fault("type", "actor reply must be ordinary data"))),
+                            None => Err(fault("type", "actor call requires a name")),
+                        }
+                    } else { Err(fault("actor", "actors unavailable outside server workers")) };
+                    vm = vm.resolve_effect(result);
+                } else if matches!(request.operation.as_str(), "stdin" | "exit" | "http_serve") {
                     vm = vm.resolve_effect(Err(fault("effect", "operation forbidden in supervised worker")));
                 } else {
                     // Keep the worker's capacity until any started blocking action settles.
@@ -138,20 +150,23 @@ pub(super) fn serve(host: &mut EffectHost, vm: &Vm) -> Reply {
     let Value::Hash(fields) = options else { unreachable!() };
     let address: SocketAddr = fields.get(&s("bind")).and_then(Value::as_str).unwrap().parse().unwrap();
     if !host.listen_addresses.contains(&address) { return Err(fault("permission", "listener address is not granted")); }
-    let mut promises = vm.promises.clone();
+    let parent_promises = vm.promises.clone();
+    let mut promises = parent_promises.clone();
     if let Some(promise) = fields.get(&s("promise")) { promises.push(promise.clone()); }
     let max_requests = match fields.get(&s("requests")) { Some(Value::Integer(n)) => Some(*n as u64), _ => None };
     let handler = handler.clone();
     let policy = host.server_policy.clone();
     let template = worker_host(host);
+    let runtime = tokio::runtime::Builder::new_multi_thread().worker_threads(policy.handlers.min(8))
+        .max_blocking_threads(policy.handlers).enable_all().build().map_err(io_fault)?;
+    let mut actor_tasks = JoinSet::new();
+    let actors = runtime.block_on(actors::start(options,&parent_promises,&template,&policy,&mut actor_tasks))?;
     let listener = std::net::TcpListener::bind(address).map_err(io_fault)?;
     listener.set_nonblocking(true).map_err(io_fault)?;
     let actual = listener.local_addr().map_err(io_fault)?;
     if let Some(progress) = host.server_progress.as_mut() {
         progress(&serde_json::json!({"version":1,"event":"ready","address":actual.to_string()}))?;
     }
-    let runtime = tokio::runtime::Builder::new_multi_thread().worker_threads(policy.handlers.min(8))
-        .max_blocking_threads(policy.handlers).enable_all().build().map_err(io_fault)?;
     let count = Arc::new(AtomicU64::new(0));
     let failures = Arc::new(AtomicU64::new(0));
     let result = runtime.block_on(async {
@@ -164,7 +179,8 @@ pub(super) fn serve(host: &mut EffectHost, vm: &Vm) -> Reply {
             if cancelled(&template) || max_requests.is_some_and(|max| count.load(Ordering::Relaxed) >= max) { break; }
             tokio::select! {
                 Some((machine, worker, deadline, reply, permit)) = work_rx.recv() => {
-                    workers.spawn(async move { let result = execute(machine, worker, deadline).await; let _ = reply.send(result); drop(permit); });
+                    let actors = actors.clone();
+                    workers.spawn(async move { let result = execute(machine, worker, deadline, Some(actors), None).await; let _ = reply.send(result); drop(permit); });
                 }
                 Some(_) = connections.join_next(), if !connections.is_empty() => {},
                 Some(_) = workers.join_next(), if !workers.is_empty() => {},
@@ -225,13 +241,16 @@ pub(super) fn serve(host: &mut EffectHost, vm: &Vm) -> Reply {
         while !connections.is_empty() || !workers.is_empty() || !work_rx.is_empty() {
             tokio::select! {
                 Some((machine,worker,deadline,reply,permit)) = work_rx.recv(), if !work_rx.is_empty() => {
-                    workers.spawn(async move { let _ = reply.send(execute(machine,worker,deadline).await); drop(permit); });
+                    let actors = actors.clone();
+                    workers.spawn(async move { let _ = reply.send(execute(machine,worker,deadline,Some(actors),None).await); drop(permit); });
                 }
                 Some(_) = connections.join_next(), if !connections.is_empty() => {},
                 Some(_) = workers.join_next(), if !workers.is_empty() => {},
                 _ = tokio::time::sleep(Duration::from_millis(10)) => {},
             }
         }
+        actors.stopping.store(true,Ordering::Relaxed);
+        while actor_tasks.join_next().await.is_some() {}
         Ok::<_, super::Failure>(())
     });
     result?;
