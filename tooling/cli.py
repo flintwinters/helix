@@ -43,6 +43,7 @@ SUITES = {
     "effects": "Capability-controlled host effects, deterministic inputs, failures and pending requests",
     "startup": "Build-free discovery stays independent of execution and test-only imports",
     "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
+    "host_facts": "Typed explicit local/SSH observations, custom facts and reviewed dependencies",
     "host_inventory": "Pure typed host inventory, explicit override provenance, validated dynamic inputs and target selection",
     "resource_composition": "Validated resource dependencies, coalesced change handlers, failure gating and typed pinned modules",
     "provider_contract": "Typed provider lifecycle, pure previews, explicit ownership and independently verified mutations",
