@@ -12,7 +12,7 @@ pub fn run(args: &[String]) -> ExitCode {
     let mut resume_checkpoint = None;
     let mut index = 0;
     while let Some(option) = args.get(index).filter(|arg| arg.starts_with("--")) {
-        let takes_value = matches!(option.as_str(), "--allow-secret" | "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--allow-ssh" | "--ssh-control-dir" | "--fixed-time" | "--seed" | "--command-timeout-ms" | "--command-output-limit" | "--command-attempts" | "--command-retry-delay-ms" | "--command-retry-exit-code" | "--command-progress" | "--target-lock" | "--checkpoint" | "--resume-checkpoint");
+        let takes_value = matches!(option.as_str(), "--allow-listen" | "--server-progress" | "--server-handlers" | "--server-connections" | "--server-deadline-ms" | "--allow-secret" | "--allow-read" | "--allow-write" | "--allow-env" | "--allow-command" | "--allow-http" | "--allow-ssh" | "--ssh-control-dir" | "--fixed-time" | "--seed" | "--command-timeout-ms" | "--command-output-limit" | "--command-attempts" | "--command-retry-delay-ms" | "--command-retry-exit-code" | "--command-progress" | "--target-lock" | "--checkpoint" | "--resume-checkpoint");
         let value = if takes_value {
             index += 1;
             let Some(value) = args.get(index) else { eprintln!("missing value for {option}"); return ExitCode::from(2); };
@@ -50,6 +50,23 @@ pub fn run(args: &[String]) -> ExitCode {
                     }
                 }
                 _ => return usage("secret grant requires NAME=FILE"),
+            },
+            "--allow-listen" => match value.parse::<std::net::SocketAddr>() {
+                Ok(address) if address.ip().is_loopback() => { host.listen_addresses.insert(address); }
+                _ => return usage("listener grant must be an exact numeric loopback socket address"),
+            },
+            "--server-handlers" => match value.parse() { Ok(n) => host.server_policy.handlers = n, Err(_) => return usage("invalid handler capacity") },
+            "--server-connections" => match value.parse() { Ok(n) => host.server_policy.connections = n, Err(_) => return usage("invalid connection capacity") },
+            "--server-deadline-ms" => match value.parse() { Ok(n) => host.server_policy.deadline_ms = n, Err(_) => return usage("invalid request deadline") },
+            "--server-progress" => {
+                use std::io::Write;
+                let mut file = match std::fs::OpenOptions::new().write(true).create_new(true).open(value) {
+                    Ok(file) => file, Err(error) => return usage(&error.to_string()),
+                };
+                host.server_progress = Some(Box::new(move |event| {
+                    writeln!(file, "{event}").and_then(|_| file.flush()).map_err(|error| ("io".into(), error.to_string()))?;
+                    Ok(yaml_rust2::Yaml::Null)
+                }));
             },
             "--allow-read" => host.read_roots.push(value.into()),
             "--allow-write" => host.write_roots.push(value.into()),

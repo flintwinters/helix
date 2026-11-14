@@ -70,6 +70,7 @@ const ACTORS: &[Descriptor] = &[
     actor("step", 1, Some(1), Evaluation::Engine),
     actor("inspect", 1, Some(1), Evaluation::Engine),
     actor("effect", 2, Some(2), Evaluation::Engine),
+    actor("http_serve", 2, Some(2), Evaluation::Engine),
     actor("json_parse", 1, Some(1), Evaluation::Data),
     actor("json_dump", 1, Some(1), Evaluation::Data),
     actor("csv_parse", 1, Some(1), Evaluation::Data),

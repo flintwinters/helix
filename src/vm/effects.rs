@@ -6,6 +6,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 #[path = "effects/failure.rs"]
 mod failure;
+#[path = "effects/http.rs"]
+pub(crate) mod http;
 use failure::{Failure, fault, io_fault};
 #[path = "effects/sqlite.rs"]
 mod sqlite;
@@ -19,6 +21,7 @@ pub mod locks;
 mod secrets;
 #[path = "effects/durable.rs"]
 pub mod durable;
+pub use http::{ServerPolicy, ServerProgress};
 pub use ssh::SshTarget;
 pub use command::{CommandPolicy, CommandProgress, ProgressCallback};
 use yaml_rust2::Yaml;
@@ -40,6 +43,9 @@ pub struct EffectHost {
     pub cancellation: Arc<AtomicBool>,
     pub cancellation_signal: Option<&'static AtomicBool>,
     pub command_progress: Option<ProgressCallback>,
+    pub listen_addresses: BTreeSet<std::net::SocketAddr>,
+    pub server_policy: http::ServerPolicy,
+    pub server_progress: Option<http::ServerProgress>,
     pub http_origins: BTreeSet<String>,
     pub ssh_targets: BTreeMap<String, SshTarget>,
     /// Private directory for connection-reuse sockets; `None` disables reuse.
@@ -81,7 +87,11 @@ impl EffectHost {
             *vm = vm.signal(object([("kind", Yaml::String("cancelled".into()))]));
             return false;
         }
-        let reply = self.handle_secret(request.id, &request.operation, &request.payload);
+        let reply = if request.operation == "http_serve" {
+            http::serve(self, vm)
+        } else {
+            self.handle_secret(request.id, &request.operation, &request.payload)
+        };
         *vm = vm.resolve_effect(reply);
         true
     }

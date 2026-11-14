@@ -235,6 +235,11 @@ impl EffectHost {
                 checkpoint.save(vm, "ready", self)?;
                 return Ok(());
             }
+            if vm.pending_effect().is_some_and(|request| request.operation == "http_serve") {
+                *vm = vm.resolve_effect(Err(("effect".into(), "journaled server startup is unsupported".into())));
+                checkpoint.save(vm, "ready", self)?;
+                continue;
+            }
             checkpoint.save(vm, "in_flight", self)?;
             let handled = self.resolve_pending(vm);
             checkpoint.save(vm, "ready", self)?;

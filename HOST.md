@@ -558,3 +558,8 @@ tools, output overflow and timeout remain explicit diagnostics.
 Commands and callbacks are trusted observation code, not an OS read-only sandbox.
 Fresh fact evidence supplements the provider review; it is not target locking,
 fencing, rollback or an atomic observation of a concurrently changing host.
+
+## Native HTTP listeners
+
+See [HTTP.md](HTTP.md) for `std:http`, exact loopback listener grants, supervised
+request machines and caller-owned transport ceilings.

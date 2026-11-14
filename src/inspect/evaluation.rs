@@ -229,6 +229,7 @@ impl Request {
         };
         let number = |n: usize| Value::Integer(n as i64);
         match self {
+            Self::Serve(_, _, _) => object("http_serve", Vec::new()),
             Self::TypeEnd { previous, memo } => object(
                 "type_time_return",
                 vec![

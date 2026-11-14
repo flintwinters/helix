@@ -117,6 +117,7 @@ pub(crate) enum Request {
     },
     Apply(NodeId, Actor, Vec<NodeId>, Vec<Value>),
     Call(NodeId, Arc<Function>, Vec<Value>, Vec<NodeId>),
+    Serve(NodeId, Value, Arc<Function>),
     CallTrace(NodeId, Arc<Function>),
     CallArgument(NodeId, Vec<Value>, Vec<NodeId>),
     CallResolved(NodeId, Vec<Value>, Vec<NodeId>),

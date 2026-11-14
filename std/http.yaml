@@ -1,0 +1,332 @@
+# Whole-body HTTP/1.1 transport; caller-owned grants and limits live in perform.
+{
+  "json": {
+    "$call": [
+      "import",
+      "std:json"
+    ]
+  },
+  "response": {
+    "$call": [
+      "record",
+      "status",
+      {
+        "$ref": "integer"
+      },
+      "headers",
+      {
+        "$call": [
+          "list_of",
+          {
+            "$call": [
+              "list_of",
+              {
+                "$ref": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "body",
+      {
+        "$ref": "string"
+      }
+    ]
+  },
+  "serve": {
+    "$call": [
+      "fn",
+      [
+        "options",
+        "handler"
+      ],
+      {
+        "$call": [
+          "http_serve",
+          {
+            "$ref": "options"
+          },
+          {
+            "$ref": "handler"
+          }
+        ]
+      }
+    ]
+  },
+  "validate": {
+    "$call": [
+      "fn",
+      [
+        "value"
+      ],
+      {
+        "$call": [
+          "expect",
+          {
+            "$ref": "value"
+          },
+          {
+            "$ref": "response"
+          }
+        ]
+      }
+    ]
+  },
+  "respond": {
+    "$call": [
+      "fn",
+      [
+        "status",
+        "headers",
+        "body"
+      ],
+      {
+        "$call": [
+          "validate",
+          {
+            "$call": [
+              "dict",
+              "status",
+              {
+                "$ref": "status"
+              },
+              "headers",
+              {
+                "$ref": "headers"
+              },
+              "body",
+              {
+                "$ref": "body"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "text": {
+    "$call": [
+      "fn",
+      [
+        "status",
+        "body"
+      ],
+      {
+        "$call": [
+          "respond",
+          {
+            "$ref": "status"
+          },
+          [
+            [
+              "content-type",
+              "text/plain; charset=utf-8"
+            ]
+          ],
+          {
+            "$ref": "body"
+          }
+        ]
+      }
+    ]
+  },
+  "json_response": {
+    "$call": [
+      "fn",
+      [
+        "status",
+        "value"
+      ],
+      {
+        "$call": [
+          "respond",
+          {
+            "$ref": "status"
+          },
+          [
+            [
+              "content-type",
+              "application/json"
+            ]
+          ],
+          {
+            "$call": [
+              "json.dump",
+              {
+                "$ref": "value"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "route": {
+    "$call": [
+      "fn",
+      [
+        "routes",
+        "fallback"
+      ],
+      {
+        "$call": [
+          "fn",
+          [
+            "request"
+          ],
+          {
+            "$call": [
+              "dispatch",
+              {
+                "$ref": "routes"
+              },
+              {
+                "$ref": "fallback"
+              },
+              {
+                "$ref": "request"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dispatch": {
+    "$call": [
+      "fn",
+      [
+        "routes",
+        "fallback",
+        "request"
+      ],
+      {
+        "$call": [
+          "let",
+          {
+            "matches": {
+              "$call": [
+                "filter",
+                {
+                  "$call": [
+                    "fn",
+                    [
+                      "route"
+                    ],
+                    {
+                      "$call": [
+                        "and",
+                        {
+                          "$call": [
+                            "eq",
+                            {
+                              "$call": [
+                                "get",
+                                {
+                                  "$ref": "route"
+                                },
+                                "method"
+                              ]
+                            },
+                            {
+                              "$call": [
+                                "get",
+                                {
+                                  "$ref": "request"
+                                },
+                                "method"
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "$call": [
+                            "eq",
+                            {
+                              "$call": [
+                                "get",
+                                {
+                                  "$ref": "route"
+                                },
+                                "path"
+                              ]
+                            },
+                            {
+                              "$call": [
+                                "get",
+                                {
+                                  "$ref": "request"
+                                },
+                                "path"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "$ref": "routes"
+                }
+              ]
+            }
+          },
+          {
+            "$call": [
+              "if",
+              {
+                "$call": [
+                  "eq",
+                  {
+                    "$call": [
+                      "len",
+                      {
+                        "$ref": "matches"
+                      }
+                    ]
+                  },
+                  0
+                ]
+              },
+              {
+                "$call": [
+                  "call",
+                  {
+                    "$ref": "fallback"
+                  },
+                  {
+                    "$ref": "request"
+                  }
+                ]
+              },
+              {
+                "$call": [
+                  "call",
+                  {
+                    "$call": [
+                      "get",
+                      {
+                        "$call": [
+                          "get",
+                          {
+                            "$ref": "matches"
+                          },
+                          0
+                        ]
+                      },
+                      "handler"
+                    ]
+                  },
+                  {
+                    "$ref": "request"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

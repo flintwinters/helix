@@ -175,6 +175,15 @@ pub(super) fn evaluator(e: &Evaluator) -> R<()> {
                     return Err("invalid operand cursor".into());
                 }
             }
+            Request::Serve(_, options, _) => {
+                crate::vm::effects::http::validate_options(options)?;
+                if let Some((_, pending)) = &e.pending_effect {
+                    let Value::Hash(fields) = options else { unreachable!() };
+                    if pending.operation != "http_serve" || fields.get(&crate::model::string("bind")).and_then(Value::as_str) != pending.payload.as_str() {
+                        return Err("server continuation does not match startup request".into());
+                    }
+                }
+            }
             Request::Refine(_, args, _) | Request::Refined(_, args, _) => {
                 arity("refine", args.len())?
             }

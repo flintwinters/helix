@@ -278,7 +278,7 @@ variants!(Operation { Builtin(name:v, values:v), Violations(value:v, ty:v); });
 variants!(Request {
     Eval(node:n), Finish(node:n, depth:v, local:v), Actor(site:n, nodes:ns),
     Apply(site:n, actor:v, nodes:ns, values:v), Call(site:n, function:v, args:v, nodes:ns),
-    CallTrace(site:n, function:v), CallArgument(site:n, args:v, nodes:ns), CallResolved(site:n, args:v, nodes:ns),
+    Serve(site:n, options:v, handler:v), CallTrace(site:n, function:v), CallArgument(site:n, args:v, nodes:ns), CallResolved(site:n, args:v, nodes:ns),
     ResultAnnotation(body:n, declaration:n, value:v), ResultChecked(body:n, declaration:n, value:v, ty:v),
     Try(site:n), Finally(site:n), Cleanup(outcome:v), Iterate(iteration:v), UntilTest(iteration:v), UntilNext(iteration:v),
     Refine(site:n, nodes:ns, value:v), Refined(site:n, nodes:ns, value:v), Atomic(atomic:v), PredicateEnd(atomic:v, signature:v),

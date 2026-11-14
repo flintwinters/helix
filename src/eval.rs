@@ -72,6 +72,10 @@ impl Evaluator {
             limits,
         }
     }
+    pub(crate) fn invoke(function: Arc<Function>, args: Vec<Value>) -> Self {
+        Self::start(function.program.clone(), function.environment.clone(),
+            Request::Call(function.node, function, args, Vec::new()))
+    }
     pub fn child(function: Arc<Function>) -> Self {
         Self::start(
             function.program.clone(),
@@ -221,6 +225,17 @@ impl Evaluator {
                     self.request_effect(site, &nodes, &values)?
                 }
 
+                Actor::Builtin(name) if name == "http_serve" => {
+                    let Value::Function(handler) = &values[1] else {
+                        return Err(self.err(site, "type", "HTTP handler must be a function"));
+                    };
+                    crate::vm::effects::http::validate_options(&values[0])
+                        .map_err(|why| self.err(site, "type", why))?;
+                    let Value::Hash(options) = &values[0] else { unreachable!() };
+                    let bind = options.get(&s("bind")).unwrap().clone();
+                    self.request_effect(site, &[site, site], &[s("http_serve"), bind])?;
+                    self.push(Request::Serve(site, values[0].clone(), handler.clone()));
+                }
                 Actor::Function(function) => self.push(Request::Call(site, function, values, nodes)),
                 Actor::Builtin(name) if name == "step" => {
                     let Value::Machine(child) = &values[0] else {
@@ -238,6 +253,10 @@ impl Evaluator {
                 }
                 Actor::Builtin(name) => self.schedule_builtin(site, nodes, name, values),
             },
+            Request::Serve(_, _, _) => {
+                let outcome = self.take();
+                self.answer = Some(outcome);
+            }
             Request::Call(site, function, args, nodes) => {
                 let origin = CallOrigin { program: self.program.clone(), site, args: nodes };
                 self.push(Request::CallTrace(site, function.clone()));
