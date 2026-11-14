@@ -9,6 +9,9 @@ pub fn dispatch(args: &[String]) -> Option<ExitCode> {
     {
         return None;
     }
+    if args.first().is_some_and(|x| x == "exec") && args.iter().skip(1).take_while(|x| x.as_str() != "--").any(|x| matches!(x.as_str(), "--stream" | "--input" | "--file")) {
+        return Some(super::stream::command(&args[1..]));
+    }
     let words: Vec<&str> = args.iter().map(String::as_str).collect();
     Some(match words.as_slice() {
         ["check", "--evaluate", _] | ["check", _, "--evaluate"] => return None,

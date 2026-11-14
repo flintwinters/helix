@@ -74,6 +74,17 @@ impl Vm {
             errors: Vec::new(),
         }
     }
+    /// Invoke a completed function value with ordinary host data in fresh execution state.
+    pub fn call(&self, arguments: &[Yaml]) -> Result<Self, String> {
+        let Some(Value::Function(function)) = &self.result else {
+            return Err("completed result must be a function".into());
+        };
+        let arguments = arguments.iter().map(crate::value::from_host_yaml).collect::<Result<Vec<_>, _>>()?;
+        let mut next = Self::from_function(function.clone());
+        next.evaluator = Some(Arc::new(Evaluator::invoke(function.clone(), arguments)));
+        Ok(next)
+    }
+
     pub fn status(&self) -> Status {
         self.status
     }

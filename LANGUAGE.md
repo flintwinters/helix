@@ -594,3 +594,15 @@ running yields pending effects without applying them; a caller must supply a
 fresh authorized host. Completed outcomes stay completed. An externally started
 operation whose reply was never recorded is uncertain, and must not be blindly
 replayed merely because its VM request is still pending.
+
+### Streaming execution inputs
+
+`helix exec --input DATA --file QUERY` evaluates QUERY once, then invokes its
+one-argument function with ordinary YAML data from DATA (`-` means stdin).
+`helix exec --stream --file QUERY` consumes JSONL incrementally; each invocation
+uses fresh execution state and returns a list of ordinary-data output records.
+Empty lists suppress records. Outputs flush per input; earlier outputs survive a
+later failure. Queries link once, retaining their immutable lexical captures.
+`--json` and `--yaml` control single-input output; streaming always emits JSONL.
+Inline queries remain accepted. Inputs never become executable source.
+

@@ -7,3 +7,5 @@ pub mod perform;
 
 pub mod snapshots;
 pub mod peers;
+
+pub mod stream;

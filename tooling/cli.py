@@ -173,6 +173,9 @@ def parser():
     formats = pipeline.add_mutually_exclusive_group()
     formats.add_argument("--json", dest="output_format", action="store_const", const="--json", help="emit JSON, including quoted string results, for jq/yq")
     formats.add_argument("--yaml", dest="output_format", action="store_const", const="--yaml", help="emit YAML, including quoted string results, for yq")
+    pipeline.add_argument("--input", help="ordinary-data file, or - for stdin")
+    pipeline.add_argument("--file", help="query source file")
+    pipeline.add_argument("--stream", action="store_true", help="incremental JSONL list-producing query")
     pipeline.add_argument("source", nargs="?", default="-", metavar="PROGRAM", help="inline YAML, or - for stdin (default)")
     inline = command(runtime, "eval", "Evaluate inline YAML and emit VM state",
                      ["runtime", "eval"], "runtime eval '{$call: [add, 20, 22]}'")

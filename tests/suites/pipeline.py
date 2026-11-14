@@ -9,6 +9,7 @@ import yaml
 
 
 def verify(h):
+    verify_stream(h)
     verify_formats(h)
     verify_consumers(h)
     for args, source in [(('{"$call": ["add", 20, 22]}',), None), ((), '{"$call": ["add", 20, 22]}'),
@@ -117,3 +118,19 @@ def verify_consumers(h):
                 capture_output=True, text=True, cwd=h.root, timeout=10,
             )
             assert (result.returncode, result.stdout, result.stderr) == (0, "42\n", ""), result
+
+
+def verify_stream(h):
+    identity = '{$call: [fn, [x], {$ref: x}]}'
+    result = h.helix("exec", "--input", "-", "--json", identity,
+                     stdin='{"$call": ["raise", "test", "data stays data"]}')
+    assert result.returncode == 0, result
+    assert json.loads(result.stdout) == {"$call": ["raise", "test", "data stays data"]}, result
+    query = '{$call: [fn, [x], {$call: [list, {$ref: x}, {$ref: x}]}]}'
+    result = h.helix("exec", "--stream", query, stdin='1\n{"雪": 2}\n')
+    assert result.returncode == 0, result
+    assert [json.loads(line) for line in result.stdout.splitlines()] == [1, 1, {"雪": 2}, {"雪": 2}], result
+    result = h.helix("exec", "--stream", identity, stdin='1\n')
+    assert result.returncode == 1 and "list" in result.stderr, result
+    result = h.helix("exec", "--stream", query, stdin='1\ninvalid\n')
+    assert result.returncode == 1 and result.stdout == '1\n1\n', result
