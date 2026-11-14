@@ -476,3 +476,30 @@ The disposable keys in those local artifacts are test credentials, never product
 credentials. This is one Debian container/root/helper combination; it does not
 qualify generic remote provisioning, target locking, fleet operation or secret
 redaction. See the [operator contract](fixtures/docker_nginx/README.md#ssh-operation).
+
+## Ubuntu facts qualification
+
+All artifacts live under `runtime/`; all entrypoints use `manage.py`:
+
+```sh
+./manage.py test --suite host_facts
+HELIX_DOCKER_SUDO=1 ./manage.py test --suite docker_facts
+./manage.py test --suite facts_smoke
+```
+
+`host_facts` is a normal suite covering schemas, pure parsers, selector admission,
+large package inventories against independent Python expectations, custom JSON
+facts, partial failures, command budgets and pure configuration/review equality.
+`docker_facts` is explicit opt-in authority for a digest-pinned Ubuntu 26.10 amd64
+image. It reuses supervised Docker commands, SSH keys and label-owned cleanup;
+checks local and real SSH observations independently; and exercises fixture
+provider application, no-op repetition, timestamp independence, changed consumed
+facts, unselected changes, denied observation and container recreation.
+It installs fixture prerequisites before observation and verifies collection does
+not change installed packages or the fixture resource. No collector is installed.
+`facts_smoke` is explicitly selected because it observes this Ubuntu workstation;
+it only reads facts and independently checks platform, CPU, memory and packages. Host command, VM and test deadlines retain their defaults.
+It changes no workstation configuration. Normally booted systemd service facts,
+other Ubuntu releases, Ubuntu Linux-resource management and Ansible migration are
+outside this qualification. Inspect saved source/state and Docker command records
+in `runtime/host-facts/`, `runtime/docker-facts/` and `runtime/facts-smoke/`.

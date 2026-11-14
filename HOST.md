@@ -540,3 +540,21 @@ file permissions do not redact ordinary data. Use opaque secret inputs above for
 credentials that must remain outside execution state.
 Disk-full, rename and flush failures stop the controller; an already dispatched
 effect remains uncertain when its outcome could not be durably saved.
+
+
+### Facts observation authority
+
+[`std:facts`](LIBRARY.md#ubuntu-facts-and-reviewed-configuration) uses existing
+`command` and `ssh_command` effects, never a collector effect or implicit grants.
+Local builtin observations require caller grants for `date`, `cat`, `sh`, and
+selected `ip`, `findmnt`, `lsblk`, `getconf`, `awk` or `dpkg-query` commands.
+`sh` authorizes the fixed scripts and their subprocesses, with the existing
+ambient-access contract. Custom commands require their own normal grants.
+SSH uses the caller's existing alias and connection identity, without inferred
+escalation. All observations share host timeout, output, cancellation and VM
+budgets; there is no truncation or global limit increase. Grant refusal, missing
+tools, output overflow and timeout remain explicit diagnostics.
+
+Commands and callbacks are trusted observation code, not an OS read-only sandbox.
+Fresh fact evidence supplements the provider review; it is not target locking,
+fencing, rollback or an atomic observation of a concurrently changing host.

@@ -43,6 +43,8 @@ SUITES = {
     "effects": "Capability-controlled host effects, deterministic inputs, failures and pending requests",
     "startup": "Build-free discovery stays independent of execution and test-only imports",
     "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
+    "docker_facts": "Opt-in pinned Ubuntu 26.10 local and real SSH facts acceptance",
+    "facts_smoke": "Opt-in read-only Ubuntu workstation facts smoke check",
     "host_facts": "Typed explicit local/SSH observations, custom facts and reviewed dependencies",
     "host_inventory": "Pure typed host inventory, explicit override provenance, validated dynamic inputs and target selection",
     "resource_composition": "Validated resource dependencies, coalesced change handlers, failure gating and typed pinned modules",

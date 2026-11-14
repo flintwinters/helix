@@ -32,7 +32,7 @@ def verify(h):
             assert [row["suite"] for row in actual if row["action"] == "skip"] == (
                 ["robustness"] if bless and "robustness" in selected else [])
     assert test_policy.plan(h, [], [], False) == []
-    for suite in ("docker_nginx", "ssh_nginx"):
+    for suite in ("docker_nginx", "ssh_nginx", "docker_facts", "facts_smoke"):
         docker_catalog = ["first", suite]
         default = test_policy.plan(h, docker_catalog, None, False)
         assert default[1]["action"] == "skip" and f"--suite {suite}" in default[1]["reason"], default

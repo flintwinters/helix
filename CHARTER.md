@@ -750,10 +750,16 @@ account; it is not an arbitrary-host bootstrap or a real playbook migration.
   - [x] Document and check managed-host prerequisites; bootstrap missing prerequisites through an explicit supported path
     - [`HOST.md`](HOST.md#ssh-remote-commands) lists the remote tools the file effects need; `std:ssh.check` observes the gaps under the connection identity and never mistakes a failed check for an empty one; `std:ssh.bootstrap` runs only a caller-declared installer (escalated through a granted `become` when set) for an observed gap and re-checks, so success is an observation, not an exit status. No package manager or distribution is inferred, and no distribution-specific installer is qualified yet.
   - Evidence: `./manage.py test --suite ssh_host` exercises all of the above against unprivileged loopback `sshd` servers with throwaway keys and independently counted authentications. The opt-in `HELIX_SSH_DOCKER=1` path adds a disposable container SSH target for escalation and file acceptance. `ssh_nginx` separately qualifies the nginx workload and durable recovery on a disposable Debian host. General platform support and reliable pre-session failure kinds remain open.
-- [ ] Gather typed facts and resource observations for realization
+- [x] Gather typed facts for bounded Ubuntu 26.10/x86_64 realization through explicit local/SSH commands; `std:facts` qualifies containers and a disposable provider fixture. Normally booted systemd services and general resource observations remain separate.
   - [ ] Detect supported operating systems, package managers and service managers before selecting adapters
   - [ ] Observations carry host identity and freshness information; unknown or inaccessible state is never treated as absence
-  - [ ] Cached facts have explicit invalidation rules; relevant state is refreshed before applying a potentially stale plan
+  - [x] Collection is explicitly uncached; application refreshes fact evidence and reruns pure configuration before provider mutation
+  - [x] Define a typed, versioned facts schema (distribution and release, kernel, architecture, hostname/machine identity, network addresses, mounts and storage, CPU/memory, installed-package index, running services) with explicit `unknown` and `inaccessible` states distinct from absence
+  - [x] Gather facts only through caller-granted read-only effects at an explicit phase; pure configuration may consume supplied facts but never trigger discovery, and fact collection cannot mutate the host
+  - [x] Bound collection time, output and per-fact cost; allow selecting which facts are gathered; report partial gathering and per-fact failure causes
+  - [x] Let class constraints, resource selection and inventory groups depend on supplied facts, with the consumed facts recorded in the review so a plan is stale when they change
+  - [x] Support caller-defined custom facts as typed, versioned ordinary data from a granted command, validated before use
+  - [x] Verify against disposable hosts that reported facts match independently observed state across each supported distribution
 
 ### Resource providers and change semantics
 

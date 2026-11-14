@@ -15,6 +15,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:queue` | `enqueue(xs, value)`, `peek(xs, fallback)`, `dequeue(xs)`; front at index zero |
 | `std:map` | `merge(left, right)` (shallow, right wins), `remove(source, key)` (one string key; missing is harmless), `select(source, keys)`, `omit(source, keys)` |
 | `std:machine` | Abstract machine classes `host`, `packages`, `files`, `services`, `users`, their combination `machine`, the `port` refinement, and fleet checks `hostnames(fleet)` / `unique_hostnames(fleet)` over realized configs |
+| `std:facts` | Explicit typed Ubuntu observations, pure fact projection and reviewed provider configuration ([facts contracts](#ubuntu-facts-and-reviewed-configuration)) |
 | `std:inventory` | `resolve(document, dynamic, selection)` (validated host inventory, explicit connection overrides with provenance, and a reviewable target list) |
 | `std:fuzz` | `plan(source)` (ordered damaged-source slice plans) |
 | `std:text` | `split(source, separator)` (literal, non-overlapping), `join(parts, separator)` |
@@ -214,3 +215,65 @@ pure planning, exact fresh-review matching and observed postconditions. This is
 a fixture-qualified workload, not a generic service manager. Inputs, entrypoint,
 resource semantics and host prerequisites are authoritative in the
 [operator contract](tests/fixtures/docker_nginx/README.md).
+
+## Ubuntu facts and reviewed configuration
+
+`std:facts` supports Ubuntu 26.10 on x86_64 over local commands (`target: null`)
+or an existing caller-granted SSH alias (`target: alias`). Collection installs no
+collector and needs no remote Python. `selectors` lists the supported builtin
+names; `catalog` describes their commands, parsers and value types.
+
+- `gather(target, {select: [...], custom: [...]})` explicitly collects an uncached,
+  version 1 ordinary-data snapshot. `identity` and `platform` are always included. Optional selectors are
+  `package_manager`, `service_manager`, `network`,
+  `mounts`, `storage`, `cpu`, `memory`, `packages` and `services`.
+- Each result has `{status, value, diagnostic}`. `known` contains a validated
+  value; `unknown`, `inaccessible` and `unsupported` contain null and an explicit
+  diagnostic. A missing machine ID is an `unknown` member of the identity value.
+  Failed observations never become empty inventories. Installed systemd tools
+  and an active systemd manager are different observations; containers without
+  the manager report `services` as unsupported.
+- `platform` contains `ID`, `VERSION_ID` and `VERSION_CODENAME` parsed from
+  OS-release as data. `identity` contains architecture, kernel, hostname,
+  machine ID, boot ID and mount namespace. CPU is an online processor count;
+  memory is total bytes. Network, mounts and storage use validated native command
+  JSON projections. Packages contain installed `{name, version, state}` rows; services contain
+  running unit records. Snapshots retain started/finished epoch-second results.
+- Custom entries explicitly select `{name, version, value_type, command}`.
+  `command` is `{program, args}` and must print JSON `{version: 1, value: ...}`;
+  `value_type` validates the value. There are at most 32 custom entries, with
+  unique names disjoint from builtin selectors. Declaration versions belong in
+  reviews and should change when custom semantics or schemas change. Commands
+  are trusted read-only observation code; declarations confer no authority.
+
+`validate_request`, `validate_snapshot`, `value(snapshot, name)`,
+`evidence(snapshot)` and `same_evidence(left, right)` are pure. Evidence retains
+target, platform/identity, selectors, custom versions and result statuses/values.
+Canonical YAML comparison preserves distinguishable numeric representations;
+timestamps and diagnostics are excluded. Selected facts are the declared
+configuration dependency set; there is no automatic dependency tracing.
+
+`check(target, request, configure)` gathers facts and calls `configure` purely
+with their evidence projection. The callback returns
+`{provider: descriptor, arguments: value, context: provider_context}` using the
+existing [provider lifecycle](HOST.md#resource-provider-contract). Class
+constraints and resource or inventory-group selection can use these supplied
+values. The result is `{version: 1, evidence, review}`. Configuration receives
+no timestamps or diagnostic timing. `plan(snapshot, configure, before)` provides
+a pure preview from a supplied validated snapshot and provider observation.
+
+`apply(target, request, configure, review)` always gathers fresh observations,
+rejects changed fact evidence, reruns pure configuration, and delegates to
+`std:provider.apply` for fresh resource review and postcondition verification.
+Unknown identity/platform and loss of their observation authority fail before
+mutation. A supplied snapshot is for pure planning, not fresh authorization.
+Failures of collection are data; invalid requests, unavailable required values,
+unsupported configuration platforms and stale fact evidence raise structured
+errors. Effectful assembly helpers remain private lexical bindings; the exported
+`apply` entrypoint always performs this fresh collection protocol.
+
+[The read-only example](tests/programs/facts_observe.yaml) uses only existing
+command grants. [Ubuntu acceptance](tests/README.md#ubuntu-facts-qualification)
+qualifies local and SSH collection and a disposable fixture resource. It does
+not extend the Debian-specific `std:linux` provider to Ubuntu, qualify normally
+booted systemd services, or migrate this workstation's Ansible configuration.

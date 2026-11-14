@@ -29,6 +29,10 @@ def verify(h):
         assert process.returncode == 0 and state['status'] == 'finished', (name, state.get('error', state.get('status')))
         return state['root']
 
+    def custom_result(declaration):
+        snapshot = c('facts.gather', None, {'select': [], 'custom': c('list', declaration)})
+        return c('get', c('get', snapshot, 'custom'), 'fixture')
+
     request = {'select': ['cpu'], 'custom': []}
     assert run('request', c('facts.validate_request', lit(request))) == request
     for name, value in [('unknown', {'select': ['bogus'], 'custom': []}),
@@ -42,7 +46,7 @@ def verify(h):
     run('bad_identity', c('facts.identity_parse', 'a\nb\n'), error='facts_validation')
     for n in (0, 1, 4000):
         text = ''.join(f'package-{i},1:{i}.0-1,installed\n' for i in range(n))
-        observed = run(f'packages_{n}', c('facts.packages_parse', text))
+        observed = run(f'packages_{n}', c('get', c('facts.decode', 'packages', lit(dict(code=0, stdout=text, stderr=''))), 'value'))
         assert observed == [dict(name=f'package-{i}', version=f'1:{i}.0-1', state='installed') for i in range(n)]
     run('bad_package', c('facts.packages_parse', 'name,version\n'), error='facts_validation')
     for code, status in [(1, 'inaccessible'), (126, 'unsupported'), (127, 'unsupported'), (69, 'unsupported')]:
@@ -50,16 +54,24 @@ def verify(h):
         result = run(f'failure_{code}', c('facts.decode', 'packages', lit(reply)))
         assert result == dict(status=status, value=None, diagnostic=reply)
     run('malformed_network', c('facts.decode', 'network', lit(dict(code=0, stdout='[{}]', stderr=''))), error='type')
+    native_network = [{'ifindex': 1, 'ifname': 'lo', 'flags': ['LOOPBACK'],
+                       'addr_info': [{'family': 'inet', 'local': '127.0.0.1', 'prefixlen': 8, 'valid_life_time': 99}]}]
+    native_reply = dict(code=0, stdout=json.dumps(native_network), stderr='')
+    assert run('network_projection', c('facts.decode', 'network', lit(native_reply)))['value'] == [
+        dict(ifindex=1, ifname='lo', addr_info=[dict(family='inet', local='127.0.0.1', prefixlen=8)])]
+    service_reply = dict(code=0, stdout=json.dumps([dict(unit='fixture.service', active='active', sub='running', load='loaded')]), stderr='')
+    assert run('services_projection', c('facts.decode', 'services', lit(service_reply)))['value'] == [
+        dict(unit='fixture.service', active='active', sub='running')]
     decl = {'name': 'fixture', 'version': '1', 'value_type': r('integer'),
             'command': {'program': 'printf', 'args': ['%s', '{"version":1,"value":42}']}}
     custom = c('dict', 'select', [], 'custom', c('list', decl))
     assert run('custom_request', c('get', c('facts.validate_request', custom), 'select')) == []
-    result = run('custom_value', c('facts.custom_observe', None, decl), perform=True, flags=('--allow-command', 'printf'))
+    result = run('custom_value', custom_result(decl), perform=True, flags=('--allow-command', 'printf'))
     assert result == dict(status='known', value=42, diagnostic=None)
     for name, output in [('bad_json', '{'), ('bad_version', '{"version":2,"value":42}'),
                          ('bad_type', '{"version":1,"value":"42"}')]:
         changed = {**decl, 'command': {'program': 'printf', 'args': ['%s', output]}}
-        result = run(name, c('facts.custom_observe', None, changed), perform=True, flags=('--allow-command', 'printf'))
+        result = run(name, custom_result(changed), perform=True, flags=('--allow-command', 'printf'))
         assert result['status'] == 'inaccessible' and result['value'] is None
     excessive = c('dict', 'select', [], 'custom', c('list', *[
         {**decl, 'name': f'fact-{i}'} for i in range(33)]))
@@ -69,7 +81,7 @@ def verify(h):
         ('overflow', {'program': 'printf', 'args': ['%0100d', '1']}, ('--allow-command', 'printf', '--command-output-limit', '16')),
         ('missing_tool', {'program': '/helix-missing-facts-tool', 'args': []}, ('--allow-command', '/helix-missing-facts-tool')),
     ]:
-        result = run(name, c('facts.custom_observe', None, {**decl, 'command': command}), perform=True, flags=flags)
+        result = run(name, custom_result({**decl, 'command': command}), perform=True, flags=flags)
         assert result['status'] == 'inaccessible' and result['diagnostic'], (name, result)
     result = run('denied', c('facts.gather', None, lit(request)), perform=True)
     assert all(v['status'] == 'inaccessible' for v in result['facts'].values())
@@ -77,7 +89,7 @@ def verify(h):
     payload = '$(touch runtime/facts-injection); `id`; " ; \\ newline\n'
     decl['value_type'] = r('string')
     decl['command']['args'] = ['%s', json.dumps(dict(version=1, value=payload))]
-    assert run('metacharacters', c('facts.custom_observe', None, decl), perform=True,
+    assert run('metacharacters', custom_result(decl), perform=True,
                flags=('--allow-command', 'printf'))['value'] == payload
     assert not (h.root / 'runtime/facts-injection').exists()
     from tests.suites.provider_contract import descriptor, context
@@ -97,6 +109,10 @@ def verify(h):
     changed = {**snapshot, 'started': known(999), 'finished': known(1000)}
     changed['facts'] = {**snapshot['facts'], 'cpu': {**known(4), 'diagnostic': {'timing': 100}}}
     assert run('timestamp_equality', c('facts.same_evidence', lit(snapshot), lit(changed))) is True
+    identity = snapshot['facts']['identity']['value']
+    changed_identity = {**identity, 'machine_id': {**identity['machine_id'], 'diagnostic': {'timing': 100}}}
+    changed = {**snapshot, 'facts': {**snapshot['facts'], 'identity': known(changed_identity)}}
+    assert run('nested_diagnostic_equality', c('facts.same_evidence', lit(snapshot), lit(changed))) is True
     for name, value in [('changed_cpu', 5)]:
         changed = {**snapshot, 'facts': {**snapshot['facts'], 'cpu': known(value)}}
         assert run(name, c('facts.same_evidence', lit(snapshot), lit(changed))) is False
@@ -116,6 +132,25 @@ def verify(h):
                                 c('raise', 'unexpected_timestamp', 'timestamp leaked'),
                                 {'provider': descriptor(), 'arguments': 'new', 'context': context()}))
     assert run('configuration_projection', c('facts.plan', lit(snapshot), cfg, 'old'))['review']['status'] == 'changed'
+    # Existing class constraints and inventory group policy consume ordinary supplied facts.
+    def class_config(minimum):
+        machine = c('class', 'facts-config', c('record', 'cores', r('integer')),
+                    {'cores': c('facts.value', r('selected'), 'cpu')})
+        realized = c('realize', c('constrain', machine, c('fn', ['candidate'],
+                                                      c('gt', c('get', r('candidate'), 'cores'), minimum))))
+        return c('fn', ['selected'], {'provider': descriptor(),
+            'arguments': c('str', c('get', c('get', realized, 'values'), 'cores')), 'context': context()})
+    assert run('class_configuration', c('facts.plan', lit(snapshot), class_config(2), 'old'))['review']['args'] == '4'
+    run('class_constraint', c('facts.plan', lit(snapshot), class_config(8), 'old'), error='type')
+    inventory_doc = {'version': 1, 'hosts': [{'id': 'fixture', 'connection': {'transport': 'local'}}],
+                     'groups': {'capable': c('if', c('gt', c('facts.value', r('selected'), 'cpu'), 2), ['fixture'], [])},
+                     'overrides': []}
+    inventory = c('call', c('get', c('import', 'std:inventory'), 'resolve'), inventory_doc, [],
+                  lit({'all': False, 'hosts': [], 'groups': ['capable'], 'exclude_hosts': [], 'exclude_groups': []}))
+    cfg = c('fn', ['selected'], {'provider': descriptor(),
+                                'arguments': c('str', c('len', c('get', inventory, 'targets'))), 'context': context()})
+    assert run('inventory_configuration', c('facts.plan', lit(snapshot), cfg, 'old'))['review']['args'] == '1'
+    run('private_apply_assembly', c('facts.apply_snapshot', None, None, None), error='unbound')
     print(f'host_facts: {count} contracts; artifacts={artifacts.relative_to(h.root)}')
 
 
@@ -129,7 +164,11 @@ def verify_smoke(h):
     path.write_text(json.dumps(source) + '\n')
     flags = [v for program in ('date', 'cat', 'sh', 'ip', 'findmnt', 'getconf', 'awk', 'dpkg-query')
              for v in ('--allow-command', program)]
-    result = h.helix('perform', *flags, str(path))
+    import time
+    start = time.monotonic()
+    progress = base / f'commands-{time.time_ns()}.jsonl'
+    result = h.helix('perform', '--command-progress', str(progress), *flags, str(path))
+    (base / 'timing.json').write_text(json.dumps({'elapsed_seconds': time.monotonic() - start, 'workflow_timeout_seconds': h.timeout}) + '\n')
     (base / 'state.yaml').write_text(result.stderr)
     state = yaml.safe_load(result.stderr)
     assert result.returncode == 0 and state['status'] == 'finished', state
