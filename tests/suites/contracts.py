@@ -321,7 +321,7 @@ def scale(h):
         elapsed = time.perf_counter() - started
         assert len(root) == count and root[f"v{count - 1}"] == count
         print(f"scale: {1 + 4 * count} nodes, {elapsed:.3f}s (debug CLI + Python decode)")
-        assert elapsed < (1 if count == 2500 else 10), "scale workload exceeded its time budget"
+        assert elapsed < (0.9 if count == 2500 else 10), "scale workload exceeded its time budget"
 
 def execution(h):
     import os
