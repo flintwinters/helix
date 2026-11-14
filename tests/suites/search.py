@@ -243,7 +243,7 @@ def verify_production_query(h, root):
     start = time.monotonic()
     result = subprocess.run(["bash", "-o", "pipefail", "-c",
         '"$1" search index "$2" --no-std | "$1" exec --stream --file "$3"',
-        "helix-production-query", str(h.binary), str(h.root / "std" / "math.yaml"), str(query)],
+        "helix-production-query", str(h.binary), str(h.root / "std" / "math" / "main.yaml"), str(query)],
         capture_output=True, text=True, cwd=root, timeout=60)
     selected = records(result)
     assert selected and any(n["reference"]["path"] == ["abs"] for n in selected[0]["selection"]), selected

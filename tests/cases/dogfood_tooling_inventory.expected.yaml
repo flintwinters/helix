@@ -141,7 +141,7 @@ annotations:
       - directory: src
         path: src/vm.rs
       - directory: std
-        path: std/group.yaml
+        path: std/group/main.yaml
       - directory: src
         path: "src/雪.rs"
       - directory: "."
@@ -174,7 +174,7 @@ annotations:
       - directory: src
         path: src/vm.rs
       - directory: std
-        path: std/group.yaml
+        path: std/group/main.yaml
       - directory: src
         path: "src/雪.rs"
       - directory: "."
@@ -245,7 +245,7 @@ annotations:
           path: "src/雪.rs"
       std:
         - directory: std
-          path: std/group.yaml
+          path: std/group/main.yaml
   - declaration:
       code:
         "$ref": list
@@ -274,7 +274,7 @@ annotations:
       - directory: src
         path: src/vm.rs
       - directory: std
-        path: std/group.yaml
+        path: std/group/main.yaml
       - directory: src
         path: "src/雪.rs"
       - directory: "."
@@ -345,7 +345,7 @@ annotations:
           path: "src/雪.rs"
       std:
         - directory: std
-          path: std/group.yaml
+          path: std/group/main.yaml
   - declaration:
       code:
         "$ref": list
@@ -374,7 +374,7 @@ annotations:
       - directory: src
         path: src/vm.rs
       - directory: std
-        path: std/group.yaml
+        path: std/group/main.yaml
       - directory: src
         path: "src/雪.rs"
       - directory: "."
@@ -445,7 +445,7 @@ annotations:
           path: "src/雪.rs"
       std:
         - directory: std
-          path: std/group.yaml
+          path: std/group/main.yaml
   - declaration:
       code:
         "$ref": list
@@ -474,7 +474,7 @@ annotations:
       - directory: src
         path: src/vm.rs
       - directory: std
-        path: std/group.yaml
+        path: std/group/main.yaml
       - directory: src
         path: "src/雪.rs"
       - directory: "."
@@ -545,7 +545,7 @@ annotations:
           path: "src/雪.rs"
       std:
         - directory: std
-          path: std/group.yaml
+          path: std/group/main.yaml
   - declaration:
       code:
         "$ref": list
@@ -574,7 +574,7 @@ annotations:
       - directory: src
         path: src/vm.rs
       - directory: std
-        path: std/group.yaml
+        path: std/group/main.yaml
       - directory: src
         path: "src/雪.rs"
       - directory: "."
@@ -645,7 +645,7 @@ annotations:
           path: "src/雪.rs"
       std:
         - directory: std
-          path: std/group.yaml
+          path: std/group/main.yaml
   - declaration:
       code:
         "$ref": list
@@ -674,7 +674,7 @@ annotations:
       - directory: src
         path: src/vm.rs
       - directory: std
-        path: std/group.yaml
+        path: std/group/main.yaml
       - directory: src
         path: "src/雪.rs"
       - directory: "."
@@ -745,7 +745,7 @@ annotations:
           path: "src/雪.rs"
       std:
         - directory: std
-          path: std/group.yaml
+          path: std/group/main.yaml
   - declaration:
       code:
         "$ref": list
@@ -774,7 +774,7 @@ annotations:
       - directory: src
         path: src/vm.rs
       - directory: std
-        path: std/group.yaml
+        path: std/group/main.yaml
       - directory: src
         path: "src/雪.rs"
       - directory: "."
@@ -845,7 +845,7 @@ annotations:
           path: "src/雪.rs"
       std:
         - directory: std
-          path: std/group.yaml
+          path: std/group/main.yaml
   - declaration:
       code:
         "$ref": list
@@ -876,7 +876,7 @@ annotations:
       - count: 1
         directory: std
         files:
-          - std/group.yaml
+          - std/group/main.yaml
 objects:
   object0:
     bindings: {}
@@ -1002,7 +1002,7 @@ objects:
             - directory: src
               path: src/vm.rs
             - directory: std
-              path: std/group.yaml
+              path: std/group/main.yaml
             - directory: src
               path: "src/雪.rs"
             - directory: "."
@@ -1135,7 +1135,7 @@ root:
     - directory: src
       path: src/vm.rs
     - directory: std
-      path: std/group.yaml
+      path: std/group/main.yaml
     - directory: src
       path: "src/雪.rs"
     - directory: "."
@@ -1154,7 +1154,7 @@ root:
     - count: 1
       directory: std
       files:
-        - std/group.yaml
+        - std/group/main.yaml
   shim:
     group:
       by:

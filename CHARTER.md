@@ -592,7 +592,7 @@ Use Helix for its own policy when production callers demonstrate clearer behavio
 
 ### Already within reach of the pure core
 
-- [x] Standard-library arithmetic and list helpers are Helix source: `std/math.yaml` and `std/list.yaml` already implement min/max/clamp, sum/product/reverse/range, exercised by the standard-library golden cases. Extend these modules rather than adding equivalent Rust builtins.
+- [x] Standard-library arithmetic and list helpers are Helix source: `std/math/main.yaml` and `std/list/main.yaml` already implement min/max/clamp, sum/product/reverse/range, exercised by the standard-library golden cases. Extend these modules rather than adding equivalent Rust builtins.
 - [x] Collection and text algorithms: sorting, grouping, deduplication, map merge/removal, splitting and joining as imported Helix functions over the existing collection primitives. Reuse the algorithms in the dogfooding cases; document copying costs and iteration limits before treating them as general-purpose library functions.
   - [x] Stable grouping by a string-valued callback in `std:group.by`, covered by `std_group`; preserves item order within each group, with canonical string-key order for groups and documented copying costs and iteration limits. Real tooling caller: `./manage.py inventory` invokes `tooling/inventory.yaml` to group repository files by directory and saves replayable input/state; covered by `dogfood_tooling_inventory` and CLI contracts.
   - [x] Stable comparator sort (`sort_by`) extracted from the work-queue example, plus first-occurrence deduplication (`unique`), in `std:list`; covered by `std_list_algorithms` and `dogfood_work_queue`. Both use quadratic scans/copying and runtime iteration limits; intended for small inputs.
@@ -737,7 +737,7 @@ Each scenario must assert actual package/file/process/HTTP state and relevant ac
 
 Evidence: the [primary example](tests/programs/docker_nginx.yaml) and
 [alternate input](tests/programs/docker_nginx/alternate.yaml) use
-[`std:nginx`](std/nginx.yaml). The [fixture/operator contract](tests/fixtures/docker_nginx/README.md)
+[`std:nginx`](std/nginx/main.yaml). The [fixture/operator contract](tests/fixtures/docker_nginx/README.md)
 and [test entrypoint](tests/README.md#docker-nginx-acceptance) describe execution,
 review, failure semantics and supported environment. The
 [qualification record](tests/fixtures/docker_nginx/qualification.json) preserves

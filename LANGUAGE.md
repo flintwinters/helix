@@ -253,7 +253,7 @@ File and embedded `std:` imports use the same pure evaluation boundary. The load
 
 `{$call: [import, helpers.yaml]}` loads a Helix document. Relative paths resolve from the importing file's directory; stdin resolves from the working directory. All imports are linked at load time, including imports inside functions and unchosen branches. The specifier is a literal string, quoted or plain, never an evaluated expression. Missing files, unknown standard modules and circular dependencies fail before execution, outside `try` handlers.
 
-A library normally exports a map. Every key is public; its definitions resolve lexically inside the library and cannot see the importing program's names. Files are identified by canonical path and linked once per program. Imports can themselves import other libraries. There is no package registry, version resolver or implicit search path.
+A library normally exports a map. Every key is public; its definitions resolve lexically inside the library and cannot see the importing program's names. A directory import loads its `main.yaml`; imports inside it resolve relative to that directory. An explicit file import remains supported. Standard library sources use `std/<name>/main.yaml`, imported as `std:name`. Files are identified by canonical path and linked once per program. Imports can themselves import other libraries. There is no package registry, version resolver or implicit search path.
 
 ```yaml
 math: {$call: [import, 'std:math']}

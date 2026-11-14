@@ -3,7 +3,7 @@
 "files":
 - "path": "src/vm.rs"
   "directory": "src"
-- "path": "std/group.yaml"
+- "path": "std/group/main.yaml"
   "directory": "std"
 - "path": "src/\u96EA.rs"
   "directory": "src"

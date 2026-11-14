@@ -265,7 +265,8 @@ def verify_standard_library_boundary(h):
         (root / 'std').mkdir()
         sources = {'alpha': 'answer: 42\n', 'beta': 'answer: 43\n'}
         for name, source in sources.items():
-            (root / 'std' / f'{name}.yaml').write_text(source)
+            (root / 'std' / name).mkdir()
+            (root / 'std' / name / 'main.yaml').write_text(source)
         catalog = 'std:alpha\nstd:beta\n'
         unknown = 'unknown standard module `unknown`; available: alpha, beta\n'
         responses = {('std',): (0, catalog, ''),
@@ -309,7 +310,7 @@ def verify_standard_library_boundary(h):
             assert (evidence / 'actual.yaml').read_text() == stdout
             assert (evidence / 'stderr.txt').read_text() == stderr
             assert (evidence / 'expected.yaml').read_text() == responses[invocation][1]
-            assert all((root / 'std' / f'{name}.yaml').read_text() == source for name, source in sources.items())
+            assert all((root / 'std' / name / 'main.yaml').read_text() == source for name, source in sources.items())
 
         # Execute the final emitted catalog recipe without the injected timeout.
         # The current checkout, rather than the synthetic corpus, supplies modules.
