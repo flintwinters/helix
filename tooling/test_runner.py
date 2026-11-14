@@ -248,7 +248,7 @@ class TestContext:
             problem = mutation_plan_problem(source, variants)
         if problem is not None:
             raise MutationPolicyError(test_failure(
-                self.root, self.root / "std" / "fuzz" / "main.yaml", "mutation-plan",
+                self.root, self.root / "std" / "fuzz.yaml", "mutation-plan",
                 f"std:fuzz.plan failed: {problem}", "run", result, source=program))
         for variant in variants:
             yield "".join(source[start:end] for start, end in variant)
@@ -493,11 +493,11 @@ class TestContext:
         directory = self.root / "std"
         if not directory.is_dir():
             return [f"standard library source directory is missing or not a directory: {directory}"]
-        sources = [source for source in sorted(directory.glob("*/main.yaml")) if source.is_file()]
+        sources = [source for source in sorted(directory.glob("*.yaml")) if source.is_file()]
         if not sources:
             return [f"standard library source directory contains no modules: {directory}"]
         modules = self.helix("std")
-        expected_modules = {f"std:{source.parent.name}" for source in sources}
+        expected_modules = {f"std:{source.stem}" for source in sources}
         discovered_modules = modules.stdout.splitlines()
         if (modules.returncode != 0 or modules.stderr or set(discovered_modules) != expected_modules
                 or len(discovered_modules) != len(expected_modules)):
@@ -506,12 +506,12 @@ class TestContext:
                 expected="".join(f"{name}\n" for name in sorted(expected_modules)),
                 replay_args=["inspect", "std"]))
         for source in sources:
-            shown = self.helix("std", source.parent.name)
+            shown = self.helix("std", source.stem)
             expected = source.read_text()
             if shown.returncode != 0 or shown.stderr or shown.stdout != expected:
                 failures.append(test_failure(self.root, source, "std-show",
                     "standard library source differs or did not finish cleanly", "std", shown,
-                    expected=expected, replay_args=["inspect", "std", source.parent.name]))
+                    expected=expected, replay_args=["inspect", "std", source.stem]))
         unknown = self.helix("std", "unknown")
         if (unknown.returncode != 2 or unknown.stdout
                 or "unknown standard module `unknown`" not in unknown.stderr):

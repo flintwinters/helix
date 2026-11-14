@@ -73,7 +73,7 @@ def verify_repository_modules(ctx):
     """
     destination = ctx.root / 'runtime' / 'static'
     destination.mkdir(exist_ok=True)
-    sources = sorted((ctx.root / 'std').rglob('*.yaml')) + sorted((ctx.root / 'tooling').glob('*.yaml'))
+    sources = sorted((ctx.root / 'std').glob('*.yaml')) + sorted((ctx.root / 'tooling').glob('*.yaml'))
     assert sources, 'no repository Helix modules discovered'
     failures = []
     unchecked = 0

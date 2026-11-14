@@ -176,7 +176,7 @@ def verify(h):
               'versions': local.VERSIONS, 'scenarios': [],
               'controller_sha256': hashlib.sha256(h.binary.read_bytes()).hexdigest(),
               'source_sha256': {name: hashlib.sha256((h.root / name).read_bytes()).hexdigest()
-                  for name in ('std/nginx/main.yaml', 'tests/suites/ssh_nginx.py', 'tests/suites/docker_nginx.py',
+                  for name in ('std/nginx.yaml', 'tests/suites/ssh_nginx.py', 'tests/suites/docker_nginx.py',
                                'tests/fixtures/docker_nginx/Dockerfile', 'tests/fixtures/docker_nginx/host.py',
                                'tests/fixtures/docker_nginx/supervisor.py')}}
     previous_termination = signal.getsignal(signal.SIGTERM)

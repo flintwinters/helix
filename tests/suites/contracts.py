@@ -229,8 +229,6 @@ def imports(h):
         (base / "shared.yaml").unlink()
         result = h.helix("run", str(main))
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None
-        # A module cannot capture the importing file's lexical bindings.
-        (base / "shared.yaml").write_text('{"value": {"$call": ["add", {"$ref": "private"}, 1]}}')
         # Directory entrypoints retain local imports and canonical file identity.
         package = base / "package"
         package.mkdir()
@@ -245,6 +243,8 @@ def imports(h):
         (package / "main.yaml").unlink()
         result = h.helix("run", str(main))
         assert result.returncode == 1 and "main.yaml" in result.stdout
+        # A module cannot capture the importing file's lexical bindings.
+        (base / "shared.yaml").write_text('{"value": {"$call": ["add", {"$ref": "private"}, 1]}}')
         main.write_text('{"private": 9, "s": {"$call": ["import", "shared.yaml"]}}')
         error = yaml.safe_load(h.helix("run", str(main)).stdout)["error"]
         assert error["kind"] == "unbound" and error["path"] == "/value/$call/1", error
