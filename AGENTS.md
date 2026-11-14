@@ -41,6 +41,14 @@ Complexity must earn its place through concrete workloads. `CHARTER.md` section 
 
 ## Current Big Tasks
 
+Machine portability must distinguish captured execution state from future external
+dependencies. `CHARTER.md` section 2 owns the agreed closed, explicitly bound and
+open dependency boundaries; classification/enforcement and dependency inspection
+remain future work. Shared immutable storage does not weaken snapshot closure,
+but arbitrary commands prevent automatic environmental closure. Build on existing
+source-independent restoration acceptance; derive claims from enforced capabilities,
+never declarations alone.
+
 Consolidation, declarative types, section 2's bounded reversible machines and section 7's current trust obligations are complete within their documented bounds. Versioned snapshots preserve bounded execution, and caller-owned effect journals preserve completed outcomes while refusing uncertain replay. The same nginx workload is now qualified locally and over SSH, including independently observed convergence and controller-death recovery. Choose the next milestone from a concrete remaining operational need; a real migration trial must declare its supported scope before provider expansion. Opaque secret inputs, read-only recovery inspection and persistent target locks now cover their bounded host contracts, and nginx realizes classes before application. External secret managers, facts beyond Ubuntu 26.10, remote fencing, fleet recovery and independently distributed reversible execution remain separate. Keep independent bootstrap and host validation; defer unrelated type algebra, provider breadth and policy migrations.
 
 1. Measure and improve development feedback on actual production-policy workloads. Further dogfooding must demonstrate a concrete benefit while retaining independent bootstrap and host failure detection; moving more policy into Helix is not itself progress.

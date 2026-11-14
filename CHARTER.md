@@ -63,6 +63,46 @@ If these are not great, there is no reason to use Helix over anything else.
 
 Reversibility is a promise type. A machine that mixes in this promise must expose all of its behavior and complete execution state so it can always be serialized and restored. This includes stack, heap, local bindings, continuations, iteration progress and pending effects wherever they determine execution; hidden host state cannot carry part of the continuation. Suspend/resume follows from satisfying this promise. The runtime enforces this through named, composable `promise` types and immutable `mixin` application. The initial registered obligation is `reversible`: admission and subsequent transitions preserve bounded executable serialization, refusing a transition before losing the previous continuation. Promised machines refuse ordinary host dispatch and arbitrary effect replies. `PromisedSystem` composes promised participants through atomic `peer_send`/`peer_receive` rendezvous, retaining both continuations, exact delivery receipts and scheduler position in one checkpoint. The complete system is the restoration boundary; independently hosted remote participants and effects outside it remain separate work. This is state restoration, not external rollback or secret-safe serialization.
 
+### Machine dependency closure and portability
+
+Dependency closure is an explicit machine contract: distinguish captured execution
+state from the external environment needed by future effects. Immutable storage
+may be shared between retained versions; exporting a machine must materialize all
+reachable execution dependencies, including code, values, captures and
+continuations, without relying on the original process. A compatible runtime is
+still required. Snapshot validation checks encoded structure; completeness also
+requires implementation review and restoration acceptance evidence.
+
+Adopt these dependency boundaries as the design direction, not as implemented
+machine classifications:
+
+- **Closed:** execution depends only on captured code and input data.
+- **Explicitly bound:** execution additionally requires declared external resources;
+  the destination supplies their bindings and fresh permissions. Requirements
+  carry no authority, and binding a resource does not reproduce its contents or
+  guarantee identical future observations.
+- **Open:** execution can discover further dependencies, including through arbitrary
+  host commands. Command grants authorize operations but cannot enumerate every
+  file, subprocess or service those operations might use. Declarations alone do
+  not establish closure.
+
+Classification must follow reachable capabilities and enforced boundaries, rather
+than an author's assertion. Retaining completed effect outcomes preserves recorded
+computation; it does not capture the environment of future effects. Snapshot
+restoration alone therefore establishes neither environmental reproducibility nor
+external rollback. Capturing an operating environment is a separate contract.
+
+- [x] Establish the initial pure portability workload: move a suspended machine to
+  another directory and finish in a fresh process after deleting original source
+  and imports, with only its checkpoint and compatible runtime (`snapshots`,
+  section 9's source-independent continuation acceptance).
+- [ ] Derive and enforce dependency classifications for a concrete workload before
+  claiming closed or explicitly bound portability.
+- [ ] Expose an inspection report of captured inputs, pending external requirements
+  and open boundaries; reuse snapshot and capability representations rather than
+  maintaining an independent dependency inventory. Incomplete knowledge must remain
+  explicit, including dependencies discovered only by future commands.
+
 Design decisions beyond that implemented boundary:
 
 - Edits are externally supplied state changes: from the VM's perspective they
