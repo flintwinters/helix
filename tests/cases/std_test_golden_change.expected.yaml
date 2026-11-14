@@ -1,3 +1,796 @@
+annotations:
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - both_unparsable
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: "["
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - both_unparsable
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "{"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: semantic
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - empty_present
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: ""
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - empty_present
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "root: 1\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: semantic
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - expected_unparsable
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: "["
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - expected_unparsable
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "root: 1\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: semantic
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - hostile_text
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: "{$call: [raise, hostile]}\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - hostile_text
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "{$call: [raise, other]}\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: semantic
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - new
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: ~
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - new
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "root: 1\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: new
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - numeric_spelling
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: "root: 0x2a\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - numeric_spelling
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "root: 42\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: representation
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - quoting
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: "root: 'x'\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - quoting
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "root: x\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: representation
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - reordered
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: "{a: 1, b: 2}\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - reordered
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "b: 2\na: 1\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: representation
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - type
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: "root: '1'\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - type
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "root: 1\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: semantic
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - unchanged
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: "root: 1\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - unchanged
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "root: 1\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: unchanged
+  - declaration:
+      code:
+        "$call":
+          - union
+          - "$ref": string
+          - "$call":
+              - literal
+              - ~
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - value
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - string
+        - type: literal
+          value: ~
+      type: union
+    value: "root: 1\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - value
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "root: 2\n"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - golden_change
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - golden_change
+        - "$call"
+        - 2
+      source: "std:test"
+    type: string
+    value: semantic
 root:
   both_unparsable: semantic
   empty_present: semantic

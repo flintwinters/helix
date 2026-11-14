@@ -444,6 +444,24 @@ annotations:
           blessed:
             of: boolean
             type: optional
+          blessing:
+            of:
+              fields:
+                changes:
+                  fields:
+                    new:
+                      of: string
+                      type: list
+                    representation:
+                      of: string
+                      type: list
+                    semantic:
+                      of: string
+                      type: list
+                  type: record
+                reason: string
+              type: record
+            type: optional
           case_paths:
             of:
               of: string
@@ -505,999 +523,23 @@ annotations:
         blessed:
           of: boolean
           type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures:
-        - one
-        - two
-      suite: first
-  - declaration:
-      code:
-        "$ref": result_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 3
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: result
-    target:
-      path:
-        - result
-        - "$call"
-        - 2
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        status:
-          type: enum
-          values:
-            - passed
-            - failed
-            - skipped
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures:
-        - one
-        - two
-      status: failed
-      suite: first
-  - declaration:
-      code:
-        "$ref": observation_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: parameter
-    target:
-      path:
-        - report
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - processed_results
-        - "$call"
-        - 1
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures: []
-      suite: second
-  - declaration:
-      code:
-        "$ref": result_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 3
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: result
-    target:
-      path:
-        - result
-        - "$call"
-        - 2
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        status:
-          type: enum
-          values:
-            - passed
-            - failed
-            - skipped
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures: []
-      status: passed
-      suite: second
-  - declaration:
-      code:
-        "$ref": observation_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: parameter
-    target:
-      path:
-        - report
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - processed_results
-        - "$call"
-        - 1
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures:
-        - one
-        - two
-      suite: first
-  - declaration:
-      code:
-        "$ref": result_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 3
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: result
-    target:
-      path:
-        - result
-        - "$call"
-        - 2
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        status:
-          type: enum
-          values:
-            - passed
-            - failed
-            - skipped
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures:
-        - one
-        - two
-      status: failed
-      suite: first
-  - declaration:
-      code:
-        "$ref": observation_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: parameter
-    target:
-      path:
-        - report
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - processed_results
-        - "$call"
-        - 1
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures: []
-      suite: second
-  - declaration:
-      code:
-        "$ref": result_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 3
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: result
-    target:
-      path:
-        - result
-        - "$call"
-        - 2
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        status:
-          type: enum
-          values:
-            - passed
-            - failed
-            - skipped
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures: []
-      status: passed
-      suite: second
-  - declaration:
-      code:
-        "$ref": observation_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: parameter
-    target:
-      path:
-        - report
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - processed_results
-        - "$call"
-        - 1
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures:
-        - one
-        - two
-      suite: first
-  - declaration:
-      code:
-        "$ref": result_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 3
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: result
-    target:
-      path:
-        - result
-        - "$call"
-        - 2
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        status:
-          type: enum
-          values:
-            - passed
-            - failed
-            - skipped
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures:
-        - one
-        - two
-      status: failed
-      suite: first
-  - declaration:
-      code:
-        "$ref": observation_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: parameter
-    target:
-      path:
-        - report
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - processed_results
-        - "$call"
-        - 1
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures: []
-      suite: second
-  - declaration:
-      code:
-        "$ref": result_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 3
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: result
-    target:
-      path:
-        - result
-        - "$call"
-        - 2
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        status:
-          type: enum
-          values:
-            - passed
-            - failed
-            - skipped
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures: []
-      status: passed
-      suite: second
-  - declaration:
-      code:
-        "$ref": observation_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: parameter
-    target:
-      path:
-        - report
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - processed_results
-        - "$call"
-        - 1
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures:
-        - one
-        - two
-      suite: first
-  - declaration:
-      code:
-        "$ref": result_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 3
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: result
-    target:
-      path:
-        - result
-        - "$call"
-        - 2
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        status:
-          type: enum
-          values:
-            - passed
-            - failed
-            - skipped
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures:
-        - one
-        - two
-      status: failed
-      suite: first
-  - declaration:
-      code:
-        "$ref": observation_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: parameter
-    target:
-      path:
-        - report
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - processed_results
-        - "$call"
-        - 1
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures: []
-      suite: second
-  - declaration:
-      code:
-        "$ref": result_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 3
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: result
-    target:
-      path:
-        - result
-        - "$call"
-        - 2
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        blessed:
-          of: boolean
-          type: optional
-        case_paths:
-          of:
-            of: string
-            type: list
-          type: optional
-        cases:
-          of: integer
-          type: optional
-        failures:
-          of: string
-          type: list
-        jobs:
-          of: integer
-          type: optional
-        reason:
-          of: string
-          type: optional
-        status:
-          type: enum
-          values:
-            - passed
-            - failed
-            - skipped
-        stderr:
-          of: string
-          type: optional
-        stdout:
-          of: string
-          type: optional
-        suite: string
-      type: record
-    value:
-      failures: []
-      status: passed
-      suite: second
-  - declaration:
-      code:
-        "$ref": report_type
-      location:
-        path:
-          - report
-          - "$call"
-          - 3
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: result
-    target:
-      path:
-        - report
-        - "$call"
-        - 2
-      source: tests/cases/../../tooling/test_policy.yaml
-    type:
-      fields:
-        command:
-          type: literal
-          value: test
-        exit_code:
-          type: enum
-          values:
-            - 0
-            - 1
-        failure_count: integer
-        results:
+        blessing:
           of:
             fields:
-              blessed:
-                of: boolean
-                type: optional
-              case_paths:
-                of:
-                  of: string
-                  type: list
-                type: optional
-              cases:
-                of: integer
-                type: optional
-              failures:
-                of: string
-                type: list
-              jobs:
-                of: integer
-                type: optional
-              reason:
-                of: string
-                type: optional
-              status:
-                type: enum
-                values:
-                  - passed
-                  - failed
-                  - skipped
-              stderr:
-                of: string
-                type: optional
-              stdout:
-                of: string
-                type: optional
-              suite: string
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
             type: record
-          type: list
-        status:
-          type: enum
-          values:
-            - passed
-            - failed
-      type: record
-    value:
-      command: test
-      exit_code: 1
-      failure_count: 2
-      results:
-        - failures:
-            - one
-            - two
-          status: failed
-          suite: first
-        - failures: []
-          status: passed
-          suite: second
-      status: failed
-  - declaration:
-      code:
-        "$ref": observation_type
-      location:
-        path:
-          - result
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: tests/cases/../../tooling/test_policy.yaml
-    kind: parameter
-    target:
-      path:
-        - "$call"
-        - 2
-        - metadata
-        - "$call"
-        - 1
-      source: "<root>"
-    type:
-      fields:
-        blessed:
-          of: boolean
           type: optional
         case_paths:
           of:
@@ -1525,13 +567,986 @@ annotations:
         suite: string
       type: record
     value:
-      blessed: true
-      cases: 3
+      failures:
+        - one
+        - two
+      suite: first
+  - declaration:
+      code:
+        "$ref": result_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 3
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: result
+    target:
+      path:
+        - result
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        status:
+          type: enum
+          values:
+            - passed
+            - failed
+            - skipped
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures:
+        - one
+        - two
+      status: failed
+      suite: first
+  - declaration:
+      code:
+        "$ref": observation_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - processed_results
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
       failures: []
-      jobs: 2
-      stderr: "warning\n"
-      stdout: "saved output\n"
-      suite: golden
+      suite: second
+  - declaration:
+      code:
+        "$ref": result_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 3
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: result
+    target:
+      path:
+        - result
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        status:
+          type: enum
+          values:
+            - passed
+            - failed
+            - skipped
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures: []
+      status: passed
+      suite: second
+  - declaration:
+      code:
+        "$ref": observation_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - processed_results
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures:
+        - one
+        - two
+      suite: first
+  - declaration:
+      code:
+        "$ref": result_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 3
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: result
+    target:
+      path:
+        - result
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        status:
+          type: enum
+          values:
+            - passed
+            - failed
+            - skipped
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures:
+        - one
+        - two
+      status: failed
+      suite: first
+  - declaration:
+      code:
+        "$ref": observation_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - processed_results
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures: []
+      suite: second
+  - declaration:
+      code:
+        "$ref": result_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 3
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: result
+    target:
+      path:
+        - result
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        status:
+          type: enum
+          values:
+            - passed
+            - failed
+            - skipped
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures: []
+      status: passed
+      suite: second
+  - declaration:
+      code:
+        "$ref": observation_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - processed_results
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures:
+        - one
+        - two
+      suite: first
+  - declaration:
+      code:
+        "$ref": result_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 3
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: result
+    target:
+      path:
+        - result
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        status:
+          type: enum
+          values:
+            - passed
+            - failed
+            - skipped
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures:
+        - one
+        - two
+      status: failed
+      suite: first
+  - declaration:
+      code:
+        "$ref": observation_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - processed_results
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures: []
+      suite: second
+  - declaration:
+      code:
+        "$ref": result_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 3
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: result
+    target:
+      path:
+        - result
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        status:
+          type: enum
+          values:
+            - passed
+            - failed
+            - skipped
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures: []
+      status: passed
+      suite: second
+  - declaration:
+      code:
+        "$ref": observation_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: parameter
+    target:
+      path:
+        - report
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - processed_results
+        - "$call"
+        - 1
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures:
+        - one
+        - two
+      suite: first
+  - declaration:
+      code:
+        "$ref": result_type
+      location:
+        path:
+          - result
+          - "$call"
+          - 3
+        source: tests/cases/../../tooling/test_policy.yaml
+    kind: result
+    target:
+      path:
+        - result
+        - "$call"
+        - 2
+      source: tests/cases/../../tooling/test_policy.yaml
+    type:
+      fields:
+        blessed:
+          of: boolean
+          type: optional
+        blessing:
+          of:
+            fields:
+              changes:
+                fields:
+                  new:
+                    of: string
+                    type: list
+                  representation:
+                    of: string
+                    type: list
+                  semantic:
+                    of: string
+                    type: list
+                type: record
+              reason: string
+            type: record
+          type: optional
+        case_paths:
+          of:
+            of: string
+            type: list
+          type: optional
+        cases:
+          of: integer
+          type: optional
+        failures:
+          of: string
+          type: list
+        jobs:
+          of: integer
+          type: optional
+        reason:
+          of: string
+          type: optional
+        status:
+          type: enum
+          values:
+            - passed
+            - failed
+            - skipped
+        stderr:
+          of: string
+          type: optional
+        stdout:
+          of: string
+          type: optional
+        suite: string
+      type: record
+    value:
+      failures:
+        - one
+        - two
+      status: failed
+      suite: first
 annotations_truncated: true
 root:
   bad_catalog:
