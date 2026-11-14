@@ -22,8 +22,10 @@ pub(crate) fn location(graph: &Graph, id: usize) -> J {
     let span = graph.span(id);
     json!({"line":span.line,"column":span.col})
 }
-pub(crate) fn reflect(graph: &Graph, source: &str, modules: &Modules) -> J {
+pub(crate) fn reflect(graph: &Graph, source: &str, modules: &Modules) -> Result<J, String> {
     let code = graph.code_views();
+    let code_json = json(&code[0].plain_yaml().unwrap());
+    let mut evidence_bytes = code_json.to_string().len();
     let mut nodes = Vec::new();
     let mut pending = vec![(0, None)];
     while let Some((id, parent)) = pending.pop() {
@@ -97,7 +99,7 @@ pub(crate) fn reflect(graph: &Graph, source: &str, modules: &Modules) -> J {
                         Effects::Requests(n) => ("requests", Some(n)),
                         Effects::Unproven(n) => ("unresolved", Some(n)),
                     };
-                    node["effects"] = json!({"state":state,"basis":"syntax","at":at.map(|n|reference(graph,n,source))});
+                    node["effects"] = json!({"state":state,"basis":"syntax","at":at.map(|n|reference(graph,n,source)),"location":at.map(|n|location(graph,n))});
                 }
                 (
                     if graph.form(id) == Some("fn") {
@@ -119,14 +121,23 @@ pub(crate) fn reflect(graph: &Graph, source: &str, modules: &Modules) -> J {
                 })
                 .collect::<Vec<_>>()
         );
+        evidence_bytes = evidence_bytes.saturating_add(node.to_string().len());
+        if evidence_bytes > super::stream::MAX_INPUT_BYTES as usize / 2 {
+            return Err("source reflection exceeds evidence byte limit".into());
+        }
         nodes.push(node);
         pending.extend(children.into_iter().rev().map(|n| (n, Some(id))));
     }
-    json!({"version":1,"kind":"source","source":source,"reference":{"source":source,"path":[]},"location":{"line":1,"column":1},"code":json(&code[0].plain_yaml().unwrap()),"nodes":nodes})
+    let record = json!({"version":1,"kind":"source","source":source,"reference":{"source":source,"path":[]},"location":{"line":1,"column":1},"code":code_json,"nodes":nodes});
+    crate::value::from_host_yaml(&yaml(&record))
+        .map_err(|e| format!("source reflection exceeds ordinary-data bounds: {e}"))?;
+    Ok(record)
 }
-pub(crate) fn parse(text: &str) -> Result<Value, String> {
-    let graph = Graph::parse(text).map_err(|e| e.message)?;
-    crate::value::from_host_yaml(&yaml(&reflect(&graph, "<input>", &Modules::default())))
+pub(crate) fn parse(text: &str) -> Result<Value, crate::model::HelixError> {
+    let graph = Graph::parse(text)?;
+    let record = reflect(&graph, "<input>", &Modules::default())
+        .map_err(|message| graph.error(0, "limit", message))?;
+    Ok(Value::from_yaml(&yaml(&record)))
 }
 
 fn binding(graph: &Graph, id: usize, name: &str, source: &str, modules: &Modules) -> J {

@@ -22,7 +22,17 @@ pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
         .dfa_size_limit(1_000_000)
         .nest_limit(64)
         .build()
-        .map_err(|e| Fault::at(0, "regex", e.to_string()))?;
+        .map_err(|e| {
+            Fault::at(
+                0,
+                if matches!(&e, regex::Error::CompiledTooBig(_)) {
+                    "limit"
+                } else {
+                    "regex"
+                },
+                e.to_string(),
+            )
+        })?;
     let mut matches = Vec::new();
     for captures in re.captures_iter(text) {
         if matches.len() >= 4096 {

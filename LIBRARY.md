@@ -320,7 +320,7 @@ Source-aware pipelines can use `function_candidates(source)` and
 `select_functions(source, predicate)` to retain the source's shared code while
 adding a `selection` list. `select_bodies(source, pattern)` and
 `select_results(source, pattern)` refine that selection in later stages.
-`result_expressions(source, reference)` follows explicit `if`, `let` and
+`result_expressions(source, reference)` follows explicit `if`, `cond`, `let` and
 `type_time` result syntax; other expressions remain expressions to match, without
 claims about the values they evaluate to. `result_matches` returns each possible
 expression with its syntax basis and capture evidence. Runnable query files live
@@ -343,3 +343,8 @@ Within reflected nodes, `parent` is null or `{up: N}` (remove `N` typed path
 segments); `children` are relative typed paths to append to the node's path.
 These relationships preserve source-qualified identity without repeating full
 ancestor paths at every edge. Scalar contents are read from the shared `code`.
+
+Reflection stops before its evidence exceeds 8 MB and validates the completed
+record against ordinary-data bounds. Expanded typed paths can exhaust those
+bounds even for a small source; indexing emits a `limit` diagnostic and an
+incomplete summary, while `source_parse` raises `limit`.

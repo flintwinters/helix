@@ -36,7 +36,11 @@ struct Index<W: Write> {
     exclude: bool,
 }
 impl<W: Write> Index<W> {
-    fn emit(&mut self, record: J) -> io::Result<()> {
+    fn emit(&mut self, mut record: J) -> io::Result<()> {
+        if let Err(message) = crate::value::from_host_yaml(&super::source::yaml(&record)) {
+            self.complete = false;
+            record = json!({"version":1,"kind":"diagnostic","source":record["source"],"reference":record["reference"],"location":record["location"],"error":{"kind":"limit","message":message},"message":"index evidence exceeds ordinary-data bounds"});
+        }
         serde_json::to_writer(&mut self.out, &record)?;
         self.out.write_all(b"\n")?;
         self.out.flush()
@@ -62,7 +66,10 @@ impl<W: Write> Index<W> {
                 Modules::default()
             }
         };
-        let mut record = reflect(&graph, source, &modules);
+        let mut record = match reflect(&graph, source, &modules) {
+            Ok(record) => record,
+            Err(message) => return self.parse_error(source, graph.error(0, "limit", message)),
+        };
         record["text"] = json!(text);
         // Revision is exact source text, avoiding hash collisions and extra dependencies.
         record["revision"] = json!(text);
@@ -226,7 +233,10 @@ fn run(args: &[String]) -> Result<bool, (u8, String)> {
             exclude: true,
         };
         match Graph::parse(&text) {
-            Ok(graph) => index.emit(reflect(&graph, &args[1], &Modules::default())),
+            Ok(graph) => match reflect(&graph, &args[1], &Modules::default()) {
+                Ok(record) => index.emit(record),
+                Err(message) => index.parse_error(&args[1], graph.error(0, "limit", message)),
+            },
             Err(e) => index.parse_error(&args[1], e),
         }
         .map_err(|e| (1, e.to_string()))?;

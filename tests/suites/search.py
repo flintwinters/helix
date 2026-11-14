@@ -87,6 +87,7 @@ quoted: {$literal: {$call: [fn, [], 7]}}
         verify_standard_stream(h, root)
         verify_additional_roots(h, root)
         verify_stream_memory(h, root)
+        verify_analysis_bound(h, root)
 
 
 def verify_queries(h, source):
@@ -102,11 +103,16 @@ def verify_queries(h, source):
     assert result["captures"]["input"]["location"]["line"] == 2, result
     result = invoke(h, c("s.match", r("data"), literal({"source": source["source"], "path": ["quoted"]}), literal({"tag": "mapping", "fields": {}})), bindings)
     assert not result["matched"], result
+    hidden = invoke(h, c("s.match", r("data"), literal({"source": source["source"], "path": ["quoted", "$literal"]}), literal({"tag": "wildcard"})), bindings)
+    assert not hidden["matched"] and hidden["unresolved"], hidden
     for regex_pattern, text, count in [("雪", "a雪b", 1), ("(?P<n>[0-9]+)", "x12y", 1), ("z", "abc", 0)]:
         result = invoke(h, c("s.regex", regex_pattern, text))
         assert len(result) == count, result
     result = h.helix("exec", '{$call: [regex_find, "[", text]}')
     assert result.returncode == 1 and "regex" in result.stderr, result
+    for limited_pattern, limited_text in [("a" * 16385, ""), ("", "a" * 4096), ("[a-z]{1000000}", "")]:
+        result = h.helix("exec", json.dumps({"$call": ["regex_find", limited_pattern, limited_text]}))
+        assert result.returncode == 1 and yaml.safe_load(result.stderr)["error"]["kind"] == "limit", result.stderr[-1000:]
     relation = invoke(h, c("s.result_type", literal({"types": function["types"]}), "integer"))
     assert relation["status"] == "matches", relation
     candidates = invoke(h, c("s.select_bodies", r("data"), literal(pattern)), bindings)
@@ -115,13 +121,15 @@ def verify_queries(h, source):
     assert expressions[0]["match"]["matched"], expressions
     repeated = {"tag": "sequence", "items": [{"tag": "capture", "name": "same"}, {"tag": "capture", "name": "same"}]}
     for values, expected in [([1, 1.0], True), ([1, 2], False)]:
-        fixture = {"code": values, "nodes": [], "source": "<test>"}
-        result = invoke(h, c("s.match", literal(fixture), literal({"source": "<test>", "path": []}), literal(repeated)))
+        result = invoke(h, c("s.match", c("src.parse", json.dumps(values)), literal({"source": "<input>", "path": []}), literal(repeated)))
         assert result["matched"] == expected, result
     summary = {"version": 1, "kind": "summary", "complete": False, "sources": 3}
     assert invoke(h, c("s.project", literal(summary), [])) == summary
     projected = invoke(h, c("s.project", literal(function), []))
     assert projected["types"] == function["types"] and projected["effects"] == function["effects"], projected
+    branched = c("src.parse", json.dumps(c("fn", [], c("cond", True, {"answer": 1}, {"answer": 2}))))
+    result = invoke(h, c("let", {"branched": branched}, c("s.result_matches", r("branched"), c("get", c("s.function_candidates", r("branched")), 0), literal({"tag": "mapping", "fields": {"answer": {"tag": "wildcard"}}}))))
+    assert len(result) == 2 and all(row["match"]["matched"] for row in result), result
     reach = invoke(h, c("s.reachable", literal([{"from": "a", "to": "b"}, {"from": "b", "to": "a"}]), "a", 10))
     assert reach["complete"] and reach["visited"] == ["a", "b"], reach
 
@@ -139,6 +147,7 @@ recursive: {$call: [fn, [], {$call: [recursive]}]}
     functions = {r["name"]: r for r in indexed if r["kind"] == "function"}
     assert functions["run"]["effects"]["state"] == "requests", functions
     assert functions["run"]["effects"]["at"]["source"] == str(dependency), functions
+    assert functions["run"]["effects"]["location"]["line"] == 1, functions
     assert functions["dynamic"]["effects"]["state"] == "unresolved", functions
     assert functions["recursive"]["effects"]["state"] == "none_found", functions
     assert any(r["kind"] == "call" and r.get("target", {}).get("source") == str(dependency) for r in indexed if isinstance(r.get("target"), dict)), indexed
@@ -173,6 +182,11 @@ loop: {$call: [fn, [], {$call: [until, {$call: [fn, [x], false]}, {$call: [fn, [
     cases.write_text("- args: [7]\n  expected: 7\n")
     result = records(h.helix("search", "probe", "--cases", str(cases), "--harness", str(harness), stdin=json.dumps(functions["factory"])+"\n"))
     assert result[0]["status"] == "matched", result
+    harness.write_text('{$call: [fn, [candidate, args], {$call: [fn, [], {$call: [raise, harness, failed]}]}]}')
+    result = records(h.helix("search", "probe", "--cases", str(cases), "--harness", str(harness), stdin=json.dumps(functions["factory"])+"\n"))
+    assert result[0]["status"] == "execution_error", result
+    assert yaml.safe_load(result[0]["detail"])["source_file"] == str(harness), result
+
 
 
 def verify_streaming(h, root):
@@ -290,3 +304,22 @@ def verify_stream_memory(h, root):
         if process.poll() is None:
             process.kill()
             process.wait()
+
+
+def verify_analysis_bound(h, root):
+    # A compact source can expand long public paths; evidence must remain bounded.
+    source = yaml.safe_dump({"k" * 8192: list(range(300))})
+    path = root / "expanded-paths.yaml"
+    path.write_text(source)
+    rows = records(h.helix("search", "index", str(path), "--no-std"), 1)
+    assert rows[0]["kind"] == "diagnostic" and rows[0]["error"]["kind"] == "limit", rows[0]
+    assert not rows[-1]["complete"], rows[-1]
+    result = h.helix("exec", json.dumps({"$call": ["source_parse", source]}))
+    assert result.returncode == 1 and yaml.safe_load(result.stderr)["error"]["kind"] == "limit", result.stderr[-1000:]
+
+    # Source text and revision evidence also count toward the streaming record bound.
+    large = root / "large-string.yaml"
+    large.write_text(json.dumps("x" * 350000))
+    rows = records(h.helix("search", "index", str(large), "--no-std"), 1)
+    assert rows[0]["kind"] == "diagnostic" and rows[0]["error"]["kind"] == "limit", rows[0]
+    assert not rows[-1]["complete"], rows[-1]

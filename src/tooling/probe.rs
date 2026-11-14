@@ -82,16 +82,26 @@ pub fn run(args: &[String]) -> Result<bool, (u8, String)> {
     }
     Ok(true)
 }
+fn detail(vm: &Vm) -> String {
+    let mut state = vm.state();
+    if let (Some(file), Yaml::Hash(fields)) = (&vm.source_file, &mut state) {
+        fields.insert(
+            Yaml::String("source_file".into()),
+            Yaml::String(file.display().to_string()),
+        );
+    }
+    crate::yaml_document(&state)
+}
 fn drive(vm: &mut Vm, remaining: &mut usize) -> Result<(), (&'static str, String)> {
     vm.run_budgeted(remaining);
     if *remaining == 0 && matches!(vm.status(), Status::Ready | Status::Running) {
-        return Err(("exhausted_budget", vm.state_string()));
+        return Err(("exhausted_budget", detail(vm)));
     }
     if vm.pending_effect().is_some() {
-        return Err(("attempted_effect", vm.state_string()));
+        return Err(("attempted_effect", detail(vm)));
     }
     if vm.status() != Status::Finished {
-        let state = vm.state_string();
+        let state = detail(vm);
         return Err((
             if vm
                 .error
@@ -221,7 +231,18 @@ fn example(
     } else {
         call_value(value, args)?
     };
-    vm.source_file = standard.is_none().then(|| PathBuf::from(source));
+    vm.source_file = if let Some((file, _)) = harness {
+        if std::sync::Arc::ptr_eq(
+            &vm.evaluator.as_ref().unwrap().program,
+            &setup.evaluator.as_ref().unwrap().program,
+        ) {
+            standard.is_none().then(|| PathBuf::from(source))
+        } else {
+            Some(file.to_path_buf())
+        }
+    } else {
+        standard.is_none().then(|| PathBuf::from(source))
+    };
     drive(&mut vm, &mut remaining)?;
     let value = vm.result.as_ref().unwrap();
     let ordinary = value.plain_yaml().ok_or((

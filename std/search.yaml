@@ -620,21 +620,40 @@ match:
     - reference
     - pattern
   - $call:
-    - match_value
-    - $ref: source
-    - $ref: pattern
+    - if
     - $call:
-      - sources.code_at
-      - $ref: source
-      - $ref: reference
-    - $ref: reference
+      - eq
+      - $call:
+        - len
+        - $call:
+          - sources.node
+          - $ref: source
+          - $ref: reference
+      - 0
     - $call:
       - dict
       - matched
-      - true
+      - false
       - captures
+      - {}
+      - unresolved
+      - reference is outside semantic source nodes
+    - $call:
+      - match_value
+      - $ref: source
+      - $ref: pattern
+      - $call:
+        - sources.code_at
+        - $ref: source
+        - $ref: reference
+      - $ref: reference
       - $call:
         - dict
+        - matched
+        - true
+        - captures
+        - $call:
+          - dict
 body_matches:
   $call:
   - fn
@@ -981,6 +1000,65 @@ result_expressions:
                       - let
                     - 2
                     - 1
+          - $call:
+            - eq
+            - $ref: head
+            - cond
+          - $call:
+            - fold
+            - $call:
+              - fn
+              - - found
+                - index
+              - $call:
+                - if
+                - $call:
+                  - and
+                  - $call:
+                    - gt
+                    - $ref: index
+                    - 0
+                  - $call:
+                    - or
+                    - $call:
+                      - eq
+                      - $call:
+                        - mod
+                        - $ref: index
+                        - 2
+                      - 0
+                    - $call:
+                      - eq
+                      - $ref: index
+                      - $call:
+                        - sub
+                        - $call:
+                          - len
+                          - $ref: parts
+                        - 1
+                - $call:
+                  - concat
+                  - $ref: found
+                  - $call:
+                    - result_expressions
+                    - $ref: source
+                    - $call:
+                      - dict
+                      - source
+                      - $ref: reference.source
+                      - path
+                      - $call:
+                        - concat
+                        - $ref: reference.path
+                        - - $call
+                          - $ref: index
+                - $ref: found
+            - []
+            - $call:
+              - lists.range
+              - $call:
+                - len
+                - $ref: parts
           - - $ref: reference
       - - $ref: reference
 result_matches:
