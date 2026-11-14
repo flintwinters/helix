@@ -1,0 +1,1145 @@
+# Bounded evidence-preserving search policy. No candidate execution.
+lists:
+  $call:
+  - import
+  - std:list
+sources:
+  $call:
+  - import
+  - std:source
+functions:
+  $call:
+  - fn
+  - - record
+  - $call:
+    - eq
+    - $call:
+      - get
+      - $ref: record
+      - kind
+      - null
+    - function
+documentation:
+  $call:
+  - fn
+  - - record
+  - $call:
+    - eq
+    - $call:
+      - get
+      - $ref: record
+      - kind
+      - null
+    - documentation
+regex:
+  $call:
+  - fn
+  - - pattern
+    - text
+  - $call:
+    - regex_find
+    - $ref: pattern
+    - $ref: text
+text_matches:
+  $call:
+  - fn
+  - - pattern
+    - text
+  - $call:
+    - gt
+    - $call:
+      - len
+      - $call:
+        - regex_find
+        - $ref: pattern
+        - $ref: text
+    - 0
+keep:
+  $call:
+  - fn
+  - - record
+    - predicate
+  - $call:
+    - if
+    - $call:
+      - or
+      - $call:
+        - eq
+        - $ref: record.kind
+        - diagnostic
+      - $call:
+        - eq
+        - $ref: record.kind
+        - summary
+      - $call:
+        - call
+        - $ref: predicate
+        - $ref: record
+    - - $ref: record
+    - []
+name_matches:
+  $call:
+  - fn
+  - - record
+    - pattern
+  - $call:
+    - text_matches
+    - $ref: pattern
+    - $call:
+      - get
+      - $ref: record
+      - name
+      - ''
+signature_matches:
+  $call:
+  - fn
+  - - record
+    - pattern
+  - $call:
+    - text_matches
+    - $ref: pattern
+    - $call:
+      - get
+      - $call:
+        - get
+        - $ref: record
+        - types
+        - {}
+      - signature
+      - ''
+effect_finding:
+  $call:
+  - fn
+  - - record
+  - $call:
+    - get
+    - $ref: record
+    - effects
+    - $call:
+      - dict
+      - state
+      - unresolved
+      - basis
+      - syntax
+result_type:
+  $call:
+  - fn
+  - - record
+    - wanted
+  - $call:
+    - relationship
+    - $call:
+      - get
+      - $call:
+        - get
+        - $ref: record
+        - types
+        - {}
+      - inferred_result
+      - null
+    - $ref: wanted
+    - inference
+parameter_type:
+  $call:
+  - fn
+  - - record
+    - index
+    - wanted
+  - $call:
+    - let
+    - declaration:
+        $call:
+        - get
+        - $call:
+          - get
+          - $ref: record
+          - types
+          - {}
+        - declared
+        - null
+      parameters:
+        $call:
+        - get
+        - $ref: record
+        - parameters
+        - []
+    - $call:
+      - relationship
+      - $call:
+        - if
+        - $call:
+          - or
+          - $call:
+            - eq
+            - $ref: declaration
+            - null
+          - $call:
+            - ge
+            - $ref: index
+            - $call:
+              - len
+              - $ref: parameters
+          - $call:
+            - eq
+            - $call:
+              - get
+              - $call:
+                - get
+                - $ref: parameters
+                - $ref: index
+              - annotation
+              - null
+            - null
+        - null
+        - $call:
+          - get
+          - $ref: declaration.params
+          - $ref: index
+      - $ref: wanted
+      - declaration
+project:
+  $call:
+  - fn
+  - - record
+    - fields
+  - $call:
+    - if
+    - $call:
+      - has
+      - - diagnostic
+        - summary
+      - $ref: record.kind
+    - $ref: record
+    - $call:
+      - fold
+      - $call:
+        - fn
+        - - result
+          - field
+        - $call:
+          - if
+          - $call:
+            - has
+            - $ref: record
+            - $ref: field
+          - $call:
+            - set
+            - $ref: result
+            - $ref: field
+            - $call:
+              - get
+              - $ref: record
+              - $ref: field
+          - $ref: result
+      - {}
+      - $call:
+        - concat
+        - $ref: evidence_fields
+        - $ref: fields
+match_value:
+  $call:
+  - fn
+  - - source
+    - pattern
+    - value
+    - reference
+    - state
+  - $call:
+    - if
+    - $call:
+      - not
+      - $ref: state.matched
+    - $ref: state
+    - $call:
+      - let
+      - tag:
+          $call:
+          - get
+          - $ref: pattern
+          - tag
+      - $call:
+        - cond
+        - $call:
+          - eq
+          - $ref: tag
+          - wildcard
+        - $ref: state
+        - $call:
+          - eq
+          - $ref: tag
+          - exact
+        - $call:
+          - if
+          - $call:
+            - eq
+            - $ref: value
+            - $ref: pattern.value
+          - $ref: state
+          - $call:
+            - dict
+            - matched
+            - false
+            - captures
+            - $ref: state.captures
+        - $call:
+          - eq
+          - $ref: tag
+          - capture
+        - $call:
+          - let
+          - inner:
+              $call:
+              - match_value
+              - $ref: source
+              - $call:
+                - get
+                - $ref: pattern
+                - of
+                - $call:
+                  - dict
+                  - tag
+                  - wildcard
+              - $ref: value
+              - $ref: reference
+              - $ref: state
+          - $call:
+            - if
+            - $call:
+              - not
+              - $ref: inner.matched
+            - $ref: inner
+            - $call:
+              - if
+              - $call:
+                - has
+                - $ref: inner.captures
+                - $ref: pattern.name
+              - $call:
+                - if
+                - $call:
+                  - eq
+                  - $call:
+                    - get
+                    - $call:
+                      - get
+                      - $ref: inner.captures
+                      - $ref: pattern.name
+                    - value
+                  - $ref: value
+                - $ref: inner
+                - $call:
+                  - dict
+                  - matched
+                  - false
+                  - captures
+                  - $ref: inner.captures
+              - $call:
+                - dict
+                - matched
+                - true
+                - captures
+                - $call:
+                  - set
+                  - $ref: inner.captures
+                  - $ref: pattern.name
+                  - $call:
+                    - dict
+                    - value
+                    - $ref: value
+                    - reference
+                    - $ref: reference
+                    - location
+                    - $call:
+                      - locate
+                      - $ref: source
+                      - $ref: reference
+        - $call:
+          - eq
+          - $ref: tag
+          - reference
+        - $call:
+          - if
+          - $call:
+            - and
+            - $call:
+              - eq
+              - $call:
+                - type
+                - $ref: value
+              - map
+            - $call:
+              - eq
+              - $call:
+                - keys
+                - $ref: value
+              - - $ref
+            - $call:
+              - eq
+              - $call:
+                - get
+                - $ref: value
+                - $ref
+              - $ref: pattern.name
+          - $ref: state
+          - $call:
+            - dict
+            - matched
+            - false
+            - captures
+            - $ref: state.captures
+        - $call:
+          - eq
+          - $ref: tag
+          - call
+        - $call:
+          - if
+          - $call:
+            - and
+            - $call:
+              - eq
+              - $call:
+                - type
+                - $ref: value
+              - map
+            - $call:
+              - eq
+              - $call:
+                - keys
+                - $ref: value
+              - - $call
+          - $call:
+            - match_value
+            - $ref: source
+            - $call:
+              - dict
+              - tag
+              - sequence
+              - items
+              - $call:
+                - concat
+                - - $ref: pattern.head
+                - $ref: pattern.args
+            - $call:
+              - get
+              - $ref: value
+              - $call
+            - $call:
+              - dict
+              - source
+              - $ref: reference.source
+              - path
+              - $call:
+                - append
+                - $ref: reference.path
+                - $call
+            - $ref: state
+          - $call:
+            - dict
+            - matched
+            - false
+            - captures
+            - $ref: state.captures
+        - $call:
+          - eq
+          - $ref: tag
+          - sequence
+        - $call:
+          - if
+          - $call:
+            - and
+            - $call:
+              - eq
+              - $call:
+                - type
+                - $ref: value
+              - list
+            - $call:
+              - eq
+              - $call:
+                - len
+                - $ref: value
+              - $call:
+                - len
+                - $ref: pattern.items
+          - $call:
+            - fold
+            - $call:
+              - fn
+              - - current
+                - index
+              - $call:
+                - match_value
+                - $ref: source
+                - $call:
+                  - get
+                  - $ref: pattern.items
+                  - $ref: index
+                - $call:
+                  - get
+                  - $ref: value
+                  - $ref: index
+                - $call:
+                  - dict
+                  - source
+                  - $ref: reference.source
+                  - path
+                  - $call:
+                    - append
+                    - $ref: reference.path
+                    - $ref: index
+                - $ref: current
+            - $ref: state
+            - $call:
+              - lists.range
+              - $call:
+                - len
+                - $ref: pattern.items
+          - $call:
+            - dict
+            - matched
+            - false
+            - captures
+            - $ref: state.captures
+        - $call:
+          - eq
+          - $ref: tag
+          - mapping
+        - $call:
+          - if
+          - $call:
+            - and
+            - $call:
+              - eq
+              - $call:
+                - type
+                - $ref: value
+              - map
+            - $call:
+              - not
+              - $call:
+                - or
+                - $call:
+                  - eq
+                  - $call:
+                    - keys
+                    - $ref: value
+                  - - $literal
+                - $call:
+                  - eq
+                  - $call:
+                    - keys
+                    - $ref: value
+                  - - $call
+                - $call:
+                  - eq
+                  - $call:
+                    - keys
+                    - $ref: value
+                  - - $ref
+            - $call:
+              - or
+              - $call:
+                - not
+                - $call:
+                  - get
+                  - $ref: pattern
+                  - exact
+                  - false
+              - $call:
+                - eq
+                - $call:
+                  - len
+                  - $call:
+                    - keys
+                    - $ref: value
+                - $call:
+                  - len
+                  - $call:
+                    - keys
+                    - $ref: pattern.fields
+          - $call:
+            - fold
+            - $call:
+              - fn
+              - - current
+                - key
+              - $call:
+                - if
+                - $call:
+                  - and
+                  - $ref: current.matched
+                  - $call:
+                    - has
+                    - $ref: value
+                    - $ref: key
+                - $call:
+                  - match_value
+                  - $ref: source
+                  - $call:
+                    - get
+                    - $ref: pattern.fields
+                    - $ref: key
+                  - $call:
+                    - get
+                    - $ref: value
+                    - $ref: key
+                  - $call:
+                    - dict
+                    - source
+                    - $ref: reference.source
+                    - path
+                    - $call:
+                      - append
+                      - $ref: reference.path
+                      - $ref: key
+                  - $ref: current
+                - $call:
+                  - dict
+                  - matched
+                  - false
+                  - captures
+                  - $ref: current.captures
+            - $ref: state
+            - $call:
+              - keys
+              - $ref: pattern.fields
+          - $call:
+            - dict
+            - matched
+            - false
+            - captures
+            - $ref: state.captures
+        - $call:
+          - raise
+          - pattern
+          - unknown structural pattern tag
+match:
+  $call:
+  - fn
+  - - source
+    - reference
+    - pattern
+  - $call:
+    - match_value
+    - $ref: source
+    - $ref: pattern
+    - $call:
+      - sources.code_at
+      - $ref: source
+      - $ref: reference
+    - $ref: reference
+    - $call:
+      - dict
+      - matched
+      - true
+      - captures
+      - $call:
+        - dict
+body_matches:
+  $call:
+  - fn
+  - - source
+    - pattern
+  - $call:
+    - map
+    - $call:
+      - fn
+      - - node
+      - $call:
+        - dict
+        - reference
+        - $ref: node.reference
+        - basis
+        - syntax
+        - match
+        - $call:
+          - match
+          - $ref: source
+          - $ref: node.body
+          - $ref: pattern
+    - $call:
+      - filter
+      - $call:
+        - fn
+        - - node
+        - $call:
+          - eq
+          - $ref: node.kind
+          - function
+      - $ref: source.nodes
+calls:
+  $call:
+  - fn
+  - - source
+    - name
+  - $call:
+    - filter
+    - $call:
+      - fn
+      - - node
+      - $call:
+        - and
+        - $call:
+          - eq
+          - $ref: node.kind
+          - call
+        - $call:
+          - eq
+          - $call:
+            - get
+            - $ref: node
+            - actor
+            - null
+          - $ref: name
+    - $ref: source.nodes
+references:
+  $call:
+  - fn
+  - - source
+    - name
+  - $call:
+    - filter
+    - $call:
+      - fn
+      - - node
+      - $call:
+        - and
+        - $call:
+          - eq
+          - $ref: node.kind
+          - reference
+        - $call:
+          - eq
+          - $call:
+            - get
+            - $ref: node
+            - name
+            - null
+          - $ref: name
+    - $ref: source.nodes
+reachable:
+  $call:
+  - fn
+  - - edges
+    - start
+    - limit
+  - $call:
+    - let
+    - done:
+        $call:
+        - until
+        - $call:
+          - fn
+          - - state
+          - $call:
+            - or
+            - $call:
+              - eq
+              - $ref: state.pending
+              - []
+            - $call:
+              - ge
+              - $ref: state.steps
+              - $ref: limit
+        - $call:
+          - fn
+          - - state
+          - $call:
+            - let
+            - next:
+                $call:
+                - get
+                - $ref: state.pending
+                - 0
+              rest:
+                $call:
+                - slice
+                - $ref: state.pending
+                - 1
+                - $call:
+                  - len
+                  - $ref: state.pending
+            - $call:
+              - if
+              - $call:
+                - has
+                - $ref: state.visited
+                - $ref: next
+              - $call:
+                - dict
+                - pending
+                - $ref: rest
+                - visited
+                - $ref: state.visited
+                - steps
+                - $call:
+                  - add
+                  - $ref: state.steps
+                  - 1
+              - $call:
+                - dict
+                - pending
+                - $call:
+                  - concat
+                  - $ref: rest
+                  - $call:
+                    - map
+                    - $call:
+                      - fn
+                      - - edge
+                      - $ref: edge.to
+                    - $call:
+                      - filter
+                      - $call:
+                        - fn
+                        - - edge
+                        - $call:
+                          - eq
+                          - $ref: edge.from
+                          - $ref: next
+                      - $ref: edges
+                - visited
+                - $call:
+                  - append
+                  - $ref: state.visited
+                  - $ref: next
+                - steps
+                - $call:
+                  - add
+                  - $ref: state.steps
+                  - 1
+        - $call:
+          - dict
+          - pending
+          - - $ref: start
+          - visited
+          - []
+          - steps
+          - 0
+    - $call:
+      - dict
+      - visited
+      - $ref: done.visited
+      - complete
+      - $call:
+        - eq
+        - $ref: done.pending
+        - []
+      - basis
+      - syntax
+function_candidates:
+  $call:
+  - fn
+  - - source
+  - $call:
+    - filter
+    - $call:
+      - fn
+      - - node
+      - $call:
+        - eq
+        - $ref: node.kind
+        - function
+    - $ref: source.nodes
+select_functions:
+  $call:
+  - fn
+  - - source
+    - predicate
+  - $call:
+    - set
+    - $ref: source
+    - selection
+    - $call:
+      - filter
+      - $ref: predicate
+      - $call:
+        - get
+        - $ref: source
+        - selection
+        - $call:
+          - function_candidates
+          - $ref: source
+select_bodies:
+  $call:
+  - fn
+  - - source
+    - pattern
+  - $call:
+    - select_functions
+    - $ref: source
+    - $call:
+      - fn
+      - - node
+      - $call:
+        - get
+        - $call:
+          - match
+          - $ref: source
+          - $ref: node.body
+          - $ref: pattern
+        - matched
+result_expressions:
+  $call:
+  - fn
+  - - source
+    - reference
+  - $call:
+    - let
+    - code:
+        $call:
+        - sources.code_at
+        - $ref: source
+        - $ref: reference
+    - $call:
+      - if
+      - $call:
+        - and
+        - $call:
+          - eq
+          - $call:
+            - type
+            - $ref: code
+          - map
+        - $call:
+          - eq
+          - $call:
+            - keys
+            - $ref: code
+          - - $call
+      - $call:
+        - let
+        - parts:
+            $call:
+            - get
+            - $ref: code
+            - $call
+          head:
+            $call:
+            - get
+            - $call:
+              - get
+              - $ref: code
+              - $call
+            - 0
+        - $call:
+          - cond
+          - $call:
+            - eq
+            - $ref: head
+            - if
+          - $call:
+            - concat
+            - $call:
+              - result_expressions
+              - $ref: source
+              - $call:
+                - dict
+                - source
+                - $ref: reference.source
+                - path
+                - $call:
+                  - concat
+                  - $ref: reference.path
+                  - - $call
+                    - 2
+            - $call:
+              - result_expressions
+              - $ref: source
+              - $call:
+                - dict
+                - source
+                - $ref: reference.source
+                - path
+                - $call:
+                  - concat
+                  - $ref: reference.path
+                  - - $call
+                    - 3
+          - $call:
+            - has
+            - - let
+              - type_time
+            - $ref: head
+          - $call:
+            - result_expressions
+            - $ref: source
+            - $call:
+              - dict
+              - source
+              - $ref: reference.source
+              - path
+              - $call:
+                - concat
+                - $ref: reference.path
+                - - $call
+                  - $call:
+                    - if
+                    - $call:
+                      - eq
+                      - $ref: head
+                      - let
+                    - 2
+                    - 1
+          - - $ref: reference
+      - - $ref: reference
+result_matches:
+  $call:
+  - fn
+  - - source
+    - function
+    - pattern
+  - $call:
+    - map
+    - $call:
+      - fn
+      - - reference
+      - $call:
+        - dict
+        - reference
+        - $ref: reference
+        - basis
+        - syntax
+        - match
+        - $call:
+          - match
+          - $ref: source
+          - $ref: reference
+          - $ref: pattern
+    - $call:
+      - result_expressions
+      - $ref: source
+      - $ref: function.body
+select_results:
+  $call:
+  - fn
+  - - source
+    - pattern
+  - $call:
+    - select_functions
+    - $ref: source
+    - $call:
+      - fn
+      - - node
+      - $call:
+        - gt
+        - $call:
+          - len
+          - $call:
+            - filter
+            - $call:
+              - fn
+              - - result
+              - $ref: result.match.matched
+            - $call:
+              - result_matches
+              - $ref: source
+              - $ref: node
+              - $ref: pattern
+        - 0
+locate:
+  $call:
+  - fn
+  - - source
+    - reference
+  - $call:
+    - let
+    - found:
+        $call:
+        - sources.node
+        - $ref: source
+        - $ref: reference
+    - $call:
+      - if
+      - $call:
+        - eq
+        - $call:
+          - len
+          - $ref: found
+        - 0
+      - null
+      - $call:
+        - get
+        - $call:
+          - get
+          - $ref: found
+          - 0
+        - location
+relationship:
+  $call:
+  - fn
+  - - actual
+    - wanted
+    - basis
+  - $call:
+    - dict
+    - basis
+    - $ref: basis
+    - status
+    - $call:
+      - if
+      - $call:
+        - or
+        - $call:
+          - eq
+          - $ref: actual
+          - null
+        - $call:
+          - eq
+          - $ref: actual
+          - any
+      - unresolved
+      - $call:
+        - if
+        - $call:
+          - source_subtype
+          - $ref: actual
+          - $ref: wanted
+        - matches
+        - unresolved
+declared_result_type:
+  $call:
+  - fn
+  - - record
+    - wanted
+  - $call:
+    - relationship
+    - $call:
+      - if
+      - $call:
+        - eq
+        - $call:
+          - get
+          - $ref: record
+          - result_annotation
+          - null
+        - null
+      - null
+      - $call:
+        - get
+        - $call:
+          - get
+          - $call:
+            - get
+            - $ref: record
+            - types
+            - {}
+          - declared
+          - {}
+        - result
+        - null
+    - $ref: wanted
+    - declaration
+evidence_fields:
+- version
+- kind
+- source
+- reference
+- location
+- basis
+- types
+- effects
+- binding
+- resolved
+- target
+- revision

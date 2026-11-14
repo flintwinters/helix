@@ -3,6 +3,7 @@ use std::process::ExitCode;
 use crate::tooling::{analysis, inspection, interactive};
 
 pub fn dispatch(args: &[String]) -> Option<ExitCode> {
+    if args.first().is_some_and(|x| x == "search") { return Some(super::search::command(&args[1..])); }
     if args
         .get(1)
         .is_some_and(|arg| matches!(arg.as_str(), "--help" | "-h"))

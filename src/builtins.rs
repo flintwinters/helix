@@ -11,6 +11,7 @@ use crate::model::PolicyCall;
 
 mod collection;
 mod data;
+mod search;
 mod fault;
 mod number;
 pub(crate) mod typing;
@@ -44,7 +45,7 @@ pub(crate) enum Form {
 /// Evaluation policy; strict families retain their existing operation implementations.
 #[derive(Clone, Copy)]
 pub(crate) enum Evaluation {
-    Number, Collection, Typing, Data, Equal, NotEqual, Not, Text, Type, Assert, Raise,
+    Search, Number, Collection, Typing, Data, Equal, NotEqual, Not, Text, Type, Assert, Raise,
     Form(Form),
     /// Eager arguments followed by a machine operation handled by the request dispatcher.
     Engine,
@@ -71,6 +72,8 @@ const ACTORS: &[Descriptor] = &[
     actor("inspect", 1, Some(1), Evaluation::Engine),
     actor("effect", 2, Some(2), Evaluation::Engine),
     actor("http_serve", 2, Some(2), Evaluation::Engine),
+    actor("source_subtype", 2, Some(2), Evaluation::Search),
+    actor("regex_find", 2, Some(2), Evaluation::Search),
     actor("source_parse", 1, Some(1), Evaluation::Data),
     actor("json_parse", 1, Some(1), Evaluation::Data),
     actor("json_dump", 1, Some(1), Evaluation::Data),
@@ -173,6 +176,7 @@ pub fn apply(name: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault
         Evaluation::Not => boolean(&args[0], 0).map(|b| Value::Boolean(!b)),
         Evaluation::Typing => typing::apply(actor.name, args, pred),
         Evaluation::Collection => collection::apply(actor.name, args),
+        Evaluation::Search => search::apply(actor.name, args),
         Evaluation::Data => data::apply(actor.name, &args[0]),
         Evaluation::Text => text(&args[0]),
         Evaluation::Type => Ok(Value::String(type_name(&args[0]).to_string())),

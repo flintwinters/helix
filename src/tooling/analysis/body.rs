@@ -667,9 +667,11 @@ impl Checker<'_> {
 /// Search evidence uses the checker's bounded annotation and inference rules.
 pub(crate) fn evidence(graph: &Graph, function: NodeId) -> Yaml {
     let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new(), invalid_annotations: HashSet::new() };
-    let declared = checker.function_type(function).and_then(|t| search_type(&t)).unwrap_or(Value::Null);
+    let signature = checker.function_type(function);
+    let rendered = signature.as_ref().map(|t| s(&t.name())).unwrap_or(Value::Null);
+    let declared = signature.as_ref().and_then(search_type).unwrap_or(Value::Null);
     let inferred = graph.call(function).and_then(|c| c.get(2)).and_then(|&b| checker.infer(b)).and_then(|t| search_type(&t)).unwrap_or(Value::Null);
-    Value::Hash([(s("declared"), declared), (s("inferred_result"), inferred),
+    Value::Hash([(s("declared"), declared), (s("signature"), rendered), (s("inferred_result"), inferred),
         (s("unresolved"), Value::Array(checker.findings.unchecked.iter().chain(checker.findings.errors.iter()).map(|e| e.to_value()).collect()))].into_iter().collect()).plain_yaml().unwrap()
 }
 

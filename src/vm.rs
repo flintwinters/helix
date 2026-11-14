@@ -81,6 +81,7 @@ impl Vm {
         };
         let arguments = arguments.iter().map(crate::value::from_host_yaml).collect::<Result<Vec<_>, _>>()?;
         let mut next = Self::from_function(function.clone());
+        next.source_file = self.source_file.clone();
         next.evaluator = Some(Arc::new(Evaluator::invoke(function.clone(), arguments)));
         Ok(next)
     }
