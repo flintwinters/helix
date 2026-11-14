@@ -1,299 +1,345 @@
-# Helix explicit syntax; migrated from legacy source.
-# Testing behavior belongs in Helix; the outer golden suite checks this runner's own reports.
-"t": {"$call": ["import", "std:test"]}
-"l": {"$call": ["import", "std:list"]}
-"fixture": {"$call": ["fn", ["offset"], {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "offset"}, {"$ref": "n"}]}]}]}
-"add_two": {"$call": ["fixture", 2]}
-"add_ten": {"$call": ["fixture", 10]}
-"basics":
-  "$call":
-  - "t.suite"
-  - - "name": "equality"
-      "run":
-        "$call":
-        - "fn"
-        - []
-        - {"$call": ["t.equal", {"$call": ["list", 1, {"x": true}]}, {"$call": ["list", 1, {"x": true}]}]}
-    - "name": "expected_error"
-      "run":
-        "$call":
-        - "fn"
-        - []
-        - "$call":
-          - "t.equal"
+# Keep helpers local; this fixture tests results, not module inspection.
+$call:
+- let
+-
+  # Helix explicit syntax; migrated from legacy source.
+  # Testing behavior belongs in Helix; the outer golden suite checks this runner's own reports.
+  "t": {"$call": ["import", "std:test"]}
+  "l": {"$call": ["import", "std:list"]}
+  "fixture": {"$call": ["fn", ["offset"], {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "offset"}, {"$ref": "n"}]}]}]}
+  "add_two": {"$call": ["fixture", 2]}
+  "add_ten": {"$call": ["fixture", 10]}
+  "basics":
+    "$call":
+    - "t.suite"
+    - - "name": "equality"
+        "run":
+          "$call":
+          - "fn"
+          - []
+          - {"$call": ["t.equal", {"$call": ["list", 1, {"x": true}]}, {"$call": ["list", 1, {"x": true}]}]}
+      - "name": "expected_error"
+        "run":
+          "$call":
+          - "fn"
+          - []
           - "$call":
-            - "get"
-            - {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["div", 1, 0]}]}, "divide_by_zero"]}
-            - "kind"
-          - "divide_by_zero"
-    - "name": "captured_fixture"
-      "run":
-        "$call":
-        - "fn"
-        - []
-        - "$call":
-          - "t.equal"
-          - {"$call": ["list", {"$call": ["add_two", 3]}, {"$call": ["add_ten", 3]}, {"$call": ["add_two", 3]}]}
-          - {"$call": ["list", 5, 13, 5]}
-    - "name": "lazy_branch"
-      "run":
-        "$call":
-        - "fn"
-        - []
-        - "$call":
-          - "t.equal"
-          - {"$call": ["if", false, {"$call": ["raise", "unexpected", "unselected branch"]}, 42]}
-          - 42
-    - "name": "cleanup_on_success"
-      "run":
-        "$call":
-        - "fn"
-        - []
-        - "$call":
-          - "t.throws"
-          - {"$call": ["fn", [], {"$call": ["finally", 42, {"$call": ["raise", "cleanup", "ran"]}]}]}
-          - "cleanup"
-    - "name": "cleanup_on_failure"
-      "run":
-        "$call":
-        - "fn"
-        - []
-        - "$call":
-          - "t.throws"
+            - "t.equal"
+            - "$call":
+              - "get"
+              - {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["div", 1, 0]}]}, "divide_by_zero"]}
+              - "kind"
+            - "divide_by_zero"
+      - "name": "captured_fixture"
+        "run":
+          "$call":
+          - "fn"
+          - []
           - "$call":
-            - "fn"
-            - []
-            - {"$call": ["finally", {"$call": ["raise", "body", "failed"]}, {"$call": ["raise", "cleanup", "ran"]}]}
-          - "cleanup"
-"self_test":
-  "$call":
-  - "t.suite"
-  - - "name": "mismatch"
-      "run": {"$call": ["fn", [], {"$call": ["t.equal", 4, 5]}]}
-    - "name": "wrong_error"
-      "run": {"$call": ["fn", [], {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["div", 1, 0]}]}, "missing"]}]}
-    - "name": "missing_error"
-      "run": {"$call": ["fn", [], {"$call": ["t.throws", {"$call": ["fn", [], null]}, "missing"]}]}
-    - "name": "bad_predicate"
-      "run": {"$call": ["fn", [], {"$call": ["assert", 1]}]}
-    - "name": "final_case"
-      "run": {"$call": ["fn", [], "still ran"]}
-"rows":
-- "name": "zero"
-  "input": [0, 0]
-- "name": "negative"
-  "input": [-4, 16]
-- "name": "positive"
-  "input": [7, 49]
-"squares":
-  "$call":
-  - "t.table"
-  - {"$ref": "rows"}
-  - "$call":
-    - "fn"
-    - - "row"
-    - "$call":
-      - "t.equal"
-      - {"$call": ["mul", {"$call": ["get", {"$ref": "row"}, 0]}, {"$call": ["get", {"$ref": "row"}, 0]}]}
-      - {"$call": ["get", {"$ref": "row"}, 1]}
-"integers": {"$call": ["map", {"$call": ["fn", ["n"], {"$call": ["sub", {"$ref": "n"}, 5]}]}, {"$call": ["l.range",
-        11]}]}
-"pairs":
-  "$call":
-  - "l.flat_map"
-  - {"$ref": "integers"}
-  - "$call":
-    - "fn"
-    - - "a"
-    - "$call":
-      - "map"
-      - {"$call": ["fn", ["b"], {"$call": ["list", {"$ref": "a"}, {"$ref": "b"}]}]}
-      - {"$ref": "integers"}
-"commutative":
-  "$call":
-  - "t.property"
-  - "addition commutes"
-  - {"$ref": "pairs"}
-  - "$call":
-    - "fn"
-    - - "pair"
-    - "$call":
-      - "eq"
-      - {"$call": ["add", {"$call": ["get", {"$ref": "pair"}, 0]}, {"$call": ["get", {"$ref": "pair"}, 1]}]}
-      - {"$call": ["add", {"$call": ["get", {"$ref": "pair"}, 1]}, {"$call": ["get", {"$ref": "pair"}, 0]}]}
-"samples":
-  "$call":
-  - "list"
-  - []
-  - {"$call": ["list", 1]}
-  - {"$call": ["list", 3, 2, 1]}
-  - {"$call": ["list", 2, 2, 1]}
-  - {"$call": ["list", null, {"$call": ["list", 1]}, {"x": 2}]}
-"reverse_law":
-  "$call":
-  - "t.property"
-  - "reverse twice"
-  - {"$ref": "samples"}
-  - "$call":
-    - "fn"
-    - - "xs"
-    - {"$call": ["eq", {"$call": ["l.reverse", {"$call": ["l.reverse", {"$ref": "xs"}]}]}, {"$ref": "xs"}]}
-"sum_oracle":
-  "$call":
-  - "t.compare"
-  - "sum versus fold"
-  - {"$call": ["list", [], {"$ref": "integers"}, {"$call": ["list", -10, 0, 10]}]}
-  - {"$call": ["fn", ["xs"], {"$call": ["l.sum", {"$ref": "xs"}]}]}
-  - "$call":
-    - "fn"
-    - - "xs"
-    - "$call":
-      - "fold"
-      - {"$call": ["fn", ["acc", "n"], {"$call": ["add", {"$ref": "acc"}, {"$ref": "n"}]}]}
-      - 0
-      - {"$ref": "xs"}
-"positive": {"$call": ["fn", ["n"], {"$call": ["gt", {"$ref": "n"}, 0]}]}
-"counterexamples": {"$call": ["t.property", "all numbers are positive", {"$ref": "integers"}, {"$ref": "positive"}]}
-"regression":
-  "$call":
-  - "t.table"
-  - "$call":
-    - "list"
-    - "$call":
-      - "dict"
-      - "name"
-      - "zero is not positive"
-      - "input"
-      - {"$call": ["get", {"$call": ["get", {"$ref": "counterexamples"}, "results"]}, 5]}
-  - {"$call": ["fn", ["row"], {"$call": ["t.equal", {"$call": ["get", {"$ref": "row"}, "outcome"]}, "failed"]}]}
-"nested":
-  "$call":
-  - "t.suite"
-  - "$call":
-    - "list"
-    - "$call":
-      - "dict"
-      - "name"
-      - "child failure"
-      - "run"
-      - {"$call": ["fn", [], {"$call": ["t.require_pass", {"$ref": "self_test"}]}]}
-    - "$call":
-      - "dict"
-      - "name"
-      - "child success"
-      - "run"
-      - {"$call": ["fn", [], {"$call": ["t.require_pass", {"$ref": "squares"}]}]}
-"classified":
-  "$call":
-  - "l.group_by"
-  - {"$call": ["get", {"$ref": "self_test"}, "results"]}
-  - {"$call": ["fn", ["result"], {"$call": ["get", {"$ref": "result"}, "outcome"]}]}
-"selectable":
-- "name": "fast_math"
-  "tags":
-  - "fast"
-  "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["add", 2, 3]}, 5]}]}
-- "name": "known_bug"
-  "tags":
-  - "slow"
-  "run": {"$call": ["fn", [], {"$call": ["t.equal", 1, 2]}]}
-- "name": "fast_literal"
-  "tags":
-  - "fast"
-  "run": {"$call": ["fn", [], {"$call": ["t.equal", "\u96EA", "\u96EA"]}]}
-"selected":
-  "$call":
-  - "t.suite"
-  - "$call":
-    - "filter"
-    - {"$call": ["fn", ["spec"], {"$call": ["has", {"$call": ["get", {"$ref": "spec"}, "tags"]}, "fast"]}]}
-    - {"$ref": "selectable"}
-"first_run": {"$call": ["t.suite", {"$ref": "selectable"}]}
-"failed_names":
-  "$call":
-  - "map"
-  - {"$call": ["fn", ["result"], {"$call": ["get", {"$ref": "result"}, "name"]}]}
-  - "$call":
-    - "filter"
-    - {"$call": ["fn", ["result"], {"$call": ["eq", {"$call": ["get", {"$ref": "result"}, "outcome"]}, "failed"]}]}
-    - {"$call": ["get", {"$ref": "first_run"}, "results"]}
-"rerun":
-  "$call":
-  - "t.suite"
-  - "$call":
-    - "filter"
+            - "t.equal"
+            - {"$call": ["list", {"$call": ["add_two", 3]}, {"$call": ["add_ten", 3]}, {"$call": ["add_two", 3]}]}
+            - {"$call": ["list", 5, 13, 5]}
+      - "name": "lazy_branch"
+        "run":
+          "$call":
+          - "fn"
+          - []
+          - "$call":
+            - "t.equal"
+            - {"$call": ["if", false, {"$call": ["raise", "unexpected", "unselected branch"]}, 42]}
+            - 42
+      - "name": "cleanup_on_success"
+        "run":
+          "$call":
+          - "fn"
+          - []
+          - "$call":
+            - "t.throws"
+            - {"$call": ["fn", [], {"$call": ["finally", 42, {"$call": ["raise", "cleanup", "ran"]}]}]}
+            - "cleanup"
+      - "name": "cleanup_on_failure"
+        "run":
+          "$call":
+          - "fn"
+          - []
+          - "$call":
+            - "t.throws"
+            - "$call":
+              - "fn"
+              - []
+              - {"$call": ["finally", {"$call": ["raise", "body", "failed"]}, {"$call": ["raise", "cleanup", "ran"]}]}
+            - "cleanup"
+  "self_test":
+    "$call":
+    - "t.suite"
+    - - "name": "mismatch"
+        "run": {"$call": ["fn", [], {"$call": ["t.equal", 4, 5]}]}
+      - "name": "wrong_error"
+        "run": {"$call": ["fn", [], {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["div", 1, 0]}]}, "missing"]}]}
+      - "name": "missing_error"
+        "run": {"$call": ["fn", [], {"$call": ["t.throws", {"$call": ["fn", [], null]}, "missing"]}]}
+      - "name": "bad_predicate"
+        "run": {"$call": ["fn", [], {"$call": ["assert", 1]}]}
+      - "name": "final_case"
+        "run": {"$call": ["fn", [], "still ran"]}
+  "rows":
+  - "name": "zero"
+    "input": [0, 0]
+  - "name": "negative"
+    "input": [-4, 16]
+  - "name": "positive"
+    "input": [7, 49]
+  "squares":
+    "$call":
+    - "t.table"
+    - {"$ref": "rows"}
     - "$call":
       - "fn"
-      - - "spec"
-      - {"$call": ["has", {"$ref": "failed_names"}, {"$call": ["get", {"$ref": "spec"}, "name"]}]}
-    - {"$ref": "selectable"}
-"state_rows":
-- "name": "empty_state"
-  "input":
-    "source": []
-    "expected":
-      "status": "finished"
-      "root": []
-- "name": "squares_state"
-  "input":
-    "source": [2, 3]
-    "expected":
-      "status": "finished"
-      "root": [4, 9]
-"state_goldens":
-  "$call":
-  - "t.table"
-  - {"$ref": "state_rows"}
-  - "$call":
-    - "fn"
-    - - "row"
+      - - "row"
+      - "$call":
+        - "t.equal"
+        - {"$call": ["mul", {"$call": ["get", {"$ref": "row"}, 0]}, {"$call": ["get", {"$ref": "row"}, 0]}]}
+        - {"$call": ["get", {"$ref": "row"}, 1]}
+  "integers": {"$call": ["map", {"$call": ["fn", ["n"], {"$call": ["sub", {"$ref": "n"}, 5]}]}, {"$call": ["l.range",
+          11]}]}
+  "pairs":
+    "$call":
+    - "l.flat_map"
+    - {"$ref": "integers"}
     - "$call":
-      - "t.equal"
+      - "fn"
+      - - "a"
+      - "$call":
+        - "map"
+        - {"$call": ["fn", ["b"], {"$call": ["list", {"$ref": "a"}, {"$ref": "b"}]}]}
+        - {"$ref": "integers"}
+  "commutative":
+    "$call":
+    - "t.property"
+    - "addition commutes"
+    - {"$ref": "pairs"}
+    - "$call":
+      - "fn"
+      - - "pair"
+      - "$call":
+        - "eq"
+        - {"$call": ["add", {"$call": ["get", {"$ref": "pair"}, 0]}, {"$call": ["get", {"$ref": "pair"}, 1]}]}
+        - {"$call": ["add", {"$call": ["get", {"$ref": "pair"}, 1]}, {"$call": ["get", {"$ref": "pair"}, 0]}]}
+  "samples":
+    "$call":
+    - "list"
+    - []
+    - {"$call": ["list", 1]}
+    - {"$call": ["list", 3, 2, 1]}
+    - {"$call": ["list", 2, 2, 1]}
+    - {"$call": ["list", null, {"$call": ["list", 1]}, {"x": 2}]}
+  "reverse_law":
+    "$call":
+    - "t.property"
+    - "reverse twice"
+    - {"$ref": "samples"}
+    - "$call":
+      - "fn"
+      - - "xs"
+      - {"$call": ["eq", {"$call": ["l.reverse", {"$call": ["l.reverse", {"$ref": "xs"}]}]}, {"$ref": "xs"}]}
+  "sum_oracle":
+    "$call":
+    - "t.compare"
+    - "sum versus fold"
+    - {"$call": ["list", [], {"$ref": "integers"}, {"$call": ["list", -10, 0, 10]}]}
+    - {"$call": ["fn", ["xs"], {"$call": ["l.sum", {"$ref": "xs"}]}]}
+    - "$call":
+      - "fn"
+      - - "xs"
+      - "$call":
+        - "fold"
+        - {"$call": ["fn", ["acc", "n"], {"$call": ["add", {"$ref": "acc"}, {"$ref": "n"}]}]}
+        - 0
+        - {"$ref": "xs"}
+  "positive": {"$call": ["fn", ["n"], {"$call": ["gt", {"$ref": "n"}, 0]}]}
+  "counterexamples": {"$call": ["t.property", "all numbers are positive", {"$ref": "integers"}, {"$ref": "positive"}]}
+  "regression":
+    "$call":
+    - "t.table"
+    - "$call":
+      - "list"
       - "$call":
         - "dict"
-        - "status"
-        - "finished"
-        - "root"
+        - "name"
+        - "zero is not positive"
+        - "input"
+        - {"$call": ["get", {"$call": ["get", {"$ref": "counterexamples"}, "results"]}, 5]}
+    - {"$call": ["fn", ["row"], {"$call": ["t.equal", {"$call": ["get", {"$ref": "row"}, "outcome"]}, "failed"]}]}
+  "nested":
+    "$call":
+    - "t.suite"
+    - "$call":
+      - "list"
+      - "$call":
+        - "dict"
+        - "name"
+        - "child failure"
+        - "run"
+        - {"$call": ["fn", [], {"$call": ["t.require_pass", {"$ref": "self_test"}]}]}
+      - "$call":
+        - "dict"
+        - "name"
+        - "child success"
+        - "run"
+        - {"$call": ["fn", [], {"$call": ["t.require_pass", {"$ref": "squares"}]}]}
+  "classified":
+    "$call":
+    - "l.group_by"
+    - {"$call": ["get", {"$ref": "self_test"}, "results"]}
+    - {"$call": ["fn", ["result"], {"$call": ["get", {"$ref": "result"}, "outcome"]}]}
+  "selectable":
+  - "name": "fast_math"
+    "tags":
+    - "fast"
+    "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["add", 2, 3]}, 5]}]}
+  - "name": "known_bug"
+    "tags":
+    - "slow"
+    "run": {"$call": ["fn", [], {"$call": ["t.equal", 1, 2]}]}
+  - "name": "fast_literal"
+    "tags":
+    - "fast"
+    "run": {"$call": ["fn", [], {"$call": ["t.equal", "\u96EA", "\u96EA"]}]}
+  "selected":
+    "$call":
+    - "t.suite"
+    - "$call":
+      - "filter"
+      - {"$call": ["fn", ["spec"], {"$call": ["has", {"$call": ["get", {"$ref": "spec"}, "tags"]}, "fast"]}]}
+      - {"$ref": "selectable"}
+  "first_run": {"$call": ["t.suite", {"$ref": "selectable"}]}
+  "failed_names":
+    "$call":
+    - "map"
+    - {"$call": ["fn", ["result"], {"$call": ["get", {"$ref": "result"}, "name"]}]}
+    - "$call":
+      - "filter"
+      - {"$call": ["fn", ["result"], {"$call": ["eq", {"$call": ["get", {"$ref": "result"}, "outcome"]}, "failed"]}]}
+      - {"$call": ["get", {"$ref": "first_run"}, "results"]}
+  "rerun":
+    "$call":
+    - "t.suite"
+    - "$call":
+      - "filter"
+      - "$call":
+        - "fn"
+        - - "spec"
+        - {"$call": ["has", {"$ref": "failed_names"}, {"$call": ["get", {"$ref": "spec"}, "name"]}]}
+      - {"$ref": "selectable"}
+  "state_rows":
+  - "name": "empty_state"
+    "input":
+      "source": []
+      "expected":
+        "status": "finished"
+        "root": []
+  - "name": "squares_state"
+    "input":
+      "source": [2, 3]
+      "expected":
+        "status": "finished"
+        "root": [4, 9]
+  "state_goldens":
+    "$call":
+    - "t.table"
+    - {"$ref": "state_rows"}
+    - "$call":
+      - "fn"
+      - - "row"
+      - "$call":
+        - "t.equal"
         - "$call":
-          - "map"
-          - {"$call": ["fn", ["n"], {"$call": ["mul", {"$ref": "n"}, {"$ref": "n"}]}]}
-          - {"$call": ["get", {"$ref": "row"}, "source"]}
-      - {"$call": ["get", {"$ref": "row"}, "expected"]}
-"shrunk":
-  "$call":
-  - "l.find"
-  - {"$call": ["list", 0, 1, -1]}
-  - {"$call": ["fn", ["n"], {"$call": ["not", {"$call": ["positive", {"$ref": "n"}]}]}]}
-  - null
-"invalid_spec":
-  "$call":
-  - "t.throws"
-  - {"$call": ["fn", [], {"$call": ["t.suite", {"$call": ["list", {"name": "missing_callback"}]}]}]}
-  - "missing"
-"checks":
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "basics"}, "failed"]}, 0]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "self_test"}, "failed"]}, 4]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "self_test"}, "passed"]}, 1]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "squares"}, "passed"]}, 3]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "commutative"}, "passed"]}, 121]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "reverse_law"}, "failed"]}, 0]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "sum_oracle"}, "failed"]}, 0]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "counterexamples"}, "failed"]}, 6]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "regression"}, "failed"]}, 0]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "nested"}, "failed"]}, 1]}
-- {"$call": ["t.equal", {"$call": ["len", {"$call": ["get", {"$ref": "classified"}, "failed"]}]}, 4]}
-"more_checks":
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "selected"}, "passed"]}, 2]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "rerun"}, "total"]}, 1]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "rerun"}, "failed"]}, 1]}
-- {"$call": ["t.equal", {"$call": ["get", {"$ref": "state_goldens"}, "failed"]}, 0]}
-- {"$call": ["t.equal", {"$ref": "shrunk"}, 0]}
-- "$call":
-  - "t.equal"
+          - "dict"
+          - "status"
+          - "finished"
+          - "root"
+          - "$call":
+            - "map"
+            - {"$call": ["fn", ["n"], {"$call": ["mul", {"$ref": "n"}, {"$ref": "n"}]}]}
+            - {"$call": ["get", {"$ref": "row"}, "source"]}
+        - {"$call": ["get", {"$ref": "row"}, "expected"]}
+  "shrunk":
+    "$call":
+    - "l.find"
+    - {"$call": ["list", 0, 1, -1]}
+    - {"$call": ["fn", ["n"], {"$call": ["not", {"$call": ["positive", {"$ref": "n"}]}]}]}
+    - null
+  "invalid_spec":
+    "$call":
+    - "t.throws"
+    - {"$call": ["fn", [], {"$call": ["t.suite", {"$call": ["list", {"name": "missing_callback"}]}]}]}
+    - "missing"
+  "checks":
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "basics"}, "failed"]}, 0]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "self_test"}, "failed"]}, 4]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "self_test"}, "passed"]}, 1]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "squares"}, "passed"]}, 3]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "commutative"}, "passed"]}, 121]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "reverse_law"}, "failed"]}, 0]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "sum_oracle"}, "failed"]}, 0]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "counterexamples"}, "failed"]}, 6]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "regression"}, "failed"]}, 0]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "nested"}, "failed"]}, 1]}
+  - {"$call": ["t.equal", {"$call": ["len", {"$call": ["get", {"$ref": "classified"}, "failed"]}]}, 4]}
+  "more_checks":
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "selected"}, "passed"]}, 2]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "rerun"}, "total"]}, 1]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "rerun"}, "failed"]}, 1]}
+  - {"$call": ["t.equal", {"$call": ["get", {"$ref": "state_goldens"}, "failed"]}, 0]}
+  - {"$call": ["t.equal", {"$ref": "shrunk"}, 0]}
   - "$call":
-    - "get"
-    - {"$call": ["get", {"$call": ["get", {"$call": ["get", {"$ref": "self_test"}, "results"]}, 0]}, "error"]}
-    - "data"
-  - "expected": 5
-    "actual": 4
-"empty": {"$call": ["t.require_pass", {"$call": ["t.suite", []]}]}
+    - "t.equal"
+    - "$call":
+      - "get"
+      - {"$call": ["get", {"$call": ["get", {"$call": ["get", {"$ref": "self_test"}, "results"]}, 0]}, "error"]}
+      - "data"
+    - "expected": 5
+      "actual": 4
+  "empty": {"$call": ["t.require_pass", {"$call": ["t.suite", []]}]}
+- $call:
+  - dict
+  - basics
+  - $ref: basics
+  - checks
+  - $ref: checks
+  - classified
+  - $ref: classified
+  - commutative
+  - $ref: commutative
+  - counterexamples
+  - $ref: counterexamples
+  - empty
+  - $ref: empty
+  - failed_names
+  - $ref: failed_names
+  - first_run
+  - $ref: first_run
+  - invalid_spec
+  - $ref: invalid_spec
+  - more_checks
+  - $ref: more_checks
+  - nested
+  - $ref: nested
+  - regression
+  - $ref: regression
+  - rerun
+  - $ref: rerun
+  - reverse_law
+  - $ref: reverse_law
+  - selected
+  - $ref: selected
+  - self_test
+  - $ref: self_test
+  - shrunk
+  - $ref: shrunk
+  - squares
+  - $ref: squares
+  - state_goldens
+  - $ref: state_goldens
+  - sum_oracle
+  - $ref: sum_oracle

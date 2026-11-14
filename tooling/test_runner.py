@@ -77,15 +77,6 @@ def root_section(state: str) -> str | None:
 ERROR_FIELDS = {"kind", "message", "line", "column"}  # `path` is omitted for errors outside the graph (parse)
 
 
-class GoldenPolicyError(RuntimeError):
-    """A failed policy execution, retaining the exact replayable evidence."""
-
-    def __init__(self, reason, result, source):
-        super().__init__(f"std:test.golden_decision failed: {reason}")
-        self.result = result
-        self.source = source
-
-
 class MutationPolicyError(RuntimeError):
     """A rejected mutation policy result with a retained replay diagnostic."""
 
@@ -281,60 +272,12 @@ class TestContext:
     def robustness(self, cases: list[Path], jobs: int = DEFAULT_TEST_JOBS) -> list[str]:
         return collect_cases(self.robustness_case, cases, jobs)
 
-    def golden_policy(self, observation):
-        """Ask Helix for the next golden action; reject broken policy execution."""
-        import yaml
-
-        replay = observation["replay"]
-        facts = {
-            "deterministic": observation["run"] == observation["repeated"],
-            "matches_expected": observation["run"]["stdout"] == observation["expected"],
-            "bless_requested": observation["bless"],
-            "replayable": observation["root"] is not None,
-            "replay_completed": replay is not None,
-            "replay_matches": replay is not None and replay["returncode"] == 0
-                              and replay["root"] == observation["root"],
-        }
-        source = yaml.safe_dump({"$call": ["let", {
-            "test": {"$call": ["import", "std:test"]},
-        }, {"$call": ["test.golden_decision", {"$literal": facts}]}]}, allow_unicode=False)
-        result = self.helix("run", "-", stdin=source)
-        problem = self.malformed_state(result.stdout, result.returncode)
-        if problem is None and (result.returncode != 0 or result.stderr):
-            problem = "policy did not finish cleanly"
-        if problem is None:
-            decision = yaml.safe_load(result.stdout).get("root")
-            if (not isinstance(decision, dict) or set(decision) != {"stage", "bless", "replay"}
-                    or decision.get("stage") not in ("passed", "determinism", "golden", "roundtrip")
-                    or type(decision.get("bless")) is not bool
-                    or type(decision.get("replay")) is not bool):
-                problem = "policy root must contain a stage and boolean bless/replay actions"
-            elif (decision["bless"] and not observation["bless"]
-                  or decision["replay"] and (decision["stage"] != "passed"
-                      or observation["root"] is None or observation["replay"] is not None)
-                  or decision["stage"] in ("determinism", "golden") and decision["bless"]
-                  or decision["stage"] == "roundtrip" and observation["replay"] is None
-                  or decision["stage"] == "passed" and observation["root"] is not None
-                      and observation["replay"] is None and not decision["replay"]):
-                problem = "policy returned actions inconsistent with the observation phase"
-            # Helix selects the next action; independently captured evidence can
-            # veto acceptance or persistence even when that decision is well formed.
-            elif ((decision["bless"] or decision["replay"] or decision["stage"] == "passed")
-                  and observation["run"] != observation["repeated"]):
-                problem = "policy accepted nondeterministic process observations"
-            elif ((decision["replay"] or decision["stage"] == "passed")
-                  and not decision["bless"]
-                  and observation["run"]["stdout"] != observation["expected"]):
-                problem = "policy accepted an expectation mismatch without blessing"
-            elif (decision["stage"] == "passed" and observation["replay"] is not None
-                  and (observation["replay"]["returncode"] != 0
-                       or observation["replay"]["root"] != observation["root"])):
-                problem = "policy accepted a failed or changed replay"
-        if problem is not None:
-            raise GoldenPolicyError(problem, result, source)
-        return decision
-
     def golden_case(self, case: Path, bless: bool) -> list[str]:
+        import os
+        from textwrap import indent
+
+        if bless and os.environ.get("CI"):
+            return [f"{case.relative_to(self.root)}: blessing is disabled in CI"]
         expected_path = case.with_suffix(".expected.yaml")
         command = self.commands[case.parent]
         run = self.helix(*shlex.split(command), str(case.relative_to(self.root)))
@@ -344,46 +287,24 @@ class TestContext:
         repeated = self.helix(*shlex.split(command), str(case.relative_to(self.root)))
         if (why := self.malformed_state(repeated.stdout, repeated.returncode)) is not None:
             return [test_failure(self.root, case, "determinism", why, command, repeated, expected=out)]
+        if (run.returncode, out, run.stderr) != (repeated.returncode, repeated.stdout, repeated.stderr):
+            return [test_failure(self.root, case, "determinism", "two runs differ", command, repeated, expected=out)]
         program = self.root_section(out)
-        observation = {
-            "run": {"returncode": run.returncode, "stdout": out, "stderr": run.stderr},
-            "repeated": {"returncode": repeated.returncode, "stdout": repeated.stdout, "stderr": repeated.stderr},
-            "expected": expected_path.read_text() if expected_path.exists() else None,
-            "bless": bless, "root": program, "replay": None,
-        }
-        replay_problem = None
-        try:
-            decision = self.golden_policy(observation)
-            if decision["replay"]:
-                from textwrap import indent
-
-                replay = "$literal:\n" + indent(program, "  ")
-                reloaded = self.helix("run", "-", stdin=replay)
-                replay_problem = self.malformed_state(reloaded.stdout, reloaded.returncode)
-                observation["replay"] = {"returncode": reloaded.returncode,
-                                         "root": self.root_section(reloaded.stdout) if replay_problem is None else None,
-                                         "stdout": reloaded.stdout, "stderr": reloaded.stderr}
-                decision = self.golden_policy(observation)
-        except GoldenPolicyError as error:
-            return [test_failure(self.root, case, "policy", str(error), "run", error.result,
-                                 source=error.source, observation=observation)]
-        # A broken policy must never overwrite an expectation. Valid roundtrip failures
-        # retain the established behavior of blessing the original deterministic run.
-        if decision["bless"]:
-            expected_path.write_text(out)
-        # Process failures remain independently observable even if the policy is broken.
-        if replay_problem is not None:
-            return [test_failure(self.root, case, "roundtrip", replay_problem, "run", reloaded,
-                                 source=replay, expected=out)]
-        match decision["stage"]:
-            case "determinism":
-                return [test_failure(self.root, case, "determinism", "two runs differ", command, repeated, expected=out)]
-            case "golden":
-                return [test_failure(self.root, case, "golden", f"state differs from {expected_path.relative_to(self.root)}",
-                                     command, run, expected=observation["expected"] or "")]
-            case "roundtrip":
-                return [test_failure(self.root, case, "roundtrip", "emitted root is not stable",
-                                     "run", reloaded, source=replay, expected=out)]
+        if program is not None:
+            replay = "$literal:\n" + indent(program, "  ")
+            reloaded = self.helix("run", "-", stdin=replay)
+            why = self.malformed_state(reloaded.stdout, reloaded.returncode)
+            if why is None and (reloaded.returncode != 0 or self.root_section(reloaded.stdout) != program):
+                why = "emitted root is not stable"
+            if why is not None:
+                return [test_failure(self.root, case, "roundtrip", why, "run", reloaded,
+                                     source=replay, expected=out)]
+        expected = expected_path.read_bytes().decode("utf-8") if expected_path.exists() else None
+        if bless:
+            expected_path.write_bytes(out.encode("utf-8"))
+        elif out != expected:
+            return [test_failure(self.root, case, "golden", f"state differs from {expected_path.relative_to(self.root)}",
+                                 command, run, expected=expected or "")]
         return []
 
     def regression(self, bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_JOBS,

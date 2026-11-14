@@ -1,174 +1,202 @@
-# Helix explicit syntax; migrated from legacy source.
-# Batch rows are independent YAML documents; keep source and index with each error.
-"yaml": {"$call": ["import", "std:yaml"]}
-"validation": {"$call": ["import", "std:validation"]}
-"rows":
-- "{name: core, stock: 3}"
-- "{name: broken"
-- "{name: debt, stock: -2}"
-- "{stock: 1}"
-- "{name: cli, stock: 2}"
-"validate":
-  "$call":
-  - "fn"
-  - - "row"
-  - "$call":
-    - "let"
-    - "name": {"$call": ["get", {"$ref": "row"}, "name"]}
-      "stock": {"$call": ["get", {"$ref": "row"}, "stock"]}
+# Keep helpers local; this fixture tests results, not module inspection.
+$call:
+- let
+-
+  # Helix explicit syntax; migrated from legacy source.
+  # Batch rows are independent YAML documents; keep source and index with each error.
+  "yaml": {"$call": ["import", "std:yaml"]}
+  "validation": {"$call": ["import", "std:validation"]}
+  "rows":
+  - "{name: core, stock: 3}"
+  - "{name: broken"
+  - "{name: debt, stock: -2}"
+  - "{stock: 1}"
+  - "{name: cli, stock: 2}"
+  "validate":
+    "$call":
+    - "fn"
+    - - "row"
+    - "$call":
+      - "let"
+      - "name": {"$call": ["get", {"$ref": "row"}, "name"]}
+        "stock": {"$call": ["get", {"$ref": "row"}, "stock"]}
+      - "$call":
+        - "if"
+        - "$call":
+          - "eq"
+          - {"$call": ["assert", {"$call": ["ge", {"$ref": "stock"}, 0]}, "stock must be nonnegative"]}
+          - null
+        - {"$ref": "name"}
+        - null
+  "batch":
+    "$call":
+    - "validation.batch"
+    - {"$ref": "rows"}
+    - {"$call": ["fn", ["source"], {"$call": ["validate", {"$call": ["yaml.parse", {"$ref": "source"}]}]}]}
+  "calculate":
+    "$call":
+    - "fn"
+    - - "source"
+    - "$call":
+      - "let"
+      - "form": {"$call": ["yaml.parse", {"$ref": "source"}]}
+      - "$call":
+        - "if"
+        - {"$call": ["ne", {"$call": ["type", {"$ref": "form"}]}, "list"]}
+        - {"$call": ["raise", "syntax", "expected [operator, left, right]", {"$ref": "form"}]}
+        - "$call":
+          - "if"
+          - {"$call": ["ne", {"$call": ["len", {"$ref": "form"}]}, 3]}
+          - {"$call": ["raise", "arity", "calculator needs exactly two operands", {"$ref": "form"}]}
+          - "$call":
+            - "let"
+            - "op": {"$call": ["get", {"$ref": "form"}, 0]}
+              "left": {"$call": ["get", {"$ref": "form"}, 1]}
+              "right": {"$call": ["get", {"$ref": "form"}, 2]}
+            - "$call":
+              - "cond"
+              - {"$call": ["eq", {"$ref": "op"}, "+"]}
+              - {"$call": ["add", {"$ref": "left"}, {"$ref": "right"}]}
+              - {"$call": ["eq", {"$ref": "op"}, "/"]}
+              - {"$call": ["div", {"$ref": "left"}, {"$ref": "right"}]}
+              - {"$call": ["raise", "syntax", "unknown calculator operator", {"$ref": "op"}]}
+  "calculations":
+    "$call":
+    - "map"
+    - "$call":
+      - "fn"
+      - - "source"
+      - "$call":
+        - "try"
+        - {"$call": ["calculate", {"$ref": "source"}]}
+        - {"$call": ["fn", ["error"], {"$ref": "error"}]}
+    - - "[+, 6, 2]"
+      - "[+, 1]"
+      - "[wat, 1, 2]"
+      - "42"
+      - "[/, 1, 0]"
+      - "[+, 8, 1]"
+  "attempt":
+    "$call":
+    - "fn"
+    - - "kinds"
+      - "index"
+    - "$call":
+      - "let"
+      - "kind": {"$call": ["get", {"$ref": "kinds"}, {"$ref": "index"}]}
+      - "$call":
+        - "if"
+        - {"$call": ["eq", {"$ref": "kind"}, "ok"]}
+        - 42
+        - {"$call": ["raise", {"$ref": "kind"}, "step failed", {"$ref": "index"}]}
+  "retry":
+    "$call":
+    - "fn"
+    - - "kinds"
+      - "index"
+      - "history"
+    - "$call":
+      - "let"
+      - "outcome":
+          "$call":
+          - "try"
+          - {"$call": ["set", {}, "value", {"$call": ["attempt", {"$ref": "kinds"}, {"$ref": "index"}]}]}
+          - {"$call": ["fn", ["error"], {"$call": ["set", {}, "error", {"$ref": "error"}]}]}
+      - "$call":
+        - "let"
+        - "next": {"$call": ["concat", {"$ref": "history"}, {"$call": ["list", {"$ref": "outcome"}]}]}
+        - "$call":
+          - "if"
+          - "$call":
+            - "and"
+            - {"$call": ["has", {"$ref": "outcome"}, "error"]}
+            - {"$call": ["eq", {"$call": ["get", {"$call": ["get", {"$ref": "outcome"}, "error"]}, "kind"]}, "transient"]}
+            - {"$call": ["lt", {"$call": ["add", {"$ref": "index"}, 1]}, {"$call": ["len", {"$ref": "kinds"}]}]}
+          - {"$call": ["retry", {"$ref": "kinds"}, {"$call": ["add", {"$ref": "index"}, 1]}, {"$ref": "next"}]}
+          - {"$call": ["set", {"$call": ["set", {}, "outcome", {"$ref": "outcome"}]}, "history", {"$ref": "next"}]}
+  "retried": {"$call": ["retry", ["transient", "transient", "ok"], 0, []]}
+  "fatal": {"$call": ["retry", ["fatal", "ok"], 0, []]}
+  "exhausted": {"$call": ["retry", ["transient", "transient"], 0, []]}
+  "load_config":
+    "$call":
+    - "fn"
+    - []
+    - "$call":
+      - "try"
+      - {"$call": ["yaml.parse", "{broken"]}
+      - "$call":
+        - "fn"
+        - - "error"
+        - "$call":
+          - "raise"
+          - "$call":
+            - "dict"
+            - "kind"
+            - "configuration"
+            - "message"
+            - "cannot load deployment configuration"
+            - "cause"
+            - {"$ref": "error"}
+  "wrapped": {"$call": ["try", {"$call": ["load_config"]}, {"$call": ["fn", ["error"], {"$ref": "error"}]}]}
+  "allocate":
+    "$call":
+    - "fn"
+    - - "count"
     - "$call":
       - "if"
       - "$call":
         - "eq"
-        - {"$call": ["assert", {"$call": ["ge", {"$ref": "stock"}, 0]}, "stock must be nonnegative"]}
-        - null
-      - {"$ref": "name"}
-      - null
-"batch":
-  "$call":
-  - "validation.batch"
-  - {"$ref": "rows"}
-  - {"$call": ["fn", ["source"], {"$call": ["validate", {"$call": ["yaml.parse", {"$ref": "source"}]}]}]}
-"calculate":
-  "$call":
-  - "fn"
-  - - "source"
-  - "$call":
-    - "let"
-    - "form": {"$call": ["yaml.parse", {"$ref": "source"}]}
-    - "$call":
-      - "if"
-      - {"$call": ["ne", {"$call": ["type", {"$ref": "form"}]}, "list"]}
-      - {"$call": ["raise", "syntax", "expected [operator, left, right]", {"$ref": "form"}]}
-      - "$call":
-        - "if"
-        - {"$call": ["ne", {"$call": ["len", {"$ref": "form"}]}, 3]}
-        - {"$call": ["raise", "arity", "calculator needs exactly two operands", {"$ref": "form"}]}
         - "$call":
-          - "let"
-          - "op": {"$call": ["get", {"$ref": "form"}, 0]}
-            "left": {"$call": ["get", {"$ref": "form"}, 1]}
-            "right": {"$call": ["get", {"$ref": "form"}, 2]}
-          - "$call":
-            - "cond"
-            - {"$call": ["eq", {"$ref": "op"}, "+"]}
-            - {"$call": ["add", {"$ref": "left"}, {"$ref": "right"}]}
-            - {"$call": ["eq", {"$ref": "op"}, "/"]}
-            - {"$call": ["div", {"$ref": "left"}, {"$ref": "right"}]}
-            - {"$call": ["raise", "syntax", "unknown calculator operator", {"$ref": "op"}]}
-"calculations":
-  "$call":
-  - "map"
-  - "$call":
+          - "assert"
+          - {"$call": ["gt", {"$ref": "count"}, 0]}
+          - "allocate count must be positive; pass at least 1"
+        - null
+      - {"$call": ["mul", {"$ref": "count"}, 2]}
+      - null
+  "wrong_call": {"$call": ["try", {"$call": ["allocate", 0]}, {"$call": ["fn", ["error"], {"$ref": "error"}]}]}
+  "fixed_call": {"$call": ["allocate", 1]}
+  "job":
+    "$call":
     - "fn"
-    - - "source"
-    - "$call":
-      - "try"
-      - {"$call": ["calculate", {"$ref": "source"}]}
-      - {"$call": ["fn", ["error"], {"$ref": "error"}]}
-  - - "[+, 6, 2]"
-    - "[+, 1]"
-    - "[wat, 1, 2]"
-    - "42"
-    - "[/, 1, 0]"
-    - "[+, 8, 1]"
-"attempt":
-  "$call":
-  - "fn"
-  - - "kinds"
-    - "index"
-  - "$call":
-    - "let"
-    - "kind": {"$call": ["get", {"$ref": "kinds"}, {"$ref": "index"}]}
-    - "$call":
-      - "if"
-      - {"$call": ["eq", {"$ref": "kind"}, "ok"]}
-      - 42
-      - {"$call": ["raise", {"$ref": "kind"}, "step failed", {"$ref": "index"}]}
-"retry":
-  "$call":
-  - "fn"
-  - - "kinds"
-    - "index"
-    - "history"
-  - "$call":
-    - "let"
-    - "outcome":
-        "$call":
-        - "try"
-        - {"$call": ["set", {}, "value", {"$call": ["attempt", {"$ref": "kinds"}, {"$ref": "index"}]}]}
-        - {"$call": ["fn", ["error"], {"$call": ["set", {}, "error", {"$ref": "error"}]}]}
+    - - "divisor"
     - "$call":
       - "let"
-      - "next": {"$call": ["concat", {"$ref": "history"}, {"$call": ["list", {"$ref": "outcome"}]}]}
+      - "prepared": {"$call": ["add", 1, 1]}
       - "$call":
-        - "if"
+        - "finally"
         - "$call":
-          - "and"
-          - {"$call": ["has", {"$ref": "outcome"}, "error"]}
-          - {"$call": ["eq", {"$call": ["get", {"$call": ["get", {"$ref": "outcome"}, "error"]}, "kind"]}, "transient"]}
-          - {"$call": ["lt", {"$call": ["add", {"$ref": "index"}, 1]}, {"$call": ["len", {"$ref": "kinds"}]}]}
-        - {"$call": ["retry", {"$ref": "kinds"}, {"$call": ["add", {"$ref": "index"}, 1]}, {"$ref": "next"}]}
-        - {"$call": ["set", {"$call": ["set", {}, "outcome", {"$ref": "outcome"}]}, "history", {"$ref": "next"}]}
-"retried": {"$call": ["retry", ["transient", "transient", "ok"], 0, []]}
-"fatal": {"$call": ["retry", ["fatal", "ok"], 0, []]}
-"exhausted": {"$call": ["retry", ["transient", "transient"], 0, []]}
-"load_config":
-  "$call":
-  - "fn"
-  - []
-  - "$call":
+          - "let"
+          - "middle": {"$call": ["div", {"$ref": "prepared"}, {"$ref": "divisor"}]}
+          - {"$call": ["add", {"$ref": "middle"}, 1]}
+        - {"$call": ["raise", "cleanup", "release job lease"]}
+  "cleanup_after_middle_failure": {"$call": ["try", {"$call": ["job", 0]}, {"$call": ["fn", ["error"], {"$ref": "error"}]}]}
+  "cleanup_after_success": {"$call": ["try", {"$call": ["job", 1]}, {"$call": ["fn", ["error"], {"$ref": "error"}]}]}
+  "preserved":
+    "$call":
     - "try"
-    - {"$call": ["yaml.parse", "{broken"]}
-    - "$call":
-      - "fn"
-      - - "error"
-      - "$call":
-        - "raise"
-        - "$call":
-          - "dict"
-          - "kind"
-          - "configuration"
-          - "message"
-          - "cannot load deployment configuration"
-          - "cause"
-          - {"$ref": "error"}
-"wrapped": {"$call": ["try", {"$call": ["load_config"]}, {"$call": ["fn", ["error"], {"$ref": "error"}]}]}
-"allocate":
-  "$call":
-  - "fn"
-  - - "count"
-  - "$call":
-    - "if"
-    - "$call":
-      - "eq"
-      - "$call":
-        - "assert"
-        - {"$call": ["gt", {"$ref": "count"}, 0]}
-        - "allocate count must be positive; pass at least 1"
-      - null
-    - {"$call": ["mul", {"$ref": "count"}, 2]}
-    - null
-"wrong_call": {"$call": ["try", {"$call": ["allocate", 0]}, {"$call": ["fn", ["error"], {"$ref": "error"}]}]}
-"fixed_call": {"$call": ["allocate", 1]}
-"job":
-  "$call":
-  - "fn"
-  - - "divisor"
-  - "$call":
-    - "let"
-    - "prepared": {"$call": ["add", 1, 1]}
-    - "$call":
-      - "finally"
-      - "$call":
-        - "let"
-        - "middle": {"$call": ["div", {"$ref": "prepared"}, {"$ref": "divisor"}]}
-        - {"$call": ["add", {"$ref": "middle"}, 1]}
-      - {"$call": ["raise", "cleanup", "release job lease"]}
-"cleanup_after_middle_failure": {"$call": ["try", {"$call": ["job", 0]}, {"$call": ["fn", ["error"], {"$ref": "error"}]}]}
-"cleanup_after_success": {"$call": ["try", {"$call": ["job", 1]}, {"$call": ["fn", ["error"], {"$ref": "error"}]}]}
-"preserved":
-  "$call":
-  - "try"
-  - {"$call": ["finally", {"$call": ["div", 2, 0]}, {"$call": ["assert", true]}]}
-  - {"$call": ["fn", ["error"], {"$ref": "error"}]}
+    - {"$call": ["finally", {"$call": ["div", 2, 0]}, {"$call": ["assert", true]}]}
+    - {"$call": ["fn", ["error"], {"$ref": "error"}]}
+- $call:
+  - dict
+  - batch
+  - $ref: batch
+  - calculations
+  - $ref: calculations
+  - cleanup_after_middle_failure
+  - $ref: cleanup_after_middle_failure
+  - cleanup_after_success
+  - $ref: cleanup_after_success
+  - exhausted
+  - $ref: exhausted
+  - fatal
+  - $ref: fatal
+  - fixed_call
+  - $ref: fixed_call
+  - preserved
+  - $ref: preserved
+  - retried
+  - $ref: retried
+  - wrapped
+  - $ref: wrapped
+  - wrong_call
+  - $ref: wrong_call

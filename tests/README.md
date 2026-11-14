@@ -102,21 +102,21 @@ will succeed. JSON remains silent until one complete versioned report is ready.
 The harness verifies visibility and flushing at the next suite boundary without
 timing sleeps, along with policy-failure fallback and unchanged JSON output.
 
-Golden-test decisions live in `std:test.golden_decision`; `golden_plan` derives
-the same facts for callers with full observations. Python sends six exact comparison
-facts while retaining captured output, expectations and replay observations; Helix
-selects failure precedence, blessing and replay actions. Python retains
-independent state validation, process timeouts, crash detection and failure
-artifacts. It also vetoes success or blessing that contradicts captured evidence:
-repeated runs must agree, unblessed results must match saved text, and passing
-replays must retain the original root. A policy crash, malformed response or
-contradictory decision fails the suite before expectations can be written; there
-is no Python policy fallback. An honest roundtrip failure may still bless the
-original deterministic run when explicitly requested. The `harness` suite uses
-independent expected outcomes and injected process faults, including well-formed
-false-success responses, to check this self-hosting boundary.
-Rejected policy calls save complete raw observations in `observation.json` beside
-the compact policy program and its output, including replay stdout/stderr.
+Golden testing lives in Python in `tooling/test_runner.py`. Execute the fixture,
+validate terminal states and deterministic repeated process observations, replay
+ordinary-data roots, and compare output exactly with the checked-in expectation.
+Function/machine inspection graphs are not replayable disk snapshots. Failures
+retain input/output evidence and a concise diff. An explicit `--bless` writes only
+after validation, determinism and any applicable round trip pass; failed checks
+never update an expectation. CI refuses blessing. `--case` scopes which files can
+be updated; review changed expectations with the ordinary Git diff.
+
+Use full execution-state goldens when serialization or diagnostic structure is
+itself observable. When a test only needs a few values, assert them directly and
+return a focused result instead of snapshotting imported modules or helper
+functions. Exact goldens have no textual/semantic change classification. The
+`harness` suite injects invalid states, crashes, timeouts, nondeterminism, mismatches
+and changed/failed replays to verify that these failures cannot be accepted or blessed.
 
 Terminal CLI observations must carry usable diagnostic and effect-request
 metadata. Error kinds/messages are strings and source positions are positive
@@ -149,7 +149,7 @@ and saved reports share the same row validation, including exact integer counts
 and boolean blessing metadata; Python-equal replacements such as `1` and `true`
 cannot silently change the report schema. The `harness`
 suite injects damaged policy responses, and `dogfood_test_orchestration` is the
-golden policy contract. Standalone startup checks remain build-free; discovery,
+golden contract for suite planning/reporting. Standalone startup checks remain build-free; discovery,
 process concurrency, compilation and lint execution remain host responsibilities.
 The public policy functions also use Helix input/result annotations for suite
 lists, task records, observation metadata, compact retry selections and reports.
@@ -331,11 +331,6 @@ Report benchmarks also retain the imported policy source and its hash, since it
 is not embedded in the executable. That implementation fingerprint is provenance,
 not a history filter: policy changes are what these fixed workloads compare.
 Replaying a saved input otherwise uses the current checkout and executable.
-Golden host-boundary benchmarks separately include serialization, policy execution,
-decoding and independent response checks. They cover pre/post replay of the
-`provider_contract` result and non-replayable `dogfood_testing` inspection output.
-Each row declares its timing scope; raw observations and the generated `.program.yaml`
-are retained separately, alongside a snapshot of the host bridge implementation.
 Reports flag `SLOWDOWN` when median time exceeds the earliest five compatible runs
 by more than 20% and three median absolute deviations of observed noise. Matching
 host/environment, sampling settings and workload source keep comparisons relevant;

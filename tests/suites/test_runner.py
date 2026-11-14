@@ -8,6 +8,7 @@ from tooling.test_runner import TestContext, collect_cases, discover_cases
 def verify_selection(h, directory):
     import contextlib
     import io
+    from unittest.mock import patch
 
     first, second = directory / "run", directory / "check"
     first.mkdir()
@@ -37,7 +38,9 @@ def verify_selection(h, directory):
     with contextlib.redirect_stdout(io.StringIO()) as stdout, contextlib.redirect_stderr(io.StringIO()) as stderr:
         assert selected.test(False, ["golden"], patterns=["missing"]) == 2
         assert invoked == [], "an unmatched filter executed a process"
-        assert selected.test(True, ["golden"], patterns=["beta"]) == 0, (stdout.getvalue(), stderr.getvalue())
+        # Exercise a local explicit blessing even when the harness itself runs in CI.
+        with patch.dict("os.environ", {"CI": ""}):
+            assert selected.test(True, ["golden"], patterns=["beta"]) == 0, (stdout.getvalue(), stderr.getvalue())
         assert cases[1].with_suffix(".expected.yaml").read_text() != "unchanged"
         assert all(case.with_suffix(".expected.yaml").read_text() == "unchanged"
                    for case in (cases[0], cases[2]))
@@ -617,8 +620,8 @@ def verify(h):
     verify_completed_output(h)
     from tests.suites.test_orchestration import verify as verify_orchestration
     verify_orchestration(h)
-    from tests.suites.golden_policy import verify as verify_golden_policy
-    verify_golden_policy(h)
+    from tests.suites.golden import verify as verify_golden
+    verify_golden(h)
     caller = threading.get_ident()
     seen = []
 
