@@ -84,37 +84,40 @@ packages_parse:
           {$call: [package_rows, {$ref: source}]}]}]}
 
 services_parse:
-  {$call: [fn, [source], {$call: [map, {$call: [fn, [row], {$call: [expect, {$ref: row}, {$call: [record, unit, {
-                        $ref: name}, active, {$ref: string}, sub, {$ref: string}]}]}]}, {$call: [json_parse, {$ref: source}]}]}]}
+  {$call: [fn, [source], {$call: [map, {$call: [fn, [row], {$call: [expect, {$call: [dict, unit, {$call: [get, {$ref: row},
+                          unit, null]}, active, {$call: [get, {$ref: row}, active, null]}, sub, {$call: [get, {$ref: row},
+                          sub, null]}]}, {$call: [record, unit, {$ref: name}, active, {$ref: string}, sub, {$ref: string}]}]}]},
+          {$call: [json_parse, {$ref: source}]}]}]}
 
 catalog:
-  {platform: {command: {program: cat, args: [/etc/os-release]}, value_type: {$ref: any}, parse: {$call: [fn, [source],
-          {$call: [os_release, {$ref: source}]}]}}, identity: {command: {program: sh, args: [-c, set -eu; uname -m;
-            uname -r; uname -n; if test -e /etc/machine-id; then cat /etc/machine-id; else printf '%s\n' -; fi; cat
-            /proc/sys/kernel/random/boot_id; readlink /proc/self/ns/mnt]}, value_type: {$ref: any}, parse: {$call: [
-          fn, [source], {$call: [identity_parse, {$ref: source}]}]}}, package_manager: {command: {program: sh, args: [
-          -c, command -v dpkg-query]}, value_type: {$ref: strings}, parse: {$call: [fn, [source], {$call: [lines,
-              {$ref: source}]}]}}, service_manager: {command: {program: sh, args: [-c, if command -v systemctl >/dev/null
-            2>&1; then if test -d /run/systemd/system; then printf '"systemd"\n'; else printf '"installed-inactive"\n';
-            fi; else printf '"unavailable"\n'; fi]}, value_type: {$ref: string}, parse: {$call: [fn, [source], {$call: [
-              json_parse, {$ref: source}]}]}}, network: {command: {program: ip, args: [-j, address, show]}, value_type: {
-        $call: [list_of, {$call: [record, ifindex, {$ref: integer}, ifname, {$ref: string}, addr_info, {$call: [list_of,
-                  {$call: [record, family, {$ref: string}, local, {$ref: string}, prefixlen, {$ref: integer}]}]}]}]},
-      parse: {$call: [fn, [source], {$call: [json_parse, {$ref: source}]}]}}, mounts: {command: {program: findmnt,
-        args: [--json, --list, --output, 'TARGET,SOURCE,FSTYPE,OPTIONS']}, value_type: {$call: [record, filesystems,
-          {$call: [list_of, {$call: [record, target, {$ref: string}, source, {$ref: string}, fstype, {$ref: string},
-                  options, {$ref: string}]}]}]}, parse: {$call: [fn, [source], {$call: [json_parse, {$ref: source}]}]}},
-    storage: {command: {program: lsblk, args: [--json, --bytes, --output, 'NAME,TYPE,SIZE']}, value_type: {$call: [
-          record, blockdevices, {$call: [list_of, {$call: [record, name, {$ref: string}, type, {$ref: string}, size,
-                  {$ref: integer}]}]}]}, parse: {$call: [fn, [source], {$call: [json_parse, {$ref: source}]}]}}, cpu: {
-      command: {program: getconf, args: [_NPROCESSORS_ONLN]}, value_type: {$ref: positive}, parse: {$call: [fn, [
-            source], {$call: [json_parse, {$ref: source}]}]}}, memory: {command: {program: awk, args: ['/^MemTotal:/
-            {printf "%.0f\n", $2 * 1024; found=1} END {if (!found) exit 1}', /proc/meminfo]}, value_type: {$ref: positive},
-      parse: {$call: [fn, [source], {$call: [json_parse, {$ref: source}]}]}}, packages: {command: {program: dpkg-query,
-        args: [-W, '-f=${binary:Package},${Version},${db:Status-Status}\n']}, value_type: {$call: [list_of, {$call: [
-              record, name, {$ref: name}, version, {$ref: string}, state, {$ref: string}]}]}, parse: {$call: [fn,
-          [source], {$call: [packages_parse, {$ref: source}]}]}}, services: {command: {program: sh, args: [-c, test
-            -d /run/systemd/system || exit 69; exec systemctl --no-pager --json=short --type=service --state=running
+  {platform: {command: {program: cat, args: [/etc/os-release]}, value_type: {$call: [record, ID, {$ref: name}, VERSION_ID,
+          {$ref: name}, VERSION_CODENAME, {$ref: name}]}, parse: {$call: [fn, [source], {$call: [os_release, {$ref: source}]}]}},
+    identity: {command: {program: sh, args: [-c, set -eu; uname -m; uname -r; uname -n; if test -s /etc/machine-id;
+            then cat /etc/machine-id; else printf '%s\n' -; fi; cat /proc/sys/kernel/random/boot_id; readlink /proc/self/ns/mnt]},
+      value_type: {$call: [record, architecture, {$ref: name}, kernel, {$ref: name}, hostname, {$ref: name}, machine_id,
+          {$ref: result_type}, boot_id, {$ref: name}, namespace, {$ref: name}]}, parse: {$call: [fn, [source], {$call: [
+              identity_parse, {$ref: source}]}]}}, package_manager: {command: {program: sh, args: [-c, command -v
+            dpkg-query]}, value_type: {$ref: strings}, parse: {$call: [fn, [source], {$call: [lines, {$ref: source}]}]}},
+    service_manager: {command: {program: sh, args: [-c, if command -v systemctl >/dev/null 2>&1; then if test -d /run/systemd/system;
+            then printf '"systemd"\n'; else printf '"installed-inactive"\n'; fi; else printf '"unavailable"\n'; fi]},
+      value_type: {$ref: string}, parse: {$call: [fn, [source], {$call: [json_parse, {$ref: source}]}]}}, network: {
+      command: {program: ip, args: [-j, address, show]}, value_type: {$call: [list_of, {$call: [record, ifindex, {
+                $ref: integer}, ifname, {$ref: string}, addr_info, {$call: [list_of, {$call: [record, family, {$ref: string},
+                      local, {$ref: string}, prefixlen, {$ref: integer}]}]}]}]}, parse: {$ref: network_parse}}, mounts: {
+      command: {program: findmnt, args: [--json, --list, --output, 'TARGET,SOURCE,FSTYPE,OPTIONS']}, value_type: {
+        $call: [record, filesystems, {$call: [list_of, {$call: [record, target, {$ref: string}, source, {$ref: string},
+                  fstype, {$ref: string}, options, {$ref: string}]}]}]}, parse: {$call: [fn, [source], {$call: [json_parse,
+              {$ref: source}]}]}}, storage: {command: {program: lsblk, args: [--json, --list, --bytes, --output, 'NAME,TYPE,SIZE']},
+      value_type: {$call: [record, blockdevices, {$call: [list_of, {$call: [record, name, {$ref: string}, type, {
+                    $ref: string}, size, {$ref: integer}]}]}]}, parse: {$call: [fn, [source], {$call: [json_parse,
+              {$ref: source}]}]}}, cpu: {command: {program: getconf, args: [_NPROCESSORS_ONLN]}, value_type: {$ref: positive},
+      parse: {$call: [fn, [source], {$call: [json_parse, {$ref: source}]}]}}, memory: {command: {program: awk, args: [
+          '/^MemTotal:/ {printf "%.0f\n", $2 * 1024; found=1} END {if (!found) exit 1}', /proc/meminfo]}, value_type: {
+        $ref: positive}, parse: {$call: [fn, [source], {$call: [json_parse, {$ref: source}]}]}}, packages: {command: {
+        program: dpkg-query, args: [-W, '-f=${binary:Package},${Version},${db:Status-Status}\n']}, value_type: {$call: [
+          list_of, {$call: [record, name, {$ref: name}, version, {$ref: string}, state, {$ref: string}]}]}, parse: {
+        $call: [fn, [source], {$call: [packages_parse, {$ref: source}]}]}}, services: {command: {program: sh, args: [
+          -c, test -d /run/systemd/system || exit 69; exec systemctl --no-pager --json=short --type=service --state=running
             list-units]}, value_type: {$call: [list_of, {$call: [record, unit, {$ref: name}, active, {$ref: string},
               sub, {$ref: string}]}]}, parse: {$call: [fn, [source], {$call: [services_parse, {$ref: source}]}]}}}
 
@@ -196,3 +199,102 @@ value:
                 {$call: [get, {$call: [get, {$ref: snapshot}, custom]}, {$ref: name}, null]}]}}, {$call: [if, {$call: [
                   eq, {$call: [get, {$ref: result}, status]}, known]}, {$call: [get, {$ref: result}, value]}, {$call: [
                   raise, facts_validation, Requested fact is unavailable]}]}]}]}
+
+provider:
+  {$call: [import, 'std:provider']}
+
+network_parse:
+  {$call: [fn, [source], {$call: [map, {$call: [fn, [link], {$call: [dict, ifindex, {$call: [get, {$ref: link}, ifindex,
+                      null]}, ifname, {$call: [get, {$ref: link}, ifname, null]}, addr_info, {$call: [map, {$call: [
+                          fn, [address], {$call: [dict, family, {$call: [get, {$ref: address}, family, null]}, local,
+                              {$call: [get, {$ref: address}, local, null]}, prefixlen, {$call: [get, {$ref: address},
+                                  prefixlen, null]}]}]}, {$call: [get, {$ref: link}, addr_info, []]}]}]}]}, {$call: [
+              expect, {$call: [json_parse, {$ref: source}]}, {$call: [list_of, {$ref: map}]}]}]}]}
+
+snapshot_type:
+  {$call: [record, version, {$call: [literal, 1]}, target, {$call: [union, {$call: [literal, null]}, {$ref: name}]},
+      selectors, {$ref: strings}, custom_versions, {$call: [list_of, {$call: [record, name, {$ref: name}, version,
+              {$ref: name}]}]}, facts, {$call: [map_of, {$ref: result_type}]}, custom, {$call: [map_of, {$ref: result_type}]},
+      started, {$ref: result_type}, finished, {$ref: result_type}]}
+
+validated_fact:
+  {$call: [fn, [name, result], {$call: [get, {$call: [list, {$call: [if, {$call: [eq, {$call: [get, {$ref: result},
+                          status]}, known]}, {$call: [expect, {$call: [get, {$ref: result}, value]}, {$call: [get,
+                          {$call: [get, {$ref: catalog}, {$ref: name}]}, value_type]}]}, {$call: [expect, {$call: [
+                          get, {$ref: result}, value]}, {$call: [literal, null]}]}]}, true]}, 1]}]}
+
+validate_snapshot:
+  {$call: [fn, [snapshot], {$call: [let, {s: {$call: [provider.data, {$call: [expect, {$ref: snapshot}, {$ref: snapshot_type}]}]}},
+          {$call: [if, {$call: [and, {$call: [eq, {$call: [duplicates, {$call: [get, {$ref: s}, selectors]}]}, []]},
+                  {$call: [lists.all, {$call: [get, {$ref: s}, selectors]}, {$call: [fn, [name], {$call: [validated_fact,
+                              {$ref: name}, {$call: [get, {$call: [get, {$ref: s}, facts]}, {$ref: name}]}]}]}]},
+                  {$call: [eq, {$call: [yaml_dump, {$call: [lists.unique, {$call: [concat, {$ref: mandatory}, {$call: [
+                                      get, {$ref: s}, selectors]}]}]}]}, {$call: [yaml_dump, {$call: [get, {$ref: s},
+                              selectors]}]}]}, {$call: [eq, {$call: [keys, {$call: [get, {$ref: s}, facts]}]}, {$call: [
+                          keys, {$call: [fold, {$call: [fn, [out, name], {$call: [set, {$ref: out}, {$ref: name},
+                                      true]}]}, {}, {$call: [get, {$ref: s}, selectors]}]}]}]}]}, {$ref: s}, {$call: [
+                  raise, facts_validation, Snapshot selectors do not match observations]}]}]}]}
+
+result_evidence:
+  {$call: [fn, [result], {$call: [dict, status, {$call: [get, {$ref: result}, status]}, value, {$call: [get, {$ref: result},
+              value]}]}]}
+
+project_results:
+  {$call: [fn, [results], {$call: [fold, {$call: [fn, [out, name], {$call: [set, {$ref: out}, {$ref: name}, {$call: [
+                      result_evidence, {$call: [get, {$ref: results}, {$ref: name}]}]}]}]}, {}, {$call: [keys, {$ref: results}]}]}]}
+
+evidence:
+  {$call: [fn, [snapshot], {$call: [let, {s: {$call: [validate_snapshot, {$ref: snapshot}]}}, {$call: [dict, version,
+              1, target, {$call: [get, {$ref: s}, target]}, selectors, {$call: [get, {$ref: s}, selectors]}, custom_versions,
+              {$call: [get, {$ref: s}, custom_versions]}, facts, {$call: [project_results, {$call: [get, {$ref: s},
+                      facts]}]}, custom, {$call: [project_results, {$call: [get, {$ref: s}, custom]}]}]}]}]}
+
+same_evidence:
+  {$call: [fn, [left, right], {$call: [eq, {$call: [yaml_dump, {$call: [evidence, {$ref: left}]}]}, {$call: [yaml_dump,
+              {$call: [evidence, {$ref: right}]}]}]}]}
+
+supported:
+  {$call: [fn, [snapshot], {$call: [let, {platform: {$call: [value, {$ref: snapshot}, platform]}, identity: {$call: [
+                value, {$ref: snapshot}, identity]}}, {$call: [if, {$call: [and, {$call: [eq, {$call: [get, {$ref: platform},
+                          ID]}, ubuntu]}, {$call: [eq, {$call: [get, {$ref: platform}, VERSION_ID]}, '26.10']}, {
+                    $call: [eq, {$call: [get, {$ref: identity}, architecture]}, x86_64]}]}, {$ref: snapshot}, {$call: [
+                  raise, facts_validation, Qualified facts require Ubuntu 26.10 on x86_64]}]}]}]}
+
+configuration_type:
+  {$call: [record, provider, {$ref: provider.descriptor}, arguments, {$ref: any}, context, {$ref: provider.context_type}]}
+
+configuration:
+  {$call: [fn, [snapshot, configure], {$call: [type_time, {$call: [expect, {$call: [call, {$ref: configure}, {$call: [
+                      evidence, {$call: [supported, {$call: [validate_snapshot, {$ref: snapshot}]}]}]}]}, {$ref: configuration_type}]}]}]}
+
+plan:
+  {$call: [fn, [snapshot, configure, before], {$call: [let, {configured: {$call: [configuration, {$ref: snapshot},
+                {$ref: configure}]}}, {$call: [dict, version, 1, evidence, {$call: [evidence, {$ref: snapshot}]},
+              review, {$call: [provider.plan, {$call: [get, {$ref: configured}, provider]}, {$call: [get, {$ref: configured},
+                      arguments]}, {$ref: before}, {$call: [get, {$ref: configured}, context]}]}]}]}]}
+
+check:
+  {$call: [fn, [target, request, configure], {$call: [check_snapshot, {$call: [gather, {$ref: target}, {$ref: request}]},
+          {$ref: configure}]}]}
+
+check_snapshot:
+  {$call: [fn, [snapshot, configure], {$call: [let, {configured: {$call: [configuration, {$ref: snapshot}, {$ref: configure}]}},
+          {$call: [dict, version, 1, evidence, {$call: [evidence, {$ref: snapshot}]}, review, {$call: [provider.check,
+                  {$call: [get, {$ref: configured}, provider]}, {$call: [get, {$ref: configured}, arguments]}, {$call: [
+                      get, {$ref: configured}, context]}]}]}]}]}
+
+review_type:
+  {$call: [record, version, {$call: [literal, 1]}, evidence, {$ref: any}, review, {$ref: any}]}
+
+apply:
+  {$call: [fn, [target, request, configure, review], {$call: [apply_snapshot, {$call: [gather, {$ref: target}, {$ref: request}]},
+          {$ref: configure}, {$call: [type_time, {$call: [provider.data, {$call: [expect, {$ref: review}, {$ref: review_type}]}]}]}]}]}
+
+apply_snapshot:
+  {$call: [fn, [snapshot, configure, review], {$call: [let, {configured: {$call: [configuration, {$ref: snapshot},
+                {$ref: configure}]}}, {$call: [if, {$call: [eq, {$call: [yaml_dump, {$call: [evidence, {$ref: snapshot}]}]},
+                  {$call: [yaml_dump, {$call: [get, {$ref: review}, evidence]}]}]}, {$call: [dict, version, 1, evidence,
+                  {$call: [evidence, {$ref: snapshot}]}, review, {$call: [provider.apply, {$call: [get, {$ref: configured},
+                          provider]}, {$call: [get, {$ref: configured}, arguments]}, {$call: [get, {$ref: configured},
+                          context]}, {$call: [get, {$ref: review}, review]}]}]}, {$call: [raise, facts_stale_review,
+                  'Fresh identity, platform or selected facts differ from reviewed evidence']}]}]}]}

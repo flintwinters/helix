@@ -24,9 +24,9 @@ def verify(h):
         assert h.malformed_state(output, process.returncode) is None, (name, process)
         state = yaml.safe_load(output)
         if error:
-            assert state['status'] == 'error' and state['error']['kind'] == error, (name, state)
+            assert state['status'] == 'error' and state['error']['kind'] == error, (name, state.get('error', state.get('status')))
             return state
-        assert process.returncode == 0 and state['status'] == 'finished', (name, state)
+        assert process.returncode == 0 and state['status'] == 'finished', (name, state.get('error', state.get('status')))
         return state['root']
 
     request = {'select': ['cpu'], 'custom': []}
@@ -80,6 +80,42 @@ def verify(h):
     assert run('metacharacters', c('facts.custom_observe', None, decl), perform=True,
                flags=('--allow-command', 'printf'))['value'] == payload
     assert not (h.root / 'runtime/facts-injection').exists()
+    from tests.suites.provider_contract import descriptor, context
+    def known(value):
+        return dict(status='known', value=value, diagnostic=None)
+    snapshot = dict(version=1, target=None, selectors=['identity', 'platform', 'package_manager', 'service_manager', 'cpu'],
+                    custom_versions=[], custom={}, started=known(1), finished=known(2),
+                    facts={
+                        'identity': known(dict(architecture='x86_64', kernel='test', hostname='fixture',
+                                               machine_id=known('machine'), boot_id='boot', namespace='mnt:[1]')),
+                        'platform': known(dict(ID='ubuntu', VERSION_ID='26.10', VERSION_CODENAME='stonking')),
+                        'package_manager': known(['/usr/bin/dpkg-query']), 'service_manager': known('installed-inactive'),
+                        'cpu': known(4)})
+    cfg = c('fn', ['selected'], {'provider': descriptor(), 'arguments': 'new', 'context': context()})
+    plan = run('pure_plan', c('type_time', c('facts.plan', lit(snapshot), cfg, 'old')))
+    assert plan['review']['status'] == 'changed' and plan['evidence']['facts']['cpu']['value'] == 4
+    changed = {**snapshot, 'started': known(999), 'finished': known(1000)}
+    changed['facts'] = {**snapshot['facts'], 'cpu': {**known(4), 'diagnostic': {'timing': 100}}}
+    assert run('timestamp_equality', c('facts.same_evidence', lit(snapshot), lit(changed))) is True
+    for name, value in [('changed_cpu', 5)]:
+        changed = {**snapshot, 'facts': {**snapshot['facts'], 'cpu': known(value)}}
+        assert run(name, c('facts.same_evidence', lit(snapshot), lit(changed))) is False
+    changed = {**snapshot, 'facts': {**snapshot['facts'], 'cpu': known('four')}}
+    run('snapshot_schema', c('facts.validate_snapshot', lit(changed)), error='type')
+    numeric = {**snapshot, 'custom_versions': [{'name': 'number', 'version': '1'}], 'custom': {'number': known(4)}}
+    numeric_float = {**numeric, 'custom': {'number': known(4.0)}}
+    assert run('numeric_representation', c('facts.same_evidence', lit(numeric), lit(numeric_float))) is False
+    changed = {**snapshot, 'facts': {**snapshot['facts'], 'identity': known({**snapshot['facts']['identity']['value'], 'boot_id': 'other'})}}
+    assert run('changed_identity', c('facts.same_evidence', lit(snapshot), lit(changed))) is False
+    bad_cfg = c('fn', ['selected'], c('effect', 'stdout', 'forbidden'))
+    run('pure_configuration', c('facts.plan', lit(snapshot), bad_cfg, 'old'), error='purity')
+    unsupported = {**snapshot, 'facts': {**snapshot['facts'], 'platform': known(dict(ID='debian', VERSION_ID='13', VERSION_CODENAME='trixie'))}}
+    run('unsupported_platform', c('facts.plan', lit(unsupported), cfg, 'old'), error='facts_validation')
+    # The callback sees only its declared evidence; clock/diagnostic data cannot affect configuration.
+    cfg = c('fn', ['selected'], c('if', c('has', r('selected'), 'started'),
+                                c('raise', 'unexpected_timestamp', 'timestamp leaked'),
+                                {'provider': descriptor(), 'arguments': 'new', 'context': context()}))
+    assert run('configuration_projection', c('facts.plan', lit(snapshot), cfg, 'old'))['review']['status'] == 'changed'
     print(f'host_facts: {count} contracts; artifacts={artifacts.relative_to(h.root)}')
 
 
