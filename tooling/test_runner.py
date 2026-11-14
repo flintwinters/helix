@@ -287,24 +287,39 @@ class TestContext:
         repeated = self.helix(*shlex.split(command), str(case.relative_to(self.root)))
         if (why := self.malformed_state(repeated.stdout, repeated.returncode)) is not None:
             return [test_failure(self.root, case, "determinism", why, command, repeated, expected=out)]
-        if (run.returncode, out, run.stderr) != (repeated.returncode, repeated.stdout, repeated.stderr):
-            return [test_failure(self.root, case, "determinism", "two runs differ", command, repeated, expected=out)]
+        checks = [{'name': 'determinism',
+                   'actual': [repeated.returncode, repeated.stdout, repeated.stderr],
+                   'expected': [run.returncode, out, run.stderr]}]
         program = self.root_section(out)
         if program is not None:
             replay = "$literal:\n" + indent(program, "  ")
             reloaded = self.helix("run", "-", stdin=replay)
             why = self.malformed_state(reloaded.stdout, reloaded.returncode)
-            if why is None and (reloaded.returncode != 0 or self.root_section(reloaded.stdout) != program):
-                why = "emitted root is not stable"
             if why is not None:
                 return [test_failure(self.root, case, "roundtrip", why, "run", reloaded,
                                      source=replay, expected=out)]
+            checks.append({'name': 'roundtrip',
+                           'actual': [reloaded.returncode, self.root_section(reloaded.stdout)],
+                           'expected': [0, program]})
         expected = expected_path.read_bytes().decode("utf-8") if expected_path.exists() else None
+        if not bless:
+            checks.append({'name': 'golden', 'actual': out, 'expected': expected})
+        from tooling.test_checks import compare
+        try:
+            failed = compare(self, checks)
+        except RuntimeError as error:
+            return [str(error)]
+        if failed:
+            stage = failed[0]['name']
+            if stage == 'determinism':
+                return [test_failure(self.root, case, stage, "two runs differ", command, repeated, expected=out)]
+            if stage == 'roundtrip':
+                return [test_failure(self.root, case, stage, "emitted root is not stable", "run", reloaded,
+                                     source=replay, expected=out)]
+            return [test_failure(self.root, case, stage, f"state differs from {expected_path.relative_to(self.root)}",
+                                 command, run, expected=expected or "")]
         if bless:
             expected_path.write_bytes(out.encode("utf-8"))
-        elif out != expected:
-            return [test_failure(self.root, case, "golden", f"state differs from {expected_path.relative_to(self.root)}",
-                                 command, run, expected=expected or "")]
         return []
 
     def regression(self, bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_JOBS,

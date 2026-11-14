@@ -121,10 +121,13 @@ proves a report can produce the usual VM error and exit code 1.
 Only supplied samples are tested; these helpers do not prove a property. Work and
 immutable copying grow with the supplied cases and captured fixtures. Keep samples
 small and within runtime call/iteration limits. Generated list domains grow exponentially; generators do not bypass VM resource bounds. Pure tests cannot observe process
-crashes, timeouts or side effects. The host `./manage.py test` owns golden execution,
-validation, deterministic reruns, ordinary-data replay, exact output comparison and
-explicit blessing after checks pass. `std:test` supplies semantic assertions and
-reports; it does not approve golden changes. The same host runner tests this module.
+crashes, timeouts or side effects. The golden runner exercises these same general
+`table` and `equal` operations with captured process observations: tuples for
+determinism, root text for replay stability and complete output text for exact
+expectations. Literal data remains data when assertions are composed. The host
+executes and validates processes and owns scoped expectation writes after checks
+pass; it does not repeat the equality decisions. There is no golden-specific
+classification, action-planning or approval API.
 
 
 ## YAML toolkit

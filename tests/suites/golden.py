@@ -1,4 +1,4 @@
-"""Host golden workflow: exact output and failed checks never bless."""
+"""Golden observations use general Helix assertions; invalid processes never bless."""
 from dataclasses import replace
 from pathlib import Path
 import subprocess
@@ -9,13 +9,14 @@ FINISHED = 'status: finished\nroot: 42\n'
 
 
 def verify(h):
+    verify_comparisons(h)
     with tempfile.TemporaryDirectory(dir=h.root / 'runtime', prefix='golden-') as temporary:
         case = Path(temporary) / 'probe.yaml'
         case.write_text('42\n')
         expected_path = case.with_suffix('.expected.yaml')
 
         def exercise(*, output=FINISHED, code=0, expected=FINISHED, repeated=None,
-                     replay=None, bless=False, ci=False):
+                     replay=None, bless=False, ci=False, assertions=None):
             if expected is None:
                 expected_path.unlink(missing_ok=True)
             else:
@@ -28,6 +29,9 @@ def verify(h):
                 if source is None:
                     response = initial if not calls or repeated is None else repeated
                     calls.append('fixture')
+                elif not source.startswith('$literal:\n'):
+                    return (h.process_runner(args, **kwargs) if assertions is None else
+                            subprocess.CompletedProcess(args, *assertions))
                 else:
                     assert source.startswith('$literal:\n'), source
                     calls.append('replay')
@@ -63,7 +67,7 @@ def verify(h):
             for bless in (False, True):
                 failures, calls = exercise(expected='wrong', repeated=repeated, bless=bless)
                 stage(failures, 'determinism')
-                assert calls == ['fixture', 'fixture']
+                assert calls == ['fixture', 'fixture', 'replay']
         faults = [(0, '[', ''), (0, 'status: finished\n', ''), (-11, '', ''),
                   (1, FINISHED, ''), (124, '', 'timeout'), 'timeout', 'launch']
         for fault in faults:
@@ -88,7 +92,35 @@ def verify(h):
         ):
             failures, calls = exercise(output=output, code=code, expected=output)
             assert failures == [] and calls == ['fixture', 'fixture'], (failures, calls)
+        for response in ((-11, '', ''), (0, FINISHED, ''), (124, '', 'timeout')):
+            for expected in ('wrong', None):
+                failures, _ = exercise(bless=True, expected=expected, assertions=response)
+                stage(failures, 'assertions')
         failures, calls = exercise(bless=True, expected='wrong', ci=True)
         assert len(failures) == 1 and 'disabled in CI' in failures[0] and calls == [], (failures, calls)
         failures, _ = exercise(ci=True)
         assert failures == [], failures
+
+
+def verify_comparisons(h):
+    """The same comparison composition handles arbitrary data, not golden phases."""
+    from tooling.test_checks import compare
+    observations = [
+        {'name': 'config', 'actual': {'port': 80, 'enabled': True},
+         'expected': {'enabled': True, 'port': 80}},
+        {'name': 'ordered events', 'actual': ['start', 'stop'], 'expected': ['stop', 'start']},
+        {'name': 'literal data', 'actual': {'$call': ['raise', 'hostile']},
+         'expected': {'$call': ['raise', 'hostile']}},
+    ]
+    failed = compare(h, observations)
+    assert [row['name'] for row in failed] == ['ordered events'], failed
+    assert failed[0]['error']['kind'] == 'assertion', failed
+    for response in ((-11, '', ''), (0, '[', ''), (0, FINISHED, ''),
+                     (0, 'status: finished\nroot: {results: []}\n', ''), (124, '', 'timeout')):
+        broken = replace(h, process_runner=lambda args, **kwargs: subprocess.CompletedProcess(args, *response))
+        try:
+            compare(broken, observations)
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError(f'accepted invalid comparison process: {response}')

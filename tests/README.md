@@ -102,9 +102,13 @@ will succeed. JSON remains silent until one complete versioned report is ready.
 The harness verifies visibility and flushing at the next suite boundary without
 timing sleeps, along with policy-failure fallback and unchanged JSON output.
 
-Golden testing lives in Python in `tooling/test_runner.py`. Execute the fixture,
-validate terminal states and deterministic repeated process observations, replay
-ordinary-data roots, and compare output exactly with the checked-in expectation.
+Golden testing uses the general `std:test.table` and `equal` operations to compare
+recorded observations: repeated executions, ordinary-root replay and exact expected
+output. `tooling/test_checks.py` supplies named values to those existing operations;
+it does not encode a golden-specific decision API. Python captures processes,
+independently validates their terminal states, runs ordinary-data replays and owns
+expectation-file writes. It consumes Helix assertion results without repeating
+the equality decisions.
 Function/machine inspection graphs are not replayable disk snapshots. Failures
 retain input/output evidence and a concise diff. An explicit `--bless` writes only
 after validation, determinism and any applicable round trip pass; failed checks
