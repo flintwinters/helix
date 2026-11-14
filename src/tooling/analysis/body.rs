@@ -663,3 +663,25 @@ impl Checker<'_> {
         }
     }
 }
+
+/// Search evidence uses the checker's bounded annotation and inference rules.
+pub(crate) fn evidence(graph: &Graph, function: NodeId) -> Yaml {
+    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new(), invalid_annotations: HashSet::new() };
+    let declared = checker.function_type(function).and_then(|t| search_type(&t)).unwrap_or(Value::Null);
+    let inferred = graph.call(function).and_then(|c| c.get(2)).and_then(|&b| checker.infer(b)).and_then(|t| search_type(&t)).unwrap_or(Value::Null);
+    Value::Hash([(s("declared"), declared), (s("inferred_result"), inferred),
+        (s("unresolved"), Value::Array(checker.findings.unchecked.iter().chain(checker.findings.errors.iter()).map(|e| e.to_value()).collect()))].into_iter().collect()).plain_yaml().unwrap()
+}
+
+fn search_type(ty: &Ty) -> Option<Value> {
+    Some(match ty {
+        Ty::List(of) => describe("list", [("of", search_type(of)?)]),
+        Ty::Map(of) => describe("map", [("of", search_type(of)?)]),
+        Ty::Fn(params,result,pure) => describe("function", [("params",Value::Array(params.iter().map(search_type).collect::<Option<Vec<_>>>()?.into())),("result",search_type(result)?),("pure",Value::Boolean(*pure))]),
+        Ty::Record(fields) => describe("record", [("fields",Value::Hash(fields.iter().map(|(n,f)|Some((s(n), if f.required { search_type(&f.ty)? } else if let Some(default)=&f.default { describe("default", [("of",search_type(&f.ty)?),("default",default.clone())]) } else { describe("optional", [("of",search_type(&f.ty)?)]) }))).collect::<Option<Hash>>()?))]),
+        Ty::Union(members) => describe("union", [("of",Value::Array(members.iter().map(search_type).collect::<Option<Vec<_>>>()?.into()))]),
+        Ty::Enum(values) => describe("enum", [("values",Value::Array(values.clone().into()))]),
+        Ty::Class(..) | Ty::Refine(..) | Ty::Promise(..) => return None,
+        _ => s(&ty.name()),
+    })
+}

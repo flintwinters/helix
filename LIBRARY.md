@@ -277,3 +277,14 @@ command grants. [Ubuntu acceptance](tests/README.md#ubuntu-facts-qualification)
 qualifies local and SSH collection and a disposable fixture resource. It does
 not extend the Debian-specific `std:linux` provider to Ubuntu, qualify normally
 booted systemd services, or migrate this workstation's Ansible configuration.
+
+## Source reflection
+
+`std:source` exposes `parse(text)`, `walk(source)`, `select(source, predicate)`,
+`node(source, reference)`, `code_at(source, reference)` and
+`enclosing_functions(source, reference)`. Parsing never executes source. A source
+record stores normalized `code` once and lists semantic nodes with `reference`,
+`parent`, `children`, `kind` and 1-based `location`. References contain `source`
+and a `path` of string keys and integer indices. `$literal` is opaque to semantic
+walking. Scalar values and declaration annotations remain ordinary data.
+

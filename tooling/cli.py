@@ -56,6 +56,7 @@ SUITES = {
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",
     "cli": "Runtime and project CLI contracts, imports, inventory, and recovery",
+    "source_reflection": "Authoritative syntax reflection, typed identities, lexical bindings and bounded type evidence",
     "pipeline": "helix exec inline/stdin execution, raw strings, YAML/JSON results, errors and jq/yq shell pipes",
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
     "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",

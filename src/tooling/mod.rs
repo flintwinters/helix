@@ -9,3 +9,4 @@ pub mod snapshots;
 pub mod peers;
 
 pub mod stream;
+pub mod source;

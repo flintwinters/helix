@@ -5,3 +5,5 @@ mod source;
 
 pub use lsp::serve as lsp;
 pub use source::{check, format, schema};
+
+pub(crate) use body::evidence;
