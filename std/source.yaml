@@ -1,0 +1,104 @@
+# Authoritative source reflection and path selection; no source execution.
+parse:
+  $call:
+  - fn
+  - - text
+  - $call:
+    - source_parse
+    - $ref: text
+walk:
+  $call:
+  - fn
+  - - source
+  - $call:
+    - get
+    - $ref: source
+    - nodes
+select:
+  $call:
+  - fn
+  - - source
+    - predicate
+  - $call:
+    - filter
+    - $ref: predicate
+    - $call:
+      - walk
+      - $ref: source
+node:
+  $call:
+  - fn
+  - - source
+    - reference
+  - $call:
+    - filter
+    - $call:
+      - fn
+      - - node
+      - $call:
+        - eq
+        - $ref: node.reference
+        - $ref: reference
+    - $ref: source.nodes
+code_at:
+  $call:
+  - fn
+  - - source
+    - reference
+  - $call:
+    - if
+    - $call:
+      - eq
+      - $ref: source.source
+      - $ref: reference.source
+    - $call:
+      - fold
+      - $call:
+        - fn
+        - - value
+          - segment
+        - $call:
+          - get
+          - $ref: value
+          - $ref: segment
+      - $ref: source.code
+      - $ref: reference.path
+    - $call:
+      - raise
+      - source
+      - reference belongs to another source
+enclosing_functions:
+  $call:
+  - fn
+  - - source
+    - reference
+  - $call:
+    - filter
+    - $call:
+      - fn
+      - - node
+      - $call:
+        - and
+        - $call:
+          - eq
+          - $ref: node.kind
+          - function
+        - $call:
+          - le
+          - $call:
+            - len
+            - $ref: node.reference.path
+          - $call:
+            - len
+            - $ref: reference.path
+        - $call:
+          - eq
+          - $ref: node.reference.path
+          - $call:
+            - slice
+            - $ref: reference.path
+            - 0
+            - $call:
+              - len
+              - $ref: node.reference.path
+    - $ref: source.nodes

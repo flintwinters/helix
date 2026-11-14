@@ -74,6 +74,18 @@ impl Vm {
             errors: Vec::new(),
         }
     }
+    /// Invoke a completed function value with ordinary host data in fresh execution state.
+    pub fn call(&self, arguments: &[Yaml]) -> Result<Self, String> {
+        let Some(Value::Function(function)) = &self.result else {
+            return Err("completed result must be a function".into());
+        };
+        let arguments = arguments.iter().map(crate::value::from_host_yaml).collect::<Result<Vec<_>, _>>()?;
+        let mut next = Self::from_function(function.clone());
+        next.source_file = self.source_file.clone();
+        next.evaluator = Some(Arc::new(Evaluator::invoke(function.clone(), arguments)));
+        Ok(next)
+    }
+
     pub fn status(&self) -> Status {
         self.status
     }
@@ -236,6 +248,13 @@ impl Vm {
         }
         next.enforce_promises((!self.promises.is_empty()).then(|| self.clone()));
         next
+    }
+    /// Advance owned execution without retaining a version per transition.
+    pub(crate) fn run_budgeted(&mut self, remaining: &mut usize) {
+        while !self.terminal() && *remaining > 0 {
+            *remaining -= 1;
+            self.advance();
+        }
     }
     pub fn run(&mut self) {
         while !self.terminal() {

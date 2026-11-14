@@ -3,11 +3,15 @@ use std::process::ExitCode;
 use crate::tooling::{analysis, inspection, interactive};
 
 pub fn dispatch(args: &[String]) -> Option<ExitCode> {
+    if args.first().is_some_and(|x| x == "search") { return Some(super::search::command(&args[1..])); }
     if args
         .get(1)
         .is_some_and(|arg| matches!(arg.as_str(), "--help" | "-h"))
     {
         return None;
+    }
+    if args.first().is_some_and(|x| x == "exec") && args.iter().skip(1).take_while(|x| x.as_str() != "--").any(|x| matches!(x.as_str(), "--stream" | "--input" | "--file")) {
+        return Some(super::stream::command(&args[1..]));
     }
     let words: Vec<&str> = args.iter().map(String::as_str).collect();
     Some(match words.as_slice() {

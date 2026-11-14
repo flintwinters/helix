@@ -594,3 +594,94 @@ running yields pending effects without applying them; a caller must supply a
 fresh authorized host. Completed outcomes stay completed. An externally started
 operation whose reply was never recorded is uncertain, and must not be blindly
 replayed merely because its VM request is still pending.
+
+### Streaming execution inputs
+
+`helix exec --input DATA --file QUERY` evaluates QUERY once, then invokes its
+one-argument function with ordinary YAML data from DATA (`-` means stdin).
+`helix exec --stream --file QUERY` consumes JSONL incrementally; each invocation
+uses fresh execution state and returns a list of ordinary-data output records.
+Empty lists suppress records. Outputs flush per input; earlier outputs survive a
+later failure. Queries link once, retaining their immutable lexical captures.
+`--json` and `--yaml` control single-input output; streaming always emits JSONL.
+Inline queries remain accepted. Inputs never become executable source.
+
+### Streaming source discovery and explicit probes
+
+`helix search index [PATH ...] [--library PATH_OR_STD_MODULE] [--no-std]`
+recursively observes selected paths and embedded standard modules. Without paths
+it selects the current directory. Repeated `--library` adds roots or embedded
+modules. Git tracking has no meaning. Canonical paths and embedded identities
+are deduplicated, and directory symlinks are not followed during discovery.
+Explicit files accept any extension; discovered source uses `.yaml`/`.yml` and
+prose uses `.md`/`.markdown`/`.txt`. File observations are bounded to 1 MB each.
+
+Default excluded directory names are `.git`, `.hg`, `.svn`, `.worktrees`,
+`.claude`, `.codex`, `target`, `runtime`, `node_modules`, `vendor`, `.venv`,
+`venv`, `__pycache__`, `dist` and `build`. `--no-default-excludes` disables them;
+an explicitly selected directory is always visited. `search parse FILE_OR_STDIN`
+reflects one source without linking imports. Both operations emit version 1
+JSONL. Index emits source, function, call, reference and documentation records,
+individual diagnostic records and a final completeness summary. Incomplete
+scans exit 1, argument errors exit 2; a complete empty selection succeeds.
+No indexing operation evaluates annotations, function bodies or host effects.
+Literal imports use the ordinary confined linker with selected filesystem roots.
+Resolved edges may name imported definitions. Unsupported aliases and computed
+callees remain unresolved; `none_found` means the conservative scan found no
+effect, not that execution has been tested.
+
+Example pipeline (query files return a function):
+
+```sh
+helix search index std --no-std \
+  | helix exec --stream --file queries/functions.yaml \
+  | helix exec --stream --file queries/named.yaml
+```
+
+`queries/functions.yaml`:
+
+```yaml
+$call: [let, {s: {$call: [import, 'std:search']}},
+  {$call: [fn, [record], {$call: [s.keep, {$ref: record}, {$ref: s.functions}]}]}]
+```
+
+`queries/named.yaml`:
+
+```yaml
+$call: [let, {s: {$call: [import, 'std:search']}},
+  {$call: [fn, [record], {$call: [s.keep, {$ref: record},
+    {$call: [fn, [candidate], {$call: [s.name_matches, {$ref: candidate}, 'map|filter']}]}]}]}]
+```
+
+`helix search probe --cases examples.yaml [--harness harness.yaml] [--root PATH]`
+reads selected function records on stdin. Other records pass through. Each case
+is `{args: [...], expected: VALUE}`; `expected` is optional. The default adapter
+loads the module and selects the exported function through its result record.
+Internal source definitions are unsupported. A harness is a function receiving
+the selected function and argument list, returning a zero-argument thunk; it can
+adapt an exported factory to a captured closure. Module setup, harness setup and
+invocation share a 2,000,000-transition allowance per example, in addition to the
+ordinary evaluator bounds. Each example starts afresh. Imports require explicit
+`--root` grants; there is no host-effect dispatch. The selected source is reread
+and must exactly match the indexed `revision` (the complete source text).
+Results distinguish `observed`, `matched`, `mismatch`, `source_changed`,
+`execution_error`, `attempted_effect`, `unsupported_target`, `unsupported_result`
+and `exhausted_budget`. Probe records retain input, source blame and the revision
+actually executed. Examples establish observations only for their supplied inputs.
+
+Streaming query/probe inputs share a 16 MB per-record byte bound and the ordinary
+data graph size/nesting bounds. The stream does not accumulate prior records.
+For source-aware queries that preserve code through multiple stages, try:
+
+```sh
+helix search index std --no-std \
+  | helix exec --stream --file examples/search/reusable-functions.yaml \
+  | helix exec --stream --file examples/search/returning-records.yaml
+```
+
+`probe --max-steps N` replaces the default per-example transition allowance;
+`N` must be positive. Setup and invocation consume the same allowance. Choose a
+smaller allowance for exploratory probes of unknown candidates. Probe export
+selection examines actual function values in the initialized result (including
+lists and result wrappers), preserving their captures. A definition instantiated
+as multiple exported functions is reported as ambiguous.

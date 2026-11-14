@@ -257,13 +257,23 @@ def runtime(args, binary) -> int:
         if forwarded[:1] == ["perform"]:
             return perform_forwarded(binary, forwarded)
         return subprocess.call([str(binary), *forwarded], cwd=ROOT)
+    if command == "search":
+        return subprocess.call([str(binary), "search", *args.extra], cwd=ROOT)
     if command == "reconcile":
         return subprocess.call([str(binary), command, args.file, args.outcome], cwd=ROOT)
     if command == "eval":
         return subprocess.run([str(binary), *(["check", "--evaluate"] if args.check else ["run"]), "-"],
                               input=args.source, text=True, cwd=ROOT).returncode
     if command == "exec":
-        return subprocess.call([str(binary), "exec", *([args.output_format] if args.output_format else []), "--", args.source], cwd=ROOT)
+        options = []
+        if args.stream:
+            options.append("--stream")
+        if args.input is not None:
+            options.extend(["--input", args.input])
+        if args.file is not None:
+            options.extend(["--file", args.file])
+        program = [] if args.file is not None else ["--", args.source]
+        return subprocess.call([str(binary), "exec", *([args.output_format] if args.output_format else []), *options, *program], cwd=ROOT)
     if command == "inventory":
         from dataclasses import replace
         from tooling.inventory import inventory

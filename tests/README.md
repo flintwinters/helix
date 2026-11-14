@@ -508,3 +508,10 @@ Native HTTP acceptance runs within `python manage.py test --suite effects`.
 Independent clients exercise dynamic and binary responses, concurrent handlers,
 serialized actors, JSON/SQLite restart, failures, promise enforcement and bounded
 retention. Fixtures and progress artifacts stay under `runtime/`.
+
+Source discovery and composable queries are exercised by `./manage.py test
+--suite search`; streaming execution contracts also live in `--suite pipeline`.
+The search suite creates its fixture projects under `runtime/`, exercises actual
+OS pipelines and reports indexing timing observations. It covers typed paths,
+literal boundaries, discovery completeness, imported effect findings, explicit
+probes, changed-source refusal, Unicode regex and output before input EOF.

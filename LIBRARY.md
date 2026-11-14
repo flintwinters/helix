@@ -283,3 +283,74 @@ booted systemd services, or migrate this workstation's Ansible configuration.
 [HTTP.md](HTTP.md) documents `std:http` response helpers, exact routing and static
 files, plus `std:actor` serialized turns and interchangeable persistence callbacks.
 Listening and external storage still require caller-owned host grants.
+
+## Source search
+
+`std:source` exposes `parse(text)`, `walk(source)`, `select(source, predicate)`,
+`node(source, reference)`, `code_at(source, reference)` and
+`enclosing_functions(source, reference)`. Parsing never executes source. A source
+record stores normalized `code` once and lists semantic nodes with `reference`,
+`parent`, `children`, `kind` and 1-based `location`. References contain `source`
+and a `path` of string keys and integer indices. `$literal` is opaque to semantic
+walking. Scalar values and declaration annotations remain ordinary data.
+
+`std:search` supplies `functions(record)`, `documentation(record)`,
+`keep(record, predicate)`, `project(record, fields)`, `name_matches`,
+`signature_matches`, `text_matches`, `regex`, `effect_finding`, `result_type`,
+`parameter_type`, `calls(source, name)`, `references(source, name)`,
+`match(source, reference, pattern)`, `body_matches(source, pattern)` and
+`reachable(edges, start, limit)`. Type relations return a status and basis;
+unknown evidence is `unresolved`. Declared types and inferred result types are
+separate. Inference is the static checker's bounded fragment, never execution.
+`keep` preserves diagnostics and summaries. Projections retain identity,
+location and basis. Reachability consumes compact `{from, to}` edges and reports
+whether traversal completed within its bound.
+
+Patterns are tagged ordinary data: `{tag: wildcard}`, `{tag: exact, value: ...}`,
+`{tag: capture, name: x, of: PATTERN}` (`of` defaults to wildcard),
+`{tag: reference, name: x}`, `{tag: call, head: PATTERN, args: [PATTERN, ...]}`,
+`{tag: sequence, items: [...]}` and `{tag: mapping, fields: {key: PATTERN}}`.
+Mapping patterns match specified fields; `exact: true` also checks field count.
+Sequences and call arguments require exact lengths. Captures retain value,
+source reference and location; repeated captures require ordinary equality.
+Executable call/reference/literal wrappers are distinct from mapping shapes.
+Matching establishes syntax, not behavioral equivalence.
+
+`regex_find(pattern, text)` and `std:text.regex` return UTF-8 byte spans and
+capture text/spans (unmatched groups are null). The full match is capture zero.
+Patterns are limited to 16 KiB, text to 1 MB, compiled automata to 1 MB each,
+nesting to 64 and results to 4096 matches. Invalid patterns raise `regex`;
+exceeded bounds raise `limit`.
+
+Source-aware pipelines can use `function_candidates(source)` and
+`select_functions(source, predicate)` to retain the source's shared code while
+adding a `selection` list. `select_bodies(source, pattern)` and
+`select_results(source, pattern)` refine that selection in later stages.
+`result_expressions(source, reference)` follows explicit `if`, `cond`, `let` and
+`type_time` result syntax; other expressions remain expressions to match, without
+claims about the values they evaluate to. `result_matches` returns each possible
+expression with its syntax basis and capture evidence. Runnable query files live
+in `examples/search/`; combine `reusable-functions.yaml` and
+`returning-records.yaml` with `exec --stream --file`.
+
+`source_subtype(left, right)` is the bounded checker's non-executing structural
+proof relation. It never invokes predicates. `std:search` uses it to distinguish
+matches from unresolved type relationships; a failed proof is not a negative
+behavioral claim.
+
+`declared_result_type(record, wanted)` selects explicit result contracts;
+`result_type` selects inferred evidence. Unannotated parameters and widened `any`
+evidence remain unresolved. `relationship(actual, wanted, basis)` centralizes
+that policy. Function evidence also supplies a rendered signature for regex
+queries. `project` retains type/effect evidence and passes diagnostic/summary
+records through intact.
+
+Within reflected nodes, `parent` is null or `{up: N}` (remove `N` typed path
+segments); `children` are relative typed paths to append to the node's path.
+These relationships preserve source-qualified identity without repeating full
+ancestor paths at every edge. Scalar contents are read from the shared `code`.
+
+Reflection stops before its evidence exceeds 8 MB and validates the completed
+record against ordinary-data bounds. Expanded typed paths can exhaust those
+bounds even for a small source; indexing emits a `limit` diagnostic and an
+incomplete summary, while `source_parse` raises `limit`.

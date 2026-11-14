@@ -56,6 +56,8 @@ SUITES = {
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",
     "cli": "Runtime and project CLI contracts, imports, inventory, and recovery",
+    "source_reflection": "Authoritative syntax reflection, typed identities, lexical bindings and bounded type evidence",
+    "search": "Composable source reflection, streaming discovery, structural queries and explicit probes",
     "pipeline": "helix exec inline/stdin execution, raw strings, YAML/JSON results, errors and jq/yq shell pipes",
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
     "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",
@@ -173,7 +175,13 @@ def parser():
     formats = pipeline.add_mutually_exclusive_group()
     formats.add_argument("--json", dest="output_format", action="store_const", const="--json", help="emit JSON, including quoted string results, for jq/yq")
     formats.add_argument("--yaml", dest="output_format", action="store_const", const="--yaml", help="emit YAML, including quoted string results, for yq")
+    pipeline.add_argument("--input", help="ordinary-data file, or - for stdin")
+    pipeline.add_argument("--file", help="query source file")
+    pipeline.add_argument("--stream", action="store_true", help="incremental JSONL list-producing query")
     pipeline.add_argument("source", nargs="?", default="-", metavar="PROGRAM", help="inline YAML, or - for stdin (default)")
+    search = command(runtime, "search", "Stream source index, parse source, or explicitly probe selected functions",
+                     ["runtime", "search"], "runtime search index std --no-std")
+    search.add_argument("extra", nargs=argparse.REMAINDER, help="index [PATH ...] | parse FILE | probe --cases FILE [--root PATH]")
     inline = command(runtime, "eval", "Evaluate inline YAML and emit VM state",
                      ["runtime", "eval"], "runtime eval '{$call: [add, 20, 22]}'")
     inline.add_argument("source", metavar="SOURCE", help="YAML program quoted as one shell argument; use -- before a leading dash")
