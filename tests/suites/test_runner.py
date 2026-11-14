@@ -37,7 +37,7 @@ def verify_selection(h, directory):
     with contextlib.redirect_stdout(io.StringIO()) as stdout, contextlib.redirect_stderr(io.StringIO()) as stderr:
         assert selected.test(False, ["golden"], patterns=["missing"]) == 2
         assert invoked == [], "an unmatched filter executed a process"
-        assert selected.test(True, ["golden"], patterns=["beta"]) == 0, (stdout.getvalue(), stderr.getvalue())
+        assert selected.test(True, ["golden"], patterns=["beta"], bless_reason="fixture") == 0, (stdout.getvalue(), stderr.getvalue())
         assert cases[1].with_suffix(".expected.yaml").read_text() != "unchanged"
         assert all(case.with_suffix(".expected.yaml").read_text() == "unchanged"
                    for case in (cases[0], cases[2]))
@@ -363,8 +363,8 @@ def verify_report_reliability(h):
                     return h.process_runner(args, **kwargs)
 
                 context = replace(h, commands={directory: 'run'}, process_runner=runner)
-                def golden(path, bless):
-                    assert path == case and bless is False
+                def golden(path, bless, changes):
+                    assert path == case and bless is False and changes == []
                     executed.append('golden')
                     print('earlier fixture stdout')
                     print('earlier fixture warning', file=sys.stderr)

@@ -22,6 +22,10 @@ fixture stems or repository-relative paths (for example `tests/check/*.yaml`).
 Quote globs to keep the shell from expanding them. Every pattern must match an
 input; typos fail before building. Filters require explicit golden/robustness
 suite selection and also restrict `--bless` to the selected golden expectations.
+`--bless` and `--reason TEXT` must be given together. Helix (`std:test.golden_change`)
+classifies every rewritten expectation as new, unchanged, representation-only or
+semantic; the report's `blessing` field records the reason and sorted paths per class,
+and the text output lists semantic rewrites. Python vetoes understated classes only.
 Selected cases retain discovery order and use the existing `--jobs` workers.
 
 Test runs default to one line per suite and a final outcome/count summary.

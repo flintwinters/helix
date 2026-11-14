@@ -419,3 +419,25 @@ golden_decision:
       bless: {$call: [and, {$ref: facts.deterministic}, {$ref: facts.bless_requested}]}
       replay: {$call: [and, {$ref: accepted}, {$ref: facts.replayable}, {$call: [not, {$ref: facts.replay_completed}]}]}
   - {$ref: map}
+# Review aid for blessing: classify one rewritten expectation. Missing expectations
+# are null. Texts that differ but parse to equal data are only a representation
+# change; unparsable or unequal texts are semantic. Presentation carries no
+# authority: hosts veto any claim contradicted by their own parse.
+golden_change:
+  $call:
+  - fn
+  - - [expected, {$call: [union, {$ref: string}, {$call: [literal, null]}]}]
+    - [actual, {$ref: string}]
+  - $call:
+    - cond
+    - {$call: [eq, {$ref: expected}, null]}
+    - new
+    - {$call: [eq, {$ref: expected}, {$ref: actual}]}
+    - unchanged
+    - $call:
+      - try
+      - $call: [eq, {$call: [yaml_parse, {$ref: expected}]}, {$call: [yaml_parse, {$ref: actual}]}]
+      - {$call: [fn, [error], false]}
+    - representation
+    - semantic
+  - {$ref: string}

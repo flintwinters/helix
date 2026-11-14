@@ -170,8 +170,11 @@ def verify_rerun_reports(h):
         original = path.read_bytes()
         assert load_rerun_report(path, catalog) == valid
         assert path.read_bytes() == original
+        blessing = {"reason": "re-pin", "changes": {"new": ["a.yaml"], "representation": [], "semantic": ["b.yaml"]}}
         for report in (report_fixture(), report_fixture(suite_fixture("first", "passed")),
                        report_fixture({**suite_fixture("golden"), "cases": 3, "jobs": 2, "blessed": True}),
+                       report_fixture({**suite_fixture("golden"), "cases": 3, "jobs": 2, "blessed": True,
+                                       "blessing": blessing}),
                        report_fixture(suite_fixture("standard_library"), suite_fixture("golden", "passed"))):
             path.write_text(json.dumps(report))
             assert load_rerun_report(path, catalog) == report
@@ -189,6 +192,17 @@ def verify_rerun_reports(h):
             report = copy.deepcopy(valid)
             report["results"][0][field] = value
             damaged.append(report)
+        golden_row = {**suite_fixture("golden"), "cases": 3, "jobs": 2, "blessed": True}
+        for bad in ({**blessing, "reason": " "}, {**blessing, "reason": 1}, {"reason": "r"},
+                    {**blessing, "extra": 1}, {**blessing, "changes": {**blessing["changes"], "new": "a.yaml"}},
+                    {**blessing, "changes": {"new": [], "semantic": []}},
+                    {**blessing, "changes": {**blessing["changes"], "new": ["a.yaml", "a.yaml"]}},
+                    {**blessing, "changes": {**blessing["changes"], "semantic": ["a.yaml"]}},
+                    {**blessing, "changes": {**blessing["changes"], "new": [1]}}, [], None):
+            damaged.append(report_fixture({**golden_row, "blessing": bad}))
+        # Blessing evidence needs an actual blessed golden suite.
+        damaged.append(report_fixture({**golden_row, "blessed": False, "blessing": blessing}))
+        damaged.append(report_fixture({**suite_fixture("first"), "blessed": True, "blessing": blessing}))
         for report in damaged:
             path.write_text(json.dumps(report))
             try:

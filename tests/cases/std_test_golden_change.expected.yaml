@@ -1,0 +1,13 @@
+root:
+  both_unparsable: semantic
+  empty_present: semantic
+  expected_unparsable: semantic
+  hostile_text: semantic
+  new: new
+  numeric_spelling: representation
+  quoting: representation
+  reordered: representation
+  type: semantic
+  unchanged: unchanged
+  value: semantic
+status: finished

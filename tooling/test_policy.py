@@ -16,10 +16,25 @@ def _valid_summary(value, observations):
             and value["status"] == ("failed" if count else "passed"))
 
 
+def _blessing_problem(blessing):
+    """Blessing evidence is a reviewed reason plus the rewritten case paths by change kind."""
+    kinds = ("new", "representation", "semantic")
+    if (not isinstance(blessing, dict) or set(blessing) != {"reason", "changes"}
+            or not isinstance(blessing["reason"], str) or not blessing["reason"].strip()
+            or not isinstance(blessing["changes"], dict) or set(blessing["changes"]) != set(kinds)):
+        return "blessing must contain a reason and new/representation/semantic changes"
+    paths = [path for kind in kinds for path in blessing["changes"][kind]
+             if isinstance(blessing["changes"][kind], list)]
+    if (any(not isinstance(blessing["changes"][kind], list) for kind in kinds)
+            or any(not isinstance(path, str) or not path for path in paths) or len(set(paths)) != len(paths)):
+        return "blessing changes must list each case path once"
+    return None
+
+
 def _result_problem(row):
     """Validate the shared shallow result-row contract, without trusting numeric equality."""
     required = {"suite", "status", "failures"}
-    optional = {"stdout", "stderr", "cases", "case_paths", "jobs", "blessed", "reason"}
+    optional = {"stdout", "stderr", "cases", "case_paths", "jobs", "blessed", "reason", "blessing"}
     if (not isinstance(row, dict) or not required <= set(row) or set(row) - required - optional
             or not isinstance(row["suite"], str)):
         return "results must contain suite observations with supported fields"
@@ -35,6 +50,9 @@ def _result_problem(row):
                    for key, minimum in (("cases", 0), ("jobs", 1)))
             or ("blessed" in row and type(row["blessed"]) is not bool)):
         return f"invalid observation metadata for {row['suite']}"
+    if "blessing" in row and (row["suite"] != "golden" or row.get("blessed") is not True
+                              or _blessing_problem(row["blessing"])):
+        return f"invalid blessing metadata for {row['suite']}"
     if "case_paths" in row:
         paths = row["case_paths"]
         if (row["suite"] not in {"golden", "robustness"} or row["status"] == "skipped"

@@ -192,6 +192,7 @@ def parser():
     testing = command(quality, "test", "Run regression suites or discover their contracts",
                       ["quality", "test"], "quality test --suite golden --suite cli")
     testing.add_argument("--bless", action="store_true", help="rewrite golden expectations; requires only golden or default suite selection")
+    testing.add_argument("--reason", metavar="TEXT", help="why expectations change; required with --bless and recorded in the report beside each rewrite's new/representation/semantic classification")
     testing.add_argument("--suite", action="append", choices=SUITES, metavar="SUITE", help="repeat to select suites; default: all except explicitly reported opt-in Docker acceptance")
     testing.add_argument("--case", action="append", metavar="GLOB",
                          help="filter fixture stems or repository-relative paths; repeat for a union; requires golden/robustness suites only")
@@ -284,6 +285,8 @@ def parse(argv):
         args.help_parser.error("--rerun-failed cannot be combined with --suite, --case, --bless, --list or --describe")
     if args.command == "test" and args.case and (not args.suite or set(args.suite) - {"golden", "robustness"}):
         args.help_parser.error("--case requires explicit --suite golden and/or --suite robustness")
+    if args.command == "test" and args.bless != bool(args.reason and args.reason.strip()):
+        args.help_parser.error("--bless and a non-empty --reason must be given together")
     if args.command == "test" and args.bless and args.suite and set(args.suite) != {"golden"}:
         args.help_parser.error("--bless requires --suite golden (or no suite selection)")
     return args

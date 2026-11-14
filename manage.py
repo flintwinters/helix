@@ -131,7 +131,7 @@ def usage(args) -> int:
 
 def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS,
          patterns: list[str] | None = None, output_format: str = DEFAULT_FORMAT,
-         rerun_failed: str | None = None) -> int:
+         rerun_failed: str | None = None, bless_reason: str | None = None) -> int:
     from tooling.test_runner import discover_cases
     from tooling import test_policy
     from tooling.output import test_report
@@ -154,7 +154,7 @@ def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_
         # An explicit empty rerun is a bootstrap no-op, never the default all-suite selection.
         return test_report([], output_format=output_format)
     if suites and set(suites) == {"startup"}:
-        return context.regression(bless, suites, jobs, output_format=output_format)
+        return context.regression(bless, suites, jobs, output_format=output_format, bless_reason=bless_reason)
 
     with frozen_test_context(context, output_format) as (frozen, code):
         if code:
@@ -168,7 +168,7 @@ def test(bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_
                 return test_report([{"suite": "orchestration", "status": "failed", "failures": [str(error)]}],
                                    output_format=output_format)
             return frozen.regression(False, suites, jobs, None, output_format, case_selections=case_selections)
-        return frozen.regression(bless, suites, jobs, cases, output_format)
+        return frozen.regression(bless, suites, jobs, cases, output_format, bless_reason=bless_reason)
 
 
 def main() -> int:
@@ -206,7 +206,7 @@ def main() -> int:
     if command == "build":
         return build(report=True, output_format=args.format)
     if command == "test":
-        return test(args.bless, args.suite, args.jobs, args.case, args.format, args.rerun_failed)
+        return test(args.bless, args.suite, args.jobs, args.case, args.format, args.rerun_failed, args.reason)
     if command == "usage":
         return usage(args)
     with frozen_binary(BIN) as (binary, code):

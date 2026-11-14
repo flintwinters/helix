@@ -80,8 +80,8 @@ ERROR_FIELDS = {"kind", "message", "line", "column"}  # `path` is omitted for er
 class GoldenPolicyError(RuntimeError):
     """A failed policy execution, retaining the exact replayable evidence."""
 
-    def __init__(self, reason, result, source):
-        super().__init__(f"std:test.golden_decision failed: {reason}")
+    def __init__(self, reason, result, source, policy="golden_decision"):
+        super().__init__(f"std:test.{policy} failed: {reason}")
         self.result = result
         self.source = source
 
@@ -254,14 +254,14 @@ class TestContext:
             yield "".join(source[start:end] for start, end in variant)
 
     def test(self, bless: bool, suites: list[str] | None = None, jobs: int = DEFAULT_TEST_JOBS,
-             patterns: list[str] | None = None) -> int:
+             patterns: list[str] | None = None, bless_reason: str | None = None) -> int:
         """Execute selected contracts using this context's already prepared executable."""
         try:
             cases = discover_cases(self.commands, self.root, patterns) if patterns else None
         except ValueError as error:
             print(f"error: {error}", file=sys.stderr)
             return 2
-        return self.regression(bless, suites, jobs, cases)
+        return self.regression(bless, suites, jobs, cases, bless_reason=bless_reason)
 
     def robustness_case(self, case: Path) -> list[str]:
         from itertools import chain
@@ -334,7 +334,37 @@ class TestContext:
             raise GoldenPolicyError(problem, result, source)
         return decision
 
-    def golden_case(self, case: Path, bless: bool) -> list[str]:
+    def golden_change(self, expected, actual):
+        """Ask Helix how a blessed expectation differs; Python vetoes understated claims."""
+        import yaml
+
+        source = yaml.safe_dump({"$call": ["let", {
+            "test": {"$call": ["import", "std:test"]},
+        }, {"$call": ["test.golden_change", {"$literal": expected}, {"$literal": actual}]}]}, allow_unicode=False)
+        result = self.helix("run", "-", stdin=source)
+        problem = self.malformed_state(result.stdout, result.returncode)
+        if problem is None and (result.returncode != 0 or result.stderr):
+            problem = "policy did not finish cleanly"
+        change = yaml.safe_load(result.stdout).get("root") if problem is None else None
+        if problem is None:
+            def parsed_equal():
+                try:
+                    return yaml.safe_load(expected) == yaml.safe_load(actual)
+                except yaml.YAMLError:
+                    return False
+
+            if change not in ("new", "unchanged", "representation", "semantic"):
+                problem = "policy root must be new, unchanged, representation or semantic"
+            # Overstating a change is only noisy; understating one hides review evidence.
+            elif (change == "new") != (expected is None) or (change == "unchanged") != (expected == actual):
+                problem = f"policy classified {change!r} contradicting the observed expectation text"
+            elif change == "representation" and not parsed_equal():
+                problem = "policy called a data difference a representation change"
+        if problem is not None:
+            raise GoldenPolicyError(problem, result, source, "golden_change")
+        return change
+
+    def golden_case(self, case: Path, bless: bool, changes: list | None = None) -> list[str]:
         expected_path = case.with_suffix(".expected.yaml")
         command = self.commands[case.parent]
         run = self.helix(*shlex.split(command), str(case.relative_to(self.root)))
@@ -364,6 +394,7 @@ class TestContext:
                                          "root": self.root_section(reloaded.stdout) if replay_problem is None else None,
                                          "stdout": reloaded.stdout, "stderr": reloaded.stderr}
                 decision = self.golden_policy(observation)
+            change = self.golden_change(observation["expected"], out) if decision["bless"] else None
         except GoldenPolicyError as error:
             return [test_failure(self.root, case, "policy", str(error), "run", error.result,
                                  source=error.source, observation=observation)]
@@ -371,6 +402,8 @@ class TestContext:
         # retain the established behavior of blessing the original deterministic run.
         if decision["bless"]:
             expected_path.write_text(out)
+            if changes is not None:
+                changes.append((change, case.relative_to(self.root).as_posix()))
         # Process failures remain independently observable even if the policy is broken.
         if replay_problem is not None:
             return [test_failure(self.root, case, "roundtrip", replay_problem, "run", reloaded,
@@ -388,7 +421,8 @@ class TestContext:
 
     def regression(self, bless: bool, suites: list[str] | None, jobs: int = DEFAULT_TEST_JOBS,
                    cases: list[Path] | None = None, output_format: str = DEFAULT_FORMAT, *,
-                   case_selections: Mapping[str, list[Path]] | None = None) -> int:
+                   case_selections: Mapping[str, list[Path]] | None = None,
+                   bless_reason: str | None = None) -> int:
         import contextlib
         import io
         from tooling import test_policy
@@ -431,7 +465,7 @@ class TestContext:
             if output_format != "json":
                 render_test_result({**observation, "status": observed_test_status(observation)})
 
-        def record(name, check, **details):
+        def record(name, check, finish=lambda: {}, **details):
             stdout, stderr = io.StringIO(), io.StringIO()
             with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 try:
@@ -442,7 +476,7 @@ class TestContext:
                     import traceback
                     failures = [traceback.format_exc()]
             completed({"suite": name, "failures": failures, "stdout": stdout.getvalue(), "stderr": stderr.getvalue(),
-                       **details})
+                       **details, **finish()})
 
         def library():
             from manage import build_lock
@@ -468,8 +502,17 @@ class TestContext:
                     details["case_paths"] = [case.relative_to(self.root).as_posix() for case in suite_cases]
                 if name == "golden":
                     from functools import partial
-                    record(name, lambda: collect_cases(partial(self.golden_case, bless=bless), suite_cases, jobs),
-                           **details, blessed=bless)
+                    changes = []
+
+                    def blessing():
+                        # Unchanged rewrites are not review evidence; the rest are listed by case.
+                        kinds = {kind: sorted(path for label, path in changes if label == kind)
+                                 for kind in ("new", "representation", "semantic")}
+                        return {"blessing": {"reason": bless_reason, "changes": kinds}} if bless else {}
+
+                    record(name, lambda: collect_cases(partial(self.golden_case, bless=bless, changes=changes),
+                                                       suite_cases, jobs),
+                           blessing, **details, blessed=bless)
                 else:
                     record(name, lambda: self.robustness(suite_cases, jobs), **details)
             else:

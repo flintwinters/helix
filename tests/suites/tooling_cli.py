@@ -87,7 +87,10 @@ def verify(h):
     assert unmatched.returncode == 2 and not unmatched.stdout and "matched no" in unmatched.stderr
     for args in [("runtime", "unknown"), ("runtime", "run"),
                  ("quality", "test", "--suite", "unknown"),
-                 ("quality", "test", "--bless", "--suite", "cli"),
+                 ("quality", "test", "--bless", "--suite", "cli", "--reason", "why"),
+                 ("quality", "test", "--bless", "--suite", "golden"),
+                 ("quality", "test", "--bless", "--suite", "golden", "--reason", "  "),
+                 ("quality", "test", "--suite", "golden", "--reason", "orphan reason"),
                  ("--help-json", "build")]:
         result = invoke("--format=json", *args)
         assert result.returncode == 2 and not result.stdout, args

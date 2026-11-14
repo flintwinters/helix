@@ -1,0 +1,18 @@
+# Blessing classification over opaque expectation texts.
+$call:
+- let
+- t:
+    $call:
+    - import
+    - std:test
+- new: {$call: [t.golden_change, null, "root: 1\n"]}
+  unchanged: {$call: [t.golden_change, "root: 1\n", "root: 1\n"]}
+  reordered: {$call: [t.golden_change, "{a: 1, b: 2}\n", "b: 2\na: 1\n"]}
+  numeric_spelling: {$call: [t.golden_change, "root: 0x2a\n", "root: 42\n"]}
+  quoting: {$call: [t.golden_change, "root: 'x'\n", "root: x\n"]}
+  value: {$call: [t.golden_change, "root: 1\n", "root: 2\n"]}
+  type: {$call: [t.golden_change, "root: '1'\n", "root: 1\n"]}
+  expected_unparsable: {$call: [t.golden_change, "[", "root: 1\n"]}
+  both_unparsable: {$call: [t.golden_change, "[", "{"]}
+  empty_present: {$call: [t.golden_change, "", "root: 1\n"]}
+  hostile_text: {$call: [t.golden_change, "{$call: [raise, hostile]}\n", "{$call: [raise, other]}\n"]}

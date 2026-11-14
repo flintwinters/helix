@@ -19,12 +19,13 @@ def verify(h):
         expected_path = case.with_suffix(".expected.yaml")
 
         def exercise(*, output=FINISHED, code=0, expected=FINISHED, repeated=None,
-                     replay=None, bless=False, policy_fault=None, fault_after=0):
+                     replay=None, bless=False, policy_fault=None, fault_after=0,
+                     change_fault=None, changes=None):
             if expected is None:
                 expected_path.unlink(missing_ok=True)
             else:
                 expected_path.write_text(expected)
-            calls = {"file": 0, "replay": 0, "policy": 0}
+            calls = {"file": 0, "replay": 0, "policy": 0, "change": 0}
             initial = (code, output, "")
 
             def runner(args, **kwargs):
@@ -35,6 +36,11 @@ def verify(h):
                 elif source.startswith("$literal:\n"):
                     calls["replay"] += 1
                     response = initial if replay is None else replay
+                elif "golden_change" in source:
+                    calls["change"] += 1
+                    if change_fault is None:
+                        return h.process_runner(args, **kwargs)
+                    response = change_fault
                 else:
                     calls["policy"] += 1
                     if policy_fault is None or calls["policy"] <= fault_after:
@@ -45,7 +51,7 @@ def verify(h):
                 return subprocess.CompletedProcess(args, *response)
 
             context = replace(h, commands={case.parent: "run"}, process_runner=runner)
-            failures = context.golden_case(case, bless)
+            failures = context.golden_case(case, bless, changes)
             return failures, calls
 
         def stage(failures, expected):
@@ -80,6 +86,40 @@ def verify(h):
         ):
             failures, calls = exercise(output=output, code=code, expected=output)
             assert failures == [] and calls["replay"] == 0, (failures, calls)
+        # Blessing reports how each rewrite differs, classified by Helix.
+        relative = case.relative_to(h.root).as_posix()
+        for expected, kind in ((None, "new"), (FINISHED, "unchanged"), ("wrong", "semantic"),
+                               ("status: finished\nroot: 0x2a\n", "representation")):
+            changes = []
+            failures, calls = exercise(expected=expected, bless=True, changes=changes)
+            assert failures == [] and changes == [(kind, relative)], (expected, changes)
+            assert calls["change"] == 1 and expected_path.read_text() == FINISHED
+        # Without blessing nothing is classified or written.
+        changes = []
+        failures, calls = exercise(expected="wrong", changes=changes)
+        stage(failures, "golden")
+        assert changes == [] and calls["change"] == 0 and expected_path.read_text() == "wrong"
+
+        def change(root):
+            return (0, yaml.safe_dump({"status": "finished", "root": root}), "")
+
+        # A damaged classifier cannot understate a rewrite or smuggle in an unknown kind.
+        for expected, fault in (("wrong", change("unchanged")), ("wrong", change("representation")),
+                                ("wrong", change("new")), (FINISHED, change("new")), (FINISHED, change("semantic")),
+                                (None, change("semantic")), (None, change("unchanged")),
+                                ("wrong", change("other")), ("wrong", change(None)),
+                                ("wrong", (0, "[", "")), ("wrong", (-11, "", "")),
+                                ("wrong", (0, "status: finished\nroot: semantic\n", "stderr"))):
+            changes = []
+            failures, _ = exercise(expected=expected, bless=True, change_fault=fault, changes=changes)
+            stage(failures, "policy")
+            assert changes == [], (expected, fault)
+            assert (expected_path.read_text() if expected_path.exists() else None) == expected, (expected, fault)
+        # Overstating a change only adds review noise; identical text must still be unchanged.
+        changes = []
+        failures, _ = exercise(expected="status: finished\nroot: 0x2a\n", bless=True, change_fault=change("semantic"), changes=changes)
+        assert failures == [] and changes == [("semantic", relative)], (failures, changes)
+        expected_path.write_text(FINISHED)
         failures, calls = exercise(code=-11, output="", expected="wrong", bless=True)
         stage(failures, "state")
         assert calls["policy"] == calls["replay"] == 0 and expected_path.read_text() == "wrong"

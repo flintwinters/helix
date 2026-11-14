@@ -107,6 +107,7 @@ checked: {$call: [t.require_pass, {$ref: report}]}
 | `product(axes)` | Enumerate a finite Cartesian product in axis order, retaining duplicates. No axes yields `{$call: [[]]}`; an empty axis yields `[]`. |
 | `lists(alphabet, max_length)` | Enumerate every list of length zero through the nonnegative bound, in length then alphabet order. Negative bounds raise `range`. |
 | `golden_plan(observation)` | Decide golden-test failure precedence, blessing and replay from host-captured observations; return `{stage, bless, replay}`. |
+| `golden_change(expected, actual)` | Classify a blessed rewrite of expectation text as `new`, `unchanged`, `representation` (same YAML data, different text) or `semantic`; `expected` is null when no expectation existed. |
 | `golden_decision(facts)` | Apply the same decision policy to six boolean comparison facts without transporting captured text. |
 
 Use `{$call: [t.product, {$call: [list, {$ref: xs}, {$ref: ys}]}]}` for bounded pairs and `{$call: [t.lists, [-1, 0, 1], 3]}`
@@ -126,7 +127,10 @@ small and within runtime call/iteration limits. Generated list domains grow expo
 crashes, timeouts or side effects. `./manage.py test` supplies exact comparison
 facts to `golden_decision`, which owns failure precedence, blessing and replay
 decisions. `golden_plan` derives the same facts from full observations and delegates
-to that policy. Python independently validates decisions against retained raw
+to that policy. `golden_change` is a review aid for blessing: `./manage.py test --bless`
+requires `--reason` and reports each rewritten case by class, listing semantic ones.
+Python vetoes an understated class (for example `unchanged` for different text or
+`representation` for different data) but accepts overstatement. Python independently validates decisions against retained raw
 observations, supervises interpreter states, runs replay and writes failure
 evidence. The same golden runner tests this module; there is no competing test
 entrypoint.

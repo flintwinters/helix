@@ -30,10 +30,16 @@ def render_test_result(result):
     details = [f"{result['cases']} cases"] if "cases" in result else []
     if result.get("blessed"):
         details.append("expectations rewritten")
+    if blessing := result.get("blessing"):
+        details.append(", ".join(f"{len(paths)} {kind}" for kind, paths in blessing["changes"].items()))
+        details.append(f"reason: {blessing['reason']}")
     if result.get("reason"):
         details.append(result["reason"])
     suffix = f" ({'; '.join(details)})" if details else ""
     print(f"{result['suite']}: {result['status']}{suffix}")
+    # Semantic rewrites are the review-relevant ones; JSON lists every kind.
+    for path in result.get("blessing", {}).get("changes", {}).get("semantic", []):
+        print(f"  semantic: {path}")
     # Successful chatter stays available in the explicit JSON report.
     # Warnings on stderr and all failing-suite evidence remain visible.
     for channel in ("stdout", "stderr"):

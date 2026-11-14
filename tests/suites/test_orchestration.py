@@ -377,7 +377,7 @@ def verify_scoped_rerun(h):
             saved.write_text(json.dumps(previous))
             historical = saved.read_bytes()
             executed = {}
-            def golden_case(case, bless):
+            def golden_case(case, bless, changes=None):
                 assert bless is False
                 executed.setdefault('golden', []).append(case)
                 return []
