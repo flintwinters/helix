@@ -118,9 +118,6 @@ impl Hash {
         self.get(key).is_some()
     }
     pub fn insert(&mut self, key: Value, value: Value) -> Option<Value> {
-        if let Some(slot) = self.get_mut(&key) {
-            return Some(std::mem::replace(slot, value));
-        }
         assert!(key.as_str().is_some(), "runtime map keys are strings");
         Arc::make_mut(&mut self.0).insert(MapKey(key), value)
     }
