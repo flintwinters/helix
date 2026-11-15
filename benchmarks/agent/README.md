@@ -18,8 +18,14 @@ These arms are reported separately; CLI-assisted completion is not one-shot
 completion. Documentation is
 sent to OpenRouter, so only run with documents approved for that external service.
 
-The default model is `openai/gpt-6-luna`, verified against OpenRouter's current
-catalog before a run. Model IDs are exact; there is no silent fallback. Each task
+The requested default model is `openai/gpt-6.1-luna`. Availability is checked
+against OpenRouter's current catalog before a run. As of 2026-11-15, this ID is
+absent from both the public and authenticated account catalogs; an authenticated
+chat-completion request with provider fallback disabled returns HTTP 400:
+`openai/gpt-6.1-luna is not a valid model ID`. The official
+[Luna-latest page](https://openrouter.ai/~openai/gpt-luna-latest) points to GPT-6
+Luna. The default therefore fails explicitly until the requested model is exposed;
+no other model is selected automatically. Model IDs are exact; there is no silent fallback. Each task
 gets five independent requests with identical messages and temperature 0.7. The
 completion limit is 4,096 tokens per model request. One optional YAML transport fence is stripped;
 code is never repaired. Provider failures and empty or truncated responses are
@@ -66,7 +72,7 @@ YAML tags have improved model performance.
 ./manage.py quality agent-bench run --dry-run
 ./manage.py quality agent-bench run --mode one-shot --trials 5 --samples 3
 ./manage.py quality agent-bench run --mode cli --trials 5 --samples 3
-./manage.py quality agent-bench run --model openai/gpt-6-luna --task word-counts --trials 10
+./manage.py quality agent-bench run --model openai/gpt-6.1-luna --task word-counts --trials 10
 ./manage.py quality agent-bench score --directory runtime/agent-bench/RUN
 ./manage.py quality agent-bench report --directory runtime/agent-bench/RUN
 ./manage.py quality agent-bench report --replay --directory runtime/agent-bench/RUN
@@ -111,8 +117,8 @@ Every requested CLI operation, including rejected arguments, is appended through
 `tooling/usage_log.py` to the existing SQLite usage log. The runner supplies:
 
 - `caller_role = benchmark-model`
-- `model = openai/gpt-6-luna` (or the explicitly selected model)
-- `agent = openrouter:openai/gpt-6-luna`
+- `model = openai/gpt-6.1-luna` (or the explicitly selected model)
+- `agent = openrouter:openai/gpt-6.1-luna`
 - `benchmark_run`, `benchmark_task`, and `benchmark_trial`
 
 These values come from the runner, not the model's tool arguments or inherited
@@ -134,7 +140,8 @@ operations, multi-request usage totals, and credential-free saved conversations.
 
 The checked-in [one-shot report](baseline-one-shot-v1.json) and
 [CLI-assisted report](baseline-cli-v1.json) retain the initial measurements for
-`openai/gpt-6-luna`. Generation used five trials per task. Evaluation was replayed
+`openai/gpt-6-luna`. These are historical GPT-6 results, not measurements of the
+requested GPT-6.1 Luna model. Generation used five trials per task. Evaluation was replayed
 with five timing samples after the regression jobs finished; both reports select
 that replay explicitly. Original API responses, prompts and full scores remain in
 the referenced runtime directories. Small-sample differences are observations,

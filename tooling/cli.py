@@ -232,7 +232,7 @@ def parser():
     bench.add_argument("--mode", choices=("one-shot", "cli"), default="cli", help="CLI-enabled bounded agent or a single completion without tools")
     bench.add_argument("--max-turns", type=int, default=8, help="maximum model requests per CLI-enabled attempt")
     bench.add_argument("--max-tool-calls", type=int, default=12, help="maximum Helix calls per CLI-enabled attempt")
-    bench.add_argument("--model", default="openai/gpt-6-luna", help="exact OpenRouter model ID")
+    bench.add_argument("--model", default="openai/gpt-6.1-luna", help="exact OpenRouter model ID")
     bench.add_argument("--trials", type=int, default=5, help="independent completions per task")
     bench.add_argument("--task", action="append", help="task ID; repeat to select several")
     bench.add_argument("--samples", type=int, default=3, help="timing samples after one warmup")

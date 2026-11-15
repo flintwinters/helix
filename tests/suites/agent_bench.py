@@ -12,6 +12,8 @@ from tooling.agent_tasks import TASKS, inputs, oracle
 
 
 def verify(h):
+    from tooling.cli import parse
+    assert parse(['agent-bench', 'run']).model == 'openai/gpt-6.1-luna'
     assert oracle('sum-squares', [-2, 0, 2, 3]) == 13
     assert oracle('word-counts', ['a', 'A', '', 'a']) == {'a': 2, 'A': 1, '': 1}
     assert oracle('group-totals', [
@@ -75,6 +77,19 @@ def verify(h):
         args.replay = True
         assert bench.saved_report(args)['evaluation']['samples'] == 1
         assert bench.saved_report(args)['evaluation_source'] == 'replay.json'
+        # An unavailable requested version must never become a run of another model.
+        missing = SimpleNamespace(**{**vars(args), 'model': 'openai/gpt-6.1-luna',
+                                     'directory': str(directory / 'missing-model')})
+        def catalog_only(path, payload=None, key=None):
+            assert path == '/models', 'unavailable model must not generate a completion'
+            return {'data': [{'id': 'openai/gpt-6-luna'}]}
+        with patch.object(bench, 'request', catalog_only), patch.object(bench, 'api_key', return_value='fake'):
+            try:
+                bench.run(h.root, missing, h)
+            except ValueError as error:
+                assert 'openai/gpt-6.1-luna' in str(error) and 'no substitute' in str(error), error
+            else:
+                raise AssertionError('missing version silently fell back')
         verify_cli(h, directory)
 
 

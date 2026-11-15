@@ -267,7 +267,7 @@ def run(root, args, ctx):
         key = api_key(root)
         model = next((m for m in request('/models')['data'] if m['id'] == args.model), None)
         if model is None:
-            raise ValueError('exact model ID is absent from OpenRouter catalog; use agent-bench models')
+            raise ValueError(f'{args.model} is absent from OpenRouter catalog; no substitute model was requested')
     manifest = {'schema': 'helix.agent-bench.v1', 'task_version': VERSION, 'model': args.model,
                 'catalog_model': model, 'mode': getattr(args, 'mode', 'one-shot'),
                 'max_turns': getattr(args, 'max_turns', 8), 'max_tool_calls': getattr(args, 'max_tool_calls', 12),
