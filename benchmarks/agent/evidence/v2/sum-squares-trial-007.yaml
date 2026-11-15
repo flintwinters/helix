@@ -1,0 +1,14 @@
+solve: !call
+  - fn
+  - [xs]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [total, n]
+      - !if
+        - !call [gt, !ref n, 0]
+        - !call [add, !ref total, !call [mul, !ref n, !ref n]]
+        - !ref total
+    - 0
+    - !ref xs

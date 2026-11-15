@@ -1,0 +1,1 @@
+solve: !call [fn, [input], !call [fold, !ref add, 0, !call [map, !call [fn, [n], !call [mul, !ref n, !ref n]], !call [filter, !call [fn, [n], !call [gt, !ref n, 0]], !ref input]]]]

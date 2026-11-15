@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "command": "agent-bench",
+  "status": "ok",
+  "evaluation_source": "report.json",
+  "evaluation": null,
+  "directory": "/home/felix/projects/experiments/helix/helix/runtime/agent-bench/luna-cli-5x10-v2",
+  "provenance": {
+    "schema": "helix.agent-bench.v1",
+    "task_version": 2,
+    "model": "openai/gpt-6-luna",
+    "trials": 10,
+    "samples": 5,
+    "temperature": 0.7,
+    "max_tokens": 4096,
+    "context_sha256": "b0b2d59e21f3d56e6fbfd303376e53ff580a0861b6247a3dbf841db1d9f70d51",
+    "task_source_sha256": "c9d93207dc38d485275aa6fad82d1316ab71830fd415f937b34904c4fc4b1443",
+    "git_revision": "0495011b00aa41ad51de6bd46278aac258b920af",
+    "git_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "binary_sha256": "8690ceedc124f4ee6f05fa80405abd206daefd1e3656ab995141cc62458e2f28",
+    "environment": {
+      "platform": "Linux-7.3.0-10-generic-x86_64-with-glibc2.44",
+      "python": "3.14.8"
+    },
+    "timing_contract": "CLI wall time includes process startup, parsing, linking, execution and serialization; one warmup, n=256. No build or API time. Ratios use a same-run reference; debug build."
+  },
+  "mode": "cli",
+  "summary": {
+    "dependency-plan": {
+      "model_requests": 40,
+      "tool_calls": 30,
+      "attempts": 10,
+      "evaluated": 10,
+      "successes": 9,
+      "pass_rate": 0.9,
+      "pass_rate_wilson_95": [
+        0.5958499732047615,
+        0.9821237869049271
+      ],
+      "mean_case_score": 0.9,
+      "usage_observations": 10,
+      "prompt_tokens": 1112842,
+      "completion_tokens": 18061,
+      "total_tokens": 1130903,
+      "mean_total_tokens_per_attempt": 113090.3,
+      "total_tokens_per_success": 125655.88888888889,
+      "reported_cost_usd": 0.02997101,
+      "cost_observations": 10,
+      "median_successful_cli_wall_ms": 2105.6917650275864,
+      "median_generation_ms": 14398.174972971901,
+      "median_runtime_ratio_to_reference": 0.8608985075614117
+    },
+    "group-totals": {
+      "model_requests": 21,
+      "tool_calls": 11,
+      "attempts": 10,
+      "evaluated": 10,
+      "successes": 10,
+      "pass_rate": 1.0,
+      "pass_rate_wilson_95": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "mean_case_score": 1.0,
+      "usage_observations": 10,
+      "prompt_tokens": 509346,
+      "completion_tokens": 6487,
+      "total_tokens": 515833,
+      "mean_total_tokens_per_attempt": 51583.3,
+      "total_tokens_per_success": 51583.3,
+      "reported_cost_usd": 0.009572165,
+      "cost_observations": 10,
+      "median_successful_cli_wall_ms": 111.04422700009309,
+      "median_generation_ms": 8403.339669981506,
+      "median_runtime_ratio_to_reference": 1.0700560229189646
+    },
+    "stable-unique": {
+      "model_requests": 26,
+      "tool_calls": 16,
+      "attempts": 10,
+      "evaluated": 10,
+      "successes": 9,
+      "pass_rate": 0.9,
+      "pass_rate_wilson_95": [
+        0.5958499732047615,
+        0.9821237869049271
+      ],
+      "mean_case_score": 0.9,
+      "usage_observations": 10,
+      "prompt_tokens": 687153,
+      "completion_tokens": 5692,
+      "total_tokens": 692845,
+      "mean_total_tokens_per_attempt": 69284.5,
+      "total_tokens_per_success": 76982.77777777778,
+      "reported_cost_usd": 0.014806355,
+      "cost_observations": 10,
+      "median_successful_cli_wall_ms": 58.650921972002834,
+      "median_generation_ms": 10454.601973993704,
+      "median_runtime_ratio_to_reference": 0.894509492121792
+    },
+    "sum-squares": {
+      "model_requests": 20,
+      "tool_calls": 10,
+      "attempts": 10,
+      "evaluated": 10,
+      "successes": 8,
+      "pass_rate": 0.8,
+      "pass_rate_wilson_95": [
+        0.49016247153664183,
+        0.9433178485456247
+      ],
+      "mean_case_score": 0.8333333333333334,
+      "usage_observations": 10,
+      "prompt_tokens": 481863,
+      "completion_tokens": 4098,
+      "total_tokens": 485961,
+      "mean_total_tokens_per_attempt": 48596.1,
+      "total_tokens_per_success": 60745.125,
+      "reported_cost_usd": 0.007861755,
+      "cost_observations": 10,
+      "median_successful_cli_wall_ms": 58.42013249639422,
+      "median_generation_ms": 7439.540153951384,
+      "median_runtime_ratio_to_reference": 1.2288577834764354
+    },
+    "word-counts": {
+      "model_requests": 24,
+      "tool_calls": 14,
+      "attempts": 10,
+      "evaluated": 10,
+      "successes": 10,
+      "pass_rate": 1.0,
+      "pass_rate_wilson_95": [
+        0.7224672001371107,
+        0.9999999999999999
+      ],
+      "mean_case_score": 1.0,
+      "usage_observations": 10,
+      "prompt_tokens": 618509,
+      "completion_tokens": 4728,
+      "total_tokens": 623237,
+      "mean_total_tokens_per_attempt": 62323.7,
+      "total_tokens_per_success": 62323.7,
+      "reported_cost_usd": 0.013092275,
+      "cost_observations": 10,
+      "median_successful_cli_wall_ms": 91.40256949467584,
+      "median_generation_ms": 7683.96639751154,
+      "median_runtime_ratio_to_reference": 0.9013127509333663
+    }
+  }
+}

@@ -157,3 +157,44 @@ is preserved byte-for-byte: it expected a record containing `input` and returned
 record containing `output`, while the task required a list argument and a count
 map result directly. Its self-tests used the same mistaken interface. This is a
 concrete interface-understanding failure, despite having execution feedback.
+
+## Recorded 50-attempt protocol-v2 run
+
+The [five-task summary](baseline-cli-5x10-v2.json) records ten CLI-assisted
+attempts per task using explicitly approved `openai/gpt-6-luna`, not the unavailable
+6.1 default. All 50 attempts produced candidates; 46 passed every oracle case.
+There were no API errors. The run used 131 model requests and 81 CLI calls.
+
+[Per-attempt measurements](attempts-cli-5x10-v2.json) preserve all 50 outcomes,
+response model IDs, input/output token usage and cost, generation latency,
+CLI-call counts, source hashes, correctness counts, five raw timing samples for
+successful candidates, and the first failing-case diagnostic. The summary owns
+per-task completion intervals and reference runtime ratios. Full API responses,
+conversations, programs and six-case observations remain under
+`runtime/agent-bench/luna-cli-5x10-v2/`.
+
+[SQLite attribution evidence](baseline-cli-5x10-attribution-v2.json) accounts for
+all 81 CLI calls as `benchmark-model` / `openai/gpt-6-luna`, with ten distinct trial
+IDs for every task. Scorer and timing invocations are separate harness operations.
+
+The failed candidates are preserved unchanged:
+
+- [Sum of squares, trial 1](evidence/v2/sum-squares-trial-001.yaml): referenced
+  builtin actor `add` as a lexical function value; the observed error was unbound.
+- [Sum of squares, trial 7](evidence/v2/sum-squares-trial-007.yaml): invented the
+  unsupported `!if` tag.
+- [Stable deduplication, trial 8](evidence/v2/stable-unique-trial-008.yaml): tried
+  to call the imported library module itself as a function.
+- [Dependency planning, trial 2](evidence/v2/dependency-plan-trial-002.yaml):
+  returned code with a lexical value-dependency cycle after seven CLI calls.
+
+These are observed first failures, not claims that each program has only one
+fault. No candidate was repaired or replaced by the implementer. The measured
+runtime is still debug CLI wall time on a 256-entry input, including startup,
+loading, execution and serialization; it is not isolated evaluator throughput.
+
+The explicit run command was:
+
+```sh
+./manage.py quality agent-bench run --mode cli --model openai/gpt-6-luna --trials 10 --samples 5 --directory runtime/agent-bench/luna-cli-5x10-v2
+```
