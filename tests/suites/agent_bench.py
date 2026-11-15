@@ -14,6 +14,14 @@ from tooling.agent_tasks import TASKS, inputs, oracle
 def verify(h):
     from tooling.cli import parse
     assert parse(['agent-bench', 'run']).model == 'openai/gpt-6.1-luna'
+    assert parse(['agent-bench', 'run']).trials == 10
+    assert len(TASKS) == 5
+    assert oracle('stable-unique', ['b', '', 'b', '雪', '']) == ['b', '', '雪']
+    assert oracle('dependency-plan', {'z': [], 'a': ['z'], 'b': []}) == {
+        'order': ['b', 'z', 'a'], 'pending': {}, 'missing': [], 'status': 'finished'}
+    assert oracle('dependency-plan', {'a': ['b'], 'b': ['a'], 'missing': ['absent', 'absent']}) == {
+        'order': [], 'pending': {'a': ['b'], 'b': ['a'], 'missing': ['absent', 'absent']},
+        'missing': [{'task': 'missing', 'dependency': 'absent'}] * 2, 'status': 'blocked'}
     assert oracle('sum-squares', [-2, 0, 2, 3]) == 13
     assert oracle('word-counts', ['a', 'A', '', 'a']) == {'a': 2, 'A': 1, '': 1}
     assert oracle('group-totals', [

@@ -4,10 +4,11 @@
 `./manage.py test --suite agent_bench` verifies the harness offline. Live model
 calls are explicit experiments, never part of the default regression suite.
 
-## Protocol v1
+## Protocol v2
 
-The three tasks are positive-integer sum of squares, case-sensitive word counts,
-and active-record grouped totals. Each asks for a pure YAML module exporting
+The five tasks are positive-integer sum of squares, case-sensitive word counts,
+active-record grouped totals, stable deduplication, and deterministic dependency
+planning with missing prerequisites and cycles. Each asks for a pure YAML module exporting
 `solve(input)`. The model gets the complete current `LANGUAGE.md` and `LIBRARY.md`,
 the task specification and one example. The `--mode one-shot` arm gets no tools, oracle cases, reference solution,
 execution feedback, repair turns or prior attempts. The default `--mode cli` arm
@@ -26,7 +27,8 @@ chat-completion request with provider fallback disabled returns HTTP 400:
 [Luna-latest page](https://openrouter.ai/~openai/gpt-luna-latest) points to GPT-6
 Luna. The default therefore fails explicitly until the requested model is exposed;
 no other model is selected automatically. Model IDs are exact; there is no silent fallback. Each task
-gets five independent requests with identical messages and temperature 0.7. The
+gets ten independent attempts with identical initial messages and temperature 0.7
+by default: 50 attempts over the complete task suite. The
 completion limit is 4,096 tokens per model request. One optional YAML transport fence is stripped;
 code is never repaired. Provider failures and empty or truncated responses are
 retained, with no automatic retry or replacement. The report distinguishes API
@@ -56,9 +58,9 @@ runtime. CLI-mode usage sums every model request, including repeated context and
 feedback. Raw per-request usage remains available. See [OpenRouter chat completions](https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request)
 and [usage accounting](https://github.com/OpenRouterTeam/docs/blob/main/cookbook/administration/usage-accounting.mdx).
 
-Five trials give a noisy initial baseline. Reports include Wilson 95% intervals
-for each task's completion rate. Do not infer general agent usability from three
-small data tasks or treat a few milliseconds as an established improvement.
+Ten trials per task still carry sampling uncertainty. Reports include Wilson 95% intervals
+for each task's completion rate. Do not infer general agent usability from five
+small coding tasks or treat a few milliseconds as an established improvement.
 Compare fixed tasks, model, prompt/context hashes, sampling parameters and host
 conditions; change one factor at a time. Syntax comparisons require paired context
 variants and more trials; v1 establishes the baseline rather than claiming that
@@ -70,8 +72,8 @@ YAML tags have improved model performance.
 ./manage.py quality agent-bench list
 ./manage.py quality agent-bench models
 ./manage.py quality agent-bench run --dry-run
-./manage.py quality agent-bench run --mode one-shot --trials 5 --samples 3
-./manage.py quality agent-bench run --mode cli --trials 5 --samples 3
+./manage.py quality agent-bench run --mode one-shot --trials 10 --samples 3
+./manage.py quality agent-bench run --mode cli --trials 10 --samples 3
 ./manage.py quality agent-bench run --model openai/gpt-6.1-luna --task word-counts --trials 10
 ./manage.py quality agent-bench score --directory runtime/agent-bench/RUN
 ./manage.py quality agent-bench report --directory runtime/agent-bench/RUN
@@ -136,9 +138,11 @@ The offline suite also checks a real SQLite model-attribution row despite an
 inherited implementer identity and disabled developer logging, denied CLI
 operations, multi-request usage totals, and credential-free saved conversations.
 
-## Initial recorded baseline
+## Historical protocol-v1 baseline
 
-The checked-in [one-shot report](baseline-one-shot-v1.json) and
+Protocol v1 used three tasks and five attempts per task. Its task definitions
+remain recoverable from the recorded Git history; replay refuses changed task
+definitions. The checked-in [one-shot report](baseline-one-shot-v1.json) and
 [CLI-assisted report](baseline-cli-v1.json) retain the initial measurements for
 `openai/gpt-6-luna`. These are historical GPT-6 results, not measurements of the
 requested GPT-6.1 Luna model. Generation used five trials per task. Evaluation was replayed
