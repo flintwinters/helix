@@ -393,6 +393,10 @@ the [fixture contract](fixtures/docker_linux/README.md). Pure planning is in the
 The `peers` scenario runs Helix controllers inside two containers that configure
 each other over pinned SSH, then checks no-op convergence and targeted drift repair.
 See the fixture contract for retaining and operating the successful pair.
+Its adversarial matrix also covers all resource failure/false-success modes, exact file
+bytes and partial replacement, real dpkg locks, seeded transitions, concurrent observations,
+simultaneous peers, transport failures and durable controller-death recovery. Comma-separated
+`HELIX_DOCKER_LINUX_SCENARIO` values select focused subsets; `_REPEAT` repeats them.
 
 ## Docker nginx acceptance
 

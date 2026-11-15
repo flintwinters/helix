@@ -4,9 +4,12 @@ Reuses the nginx suite's bounded Docker driver, pinned image and cleanup ownersh
 independent probe below reads actual accounts, packages and paths without the host helper.
 """
 import json
+from contextlib import contextmanager
 import os
+import random
 from pathlib import Path
 import signal
+import subprocess
 import sys
 import time
 
@@ -32,6 +35,19 @@ SCENARIOS = {
     "lifecycle": "Container recreation yields a fresh target identity and a clean baseline",
     "sensitivity": "Independent oracles reject corrupt state that a report might call converged",
     "peers": "Two container-resident Helix controllers configure each other over pinned SSH, converge and repair drift",
+    "adversarial_plans": "Reject contradictory paths, self dependencies and invalid absent declarations before effects",
+    "exact_files": "Preserve CRLF, CR, Unicode, NUL and empty file bytes without repeated drift",
+    "host_failures": "Every resource rejects false success and real helper failures, then recovers",
+    "filesystem": "Symlink ancestors, wrong object kinds, invalid UTF-8 and oversized files fail closed",
+    "sequences": "Seeded state transitions, removals and drift repeatedly converge against an independent oracle",
+    "peer_failures": "Pinned identity, denied grants, stale remote reviews, interrupted SSH and repair in both directions",
+    "peer_recovery": "Container-resident controller death refuses uncertain replay and resumes only after exact reconciliation",
+    "file_failures": "Failure before and after atomic replacement preserves evidence and permits fresh reconciliation",
+    "contention": "Actual dpkg locks and conflicting account identifiers fail closed and recover",
+    "observations": "Concurrent first observations publish exactly one complete target identity",
+    "late_drift": "A resource changed after its own postcondition still fails whole-application verification",
+    "peer_parallel": "Both container-resident controllers configure their different targets simultaneously",
+    "identity_changes": "Numeric account changes rebind named ownership in one apply without unnecessary rewrites",
 }
 
 # Deliberately independent of the host helper: reads actual OS state for a fixed superset.
@@ -56,7 +72,7 @@ def path(name):
     info = p.stat()
     common = dict(uid=info.st_uid, gid=info.st_gid, mode=stat.S_IMODE(info.st_mode), inode=info.st_ino, mtime_ns=info.st_mtime_ns)
     if p.is_dir(): return dict(type='directory', **common)
-    return dict(type='file', content=p.read_text(), **common)
+    return dict(type='file', content=p.read_bytes().decode('utf-8'), **common)
 processes = {}
 for p in pathlib.Path('/proc').iterdir():
     if p.name.isdigit():
@@ -80,7 +96,8 @@ def replay(name):
 
 def options():
     chosen = os.environ.get("HELIX_DOCKER_LINUX_SCENARIO", "all")
-    if chosen != "all" and chosen not in SCENARIOS:
+    names = list(SCENARIOS) if chosen == "all" else chosen.split(",")
+    if len(set(names)) != len(names) or any(name not in SCENARIOS for name in names):
         raise ValueError(f"unknown Docker Linux scenario {chosen!r}; choose one of {', '.join(SCENARIOS)}")
     repeat = int(os.environ.get("HELIX_DOCKER_LINUX_REPEAT", "1"))
     if not 1 <= repeat <= 10:
@@ -88,7 +105,7 @@ def options():
     keep = os.environ.get("HELIX_DOCKER_LINUX_KEEP_PEERS", "0")
     if keep not in {"0", "1"} or keep == "1" and (chosen != "peers" or repeat != 1):
         raise ValueError("HELIX_DOCKER_LINUX_KEEP_PEERS=1 requires SCENARIO=peers and REPEAT=1")
-    return list(SCENARIOS) if chosen == "all" else [chosen], repeat
+    return names, repeat
 
 
 def desired(**changes):
@@ -171,6 +188,8 @@ class LinuxDocker(Docker):
 
     def fault(self, value=None):
         self.exec("mkdir", "-p", "/run/helix-linux")
+        if value is not None:
+            self.exec("rm", "-f", "/run/helix-linux/fault-reached.json", "/run/helix-linux/fault-release")
         if value is None:
             self.exec("rm", "-f", FAULT)
         else:
@@ -461,8 +480,14 @@ def false_success(d):
 def authority(d):
     before, actions = d.probe(), d.actions()
     assert_failure(d.controller("check", desired(), grant=False), "capability", "observe", cause="not granted")
-    d.fault({"observe": "fail"})
-    d.fault()
+    for mode in ("fail", "malformed", "error-malformed", "error-scalar", "missing", "extra", "invalid-value"):
+        d.fault({"observe": mode})
+        report = d.controller("check", desired())
+        assert report["status"] == "failed" and report["phase"] == "observe", (mode, report)
+        if mode.startswith("error-"):
+            assert report["error"]["kind"] == "linux_host" and report["error"]["data"]["code"] == 1, report
+            assert report["error"]["data"]["host_error"] is None, report
+        d.fault()
     assert d.probe() == before and d.actions() == actions
     # Ownership boundaries: the helper refuses paths outside the fixture roots even if Helix asked.
     outside = {"files": {"/etc/passwd": {"content": "root::0:0::/:/bin/sh\n"}}}
@@ -511,7 +536,274 @@ def sensitivity(d):
     d.apply(desired())
 
 
-def peers(d):
+def adversarial_configurations():
+    return {
+        "self dependency": {"groups": {"helix-app": {"gid": 2001, "after": ["group:helix-app"]}}},
+        "two-node cycle": {"groups": {"helix-app": {"gid": 2001, "after": ["group:helix-extra"]},
+                                      "helix-extra": {"gid": 2002, "after": ["group:helix-app"]}}},
+        "absent unknown prerequisite": {"groups": {"helix-app": {"state": "absent", "after": ["group:missing"]}}},
+        "absent self dependency": {"groups": {"helix-app": {"state": "absent", "after": ["group:helix-app"]}}},
+        "file and directory": {"files": {"/etc/helix-demo": {"content": "x"}}, "directories": {"/etc/helix-demo": {}}},
+        "file ancestor": {"files": {"/etc/helix-demo": {"content": "x"}, "/etc/helix-demo/app.conf": {"content": "y"}}},
+        "symlink ancestor": {"symlinks": {"/etc/helix-demo": {"target": "/srv/helix"}}, "files": {"/etc/helix-demo/app.conf": {"content": "y"}}},
+        "package option": {"packages": {"--help": {"version": "1"}}},
+    }
+
+
+def declaration_error(name):
+    if name == "package option":
+        return "type"
+    return "linux_path_conflict" if name in {"file and directory", "file ancestor", "symlink ancestor"} else "linux_dependency"
+
+
+def adversarial_plans(d):
+    before, trace = d.probe(), d.actions()
+    for name, inputs in adversarial_configurations().items():
+        for mode in ("resolve", "check"):
+            report = d.controller(mode, inputs, grant=False)
+            assert report.get("status") == "failed" and report["error"]["kind"] == declaration_error(name), (name, mode, report)
+        assert d.probe() == before and d.actions() == trace, (name, "changed host before rejection")
+    # Removal needs only identity and absent state, not creation-only fields.
+    minimal = {"users": {"helix-app": {"state": "absent"}}, "groups": {"helix-app": {"state": "absent"}}}
+    assert d.controller("check", minimal)["status"] == "unchanged"
+    d.apply(desired())
+    removal = {**desired(), **minimal,
+               "directories": {"/etc/helix-demo": {}, "/srv/helix": {}, "/srv/helix/app": {"state": "absent"}},
+               "files": {"/etc/helix-demo/app.conf": {"state": "absent"}, "/srv/helix/app/README": {"state": "absent"}},
+               "symlinks": {"/etc/helix-demo/current": {"state": "absent"}}}
+    # Explicit account dependency is necessary when omitted removal fields carry no group evidence.
+    removal["users"]["helix-app"]["after"] = ["group:helix-app"]
+    review = d.controller("check", removal)
+    report = d.controller("apply", removal, review)
+    assert report["status"] == "changed", report
+    state = d.probe()
+    assert state["users"]["helix-app"] is None and state["groups"]["helix-app"] is None, state
+
+
+def exact_files(d):
+    inputs = desired()
+    d.apply(inputs)
+    for content in ("line one\r\nline two\r\n", "a\rb\r", "café λ 😀\n", "embedded\0NUL\n", "", "no newline", "x" * 140000):
+        inputs = {**inputs, "files": {**inputs["files"], "/etc/helix-demo/app.conf": {
+            **inputs["files"]["/etc/helix-demo/app.conf"], "content": content}}}
+        d.apply(inputs)
+        raw = d.exec("python3", "-c", "from pathlib import Path; print(Path('/etc/helix-demo/app.conf').read_bytes().hex())").stdout.strip()
+        assert raw == content.encode("utf-8").hex(), (content, raw)
+        before, trace = d.probe(), d.actions()
+        d.apply(inputs, expected="unchanged")
+        assert d.probe() == before and d.actions() == trace
+    # Atomic replacement must not modify another name for the old inode.
+    d.exec("ln", "/etc/helix-demo/app.conf", "/srv/helix/app/unmanaged.txt")
+    old = d.probe()["paths"]["/srv/helix/app/unmanaged.txt"]
+    inputs["files"]["/etc/helix-demo/app.conf"]["content"] = "new inode\n"
+    d.apply(inputs)
+    assert d.probe()["paths"]["/srv/helix/app/unmanaged.txt"] == old
+
+
+def identity_changes(d):
+    inputs = desired()
+    d.apply(inputs)
+    changes = [
+        ("gid", "groups", "helix-app", {"gid": 2002}, None),
+        ("uid in home", "users", "helix-app", {"uid": 2002}, {"user:helix-app"}),
+        ("move home", "users", "helix-app", {"home": "/home/helix-app"}, {"user:helix-app"}),
+        ("uid outside home", "users", "helix-app", {"uid": 2003},
+         {"user:helix-app", "directory:/srv/helix/app", "file:/srv/helix/app/README"}),
+        ("gid back", "groups", "helix-app", {"gid": 2001}, None),
+    ]
+    for name, section, key, fields, actual in changes:
+        inputs = {**inputs, section: {**inputs[section], key: {**inputs[section][key], **fields}}}
+        review = d.controller("check", inputs)
+        since = len(d.actions())
+        d.apply(inputs, review=review)
+        changed = {resource for resource, operation in d.performed(since)}
+        allowed = {"user:helix-app", "group:helix-app", "directory:/srv/helix/app",
+                   "file:/srv/helix/app/README", "file:/etc/helix-demo/app.conf"}
+        assert changed <= allowed and (actual is None or changed == actual), (name, changed, actual)
+        before, trace = d.probe(), d.actions()
+        d.apply(inputs, expected="unchanged")
+        assert d.probe() == before and d.actions() == trace, (name, "repeat changed state")
+
+
+def host_failures(d):
+    inputs = desired()
+    for resource in ("group:helix-app", "user:helix-app", "package:jq", "directory:/srv/helix/app",
+                     "file:/etc/helix-demo/app.conf", "symlink:/etc/helix-demo/current"):
+        for mode in ("fail", "false-success"):
+            d.fresh()
+            review = d.controller("check", inputs)
+            d.fault({resource: mode})
+            report = d.controller("apply", inputs, review)
+            d.fault()
+            resource_failure(report, review, resource,
+                             kind="linux_host" if mode == "fail" else "linux_resource_postcondition")
+            d.apply(inputs)
+            d.apply(inputs, expected="unchanged")
+
+
+def filesystem(d):
+    inputs = desired()
+    d.apply(inputs)
+    cases = [
+        ("symlink ancestor", "import os; os.rename('/etc/helix-demo','/etc/helix-demo-original'); os.symlink('/etc/helix-demo-original','/etc/helix-demo')",
+         "import os; os.unlink('/etc/helix-demo'); os.rename('/etc/helix-demo-original','/etc/helix-demo')"),
+        ("wrong object", "from pathlib import Path; p=Path('/etc/helix-demo/app.conf'); p.unlink(); p.mkdir()",
+         "from pathlib import Path; Path('/etc/helix-demo/app.conf').rmdir()"),
+        ("invalid utf8", "from pathlib import Path; Path('/etc/helix-demo/app.conf').write_bytes(b'\\xff')", None),
+        ("oversized file", "from pathlib import Path; Path('/etc/helix-demo/app.conf').write_bytes(b'x'*1048577)", None),
+    ]
+    for name, corrupt, restore in cases:
+        d.exec("python3", "-c", corrupt)
+        trace = d.actions()
+        for mode in ("check", "apply"):
+            report = d.controller(mode, inputs, {} if mode == "apply" else None)
+            assert report["status"] == "failed", (name, mode, report)
+            assert d.actions() == trace, (name, "mutated despite failed observation")
+        if restore:
+            d.exec("python3", "-c", restore)
+        else:
+            d.exec("rm", "/etc/helix-demo/app.conf")
+        d.apply(inputs, expected="unchanged" if name == "symlink ancestor" else "changed")
+
+
+def file_failures(d):
+    inputs = desired()
+    d.apply(inputs)
+    for mode in ("replace-failure", "after-replace"):
+        changed = {**inputs, "files": {**inputs["files"], "/etc/helix-demo/app.conf": {
+            **inputs["files"]["/etc/helix-demo/app.conf"], "content": mode + "\n"}}}
+        before, trace = d.probe(), d.actions()
+        review = d.controller("check", changed)
+        d.fault({"file:/etc/helix-demo/app.conf": mode})
+        report = d.controller("apply", changed, review)
+        d.fault()
+        failures = resource_failure(report, review, "file:/etc/helix-demo/app.conf", kind="linux_host")
+        assert failures["file:/etc/helix-demo/app.conf"]["error"]["data"]["host_error"]["mutation_may_have_occurred"] is True
+        assert d.actions() == trace, "failed replacement was logged as completed"
+        assert d.exec("find", "/etc/helix-demo", "-name", ".helix-*").stdout == "", "staging file leaked"
+        if mode == "replace-failure":
+            assert d.probe() == before, "replacement failure changed live bytes or metadata"
+            d.apply(changed)
+        else:
+            d.converged(changed)
+            d.apply(changed, expected="unchanged")
+        inputs = changed
+
+
+def contention(d):
+    inputs = desired()
+    d.apply(inputs)
+    d.exec("apt-get", "-y", "remove", "jq")
+    pid = d.fixture_process("import fcntl,time; f=open('/var/lib/dpkg/lock-frontend','w'); fcntl.lockf(f,fcntl.LOCK_EX); open('/run/helix-linux/dpkg-locked','w').write('ready'); time.sleep(120)")
+    try:
+        d.wait_path("/run/helix-linux/dpkg-locked")
+        review = d.controller("check", inputs)
+        report = d.controller("apply", inputs, review)
+        failures = resource_failure(report, review, "package:jq", kind="linux_host")
+        assert "lock" in json.dumps(failures["package:jq"]).lower(), failures
+        assert d.probe()["packages"]["jq"] is None
+    finally:
+        d.signal_process(pid, signal.SIGKILL)
+    d.apply(inputs)
+    conflict = {**inputs, "groups": {**inputs["groups"], "helix-extra": {"gid": 2001}}}
+    review = d.controller("check", conflict)
+    report = d.controller("apply", conflict, review)
+    resource_failure(report, review, "group:helix-extra", kind="linux_host")
+    assert d.probe()["groups"]["helix-extra"] is None
+    d.apply(inputs, expected="unchanged")
+
+
+def observations(d):
+    source = """
+from concurrent.futures import ThreadPoolExecutor
+import json, pathlib, subprocess, threading
+for repetition in range(4):
+    pathlib.Path('/var/lib/helix-linux-host/target-id').unlink(missing_ok=True)
+    barrier = threading.Barrier(12)
+    def observe(_):
+        barrier.wait(timeout=10)
+        run = subprocess.run(['/usr/local/bin/helix-linux-host','observe','{\"subjects\":{}}'], capture_output=True, text=True, timeout=20)
+        assert run.returncode == 0, run
+        return json.loads(run.stdout)['target']
+    with ThreadPoolExecutor(max_workers=12) as pool:
+        values = list(pool.map(observe, range(12)))
+    assert len(set(values)) == 1 and len(values[0]) == 32 and all(c in '0123456789abcdef' for c in values[0]), values
+    assert pathlib.Path('/var/lib/helix-linux-host/target-id').read_text() == values[0]
+assert not list(pathlib.Path('/var/lib/helix-linux-host').glob('.identity-*'))
+print(json.dumps({'rounds':4,'readers':12,'status':'passed'}))
+"""
+    report = d.exec("python3", "-c", source)
+    (d.artifacts / "concurrent-observations.json").write_text(report.stdout)
+    assert d.actions() == []
+
+
+def launch_controller(d, args, request, base):
+    """One observable background-controller lifecycle for pause/crash scenarios."""
+    d.exec("mkdir", "-p", base)
+    d.put(base + "/request.json", json.dumps(request))
+    launcher = ("import json,pathlib,subprocess,sys; base=pathlib.Path(sys.argv[1]); "
+                "p=subprocess.Popen(json.loads(sys.argv[2]),stdin=open(base/'request.json'),"
+                "stdout=open(base/'controller.stdout','w'),stderr=open(base/'controller.stderr','w'),start_new_session=True); "
+                "(base/'controller.pid').write_text(str(p.pid)); (base/'controller.exit').write_text(str(p.wait()))")
+    d.command("exec", "-d", d.container, "python3", "-c", launcher, base, json.dumps(args))
+    d.wait_path(base + "/controller.pid")
+    return int(d.exec("cat", base + "/controller.pid").stdout)
+
+
+def late_drift(d):
+    inputs = desired()
+    d.apply(inputs)
+    changed = {**inputs, "files": {
+        "/etc/helix-demo/app.conf": {**inputs["files"]["/etc/helix-demo/app.conf"], "content": "first update\n"},
+        "/srv/helix/app/README": {**inputs["files"]["/srv/helix/app/README"], "content": "second update\n",
+                                  "after": ["file:/etc/helix-demo/app.conf"]}}}
+    review = d.controller("check", changed)
+    d.fault({"file:/srv/helix/app/README": "delay"})
+    base = "/run/helix-linux/late-drift"
+    launch_controller(d, d.controller_args("apply", changed, review),
+                      {"mode": "apply", "config": changed, "review": review}, base)
+    d.wait_path("/run/helix-linux/fault-reached.json")
+    assert d.probe()["paths"]["/etc/helix-demo/app.conf"]["content"] == "first update\n"
+    d.exec("python3", "-c", "from pathlib import Path; Path('/etc/helix-demo/app.conf').write_text('late drift\\n')")
+    d.exec("touch", "/run/helix-linux/fault-release")
+    d.wait_path(base + "/controller.exit")
+    result = subprocess.CompletedProcess([], int(d.exec("cat", base + "/controller.exit").stdout),
+                                         d.exec("cat", base + "/controller.stdout").stdout,
+                                         d.exec("cat", base + "/controller.stderr").stdout)
+    report = controller_report(result)
+    assert_failure(report, "provider_postcondition", "verify")
+    assert report["applied"] is True and d.probe()["paths"]["/etc/helix-demo/app.conf"]["content"] == "late drift\n"
+    d.fault()
+    since = len(d.actions())
+    d.apply(changed)
+    assert d.performed(since) == [("file:/etc/helix-demo/app.conf", "set")]
+
+
+def sequences(d):
+    for seed in (7, 41, 2026):
+        d.fresh()
+        rng = random.Random(seed)
+        inputs = desired()
+        d.apply(inputs)
+        for step in range(12):
+            content = f"seed={seed} step={step} token={rng.randrange(1000000)}\n"
+            inputs = {**inputs, "files": {**inputs["files"], "/etc/helix-demo/app.conf": {
+                "content": content, "group": "helix-app", "mode": rng.choice([0o600, 0o640, 0o644])}},
+                "symlinks": {"/etc/helix-demo/current": {"target": rng.choice(["/srv/helix", "/srv/helix/app"]),
+                                                       "state": rng.choice(["present", "absent"])}}}
+            review = d.controller("check", inputs)
+            if step % 3 == 0:
+                d.exec("chmod", "777", "/srv/helix/app/README")
+                assert_failure(d.controller("apply", inputs, review), "provider_stale_plan", "preflight")
+                review = d.controller("check", inputs)
+            d.apply(inputs, review=review)
+            trace = d.actions()
+            d.apply(inputs, expected="unchanged")
+            assert d.actions() == trace, (seed, step, "non-idempotent state transition")
+
+
+@contextmanager
+def peer_pair(d):
     """Bootstrap transport only; each Helix machine plans/applies its peer's policy."""
     first = dict(container=d.container, sentinel=d.sentinel, unmanaged=d.unmanaged)
     d.container = None
@@ -543,34 +835,215 @@ def peers(d):
                       "-f", "/run/helix-peer/sshd_config")
             d.wait_path("/run/helix-peer/sshd.pid")
 
-        def converge(source, target, status):
-            d.container = source["container"]
-            grant = (f'peer,host={target["container"]},user=root,'
-                     'known_hosts=/run/helix-peer/known_hosts,identity=/run/helix-peer/identity')
-            result = d.command("exec", d.container, "helix", "perform", "--allow-stdout",
-                               "--allow-read", "/opt/helix-programs",
-                               "--allow-ssh", grant, "--command-timeout-ms", "120000",
-                               "/opt/helix-programs/docker_linux/peer.yaml", timeout=300, check=False)
-            report = controller_report(result)
-            assert report["status"] == status, report
-            d.container, d.sentinel, d.unmanaged = target["container"], target["sentinel"], target["unmanaged"]
-            d.converged(desired())
-            return report
-
-        for source, target in ((first, second), (second, first)):
-            converge(source, target, "changed")
-            before = d.actions()
-            converge(source, target, "unchanged")
-            assert d.actions() == before, "converged peer performed mutations"
-            d.exec("sh", "-c", "printf 'peer drift\\n' > /etc/helix-demo/app.conf")
-            converge(source, target, "changed")
-            assert d.performed(len(before)) == [("file:/etc/helix-demo/app.conf", "set")], d.actions()[len(before):]
-            converge(source, target, "unchanged")
-        (d.artifacts / "peers.json").write_text(json.dumps({"controllers": [n["container"] for n in nodes],
-            "transport": "container-to-container SSH with pinned host keys", "status": "passed"}, indent=2) + "\n")
+        yield nodes
     finally:
         # Both nodes share the run label, so suite cleanup also covers partial setup.
         d.container, d.sentinel, d.unmanaged = first["container"], first["sentinel"], first["unmanaged"]
+        keep = (os.environ.get("HELIX_DOCKER_LINUX_KEEP_PEERS") == "1" or
+                sys.exc_info()[0] is not None and os.environ.get("HELIX_DOCKER_LINUX_KEEP_FAILED") == "1")
+        if not keep:
+            d.command("rm", "-f", first["container"] + "-peer", check=False)
+
+
+def select_peer(d, node):
+    d.container, d.sentinel, d.unmanaged = node["container"], node["sentinel"], node["unmanaged"]
+
+
+def peer_args(target, *, grant=True, timeout_ms=120000, extra=(), program=PROGRAM):
+    flags = ["helix", "perform", "--allow-stdin", "--allow-stdout", "--allow-read", "/opt/helix-programs",
+             "--command-timeout-ms", str(timeout_ms)]
+    if grant:
+        flags += ["--allow-ssh", f'peer,host={target["container"]},user=root,'
+                  'known_hosts=/run/helix-peer/known_hosts,identity=/run/helix-peer/identity']
+    return [*flags, *extra, *([program] if program else [])]
+
+
+def peer_run(d, source, target, mode=None, inputs=None, review=None, **options):
+    request = {"mode": mode, "config": {**(inputs or desired()), "ssh_target": "peer"}}
+    if review is not None:
+        request["review"] = review
+    result = d.command("exec", "-i", source["container"], *peer_args(target, **options),
+                       input_text=json.dumps(request), timeout=300, check=False)
+    select_peer(d, target)
+    return result
+
+
+def peer_converge(d, source, target, status):
+    report = controller_report(peer_run(d, source, target, program="/opt/helix-programs/docker_linux/peer.yaml"))
+    assert report["status"] == status, report
+    d.converged(desired())
+    return report
+
+
+def peers(d):
+    with peer_pair(d) as nodes:
+        first, second = nodes
+        for source, target in ((first, second), (second, first)):
+            peer_converge(d, source, target, "changed")
+            before = d.actions()
+            peer_converge(d, source, target, "unchanged")
+            assert d.actions() == before, "converged peer performed mutations"
+            d.exec("sh", "-c", "printf 'peer drift\\n' > /etc/helix-demo/app.conf")
+            peer_converge(d, source, target, "changed")
+            assert d.performed(len(before)) == [("file:/etc/helix-demo/app.conf", "set")], d.actions()[len(before):]
+            peer_converge(d, source, target, "unchanged")
+        (d.artifacts / "peers.json").write_text(json.dumps({"controllers": [n["container"] for n in nodes],
+            "transport": "container-to-container SSH with pinned host keys", "status": "passed"}, indent=2) + "\n")
+
+
+def peer_failures(d):
+    with peer_pair(d) as (first, second):
+        for source, target in ((first, second), (second, first)):
+            peer_converge(d, source, target, "changed")
+            state, trace = d.probe(), d.actions()
+            denied = controller_report(peer_run(d, source, target, "check", grant=False))
+            assert denied["status"] == "failed" and "capability" in json.dumps(denied), denied
+            select_peer(d, source)
+            known = d.exec("cat", "/run/helix-peer/known_hosts").stdout
+            d.exec("truncate", "-s", "0", "/run/helix-peer/known_hosts")
+            failed = controller_report(peer_run(d, source, target, "check"))
+            assert failed["status"] == "failed" and "ssh_host_key" in json.dumps(failed), failed
+            select_peer(d, source)
+            d.put("/run/helix-peer/known_hosts", known)
+            select_peer(d, target)
+            authorized = d.exec("cat", "/run/helix-peer/authorized_keys").stdout
+            d.exec("truncate", "-s", "0", "/run/helix-peer/authorized_keys")
+            failed = controller_report(peer_run(d, source, target, "check"))
+            assert failed["status"] == "failed" and "ssh_auth" in json.dumps(failed), failed
+            d.put("/run/helix-peer/authorized_keys", authorized)
+            d.exec("chown", "0:0", "/run/helix-peer/authorized_keys")
+            assert d.probe() == state and d.actions() == trace, "transport rejection mutated target"
+
+            changed = {**desired(), "files": {**desired()["files"], "/etc/helix-demo/app.conf": {
+                **desired()["files"]["/etc/helix-demo/app.conf"], "content": "remote update\n"}}}
+            review = controller_report(peer_run(d, source, target, "check", changed))
+            d.exec("chmod", "600", "/srv/helix/app/README")
+            before, trace = d.probe(), d.actions()
+            assert_failure(controller_report(peer_run(d, source, target, "apply", changed, review)),
+                           "provider_stale_plan", "preflight")
+            assert d.probe() == before and d.actions() == trace
+            peer_converge(d, source, target, "changed")
+
+            review = controller_report(peer_run(d, source, target, "check", changed))
+            before, trace = d.probe(), d.actions()
+            d.fault({"file:/etc/helix-demo/app.conf": "delay"})
+            failed = controller_report(peer_run(d, source, target, "apply", changed, review, timeout_ms=1000))
+            assert failed["status"] == "failed" and "timeout" in json.dumps(failed), failed
+            # Remote command uncertainty is not remote process fencing. Terminate
+            # the fixture-owned paused helper before taking a fresh review.
+            paused = json.loads(d.exec("cat", "/run/helix-linux/fault-reached.json").stdout)
+            d.exec("python3", "-c", "import os,signal,sys\ntry: os.kill(int(sys.argv[1]),signal.SIGKILL)\nexcept ProcessLookupError: pass", str(paused["pid"]))
+            d.fault()
+            assert d.probe() == before and d.actions() == trace, "pre-mutation timeout changed target"
+
+            review = controller_report(peer_run(d, source, target, "check", changed))
+            d.fault({"file:/etc/helix-demo/app.conf": "after-failure"})
+            failed = controller_report(peer_run(d, source, target, "apply", changed, review))
+            d.fault()
+            assert failed["status"] == "failed", failed
+            d.converged(changed)  # Failure must not conceal already visible mutation.
+            assert controller_report(peer_run(d, source, target, "check", changed))["status"] == "unchanged"
+            peer_converge(d, source, target, "changed")
+            peer_converge(d, source, target, "unchanged")
+
+
+def peer_recovery(d):
+    import yaml
+    with peer_pair(d) as (source, target):
+        peer_converge(d, source, target, "changed")
+        changed = {**desired(), "files": {**desired()["files"], "/etc/helix-demo/app.conf": {
+            **desired()["files"]["/etc/helix-demo/app.conf"], "content": "after durable recovery\n"}}}
+        review = controller_report(peer_run(d, source, target, "check", changed))
+        d.fault({"file:/etc/helix-demo/app.conf": "after-mutation"})
+        select_peer(d, source)
+        request = {"mode": "apply", "config": {**changed, "ssh_target": "peer"}, "review": review}
+        checkpoint = "/run/helix-peer/execution.json"
+        args = peer_args(target, extra=("--checkpoint", checkpoint))
+        pid = launch_controller(d, args, request, "/run/helix-peer")
+        select_peer(d, target)
+        d.wait_path("/run/helix-linux/fault-reached.json")
+        paused = json.loads(d.exec("cat", "/run/helix-linux/fault-reached.json").stdout)
+        assert paused["phase"] == "after", paused
+        d.converged(changed)
+        trace = d.actions()
+        select_peer(d, source)
+        inspected = d.exec("helix", "checkpoint", checkpoint)
+        pending = yaml.safe_load(inspected.stdout)["pending_effect"]
+        assert pending["operation"] == "ssh_command" and pending["payload"]["args"][0] == "apply", pending
+        d.signal_process(pid, signal.SIGKILL)
+        refused = peer_run(d, source, target, extra=("--resume-checkpoint", checkpoint), program=None)
+        assert refused.returncode != 0 and "uncertain" in refused.stderr, refused
+        assert d.actions() == trace, "uncertain remote mutation replayed"
+        d.exec("python3", "-c", "import os,signal,sys\ntry: os.kill(int(sys.argv[1]),signal.SIGKILL)\nexcept ProcessLookupError: pass", str(paused["pid"]))
+        d.fault()
+        # Target container restart preserves bytes but loses transport processes.
+        # Restart the fixture transport explicitly, then independently recheck
+        # the mutation before acknowledging the source controller's uncertainty.
+        d.command("restart", target["container"])
+        d.command("exec", "-d", target["container"], "sleep", "86400")
+        target["unmanaged"] = d.probe()["processes"]
+        select_peer(d, target)
+        d.exec("rm", "-f", "/run/helix-peer/sshd.pid")
+        d.command("exec", "-d", target["container"], "/usr/sbin/sshd", "-D", "-E", "/run/helix-peer/sshd.log",
+                  "-f", "/run/helix-peer/sshd_config")
+        d.wait_path("/run/helix-peer/sshd.pid")
+        d.converged(changed)
+        outcome = {"request": {key: pending[key] for key in ("id", "operation", "payload")},
+                   "outcome": {"ok": {"code": 0, "stdout": json.dumps({"completed": True, "resource": "file:/etc/helix-demo/app.conf"}), "stderr": ""}}}
+        select_peer(d, source)
+        wrong = json.loads(json.dumps(outcome))
+        wrong["request"]["id"] += 1
+        d.put("/run/helix-peer/outcome.json", json.dumps(wrong))
+        rejected = d.exec("helix", "reconcile", checkpoint, "/run/helix-peer/outcome.json", check=False)
+        assert rejected.returncode != 0, "mismatched reconciliation accepted"
+        d.put("/run/helix-peer/outcome.json", json.dumps(outcome))
+        d.exec("helix", "reconcile", checkpoint, "/run/helix-peer/outcome.json")
+        denied_checkpoint = "/run/helix-peer/denied.json"
+        d.exec("cp", checkpoint, denied_checkpoint)
+        denied = peer_run(d, source, target, grant=False, extra=("--resume-checkpoint", denied_checkpoint), program=None)
+        assert denied.returncode != 0 and "capability" in denied.stderr, denied
+        # A denied branch must not consume the continuation used with fresh grants.
+        resumed = peer_run(d, source, target, extra=("--resume-checkpoint", checkpoint), program=None)
+        report = controller_report(resumed)
+        assert report["status"] == "changed", report
+        d.converged(changed)
+        assert d.actions() == trace, "acknowledged mutation repeated after restore"
+        select_peer(d, source)
+        # Complete journals contain source/object tables and can exceed the
+        # bounded command-output channel. Copy the artifact without rendering it.
+        d.command("cp", f'{source["container"]}:{checkpoint}', str(d.artifacts / "peer-recovery.json"))
+        repeated = peer_run(d, source, target, extra=("--resume-checkpoint", checkpoint), program=None)
+        assert repeated.returncode == 0 and repeated.stdout == "" and yaml.safe_load(repeated.stderr)["root"] == report
+        assert d.actions() == trace
+
+
+def peer_parallel(d):
+    with peer_pair(d) as nodes:
+        for repetition, expected in enumerate(("changed", "unchanged", "changed")):
+            before = {}
+            for node in nodes:
+                select_peer(d, node)
+                before[node["container"]] = len(d.actions())
+                if repetition == 2:
+                    d.exec("python3", "-c", "from pathlib import Path; Path('/etc/helix-demo/app.conf').write_text('parallel drift\\n')")
+            for source, target in ((nodes[0], nodes[1]), (nodes[1], nodes[0])):
+                select_peer(d, source)
+                base = f"/run/helix-peer/parallel-{repetition}"
+                launch_controller(d, peer_args(target, program="/opt/helix-programs/docker_linux/peer.yaml"), {}, base)
+            for node in nodes:
+                select_peer(d, node)
+                base = f"/run/helix-peer/parallel-{repetition}"
+                d.wait_path(base + "/controller.exit")
+                result = subprocess.CompletedProcess([], int(d.exec("cat", base + "/controller.exit").stdout),
+                                                     d.exec("cat", base + "/controller.stdout").stdout,
+                                                     d.exec("cat", base + "/controller.stderr").stdout)
+                assert controller_report(result)["status"] == expected, result
+                d.converged(desired())
+                performed = d.performed(before[node["container"]])
+                if repetition == 1:
+                    assert performed == [], performed
+                elif repetition == 2:
+                    assert performed == [("file:/etc/helix-demo/app.conf", "set")], performed
 
 
 def verify(h):
@@ -637,7 +1110,10 @@ def verify(h):
 def verify_harness(h):
     """Exercise selection, oracle and fixture boundaries without Docker infrastructure."""
     from unittest.mock import patch
+    import yaml
     import shutil
+    import importlib.util
+    import tempfile
     fixture = h.root / "tests/fixtures/docker_linux"
     compile((fixture / "host.py").read_text(), str(fixture / "host.py"), "exec")
     compile(PROBE, "docker_linux independent probe", "exec")
@@ -646,6 +1122,36 @@ def verify_harness(h):
     for name in ("HELIX_BUILDER_IMAGE", "HELIX_RUNTIME_IMAGE", "HELIX_PACKAGE_SNAPSHOT"):
         assert f"ARG {name}\n" in dockerfile
     assert all(callable(globals().get(name)) for name in SCENARIOS)
+    cases = adversarial_configurations()
+    expression = {"$call": ["let", {"linux": {"$call": ["import", "std:linux"]}}, {
+        name: {"$call": ["try", {"$call": ["linux.resolve", {"$literal": config}]},
+                         {"$call": ["fn", ["error"], {"$ref": "error.kind"}]}]}
+        for name, config in cases.items()}]}
+    result = h.helix("run", "-", stdin=json.dumps(expression))
+    assert result.returncode == 0, result
+    assert yaml.safe_load(result.stdout)["root"] == {name: declaration_error(name) for name in cases}
+    # Planning must expose symbolic ownership rebinding, without propagating a
+    # non-identity account change to otherwise unchanged files.
+    config = {"groups": {"helix-app": {"gid": 2002}},
+              "users": {"helix-app": {"uid": 2003, "group": "helix-app", "home": "/home/helix-app"}},
+              "files": {"/etc/helix-demo/app.conf": {"content": "x", "owner": "helix-app", "group": "helix-app"},
+                        "/etc/helix-demo/extra.conf": {"content": "keep"}}}
+    before = {"target": "fixture", "resources": {
+        "group:helix-app": {"gid": 2001},
+        "user:helix-app": {"uid": 2001, "group": "helix-app", "home": "/home/helix-app", "shell": "/usr/sbin/nologin"},
+        "file:/etc/helix-demo/app.conf": {"content": "x", "owner": "helix-app", "group": "helix-app", "mode": 420},
+        "file:/etc/helix-demo/extra.conf": {"content": "keep", "owner": "root", "group": "root", "mode": 420}}}
+    shell = {**config, "groups": {"helix-app": {"gid": 2001}},
+             "users": {"helix-app": {**config["users"]["helix-app"], "uid": 2001, "shell": "/bin/sh"}}}
+    expression = {"$call": ["let", {"linux": {"$call": ["import", "std:linux"]}}, {
+        name: {"$call": ["linux.plan", {"$literal": value}, {"$literal": before}]}
+        for name, value in (("identity", config), ("shell", shell))}]}
+    result = h.helix("run", "-", stdin=json.dumps(expression))
+    assert result.returncode == 0, result
+    plans = yaml.safe_load(result.stdout)["root"]
+    assert [step["field"] for step in plans["identity"]["steps"]] == ["file:/etc/helix-demo/app.conf", "group:helix-app", "user:helix-app"], plans
+    assert plans["identity"]["steps"][0]["from"] == plans["identity"]["steps"][0]["to"]
+    assert [step["field"] for step in plans["shell"]["steps"]] == ["user:helix-app"], plans
     with patch.dict(os.environ, {"HELIX_DOCKER_LINUX_SCENARIO": "baseline", "HELIX_DOCKER_LINUX_REPEAT": "1"}):
         assert options() == (["baseline"], 1)
     for name, value in (("HELIX_DOCKER_LINUX_SCENARIO", "unknown"), ("HELIX_DOCKER_LINUX_REPEAT", "0")):
@@ -704,3 +1210,26 @@ def verify_harness(h):
                 raise AssertionError("independent observation accepted corrupt actual state")
     finally:
         shutil.rmtree(d.artifacts)
+    # Real helper mechanisms run without Docker in project-local scratch space;
+    # root/user/package mutations remain exclusive to the opt-in container suite.
+    spec = importlib.util.spec_from_file_location("helix_linux_fixture", fixture / "host.py")
+    host = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(host)
+    with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="linux-helper-") as directory:
+        base = Path(directory)
+        host.ROOTS, host.RUN, host.DATA = (base,), base / "run", base / "data"
+        path = base / "bytes"
+        for content in (b"a\r\nb\r", "λ 😀".encode(), b"a\0b", b""):
+            path.write_bytes(content)
+            assert host.observe_file(str(path))["content"].encode() == content
+        assert len(host.target()) == 32 and host.target() == host.target()
+        assert host.command([sys.executable, "-c", "print('bounded')"]) == "bounded\n"
+        host.LIMIT = 1024
+        for script, timeout, message in (("print('x'*2048)", 5, "output limit"),
+                                         ("import time; time.sleep(5)", 0.05, "timed out")):
+            try:
+                host.command([sys.executable, "-c", script], timeout=timeout)
+            except (RuntimeError, subprocess.TimeoutExpired) as error:
+                assert message in str(error), error
+            else:
+                raise AssertionError("helper mechanism escaped its bound")

@@ -11,7 +11,7 @@ $call:
   lists: {$call: [import, 'std:list']}
   maps: {$call: [import, 'std:map']}
   text: {$call: [import, 'std:text']}
-  provider_revision: '1'
+  provider_revision: '2'
   helper_path: /usr/local/bin/helix-linux-host
   null_type: {$call: [literal, null]}
   kinds: [group, user, package, directory, file, symlink]
@@ -36,7 +36,7 @@ $call:
     - refine
     - {$call: [charset, abcdefghijklmnopqrstuvwxyz0123456789_-, 32]}
     - {$call: [fn, [name], {$call: [not, {$call: [has, 0123456789-, {$call: [slice, {$ref: name}, 0, 1]}]}]}]}
-  package_name: {$call: [charset, abcdefghijklmnopqrstuvwxyz0123456789+.-, 100]}
+  package_name: {$call: [refine, {$call: [charset, abcdefghijklmnopqrstuvwxyz0123456789+.-, 100]}, {$call: [fn, [name], {$call: [has, abcdefghijklmnopqrstuvwxyz0123456789, {$call: [slice, {$ref: name}, 0, 1]}]}]}]}
   package_version: {$call: [charset, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.+~:_-', 100]}
   path_characters: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._/+@=,:-'
   # Absolute, normalized and never the root: no empty, `.` or `..` segments.
@@ -161,9 +161,31 @@ $call:
       - $call:
         - list
         - {$call: [validated_keys, {$ref: values}]}
-        - {$call: [orchestration.plan, {$call: [graph, {$ref: values}]}]}
+        - {$call: [validated_paths, {$ref: values}]}
+        - {$call: [validated_graph, {$ref: values}]}
         - {$ref: values}
-      - 2
+      - 3
+  is_ancestor: {$call: [fn, [parent, child], {$call: [and, {$call: [lt, {$call: [len, {$ref: parent}]}, {$call: [len, {$ref: child}]}]}, {$call: [eq, {$call: [slice, {$ref: child}, 0, {$call: [add, {$call: [len, {$ref: parent}]}, 1]}]}, {$call: [concat, {$ref: parent}, '/']}]}]}]}
+  # Each filesystem identity has one kind; non-directories cannot contain managed children.
+  validated_paths:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - let
+      - paths: {$call: [concat, {$call: [keys, {$ref: config.directories}]}, {$call: [keys, {$ref: config.files}]}, {$call: [keys, {$ref: config.symlinks}]}]}
+        leaves: {$call: [concat, {$call: [keys, {$ref: config.files}]}, {$call: [keys, {$ref: config.symlinks}]}]}
+      - $call:
+        - if
+        - $call:
+          - and
+          - {$call: [eq, {$call: [len, {$ref: paths}]}, {$call: [len, {$call: [lists.unique, {$ref: paths}]}]}]}
+          - $call:
+            - lists.all
+            - {$ref: leaves}
+            - {$call: [fn, [leaf], {$call: [lists.all, {$ref: paths}, {$call: [fn, [path], {$call: [not, {$call: [is_ancestor, {$ref: leaf}, {$ref: path}]}]}]}]}]}
+        - true
+        - {$call: [raise, linux_path_conflict, Managed filesystem paths have incompatible kinds or ancestors]}
   explain:
     $call:
     - fn
@@ -226,7 +248,13 @@ $call:
           $call:
           - fn
           - [id]
-          - {$call: [ne, {$call: [get, {$ref: before.resources}, {$ref: id}]}, {$call: [desired_value, {$call: [get, {$ref: declared}, {$ref: id}]}]}]}
+          - $call:
+            - or
+            - {$call: [ne, {$call: [get, {$ref: before.resources}, {$ref: id}]}, {$call: [desired_value, {$call: [get, {$ref: declared}, {$ref: id}]}]}]}
+            - $call:
+              - and
+              - {$call: [not, {$call: [absent_entry, {$ref: declared}, {$ref: id}]}]}
+              - {$call: [lists.any, {$call: [identity_references, {$call: [get, {$ref: declared}, {$ref: id}]}]}, {$call: [fn, [other], {$call: [identity_changed, {$ref: declared}, {$ref: before}, {$ref: other}]}]}]}
       - $call:
         - map
         - $call:
@@ -250,21 +278,34 @@ $call:
         - $call:
           - fn
           - [directory]
-          - {$call: [and, {$call: [lt, {$call: [len, {$ref: directory}]}, {$call: [len, {$ref: path}]}]}, {$call: [eq, {$call: [slice, {$ref: path}, 0, {$call: [add, {$call: [len, {$ref: directory}]}, 1]}]}, {$call: [concat, {$ref: directory}, '/']}]}]}
+          - {$call: [is_ancestor, {$ref: directory}, {$ref: path}]}
         - {$call: [keys, {$call: [get, {$ref: config}, directories]}]}
-  implied:
+  # Symbolic ownership can look unchanged while its declared numeric binding changes.
+  identity_changed:
     $call:
     - fn
-    - [config, entry]
+    - [declared, before, id]
+    - $call:
+      - if
+      - {$call: [and, {$call: [has, {$ref: declared}, {$ref: id}]}, {$call: [ne, {$call: [get, {$ref: before.resources}, {$ref: id}, null]}, null]}, {$call: [not, {$call: [absent_entry, {$ref: declared}, {$ref: id}]}]}]}
+      - $call:
+        - let
+        - entry: {$call: [get, {$ref: declared}, {$ref: id}]}
+          field: {$call: [if, {$call: [eq, {$ref: entry.kind}, user]}, uid, gid]}
+        - {$call: [ne, {$call: [get, {$call: [get, {$ref: before.resources}, {$ref: id}]}, {$ref: field}]}, {$call: [get, {$ref: entry.spec}, {$ref: field}]}]}
+      - false
+  identity_references:
+    $call:
+    - fn
+    - [entry]
     - $call:
       - cond
       - {$call: [eq, {$ref: entry.kind}, user]}
-      - {$call: [list, {$call: [concat, 'group:', {$ref: entry.spec.group}]}]}
+      - {$call: [if, {$call: [has, {$ref: entry.spec}, group]}, {$call: [list, {$call: [concat, 'group:', {$ref: entry.spec.group}]}]}, []]}
       - {$call: [has, [directory, file], {$ref: entry.kind}]}
-      - {$call: [concat, {$call: [list, {$call: [concat, 'user:', {$ref: entry.spec.owner}]}, {$call: [concat, 'group:', {$ref: entry.spec.group}]}]}, {$call: [ancestors, {$ref: config}, {$ref: entry.key}]}]}
-      - {$call: [eq, {$ref: entry.kind}, symlink]}
-      - {$call: [ancestors, {$ref: config}, {$ref: entry.key}]}
+      - {$call: [list, {$call: [concat, 'user:', {$ref: entry.spec.owner}]}, {$call: [concat, 'group:', {$ref: entry.spec.group}]}]}
       - []
+  implied: {$call: [fn, [config, entry], {$call: [concat, {$call: [identity_references, {$ref: entry}]}, {$call: [if, {$call: [has, [directory, file, symlink], {$ref: entry.kind}]}, {$call: [ancestors, {$ref: config}, {$ref: entry.key}]}, []]}]}]}
   requirements:
     $call:
     - fn
@@ -273,11 +314,15 @@ $call:
       - let
       - entry: {$call: [get, {$ref: entries}, {$ref: id}]}
       - $call:
-        - lists.unique
+        - if
+        - {$call: [lists.all, {$ref: entry.spec.after}, {$call: [fn, [other], {$call: [has, {$ref: entries}, {$ref: other}]}]}]}
         - $call:
-          - filter
-          - {$call: [fn, [other], {$call: [and, {$call: [has, {$ref: entries}, {$ref: other}]}, {$call: [ne, {$ref: other}, {$ref: id}]}]}]}
-          - {$call: [concat, {$ref: entry.spec.after}, {$call: [implied, {$ref: config}, {$ref: entry}]}]}
+          - lists.unique
+          - $call:
+            - filter
+            - {$call: [fn, [other], {$call: [has, {$ref: entries}, {$ref: other}]}]}
+            - {$call: [concat, {$ref: entry.spec.after}, {$call: [implied, {$ref: config}, {$ref: entry}]}]}
+        - {$call: [raise, linux_dependency, A resource requires an undeclared resource, {resource: {$ref: id}, after: {$ref: entry.spec.after}}]}
   absent_entry: {$call: [fn, [entries, id], {$call: [eq, {$call: [get, {$call: [get, {$call: [get, {$ref: entries}, {$ref: id}]}, spec]}, state]}, absent]}]}
   # Creation follows prerequisites; explicit removal runs in reverse. A present resource cannot need an absent one.
   node_requires:
@@ -297,16 +342,36 @@ $call:
       - $call:
         - let
         - needed: {$call: [requirements, {$ref: config}, {$ref: entries}, {$ref: id}]}
-          unknown: {$call: [filter, {$call: [fn, [other], {$call: [not, {$call: [has, {$ref: entries}, {$ref: other}]}]}]}, {$call: [get, {$call: [get, {$call: [get, {$ref: entries}, {$ref: id}]}, spec]}, after]}]}
           removed: {$call: [filter, {$call: [fn, [other], {$call: [absent_entry, {$ref: entries}, {$ref: other}]}]}, {$ref: needed}]}
         - $call:
-          - cond
-          - {$call: [ne, {$ref: unknown}, []]}
-          - {$call: [raise, linux_dependency, A resource requires an undeclared resource, {resource: {$ref: id}, undeclared: {$ref: unknown}}]}
+          - if
           - {$call: [eq, {$ref: removed}, []]}
           - {$ref: needed}
           - {$call: [raise, linux_dependency, A present resource requires a resource declared absent, {resource: {$ref: id}, absent: {$ref: removed}}]}
-  graph:
+  # File bodies cannot affect topology or capability/removal context. Keep them
+  # out of metadata traversals and their produced-value budget. Preserve field
+  # presence so the shared entry validator still rejects missing content.
+  metadata_config:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - set
+      - {$ref: config}
+      - files
+      - $call:
+        - fold
+        - $call:
+          - fn
+          - [acc, key]
+          - $call:
+            - let
+            - spec: {$call: [get, {$ref: config.files}, {$ref: key}]}
+            - {$call: [set, {$ref: acc}, {$ref: key}, {$call: [if, {$call: [has, {$ref: spec}, content]}, {$call: [set, {$ref: spec}, content, '']}, {$ref: spec}]}]}
+        - {}
+        - {$call: [keys, {$ref: config.files}]}
+  graph: {$call: [fn, [config], {$call: [graph_metadata, {$call: [metadata_config, {$ref: config}]}]}]}
+  graph_metadata:
     $call:
     - fn
     - [config]
@@ -316,7 +381,8 @@ $call:
       - version: 1
         handlers: {}
         resources: {$call: [fold, {$call: [fn, [acc, id], {$call: [set, {$ref: acc}, {$ref: id}, {requires: {$call: [node_requires, {$ref: config}, {$ref: declared}, {$ref: id}]}, notify: []}]}]}, {}, {$call: [keys, {$ref: declared}]}]}
-  context:
+  context: {$call: [fn, [config], {$call: [context_metadata, {$call: [metadata_config, {$ref: config}]}]}]}
+  context_metadata:
     $call:
     - fn
     - [config]
@@ -397,7 +463,19 @@ $call:
         - if
         - {$call: [eq, {$ref: selected}, []]}
         - {status: unchanged}
-        - {$call: [resource_verified, {$ref: config}, {$ref: id}, {$call: [mutate, {$ref: config}, {$ref: id}, {$call: [get, {$ref: selected}, 0]}]}, {$call: [observe_state, {$ref: config}]}]}
+        - {$call: [resource_selected, {$ref: config}, {$ref: id}, {$call: [get, {$ref: selected}, 0]}]}
+  resource_selected:
+    $call:
+    - fn
+    - [config, id, step]
+    - $call:
+      - if
+      # Equal projections represent a reviewed numeric-identity rebinding. A
+      # prerequisite's OS tool may already have rebound this resource; skip it
+      # only after fresh observation, rather than blindly rewriting its inode.
+      - {$call: [and, {$call: [eq, {$ref: step.from}, {$ref: step.to}]}, {$call: [eq, {$call: [get, {$call: [get, {$call: [observe_state, {$ref: config}]}, resources]}, {$ref: id}]}, {$ref: step.to}]}]}
+      - {status: unchanged}
+      - {$call: [resource_verified, {$ref: config}, {$ref: id}, {$call: [mutate, {$ref: config}, {$ref: id}, {$ref: step}]}, {$call: [observe_state, {$ref: config}]}]}
   mutate:
     $call:
     - fn

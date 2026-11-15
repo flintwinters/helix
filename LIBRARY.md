@@ -227,6 +227,10 @@ Removal requires explicit `state: absent` and runs in reverse order; omission ne
 reuses `std:provider` and `std:orchestration`, with a helper executable (`std:helper`, shared
 framing for local and SSH command effects) supplying mechanisms only. Fixture-qualified; see the
 [operator contract](tests/fixtures/docker_linux/README.md).
+Resolution rejects conflicting filesystem kinds and invalid dependency graphs, including
+absent-resource references. Helpers receive the operation and `-` in argv and request JSON
+on stdin; file contents retain exact UTF-8 bytes. Failed application may have changed state
+and requires fresh observation; it does not imply rollback or remote process fencing.
 
 
 ## Ubuntu facts and reviewed configuration

@@ -1,5 +1,5 @@
 # One framed operation of a caller-granted helper executable, local or over SSH.
-# The helper receives `OPERATION JSON` in argv, prints one JSON value on success, and on
+# The helper receives `OPERATION -` in argv and JSON on stdin, prints one JSON value on success, and on
 # failure exits nonzero with `{error: {...}}` on stdout. Helpers supply mechanisms, never plans.
 # Authority comes from the caller's command/SSH grant, not from this module.
 $call:
@@ -44,5 +44,5 @@ $call:
       - reply
       - {$ref: kind}
       - {$ref: operation}
-      - {$call: [dispatch, {$ref: ssh_target}, {program: {$ref: executable}, args: {$call: [list, {$ref: operation}, {$call: [json_dump, {$ref: payload}]}]}}]}
+      - {$call: [dispatch, {$ref: ssh_target}, {program: {$ref: executable}, args: {$call: [list, {$ref: operation}, '-']}, stdin: {$call: [json_dump, {$ref: payload}]}}]}
 - {$call: [dict, call, {$ref: call}, capability, {$ref: capability}]}

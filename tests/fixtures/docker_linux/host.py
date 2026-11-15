@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Narrow Debian mechanisms invoked through Helix's authorized command effect.
 
-One operation per invocation: `observe` reports the actual state of named resources and
+One operation per invocation (`OP JSON`, or `OP -` with JSON on stdin): `observe` reports the actual state of named resources and
 `apply` makes exactly one resource match a value Helix already chose (`null` removes it).
 This executable never plans, orders, retries, or decides what should exist. Fault controls
 belong to the test fixture; they are not provider input.
@@ -15,6 +15,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 
 DATA = Path('/var/lib/helix-linux-host')
@@ -36,20 +37,65 @@ def fault(resource):
     return json.loads(path.read_text()).get(resource) if path.exists() else None
 
 
+def pause(resource, phase):
+    (RUN / 'fault-reached.json').write_text(json.dumps({'resource': resource, 'phase': phase, 'pid': os.getpid()}))
+    deadline = time.monotonic() + 120
+    while not (RUN / 'fault-release').exists():
+        if time.monotonic() >= deadline:
+            raise TimeoutError('fixture pause exceeded 120 seconds')
+        time.sleep(0.05)
+
+
 def command(arguments, timeout=60):
-    run = subprocess.run(arguments, capture_output=True, text=True, timeout=timeout,
-                         env={**os.environ, 'DEBIAN_FRONTEND': 'noninteractive'})
-    if run.returncode:
-        raise RuntimeError(json.dumps({'command': arguments[0], 'code': run.returncode,
-                                       'stderr': run.stderr[-8192:], 'stdout': run.stdout[-8192:]}))
-    return run.stdout
+    # Package tools are children of this helper, so their captured output must
+    # be bounded too; the outer effect host only sees the final framed reply.
+    RUN.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryFile(dir=RUN) as stdout, tempfile.TemporaryFile(dir=RUN) as stderr:
+        child = subprocess.Popen(arguments, stdout=stdout, stderr=stderr,
+                                 env={**os.environ, 'DEBIAN_FRONTEND': 'noninteractive'})
+        try:
+            deadline = time.monotonic() + timeout
+            while child.poll() is None:
+                if max(os.fstat(stdout.fileno()).st_size, os.fstat(stderr.fileno()).st_size) > LIMIT:
+                    raise RuntimeError('mechanism command exceeded its output limit')
+                if time.monotonic() >= deadline:
+                    raise subprocess.TimeoutExpired(arguments, timeout)
+                time.sleep(0.02)
+            stdout.seek(0)
+            stderr.seek(0)
+            output, error = stdout.read(LIMIT + 1), stderr.read(LIMIT + 1)
+            if max(len(output), len(error)) > LIMIT:
+                raise RuntimeError('mechanism command exceeded its output limit')
+            if child.returncode:
+                raise RuntimeError(json.dumps({'command': arguments[0], 'code': child.returncode,
+                                               'stderr': error[-8192:].decode(errors='replace'),
+                                               'stdout': output[-8192:].decode(errors='replace')}))
+            return output.decode('utf-8')
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait(timeout=2)
 
 
 def target():
     DATA.mkdir(parents=True, exist_ok=True)
     path = DATA / 'target-id'
     if not path.exists():
-        path.write_text(uuid.uuid4().hex)
+        descriptor, staging = tempfile.mkstemp(prefix='.identity-', dir=DATA)
+        try:
+            with os.fdopen(descriptor, 'w') as stream:
+                stream.write(uuid.uuid4().hex)
+                stream.flush()
+                os.fsync(stream.fileno())
+            try:
+                # Publish one complete identity, without replacing a concurrent
+                # observer's winner or exposing a partially written identifier.
+                os.link(staging, path)
+                fsync_directory(DATA)
+            except FileExistsError:
+                pass
+        finally:
+            Path(staging).unlink(missing_ok=True)
     return path.read_text()
 
 
@@ -143,7 +189,8 @@ def observe_file(name):
         raise ValueError('managed path is not a regular file: ' + name)
     if info.st_size > LIMIT:
         raise ValueError('managed file exceeds fixture limit: ' + name)
-    return {'content': path.read_text(), **metadata(info)}
+    # Universal-newline text reads would silently equate CRLF/CR with LF.
+    return {'content': path.read_bytes().decode('utf-8'), **metadata(info)}
 
 
 def observe_symlink(name):
@@ -160,11 +207,21 @@ OBSERVERS = {'group': observe_group, 'user': observe_user, 'package': observe_pa
 
 
 def observe(payload):
+    mode = fault('observe')
+    if mode == 'fail':
+        raise RuntimeError('injected observation failure')
     subjects = payload['subjects']
     if set(subjects) - set(OBSERVERS):
         raise ValueError('unsupported resource kind')
-    return {'target': target(),
-            'resources': {f'{kind}:{key}': OBSERVERS[kind](key) for kind, keys in subjects.items() for key in keys}}
+    result = {'target': target(),
+              'resources': {f'{kind}:{key}': OBSERVERS[kind](key) for kind, keys in subjects.items() for key in keys}}
+    if mode == 'missing' and result['resources']:
+        result['resources'].pop(next(iter(result['resources'])))
+    if mode == 'extra':
+        result['resources']['file:/not-declared'] = None
+    if mode == 'invalid-value' and result['resources']:
+        result['resources'][next(iter(result['resources']))] = 42
+    return result
 
 
 def apply_group(name, value):
@@ -222,16 +279,24 @@ def apply_file(name, value):
     observe_file(name)
     if value is None:
         path.unlink(missing_ok=True)
+        fsync_directory(path.parent)
         return
+    content = value['content'].encode('utf-8')
+    if len(content) > LIMIT:
+        raise ValueError('managed file exceeds fixture limit: ' + name)
     descriptor, staging = tempfile.mkstemp(prefix='.helix-', dir=path.parent)
     try:
-        with os.fdopen(descriptor, 'w') as stream:
-            stream.write(value['content'])
+        with os.fdopen(descriptor, 'wb') as stream:
+            stream.write(content)
+            os.fchown(stream.fileno(), uid_of(value['owner']), gid_of(value['group']))
+            os.fchmod(stream.fileno(), value['mode'])
             stream.flush()
             os.fsync(stream.fileno())
-        os.chown(staging, uid_of(value['owner']), gid_of(value['group']))
-        os.chmod(staging, value['mode'])
+        if fault(f'file:{name}') == 'replace-failure':
+            raise OSError('injected file replacement failure')
         os.replace(staging, path)
+        if fault(f'file:{name}') == 'after-replace':
+            raise OSError('injected failure after file replacement')
         fsync_directory(path.parent)
     finally:
         Path(staging).unlink(missing_ok=True)
@@ -242,11 +307,13 @@ def apply_symlink(name, value):
     observe_symlink(name)
     if value is None:
         path.unlink(missing_ok=True)
+        fsync_directory(path.parent)
         return
     staging = path.parent / f'.helix-{uuid.uuid4().hex}'
     try:
         os.symlink(value['target'], staging)
         os.replace(staging, path)
+        fsync_directory(path.parent)
     finally:
         if staging.is_symlink():
             staging.unlink()
@@ -266,24 +333,46 @@ def apply(payload):
         raise RuntimeError('injected ' + resource + ' failure')
     if mode == 'false-success':
         return {'completed': True, 'fixture_false_success': True}
+    if mode == 'delay':
+        pause(resource, 'before')
     APPLIERS[kind](key, value)
     event(operation='apply', resource=resource, action='remove' if value is None else 'set')
+    if mode == 'after-mutation':
+        pause(resource, 'after')
+    if mode == 'after-failure':
+        raise RuntimeError('injected failure after mutation: ' + resource)
     return {'completed': True, 'resource': resource}
 
 
 def main():
+    payload = None
     try:
         if len(sys.argv) != 3:
             raise ValueError('usage: helix-linux-host OP JSON')
-        payload = json.loads(sys.argv[2])
+        encoded = sys.argv[2]
+        if encoded == '-':
+            encoded = sys.stdin.buffer.read(8 * LIMIT + 1)
+            if len(encoded) > 8 * LIMIT:
+                raise ValueError('helper request exceeds fixture limit')
+        payload = json.loads(encoded)
         if not isinstance(payload, dict):
             raise ValueError('payload must be an object')
         operations = {'observe': observe, 'apply': apply}
         if sys.argv[1] not in operations:
             raise ValueError('unsupported host operation: ' + sys.argv[1])
+        if sys.argv[1] == 'observe':
+            mode = fault('observe')
+            if mode in ('malformed', 'error-malformed', 'error-scalar'):
+                print('{"error":42}' if mode == 'error-scalar' else '{not json')
+                return 0 if mode == 'malformed' else 1
         print(json.dumps(operations[sys.argv[1]](payload), sort_keys=True))
     except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError) as error:
-        print(json.dumps({'error': {'kind': type(error).__name__, 'message': str(error)}}, sort_keys=True))
+        details = {'kind': type(error).__name__, 'message': str(error)}
+        if len(sys.argv) > 1 and sys.argv[1] == 'apply' and isinstance(payload, dict):
+            # A nonzero reply acknowledges failure, not absence of side effects.
+            details['resource'] = f"{payload.get('kind')}:{payload.get('key')}"
+            details['mutation_may_have_occurred'] = True
+        print(json.dumps({'error': details}, sort_keys=True))
         return 1
     return 0
 
