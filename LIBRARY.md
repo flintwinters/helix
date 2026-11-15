@@ -216,6 +216,19 @@ a fixture-qualified workload, not a generic service manager. Inputs, entrypoint,
 resource semantics and host prerequisites are authoritative in the
 [operator contract](tests/fixtures/docker_nginx/README.md).
 
+## Typed Linux host resources
+
+`std:linux` declares Debian `groups`, `users`, `packages`, `directories`, `files` and
+`symlinks` as one configuration, with `resolve`, `explain`, `observe`, `plan`, `check`,
+`apply`, `verify`, `graph`, the `configuration` class and input/observation schemas. Resources
+are identified `kind:key`; prerequisites (a user's group, owners, declared ancestors, explicit
+`after`) derive a dependency graph that is validated before effects and is part of the review.
+Removal requires explicit `state: absent` and runs in reverse order; omission never deletes. It
+reuses `std:provider` and `std:orchestration`, with a helper executable (`std:helper`, shared
+framing for local and SSH command effects) supplying mechanisms only. Fixture-qualified; see the
+[operator contract](tests/fixtures/docker_linux/README.md).
+
+
 ## Ubuntu facts and reviewed configuration
 
 `std:facts` supports Ubuntu 26.10 on x86_64 over local commands (`target: null`)

@@ -1,0 +1,442 @@
+# Typed Debian host resources over one caller-granted helper, local or SSH: groups, users,
+# packages, directories, files and symlinks. Helix owns desired state, ordering and review;
+# the helper executable supplies one mechanism per operation and never plans.
+# Every public operation shares pure resolution (types, required fields, dependency graph)
+# before any effect. Removal requires an explicit `state: absent`; omission never deletes.
+$call:
+- let
+- provider: {$call: [import, 'std:provider']}
+  orchestration: {$call: [import, 'std:orchestration']}
+  helper: {$call: [import, 'std:helper']}
+  lists: {$call: [import, 'std:list']}
+  maps: {$call: [import, 'std:map']}
+  text: {$call: [import, 'std:text']}
+  provider_revision: '1'
+  helper_path: /usr/local/bin/helix-linux-host
+  null_type: {$call: [literal, null]}
+  kinds: [group, user, package, directory, file, symlink]
+  sections: {group: groups, user: users, package: packages, directory: directories, file: files, symlink: symlinks}
+  # Closed character sets keep identities literal; values never reach a shell.
+  charset:
+    $call:
+    - fn
+    - [allowed, limit]
+    - $call:
+      - refine
+      - {$ref: provider.name}
+      - $call:
+        - fn
+        - [value]
+        - $call:
+          - and
+          - {$call: [le, {$call: [len, {$ref: value}]}, {$ref: limit}]}
+          - {$call: [lists.all, {$call: [lists.range, {$call: [len, {$ref: value}]}]}, {$call: [fn, [index], {$call: [has, {$ref: allowed}, {$call: [slice, {$ref: value}, {$ref: index}, {$call: [add, {$ref: index}, 1]}]}]}]}]}
+  account_name:
+    $call:
+    - refine
+    - {$call: [charset, abcdefghijklmnopqrstuvwxyz0123456789_-, 32]}
+    - {$call: [fn, [name], {$call: [not, {$call: [has, 0123456789-, {$call: [slice, {$ref: name}, 0, 1]}]}]}]}
+  package_name: {$call: [charset, abcdefghijklmnopqrstuvwxyz0123456789+.-, 100]}
+  package_version: {$call: [charset, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.+~:_-', 100]}
+  path_characters: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._/+@=,:-'
+  # Absolute, normalized and never the root: no empty, `.` or `..` segments.
+  path:
+    $call:
+    - refine
+    - {$call: [charset, {$ref: path_characters}, 4096]}
+    - $call:
+      - fn
+      - [value]
+      - $call:
+        - and
+        - {$call: [eq, {$call: [slice, {$ref: value}, 0, 1]}, '/']}
+        - $call:
+          - lists.all
+          - {$call: [lists.drop, {$call: [text.split, {$ref: value}, '/']}, 1]}
+          - {$call: [fn, [segment], {$call: [and, {$call: [ne, {$ref: segment}, '']}, {$call: [ne, {$ref: segment}, .]}, {$call: [ne, {$ref: segment}, ..]}]}]}
+  link_target: {$call: [charset, {$ref: path_characters}, 4096]}
+  id_type: {$ref: provider.name}
+  state_type: {$call: [enum, present, absent]}
+  mode_type: {$call: [refine, {$ref: integer}, {$call: [fn, [mode], {$call: [and, {$call: [ge, {$ref: mode}, 0]}, {$call: [le, {$ref: mode}, 511]}]}]}]}
+  numeric_id: {$call: [refine, {$ref: integer}, {$call: [fn, [value], {$call: [and, {$call: [ge, {$ref: value}, 0]}, {$call: [lt, {$ref: value}, 2147483648]}]}]}]}
+  # The observable fields of each kind. The same names are planned, observed and applied.
+  field_types:
+    group: {gid: {$ref: numeric_id}}
+    user: {uid: {$ref: numeric_id}, group: {$ref: account_name}, home: {$ref: path}, shell: {$ref: path}}
+    package: {version: {$ref: package_version}}
+    directory: {owner: {$ref: account_name}, group: {$ref: account_name}, mode: {$ref: mode_type}}
+    file: {content: {$ref: string}, owner: {$ref: account_name}, group: {$ref: account_name}, mode: {$ref: mode_type}}
+    symlink: {target: {$ref: link_target}}
+  key_types: {group: {$ref: account_name}, user: {$ref: account_name}, package: {$ref: package_name}, directory: {$ref: path}, file: {$ref: path}, symlink: {$ref: path}}
+  required_fields: {group: [gid], user: [uid, group, home], package: [version], directory: [], file: [content], symlink: [target]}
+  common_defaults: {state: present, after: []}
+  kind_defaults:
+    group: {}
+    user: {shell: /usr/sbin/nologin}
+    package: {}
+    directory: {owner: root, group: root, mode: 493}
+    file: {owner: root, group: root, mode: 420}
+    symlink: {}
+  spec_type:
+    $call:
+    - fn
+    - [kind]
+    - $call:
+      - with_field
+      - {$call: [with_field, {$call: [fold, {$call: [fn, [type, field], {$call: [with_field, {$ref: type}, {$ref: field}, {$call: [optional, {$call: [get, {$call: [get, {$ref: field_types}, {$ref: kind}]}, {$ref: field}]}]}]}]}, {$call: [record]}, {$call: [keys, {$call: [get, {$ref: field_types}, {$ref: kind}]}]}]}, state, {$call: [optional, {$ref: state_type}]}]}
+      - after
+      - {$call: [optional, {$call: [list_of, {$ref: id_type}]}]}
+  input:
+    $call:
+    - with_field
+    - {$call: [fold, {$call: [fn, [type, kind], {$call: [with_field, {$ref: type}, {$call: [get, {$ref: sections}, {$ref: kind}]}, {$call: [map_of, {$call: [spec_type, {$ref: kind}]}]}]}]}, {$call: [record]}, {$ref: kinds}]}
+    - ssh_target
+    - {$call: [optional, {$ref: id_type}]}
+  # Each section defaults to empty, so a configuration declares only the kinds it manages.
+  configuration:
+    $call:
+    - class
+    - linux
+    - $call:
+      - fold
+      - $call:
+        - fn
+        - [type, kind]
+        - $call:
+          - with_field
+          - {$ref: type}
+          - {$call: [get, {$ref: sections}, {$ref: kind}]}
+          - {$call: [default, {$call: [map_of, {$call: [spec_type, {$ref: kind}]}]}, {}]}
+      - {$ref: input}
+      - {$ref: kinds}
+  observation_type: {$call: [record, target, {$ref: id_type}, resources, {$call: [map_of, {$call: [union, {$ref: map}, {$ref: null_type}]}]}]}
+  realize_config:
+    $call: [fn, [config], {$call: [type_time, {$call: [realize, {$call: [if, {$call: [eq, {$call: [get, {$ref: config}, type, null]}, class]}, {$ref: config}, {$call: [inherit, 'linux input', [{$ref: configuration}], {$ref: config}]}]}]}]}]
+  # Resources keyed `kind:key`, each with normalized defaults. Present entries must supply required fields.
+  # A map's own keys are lexical names inside it, so parameters never share a name with a result field.
+  entry:
+    $call:
+    - fn
+    - [family, identity, spec]
+    - $call:
+      - let
+      - normalized: {$call: [maps.merge, {$call: [maps.merge, {$ref: common_defaults}, {$call: [get, {$ref: kind_defaults}, {$ref: family}]}]}, {$ref: spec}]}
+        lacking: {$call: [filter, {$call: [fn, [field], {$call: [not, {$call: [has, {$ref: normalized}, {$ref: field}]}]}]}, {$call: [get, {$ref: required_fields}, {$ref: family}]}]}
+      - $call:
+        - if
+        - {$call: [and, {$call: [eq, {$ref: normalized.state}, present]}, {$call: [ne, {$ref: lacking}, []]}]}
+        - {$call: [raise, linux_invalid_spec, A present resource omits required fields, {resource: {$call: [concat, {$ref: family}, ':', {$ref: identity}]}, missing: {$ref: lacking}}]}
+        - {kind: {$ref: family}, key: {$ref: identity}, spec: {$ref: normalized}}
+  entries:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - fold
+      - $call:
+        - fn
+        - [all, kind]
+        - $call:
+          - fold
+          - {$call: [fn, [acc, key], {$call: [set, {$ref: acc}, {$call: [concat, {$ref: kind}, ':', {$ref: key}]}, {$call: [entry, {$ref: kind}, {$ref: key}, {$call: [get, {$call: [get, {$ref: config}, {$call: [get, {$ref: sections}, {$ref: kind}]}]}, {$ref: key}]}]}]}]}
+          - {$ref: all}
+          - {$call: [keys, {$call: [get, {$ref: config}, {$call: [get, {$ref: sections}, {$ref: kind}]}]}]}
+      - {}
+      - {$ref: kinds}
+  validated_keys:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - map
+      - {$call: [fn, [kind], {$call: [expect, {$call: [keys, {$call: [get, {$ref: config}, {$call: [get, {$ref: sections}, {$ref: kind}]}]}]}, {$call: [list_of, {$call: [get, {$ref: key_types}, {$ref: kind}]}]}]}]}
+      - {$ref: kinds}
+  # Resolve, validate every key and prerequisite, and reject cycles before any effect.
+  checked:
+    $call:
+    - fn
+    - [values]
+    - $call:
+      - get
+      - $call:
+        - list
+        - {$call: [validated_keys, {$ref: values}]}
+        - {$call: [orchestration.plan, {$call: [graph, {$ref: values}]}]}
+        - {$ref: values}
+      - 2
+  explain:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - let
+      - realized: {$call: [realize_config, {$ref: config}]}
+      - format: helix.linux.configuration.v1
+        values: {$call: [checked, {$call: [expect, {$ref: realized.values}, {$ref: input}]}]}
+        provenance: {$ref: realized.provenance}
+  resolve: {$call: [fn, [config], {$call: [get, {$call: [explain, {$ref: config}]}, values]}]}
+  with_config: {$call: [fn, [operation], {$call: [fn, [config], {$call: [operation, {$call: [resolve, {$ref: config}]}]}]}]}
+  with_config_argument: {$call: [fn, [operation], {$call: [fn, [config, argument], {$call: [operation, {$call: [resolve, {$ref: config}]}, {$ref: argument}]}]}]}
+  desired_value:
+    $call:
+    - fn
+    - [entry]
+    - $call:
+      - if
+      - {$call: [eq, {$ref: entry.spec.state}, absent]}
+      - null
+      - {$call: [maps.select, {$ref: entry.spec}, {$call: [keys, {$call: [get, {$ref: field_types}, {$ref: entry.kind}]}]}]}
+  # Observation names every declared resource, including those declared absent.
+  subject_list:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - fold
+      - {$call: [fn, [acc, kind], {$call: [set, {$ref: acc}, {$ref: kind}, {$call: [keys, {$call: [get, {$ref: config}, {$call: [get, {$ref: sections}, {$ref: kind}]}]}]}]}]}
+      - {}
+      - {$ref: kinds}
+  helper_call: {$call: [fn, [config, operation, payload], {$call: [helper.call, linux_host, {$call: [get, {$ref: config}, ssh_target, null]}, {$ref: helper_path}, {$ref: operation}, {$ref: payload}]}]}
+  observe_state:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - observed
+      - {$ref: config}
+      - {$call: [expect, {$call: [helper_call, {$ref: config}, observe, {subjects: {$call: [subject_list, {$ref: config}]}}]}, {$ref: observation_type}]}
+  # A host that omits or invents a resource has not observed the declared set.
+  observed:
+    $call:
+    - fn
+    - [config, observation]
+    - $call:
+      - if
+      - {$call: [eq, {$call: [keys, {$ref: observation.resources}]}, {$call: [keys, {$call: [entries, {$ref: config}]}]}]}
+      - {$ref: observation}
+      - {$call: [raise, linux_observation, The host did not observe exactly the declared resources, {expected: {$call: [keys, {$call: [entries, {$ref: config}]}]}, observed: {$call: [keys, {$ref: observation.resources}]}}]}
+  steps:
+    $call:
+    - fn
+    - [config, before]
+    - $call:
+      - let
+      - declared: {$call: [entries, {$ref: config}]}
+        changed:
+          $call:
+          - fn
+          - [id]
+          - {$call: [ne, {$call: [get, {$ref: before.resources}, {$ref: id}]}, {$call: [desired_value, {$call: [get, {$ref: declared}, {$ref: id}]}]}]}
+      - $call:
+        - map
+        - $call:
+          - fn
+          - [id]
+          - $call:
+            - let
+            - wanted: {$call: [desired_value, {$call: [get, {$ref: declared}, {$ref: id}]}]}
+            - {field: {$ref: id}, op: {$call: [if, {$call: [eq, {$ref: wanted}, null]}, remove, set]}, from: {$call: [get, {$ref: before.resources}, {$ref: id}]}, to: {$ref: wanted}}
+        - {$call: [filter, {$ref: changed}, {$call: [keys, {$ref: declared}]}]}
+  # Prerequisites: explicit `after`, a user's group, an owner and group, and declared ancestor directories.
+  ancestors:
+    $call:
+    - fn
+    - [config, path]
+    - $call:
+      - map
+      - {$call: [fn, [directory], {$call: [concat, 'directory:', {$ref: directory}]}]}
+      - $call:
+        - filter
+        - $call:
+          - fn
+          - [directory]
+          - {$call: [and, {$call: [lt, {$call: [len, {$ref: directory}]}, {$call: [len, {$ref: path}]}]}, {$call: [eq, {$call: [slice, {$ref: path}, 0, {$call: [add, {$call: [len, {$ref: directory}]}, 1]}]}, {$call: [concat, {$ref: directory}, '/']}]}]}
+        - {$call: [keys, {$call: [get, {$ref: config}, directories]}]}
+  implied:
+    $call:
+    - fn
+    - [config, entry]
+    - $call:
+      - cond
+      - {$call: [eq, {$ref: entry.kind}, user]}
+      - {$call: [list, {$call: [concat, 'group:', {$ref: entry.spec.group}]}]}
+      - {$call: [has, [directory, file], {$ref: entry.kind}]}
+      - {$call: [concat, {$call: [list, {$call: [concat, 'user:', {$ref: entry.spec.owner}]}, {$call: [concat, 'group:', {$ref: entry.spec.group}]}]}, {$call: [ancestors, {$ref: config}, {$ref: entry.key}]}]}
+      - {$call: [eq, {$ref: entry.kind}, symlink]}
+      - {$call: [ancestors, {$ref: config}, {$ref: entry.key}]}
+      - []
+  requirements:
+    $call:
+    - fn
+    - [config, entries, id]
+    - $call:
+      - let
+      - entry: {$call: [get, {$ref: entries}, {$ref: id}]}
+      - $call:
+        - lists.unique
+        - $call:
+          - filter
+          - {$call: [fn, [other], {$call: [and, {$call: [has, {$ref: entries}, {$ref: other}]}, {$call: [ne, {$ref: other}, {$ref: id}]}]}]}
+          - {$call: [concat, {$ref: entry.spec.after}, {$call: [implied, {$ref: config}, {$ref: entry}]}]}
+  absent_entry: {$call: [fn, [entries, id], {$call: [eq, {$call: [get, {$call: [get, {$call: [get, {$ref: entries}, {$ref: id}]}, spec]}, state]}, absent]}]}
+  # Creation follows prerequisites; explicit removal runs in reverse. A present resource cannot need an absent one.
+  node_requires:
+    $call:
+    - fn
+    - [config, entries, id]
+    - $call:
+      - if
+      - {$call: [absent_entry, {$ref: entries}, {$ref: id}]}
+      - $call:
+        - filter
+        - $call:
+          - fn
+          - [other]
+          - {$call: [and, {$call: [absent_entry, {$ref: entries}, {$ref: other}]}, {$call: [has, {$call: [requirements, {$ref: config}, {$ref: entries}, {$ref: other}]}, {$ref: id}]}]}
+        - {$call: [keys, {$ref: entries}]}
+      - $call:
+        - let
+        - needed: {$call: [requirements, {$ref: config}, {$ref: entries}, {$ref: id}]}
+          unknown: {$call: [filter, {$call: [fn, [other], {$call: [not, {$call: [has, {$ref: entries}, {$ref: other}]}]}]}, {$call: [get, {$call: [get, {$call: [get, {$ref: entries}, {$ref: id}]}, spec]}, after]}]}
+          removed: {$call: [filter, {$call: [fn, [other], {$call: [absent_entry, {$ref: entries}, {$ref: other}]}]}, {$ref: needed}]}
+        - $call:
+          - cond
+          - {$call: [ne, {$ref: unknown}, []]}
+          - {$call: [raise, linux_dependency, A resource requires an undeclared resource, {resource: {$ref: id}, undeclared: {$ref: unknown}}]}
+          - {$call: [eq, {$ref: removed}, []]}
+          - {$ref: needed}
+          - {$call: [raise, linux_dependency, A present resource requires a resource declared absent, {resource: {$ref: id}, absent: {$ref: removed}}]}
+  graph:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - let
+      - declared: {$call: [entries, {$ref: config}]}
+      - version: 1
+        handlers: {}
+        resources: {$call: [fold, {$call: [fn, [acc, id], {$call: [set, {$ref: acc}, {$ref: id}, {requires: {$call: [node_requires, {$ref: config}, {$ref: declared}, {$ref: id}]}, notify: []}]}]}, {}, {$call: [keys, {$ref: declared}]}]}
+  context:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - let
+      - declared: {$call: [entries, {$ref: config}]}
+      - platform: debian-container
+        capabilities: [{$call: [helper.capability, {$call: [get, {$ref: config}, ssh_target, null]}]}]
+        managed: true
+        allow_remove: {$call: [lists.any, {$call: [keys, {$ref: declared}]}, {$call: [fn, [id], {$call: [absent_entry, {$ref: declared}, {$ref: id}]}]}]}
+  descriptor:
+    version: 1
+    id: local.debian.linux
+    revision: {$ref: provider_revision}
+    arguments: {$ref: input}
+    observation: {$ref: observation_type}
+    result: {$ref: map}
+    platforms: [debian-container]
+    capabilities: [command]
+    check: true
+    diff: true
+    failure: stop
+    observe: {$ref: observe_state}
+    plan: {$ref: steps}
+    apply: {$ref: execute}
+  descriptor_for: {$call: [fn, [config], {$call: [if, {$call: [eq, {$call: [get, {$ref: config}, ssh_target, null]}, null]}, {$ref: descriptor}, {$call: [set, {$call: [set, {$ref: descriptor}, id, ssh.debian.linux]}, capabilities, [ssh_command]]}]}]}
+  # The reviewed dependency graph is part of the review; compare it, then hand the provider its own report.
+  # Orchestration rejects cycles and unknown references; a preview must fail as an apply would.
+  validated_graph:
+    $call:
+    - fn
+    - [config]
+    - $call:
+      - let
+      - declared: {$call: [graph, {$ref: config}]}
+        scheduled: {$call: [orchestration.plan, {$ref: declared}]}
+      - $call:
+        - if
+        - {$call: [eq, {$ref: scheduled.status}, ready]}
+        - {$ref: declared}
+        - {$call: [raise, linux_dependency, Resource prerequisites cannot be scheduled, {diagnostics: {$ref: scheduled.diagnostics}}]}
+  with_dependencies: {$call: [fn, [config, report], {$call: [set, {$ref: report}, dependencies, {$call: [validated_graph, {$ref: config}]}]}]}
+  plan: {$call: [fn, [config, before], {$call: [with_dependencies, {$ref: config}, {$call: [provider.plan, {$call: [descriptor_for, {$ref: config}]}, {$ref: config}, {$ref: before}, {$call: [context, {$ref: config}]}]}]}]}
+  check: {$call: [fn, [config], {$call: [with_dependencies, {$ref: config}, {$call: [provider.check, {$call: [descriptor_for, {$ref: config}]}, {$ref: config}, {$call: [context, {$ref: config}]}]}]}]}
+  provider_review:
+    $call:
+    - fn
+    - [config, review]
+    - $call:
+      - if
+      - {$call: [eq, {$call: [get, {$ref: review}, dependencies, null]}, {$call: [graph, {$ref: config}]}]}
+      - {$call: [maps.remove, {$ref: review}, dependencies]}
+      - {$call: [raise, linux_review_dependencies, The reviewed dependency graph does not match this configuration]}
+  apply:
+    $call:
+    - fn
+    - [config, review]
+    - $call:
+      - try
+      - {$call: [with_dependencies, {$ref: config}, {$call: [provider.apply, {$call: [descriptor_for, {$ref: config}]}, {$ref: config}, {$call: [context, {$ref: config}]}, {$call: [provider_review, {$ref: config}, {$ref: review}]}]}]}
+      - {$call: [fn, [error], {$call: [with_dependencies, {$ref: config}, {$call: [provider.failure_report, preflight, {$ref: error}]}]}]}
+  verified: {$call: [fn, [report], {$call: [if, {$call: [eq, {$ref: report.status}, unchanged]}, {$ref: report}, {$call: [raise, linux_postcondition, The host has not converged, {$ref: report}]}]}]}
+  verify: {$call: [fn, [config], {$call: [verified, {$call: [check, {$ref: config}]}]}]}
+  execute:
+    $call:
+    - fn
+    - [config, changes]
+    - {$call: [executed, {$call: [orchestration.run, {$call: [graph, {$ref: config}]}, {$call: [fn, [kind, id], {$call: [resource, {$ref: config}, {$ref: changes}, {$ref: id}]}]}]}]}
+  executed: {$call: [fn, [report], {$call: [if, {$call: [eq, {$ref: report.status}, finished]}, {$ref: report}, {$call: [raise, linux_application, Resource application failed, {$ref: report}]}]}]}
+  resource:
+    $call:
+    - fn
+    - [config, changes, id]
+    - $call:
+      - let
+      - selected: {$call: [filter, {$call: [fn, [step], {$call: [eq, {$ref: step.field}, {$ref: id}]}]}, {$ref: changes}]}
+      - $call:
+        - if
+        - {$call: [eq, {$ref: selected}, []]}
+        - {status: unchanged}
+        - {$call: [resource_verified, {$ref: config}, {$ref: id}, {$call: [mutate, {$ref: config}, {$ref: id}, {$call: [get, {$ref: selected}, 0]}]}, {$call: [observe_state, {$ref: config}]}]}
+  mutate:
+    $call:
+    - fn
+    - [config, id, step]
+    - $call:
+      - let
+      - entry: {$call: [get, {$call: [entries, {$ref: config}]}, {$ref: id}]}
+      - {$call: [helper_call, {$ref: config}, apply, {kind: {$ref: entry.kind}, key: {$ref: entry.key}, value: {$ref: step.to}}]}
+  # A command that claims success does not satisfy the resource; a fresh observation does.
+  resource_verified:
+    $call:
+    - fn
+    - [config, id, reply, after]
+    - $call:
+      - if
+      - {$call: [lists.any, {$call: [steps, {$ref: config}, {$ref: after}]}, {$call: [fn, [step], {$call: [eq, {$ref: step.field}, {$ref: id}]}]}]}
+      - {$call: [raise, linux_resource_postcondition, Fresh observation did not satisfy the resource, {resource: {$ref: id}, result: {$ref: reply}, observation: {$call: [get, {$ref: after.resources}, {$ref: id}]}}]}
+      - {status: changed, details: {$call: [json_dump, {result: {$ref: reply}, observation: {$call: [get, {$ref: after.resources}, {$ref: id}]}}]}}
+- $call:
+  - dict
+  - resolve
+  - {$ref: resolve}
+  - explain
+  - {$ref: explain}
+  - observe
+  - {$call: [with_config, {$ref: observe_state}]}
+  - plan
+  - {$call: [with_config_argument, {$ref: plan}]}
+  - check
+  - {$call: [with_config, {$ref: check}]}
+  - apply
+  - {$call: [with_config_argument, {$ref: apply}]}
+  - verify
+  - {$call: [with_config, {$ref: verify}]}
+  - input
+  - {$ref: input}
+  - observation_type
+  - {$ref: observation_type}
+  - configuration
+  - {$ref: configuration}
+  - graph
+  - {$call: [with_config, {$ref: graph}]}

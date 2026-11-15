@@ -666,6 +666,12 @@ The Docker nginx acceptance specification below is complete, with separate SSH a
   - [ ] A second run performs no mutations; deliberately introduced drift produces only the necessary repair
   - [x] Demonstrate both local execution and SSH execution on a disposable host (`ssh_nginx`; the same policy, independent observations and durable controller-death recovery)
   - [x] Record the supported distribution, resource semantics and remaining limitations alongside the example ([operator contract](tests/fixtures/docker_nginx/README.md); one pinned Debian container/root/helper combination)
+- [x] Extend the same lifecycle beyond one workload to general typed Debian host resources: groups, users, exact-version packages, directories, files and symlinks (`std:linux`, `docker_linux`)
+  - [x] Derive prerequisites (user→group, owners, declared ancestors, explicit `after`) into a validated dependency graph that is part of the review; reject unknown references, cycles and present-requires-absent before mutation
+  - [x] Explicit `state: absent` removes in reverse order; omission never deletes; unmanaged siblings survive; a failed resource skips exactly its transitive dependents
+  - [x] Independent probes of actual container state judge baseline, updates, drift repair, removal, stale reviews, failure, false success, authority and lifecycle
+  - [x] Two container-resident Helix controllers configure each other over pinned SSH, with independently verified no-op convergence and targeted drift repair (`docker_linux` peers); Docker supplies transport/trust bootstrap, and concurrent-controller/fleet recovery remains unqualified
+  - [ ] Services, boot persistence, templates, cron, firewall and other kinds remain unqualified ([operator contract](tests/fixtures/docker_linux/README.md))
 
 ### Docker nginx acceptance specification — completed local milestone
 
@@ -899,12 +905,27 @@ account; it is not an arbitrary-host bootstrap or a real playbook migration.
   - [ ] Expose partial success and pending work; recovery never reports an entire fleet successful because some hosts completed
     - [x] Read-only `checkpoint` reports completed outcomes, source paths, exact pending work and the required recovery action for one journal, including while its writer is active (`durable_effects`).
   - [ ] Declare compensations and irreversible operations explicitly; external rollback is not implied by immutable VM state
+  - [ ] Fleet recovery: resume an interrupted multi-host run from one fleet-level record without trusting a whole-fleet success flag
+    - [ ] Persist a fleet run identity, the reviewed per-host plans, batch/canary position and each host's journal location; restoring supplies fresh grants and never replays uncertain effects
+    - [ ] Classify every host as unstarted, applied, failed, skipped by policy or uncertain, and show the exact next action per host and for the run
+    - [ ] Reconcile uncertain hosts independently, then continue only the remaining batches whose failure policy still holds; completed hosts are re-verified by fresh observation, not assumed
+    - [ ] Preserve the reviewed plan across restart and detect hosts whose observed state or identity changed since review
+    - [ ] Tolerate controller death between batches, a host unreachable on resume and a second controller starting the same run (lock or refuse); a lost fleet record degrades to per-host journals, never to silent re-application
+    - [ ] Report fleet status as concise text and versioned data with documented exit statuses for resumable, blocked and complete runs
+    - [ ] Qualify on a disposable multi-host fixture with controller kills at batch boundaries and mid-host; no exactly-once claim beyond what independent observation proves
 
 ### Credentials, operator workflows and extensibility
 
 - [ ] Complete section 8's secret-reference contract throughout the operational stack
   - [ ] Resolve credentials only at authorized host boundaries and support external secret providers
     - [x] Private caller-granted files supply opaque local/SSH command inputs and SSH file contents; external secret-manager protocols remain open.
+    - [ ] Secret-manager integration: resolve named secret references through caller-granted adapters (for example Vault/OpenBao, cloud secret stores, `pass`/`sops`-style files or a granted command), never through source, inventory or snapshots
+      - [ ] A secret reference is typed ordinary data naming provider, path/key and optional version; resolution happens only in the host at the apply boundary, and the resolved value stays opaque
+      - [ ] Adapters authenticate with caller-granted identity, support bounded timeouts and distinguish missing secret, denied access, unreachable manager and malformed response
+      - [ ] Plans and reviews bind the reference and, where the manager exposes one, a non-secret version/digest, so a rotated secret makes a review stale without disclosing the value
+      - [ ] Resolved values never reach command arguments, logs, diffs, captured output, errors, journals or snapshots; verify this with canary secrets in every output channel
+      - [ ] Define caching (default none), lease/TTL expiry and explicit rotation behavior; dry-run previews resolve nothing and show only references
+      - [ ] Qualify one real manager (a disposable Vault/OpenBao container) behind the same adapter contract; additional managers are separate work
   - [ ] Prevent secret disclosure through command arguments, captured output, errors, diffs, logs and persisted state
   - [ ] Separate inventory data from authority; remote credentials, escalation and provider capabilities remain caller grants
 - [ ] Provide discoverable configuration-management commands and reports
@@ -956,6 +977,11 @@ These rules apply continuously, including to features already listed above. Reco
 - [x] After completion, review which mechanisms the workload used, which complicated it and which remain speculative. Remove, consolidate or explicitly defer unnecessary surface before selecting the next expansion. Completion does not automatically authorize the rest of the roadmap.
 
 ### Consolidate the existing semantic surface
+
+Extending to general Linux resources (`std:linux`) moved the nginx-era local/SSH
+helper framing into `std:helper`; `std:linux` uses it. `std:nginx` still carries
+its own copy because its goldens and qualification digests are pinned, so
+migrating it is a deliberate consolidation, not part of that extension.
 
 The nginx workload establishes these decisions; the reference manuals and
 acceptance suites retain implementation detail:

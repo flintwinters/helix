@@ -381,6 +381,19 @@ and legacy anchors; fixtures verify missing-file and missing-anchor detection.
 
 Resource regressions grow function and machine capture graphs from shallow source until an enforced limit. They must emit structured errors and exit cleanly when releasing the retained graph. Public execution tests also release captured graphs on a small-stack thread and through thread-local teardown, preserving retained machine versions.
 
+## Docker Linux acceptance
+
+`./manage.py test --suite docker_linux` is the same kind of explicit Docker test for `std:linux`
+(accounts, packages, directories, files, symlinks): baseline, updates, drift repair, explicit
+removal, invalid input, stale reviews, failure gating, false success, authority and lifecycle,
+each judged by an independent probe of actual container state. It reuses the nginx driver, pins and
+cleanup. `HELIX_DOCKER_LINUX_SCENARIO` / `_REPEAT` / `_KEEP_FAILED` mirror the nginx selectors; see
+the [fixture contract](fixtures/docker_linux/README.md). Pure planning is in the golden case
+`linux_planning`; the default `harness` suite checks the independent oracle without Docker.
+The `peers` scenario runs Helix controllers inside two containers that configure
+each other over pinned SSH, then checks no-op convergence and targeted drift repair.
+See the fixture contract for retaining and operating the successful pair.
+
 ## Docker nginx acceptance
 
 `./manage.py test --suite docker_nginx` is an explicit infrastructure test. The

@@ -1,0 +1,48 @@
+# One framed operation of a caller-granted helper executable, local or over SSH.
+# The helper receives `OPERATION JSON` in argv, prints one JSON value on success, and on
+# failure exits nonzero with `{error: {...}}` on stdout. Helpers supply mechanisms, never plans.
+# Authority comes from the caller's command/SSH grant, not from this module.
+$call:
+- let
+- # A malformed failure payload must not replace the original command failure.
+  decode_error:
+    $call:
+    - fn
+    - [text]
+    - $call:
+      - try
+      - {$call: [expect, {$call: [get, {$call: [json_parse, {$ref: text}]}, error, null]}, {$ref: map}]}
+      - {$call: [fn, [ignored], null]}
+  dispatch:
+    $call:
+    - fn
+    - [ssh_target, request]
+    - $call:
+      - if
+      - {$call: [eq, {$ref: ssh_target}, null]}
+      - {$call: [effect, command, {$ref: request}]}
+      - {$call: [effect, ssh_command, {$call: [set, {$ref: request}, host, {$ref: ssh_target}]}]}
+  capability: {$call: [fn, [ssh_target], {$call: [if, {$call: [eq, {$ref: ssh_target}, null]}, command, ssh_command]}]}
+  reply:
+    $call:
+    - fn
+    - [kind, operation, reply]
+    - $call:
+      - if
+      - {$call: [eq, {$ref: reply.code}, 0]}
+      - {$call: [json_parse, {$ref: reply.stdout}]}
+      - $call:
+        - raise
+        - {$ref: kind}
+        - {$call: [concat, 'helper operation failed: ', {$ref: operation}]}
+        - {$call: [set, {$call: [set, {$ref: reply}, operation, {$ref: operation}]}, host_error, {$call: [decode_error, {$ref: reply.stdout}]}]}
+  call:
+    $call:
+    - fn
+    - [kind, ssh_target, executable, operation, payload]
+    - $call:
+      - reply
+      - {$ref: kind}
+      - {$ref: operation}
+      - {$call: [dispatch, {$ref: ssh_target}, {program: {$ref: executable}, args: {$call: [list, {$ref: operation}, {$call: [json_dump, {$ref: payload}]}]}}]}
+- {$call: [dict, call, {$ref: call}, capability, {$ref: capability}]}

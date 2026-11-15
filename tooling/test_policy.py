@@ -6,7 +6,7 @@ from tooling.test_reports import failure
 
 
 # Suites needing explicit fixture or workstation observation authority are opt-in.
-OPT_IN_SUITES = {"docker_nginx", "ssh_nginx", "docker_facts", "facts_smoke"}
+OPT_IN_SUITES = {"docker_nginx", "docker_linux", "ssh_nginx", "docker_facts", "facts_smoke"}
 
 
 class PolicyError(RuntimeError):

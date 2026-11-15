@@ -96,6 +96,9 @@ def options():
 class Docker:
     """Bounded Docker subprocesses with retained output and owned-resource cleanup."""
 
+    # Fixture directory under tests/fixtures holding the Dockerfile and host helper.
+    fixture = "docker_nginx"
+
     def __init__(self, root, run_id=None, *, ssh=False):
         self.root = root
         self.ssh = ssh
@@ -169,14 +172,14 @@ class Docker:
         context.mkdir()
         for name in ("Cargo.toml", "Cargo.lock"):
             shutil.copy2(self.root / name, context / name)
-        for name in ("src", "std", "completions", "editor", "tests/programs", "tests/fixtures/docker_nginx"):
+        for name in ("src", "std", "completions", "editor", "tests/programs", f"tests/fixtures/{self.fixture}"):
             shutil.copytree(self.root / name, context / name)
         self.command("build", "--force-rm", "--platform", VERSIONS["platform"], "--label", f"{LABEL}={self.run_id}",
                      "--build-arg", "HELIX_BUILDER_IMAGE=" + VERSIONS["builder"],
                      "--build-arg", "HELIX_RUNTIME_IMAGE=" + VERSIONS["image"],
                      "--build-arg", "HELIX_PACKAGE_SNAPSHOT=" + VERSIONS["package_snapshot"],
                      "--build-arg", "HELIX_SSH_ACCEPTANCE=" + ("1" if self.ssh else "0"),
-                     "-t", self.image, "-f", str(context / "tests/fixtures/docker_nginx/Dockerfile"), str(context), timeout=1800)
+                     "-t", self.image, "-f", str(context / f"tests/fixtures/{self.fixture}/Dockerfile"), str(context), timeout=1800)
         image = self.command("image", "inspect", self.image)
         (self.artifacts / "image.json").write_text(image.stdout)
         self.command("network", "create", "--label", f"{LABEL}={self.run_id}", self.network)

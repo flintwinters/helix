@@ -1,0 +1,25 @@
+# One declarative baseline for a small application host: accounts, packages, directories,
+# managed files and a symlink. Resolution is pure; the same class feeds linux.plan/check/apply.
+# Dependencies are derived (owners, parent directories, a user's group) or declared with `after`.
+# Modes are decimal here: 488 is 0750, 416 is 0640, 420 is 0644, 493 is 0755.
+$call:
+- let
+- linux: {$call: [import, 'std:linux']}
+- $call:
+  - linux.resolve
+  - groups:
+      helix-app: {gid: 2001}
+    users:
+      helix-app: {uid: 2001, group: helix-app, home: /srv/helix/app}
+    packages:
+      jq: {version: 1.6-2.1+deb12u1}
+      tree: {version: 2.1.0-1}
+    directories:
+      /etc/helix-demo: {}
+      /srv/helix: {}
+      /srv/helix/app: {owner: helix-app, group: helix-app, mode: 488}
+    files:
+      /etc/helix-demo/app.conf: {content: "listen = 8080\n", group: helix-app, mode: 416}
+      /srv/helix/app/README: {content: "Managed by Helix\n", owner: helix-app, group: helix-app}
+    symlinks:
+      /etc/helix-demo/current: {target: /srv/helix/app}
