@@ -151,8 +151,13 @@ and inspected through the bounded checkpoint API rather than dumped through comm
 
 ## Qualification evidence
 
-[`qualification.json`](qualification.json) records the full twelve-scenario run
-and a separate successful retained-peer run, controller digest, raw-report digests
-and supporting regression checks. Raw reports under `runtime/docker-linux/`
+[`qualification.json`](qualification.json) preserves the original baseline and records
+the later hardening qualification: 26 scenarios across the integrated run and corrected
+continuation, two repetitions of the high-risk peer scenarios, and a retained hardened pair.
+The integrated run's initial directory-mtime assertion failure remains recorded explicitly.
+Production source manifests and controller digests agree across those four runs. The record
+also includes nine shared regression suites, 210 golden cases, 210 mutation-robustness cases,
+the explicit 30-second harness timeout and the unqualified large-inline capacity limit.
+Raw reports under `runtime/docker-linux/`
 retain pinned versions, image identity, commands, independent observations and
 cleanup outcomes; those artifacts are local evidence rather than checked-in files.
