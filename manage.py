@@ -178,7 +178,7 @@ def main() -> int:
     command = args.command
     if command == "agent-bench":
         from tooling.agent_bench import dispatch
-        if args.action in ("list", "models"):
+        if args.action in ("list", "models", "report"):
             return dispatch(ROOT, args)
         with frozen_test_context(test_context(), args.format) as (frozen, code):
             return code or dispatch(ROOT, args, frozen)

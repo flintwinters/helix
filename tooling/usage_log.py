@@ -178,7 +178,10 @@ def logged(root, binary, args, argv):
                     "program_path": path, "program": text,
                     "program_sha256": hashlib.sha256(text.encode()).hexdigest() if text is not None else None,
                     "stdin_program": int(stdin),
-                    "stdout": _text(streams.get(1)), "stderr": _text(streams.get(2)), "agent": _agent()})
+                    "stdout": _text(streams.get(1)), "stderr": _text(streams.get(2)), "agent": _agent(),
+                    "caller_role": os.environ.get("HELIX_CALLER_ROLE", "implementer"),
+                    "model": os.environ.get("HELIX_MODEL"),
+                    "benchmark_run": None, "benchmark_task": None, "benchmark_trial": None})
             except (OSError, subprocess.SubprocessError, yaml.YAMLError) as error:
                 print(f"warning: usage log not written: {error}", file=sys.stderr)
 
@@ -196,13 +199,16 @@ def report(root, *, sql=None, schema=False, limit=10):
     try:
         if sql:
             return {"query": table(sql)}
+        columns = {row[1] for row in db.execute("PRAGMA table_info(calls)")}
+        identity = [name for name in ("caller_role", "model", "benchmark_run", "benchmark_task", "benchmark_trial", "agent") if name in columns]
         return {
+            "by_caller": table("SELECT " + ", ".join(identity[:2]) + ", COUNT(*) AS calls FROM calls GROUP BY " + ", ".join(identity[:2])),
             "by_command": table(
                 "SELECT command, COUNT(*) AS calls, SUM(exit_code != 0) AS failed,"
                 " CAST(AVG(duration_ms) AS INTEGER) AS avg_ms, MAX(started_at) AS last"
                 " FROM calls GROUP BY command ORDER BY calls DESC"),
             "recent": table(
-                "SELECT id, started_at, command, exit_code,"
+                "SELECT id, started_at, command, exit_code," + ", ".join(identity) + ","
                 " substr(replace(coalesce(program, program_path, ''), char(10), ' '), 1, 60) AS program"
                 " FROM calls ORDER BY id DESC LIMIT ?", limit),
         }

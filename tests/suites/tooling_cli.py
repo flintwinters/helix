@@ -123,7 +123,7 @@ def verify(h):
     from tooling.cli import parse
     for name, path in catalog["shortcuts"].items():
         extra = {"run": ["-"], "check": ["-"], "recover": ["-"], "resume": ["-"],
-                 "fmt": ["-"], "step": ["-"], "snapshot": ["-"], "restore": ["-"], "system-snapshot": ["-"], "system-restore": ["-"], "checkpoint": ["checkpoint.json"], "target-release": ["target.lock"], "reconcile": ["checkpoint.json", "observed.yaml"], "trace": ["-"], "watch": ["example.yaml"],
+                 "fmt": ["-"], "format": ["std"], "step": ["-"], "snapshot": ["-"], "restore": ["-"], "system-snapshot": ["-"], "system-restore": ["-"], "checkpoint": ["checkpoint.json"], "target-release": ["target.lock"], "reconcile": ["checkpoint.json", "observed.yaml"], "trace": ["-"], "watch": ["example.yaml"],
                  "state": ["-"], "completion": ["bash"], "sandbox": ["-", "-"], "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
                  "lint": ["--format=text"], "test": ["--suite", "cli"], "migrate-syntax": ["tests/cases"],
                  "docker-nginx": ["describe"], "agent-bench": ["list"]}.get(name, [])
@@ -213,6 +213,8 @@ def verify_usage_log(h):
         "SELECT command, exit_code, program, stdin_program, stdout, stderr FROM calls ORDER BY id").fetchall()
     assert [row[:4] for row in rows] == [("eval", 0, '{"$call": ["add", 20, 22]}', 0),
                                          ("eval", 1, '{"$call": ["div", 1, 0]}', 0), ("std", 0, None, 0)], rows
+    identity = sqlite3.connect(database).execute("SELECT caller_role, model FROM calls ORDER BY id").fetchall()
+    assert identity == [('implementer', None)] * 3, identity
     # Output is stored completely and identically to what the caller received.
     assert [row[4:] for row in rows[:2]] == [(ok.stdout, ""), (failed.stdout, failed.stderr)], rows
     assert rows[2][4] == invoke("std", "math").stdout, rows

@@ -69,13 +69,17 @@ def context(root):
                        for name in ('LANGUAGE.md', 'LIBRARY.md'))
 
 
-def messages(documentation, task):
+def messages(documentation, task, mode='one-shot'):
     public = TASKS[task]
+    protocol = ('This is one shot: no tools, execution feedback, or repair turn.' if mode == 'one-shot' else
+                'You may call the helix tool to inspect embedded library source, format YAML, or test your own examples. '
+                'You have bounded tool calls and model turns. Revise independently, then return ONLY your final solve module. '
+                'You never see the evaluator cases or reference solution.')
     return [
         {'role': 'system', 'content': 'Write a pure Helix YAML module using the supplied authoritative documentation. '
          'Return ONLY YAML, without Markdown fences or explanation. Export a function named solve taking exactly '
          'one argument. Additional helper definitions and embedded std: imports are allowed. No filesystem imports '
-         'or effects. This is one shot: no tools, execution feedback, or repair turn.\n\n' + documentation},
+         'or effects. ' + protocol + '\n\n' + documentation},
         {'role': 'user', 'content': public['goal'] + '\nExample: ' + json.dumps(public['example'], ensure_ascii=False)},
     ]
 
@@ -160,6 +164,8 @@ def summary(rows):
                     if row['score'].get('median_cli_wall_ms') is not None]
         ratios = [row['runtime_ratio_to_reference'] for row in trials if row.get('runtime_ratio_to_reference') is not None]
         groups[task] = {
+            'model_requests': sum(row.get('model_requests', 1) for row in trials),
+            'tool_calls': sum(row.get('tool_calls', 0) for row in trials),
             'attempts': len(trials), 'evaluated': len(evaluated), 'successes': successes,
             'pass_rate': successes / len(trials), 'pass_rate_wilson_95': wilson(successes, len(trials)),
             'mean_case_score': statistics.mean(row['score']['cases_passed'] / row['score']['cases_total']
@@ -179,8 +185,74 @@ def summary(rows):
     return groups
 
 
+def generate(ctx, directory, prompt, args, identity):
+    from tooling.agent_cli import TOOL, execute
+    mode = getattr(args, 'mode', 'one-shot')
+    conversation = [dict(message) for message in prompt]
+    responses, calls, api_ms, requests_made = [], 0, 0.0, 0
+    response, error = None, None
+    for turn in range(getattr(args, 'max_turns', 8) if mode == 'cli' else 1):
+        payload = {'model': args.model, 'messages': [dict(message) for message in conversation],
+                   'temperature': args.temperature, 'max_tokens': args.max_tokens}
+        if mode == 'cli':
+            payload['tools'] = [TOOL]
+            payload['tool_choice'] = 'required' if turn == 0 else 'auto'
+        started = time.perf_counter()
+        requests_made += 1
+        try:
+            response = request('/chat/completions', payload, identity['key'])
+        except ValueError as failure:
+            api_ms += (time.perf_counter() - started) * 1000
+            error = str(failure)
+            break
+        api_ms += (time.perf_counter() - started) * 1000
+        responses.append(response)
+        save(directory / f'response-{turn + 1:03d}.json', response)
+        choices = response.get('choices')
+        if not choices:
+            error = 'response has no completion choices'
+            break
+        choice = choices[0]
+        message = choice.get('message', {})
+        tool_calls = message.get('tool_calls', []) if mode == 'cli' else []
+        if not tool_calls:
+            conversation.append({'role': 'assistant', 'content': message.get('content')})
+            break
+        conversation.append({'role': 'assistant', 'content': message.get('content'), 'tool_calls': tool_calls})
+        for call in tool_calls:
+            calls += 1
+            if calls > getattr(args, 'max_tool_calls', 12):
+                error = 'CLI tool-call budget exhausted'
+                break
+            try:
+                arguments = json.loads(call.get('function', {}).get('arguments', '{}'))
+            except (ValueError, TypeError):
+                arguments = None
+            if call.get('function', {}).get('name') != 'helix':
+                arguments = {'args': ['unsupported-tool']}
+            caller = {key: value for key, value in identity.items() if key != 'key'}
+            observation = execute(ctx, directory, arguments, caller, calls)
+            conversation.append({'role': 'tool', 'tool_call_id': call['id'],
+                                 'content': json.dumps(observation, ensure_ascii=False)})
+        if error:
+            break
+    else:
+        error = 'Model turn budget exhausted before a final program'
+    save(directory / 'conversation.json', conversation)
+    usages = [r.get('usage') for r in responses]
+    usage = None
+    if usages and len(usages) == requests_made and all(isinstance(u, dict) and all(isinstance(u.get(field), int) for field in ('prompt_tokens', 'completion_tokens', 'total_tokens')) for u in usages):
+        usage = {field: sum(u.get(field, 0) for u in usages)
+                 for field in ('prompt_tokens', 'completion_tokens', 'total_tokens')}
+        if all(isinstance(u.get('cost'), (int, float)) for u in usages):
+            usage['cost'] = sum(u['cost'] for u in usages)
+    return {'response': response, 'usage': usage, 'model_requests': requests_made,
+            'tool_calls': min(calls, getattr(args, 'max_tool_calls', 12)),
+            'generation_ms': api_ms, 'error': error}
+
+
 def run(root, args, ctx):
-    if args.trials < 1 or args.samples < 1 or args.max_tokens < 1 or not 0 <= args.temperature <= 2:
+    if args.trials < 1 or args.samples < 1 or args.max_tokens < 1 or not 0 <= args.temperature <= 2 or getattr(args, 'max_turns', 8) < 1 or getattr(args, 'max_tool_calls', 12) < 1:
         raise ValueError('trials, samples and max-tokens must be positive; temperature must be in [0,2]')
     selected = args.task or list(TASKS)
     if len(set(selected)) != len(selected) or any(task not in TASKS for task in selected):
@@ -197,7 +269,9 @@ def run(root, args, ctx):
         if model is None:
             raise ValueError('exact model ID is absent from OpenRouter catalog; use agent-bench models')
     manifest = {'schema': 'helix.agent-bench.v1', 'task_version': VERSION, 'model': args.model,
-                'catalog_model': model, 'trials': args.trials, 'samples': args.samples,
+                'catalog_model': model, 'mode': getattr(args, 'mode', 'one-shot'),
+                'max_turns': getattr(args, 'max_turns', 8), 'max_tool_calls': getattr(args, 'max_tool_calls', 12),
+                'trials': args.trials, 'samples': args.samples,
                 'temperature': args.temperature, 'max_tokens': args.max_tokens,
                 'tasks': selected, 'context_sha256': digest(docs),
                 'task_source_sha256': digest((root / 'tooling/agent_tasks.py').read_text()),
@@ -220,7 +294,7 @@ def run(root, args, ctx):
         save(reference / 'score.json', reference_score)
         if not reference_score['passed']:
             raise ValueError(f'reference failed for {task}; see {reference / "score.json"}')
-        prompt = messages(docs, task)
+        prompt = messages(docs, task, getattr(args, 'mode', 'one-shot'))
         save(directory / task / 'messages.json', prompt)
         if args.dry_run:
             continue
@@ -228,13 +302,17 @@ def run(root, args, ctx):
             attempt = directory / task / f'trial-{trial + 1:03d}'
             attempt.mkdir()
             row = {'task': task, 'trial': trial + 1, 'artifact': str(attempt.relative_to(directory))}
-            started = time.perf_counter()
             try:
-                response = request('/chat/completions', {'model': args.model, 'messages': prompt,
-                                   'temperature': args.temperature, 'max_tokens': args.max_tokens}, key)
-                row['generation_ms'] = (time.perf_counter() - started) * 1000
-                save(attempt / 'response.json', response)
-                row['usage'] = response.get('usage')
+                generated = generate(ctx, attempt, prompt, args, {
+                    'key': key, 'model': args.model, 'benchmark_run': directory.name,
+                    'benchmark_task': task, 'benchmark_trial': str(trial + 1),
+                })
+                response = generated.pop('response')
+                row.update(generated)
+                if response is not None:
+                    save(attempt / 'response.json', response)
+                if generated['error']:
+                    raise ValueError(generated['error'])
                 row['response_model'] = response.get('model')
                 row['provider'] = response.get('provider')
                 choice = response['choices'][0]
@@ -284,12 +362,27 @@ def replay(root, args, ctx):
     return {'directory': str(directory), 'summary': report['summary']}
 
 
+def saved_report(args):
+    if not args.directory:
+        raise ValueError('report requires --directory')
+    directory = Path(args.directory).resolve()
+    manifest = json.loads((directory / 'manifest.json').read_text())
+    report = json.loads((directory / 'report.json').read_text())
+    return {'directory': str(directory), 'provenance': {key: manifest.get(key) for key in (
+        'schema', 'task_version', 'model', 'trials', 'samples', 'temperature', 'max_tokens',
+        'context_sha256', 'task_source_sha256', 'git_revision', 'git_diff_sha256', 'binary_sha256',
+        'environment', 'timing_contract')}, 'mode': manifest.get('mode', 'one-shot'),
+        'summary': summary(report['rows'])}
+
+
 def dispatch(root, args, ctx=None):
     try:
         if args.action == 'list':
             report = {'task_version': VERSION, 'tasks': {k: {f: v[f] for f in ('goal', 'example')} for k, v in TASKS.items()}}
         elif args.action == 'models':
             report = {'models': [{'id': m['id'], 'pricing': m.get('pricing')} for m in request('/models')['data']]}
+        elif args.action == 'report':
+            report = saved_report(args)
         elif args.action == 'run':
             report = run(root, args, ctx)
         else:

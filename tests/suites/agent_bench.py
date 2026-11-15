@@ -67,7 +67,48 @@ def verify(h):
         assert summary['pass_rate'] == 0.5 and summary['total_tokens'] == 32, summary
         assert summary['reported_cost_usd'] == 0.002 and summary['attempts'] == 2, summary
         saved = json.loads((Path(args.directory) / 'report.json').read_text())
+        assert bench.saved_report(args)['summary']['sum-squares']['total_tokens'] == 32
         assert len(saved['rows']) == 2 and len(saved['rows'][0]['score']['cli_wall_ms']) == 1
         with patch.object(bench, 'request', side_effect=AssertionError('replay must be offline')):
             replay = bench.replay(h.root, args, h)
         assert replay['summary']['sum-squares']['pass_rate'] == 0.5
+        verify_cli(h, directory)
+
+
+def verify_cli(h, directory):
+    import sqlite3
+    from tooling import usage_log
+    from tooling.agent_cli import execute
+
+    target = directory / 'cli'
+    target.mkdir()
+    database = directory / 'usage.sqlite3'
+    identity = {'model': 'fake/luna', 'benchmark_run': 'offline-control',
+                'benchmark_task': 'sum-squares', 'benchmark_trial': '1'}
+    with patch.dict(bench.os.environ, {'HELIX_USAGE_DB': str(database), 'HELIX_AGENT': 'implementer', 'HELIX_USAGE_LOG': '0'}):
+        observation = execute(h, target, {'args': ['run', '-'], 'stdin': '!call [add, 20, 22]'}, identity, 1)
+    assert observation['exit_code'] == 0, observation
+    db = sqlite3.connect(database)
+    row = db.execute('SELECT caller_role, model, benchmark_run, benchmark_task, benchmark_trial, agent FROM calls').fetchone()
+    db.close()
+    assert row == ('benchmark-model', 'fake/luna', 'offline-control', 'sum-squares', '1', 'openrouter:fake/luna'), row
+    records = []
+    with patch.object(usage_log, 'append', side_effect=lambda root, binary, record: records.append(record)):
+        rejected = execute(h, target, {'args': ['perform', '--allow-read', '/']}, identity, 2)
+        assert rejected['exit_code'] == 2 and records[-1]['caller_role'] == 'benchmark-model'
+        denied = execute(h, target, {'args': ['run', '-'], 'stdin': '!call [import, ../.env]'}, identity, 3)
+        assert denied['exit_code'] == 1 and records[-1]['model'] == 'fake/luna'
+        responses = iter([
+            {'choices': [{'message': {'content': None, 'tool_calls': [{'id': 'call-1', 'type': 'function',
+                'function': {'name': 'helix', 'arguments': json.dumps({'args': ['run', '-'], 'stdin': '42'})}}]}}],
+             'usage': {'prompt_tokens': 10, 'completion_tokens': 5, 'total_tokens': 15, 'cost': .001}},
+            {'choices': [{'message': {'content': TASKS['sum-squares']['reference']}}],
+             'usage': {'prompt_tokens': 20, 'completion_tokens': 6, 'total_tokens': 26, 'cost': .002}},
+        ])
+        cli = SimpleNamespace(mode='cli', model='fake/luna', temperature=.7, max_tokens=100, max_turns=3, max_tool_calls=2)
+        with patch.object(bench, 'request', side_effect=lambda *args: next(responses)):
+            generated = bench.generate(h, target, [{'role': 'user', 'content': 'test'}], cli, {**identity, 'key': 'fake-secret'})
+        assert generated['tool_calls'] == 1 and generated['model_requests'] == 2 and generated['error'] is None, generated
+        assert generated['usage']['total_tokens'] == 41 and generated['usage']['cost'] == .003, generated
+        assert 'fake-secret' not in (target / 'conversation.json').read_text()
+        assert records[-1]['caller_role'] == 'benchmark-model'

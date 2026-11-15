@@ -315,7 +315,7 @@ fixture referenced by its command; captured artifacts are not a checkout snapsho
 ## Resource checks and benchmarks
 
 [Agent usability benchmarks](../benchmarks/agent/README.md) define repeated one-shot
-model coding tasks, token/cost accounting, independent correctness oracles and
+model coding tasks with separate CLI-assisted and no-tool arms, explicit model caller attribution, token/cost accounting, independent correctness oracles and
 program timings. `./manage.py test --suite agent_bench` verifies their harness
 offline; live OpenRouter calls use the explicit `quality agent-bench run` command.
 

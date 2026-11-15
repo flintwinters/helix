@@ -21,13 +21,18 @@ $call:
           program TEXT,                   -- complete inline, stdin or file source at invocation
           program_sha256 TEXT,
           stdin_program INTEGER NOT NULL, -- 1 when the program was read from stdin (captured in program)
+          caller_role TEXT,               -- implementer or benchmark-model (NULL for legacy rows)
+          model TEXT,                     -- exact model ID for benchmark-originated calls
+          benchmark_run TEXT,
+          benchmark_task TEXT,
+          benchmark_trial TEXT,
           agent TEXT,                     -- HELIX_AGENT, else claude-code when CLAUDECODE is set
           stdout TEXT,                    -- complete; NULL when a terminal or an interactive command
           stderr TEXT                     -- complete; NULL when a terminal or an interactive command
       )
     # Databases created before output capture lack these columns.
-    added: [stdout, stderr]
-    columns: [started_at, duration_ms, command, argv, cwd, exit_code, program_path, program, program_sha256, stdin_program, agent, stdout, stderr]
+    added: [stdout, stderr, caller_role, model, benchmark_run, benchmark_task, benchmark_trial]
+    columns: [started_at, duration_ms, command, argv, cwd, exit_code, program_path, program, program_sha256, stdin_program, agent, stdout, stderr, caller_role, model, benchmark_run, benchmark_task, benchmark_trial]
     insert:
       $call:
       - concat

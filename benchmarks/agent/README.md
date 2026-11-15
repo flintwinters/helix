@@ -1,6 +1,6 @@
 # Agent usability measurements
 
-`./manage.py quality agent-bench` owns repeated one-shot Helix coding experiments.
+`./manage.py quality agent-bench` owns repeated Helix coding experiments.
 `./manage.py test --suite agent_bench` verifies the harness offline. Live model
 calls are explicit experiments, never part of the default regression suite.
 
@@ -9,14 +9,19 @@ calls are explicit experiments, never part of the default regression suite.
 The three tasks are positive-integer sum of squares, case-sensitive word counts,
 and active-record grouped totals. Each asks for a pure YAML module exporting
 `solve(input)`. The model gets the complete current `LANGUAGE.md` and `LIBRARY.md`,
-the task specification and one example. It gets no tools, oracle cases, reference
-solution, execution feedback, repair turns or prior attempts. Documentation is
+the task specification and one example. The `--mode one-shot` arm gets no tools, oracle cases, reference solution,
+execution feedback, repair turns or prior attempts. The default `--mode cli` arm
+can inspect Helix and test its own examples, with at most eight model requests
+and twelve CLI calls per attempt. Its first request must call the CLI tool; later
+requests may call tools or submit the final program. No human repair is applied.
+These arms are reported separately; CLI-assisted completion is not one-shot
+completion. Documentation is
 sent to OpenRouter, so only run with documents approved for that external service.
 
 The default model is `openai/gpt-6-luna`, verified against OpenRouter's current
 catalog before a run. Model IDs are exact; there is no silent fallback. Each task
 gets five independent requests with identical messages and temperature 0.7. The
-completion limit is 4,096 tokens. One optional YAML transport fence is stripped;
+completion limit is 4,096 tokens per model request. One optional YAML transport fence is stripped;
 code is never repaired. Provider failures and empty or truncated responses are
 retained, with no automatic retry or replacement. The report distinguishes API
 observations, evaluated candidates and full successes.
@@ -41,8 +46,9 @@ Usage comes directly from OpenRouter's response `usage` object: input, completio
 total tokens, detailed provider fields and reported cost are preserved. Missing
 usage/cost stays identifiable through observation counts. Token totals per success
 include failed attempts. Generation latency is measured separately from program
-runtime. See [OpenRouter chat completions](https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request)
-and [usage accounting](https://openrouter.ai/docs/guides/guides/usage-accounting).
+runtime. CLI-mode usage sums every model request, including repeated context and tool
+feedback. Raw per-request usage remains available. See [OpenRouter chat completions](https://openrouter.ai/docs/api/api-reference/chat/send-chat-completion-request)
+and [usage accounting](https://github.com/OpenRouterTeam/docs/blob/main/cookbook/administration/usage-accounting.mdx).
 
 Five trials give a noisy initial baseline. Reports include Wilson 95% intervals
 for each task's completion rate. Do not infer general agent usability from three
@@ -58,9 +64,11 @@ YAML tags have improved model performance.
 ./manage.py quality agent-bench list
 ./manage.py quality agent-bench models
 ./manage.py quality agent-bench run --dry-run
-./manage.py quality agent-bench run --trials 5 --samples 3
+./manage.py quality agent-bench run --mode one-shot --trials 5 --samples 3
+./manage.py quality agent-bench run --mode cli --trials 5 --samples 3
 ./manage.py quality agent-bench run --model openai/gpt-6-luna --task word-counts --trials 10
 ./manage.py quality agent-bench score --directory runtime/agent-bench/RUN
+./manage.py quality agent-bench report --directory runtime/agent-bench/RUN
 ```
 
 Read the key from `OPENROUTER_API_KEY` or `openrouter_api_key` in the environment
@@ -75,6 +83,8 @@ and per-attempt results. `report.json` updates after each attempt, so partial ru
 remain inspectable. `manifest.json` records model catalog/pricing, sampling,
 context/task/binary hashes, Git revision/diff hash, platform and timing scope.
 
+`report` reads the original results without building, making API calls or rescoring.
+
 `score` replays saved candidates without API calls or charges and writes
 `replay.json`; it preserves the original report and API observations. It requires
 unchanged task definitions and records the replay binary hash. Replays can test
@@ -84,3 +94,35 @@ original runtime still requires its recorded checkout and build.
 The offline suite checks correct references, wrong programs, denied imports and
 effects, strict oracle equality, stochastic-trial accounting, token/cost totals,
 identical independent prompts and API-free replay using mocked completions.
+
+## CLI access and attribution
+
+The model's `helix` tool accepts argv arrays for `--help`, `std [MODULE]`,
+`schema`, `fmt -` and `run -`. Source arrives as the tool's stdin field. Execution
+uses the existing sandbox with imports confined to the attempt directory and no
+host effect grants. Tool feedback is capped at 16,000 characters per stream;
+complete stdout, stderr and the executed argv are retained in tool artifacts.
+There is no shell or access to credential files through this interface.
+
+Every requested CLI operation, including rejected arguments, is appended through
+`tooling/usage_log.py` to the existing SQLite usage log. The runner supplies:
+
+- `caller_role = benchmark-model`
+- `model = openai/gpt-6-luna` (or the explicitly selected model)
+- `agent = openrouter:openai/gpt-6-luna`
+- `benchmark_run`, `benchmark_task`, and `benchmark_trial`
+
+These values come from the runner, not the model's tool arguments or inherited
+implementer identity. Ordinary `manage.py` runtime calls default to
+`caller_role = implementer`; historical rows remain unattributed. Automatic oracle
+and timing invocations are harness operations and are not labeled as model calls.
+A model CLI logging failure stops the experiment rather than silently losing
+attribution. `inspect usage` includes caller summaries and identity on recent rows.
+
+```sh
+./manage.py inspect usage --sql "SELECT caller_role, model, benchmark_run, benchmark_task, COUNT(*) AS calls FROM calls WHERE caller_role = 'benchmark-model' GROUP BY 1,2,3,4"
+```
+
+The offline suite also checks a real SQLite model-attribution row despite an
+inherited implementer identity and disabled developer logging, denied CLI
+operations, multi-request usage totals, and credential-free saved conversations.
