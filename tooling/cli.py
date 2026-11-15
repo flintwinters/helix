@@ -239,6 +239,7 @@ def parser():
     bench.add_argument("--max-tokens", type=int, default=4096, help="completion token ceiling per attempt")
     bench.add_argument("--temperature", type=float, default=0.7)
     bench.add_argument("--directory", help="artifact directory; required for score, generated for run")
+    bench.add_argument("--replay", action="store_true", help="report the saved replay evaluation instead of original timings")
     bench.add_argument("--dry-run", action="store_true", help="validate references and save prompts without API calls")
 
     testing = command(quality, "test", "Run regression suites or discover their contracts",

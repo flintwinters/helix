@@ -72,6 +72,9 @@ def verify(h):
         with patch.object(bench, 'request', side_effect=AssertionError('replay must be offline')):
             replay = bench.replay(h.root, args, h)
         assert replay['summary']['sum-squares']['pass_rate'] == 0.5
+        args.replay = True
+        assert bench.saved_report(args)['evaluation']['samples'] == 1
+        assert bench.saved_report(args)['evaluation_source'] == 'replay.json'
         verify_cli(h, directory)
 
 

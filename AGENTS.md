@@ -57,5 +57,5 @@ agent-consumable output with progressive discovery and explicit complete JSON re
 4. Preserve the explicit YAML representation model and bounded source evidence as syntax
    and tooling evolve. Do not turn provenance into unbounded execution history.
 
-5. Measure agent usability with repeatable one-shot coding tasks;
+5. Measure agent usability with repeatable model coding tasks;
    [benchmarks/agent/README.md](benchmarks/agent/README.md) owns the experiment protocol.

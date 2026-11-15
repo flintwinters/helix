@@ -69,6 +69,7 @@ YAML tags have improved model performance.
 ./manage.py quality agent-bench run --model openai/gpt-6-luna --task word-counts --trials 10
 ./manage.py quality agent-bench score --directory runtime/agent-bench/RUN
 ./manage.py quality agent-bench report --directory runtime/agent-bench/RUN
+./manage.py quality agent-bench report --replay --directory runtime/agent-bench/RUN
 ```
 
 Read the key from `OPENROUTER_API_KEY` or `openrouter_api_key` in the environment
@@ -87,7 +88,9 @@ context/task/binary hashes, Git revision/diff hash, platform and timing scope.
 
 `score` replays saved candidates without API calls or charges and writes
 `replay.json`; it preserves the original report and API observations. It requires
-unchanged task definitions and records the replay binary hash. Replays can test
+unchanged task definitions and records the replay binary hash, timing sample count,
+host metadata and timestamp. `report --replay` explicitly selects these new
+evaluation results while retaining original model usage and generation latency. Replays can test
 runtime changes without conflating them with model sampling. Reproduction of the
 original runtime still requires its recorded checkout and build.
 
@@ -126,3 +129,20 @@ attribution. `inspect usage` includes caller summaries and identity on recent ro
 The offline suite also checks a real SQLite model-attribution row despite an
 inherited implementer identity and disabled developer logging, denied CLI
 operations, multi-request usage totals, and credential-free saved conversations.
+
+## Initial recorded baseline
+
+The checked-in [one-shot report](baseline-one-shot-v1.json) and
+[CLI-assisted report](baseline-cli-v1.json) retain the initial measurements for
+`openai/gpt-6-luna`. Generation used five trials per task. Evaluation was replayed
+with five timing samples after the regression jobs finished; both reports select
+that replay explicitly. Original API responses, prompts and full scores remain in
+the referenced runtime directories. Small-sample differences are observations,
+not evidence that CLI access changes the model's underlying success probability.
+
+[Live caller attribution](baseline-cli-attribution-v1.json) records the SQLite
+counts for this CLI run. The [failed word-count candidate](evidence/word-counts-cli-trial-002.yaml)
+is preserved byte-for-byte: it expected a record containing `input` and returned a
+record containing `output`, while the task required a list argument and a count
+map result directly. Its self-tests used the same mistaken interface. This is a
+concrete interface-understanding failure, despite having execution feedback.

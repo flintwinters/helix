@@ -1,0 +1,15 @@
+solve: !call
+  - fn
+  - [data]
+  - output: !call
+      - fold
+      - !call
+          - fn
+          - [counts, word]
+          - !call
+              - set
+              - !ref counts
+              - !ref word
+              - !call [add, !call [get, !ref counts, !ref word, 0], 1]
+      - {}
+      - !call [get, !ref data, input]

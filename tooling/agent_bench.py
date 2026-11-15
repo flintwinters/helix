@@ -357,7 +357,9 @@ def replay(root, args, ctx):
                 row['runtime_ratio_to_reference'] = median / reference['median_cli_wall_ms'] if median else None
             rows.append(row)
     report = {'schema': 'helix.agent-bench.v1', 'rows': rows, 'summary': summary(rows),
-              'replay_binary_sha256': hashlib.sha256(ctx.binary.read_bytes()).hexdigest()}
+              'evaluation': {'binary_sha256': hashlib.sha256(ctx.binary.read_bytes()).hexdigest(),
+                             'samples': args.samples, 'recorded_at': datetime.now(timezone.utc).isoformat(),
+                             'environment': {'platform': platform.platform(), 'python': platform.python_version()}}}
     save(directory / 'replay.json', report)
     return {'directory': str(directory), 'summary': report['summary']}
 
@@ -367,8 +369,9 @@ def saved_report(args):
         raise ValueError('report requires --directory')
     directory = Path(args.directory).resolve()
     manifest = json.loads((directory / 'manifest.json').read_text())
-    report = json.loads((directory / 'report.json').read_text())
-    return {'directory': str(directory), 'provenance': {key: manifest.get(key) for key in (
+    filename = 'replay.json' if getattr(args, 'replay', False) else 'report.json'
+    report = json.loads((directory / filename).read_text())
+    return {'evaluation_source': filename, 'evaluation': report.get('evaluation'), 'directory': str(directory), 'provenance': {key: manifest.get(key) for key in (
         'schema', 'task_version', 'model', 'trials', 'samples', 'temperature', 'max_tokens',
         'context_sha256', 'task_source_sha256', 'git_revision', 'git_diff_sha256', 'binary_sha256',
         'environment', 'timing_contract')}, 'mode': manifest.get('mode', 'one-shot'),
