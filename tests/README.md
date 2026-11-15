@@ -314,6 +314,11 @@ fixture referenced by its command; captured artifacts are not a checkout snapsho
 
 ## Resource checks and benchmarks
 
+[Agent usability benchmarks](../benchmarks/agent/README.md) define repeated one-shot
+model coding tasks, token/cost accounting, independent correctness oracles and
+program timings. `./manage.py test --suite agent_bench` verifies their harness
+offline; live OpenRouter calls use the explicit `quality agent-bench run` command.
+
 `./manage.py test --suite resources --suite permissions --suite library` verifies accepted/rejected syntax and graph boundaries, call and iteration caps, growing values, dependency/import depth, source blame and permission escapes. The public VM tests also exercise guarded execution on Rust test threads, whose smaller stacks previously exposed a host stack overflow. These guards bound interpreter work and produced data; they do not promise constant memory for programs retaining growing state.
 
 `semantics` records successful scenario counts per actor and rejects missing witnesses when the builtin registry changes. `type_algebra` checks independent membership judgments over nested descriptions and mixed values, plus ordered violations, class diamonds, and numeric literal subtype implications with independent equality-class witnesses, and predicate identity across inheritance and reconstruction, and parent-order independence for distinguishable inherited representations. This is evidence for the implemented structural fragment; section 8 retains normalization, recursive types and formal proof obligations. Declarative contracts live in `declarative_diagnostics.py`, `declarative_violations.py`, `raw_defaults.py` and `annotation_evidence.py`, all reached through `type_algebra`: declaration-first default validation, individual argument and predicate blame, complete nested violation data, and bounded source-preserving evidence. `execution` tests retained annotation histories; `errors` tests source-based annotated recovery. The static suite checks literal YAML declarations and applies the production mutation generator to annotated source; it asserts explicit unresolved obligations rather than treating a clean diagnostic list as proof.

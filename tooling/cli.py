@@ -29,6 +29,7 @@ class AgentParser(argparse.ArgumentParser):
 DEFAULT_TEST_JOBS = 4
 
 SUITES = {
+    "agent_bench": "Offline agent benchmark contracts, independent oracles and usage accounting",
     "yaml_model": "Representation-independent explicit syntax, data roundtrip and deterministic effects",
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
     "interactive": "REPL, dependency watch, completion and local installation",
@@ -225,6 +226,18 @@ def parser():
     audit = command(quality, "migration-audit", "Compare migrated source outcomes against existing golden expectations",
             ["quality", "migration-audit"], "quality migration-audit")
     audit.add_argument("--baseline", help="read golden expectations from a Git revision instead of the working tree")
+    bench = command(quality, "agent-bench", "Measure repeated one-shot coding with objective oracles and CLI timings",
+                    ["quality", "agent-bench"], "quality agent-bench run --trials 5")
+    bench.add_argument("action", choices=("list", "models", "run", "score"))
+    bench.add_argument("--model", default="openai/gpt-6-luna", help="exact OpenRouter model ID")
+    bench.add_argument("--trials", type=int, default=5, help="independent completions per task")
+    bench.add_argument("--task", action="append", help="task ID; repeat to select several")
+    bench.add_argument("--samples", type=int, default=3, help="timing samples after one warmup")
+    bench.add_argument("--max-tokens", type=int, default=4096, help="completion token ceiling per attempt")
+    bench.add_argument("--temperature", type=float, default=0.7)
+    bench.add_argument("--directory", help="artifact directory; required for score, generated for run")
+    bench.add_argument("--dry-run", action="store_true", help="validate references and save prompts without API calls")
+
     testing = command(quality, "test", "Run regression suites or discover their contracts",
                       ["quality", "test"], "quality test --suite golden --suite cli")
     testing.add_argument("--bless", action="store_true", help="rewrite golden expectations; requires only golden or default suite selection")

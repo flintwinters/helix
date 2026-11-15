@@ -126,7 +126,7 @@ def verify(h):
                  "fmt": ["-"], "step": ["-"], "snapshot": ["-"], "restore": ["-"], "system-snapshot": ["-"], "system-restore": ["-"], "checkpoint": ["checkpoint.json"], "target-release": ["target.lock"], "reconcile": ["checkpoint.json", "observed.yaml"], "trace": ["-"], "watch": ["example.yaml"],
                  "state": ["-"], "completion": ["bash"], "sandbox": ["-", "-"], "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
                  "lint": ["--format=text"], "test": ["--suite", "cli"], "migrate-syntax": ["tests/cases"],
-                 "docker-nginx": ["describe"]}.get(name, [])
+                 "docker-nginx": ["describe"], "agent-bench": ["list"]}.get(name, [])
         short, full = parse([name, *extra]), parse([*path, *extra])
         assert {k: v for k, v in vars(short).items() if k != "help_parser"} == {
             k: v for k, v in vars(full).items() if k != "help_parser"

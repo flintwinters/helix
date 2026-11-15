@@ -176,6 +176,12 @@ def main() -> int:
     if args is None:
         return 0
     command = args.command
+    if command == "agent-bench":
+        from tooling.agent_bench import dispatch
+        if args.action in ("list", "models"):
+            return dispatch(ROOT, args)
+        with frozen_test_context(test_context(), args.format) as (frozen, code):
+            return code or dispatch(ROOT, args, frozen)
     if command == "docker-nginx":
         from tests.suites.docker_nginx import dispatch
         return dispatch(ROOT, args.action, args.run_id, args.format)

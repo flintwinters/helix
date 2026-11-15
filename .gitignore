@@ -3,3 +3,5 @@ runtime/
 /.worktrees/
 /CLAUDE.md
 __pycache__/
+
+/.env
