@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "scope": "Pinned Debian bookworm containers and fixture helper; local resource lifecycle and two sequential container-resident Helix controllers over pinned SSH. Docker bootstraps containers and trust. No concurrent writers, service management or fleet recovery claim.",
+  "implementation_revision": "d91f922",
+  "controller_sha256": "42deefe084a21b09fa5b9bafe6c78915270ad5ecdd090a4b5cd0b514ba2a6948",
+  "runs": [
+    {
+      "command": "HELIX_DOCKER_SUDO=1 ./manage.py test --suite docker_linux",
+      "run_id": "022432f4cbee4501ba06fdbf20c69dae",
+      "status": "passed",
+      "scenarios": ["baseline", "updates", "drift", "removal", "invalid_input", "stale_review", "failure", "false_success", "authority", "lifecycle", "sensitivity", "peers"],
+      "cleanup": "passed",
+      "raw_report": {
+        "path": "runtime/docker-linux/022432f4cbee4501ba06fdbf20c69dae/report.json",
+        "sha256": "4901629a3329f35cbd3da504e49d3992012f528f52e821aa2298b846be14479a"
+      }
+    },
+    {
+      "command": "HELIX_DOCKER_SUDO=1 HELIX_DOCKER_LINUX_SCENARIO=peers HELIX_DOCKER_LINUX_KEEP_PEERS=1 ./manage.py test --suite docker_linux",
+      "run_id": "59389b50d7c449a6bff54bc6a8da7692",
+      "status": "passed",
+      "scenarios": ["peers"],
+      "retained_at_qualification": true,
+      "raw_report": {
+        "path": "runtime/docker-linux/59389b50d7c449a6bff54bc6a8da7692/report.json",
+        "sha256": "0ee07936cd109d4c989bc8ad3a8c058b8aad385afecf70b2296ee8cebda5d138"
+      }
+    }
+  ],
+  "regressions": ["static", "harness", "cli", "standard_library", "golden:linux_planning", "golden:import_unknown_std"]
+}

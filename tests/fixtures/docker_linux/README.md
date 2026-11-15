@@ -82,3 +82,11 @@ This qualifies two sequential, independent controllers. It does not coordinate
 concurrent writers, restore lost containers, or bootstrap trust from untrusted
 machines. Transport bootstrap and independent verification belong to the harness;
 desired state, planning, dependency order and application policy belong to Helix.
+
+## Qualification evidence
+
+[`qualification.json`](qualification.json) records the full twelve-scenario run
+and a separate successful retained-peer run, controller digest, raw-report digests
+and supporting regression checks. Raw reports under `runtime/docker-linux/`
+retain pinned versions, image identity, commands, independent observations and
+cleanup outcomes; those artifacts are local evidence rather than checked-in files.
