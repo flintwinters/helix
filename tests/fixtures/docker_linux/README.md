@@ -67,6 +67,8 @@ output and execution time are bounded independently of the final helper reply.
 An apply error may follow visible mutation (`host_error.mutation_may_have_occurred`);
 completed resources are not rolled back. Re-observe before a fresh review. There is no
 compare-and-swap protection against an external writer racing between observations.
+Even failure before file replacement can update the parent directory's mtime when the
+staging name is created and removed; preserving the live file does not restore that timestamp.
 No services, boot persistence, templates, secrets, firewall, cron, SELinux/ACLs, non-Debian hosts
 or fleet scheduling. See `CHARTER.md` section 11 for the roadmap.
 

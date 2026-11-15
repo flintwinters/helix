@@ -772,7 +772,13 @@ def file_failures(d):
         assert d.actions() == trace, "failed replacement was logged as completed"
         assert d.exec("find", "/etc/helix-demo", "-name", ".helix-*").stdout == "", "staging file leaked"
         if mode == "replace-failure":
-            assert d.probe() == before, "replacement failure changed live bytes or metadata"
+            after = d.probe()
+            # Creating/unlinking the staging name legitimately updates its
+            # parent's mtime. The live inode and every other observed field
+            # must remain unchanged; allow only that directory bookkeeping.
+            expected = {**before, "paths": {**before["paths"], "/etc/helix-demo": {
+                **before["paths"]["/etc/helix-demo"], "mtime_ns": after["paths"]["/etc/helix-demo"]["mtime_ns"]}}}
+            assert after == expected, ("failed publication changed live state", before, after)
             d.apply(changed)
         else:
             d.converged(changed)
