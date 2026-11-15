@@ -764,6 +764,24 @@ def verify_format(ctx):
 
     compact = ctx.helix('fmt', '-', stdin='sum: {"$call": [fold, {"$ref": combine}, 0, {"$ref": xs}]}')
     assert compact.returncode == 0 and compact.stdout == 'sum: {$call: [fold, {$ref: combine}, 0, {$ref: xs}]}\n', compact
+    structured = 'double: {$call: [fn, [x], {$call: [mul, {$ref: x}, 2]}]}'
+    expected = ('double:\n  $call:\n    - fn\n    - [x]\n'
+                '    - {$call: [mul, {$ref: x}, 2]}\n')
+    result = ctx.helix('fmt', '-', stdin=structured)
+    assert (result.returncode, result.stdout) == (0, expected), result
+    # Structural forms must remain visible through enclosing calls and data.
+    for actor in ('fn', 'let', 'if', 'try', 'until'):
+        source = json.dumps({'outer': {'$call': ['wrap', {'$call': [actor, [], 1, 2]}]}})
+        result = ctx.helix('fmt', '-', stdin=source)
+        assert result.returncode == 0 and f'- {actor}\n' in result.stdout, result
+        assert yaml.safe_load(result.stdout) == json.loads(source), result
+        again = ctx.helix('fmt', '-', stdin=result.stdout)
+        assert (again.returncode, again.stdout) == (0, result.stdout), again
+    # Long ordinary collections also break into entries rather than wrapped flow.
+    source = json.dumps({'items': [f'item_{index:02d}' for index in range(20)]})
+    result = ctx.helix('fmt', '-', stdin=source)
+    assert result.returncode == 0 and 'items:\n  - item_00\n' in result.stdout, result
+    assert yaml.safe_load(result.stdout) == json.loads(source), result
     annotated = '# header\nsum: {$call: [add, 1, 2]} # arithmetic\ntext: |\n  # literal content\n'
     result = ctx.helix('fmt', '-', stdin=annotated)
     retained = retain_comments(annotated, result.stdout)

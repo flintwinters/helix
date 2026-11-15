@@ -144,7 +144,7 @@ pub fn document(value: &Yaml) -> String {
 }
 
 impl Encoded {
-    /// Source layout uses flow collections when the complete expression fits.
+    /// Source layout keeps short leaf expressions in flow collections.
     /// Runtime state emission deliberately retains its existing block contract.
     fn flow(&self) -> String {
         match self {
@@ -163,58 +163,48 @@ impl Encoded {
             ),
         }
     }
-    fn write_flow(&self, indent: usize, out: &mut String) {
-        let (open, close, items): (&str, &str, Vec<(String, &Self)>) = match self {
-            Self::Scalar(text) => {
-                out.push_str(text);
-                return;
+    /// Structural forms introduce bodies or branches. Keep their boundaries visible,
+    /// including when an enclosing expression would otherwise fit on one line.
+    fn structural(&self) -> bool {
+        match self {
+            Self::Map(entries) => {
+                let control = entries.len() == 1 && entries[0].0 == "$call"
+                    && matches!(&entries[0].1, Self::List(items)
+                        if matches!(items.first(), Some(Self::Scalar(actor))
+                            if matches!(actor.as_str(), "fn" | "let" | "if" | "try" | "until")));
+                control || entries.iter().any(|(_, value)| value.structural())
             }
-            Self::List(items) => (
-                "[",
-                "]",
-                items.iter().map(|item| (String::new(), item)).collect(),
-            ),
-            Self::Map(entries) => (
-                "{",
-                "}",
-                entries
-                    .iter()
-                    .map(|(key, value)| (format!("{key}: "), value))
-                    .collect(),
-            ),
-        };
-        out.push_str(open);
-        for (index, (prefix, item)) in items.iter().enumerate() {
-            if index > 0 {
-                out.push(',');
-                let column = out.rsplit('\n').next().unwrap().chars().count();
-                if column + 1 + prefix.chars().count() + item.flow().chars().count() + close.len()
-                    > 100
-                {
-                    out.push('\n');
-                    out.push_str(&" ".repeat(indent + 2));
-                } else {
-                    out.push(' ');
-                }
-            }
-            out.push_str(prefix);
-            item.write_flow(indent + 2, out);
+            Self::List(items) => items.iter().any(Self::structural),
+            Self::Scalar(_) => false,
         }
-        out.push_str(close);
     }
     fn pretty(&self, indent: usize, prefix: &str, out: &mut String) {
+        self.layout(indent, prefix, out, false);
+    }
+    fn layout(&self, indent: usize, prefix: &str, out: &mut String, force_block: bool) {
         let flow = self.flow();
-        let expression = matches!(self, Self::Map(entries) if entries.len() == 1 && matches!(entries[0].0.as_str(), "$call" | "$ref" | "$literal"));
         if !self.container()
-            || expression
-            || matches!(self, Self::List(_))
-            || indent + prefix.chars().count() + flow.chars().count() <= 100
+            || (!force_block && !self.structural()
+                && indent + prefix.chars().count() + flow.chars().count() <= 100)
         {
             out.push_str(&" ".repeat(indent));
             out.push_str(prefix);
-            self.write_flow(indent, out);
+            out.push_str(&flow);
             out.push('\n');
             return;
+        }
+        // A sequence's mapping entry can start directly after its dash.
+        if prefix == "- " {
+            if let Self::Map(entries) = self {
+                for (index, (key, value)) in entries.iter().enumerate() {
+                    if index == 0 {
+                        value.layout(indent, &format!("- {key}: "), out, key == "$call" && self.structural());
+                    } else {
+                        value.pretty(indent + 2, &format!("{key}: "), out);
+                    }
+                }
+                return;
+            }
         }
         let nested = if prefix.is_empty() {
             indent
@@ -222,15 +212,20 @@ impl Encoded {
             out.push_str(&" ".repeat(indent));
             out.push_str(prefix.trim_end());
             out.push('\n');
-            indent + 2
+            indent + if prefix.starts_with("- ") && prefix != "- " { 4 } else { 2 }
         };
         match self {
             Self::Map(entries) => {
                 for (key, value) in entries {
-                    value.pretty(nested, &format!("{key}: "), out);
+                    value.layout(nested, &format!("{key}: "), out, key == "$call" && self.structural());
                 }
             }
-            _ => unreachable!(),
+            Self::List(items) => {
+                for item in items {
+                    item.pretty(nested, "- ", out);
+                }
+            }
+            Self::Scalar(_) => unreachable!(),
         }
     }
 }

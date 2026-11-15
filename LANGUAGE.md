@@ -41,7 +41,9 @@ reserved_data: {$literal: {$call: [add, 1, 2]}}
 `$call` contains a nonempty sequence: an actor name or computed function expression followed by arguments. `$ref` contains a nonempty lexical name; it resolves through enclosing maps and function environments, with dotted names selecting members. `$literal` returns its complete payload as data, including any nested reserved maps. Only singleton maps with these keys select syntax. Malformed reserved forms fail explicitly. Other maps evaluate their values; sequences evaluate their elements as data sequences, never implicit calls. Scalars are literal regardless of quoting style. All runtime maps, including constructed maps and codec results, use lexicographic Unicode string-key order. Canonical mapping traversal makes source field order irrelevant; use a sequence or explicit control flow when ordering matters.
 
 `./manage.py runtime fmt FILE` emits width-aware source YAML without execution,
-using compact flow collections for expressions that fit within 100 columns.
+using block layouts for functions, bindings, branches and iteration bodies. Short
+expressions and data collections stay inline when they fit within 100 columns;
+larger collections use one entry per line.
 `./manage.py runtime format --write std` recursively formats library files while
 retaining comments near their structural locations; omit `--write` to check.
 Formatting verifies the parsed program is unchanged. Single-document `fmt` and
