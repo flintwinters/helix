@@ -151,6 +151,8 @@ def malformed_state(out: str, returncode: int) -> str | None:
     """
     import yaml
 
+    if returncode == 124:
+        return "test process timeout (exit code 124)"
     if returncode not in (0, 1):
         return f"exit code {returncode} (panic?)"
     try:

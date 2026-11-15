@@ -58,6 +58,8 @@ def harness(h):
                          ("status: finished\nroot: 1", 1), ("", -11)]:
         assert h.malformed_state(output, code), (output, code)
     assert h.malformed_state("status: finished\nroot: null", 0) is None
+    timeout = h.malformed_state("status: finished\nroot: null", 124)
+    assert timeout and "timeout" in timeout and "panic" not in timeout, timeout
     assert h.malformed_state("status: error\nerror: {kind: type, message: bad, line: 1, column: 2}", 1) is None
     assert h.root_section("status: finished\nroot:\n  a: 1\n") == "a: 1\n"
     assert h.root_section("status: finished\nroot:\n  a: 1\nmode: check\n") == "a: 1\n"

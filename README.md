@@ -135,9 +135,11 @@ reconciliation. General machine application remains future work. The
 [charter](CHARTER.md) tracks that work and the suspend/resume design.
 
 The language, Rust API, and saved-state format are experimental and may change.
-Saved states have no format version or migration support yet. Keep source and
-the runtime revision together when reproducibility matters. Recovery can retry
-unfinished fields after an error, but cannot restore active calls or iterations.
+Versioned snapshots restore bounded execution, including active calls and
+iterations; YAML inspection output is a separate format. Keep the runtime revision
+when reproducibility matters. [Effect journals](HOST.md#durable-effect-checkpoints)
+require explicit reconciliation before resuming uncertain host requests. Pure
+failed-run recovery can separately retry unfinished fields after an error.
 
 ## Development
 
