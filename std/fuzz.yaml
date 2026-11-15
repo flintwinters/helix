@@ -1,244 +1,216 @@
-# Helix explicit syntax; migrated from legacy source.
 # Deterministic damaged-source generation for host-supervised parser/evaluator tests.
 # Unicode scalar offsets; all Python splitlines boundaries, with CRLF kept together.
 # Duplicates and order are intentional; each variant is a list of source slice spans.
 # Scan 256-scalar chunks with one-scalar lookahead; absolute cursor consumes seam CRLF once.
-chunk:
-  $call:
-    - fn
-    - [source, size, base]
-    - $call:
-        - dict
-        - text
-        - $call:
-            - slice
-            - {$ref: source}
-            - {$ref: base}
-            - $call:
-                - if
-                - {$call: [lt, {$call: [add, {$ref: base}, 257]}, {$ref: size}]}
-                - {$call: [add, {$ref: base}, 257]}
-                - {$ref: size}
-        - base
-        - {$ref: base}
-        - limit
-        - $call:
-            - if
-            - {$call: [lt, {$call: [add, {$ref: base}, 256]}, {$ref: size}]}
-            - {$call: [add, {$ref: base}, 256]}
-            - {$ref: size}
-        - size
-        - {$ref: size}
-finish:
-  $call:
-    - fn
-    - [size, scan]
-    - $call:
-        - render
-        - {$ref: size}
-        - $call:
-            - if
-            - {$call: [lt, {$call: [get, {$ref: scan}, start]}, {$ref: size}]}
-            - $call:
-                - append
-                - {$call: [get, {$ref: scan}, bounds]}
-                - {$call: [list, {$call: [get, {$ref: scan}, start]}, {$ref: size}]}
-            - {$call: [get, {$ref: scan}, bounds]}
-generate:
-  $call:
-    - fn
-    - [source, size]
-    - $call:
-        - let
-        - scan:
-            $call:
-              - fold
-              - {$ref: scan_part}
-              - {bounds: [], index: 0, start: 0}
-              - $call:
-                  - map
-                  - $call:
-                      - fn
-                      - [index]
-                      - $call:
-                          - chunk
-                          - {$ref: source}
-                          - {$ref: size}
-                          - {$call: [mul, {$ref: index}, 256]}
-                  - {$call: [l.range, {$call: [div, {$call: [add, {$ref: size}, 255]}, 256]}]}
-        - {$call: [finish, {$ref: size}, {$ref: scan}]}
-    - {$ref: list}
-l: {$call: [import, "std:list"]}
-merge_chunk:
-  $call:
-    - fn
-    - [previous, next]
-    - $call:
-        - dict
-        - index
-        - {$call: [get, {$ref: next}, index]}
-        - start
-        - {$call: [get, {$ref: next}, start]}
-        - bounds
-        - $call:
-            - concat
-            - {$call: [get, {$ref: previous}, bounds]}
-            - {$call: [get, {$ref: next}, bounds]}
-plan:
-  $call:
-    - fn
-    - [[source, {$ref: string}]]
-    - {$call: [generate, {$ref: source}, {$call: [len, {$ref: source}]}]}
-    - {$ref: list}
-render:
-  $call:
-    - fn
-    - [size, bounds]
-    - $call:
-        - let
-        - lines:
-            $call:
+chunk: !call
+  - fn
+  - [source, size, base]
+  - !call
+      - dict
+      - text
+      - !call
+          - slice
+          - !ref source
+          - !ref base
+          - !call
+              - if
+              - !call [lt, !call [add, !ref base, 257], !ref size]
+              - !call [add, !ref base, 257]
+              - !ref size
+      - base
+      - !ref base
+      - limit
+      - !call
+          - if
+          - !call [lt, !call [add, !ref base, 256], !ref size]
+          - !call [add, !ref base, 256]
+          - !ref size
+      - size
+      - !ref size
+finish: !call
+  - fn
+  - [size, scan]
+  - !call
+      - render
+      - !ref size
+      - !call
+          - if
+          - !call [lt, !call [get, !ref scan, start], !ref size]
+          - !call
+              - append
+              - !call [get, !ref scan, bounds]
+              - !call [list, !call [get, !ref scan, start], !ref size]
+          - !call [get, !ref scan, bounds]
+generate: !call
+  - fn
+  - [source, size]
+  - !call
+      - let
+      - scan: !call
+          - fold
+          - !ref scan_part
+          - {bounds: [], index: 0, start: 0}
+          - !call
               - map
-              - $call:
+              - !call
                   - fn
                   - [index]
-                  - $call:
-                      - let
-                      - pair: {$call: [get, {$ref: bounds}, {$call: [div, {$ref: index}, 2]}]}
-                        prefix: {$call: [list, 0, {$call: [get, {$ref: pair}, 0]}]}
-                      - $call:
-                          - if
-                          - {$call: [eq, {$call: [mod, {$ref: index}, 2]}, 0]}
-                          - {$call: [list, {$ref: prefix}]}
-                          - $call:
-                              - list
-                              - {$ref: prefix}
-                              - {$call: [list, {$call: [get, {$ref: pair}, 1]}, {$ref: size}]}
-              - {$call: [l.range, {$call: [mul, {$call: [len, {$ref: bounds}]}, 2]}]}
-          prefixes:
-            $call:
-              - map
-              - $call:
-                  - fn
-                  - [index]
-                  - {$call: [list, {$call: [list, 0, {$call: [mul, {$ref: index}, 5]}]}]}
-              - {$call: [l.range, {$call: [div, {$call: [add, {$ref: size}, 4]}, 5]}]}
-        - {$call: [concat, {$ref: lines}, {$ref: prefixes}]}
-scan_advance:
-  $call:
-    - fn
-    - [state, end]
-    - $call:
-        - dict
-        - index
-        - {$ref: end}
-        - start
-        - {$ref: end}
-        - bounds
-        - $call:
-            - append
-            - {$call: [get, {$ref: state}, bounds]}
-            - {$call: [list, {$call: [get, {$ref: state}, start]}, {$ref: end}]}
-scan_character:
-  $call:
-    - fn
-    - [text, base, size, state, index, character]
-    - $call:
-        - if
-        - $call:
-            - has
-            -
-              - "\n"
-              - "\r"
-              - "\u000b"
-              - "\u000c"
-              - "\u001c"
-              - "\u001d"
-              - "\u001e"
-              - "\u0085"
-              - "\u2028"
-              - "\u2029"
-            - {$ref: character}
-        - $call:
-            - scan_advance
-            - {$ref: state}
-            - $call:
-                - add
-                - {$ref: index}
-                - $call:
-                    - if
-                    - $call:
-                        - and
-                        - {$call: [eq, {$ref: character}, "\r"]}
-                        - {$call: [lt, {$call: [add, {$ref: index}, 1]}, {$ref: size}]}
-                        - $call:
-                            - eq
-                            - $call:
-                                - slice
-                                - {$ref: text}
-                                - {$call: [add, {$call: [sub, {$ref: index}, {$ref: base}]}, 1]}
-                                - {$call: [add, {$call: [sub, {$ref: index}, {$ref: base}]}, 2]}
-                            - "\n"
-                    - 2
-                    - 1
-        - {$call: [set, {$ref: state}, index, {$call: [add, {$ref: index}, 1]}]}
-scan_chunk:
-  $call:
-    - fn
-    - [text, base, limit, size, state]
-    - $call:
-        - until
-        - $call:
-            - fn
-            - [s]
-            - {$call: [ge, {$call: [get, {$ref: s}, index]}, {$ref: limit}]}
-        - $call:
-            - fn
-            - [s]
-            - $call:
-                - scan_index
-                - {$ref: text}
-                - {$ref: base}
-                - {$ref: size}
-                - {$ref: s}
-                - {$call: [get, {$ref: s}, index]}
-        - {$ref: state}
+                  - !call [chunk, !ref source, !ref size, !call [mul, !ref index, 256]]
+              - !call [l.range, !call [div, !call [add, !ref size, 255], 256]]
+      - !call [finish, !ref size, !ref scan]
+  - !ref list
+l: !call [import, "std:list"]
+merge_chunk: !call
+  - fn
+  - [previous, next]
+  - !call
+      - dict
+      - index
+      - !call [get, !ref next, index]
+      - start
+      - !call [get, !ref next, start]
+      - bounds
+      - !call [concat, !call [get, !ref previous, bounds], !call [get, !ref next, bounds]]
+plan: !call
+  - fn
+  - [[source, !ref string]]
+  - !call [generate, !ref source, !call [len, !ref source]]
+  - !ref list
+render: !call
+  - fn
+  - [size, bounds]
+  - !call
+      - let
+      - lines: !call
+          - map
+          - !call
+              - fn
+              - [index]
+              - !call
+                  - let
+                  - pair: !call [get, !ref bounds, !call [div, !ref index, 2]]
+                    prefix: !call [list, 0, !call [get, !ref pair, 0]]
+                  - !call
+                      - if
+                      - !call [eq, !call [mod, !ref index, 2], 0]
+                      - !call [list, !ref prefix]
+                      - !call
+                          - list
+                          - !ref prefix
+                          - !call [list, !call [get, !ref pair, 1], !ref size]
+          - !call [l.range, !call [mul, !call [len, !ref bounds], 2]]
+        prefixes: !call
+          - map
+          - !call
+              - fn
+              - [index]
+              - !call [list, !call [list, 0, !call [mul, !ref index, 5]]]
+          - !call [l.range, !call [div, !call [add, !ref size, 4], 5]]
+      - !call [concat, !ref lines, !ref prefixes]
+scan_advance: !call
+  - fn
+  - [state, end]
+  - !call
+      - dict
+      - index
+      - !ref end
+      - start
+      - !ref end
+      - bounds
+      - !call
+          - append
+          - !call [get, !ref state, bounds]
+          - !call [list, !call [get, !ref state, start], !ref end]
+scan_character: !call
+  - fn
+  - [text, base, size, state, index, character]
+  - !call
+      - if
+      - !call
+          - has
+          -
+            - "\n"
+            - "\r"
+            - "\u000b"
+            - "\u000c"
+            - "\u001c"
+            - "\u001d"
+            - "\u001e"
+            - "\u0085"
+            - "\u2028"
+            - "\u2029"
+          - !ref character
+      - !call
+          - scan_advance
+          - !ref state
+          - !call
+              - add
+              - !ref index
+              - !call
+                  - if
+                  - !call
+                      - and
+                      - !call [eq, !ref character, "\r"]
+                      - !call [lt, !call [add, !ref index, 1], !ref size]
+                      - !call
+                          - eq
+                          - !call
+                              - slice
+                              - !ref text
+                              - !call [add, !call [sub, !ref index, !ref base], 1]
+                              - !call [add, !call [sub, !ref index, !ref base], 2]
+                          - "\n"
+                  - 2
+                  - 1
+      - !call [set, !ref state, index, !call [add, !ref index, 1]]
+scan_chunk: !call
+  - fn
+  - [text, base, limit, size, state]
+  - !call
+      - until
+      - !call
+          - fn
+          - [s]
+          - !call [ge, !call [get, !ref s, index], !ref limit]
+      - !call
+          - fn
+          - [s]
+          - !call [scan_index, !ref text, !ref base, !ref size, !ref s, !call [get, !ref s, index]]
+      - !ref state
 # Function arguments retain these computed values; local let bindings would
 # reevaluate the index, current character and end at each use in the next state.
-scan_index:
-  $call:
-    - fn
-    - [text, base, size, state, index]
-    - $call:
-        - scan_character
-        - {$ref: text}
-        - {$ref: base}
-        - {$ref: size}
-        - {$ref: state}
-        - {$ref: index}
-        - $call:
-            - slice
-            - {$ref: text}
-            - {$call: [sub, {$ref: index}, {$ref: base}]}
-            - {$call: [add, {$call: [sub, {$ref: index}, {$ref: base}]}, 1]}
-scan_part:
-  $call:
-    - fn
-    - [state, chunk]
-    - $call:
-        - merge_chunk
-        - {$ref: state}
-        - $call:
-            - scan_chunk
-            - {$call: [get, {$ref: chunk}, text]}
-            - {$call: [get, {$ref: chunk}, base]}
-            - {$call: [get, {$ref: chunk}, limit]}
-            - {$call: [get, {$ref: chunk}, size]}
-            - $call:
-                - dict
-                - index
-                - {$call: [get, {$ref: state}, index]}
-                - start
-                - {$call: [get, {$ref: state}, start]}
-                - bounds
-                - []
+scan_index: !call
+  - fn
+  - [text, base, size, state, index]
+  - !call
+      - scan_character
+      - !ref text
+      - !ref base
+      - !ref size
+      - !ref state
+      - !ref index
+      - !call
+          - slice
+          - !ref text
+          - !call [sub, !ref index, !ref base]
+          - !call [add, !call [sub, !ref index, !ref base], 1]
+scan_part: !call
+  - fn
+  - [state, chunk]
+  - !call
+      - merge_chunk
+      - !ref state
+      - !call
+          - scan_chunk
+          - !call [get, !ref chunk, text]
+          - !call [get, !ref chunk, base]
+          - !call [get, !ref chunk, limit]
+          - !call [get, !ref chunk, size]
+          - !call
+              - dict
+              - index
+              - !call [get, !ref state, index]
+              - start
+              - !call [get, !ref state, start]
+              - bounds
+              - []

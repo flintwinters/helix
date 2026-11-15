@@ -52,6 +52,14 @@ def verify(h):
                    '---\n1\n---\n2', '!call add', '!ref [x]', '!ref x: 1', '!call []', '!ref \"\"', '&loop !call [list, *loop]'):
         result = h.helix('run', '-', stdin=source)
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, (source, result)
+    # Both spellings produce identical function code and lexical environments.
+    mixed = '!call [eq, !call [fn, [x], !ref x], {$call: [fn, [x], {$ref: x}]}]'
+    result = h.helix('run', '-', stdin=mixed)
+    assert result.returncode == 0 and yaml.safe_load(result.stdout)['root'] is True, result
+    # Tags never leak into ordinary data emission, including codec input.
+    codec = '!call [yaml_load, "!call [add, 1, 2]"]'
+    result = h.helix('run', '-', stdin=codec)
+    assert result.returncode == 0 and yaml.safe_load(result.stdout)['root'] == {'$call': ['add', 1, 2]}, result
     call = lambda actor, *args: {"$call": [actor, *args]}
     ref = lambda name: {"$ref": name}
     literal = lambda value: {"$literal": value}

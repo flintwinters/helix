@@ -1,106 +1,78 @@
 # Whole-body HTTP/1.1 transport; caller-owned grants and limits live in perform.
-dispatch:
-  $call:
-    - fn
-    - [routes, fallback, request]
-    - $call:
-        - let
-        - matches:
-            $call:
-              - filter
-              - $call:
-                  - fn
-                  - [route]
-                  - $call:
-                      - and
-                      - $call:
-                          - eq
-                          - {$call: [get, {$ref: route}, method]}
-                          - {$call: [get, {$ref: request}, method]}
-                      - $call:
-                          - eq
-                          - {$call: [get, {$ref: route}, path]}
-                          - {$call: [get, {$ref: request}, path]}
-              - {$ref: routes}
-        - $call:
-            - if
-            - {$call: [eq, {$call: [len, {$ref: matches}]}, 0]}
-            - {$call: [call, {$ref: fallback}, {$ref: request}]}
-            - $call:
-                - call
-                - {$call: [get, {$call: [get, {$ref: matches}, 0]}, handler]}
-                - {$ref: request}
-json: {$call: [import, "std:json"]}
-json_response:
-  $call:
-    - fn
-    - [status, value]
-    - $call:
-        - respond
-        - {$ref: status}
-        - [[content-type, application/json]]
-        - {$call: [json.dump, {$ref: value}]}
-respond:
-  $call:
-    - fn
-    - [status, headers, body]
-    - $call:
-        - validate
-        - {$call: [dict, status, {$ref: status}, headers, {$ref: headers}, body, {$ref: body}]}
-response:
-  $call:
-    - record
-    - status
-    - {$ref: integer}
-    - headers
-    - {$call: [list_of, {$call: [list_of, {$ref: string}]}]}
-    - body
-    - $call:
-        - union
-        - {$ref: string}
-        - $call: [record, file, {$call: [record, directory, {$ref: string}, path, {$ref: string}]}]
-route:
-  $call:
-    - fn
-    - [routes, fallback]
-    - $call:
-        - fn
-        - [request]
-        - {$call: [dispatch, {$ref: routes}, {$ref: fallback}, {$ref: request}]}
-serve:
-  $call:
-    - fn
-    - [options, handler]
-    - {$call: [http_serve, {$ref: options}, {$ref: handler}]}
-static_directory:
-  $call:
-    - fn
-    - [directory]
-    - $call:
-        - fn
-        - [request]
-        - $call:
-            - if
-            - {$call: [has, [GET, HEAD], {$ref: request.method}]}
-            - $call:
-                - dict
-                - status
-                - 200
-                - headers
-                - [[content-type, application/octet-stream]]
-                - body
-                - $call:
-                    - dict
-                    - file
-                    - {$call: [dict, directory, {$ref: directory}, path, {$ref: request.path}]}
-            - {$call: [text, 405, method not allowed]}
-text:
-  $call:
-    - fn
-    - [status, body]
-    - $call: [respond, {$ref: status}, [[content-type, "text/plain; charset=utf-8"]], {$ref: body}]
-validate:
-  $call:
-    - fn
-    - [value]
-    - {$call: [expect, {$ref: value}, {$ref: response}]}
+dispatch: !call
+  - fn
+  - [routes, fallback, request]
+  - !call
+      - let
+      - matches: !call
+          - filter
+          - !call
+              - fn
+              - [route]
+              - !call
+                  - and
+                  - !call [eq, !call [get, !ref route, method], !call [get, !ref request, method]]
+                  - !call [eq, !call [get, !ref route, path], !call [get, !ref request, path]]
+          - !ref routes
+      - !call
+          - if
+          - !call [eq, !call [len, !ref matches], 0]
+          - !call [call, !ref fallback, !ref request]
+          - !call [call, !call [get, !call [get, !ref matches, 0], handler], !ref request]
+json: !call [import, "std:json"]
+json_response: !call
+  - fn
+  - [status, value]
+  - !call [respond, !ref status, [[content-type, application/json]], !call [json.dump, !ref value]]
+respond: !call
+  - fn
+  - [status, headers, body]
+  - !call [validate, !call [dict, status, !ref status, headers, !ref headers, body, !ref body]]
+response: !call
+  - record
+  - status
+  - !ref integer
+  - headers
+  - !call [list_of, !call [list_of, !ref string]]
+  - body
+  - !call
+      - union
+      - !ref string
+      - !call [record, file, !call [record, directory, !ref string, path, !ref string]]
+route: !call
+  - fn
+  - [routes, fallback]
+  - !call
+      - fn
+      - [request]
+      - !call [dispatch, !ref routes, !ref fallback, !ref request]
+serve: !call
+  - fn
+  - [options, handler]
+  - !call [http_serve, !ref options, !ref handler]
+static_directory: !call
+  - fn
+  - [directory]
+  - !call
+      - fn
+      - [request]
+      - !call
+          - if
+          - !call [has, [GET, HEAD], !ref request.method]
+          - !call
+              - dict
+              - status
+              - 200
+              - headers
+              - [[content-type, application/octet-stream]]
+              - body
+              - !call [dict, file, !call [dict, directory, !ref directory, path, !ref request.path]]
+          - !call [text, 405, method not allowed]
+text: !call
+  - fn
+  - [status, body]
+  - !call [respond, !ref status, [[content-type, "text/plain; charset=utf-8"]], !ref body]
+validate: !call
+  - fn
+  - [value]
+  - !call [expect, !ref value, !ref response]

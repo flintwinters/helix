@@ -1,115 +1,100 @@
-# Helix explicit syntax; migrated from legacy source.
 # Ordered sets are plain lists, using structural/numeric equality.
 # from removes duplicates; other operations accept lists and normalize their results.
 # Stable encounter order, bounded folds, and quadratic copying suit small inputs.
-contains:
-  $call:
-    - fn
-    - [[xs, {$ref: list}], value]
-    - {$call: [has, {$ref: xs}, {$ref: value}]}
-    - {$ref: boolean}
-difference:
-  $call:
-    - fn
-    - [[left, {$ref: list}], [right, {$ref: list}]]
-    - $call:
-        - from
-        - $call:
-            - filter
-            - $call:
-                - fn
-                - [x]
-                - {$call: [not, {$call: [has, {$ref: right}, {$ref: x}]}]}
-            - {$ref: left}
-    - {$ref: list}
-equals:
-  $call:
-    - fn
-    - [[left, {$ref: list}], [right, {$ref: list}]]
-    - $call:
-        - and
-        - {$call: [is_subset, {$ref: left}, {$ref: right}]}
-        - {$call: [is_subset, {$ref: right}, {$ref: left}]}
-    - {$ref: boolean}
-from:
-  $call:
-    - fn
-    - [[xs, {$ref: list}]]
-    - {$call: [l.unique, {$ref: xs}]}
-    - {$ref: list}
-insert:
-  $call:
-    - fn
-    - [[xs, {$ref: list}], value]
-    - {$call: [from, {$call: [append, {$ref: xs}, {$ref: value}]}]}
-    - {$ref: list}
-intersection:
-  $call:
-    - fn
-    - [[left, {$ref: list}], [right, {$ref: list}]]
-    - $call:
-        - from
-        - $call:
-            - filter
-            - $call:
-                - fn
-                - [x]
-                - {$call: [has, {$ref: right}, {$ref: x}]}
-            - {$ref: left}
-    - {$ref: list}
-is_disjoint:
-  $call:
-    - fn
-    - [[left, {$ref: list}], [right, {$ref: list}]]
-    - $call:
-        - not
-        - $call:
-            - l.any
-            - {$ref: left}
-            - $call:
-                - fn
-                - [x]
-                - {$call: [has, {$ref: right}, {$ref: x}]}
-    - {$ref: boolean}
-is_subset:
-  $call:
-    - fn
-    - [[left, {$ref: list}], [right, {$ref: list}]]
-    - $call:
-        - l.all
-        - {$ref: left}
-        - $call:
-            - fn
-            - [x]
-            - {$call: [has, {$ref: right}, {$ref: x}]}
-    - {$ref: boolean}
-l: {$call: [import, "std:list"]}
-remove:
-  $call:
-    - fn
-    - [[xs, {$ref: list}], value]
-    - $call:
-        - from
-        - $call:
-            - filter
-            - $call:
-                - fn
-                - [x]
-                - {$call: [ne, {$ref: x}, {$ref: value}]}
-            - {$ref: xs}
-    - {$ref: list}
-symmetric_difference:
-  $call:
-    - fn
-    - [[left, {$ref: list}], [right, {$ref: list}]]
-    - $call:
-        - concat
-        - {$call: [difference, {$ref: left}, {$ref: right}]}
-        - {$call: [difference, {$ref: right}, {$ref: left}]}
-    - {$ref: list}
-union:
-  $call:
-    - fn
-    - [[left, {$ref: list}], [right, {$ref: list}]]
-    - {$call: [from, {$call: [concat, {$ref: left}, {$ref: right}]}]}
-    - {$ref: list}
+contains: !call
+  - fn
+  - [[xs, !ref list], value]
+  - !call [has, !ref xs, !ref value]
+  - !ref boolean
+difference: !call
+  - fn
+  - [[left, !ref list], [right, !ref list]]
+  - !call
+      - from
+      - !call
+          - filter
+          - !call
+              - fn
+              - [x]
+              - !call [not, !call [has, !ref right, !ref x]]
+          - !ref left
+  - !ref list
+equals: !call
+  - fn
+  - [[left, !ref list], [right, !ref list]]
+  - !call [and, !call [is_subset, !ref left, !ref right], !call [is_subset, !ref right, !ref left]]
+  - !ref boolean
+from: !call
+  - fn
+  - [[xs, !ref list]]
+  - !call [l.unique, !ref xs]
+  - !ref list
+insert: !call
+  - fn
+  - [[xs, !ref list], value]
+  - !call [from, !call [append, !ref xs, !ref value]]
+  - !ref list
+intersection: !call
+  - fn
+  - [[left, !ref list], [right, !ref list]]
+  - !call
+      - from
+      - !call
+          - filter
+          - !call
+              - fn
+              - [x]
+              - !call [has, !ref right, !ref x]
+          - !ref left
+  - !ref list
+is_disjoint: !call
+  - fn
+  - [[left, !ref list], [right, !ref list]]
+  - !call
+      - not
+      - !call
+          - l.any
+          - !ref left
+          - !call
+              - fn
+              - [x]
+              - !call [has, !ref right, !ref x]
+  - !ref boolean
+is_subset: !call
+  - fn
+  - [[left, !ref list], [right, !ref list]]
+  - !call
+      - l.all
+      - !ref left
+      - !call
+          - fn
+          - [x]
+          - !call [has, !ref right, !ref x]
+  - !ref boolean
+l: !call [import, "std:list"]
+remove: !call
+  - fn
+  - [[xs, !ref list], value]
+  - !call
+      - from
+      - !call
+          - filter
+          - !call
+              - fn
+              - [x]
+              - !call [ne, !ref x, !ref value]
+          - !ref xs
+  - !ref list
+symmetric_difference: !call
+  - fn
+  - [[left, !ref list], [right, !ref list]]
+  - !call
+      - concat
+      - !call [difference, !ref left, !ref right]
+      - !call [difference, !ref right, !ref left]
+  - !ref list
+union: !call
+  - fn
+  - [[left, !ref list], [right, !ref list]]
+  - !call [from, !call [concat, !ref left, !ref right]]
+  - !ref list

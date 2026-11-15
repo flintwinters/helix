@@ -1,13 +1,10 @@
-# Helix explicit syntax; migrated from legacy source.
 # Data-only CSV conversion.
-dump:
-  $call:
-    - fn
-    - [value]
-    - {$call: [csv_dump, {$ref: value}]}
-    - {$ref: string}
-parse:
-  $call:
-    - fn
-    - [[source, {$ref: string}]]
-    - {$call: [csv_parse, {$ref: source}]}
+dump: !call
+  - fn
+  - [value]
+  - !call [csv_dump, !ref value]
+  - !ref string
+parse: !call
+  - fn
+  - [[source, !ref string]]
+  - !call [csv_parse, !ref source]
