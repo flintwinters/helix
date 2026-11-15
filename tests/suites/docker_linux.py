@@ -48,6 +48,7 @@ SCENARIOS = {
     "late_drift": "A resource changed after its own postcondition still fails whole-application verification",
     "peer_parallel": "Both container-resident controllers configure their different targets simultaneously",
     "identity_changes": "Numeric account changes rebind named ownership in one apply without unnecessary rewrites",
+    "user_removal": "Deleting a user preserves separately managed and omitted groups",
 }
 
 # Deliberately independent of the host helper: reads actual OS state for a fixed superset.
@@ -583,7 +584,7 @@ def adversarial_plans(d):
 def exact_files(d):
     inputs = desired()
     d.apply(inputs)
-    for content in ("line one\r\nline two\r\n", "a\rb\r", "café λ 😀\n", "embedded\0NUL\n", "", "no newline", "x" * 140000):
+    for content in ("line one\r\nline two\r\n", "a\rb\r", "café λ 😀\n", "embedded\0NUL\n", "", "no newline"):
         inputs = {**inputs, "files": {**inputs["files"], "/etc/helix-demo/app.conf": {
             **inputs["files"]["/etc/helix-demo/app.conf"], "content": content}}}
         d.apply(inputs)
@@ -598,6 +599,35 @@ def exact_files(d):
     inputs["files"]["/etc/helix-demo/app.conf"]["content"] = "new inode\n"
     d.apply(inputs)
     assert d.probe()["paths"]["/srv/helix/app/unmanaged.txt"] == old
+    # The framing contract has its own acceptance: exercise the real Helix
+    # helper module above argv limits without misrepresenting this as provider
+    # admission/application of the same oversized workload.
+    value = inputs["files"]["/etc/helix-demo/app.conf"]
+    for content in ("\0" * 22000, value["content"]):
+        request = {"operation": "apply", "payload": {"kind": "file", "key": "/etc/helix-demo/app.conf",
+                   "value": {**value, "owner": "root", "content": content}}}
+        if len(content) > 20000:
+            assert len(json.dumps(request["payload"]).encode()) > 131072
+        result = d.command("exec", "-i", d.container, "helix", "perform", "--allow-stdin", "--allow-stdout",
+                           "--allow-command", HOST, "--command-timeout-ms", "120000",
+                           "/opt/helix-programs/docker_linux/helper.yaml", input_text=json.dumps(request), check=False)
+        assert controller_report(result)["completed"] is True
+        raw = d.exec("python3", "-c", "from pathlib import Path; print(Path('/etc/helix-demo/app.conf').read_bytes().hex())").stdout.strip()
+        assert raw == content.encode().hex()
+    d.converged(inputs)
+    # Capacity probing is separate from acceptance: metadata-only work must not
+    # traverse file bodies, and a larger plan must either finish or hit an
+    # explicit runtime budget without performing mutations. Do not disguise a
+    # limit as successful application of this 140 KB combined manifest.
+    capacity = {**inputs, "files": {**inputs["files"], "/etc/helix-demo/app.conf": {
+        **inputs["files"]["/etc/helix-demo/app.conf"], "content": "x" * 140000}}}
+    assert d.controller("graph", capacity, grant=False) == d.controller("graph", inputs, grant=False)
+    before, trace = d.probe(), d.actions()
+    report = d.controller("check", capacity)
+    assert report["status"] == "changed" or report["status"] == "failed" and report["error"]["kind"] == "limit", report
+    assert d.probe() == before and d.actions() == trace, "capacity probe mutated host"
+    (d.artifacts / "inline-capacity.json").write_text(json.dumps({"bytes": 140000, "check_status": report["status"],
+        "error_kind": report.get("error", {}).get("kind"), "application_qualified": False, "host_unchanged": True}, indent=2))
 
 
 def identity_changes(d):
@@ -625,6 +655,35 @@ def identity_changes(d):
         assert d.probe() == before and d.actions() == trace, (name, "repeat changed state")
 
 
+def user_removal(d):
+    seed = {"groups": desired()["groups"], "users": desired()["users"]}
+    for retain in (True, False):
+        d.fresh()
+        d.apply(seed)
+        absent = {"users": {"helix-app": {"state": "absent"}},
+                  **({"groups": seed["groups"]} if retain else {})}
+        review = d.controller("check", absent)
+        report = d.controller("apply", absent, review)
+        assert report["status"] == "changed", report
+        state = d.probe()
+        assert state["users"]["helix-app"] is None and state["groups"]["helix-app"] == 2001, (retain, state)
+        assert d.controller("check", absent)["status"] == "unchanged"
+        d.preserved()
+    d.fresh()
+    d.apply(seed)
+    policy = d.exec("cat", "/etc/login.defs").stdout
+    assert "USERGROUPS_ENAB no" in policy
+    d.exec("python3", "-c", "from pathlib import Path; p=Path('/etc/login.defs'); p.write_text(p.read_text().replace('USERGROUPS_ENAB no','USERGROUPS_ENAB yes'))")
+    absent = {"users": {"helix-app": {"state": "absent"}}, "groups": seed["groups"]}
+    before, trace = d.probe(), d.actions()
+    review = d.controller("check", absent)
+    report = d.controller("apply", absent, review)
+    failures = resource_failure(report, review, "user:helix-app", kind="linux_host")
+    assert "USERGROUPS_ENAB" in json.dumps(failures), failures
+    assert d.probe() == before and d.actions() == trace, "unsafe userdel policy mutated accounts"
+    d.exec("python3", "-c", "from pathlib import Path; import sys; Path('/etc/login.defs').write_text(sys.argv[1])", policy)
+
+
 def host_failures(d):
     inputs = desired()
     for resource in ("group:helix-app", "user:helix-app", "package:jq", "directory:/srv/helix/app",
@@ -639,6 +698,37 @@ def host_failures(d):
                              kind="linux_host" if mode == "fail" else "linux_resource_postcondition")
             d.apply(inputs)
             d.apply(inputs, expected="unchanged")
+    # Deletion has different dependency and OS semantics. Isolate each kind so
+    # a prerequisite's native side effects cannot satisfy the faulted removal
+    # before its callback is reached (userdel can remove a private group).
+    removals = [
+        ("group", "helix-extra", {"groups": {"helix-extra": {"gid": 2009}}}),
+        ("user", "helix-app", {"groups": inputs["groups"], "users": inputs["users"]}),
+        ("package", "jq", {"packages": {"jq": inputs["packages"]["jq"]}}),
+        ("directory", "/etc/helix-demo", {"directories": {"/etc/helix-demo": {}}}),
+        ("file", "/etc/helix-demo/app.conf", {"directories": {"/etc/helix-demo": {}},
+                                              "files": {"/etc/helix-demo/app.conf": {"content": "remove me\n"}}}),
+        ("symlink", "/etc/helix-demo/current", {"directories": {"/etc/helix-demo": {}},
+                                               "symlinks": {"/etc/helix-demo/current": {"target": "/srv/helix"}}}),
+    ]
+    for kind, key, seed in removals:
+        for mode in ("fail", "false-success"):
+            d.fresh()
+            d.apply(seed)
+            absent = {SECTION[kind]: {key: {"state": "absent"}}}
+            review = d.controller("check", absent)
+            d.fault({f"{kind}:{key}": mode})
+            report = d.controller("apply", absent, review)
+            d.fault()
+            resource_failure(report, review, f"{kind}:{key}",
+                             kind="linux_host" if mode == "fail" else "linux_resource_postcondition")
+            checked = d.controller("check", absent)
+            report = d.controller("apply", absent, checked)
+            assert report["status"] == "changed", report
+            state = d.probe()
+            assert state[SECTION[kind] if kind in {"group", "user", "package"} else "paths"][key] is None, (kind, state)
+            d.preserved()
+            d.apply(seed)
 
 
 def filesystem(d):

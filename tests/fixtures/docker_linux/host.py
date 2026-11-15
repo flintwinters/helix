@@ -226,7 +226,7 @@ def observe(payload):
 
 def apply_group(name, value):
     if value is None:
-        # `userdel` removes a user's same-named private group; a vanished group is already absent.
+        # A group independently removed after observation is already absent.
         if observe_group(name) is not None:
             command(['groupdel', name])
     elif observe_group(name) is None:
@@ -237,6 +237,13 @@ def apply_group(name, value):
 
 def apply_user(name, value):
     if value is None:
+        # Shadow's default USERGROUPS_ENAB=yes couples userdel to deletion of
+        # an independently managed (or omitted) same-named group. Bootstrap owns
+        # this prerequisite; refuse an ambiguous/unsafe policy before mutation.
+        definitions = [line.partition('#')[0].split() for line in Path('/etc/login.defs').read_text().splitlines()]
+        settings = [fields for fields in definitions if fields and fields[0] == 'USERGROUPS_ENAB']
+        if settings != [['USERGROUPS_ENAB', 'no']]:
+            raise ValueError('user deletion requires exactly one USERGROUPS_ENAB no setting to preserve group resources')
         command(['userdel', name])
         return
     # The home directory is its own declared resource; account creation never makes one.

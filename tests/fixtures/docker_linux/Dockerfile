@@ -19,6 +19,9 @@ RUN test -n "$HELIX_PACKAGE_SNAPSHOT" && rm -f /etc/apt/sources.list.d/* && \
     apt-get -o Acquire::Check-Valid-Until=false update && \
     apt-get install -y --no-install-recommends python3 ca-certificates openssh-client openssh-server && \
     test ! -e /usr/bin/jq && test ! -e /usr/bin/tree
+# Account and group resources are independent: userdel must not implicitly delete groups.
+RUN sed -i -E '/^[[:space:]]*USERGROUPS_ENAB([[:space:]]|$)/d' /etc/login.defs && \
+    printf '\nUSERGROUPS_ENAB no\n' >> /etc/login.defs
 COPY --from=build /build/target/release/helix /usr/local/bin/helix
 COPY tests/fixtures/docker_linux /opt/helix-linux-fixture
 COPY tests/programs /opt/helix-programs

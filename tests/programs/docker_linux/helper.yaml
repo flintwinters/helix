@@ -1,0 +1,7 @@
+# Mechanism-framing acceptance only. No provider planning or review is implied.
+$call:
+- let
+- helper: {$call: [import, 'std:helper']}
+  request: {$call: [json_parse, {$call: [effect, stdin, null]}]}
+  result: {$call: [helper.call, linux_host, null, /usr/local/bin/helix-linux-host, {$ref: request.operation}, {$ref: request.payload}]}
+- {$call: [get, {$call: [list, {$call: [effect, stdout, {$call: [json_dump, {$ref: result}]}]}, {$ref: result}]}, 1]}

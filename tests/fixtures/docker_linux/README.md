@@ -52,6 +52,15 @@ Account tools retain their native Debian semantics; UID changes can re-own files
 home. Caller-granted root commands are not an OS sandbox. Files are bounded to 1 MiB and
 helper JSON requests to 8 MiB; runtime work/data budgets and caller command-output/time limits
 impose workload-dependent lower bounds. Dependency/context planning excludes file bodies.
+The fixture pins exactly one `USERGROUPS_ENAB no` definition in `/etc/login.defs` so
+`userdel` cannot delete a separately managed or omitted private group. The helper refuses
+user deletion before mutation if that prerequisite becomes unsafe or ambiguous.
+Helper-framing acceptance includes a JSON request exceeding Linux's per-argument limit,
+through the Helix [`helper.yaml`](../../programs/docker_linux/helper.yaml) test program.
+This mechanism test does not qualify the complete provider lifecycle at the same payload size.
+A separate 140 KB inline-body capacity probe checks metadata independence and either a
+completed plan or an explicit runtime limit with no mutations; it does not qualify
+application of that larger combined manifest. `inline-capacity.json` records the outcome.
 `std:helper` uses `OP -` with JSON on stdin, avoiding argv size limits for file contents.
 The fixture also accepts `OP JSON` for direct mechanism inspection. Nested package-command
 output and execution time are bounded independently of the final helper reply.
@@ -120,10 +129,11 @@ HELIX_DOCKER_SUDO=1 HELIX_DOCKER_LINUX_SCENARIO=peer_failures,peer_recovery,peer
 |---|---|
 | `baseline`, `updates`, `drift`, `removal`, `lifecycle` | Actual accounts/packages/files, targeted changes, no-op inode/mtime preservation, reverse removal, unmanaged state and recreation |
 | `invalid_input`, `adversarial_plans`, `stale_review` | Pure rejection with no grants; exact diagnostic kinds; cycles, absent prerequisites, path conflicts and stale data/identity/reviews |
-| `failure`, `false_success`, `host_failures` | Injected failures and false success across all six resource kinds, exact failed-dependent gating and successful fresh retries |
+| `failure`, `false_success`, `host_failures` | Injected failures and false success for creation and removal across all six resource kinds, exact failed-dependent gating and successful fresh retries |
 | `authority`, `filesystem` | Missing authority, malformed success/failure payloads, missing/extra observations, invalid values, symlink ancestors, wrong objects, invalid UTF-8 and oversized files |
 | `exact_files`, `file_failures` | Exact bytes including payloads above argv limits, hardlink isolation, errors before/after replacement, staging cleanup and reconciliation of visible partial mutation |
 | `identity_changes` | UID/GID updates converge ownership in one apply, including files outside a user's new home, without rewriting files already rebound by the OS tool |
+| `user_removal` | User deletion preserves retained and omitted groups; unsafe native private-group deletion policy is rejected before mutation |
 | `contention`, `observations` | Real dpkg lock and account-ID conflicts; 48 concurrent observations publishing one complete identity per first-observation round |
 | `sequences`, `sensitivity`, `late_drift` | 36 deterministic transitions (seeds 7, 41, 2026), stale-review injection, oracle corruption checks and final verification rejecting a resource changed after its own postcondition |
 | `peers`, `peer_failures`, `peer_parallel` | Both directions, simultaneous controllers, no-op/drift cycles, host-key/auth/grant denial, stale remote reviews, SSH timeout and mutation followed by failure |
