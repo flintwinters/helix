@@ -1,24 +1,60 @@
 # Helix explicit syntax; migrated from legacy source.
 # Abstract machine classes, resolved entirely at type time: no machine or network is contacted.
 # Each class is small so configs mix in only what they manage; `machine` combines them all.
-files: {$call: [class, files,
-    {$call: [record, files, {$call: [default, {$call: [map_of, {$ref: string}]}, {}]}]}]}
+files:
+  $call:
+    - class
+    - files
+    - {$call: [record, files, {$call: [default, {$call: [map_of, {$ref: string}]}, {}]}]}
 host: {$call: [class, host, {$call: [record, hostname, {$ref: string}]}]}
-hostnames: {$call: [fn, [[fleet, {$ref: list}]],
-    {$call: [map, {$call: [fn, [m], {$call: [get, {$call: [get, {$ref: m}, values]}, hostname]}]},
-        {$ref: fleet}]}, {$ref: list}]}
-machine: {$call: [extend, machine,
-    {$call: [list, {$ref: host}, {$ref: packages}, {$ref: files}, {$ref: services}, {$ref: users}]},
-    {$call: [record]}, {}]}
-packages: {$call: [class, packages,
-    {$call: [record, packages, {$call: [default, {$call: [list_of, {$ref: string}]}, []]}]}]}
-port: {$call: [refine, {$ref: integer},
-    {$call: [fn, ["n"],
-        {$call: [and, {$call: [ge, {$ref: "n"}, 1]}, {$call: [le, {$ref: "n"}, 65535]}]}]}]}
-services: {$call: [class, services,
-    {$call: [record, services,
-        {$call: [default, {$call: [map_of, {$call: [enum, running, stopped]}]}, {}]}]}]}
-unique_hostnames: {$call: [fn, [[fleet, {$ref: list}]],
-    {$call: [eq, {$call: [duplicates, {$call: [hostnames, {$ref: fleet}]}]}, []]}, {$ref: boolean}]}
-users: {$call: [class, users,
-    {$call: [record, users, {$call: [default, {$call: [list_of, {$ref: string}]}, []]}]}]}
+hostnames:
+  $call:
+    - fn
+    - [[fleet, {$ref: list}]]
+    - $call:
+        - map
+        - $call:
+            - fn
+            - [m]
+            - {$call: [get, {$call: [get, {$ref: m}, values]}, hostname]}
+        - {$ref: fleet}
+    - {$ref: list}
+machine:
+  $call:
+    - extend
+    - machine
+    - $call: [list, {$ref: host}, {$ref: packages}, {$ref: files}, {$ref: services}, {$ref: users}]
+    - {$call: [record]}
+    - {}
+packages:
+  $call:
+    - class
+    - packages
+    - {$call: [record, packages, {$call: [default, {$call: [list_of, {$ref: string}]}, []]}]}
+port:
+  $call:
+    - refine
+    - {$ref: integer}
+    - $call:
+        - fn
+        - ["n"]
+        - {$call: [and, {$call: [ge, {$ref: "n"}, 1]}, {$call: [le, {$ref: "n"}, 65535]}]}
+services:
+  $call:
+    - class
+    - services
+    - $call:
+        - record
+        - services
+        - {$call: [default, {$call: [map_of, {$call: [enum, running, stopped]}]}, {}]}
+unique_hostnames:
+  $call:
+    - fn
+    - [[fleet, {$ref: list}]]
+    - {$call: [eq, {$call: [duplicates, {$call: [hostnames, {$ref: fleet}]}]}, []]}
+    - {$ref: boolean}
+users:
+  $call:
+    - class
+    - users
+    - {$call: [record, users, {$call: [default, {$call: [list_of, {$ref: string}]}, []]}]}

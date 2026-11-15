@@ -1,16 +1,40 @@
 # Actor composition: storage load(initial) and save(next) are ordinary captured functions.
-call: {$call: [fn, [name, message],
-    {$call: [effect, actor_call, {$call: [dict, name, {$ref: name}, message, {$ref: message}]}]}]}
-make: {$call: [fn, [initial, receive],
-    {$call: [dict, initial, {$ref: initial}, receive, {$ref: receive}]}]}
-persist: {$call: [fn, [storage, definition],
-    {$call: [set,
-        {$call: [set, {$ref: definition}, initialize, {$call: [get, {$ref: storage}, load]}]},
-        receive,
-        {$call: [fn, [state, message],
-            {$call: [let,
-                {transition: {$call: [call, {$call: [get, {$ref: definition}, receive]},
-                      {$ref: state}, {$ref: message}]}},
-                {$call: [call, {$call: [fn, [saved], {$ref: transition}]},
-                    {$call: [call, {$call: [get, {$ref: storage}, save]},
-                        {$call: [get, {$ref: transition}, state]}]}]}]}]}]}]}
+call:
+  $call:
+    - fn
+    - [name, message]
+    - {$call: [effect, actor_call, {$call: [dict, name, {$ref: name}, message, {$ref: message}]}]}
+make:
+  $call:
+    - fn
+    - [initial, receive]
+    - {$call: [dict, initial, {$ref: initial}, receive, {$ref: receive}]}
+persist:
+  $call:
+    - fn
+    - [storage, definition]
+    - $call:
+        - set
+        - {$call: [set, {$ref: definition}, initialize, {$call: [get, {$ref: storage}, load]}]}
+        - receive
+        - $call:
+            - fn
+            - [state, message]
+            - $call:
+                - let
+                - transition:
+                    $call:
+                      - call
+                      - {$call: [get, {$ref: definition}, receive]}
+                      - {$ref: state}
+                      - {$ref: message}
+                - $call:
+                    - call
+                    - $call:
+                        - fn
+                        - [saved]
+                        - {$ref: transition}
+                    - $call:
+                        - call
+                        - {$call: [get, {$ref: storage}, save]}
+                        - {$call: [get, {$ref: transition}, state]}

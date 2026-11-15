@@ -2,27 +2,73 @@
 # Immutable map algorithms for small inputs; fold's runtime iteration limit applies.
 # Copies of growing maps can take quadratic time and total allocations.
 # Shallow merge: right wins, existing left keys keep their position, new keys append.
-merge: {$call: [fn, [[left, {$ref: map}], [right, {$ref: map}]],
-    {$call: [fold,
-        {$call: [fn, [result, key],
-            {$call: [set, {$ref: result}, {$ref: key}, {$call: [get, {$ref: right}, {$ref: key}]}]}]},
-        {$ref: left}, {$call: [keys, {$ref: right}]}]}, {$ref: map}]}
-omit: {$call: [fn, [[source, {$ref: map}], [requested, {$call: [list_of, {$ref: string}]}]],
-    {$call: [select, {$ref: source},
-        {$call: [filter,
-            {$call: [fn, [name], {$call: [not, {$call: [has, {$ref: requested}, {$ref: name}]}]}]},
-            {$call: [keys, {$ref: source}]}]}]}, {$ref: map}]}
-remove: {$call: [fn, [[source, {$ref: map}], [key, {$ref: string}]],
-    {$call: [fold,
-        {$call: [fn, [result, name],
-            {$call: [if, {$call: [eq, {$ref: name}, {$ref: key}]}, {$ref: result},
-                {$call: [set, {$ref: result}, {$ref: name},
-                    {$call: [get, {$ref: source}, {$ref: name}]}]}]}]}, {},
-        {$call: [keys, {$ref: source}]}]}, {$ref: map}]}
-select: {$call: [fn, [[source, {$ref: map}], [requested, {$call: [list_of, {$ref: string}]}]],
-    {$call: [fold,
-        {$call: [fn, [result, name],
-            {$call: [if, {$call: [has, {$ref: requested}, {$ref: name}]},
-                {$call: [set, {$ref: result}, {$ref: name},
-                    {$call: [get, {$ref: source}, {$ref: name}]}]}, {$ref: result}]}]}, {},
-        {$call: [keys, {$ref: source}]}]}, {$ref: map}]}
+merge:
+  $call:
+    - fn
+    - [[left, {$ref: map}], [right, {$ref: map}]]
+    - $call:
+        - fold
+        - $call:
+            - fn
+            - [result, key]
+            - $call: [set, {$ref: result}, {$ref: key}, {$call: [get, {$ref: right}, {$ref: key}]}]
+        - {$ref: left}
+        - {$call: [keys, {$ref: right}]}
+    - {$ref: map}
+omit:
+  $call:
+    - fn
+    - [[source, {$ref: map}], [requested, {$call: [list_of, {$ref: string}]}]]
+    - $call:
+        - select
+        - {$ref: source}
+        - $call:
+            - filter
+            - $call:
+                - fn
+                - [name]
+                - {$call: [not, {$call: [has, {$ref: requested}, {$ref: name}]}]}
+            - {$call: [keys, {$ref: source}]}
+    - {$ref: map}
+remove:
+  $call:
+    - fn
+    - [[source, {$ref: map}], [key, {$ref: string}]]
+    - $call:
+        - fold
+        - $call:
+            - fn
+            - [result, name]
+            - $call:
+                - if
+                - {$call: [eq, {$ref: name}, {$ref: key}]}
+                - {$ref: result}
+                - $call:
+                    - set
+                    - {$ref: result}
+                    - {$ref: name}
+                    - {$call: [get, {$ref: source}, {$ref: name}]}
+        - {}
+        - {$call: [keys, {$ref: source}]}
+    - {$ref: map}
+select:
+  $call:
+    - fn
+    - [[source, {$ref: map}], [requested, {$call: [list_of, {$ref: string}]}]]
+    - $call:
+        - fold
+        - $call:
+            - fn
+            - [result, name]
+            - $call:
+                - if
+                - {$call: [has, {$ref: requested}, {$ref: name}]}
+                - $call:
+                    - set
+                    - {$ref: result}
+                    - {$ref: name}
+                    - {$call: [get, {$ref: source}, {$ref: name}]}
+                - {$ref: result}
+        - {}
+        - {$call: [keys, {$ref: source}]}
+    - {$ref: map}

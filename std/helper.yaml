@@ -2,29 +2,73 @@
 # The helper receives `OPERATION -` in argv and JSON on stdin, prints one JSON value on success, and on
 # failure exits nonzero with `{error: {...}}` on stdout. Helpers supply mechanisms, never plans.
 # Authority comes from the caller's command/SSH grant, not from this module.
-{$call: [let,
-    # A malformed failure payload must not replace the original command failure.
-    {call: {$call: [fn, [kind, ssh_target, executable, operation, payload],
-          {$call: [reply, {$ref: kind}, {$ref: operation},
-              {$call: [dispatch, {$ref: ssh_target},
-                  {args: {$call: [list, {$ref: operation}, "-"]}, program: {$ref: executable},
-                    stdin: {$call: [json_dump, {$ref: payload}]}}]}]}]},
-      capability: {$call: [fn, [ssh_target],
-          {$call: [if, {$call: [eq, {$ref: ssh_target}, ~]}, command, ssh_command]}]},
-      decode_error: {$call: [fn, [text],
-          {$call: [try,
-              {$call: [expect, {$call: [get, {$call: [json_parse, {$ref: text}]}, error, ~]},
-                  {$ref: map}]}, {$call: [fn, [ignored], ~]}]}]},
-      dispatch: {$call: [fn, [ssh_target, request],
-          {$call: [if, {$call: [eq, {$ref: ssh_target}, ~]},
-              {$call: [effect, command, {$ref: request}]},
-              {$call: [effect, ssh_command,
-                  {$call: [set, {$ref: request}, host, {$ref: ssh_target}]}]}]}]},
-      reply: {$call: [fn, [kind, operation, reply],
-          {$call: [if, {$call: [eq, {$ref: reply.code}, 0]},
-              {$call: [json_parse, {$ref: reply.stdout}]},
-              {$call: [raise, {$ref: kind},
-                  {$call: [concat, "helper operation failed: ", {$ref: operation}]},
-                  {$call: [set, {$call: [set, {$ref: reply}, operation, {$ref: operation}]},
-                      host_error, {$call: [decode_error, {$ref: reply.stdout}]}]}]}]}]}},
-    {$call: [dict, call, {$ref: call}, capability, {$ref: capability}]}]}
+$call:
+  - let
+  # A malformed failure payload must not replace the original command failure.
+  - call:
+      $call:
+        - fn
+        - [kind, ssh_target, executable, operation, payload]
+        - $call:
+            - reply
+            - {$ref: kind}
+            - {$ref: operation}
+            - $call:
+                - dispatch
+                - {$ref: ssh_target}
+                - args: {$call: [list, {$ref: operation}, "-"]}
+                  program: {$ref: executable}
+                  stdin: {$call: [json_dump, {$ref: payload}]}
+    capability:
+      $call:
+        - fn
+        - [ssh_target]
+        - $call:
+            - if
+            - {$call: [eq, {$ref: ssh_target}, ~]}
+            - command
+            - ssh_command
+    decode_error:
+      $call:
+        - fn
+        - [text]
+        - $call:
+            - try
+            - $call:
+                - expect
+                - {$call: [get, {$call: [json_parse, {$ref: text}]}, error, ~]}
+                - {$ref: map}
+            - $call:
+                - fn
+                - [ignored]
+                - ~
+    dispatch:
+      $call:
+        - fn
+        - [ssh_target, request]
+        - $call:
+            - if
+            - {$call: [eq, {$ref: ssh_target}, ~]}
+            - {$call: [effect, command, {$ref: request}]}
+            - $call:
+                - effect
+                - ssh_command
+                - {$call: [set, {$ref: request}, host, {$ref: ssh_target}]}
+    reply:
+      $call:
+        - fn
+        - [kind, operation, reply]
+        - $call:
+            - if
+            - {$call: [eq, {$ref: reply.code}, 0]}
+            - {$call: [json_parse, {$ref: reply.stdout}]}
+            - $call:
+                - raise
+                - {$ref: kind}
+                - {$call: [concat, "helper operation failed: ", {$ref: operation}]}
+                - $call:
+                    - set
+                    - {$call: [set, {$ref: reply}, operation, {$ref: operation}]}
+                    - host_error
+                    - {$call: [decode_error, {$ref: reply.stdout}]}
+  - {$call: [dict, call, {$ref: call}, capability, {$ref: capability}]}

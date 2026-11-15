@@ -7,16 +7,33 @@
 # and either value (the callback result) or error (the original structured error).
 # Inputs are retained for diagnosis; errors do not prevent later items from running.
 # Immutable copies can be quadratic; bounded iteration applies. Small batches only.
-batch: {$call: [fn, [[values, {$ref: list}], [validate, {$ref: function}]],
-    {$call: [policy.table,
-        {$call: [map,
-            {$call: [fn, [pair],
-                {$call: [dict, name, validation, input,
-                    {$call: [dict, index, {$call: [get, {$ref: pair}, 0]}, value,
-                        {$call: [get, {$ref: pair}, 1]}]}]}]},
-            {$call: [sequences.enumerate, {$ref: values}]}]},
-        {$call: [fn, [input],
-            {$call: [call, {$ref: validate}, {$call: [get, {$ref: input}, value]}]}]}]},
-    {$ref: map}]}
+batch:
+  $call:
+    - fn
+    - [[values, {$ref: list}], [validate, {$ref: function}]]
+    - $call:
+        - policy.table
+        - $call:
+            - map
+            - $call:
+                - fn
+                - [pair]
+                - $call:
+                    - dict
+                    - name
+                    - validation
+                    - input
+                    - $call:
+                        - dict
+                        - index
+                        - {$call: [get, {$ref: pair}, 0]}
+                        - value
+                        - {$call: [get, {$ref: pair}, 1]}
+            - {$call: [sequences.enumerate, {$ref: values}]}
+        - $call:
+            - fn
+            - [input]
+            - {$call: [call, {$ref: validate}, {$call: [get, {$ref: input}, value]}]}
+    - {$ref: map}
 policy: {$call: [import, "std:test"]}
 sequences: {$call: [import, "std:list"]}

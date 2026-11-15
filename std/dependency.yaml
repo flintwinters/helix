@@ -6,42 +6,99 @@
 # A blocked result without missing references indicates cycles (and dependents).
 # Repeated scans and immutable copies can be cubic on long chains; runtime
 # work/data budgets and until/fold iteration limits apply. No recursive calls.
-done: {$call: [fn, [state],
-    {$call: [eq,
-        {$call: [len,
-            {$call: [ready, {$call: [get, {$ref: state}, pending]},
-                {$call: [get, {$ref: state}, order]}]}]}, 0]}]}
+done:
+  $call:
+    - fn
+    - [state]
+    - $call:
+        - eq
+        - $call:
+            - len
+            - $call:
+                - ready
+                - {$call: [get, {$ref: state}, pending]}
+                - {$call: [get, {$ref: state}, order]}
+        - 0
 maps: {$call: [import, "std:map"]}
-plan: {$call: [fn, [[tasks, {$call: [map_of, {$call: [list_of, {$ref: string}]}]}]],
-    {$call: [let,
-        {final: {$call: [until, {$ref: done}, {$ref: step}, {$ref: initial}]},
-          initial: {$call: [set, {$call: [set, {}, pending, {$ref: tasks}]}, order, []]},
-          missing: {$call: [fold,
-              {$call: [fn, [acc, task],
-                  {$call: [concat, {$ref: acc},
-                      {$call: [map,
-                          {$call: [fn, [dep],
-                              {$call: [set, {$call: [set, {}, task, {$ref: task}]}, dependency,
-                                  {$ref: dep}]}]},
-                          {$call: [filter,
-                              {$call: [fn, [dep],
-                                  {$call: [not, {$call: [has, {$ref: tasks}, {$ref: dep}]}]}]},
-                              {$call: [get, {$ref: tasks}, {$ref: task}]}]}]}]}]}, [],
-              {$call: [keys, {$ref: tasks}]}]}},
-        {$call: [set, {$call: [set, {$ref: final}, missing, {$ref: missing}]}, status,
-            {$call: [if, {$call: [eq, {$call: [len, {$call: [get, {$ref: final}, pending]}]}, 0]},
-                finished, blocked]}]}]}]}
-ready: {$call: [fn, [pending, order],
-    {$call: [filter,
-        {$call: [fn, [task],
-            {$call: [fold,
-                {$call: [fn, [ok, dep],
-                    {$call: [and, {$ref: ok}, {$call: [has, {$ref: order}, {$ref: dep}]}]}]}, true,
-                {$call: [get, {$ref: pending}, {$ref: task}]}]}]}, {$call: [keys, {$ref: pending}]}]}]}
-step: {$call: [fn, [state],
-    {$call: [let,
-        {batch: {$call: [ready, {$ref: pending}, {$ref: order}]},
-          order: {$call: [get, {$ref: state}, order]},
-          pending: {$call: [get, {$ref: state}, pending]}},
-        {$call: [set, {$call: [set, {}, order, {$call: [concat, {$ref: order}, {$ref: batch}]}]},
-            pending, {$call: [maps.omit, {$ref: pending}, {$ref: batch}]}]}]}]}
+plan:
+  $call:
+    - fn
+    - [[tasks, {$call: [map_of, {$call: [list_of, {$ref: string}]}]}]]
+    - $call:
+        - let
+        - final:
+            $call:
+              - until
+              - {$ref: done}
+              - {$ref: step}
+              - {$ref: initial}
+          initial: {$call: [set, {$call: [set, {}, pending, {$ref: tasks}]}, order, []]}
+          missing:
+            $call:
+              - fold
+              - $call:
+                  - fn
+                  - [acc, task]
+                  - $call:
+                      - concat
+                      - {$ref: acc}
+                      - $call:
+                          - map
+                          - $call:
+                              - fn
+                              - [dep]
+                              - $call:
+                                  - set
+                                  - {$call: [set, {}, task, {$ref: task}]}
+                                  - dependency
+                                  - {$ref: dep}
+                          - $call:
+                              - filter
+                              - $call:
+                                  - fn
+                                  - [dep]
+                                  - {$call: [not, {$call: [has, {$ref: tasks}, {$ref: dep}]}]}
+                              - {$call: [get, {$ref: tasks}, {$ref: task}]}
+              - []
+              - {$call: [keys, {$ref: tasks}]}
+        - $call:
+            - set
+            - {$call: [set, {$ref: final}, missing, {$ref: missing}]}
+            - status
+            - $call:
+                - if
+                - {$call: [eq, {$call: [len, {$call: [get, {$ref: final}, pending]}]}, 0]}
+                - finished
+                - blocked
+ready:
+  $call:
+    - fn
+    - [pending, order]
+    - $call:
+        - filter
+        - $call:
+            - fn
+            - [task]
+            - $call:
+                - fold
+                - $call:
+                    - fn
+                    - [ok, dep]
+                    - {$call: [and, {$ref: ok}, {$call: [has, {$ref: order}, {$ref: dep}]}]}
+                - true
+                - {$call: [get, {$ref: pending}, {$ref: task}]}
+        - {$call: [keys, {$ref: pending}]}
+step:
+  $call:
+    - fn
+    - [state]
+    - $call:
+        - let
+        - batch: {$call: [ready, {$ref: pending}, {$ref: order}]}
+          order: {$call: [get, {$ref: state}, order]}
+          pending: {$call: [get, {$ref: state}, pending]}
+        - $call:
+            - set
+            - {$call: [set, {}, order, {$call: [concat, {$ref: order}, {$ref: batch}]}]}
+            - pending
+            - {$call: [maps.omit, {$ref: pending}, {$ref: batch}]}

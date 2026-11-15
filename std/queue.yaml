@@ -1,8 +1,21 @@
 # Helix explicit syntax; migrated from legacy source.
 # Immutable FIFO queue: a plain list with its front at index zero; [] is empty.
 # peek requires an explicit fallback. dequeue on empty returns []; operations copy lists.
-dequeue: {$call: [fn, [[xs, {$ref: list}]], {$call: [l.drop, {$ref: xs}, 1]}, {$ref: list}]}
-enqueue: {$call: [fn, [[xs, {$ref: list}], value], {$call: [append, {$ref: xs}, {$ref: value}]},
-    {$ref: list}]}
+dequeue:
+  $call:
+    - fn
+    - [[xs, {$ref: list}]]
+    - {$call: [l.drop, {$ref: xs}, 1]}
+    - {$ref: list}
+enqueue:
+  $call:
+    - fn
+    - [[xs, {$ref: list}], value]
+    - {$call: [append, {$ref: xs}, {$ref: value}]}
+    - {$ref: list}
 l: {$call: [import, "std:list"]}
-peek: {$call: [fn, [[xs, {$ref: list}], fallback], {$call: [l.first, {$ref: xs}, {$ref: fallback}]}]}
+peek:
+  $call:
+    - fn
+    - [[xs, {$ref: list}], fallback]
+    - {$call: [l.first, {$ref: xs}, {$ref: fallback}]}

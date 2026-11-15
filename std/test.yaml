@@ -2,168 +2,428 @@
 # Pure testing policy. Cases are {name: string, run: zero-argument function}.
 # Reports are values; a failing case never prevents later cases from running.
 # No file/process discovery, clocks, effects, or interpreter crash detection live here.
-capture: {$call: [fn, [[thunk, {$ref: function}]],
-    {$call: [try, {$call: [dict, outcome, passed, value, {$call: [call, {$ref: thunk}]}]},
-        {$call: [fn, [error], {$call: [dict, outcome, failed, error, {$ref: error}]}]}]},
-    {$ref: map}]}
-case: {$call: [fn, [[spec, {$ref: map}]],
-    {$call: [set,
-        {$call: [set, {$call: [capture, {$call: [get, {$ref: spec}, run]}]}, name,
-            {$call: [get, {$ref: spec}, name]}]}, input, {$call: [get, {$ref: spec}, input, ~]}]},
-    {$ref: map}]}
-combine: {$call: [fn, [[reports, {$ref: list}]],
-    {$call: [fold,
-        {$call: [fn, [acc, child],
-            {$call: [dict, total,
-                {$call: [add, {$call: [get, {$ref: acc}, total]},
-                    {$call: [get, {$ref: child}, total]}]}, passed,
-                {$call: [add, {$call: [get, {$ref: acc}, passed]},
-                    {$call: [get, {$ref: child}, passed]}]}, failed,
-                {$call: [add, {$call: [get, {$ref: acc}, failed]},
-                    {$call: [get, {$ref: child}, failed]}]}, results,
-                {$call: [concat, {$call: [get, {$ref: acc}, results]},
-                    {$call: [get, {$ref: child}, results]}]}]}]},
-        {failed: 0, passed: 0, results: [], total: 0}, {$ref: reports}]}, {$ref: map}]}
-compare: {$call: [fn,
-    [[name, {$ref: string}], [samples, {$ref: list}], [left, {$ref: function}],
-      [right, {$ref: function}]],
-    {$call: [table,
-        {$call: [map,
-            {$call: [fn, [sample], {$call: [dict, name, {$ref: name}, input, {$ref: sample}]}]},
-            {$ref: samples}]},
-        {$call: [fn, [sample],
-            {$call: [equal, {$call: [call, {$ref: left}, {$ref: sample}]},
-                {$call: [call, {$ref: right}, {$ref: sample}]}]}]}]}, {$ref: map}]}
-equal: {$call: [fn, [actual, expected],
-    {$call: [if, {$call: [eq, {$ref: actual}, {$ref: expected}]}, ~,
-        {$call: [raise, assertion, values differ,
-            {$call: [dict, expected, {$ref: expected}, actual, {$ref: actual}]}]}]}]}
-failures: {$call: [fn, [[report, {$ref: map}]],
-    {$call: [filter, {$ref: is_failure}, {$call: [get, {$ref: report}, results]}]}, {$ref: list}]}
-fields_equal: {$call: [fn, [[actual, {$ref: map}], [expected, {$ref: map}]],
-    {$call: [if,
-        {$call: [fold,
-            {$call: [fn, [ok, key],
-                {$call: [and, {$ref: ok}, {$call: [has, {$ref: actual}, {$ref: key}]},
-                    {$call: [eq, {$call: [get, {$ref: actual}, {$ref: key}]},
-                        {$call: [get, {$ref: expected}, {$ref: key}]}]}]}]}, true,
-            {$call: [keys, {$ref: expected}]}]}, ~,
-        {$call: [raise, assertion, map fields differ,
-            {$call: [dict, expected, {$ref: expected}, actual, {$ref: actual}]}]}]}]}
+capture:
+  $call:
+    - fn
+    - [[thunk, {$ref: function}]]
+    - $call:
+        - try
+        - {$call: [dict, outcome, passed, value, {$call: [call, {$ref: thunk}]}]}
+        - $call:
+            - fn
+            - [error]
+            - {$call: [dict, outcome, failed, error, {$ref: error}]}
+    - {$ref: map}
+case:
+  $call:
+    - fn
+    - [[spec, {$ref: map}]]
+    - $call:
+        - set
+        - $call:
+            - set
+            - {$call: [capture, {$call: [get, {$ref: spec}, run]}]}
+            - name
+            - {$call: [get, {$ref: spec}, name]}
+        - input
+        - {$call: [get, {$ref: spec}, input, ~]}
+    - {$ref: map}
+combine:
+  $call:
+    - fn
+    - [[reports, {$ref: list}]]
+    - $call:
+        - fold
+        - $call:
+            - fn
+            - [acc, child]
+            - $call:
+                - dict
+                - total
+                - $call:
+                    - add
+                    - {$call: [get, {$ref: acc}, total]}
+                    - {$call: [get, {$ref: child}, total]}
+                - passed
+                - $call:
+                    - add
+                    - {$call: [get, {$ref: acc}, passed]}
+                    - {$call: [get, {$ref: child}, passed]}
+                - failed
+                - $call:
+                    - add
+                    - {$call: [get, {$ref: acc}, failed]}
+                    - {$call: [get, {$ref: child}, failed]}
+                - results
+                - $call:
+                    - concat
+                    - {$call: [get, {$ref: acc}, results]}
+                    - {$call: [get, {$ref: child}, results]}
+        - {failed: 0, passed: 0, results: [], total: 0}
+        - {$ref: reports}
+    - {$ref: map}
+compare:
+  $call:
+    - fn
+    -
+      - [name, {$ref: string}]
+      - [samples, {$ref: list}]
+      - [left, {$ref: function}]
+      - [right, {$ref: function}]
+    - $call:
+        - table
+        - $call:
+            - map
+            - $call:
+                - fn
+                - [sample]
+                - {$call: [dict, name, {$ref: name}, input, {$ref: sample}]}
+            - {$ref: samples}
+        - $call:
+            - fn
+            - [sample]
+            - $call:
+                - equal
+                - {$call: [call, {$ref: left}, {$ref: sample}]}
+                - {$call: [call, {$ref: right}, {$ref: sample}]}
+    - {$ref: map}
+equal:
+  $call:
+    - fn
+    - [actual, expected]
+    - $call:
+        - if
+        - {$call: [eq, {$ref: actual}, {$ref: expected}]}
+        - ~
+        - $call:
+            - raise
+            - assertion
+            - values differ
+            - {$call: [dict, expected, {$ref: expected}, actual, {$ref: actual}]}
+failures:
+  $call:
+    - fn
+    - [[report, {$ref: map}]]
+    - {$call: [filter, {$ref: is_failure}, {$call: [get, {$ref: report}, results]}]}
+    - {$ref: list}
+fields_equal:
+  $call:
+    - fn
+    - [[actual, {$ref: map}], [expected, {$ref: map}]]
+    - $call:
+        - if
+        - $call:
+            - fold
+            - $call:
+                - fn
+                - [ok, key]
+                - $call:
+                    - and
+                    - {$ref: ok}
+                    - {$call: [has, {$ref: actual}, {$ref: key}]}
+                    - $call:
+                        - eq
+                        - {$call: [get, {$ref: actual}, {$ref: key}]}
+                        - {$call: [get, {$ref: expected}, {$ref: key}]}
+            - true
+            - {$call: [keys, {$ref: expected}]}
+        - ~
+        - $call:
+            - raise
+            - assertion
+            - map fields differ
+            - {$call: [dict, expected, {$ref: expected}, actual, {$ref: actual}]}
 # This is the sole stage/action policy. Comparison facts confer no authority:
 # hosts independently supervise processes and veto decisions against raw evidence.
 # Blessing precedes replay, but never follows nondeterministic observations.
-golden_decision: {$call: [fn,
-    [[facts,
-        {$call: [record, deterministic, {$ref: boolean}, matches_expected, {$ref: boolean},
-            bless_requested, {$ref: boolean}, replayable, {$ref: boolean}, replay_completed,
-            {$ref: boolean}, replay_matches, {$ref: boolean}]}]],
-    {$call: [let,
-        {accepted: {$call: [and, {$ref: facts.deterministic},
-              {$call: [or, {$ref: facts.bless_requested}, {$ref: facts.matches_expected}]}]}},
-        {bless: {$call: [and, {$ref: facts.deterministic}, {$ref: facts.bless_requested}]},
-          replay: {$call: [and, {$ref: accepted}, {$ref: facts.replayable},
-              {$call: [not, {$ref: facts.replay_completed}]}]},
-          stage: {$call: [cond, {$call: [not, {$ref: facts.deterministic}]}, determinism,
-              {$call: [not, {$ref: accepted}]}, golden,
-              {$call: [and, {$ref: facts.replayable}, {$ref: facts.replay_completed},
-                  {$call: [not, {$ref: facts.replay_matches}]}]}, roundtrip, passed]}}]},
-    {$ref: map}]}
+golden_decision:
+  $call:
+    - fn
+    -
+      -
+        - facts
+        - $call:
+            - record
+            - deterministic
+            - {$ref: boolean}
+            - matches_expected
+            - {$ref: boolean}
+            - bless_requested
+            - {$ref: boolean}
+            - replayable
+            - {$ref: boolean}
+            - replay_completed
+            - {$ref: boolean}
+            - replay_matches
+            - {$ref: boolean}
+    - $call:
+        - let
+        - accepted:
+            $call:
+              - and
+              - {$ref: facts.deterministic}
+              - {$call: [or, {$ref: facts.bless_requested}, {$ref: facts.matches_expected}]}
+        - bless: {$call: [and, {$ref: facts.deterministic}, {$ref: facts.bless_requested}]}
+          replay:
+            $call:
+              - and
+              - {$ref: accepted}
+              - {$ref: facts.replayable}
+              - {$call: [not, {$ref: facts.replay_completed}]}
+          stage:
+            $call:
+              - cond
+              - {$call: [not, {$ref: facts.deterministic}]}
+              - determinism
+              - {$call: [not, {$ref: accepted}]}
+              - golden
+              - $call:
+                  - and
+                  - {$ref: facts.replayable}
+                  - {$ref: facts.replay_completed}
+                  - {$call: [not, {$ref: facts.replay_matches}]}
+              - roundtrip
+              - passed
+    - {$ref: map}
 # Full captured observations remain a public convenience API. Hosts may instead
 # supply exact comparison facts to golden_decision without transporting the text.
 # Missing expectations are null, distinct from empty text. Replay is null until
 # completed; its non-null shape is {returncode, root}.
-golden_plan: {$call: [fn, [[observation, {$ref: map}]],
-    {$call: [let,
-        {replay: {$call: [get, {$ref: observation}, replay]},
-          run: {$call: [get, {$ref: observation}, run]}},
-        {$call: [golden_decision,
-            {bless_requested: {$call: [get, {$ref: observation}, bless]},
-              deterministic: {$call: [eq, {$ref: run},
-                  {$call: [get, {$ref: observation}, repeated]}]},
-              matches_expected: {$call: [eq, {$call: [get, {$ref: run}, stdout]},
-                  {$call: [get, {$ref: observation}, expected]}]},
-              replay_completed: {$call: [ne, {$ref: replay}, ~]},
-              replay_matches: {$call: [and, {$call: [ne, {$ref: replay}, ~]},
-                  {$call: [eq, {$call: [get, {$ref: replay}, returncode]}, 0]},
-                  {$call: [eq, {$call: [get, {$ref: replay}, root]},
-                      {$call: [get, {$ref: observation}, root]}]}]},
-              replayable: {$call: [ne, {$call: [get, {$ref: observation}, root]}, ~]}}]}]},
-    {$ref: map}]}
-is_failure: {$call: [fn, [[result, {$ref: map}]],
-    {$call: [eq, {$call: [get, {$ref: result}, outcome]}, failed]}, {$ref: boolean}]}
-lists: {$call: [fn, [[alphabet, {$ref: list}], [max_length, {$ref: integer}]],
-    {$call: [if, {$call: [lt, {$ref: max_length}, 0]},
-        {$call: [raise, range, maximum sample length must be non-negative]},
-        {$call: [sequences.flat_map,
-            {$call: [sequences.range, {$call: [add, {$ref: max_length}, 1]}]},
-            {$call: [fn, [size],
-                {$call: [product,
-                    {$call: [map, {$call: [fn, [ignored], {$ref: alphabet}]},
-                        {$call: [sequences.range, {$ref: size}]}]}]}]}]}]}, {$ref: list}]}
-product: {$call: [fn, [[axes, {$call: [list_of, {$ref: list}]}]],
-    {$call: [fold,
-        {$call: [fn, [rows, axis],
-            {$call: [sequences.flat_map, {$ref: rows},
-                {$call: [fn, [row],
-                    {$call: [map,
-                        {$call: [fn, [value], {$call: [append, {$ref: row}, {$ref: value}]}]},
-                        {$ref: axis}]}]}]}]}, {$call: [list, []]}, {$ref: axes}]}, {$ref: list}]}
-property: {$call: [fn,
-    [[name, {$ref: string}], [samples, {$ref: list}], [predicate, {$ref: function}]],
-    {$call: [table,
-        {$call: [map,
-            {$call: [fn, [sample], {$call: [dict, name, {$ref: name}, input, {$ref: sample}]}]},
-            {$ref: samples}]},
-        {$call: [fn, [sample],
-            {$call: [assert, {$call: [call, {$ref: predicate}, {$ref: sample}]},
-                property rejected sample]}]}]}, {$ref: map}]}
-require_pass: {$call: [fn, [[report, {$ref: map}]],
-    {$call: [if, {$call: [eq, {$call: [get, {$ref: report}, failed]}, 0]}, {$ref: report},
-        {$call: [raise, test_failure, suite contains failures, {$ref: report}]}]}, {$ref: map}]}
-rerun: {$call: [fn, [[cases, {$ref: list}], [report, {$ref: map}]],
-    {$call: [let,
-        {names: {$call: [map, {$call: [fn, [result], {$call: [get, {$ref: result}, name]}]},
-              {$call: [failures, {$ref: report}]}]}},
-        {$call: [suite,
-            {$call: [filter,
-                {$call: [fn, [spec],
-                    {$call: [has, {$ref: names}, {$call: [get, {$ref: spec}, name]}]}]},
-                {$ref: cases}]}]}]}, {$ref: map}]}
+golden_plan:
+  $call:
+    - fn
+    - [[observation, {$ref: map}]]
+    - $call:
+        - let
+        - replay: {$call: [get, {$ref: observation}, replay]}
+          run: {$call: [get, {$ref: observation}, run]}
+        - $call:
+            - golden_decision
+            - bless_requested: {$call: [get, {$ref: observation}, bless]}
+              deterministic:
+                $call: [eq, {$ref: run}, {$call: [get, {$ref: observation}, repeated]}]
+              matches_expected:
+                $call:
+                  - eq
+                  - {$call: [get, {$ref: run}, stdout]}
+                  - {$call: [get, {$ref: observation}, expected]}
+              replay_completed: {$call: [ne, {$ref: replay}, ~]}
+              replay_matches:
+                $call:
+                  - and
+                  - {$call: [ne, {$ref: replay}, ~]}
+                  - {$call: [eq, {$call: [get, {$ref: replay}, returncode]}, 0]}
+                  - $call:
+                      - eq
+                      - {$call: [get, {$ref: replay}, root]}
+                      - {$call: [get, {$ref: observation}, root]}
+              replayable: {$call: [ne, {$call: [get, {$ref: observation}, root]}, ~]}
+    - {$ref: map}
+is_failure:
+  $call:
+    - fn
+    - [[result, {$ref: map}]]
+    - {$call: [eq, {$call: [get, {$ref: result}, outcome]}, failed]}
+    - {$ref: boolean}
+lists:
+  $call:
+    - fn
+    - [[alphabet, {$ref: list}], [max_length, {$ref: integer}]]
+    - $call:
+        - if
+        - {$call: [lt, {$ref: max_length}, 0]}
+        - {$call: [raise, range, maximum sample length must be non-negative]}
+        - $call:
+            - sequences.flat_map
+            - {$call: [sequences.range, {$call: [add, {$ref: max_length}, 1]}]}
+            - $call:
+                - fn
+                - [size]
+                - $call:
+                    - product
+                    - $call:
+                        - map
+                        - $call:
+                            - fn
+                            - [ignored]
+                            - {$ref: alphabet}
+                        - {$call: [sequences.range, {$ref: size}]}
+    - {$ref: list}
+product:
+  $call:
+    - fn
+    - [[axes, {$call: [list_of, {$ref: list}]}]]
+    - $call:
+        - fold
+        - $call:
+            - fn
+            - [rows, axis]
+            - $call:
+                - sequences.flat_map
+                - {$ref: rows}
+                - $call:
+                    - fn
+                    - [row]
+                    - $call:
+                        - map
+                        - $call:
+                            - fn
+                            - [value]
+                            - {$call: [append, {$ref: row}, {$ref: value}]}
+                        - {$ref: axis}
+        - {$call: [list, []]}
+        - {$ref: axes}
+    - {$ref: list}
+property:
+  $call:
+    - fn
+    - [[name, {$ref: string}], [samples, {$ref: list}], [predicate, {$ref: function}]]
+    - $call:
+        - table
+        - $call:
+            - map
+            - $call:
+                - fn
+                - [sample]
+                - {$call: [dict, name, {$ref: name}, input, {$ref: sample}]}
+            - {$ref: samples}
+        - $call:
+            - fn
+            - [sample]
+            - $call:
+                - assert
+                - {$call: [call, {$ref: predicate}, {$ref: sample}]}
+                - property rejected sample
+    - {$ref: map}
+require_pass:
+  $call:
+    - fn
+    - [[report, {$ref: map}]]
+    - $call:
+        - if
+        - {$call: [eq, {$call: [get, {$ref: report}, failed]}, 0]}
+        - {$ref: report}
+        - {$call: [raise, test_failure, suite contains failures, {$ref: report}]}
+    - {$ref: map}
+rerun:
+  $call:
+    - fn
+    - [[cases, {$ref: list}], [report, {$ref: map}]]
+    - $call:
+        - let
+        - names:
+            $call:
+              - map
+              - $call:
+                  - fn
+                  - [result]
+                  - {$call: [get, {$ref: result}, name]}
+              - {$call: [failures, {$ref: report}]}
+        - $call:
+            - suite
+            - $call:
+                - filter
+                - $call:
+                    - fn
+                    - [spec]
+                    - {$call: [has, {$ref: names}, {$call: [get, {$ref: spec}, name]}]}
+                - {$ref: cases}
+    - {$ref: map}
 sequences: {$call: [import, "std:list"]}
-suite: {$call: [fn, [[cases, {$ref: list}]],
-    {$call: [let,
-        {failures: {$call: [filter, {$ref: is_failure}, {$ref: results}]},
-          results: {$call: [map, {$ref: case}, {$ref: cases}]}},
-        {$call: [dict, total, {$call: [len, {$ref: results}]}, passed,
-            {$call: [sub, {$call: [len, {$ref: results}]}, {$call: [len, {$ref: failures}]}]},
-            failed, {$call: [len, {$ref: failures}]}, results, {$ref: results}]}]}, {$ref: map}]}
-table: {$call: [fn, [[rows, {$ref: list}], [verify, {$ref: function}]],
-    {$call: [suite,
-        {$call: [map,
-            {$call: [fn, [row],
-                {$call: [dict, name, {$call: [get, {$ref: row}, name]}, input,
-                    {$call: [get, {$ref: row}, input]}, run,
-                    {$call: [fn, [],
-                        {$call: [call, {$ref: verify}, {$call: [get, {$ref: row}, input]}]}]}]}]},
-            {$ref: rows}]}]}, {$ref: map}]}
-tagged: {$call: [fn, [[cases, {$ref: list}], [tag, {$ref: string}]],
-    {$call: [filter,
-        {$call: [fn, [spec], {$call: [has, {$call: [get, {$ref: spec}, tags, []]}, {$ref: tag}]}]},
-        {$ref: cases}]}, {$ref: list}]}
-throws: {$call: [fn, [[thunk, {$ref: function}], [kind, {$ref: string}]],
-    {$call: [let, {result: {$call: [capture, {$ref: thunk}]}},
-        {$call: [if, {$call: [eq, {$call: [get, {$ref: result}, outcome]}, passed]},
-            {$call: [raise, assertion, expected an error,
-                {$call: [dict, expected_kind, {$ref: kind}, actual,
-                    {$call: [get, {$ref: result}, value]}]}]},
-            {$call: [let, {error: {$call: [get, {$ref: result}, error]}},
-                {$call: [if, {$call: [eq, {$call: [get, {$ref: error}, kind]}, {$ref: kind}]},
-                    {$ref: error},
-                    {$call: [raise, assertion, unexpected error kind,
-                        {$call: [dict, expected_kind, {$ref: kind}, error, {$ref: error}]}]}]}]}]}]},
-    {$ref: map}]}
-throws_matching: {$call: [fn, [[thunk, {$ref: function}], [expected, {$ref: map}]],
-    {$call: [let, {error: {$call: [throws, {$ref: thunk}, {$call: [get, {$ref: expected}, kind]}]}},
-        {$call: [finally, {$ref: error}, {$call: [fields_equal, {$ref: error}, {$ref: expected}]}]}]},
-    {$ref: map}]}
+suite:
+  $call:
+    - fn
+    - [[cases, {$ref: list}]]
+    - $call:
+        - let
+        - failures: {$call: [filter, {$ref: is_failure}, {$ref: results}]}
+          results: {$call: [map, {$ref: case}, {$ref: cases}]}
+        - $call:
+            - dict
+            - total
+            - {$call: [len, {$ref: results}]}
+            - passed
+            - {$call: [sub, {$call: [len, {$ref: results}]}, {$call: [len, {$ref: failures}]}]}
+            - failed
+            - {$call: [len, {$ref: failures}]}
+            - results
+            - {$ref: results}
+    - {$ref: map}
+table:
+  $call:
+    - fn
+    - [[rows, {$ref: list}], [verify, {$ref: function}]]
+    - $call:
+        - suite
+        - $call:
+            - map
+            - $call:
+                - fn
+                - [row]
+                - $call:
+                    - dict
+                    - name
+                    - {$call: [get, {$ref: row}, name]}
+                    - input
+                    - {$call: [get, {$ref: row}, input]}
+                    - run
+                    - $call:
+                        - fn
+                        - []
+                        - {$call: [call, {$ref: verify}, {$call: [get, {$ref: row}, input]}]}
+            - {$ref: rows}
+    - {$ref: map}
+tagged:
+  $call:
+    - fn
+    - [[cases, {$ref: list}], [tag, {$ref: string}]]
+    - $call:
+        - filter
+        - $call:
+            - fn
+            - [spec]
+            - {$call: [has, {$call: [get, {$ref: spec}, tags, []]}, {$ref: tag}]}
+        - {$ref: cases}
+    - {$ref: list}
+throws:
+  $call:
+    - fn
+    - [[thunk, {$ref: function}], [kind, {$ref: string}]]
+    - $call:
+        - let
+        - {result: {$call: [capture, {$ref: thunk}]}}
+        - $call:
+            - if
+            - {$call: [eq, {$call: [get, {$ref: result}, outcome]}, passed]}
+            - $call:
+                - raise
+                - assertion
+                - expected an error
+                - $call:
+                    - dict
+                    - expected_kind
+                    - {$ref: kind}
+                    - actual
+                    - {$call: [get, {$ref: result}, value]}
+            - $call:
+                - let
+                - {error: {$call: [get, {$ref: result}, error]}}
+                - $call:
+                    - if
+                    - {$call: [eq, {$call: [get, {$ref: error}, kind]}, {$ref: kind}]}
+                    - {$ref: error}
+                    - $call:
+                        - raise
+                        - assertion
+                        - unexpected error kind
+                        - {$call: [dict, expected_kind, {$ref: kind}, error, {$ref: error}]}
+    - {$ref: map}
+throws_matching:
+  $call:
+    - fn
+    - [[thunk, {$ref: function}], [expected, {$ref: map}]]
+    - $call:
+        - let
+        - {error: {$call: [throws, {$ref: thunk}, {$call: [get, {$ref: expected}, kind]}]}}
+        - $call: [finally, {$ref: error}, {$call: [fields_equal, {$ref: error}, {$ref: expected}]}]
+    - {$ref: map}
