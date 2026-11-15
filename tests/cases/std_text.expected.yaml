@@ -1054,8 +1054,27 @@ objects:
         - join
       source: "std:text"
     program:
-      ref: object2
+      ref: object3
   object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - pattern
+          - text
+        - "$call":
+            - regex_find
+            - "$ref": pattern
+            - "$ref": text
+    environment: []
+    kind: function
+    location:
+      path:
+        - regex
+      source: "std:text"
+    program:
+      ref: object3
+  object2:
     bindings: {}
     code:
       "$call":
@@ -1198,8 +1217,8 @@ objects:
         - split
       source: "std:text"
     program:
-      ref: object2
-  object2:
+      ref: object3
+  object3:
     kind: program
     sources:
       - code:
@@ -1422,6 +1441,15 @@ objects:
                       - "$ref": parts
                   - text
               - "$ref": string
+          regex:
+            "$call":
+              - fn
+              - - pattern
+                - text
+              - "$call":
+                  - regex_find
+                  - "$ref": pattern
+                  - "$ref": text
           split:
             "$call":
               - fn
@@ -1588,8 +1616,10 @@ root:
   t:
     join:
       ref: object0
-    split:
+    regex:
       ref: object1
+    split:
+      ref: object2
   unicode:
     - ""
     - "é"
