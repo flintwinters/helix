@@ -653,38 +653,38 @@ annotations:
         calls:
           - column: 57
             function: /parse
-            function_column: 8
+            function_column: 3
             function_file: "std:yaml"
-            function_line: 7
+            function_line: 19
             line: 31
             path: "/batch/$call/2/$call/2/$call/1"
-          - column: 28
+          - column: 31
             file: "std:validation"
             function: "/batch/$call/2"
             function_column: 5
             function_line: 31
-            line: 19
+            line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 40
+          - column: 43
             file: "std:test"
             function: "/batch/$call/2/$call/2"
-            function_column: 9
+            function_column: 11
             function_file: "std:validation"
-            function_line: 18
-            line: 148
+            function_line: 27
+            line: 325
             path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 73
+          - column: 64
             file: "std:test"
             function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 21
+            function_column: 23
             function_file: "std:test"
-            function_line: 147
-            line: 6
+            function_line: 323
+            line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
-        column: 70
+        column: 29
         file: "std:yaml"
         kind: parse
-        line: 7
+        line: 21
         message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
         path: "/parse/$call/2/$call/1"
         reference:
@@ -716,38 +716,38 @@ annotations:
         calls:
           - column: 57
             function: /parse
-            function_column: 8
+            function_column: 3
             function_file: "std:yaml"
-            function_line: 7
+            function_line: 19
             line: 31
             path: "/batch/$call/2/$call/2/$call/1"
-          - column: 28
+          - column: 31
             file: "std:validation"
             function: "/batch/$call/2"
             function_column: 5
             function_line: 31
-            line: 19
+            line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 40
+          - column: 43
             file: "std:test"
             function: "/batch/$call/2/$call/2"
-            function_column: 9
+            function_column: 11
             function_file: "std:validation"
-            function_line: 18
-            line: 148
+            function_line: 27
+            line: 325
             path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 73
+          - column: 64
             file: "std:test"
             function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 21
+            function_column: 23
             function_file: "std:test"
-            function_line: 147
-            line: 6
+            function_line: 323
+            line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
-        column: 70
+        column: 29
         file: "std:yaml"
         kind: parse
-        line: 7
+        line: 21
         message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
         path: "/parse/$call/2/$call/1"
         reference:
@@ -901,28 +901,28 @@ annotations:
             function_line: 12
             line: 31
             path: "/batch/$call/2/$call/2"
-          - column: 28
+          - column: 31
             file: "std:validation"
             function: "/batch/$call/2"
             function_column: 5
             function_line: 31
-            line: 19
+            line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 40
+          - column: 43
             file: "std:test"
             function: "/batch/$call/2/$call/2"
-            function_column: 9
+            function_column: 11
             function_file: "std:validation"
-            function_line: 18
-            line: 148
+            function_line: 27
+            line: 325
             path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 73
+          - column: 64
             file: "std:test"
             function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 21
+            function_column: 23
             function_file: "std:test"
-            function_line: 147
-            line: 6
+            function_line: 323
+            line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
         column: 11
         kind: assertion
@@ -966,28 +966,28 @@ annotations:
             function_line: 12
             line: 31
             path: "/batch/$call/2/$call/2"
-          - column: 28
+          - column: 31
             file: "std:validation"
             function: "/batch/$call/2"
             function_column: 5
             function_line: 31
-            line: 19
+            line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 40
+          - column: 43
             file: "std:test"
             function: "/batch/$call/2/$call/2"
-            function_column: 9
+            function_column: 11
             function_file: "std:validation"
-            function_line: 18
-            line: 148
+            function_line: 27
+            line: 325
             path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 73
+          - column: 64
             file: "std:test"
             function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 21
+            function_column: 23
             function_file: "std:test"
-            function_line: 147
-            line: 6
+            function_line: 323
+            line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
         column: 11
         kind: assertion
@@ -1149,28 +1149,28 @@ annotations:
             function_line: 12
             line: 31
             path: "/batch/$call/2/$call/2"
-          - column: 28
+          - column: 31
             file: "std:validation"
             function: "/batch/$call/2"
             function_column: 5
             function_line: 31
-            line: 19
+            line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 40
+          - column: 43
             file: "std:test"
             function: "/batch/$call/2/$call/2"
-            function_column: 9
+            function_column: 11
             function_file: "std:validation"
-            function_line: 18
-            line: 148
+            function_line: 27
+            line: 325
             path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 73
+          - column: 64
             file: "std:test"
             function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 21
+            function_column: 23
             function_file: "std:test"
-            function_line: 147
-            line: 6
+            function_line: 323
+            line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
         column: 50
         kind: missing
@@ -1213,28 +1213,28 @@ annotations:
             function_line: 12
             line: 31
             path: "/batch/$call/2/$call/2"
-          - column: 28
+          - column: 31
             file: "std:validation"
             function: "/batch/$call/2"
             function_column: 5
             function_line: 31
-            line: 19
+            line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 40
+          - column: 43
             file: "std:test"
             function: "/batch/$call/2/$call/2"
-            function_column: 9
+            function_column: 11
             function_file: "std:validation"
-            function_line: 18
-            line: 148
+            function_line: 27
+            line: 325
             path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 73
+          - column: 64
             file: "std:test"
             function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 21
+            function_column: 23
             function_file: "std:test"
-            function_line: 147
-            line: 6
+            function_line: 323
+            line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
         column: 50
         kind: missing
@@ -6538,38 +6538,38 @@ root:
           calls:
             - column: 57
               function: /parse
-              function_column: 8
+              function_column: 3
               function_file: "std:yaml"
-              function_line: 7
+              function_line: 19
               line: 31
               path: "/batch/$call/2/$call/2/$call/1"
-            - column: 28
+            - column: 31
               file: "std:validation"
               function: "/batch/$call/2"
               function_column: 5
               function_line: 31
-              line: 19
+              line: 29
               path: "/batch/$call/2/$call/2/$call/2/$call/1"
-            - column: 40
+            - column: 43
               file: "std:test"
               function: "/batch/$call/2/$call/2"
-              function_column: 9
+              function_column: 11
               function_file: "std:validation"
-              function_line: 18
-              line: 148
+              function_line: 27
+              line: 325
               path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-            - column: 73
+            - column: 64
               file: "std:test"
               function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-              function_column: 21
+              function_column: 23
               function_file: "std:test"
-              function_line: 147
-              line: 6
+              function_line: 323
+              line: 9
               path: "/capture/$call/2/$call/1/$call/4/$call/1"
-          column: 70
+          column: 29
           file: "std:yaml"
           kind: parse
-          line: 7
+          line: 21
           message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
           path: "/parse/$call/2/$call/1"
           reference:
@@ -6591,28 +6591,28 @@ root:
               function_line: 12
               line: 31
               path: "/batch/$call/2/$call/2"
-            - column: 28
+            - column: 31
               file: "std:validation"
               function: "/batch/$call/2"
               function_column: 5
               function_line: 31
-              line: 19
+              line: 29
               path: "/batch/$call/2/$call/2/$call/2/$call/1"
-            - column: 40
+            - column: 43
               file: "std:test"
               function: "/batch/$call/2/$call/2"
-              function_column: 9
+              function_column: 11
               function_file: "std:validation"
-              function_line: 18
-              line: 148
+              function_line: 27
+              line: 325
               path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-            - column: 73
+            - column: 64
               file: "std:test"
               function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-              function_column: 21
+              function_column: 23
               function_file: "std:test"
-              function_line: 147
-              line: 6
+              function_line: 323
+              line: 9
               path: "/capture/$call/2/$call/1/$call/4/$call/1"
           column: 11
           kind: assertion
@@ -6642,28 +6642,28 @@ root:
               function_line: 12
               line: 31
               path: "/batch/$call/2/$call/2"
-            - column: 28
+            - column: 31
               file: "std:validation"
               function: "/batch/$call/2"
               function_column: 5
               function_line: 31
-              line: 19
+              line: 29
               path: "/batch/$call/2/$call/2/$call/2/$call/1"
-            - column: 40
+            - column: 43
               file: "std:test"
               function: "/batch/$call/2/$call/2"
-              function_column: 9
+              function_column: 11
               function_file: "std:validation"
-              function_line: 18
-              line: 148
+              function_line: 27
+              line: 325
               path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-            - column: 73
+            - column: 64
               file: "std:test"
               function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-              function_column: 21
+              function_column: 23
               function_file: "std:test"
-              function_line: 147
-              line: 6
+              function_line: 323
+              line: 9
               path: "/capture/$call/2/$call/1/$call/4/$call/1"
           column: 50
           kind: missing
@@ -7242,15 +7242,15 @@ root:
         calls:
           - column: 7
             function: /parse
-            function_column: 8
+            function_column: 3
             function_file: "std:yaml"
-            function_line: 7
+            function_line: 19
             line: 122
             path: "/load_config/$call/2/$call/1"
-        column: 70
+        column: 29
         file: "std:yaml"
         kind: parse
-        line: 7
+        line: 21
         message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 7 line 2 column 1 (YAML line 2, column 1)"
         path: "/parse/$call/2/$call/1"
         reference:

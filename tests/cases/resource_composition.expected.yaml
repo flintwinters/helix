@@ -2183,31 +2183,31 @@ root:
   cycle:
     diagnostics:
       - calls:
-          - column: 9
+          - column: 11
             file: "std:orchestration"
             function: /require
-            function_column: 10
+            function_column: 3
             function_file: "std:orchestration"
-            function_line: 69
-            line: 48
+            function_line: 163
+            line: 104
             path: "/planned/$call/2/$call/2"
-          - column: 9
+          - column: 11
             file: "std:orchestration"
             function: /planned
-            function_column: 10
+            function_column: 3
             function_file: "std:orchestration"
-            function_line: 46
-            line: 42
+            function_line: 98
+            line: 93
             path: "/plan_checked/$call/2/$call/2"
-          - column: 19
+          - column: 15
             file: "std:orchestration"
             function: /plan_checked
-            function_column: 15
+            function_column: 3
             function_file: "std:orchestration"
-            function_line: 36
-            line: 32
+            function_line: 84
+            line: 67
             path: "/plan/$call/2/$call/1"
-        column: 9
+        column: 15
         data:
           missing: []
           order: []
@@ -2219,7 +2219,7 @@ root:
           status: blocked
         file: "std:orchestration"
         kind: orchestration_dependency_cycle
-        line: 71
+        line: 169
         message: Resource prerequisites contain a cycle
         path: "/require/$call/2/$call/3"
         reference:
@@ -2249,12 +2249,12 @@ root:
       package:
         error:
           calls:
-            - column: 41
+            - column: 42
               file: "std:orchestration"
               function: "/$call/2/failed_prerequisite/$call/2"
               function_column: 12
               function_line: 53
-              line: 17
+              line: 32
               path: "/invoke/$call/2/$call/1/$call/1/$call/1"
           column: 16
           kind: package_failed
@@ -2278,62 +2278,62 @@ root:
     changed: false
     diagnostics:
       - calls:
-          - column: 13
+          - column: 15
             file: "std:orchestration"
             function: /require
-            function_column: 10
+            function_column: 3
             function_file: "std:orchestration"
-            function_line: 69
-            line: 145
+            function_line: 163
+            line: 340
             path: "/validate_references/$call/2/$call/1/$call/2"
-          - column: 9
+          - column: 11
             file: "std:orchestration"
             function: "/validate_references/$call/2/$call/1"
-            function_column: 9
+            function_column: 11
             function_file: "std:orchestration"
-            function_line: 144
-            line: 144
+            function_line: 337
+            line: 337
             path: "/validate_references/$call/2/$call/1"
-          - column: 17
-            file: "std:orchestration"
-            function: /validate_references
-            function_column: 22
-            function_file: "std:orchestration"
-            function_line: 142
-            line: 77
-            path: "/resource_graph/$call/2/$call/1/$call/2/$call/3"
-          - column: 9
-            file: "std:orchestration"
-            function: "/resource_graph/$call/2/$call/1"
-            function_column: 9
-            function_file: "std:orchestration"
-            function_line: 75
-            line: 75
-            path: "/resource_graph/$call/2/$call/1"
-          - column: 13
-            file: "std:orchestration"
-            function: /resource_graph
-            function_column: 17
-            function_file: "std:orchestration"
-            function_line: 73
-            line: 43
-            path: "/plan_checked/$call/2/$call/2/$call/1"
           - column: 19
             file: "std:orchestration"
-            function: /plan_checked
-            function_column: 15
+            function: /validate_references
+            function_column: 3
             function_file: "std:orchestration"
-            function_line: 36
-            line: 32
+            function_line: 332
+            line: 184
+            path: "/resource_graph/$call/2/$call/1/$call/2/$call/3"
+          - column: 11
+            file: "std:orchestration"
+            function: "/resource_graph/$call/2/$call/1"
+            function_column: 11
+            function_file: "std:orchestration"
+            function_line: 177
+            line: 177
+            path: "/resource_graph/$call/2/$call/1"
+          - column: 19
+            file: "std:orchestration"
+            function: /resource_graph
+            function_column: 3
+            function_file: "std:orchestration"
+            function_line: 172
+            line: 94
+            path: "/plan_checked/$call/2/$call/2/$call/1"
+          - column: 15
+            file: "std:orchestration"
+            function: /plan_checked
+            function_column: 3
+            function_file: "std:orchestration"
+            function_line: 84
+            line: 67
             path: "/plan/$call/2/$call/1"
-        column: 9
+        column: 15
         data:
           field: requires
           owner: file
           target: missing
         file: "std:orchestration"
         kind: orchestration_missing_reference
-        line: 71
+        line: 169
         message: Resource composition references an unknown prerequisite or handler
         path: "/require/$call/2/$call/3"
         reference:

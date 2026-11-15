@@ -1048,9 +1048,9 @@ root:
     calls:
       - column: 7
         function: /optional_fields
-        function_column: 18
+        function_column: 3
         function_file: "std:types"
-        function_line: 15
+        function_line: 27
         line: 27
         path: "/audited_change/$call/2/$call/6"
       - column: 29
@@ -1059,10 +1059,10 @@ root:
         function_line: 17
         line: 71
         path: "/invalid_type/$call/1/$call/1"
-    column: 44
+    column: 37
     file: "std:types"
     kind: type
-    line: 16
+    line: 31
     message: "expected a record or class type, got string"
     path: "/optional_fields/$call/2/$call/1/specs/$call/1"
     phase: type

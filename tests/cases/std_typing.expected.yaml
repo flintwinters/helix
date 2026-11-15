@@ -3165,7 +3165,7 @@ root:
     calls:
       - column: 30
         function: /abs
-        function_column: 6
+        function_column: 3
         function_file: "std:math"
         function_line: 4
         line: 28

@@ -57,7 +57,7 @@ def verify(h):
     result = h.helix('run', '-', stdin=mixed)
     assert result.returncode == 0 and yaml.safe_load(result.stdout)['root'] is True, result
     # Tags never leak into ordinary data emission, including codec input.
-    codec = '!call [yaml_load, "!call [add, 1, 2]"]'
+    codec = '!call [yaml_parse, "!call [add, 1, 2]"]'
     result = h.helix('run', '-', stdin=codec)
     assert result.returncode == 0 and yaml.safe_load(result.stdout)['root'] == {'$call': ['add', 1, 2]}, result
     call = lambda actor, *args: {"$call": [actor, *args]}

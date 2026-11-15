@@ -1959,36 +1959,36 @@ root:
     applied: false
     error:
       calls:
-        - column: 44
+        - column: 48
           file: "std:command"
           function: "/$call/2/effectful_guard/$call/1/$call/1/$call/3"
           function_column: 16
           function_line: 169
-          line: 43
+          line: 103
           path: "/configured/$call/2/$call/4/$call/26/$call/2/$call/1/$call/1/$call/1/$call/1"
-        - column: 36
+        - column: 40
           file: "std:provider"
           function: "/configured/$call/2/$call/4/$call/26"
-          function_column: 13
+          function_column: 15
           function_file: "std:command"
-          function_line: 39
-          line: 110
+          function_line: 95
+          line: 294
           path: "/planned/$call/2/$call/5/$call/1/$call/1/$call/1/$call/1"
-        - column: 9
+        - column: 11
           file: "std:provider"
           function: /planned
-          function_column: 10
+          function_column: 3
           function_file: "std:provider"
-          function_line: 105
-          line: 101
+          function_line: 280
+          line: 273
           path: "/plan_checked/$call/2/$call/2"
-        - column: 13
+        - column: 15
           file: "std:provider"
           function: /plan_checked
-          function_column: 15
+          function_column: 3
           function_file: "std:provider"
-          function_line: 99
-          line: 96
+          function_line: 267
+          line: 256
           path: "/plan/$call/2/$call/1/$call/1"
       column: 18
       kind: purity
@@ -2014,29 +2014,29 @@ root:
     version: 1
   failed:
     calls:
-      - column: 9
+      - column: 15
         file: "std:command"
         function: /classified
-        function_column: 13
+        function_column: 3
         function_file: "std:command"
-        function_line: 10
-        line: 23
+        function_line: 11
+        line: 38
         path: "/classify/$call/2/$call/1"
       - column: 12
         function: /classify
-        function_column: 11
+        function_column: 3
         function_file: "std:command"
-        function_line: 21
+        function_line: 34
         line: 130
         path: "/$call/2/failed/$call/1"
-    column: 9
+    column: 11
     data:
       code: 7
       stderr: ""
       stdout: "changed\n"
     file: "std:command"
     kind: command_failed
-    line: 15
+    line: 20
     message: The command failure predicate rejected the result
     path: "/classified/$call/2/$call/2"
     phase: type
@@ -2070,31 +2070,31 @@ root:
     applied: false
     error:
       calls:
-        - column: 36
+        - column: 40
           file: "std:provider"
           function: "/configured/$call/2/$call/4/$call/26"
-          function_column: 13
+          function_column: 15
           function_file: "std:command"
-          function_line: 39
-          line: 110
+          function_line: 95
+          line: 294
           path: "/planned/$call/2/$call/5/$call/1/$call/1/$call/1/$call/1"
-        - column: 9
+        - column: 11
           file: "std:provider"
           function: /planned
-          function_column: 10
+          function_column: 3
           function_file: "std:provider"
-          function_line: 105
-          line: 101
+          function_line: 280
+          line: 273
           path: "/plan_checked/$call/2/$call/2"
-        - column: 13
+        - column: 15
           file: "std:provider"
           function: /plan_checked
-          function_column: 15
+          function_column: 3
           function_file: "std:provider"
-          function_line: 99
-          line: 96
+          function_line: 267
+          line: 256
           path: "/plan/$call/2/$call/1/$call/1"
-      column: 29
+      column: 35
       data:
         violations:
           - actual: not boolean
@@ -2105,7 +2105,7 @@ root:
             rule: type
       file: "std:command"
       kind: type
-      line: 43
+      line: 103
       message: "1 type violation: expected boolean, got string"
       path: "/configured/$call/2/$call/4/$call/26/$call/2/$call/1/$call/1/$call/1"
       phase: type
