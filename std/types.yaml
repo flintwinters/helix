@@ -1,136 +1,70 @@
 # Helix explicit syntax; migrated from legacy source.
 # Type derivation stays ordinary Helix: reflection, folds and the checked constructors.
 # These helpers use canonical field order and leave the input declaration unchanged.
-"from_fields":
-  "$call":
-  - "fn"
-  - - - "specs"
-      - {"$ref": "map"}
-  - "$call":
-    - "fold"
-    - "$call":
-      - "fn"
-      - - "result"
-        - "name"
-      - "$call":
-        - "with_field"
-        - {"$ref": "result"}
-        - {"$ref": "name"}
-        - {"$call": ["get", {"$ref": "specs"}, {"$ref": "name"}]}
-    - {"$call": ["record"]}
-    - {"$call": ["keys", {"$ref": "specs"}]}
-  - {"$ref": "map"}
-"without_field":
-  "$call":
-  - "fn"
-  - - "t"
-    - - "name"
-      - {"$ref": "string"}
-  - "$call":
-    - "let"
-    - "specs": {"$call": ["fields", {"$ref": "t"}]}
-    - "$call":
-      - "fold"
-      - "$call":
-        - "fn"
-        - - "result"
-          - "field"
-        - "$call":
-          - "if"
-          - {"$call": ["eq", {"$ref": "field"}, {"$ref": "name"}]}
-          - {"$ref": "result"}
-          - "$call":
-            - "with_field"
-            - {"$ref": "result"}
-            - {"$ref": "field"}
-            - {"$call": ["get", {"$ref": "specs"}, {"$ref": "field"}]}
-      - {"$call": ["record"]}
-      - {"$call": ["keys", {"$ref": "specs"}]}
-  - {"$ref": "map"}
-"optional_field":
-  "$call":
-  - "fn"
-  - - "spec"
-  - "$call":
-    - "if"
-    - "$call":
-      - "and"
-      - {"$call": ["eq", {"$call": ["type", {"$ref": "spec"}]}, "map"]}
-      - {"$call": ["has", ["optional", "default"], {"$call": ["get", {"$ref": "spec"}, "type", ""]}]}
-    - {"$ref": "spec"}
-    - {"$call": ["optional", {"$ref": "spec"}]}
-"optional_fields":
-  "$call":
-  - "fn"
-  - - "t"
-  - "$call":
-    - "let"
-    - "specs": {"$call": ["fields", {"$ref": "t"}]}
-    - "$call":
-      - "fold"
-      - "$call":
-        - "fn"
-        - - "result"
-          - "name"
-        - "$call":
-          - "with_field"
-          - {"$ref": "result"}
-          - {"$ref": "name"}
-          - {"$call": ["optional_field", {"$call": ["get", {"$ref": "specs"}, {"$ref": "name"}]}]}
-      - {"$call": ["record"]}
-      - {"$call": ["keys", {"$ref": "specs"}]}
-  - {"$ref": "map"}
+from_fields: {$call: [fn, [[specs, {$ref: map}]],
+    {$call: [fold,
+        {$call: [fn, [result, name],
+            {$call: [with_field, {$ref: result}, {$ref: name},
+                {$call: [get, {$ref: specs}, {$ref: name}]}]}]}, {$call: [record]},
+        {$call: [keys, {$ref: specs}]}]}, {$ref: map}]}
+optional_field: {$call: [fn, [spec],
+    {$call: [if,
+        {$call: [and, {$call: [eq, {$call: [type, {$ref: spec}]}, map]},
+            {$call: [has, [optional, default], {$call: [get, {$ref: spec}, type, ""]}]}]},
+        {$ref: spec}, {$call: [optional, {$ref: spec}]}]}]}
+optional_fields: {$call: [fn, [t],
+    {$call: [let, {specs: {$call: [fields, {$ref: t}]}},
+        {$call: [fold,
+            {$call: [fn, [result, name],
+                {$call: [with_field, {$ref: result}, {$ref: name},
+                    {$call: [optional_field, {$call: [get, {$ref: specs}, {$ref: name}]}]}]}]},
+            {$call: [record]}, {$call: [keys, {$ref: specs}]}]}]}, {$ref: map}]}
 # Class declaration is recoverable from reflection plus the parent classes: provenance says which
 # fields and values the class itself declared. Retain the complete constraint list;
 # language equality is not a proof that two predicates enforce the same requirement.
-"own_entries":
-  "$call":
-  - "fn"
-  - - "source"
-    - "provenance"
-    - "name"
-    - "which"
-  - "$call":
-    - "fold"
-    - "$call":
-      - "fn"
-      - - "result"
-        - "key"
-      - "$call":
-        - "if"
-        - $call:
-          - and
-          - {$call: [or, {$call: [ne, {$ref: which}, value]}, {$call: [eq, {$call: [get, {$call: [get, {$ref: provenance}, {$ref: key}]}, value_kind]}, explicit]}]}
-          - {"$call": ["eq", {"$call": ["get", {"$call": ["get", {"$ref": "provenance"}, {"$ref": "key"}]}, {"$ref": "which"}, ""]}, {"$ref": "name"}]}
-        - {"$call": ["set", {"$ref": "result"}, {"$ref": "key"}, {"$call": ["get", {"$ref": "source"}, {"$ref": "key"}]}]}
-        - {"$ref": "result"}
-    - {}
-    - {"$call": ["keys", {"$ref": "source"}]}
-"redeclare":
-  "$call":
-  - "fn"
-  - - "t"
-    - "parents"
-  - "$call":
-    - "let"
-    - "name": {$call: [if, {$call: [subtype, {$ref: t}, any]}, {$call: [get, {$ref: t}, name]}, {$call: [raise, type, expected a class declaration]}]}
-    - "$call":
-      - "let"
-      - "declared":
-          "$call":
-          - "extend"
-          - {"$ref": "name"}
-          - {"$ref": "parents"}
-          - {"$call": ["dict", "type", "record", "fields", {"$call": ["own_entries", {"$call": ["get", {"$ref": "t"}, "fields"]}, {"$call": ["get", {"$ref": "t"}, "provenance"]}, {"$ref": "name"}, "type"]}]}
-          - {"$call": ["own_entries", {"$call": ["get", {"$ref": "t"}, "values"]}, {"$call": ["get", {"$ref": "t"}, "provenance"]}, {"$ref": "name"}, "value"]}
-        constraints_present: {$call: [has, {$ref: t}, constraints]}
-      - "$call":
-        - "let"
-        - candidate: {$call: [if, {$ref: constraints_present},
-            {$call: [set, {$ref: declared}, constraints, {$call: [get, {$ref: t}, constraints]}]},
-            {$ref: declared}]}
-        - $call:
-          - if
-          - {$call: [subtype, {$call: [if, {$ref: constraints_present}, {$ref: candidate}, {$ref: t}]}, {$ref: declared}]}
-          - {$call: [if, {$call: [get, {$ref: t}, concrete]}, {$call: [realize, {$ref: candidate}]}, {$ref: candidate}]}
-          - {$call: [raise, type, Redeclaration must preserve every inherited requirement]}
+own_entries: {$call: [fn, [source, provenance, name, which],
+    {$call: [fold,
+        {$call: [fn, [result, key],
+            {$call: [if,
+                {$call: [and,
+                    {$call: [or, {$call: [ne, {$ref: which}, value]},
+                        {$call: [eq,
+                            {$call: [get, {$call: [get, {$ref: provenance}, {$ref: key}]},
+                                value_kind]}, explicit]}]},
+                    {$call: [eq,
+                        {$call: [get, {$call: [get, {$ref: provenance}, {$ref: key}]},
+                            {$ref: which}, ""]}, {$ref: name}]}]},
+                {$call: [set, {$ref: result}, {$ref: key},
+                    {$call: [get, {$ref: source}, {$ref: key}]}]}, {$ref: result}]}]}, {},
+        {$call: [keys, {$ref: source}]}]}]}
+redeclare: {$call: [fn, [t, parents],
+    {$call: [let,
+        {name: {$call: [if, {$call: [subtype, {$ref: t}, any]}, {$call: [get, {$ref: t}, name]},
+              {$call: [raise, type, expected a class declaration]}]}},
+        {$call: [let,
+            {constraints_present: {$call: [has, {$ref: t}, constraints]},
+              declared: {$call: [extend, {$ref: name}, {$ref: parents},
+                  {$call: [dict, type, record, fields,
+                      {$call: [own_entries, {$call: [get, {$ref: t}, fields]},
+                          {$call: [get, {$ref: t}, provenance]}, {$ref: name}, type]}]},
+                  {$call: [own_entries, {$call: [get, {$ref: t}, values]},
+                      {$call: [get, {$ref: t}, provenance]}, {$ref: name}, value]}]}},
+            {$call: [let,
+                {candidate: {$call: [if, {$ref: constraints_present},
+                      {$call: [set, {$ref: declared}, constraints,
+                          {$call: [get, {$ref: t}, constraints]}]}, {$ref: declared}]}},
+                {$call: [if,
+                    {$call: [subtype,
+                        {$call: [if, {$ref: constraints_present}, {$ref: candidate}, {$ref: t}]},
+                        {$ref: declared}]},
+                    {$call: [if, {$call: [get, {$ref: t}, concrete]},
+                        {$call: [realize, {$ref: candidate}]}, {$ref: candidate}]},
+                    {$call: [raise, type, Redeclaration must preserve every inherited requirement]}]}]}]}]}]}
+without_field: {$call: [fn, [t, [name, {$ref: string}]],
+    {$call: [let, {specs: {$call: [fields, {$ref: t}]}},
+        {$call: [fold,
+            {$call: [fn, [result, field],
+                {$call: [if, {$call: [eq, {$ref: field}, {$ref: name}]}, {$ref: result},
+                    {$call: [with_field, {$ref: result}, {$ref: field},
+                        {$call: [get, {$ref: specs}, {$ref: field}]}]}]}]}, {$call: [record]},
+            {$call: [keys, {$ref: specs}]}]}]}, {$ref: map}]}

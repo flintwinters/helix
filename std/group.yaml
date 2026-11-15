@@ -4,27 +4,10 @@
 # Groups use canonical string-key order; items in each group retain input order.
 # Immutable map/list copies can cost quadratic time/space in total allocations.
 # Uses fold, so the runtime iteration limit applies; no input-sized recursion.
-"by":
-  "$call":
-  - "fn"
-  - - - "xs"
-      - {"$ref": "list"}
-    - - "key"
-      - {"$ref": "function"}
-  - "$call":
-    - "fold"
-    - "$call":
-      - "fn"
-      - - "groups"
-        - "item"
-      - "$call":
-        - "let"
-        - "name": {"$call": ["key", {"$ref": "item"}]}
-        - "$call":
-          - "set"
-          - {"$ref": "groups"}
-          - {"$ref": "name"}
-          - {"$call": ["append", {"$call": ["get", {"$ref": "groups"}, {"$ref": "name"}, []]}, {"$ref": "item"}]}
-    - {}
-    - {"$ref": "xs"}
-  - {"$ref": "map"}
+by: {$call: [fn, [[xs, {$ref: list}], [key, {$ref: function}]],
+    {$call: [fold,
+        {$call: [fn, [groups, item],
+            {$call: [let, {name: {$call: [key, {$ref: item}]}},
+                {$call: [set, {$ref: groups}, {$ref: name},
+                    {$call: [append, {$call: [get, {$ref: groups}, {$ref: name}, []]}, {$ref: item}]}]}]}]},
+        {}, {$ref: xs}]}, {$ref: map}]}

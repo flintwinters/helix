@@ -1,4 +1,4 @@
-//! Block-style YAML output. Helix owns the emitter because the written text is a public contract:
+//! Block-style YAML states and compact source formatting. The written text is a public contract:
 //! a string that would re-read as something else (a number or a boolean)
 //! must stay quoted, or a serialized state would not round-trip.
 
@@ -39,7 +39,16 @@ impl Encoded {
             Kind::Map(entries) => Self::Map(
                 entries
                     .iter()
-                    .map(|(key, id)| (string(key, false), Self::source(graph, *id)))
+                    .map(|(key, id)| {
+                        (
+                            if matches!(key.as_str(), "$call" | "$ref" | "$literal") {
+                                key.clone()
+                            } else {
+                                string(key, false)
+                            },
+                            Self::source(graph, *id),
+                        )
+                    })
                     .collect(),
             ),
         }
@@ -134,9 +143,116 @@ pub fn document(value: &Yaml) -> String {
     Encoded::value(value, false).document()
 }
 
+impl Encoded {
+    /// Source layout uses flow collections when the complete expression fits.
+    /// Runtime state emission deliberately retains its existing block contract.
+    fn flow(&self) -> String {
+        match self {
+            Self::Scalar(text) => text.clone(),
+            Self::List(items) => format!(
+                "[{}]",
+                items.iter().map(Self::flow).collect::<Vec<_>>().join(", ")
+            ),
+            Self::Map(entries) => format!(
+                "{{{}}}",
+                entries
+                    .iter()
+                    .map(|(key, value)| format!("{key}: {}", value.flow()))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        }
+    }
+    fn write_flow(&self, indent: usize, out: &mut String) {
+        let (open, close, items): (&str, &str, Vec<(String, &Self)>) = match self {
+            Self::Scalar(text) => {
+                out.push_str(text);
+                return;
+            }
+            Self::List(items) => (
+                "[",
+                "]",
+                items.iter().map(|item| (String::new(), item)).collect(),
+            ),
+            Self::Map(entries) => (
+                "{",
+                "}",
+                entries
+                    .iter()
+                    .map(|(key, value)| (format!("{key}: "), value))
+                    .collect(),
+            ),
+        };
+        out.push_str(open);
+        for (index, (prefix, item)) in items.iter().enumerate() {
+            if index > 0 {
+                out.push(',');
+                let column = out.rsplit('\n').next().unwrap().chars().count();
+                if column + 1 + prefix.chars().count() + item.flow().chars().count() + close.len()
+                    > 100
+                {
+                    out.push('\n');
+                    out.push_str(&" ".repeat(indent + 2));
+                } else {
+                    out.push(' ');
+                }
+            }
+            out.push_str(prefix);
+            item.write_flow(indent + 2, out);
+        }
+        out.push_str(close);
+    }
+    fn pretty(&self, indent: usize, prefix: &str, out: &mut String) {
+        let flow = self.flow();
+        let expression = matches!(self, Self::Map(entries) if entries.len() == 1 && matches!(entries[0].0.as_str(), "$call" | "$ref" | "$literal"));
+        if !self.container()
+            || expression
+            || matches!(self, Self::List(_))
+            || indent + prefix.chars().count() + flow.chars().count() <= 100
+        {
+            out.push_str(&" ".repeat(indent));
+            out.push_str(prefix);
+            self.write_flow(indent, out);
+            out.push('\n');
+            return;
+        }
+        let nested = if prefix.is_empty() {
+            indent
+        } else {
+            out.push_str(&" ".repeat(indent));
+            out.push_str(prefix.trim_end());
+            out.push('\n');
+            indent + 2
+        };
+        match self {
+            Self::Map(entries) => {
+                for (key, value) in entries {
+                    value.pretty(nested, &format!("{key}: "), out);
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+}
+
 /// Canonical source layout preserves YAML representation values.
 pub(crate) fn source(graph: &crate::model::Graph) -> String {
-    Encoded::source(graph, crate::model::ROOT).document()
+    let mut out = String::new();
+    let source = Encoded::source(graph, crate::model::ROOT);
+    match &source {
+        Encoded::Map(entries)
+            if entries.len() > 1
+                || entries.first().is_some_and(|(key, _)| {
+                    !matches!(key.as_str(), "$call" | "$ref" | "$literal")
+                }) =>
+        {
+            for (key, value) in entries {
+                value.pretty(0, &format!("{key}: "), &mut out);
+            }
+        }
+        _ => source.pretty(0, "", &mut out),
+    }
+    out
 }
 
 /// Pure source recovery freezes only ordinary-data root fields. Runtime objects are retried

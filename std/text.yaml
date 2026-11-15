@@ -4,101 +4,43 @@
 # An empty separator is rejected. join([], separator) returns the empty string.
 # Scanning/slicing and immutable string/list copies can take quadratic time and
 # total allocations. until/fold iteration limits and shared runtime budgets apply.
-"split":
-  "$call":
-  - "fn"
-  - - - "source"
-      - {"$ref": "string"}
-    - - "separator"
-      - {"$ref": "string"}
-  - "$call":
-    - "if"
-    - {"$call": ["eq", {"$call": ["len", {"$ref": "separator"}]}, 0]}
-    - {"$call": ["raise", "range", "split separator must not be empty"]}
-    - "$call":
-      - "let"
-      - "width": {"$call": ["len", {"$ref": "separator"}]}
-        "size": {"$call": ["len", {"$ref": "source"}]}
-        "result":
-          "$call":
-          - "until"
-          - "$call":
-            - "fn"
-            - - "state"
-            - "$call":
-              - "gt"
-              - {"$call": ["get", {"$ref": "state"}, "index"]}
-              - {"$call": ["sub", {"$ref": "size"}, {"$ref": "width"}]}
-          - "$call":
-            - "fn"
-            - - "state"
-            - "$call":
-              - "if"
-              - "$call":
-                - "eq"
-                - "$call":
-                  - "slice"
-                  - {"$ref": "source"}
-                  - {"$call": ["get", {"$ref": "state"}, "index"]}
-                  - {"$call": ["add", {"$call": ["get", {"$ref": "state"}, "index"]}, {"$ref": "width"}]}
-                - {"$ref": "separator"}
-              - "$call":
-                - "dict"
-                - "index"
-                - {"$call": ["add", {"$call": ["get", {"$ref": "state"}, "index"]}, {"$ref": "width"}]}
-                - "start"
-                - {"$call": ["add", {"$call": ["get", {"$ref": "state"}, "index"]}, {"$ref": "width"}]}
-                - "parts"
-                - "$call":
-                  - "append"
-                  - {"$call": ["get", {"$ref": "state"}, "parts"]}
-                  - "$call":
-                    - "slice"
-                    - {"$ref": "source"}
-                    - {"$call": ["get", {"$ref": "state"}, "start"]}
-                    - {"$call": ["get", {"$ref": "state"}, "index"]}
-              - "$call":
-                - "set"
-                - {"$ref": "state"}
-                - "index"
-                - {"$call": ["add", {"$call": ["get", {"$ref": "state"}, "index"]}, 1]}
-          - "index": 0
-            "start": 0
-            "parts": []
-      - "$call":
-        - "append"
-        - {"$call": ["get", {"$ref": "result"}, "parts"]}
-        - {"$call": ["slice", {"$ref": "source"}, {"$call": ["get", {"$ref": "result"}, "start"]}, {"$ref": "size"}]}
-  - {"$call": ["list_of", {"$ref": "string"}]}
-"join":
-  "$call":
-  - "fn"
-  - - - "parts"
-      - {"$call": ["list_of", {"$ref": "string"}]}
-    - - "separator"
-      - {"$ref": "string"}
-  - "$call":
-    - "get"
-    - "$call":
-      - "fold"
-      - "$call":
-        - "fn"
-        - - "state"
-          - "part"
-        - "$call":
-          - "dict"
-          - "text"
-          - "$call":
-            - "concat"
-            - {"$call": ["get", {"$ref": "state"}, "text"]}
-            - {"$call": ["if", {"$call": ["get", {"$ref": "state"}, "first"]}, "", {"$ref": "separator"}]}
-            - {"$ref": "part"}
-          - "first"
-          - false
-      - "text": ""
-        "first": true
-      - {"$ref": "parts"}
-    - "text"
-  - {"$ref": "string"}
-
+join: {$call: [fn, [[parts, {$call: [list_of, {$ref: string}]}], [separator, {$ref: string}]],
+    {$call: [get,
+        {$call: [fold,
+            {$call: [fn, [state, part],
+                {$call: [dict, text,
+                    {$call: [concat, {$call: [get, {$ref: state}, text]},
+                        {$call: [if, {$call: [get, {$ref: state}, first]}, "", {$ref: separator}]},
+                        {$ref: part}]}, first, false]}]}, {first: true, text: ""}, {$ref: parts}]},
+        text]}, {$ref: string}]}
 regex: {$call: [fn, [pattern, text], {$call: [regex_find, {$ref: pattern}, {$ref: text}]}]}
+split: {$call: [fn, [[source, {$ref: string}], [separator, {$ref: string}]],
+    {$call: [if, {$call: [eq, {$call: [len, {$ref: separator}]}, 0]},
+        {$call: [raise, range, split separator must not be empty]},
+        {$call: [let,
+            {result: {$call: [until,
+                  {$call: [fn, [state],
+                      {$call: [gt, {$call: [get, {$ref: state}, index]},
+                          {$call: [sub, {$ref: size}, {$ref: width}]}]}]},
+                  {$call: [fn, [state],
+                      {$call: [if,
+                          {$call: [eq,
+                              {$call: [slice, {$ref: source}, {$call: [get, {$ref: state}, index]},
+                                  {$call: [add, {$call: [get, {$ref: state}, index]}, {$ref: width}]}]},
+                              {$ref: separator}]},
+                          {$call: [dict, index,
+                              {$call: [add, {$call: [get, {$ref: state}, index]}, {$ref: width}]},
+                              start,
+                              {$call: [add, {$call: [get, {$ref: state}, index]}, {$ref: width}]},
+                              parts,
+                              {$call: [append, {$call: [get, {$ref: state}, parts]},
+                                  {$call: [slice, {$ref: source},
+                                      {$call: [get, {$ref: state}, start]},
+                                      {$call: [get, {$ref: state}, index]}]}]}]},
+                          {$call: [set, {$ref: state}, index,
+                              {$call: [add, {$call: [get, {$ref: state}, index]}, 1]}]}]}]},
+                  {index: 0, parts: [], start: 0}]}, size: {$call: [len, {$ref: source}]},
+              width: {$call: [len, {$ref: separator}]}},
+            {$call: [append, {$call: [get, {$ref: result}, parts]},
+                {$call: [slice, {$ref: source}, {$call: [get, {$ref: result}, start]}, {$ref: size}]}]}]}]},
+    {$call: [list_of, {$ref: string}]}]}

@@ -4,58 +4,24 @@
 # Presence is checked separately from values: missing is distinct from null.
 # Immutable list copies and key lookups can be quadratic for large inputs.
 # Bounded map/filter iteration applies; intended for small configuration maps.
-"compare":
-  "$call":
-  - "fn"
-  - - - "old"
-      - {"$ref": "map"}
-    - - "new"
-      - {"$ref": "map"}
-  - "$call":
-    - "let"
-    - "added":
-        "$call":
-        - "filter"
-        - {"$call": ["fn", ["key"], {"$call": ["not", {"$call": ["has", {"$ref": "old"}, {"$ref": "key"}]}]}]}
-        - {"$call": ["keys", {"$ref": "new"}]}
-      "removed":
-        "$call":
-        - "filter"
-        - {"$call": ["fn", ["key"], {"$call": ["not", {"$call": ["has", {"$ref": "new"}, {"$ref": "key"}]}]}]}
-        - {"$call": ["keys", {"$ref": "old"}]}
-      "changed":
-        "$call":
-        - "filter"
-        - "$call":
-          - "fn"
-          - - "key"
-          - "$call":
-            - "and"
-            - {"$call": ["has", {"$ref": "new"}, {"$ref": "key"}]}
-            - "$call":
-              - "ne"
-              - {"$call": ["get", {"$ref": "old"}, {"$ref": "key"}]}
-              - {"$call": ["get", {"$ref": "new"}, {"$ref": "key"}]}
-        - {"$call": ["keys", {"$ref": "old"}]}
-    - "$call":
-      - "dict"
-      - "added"
-      - {"$ref": "added"}
-      - "removed"
-      - {"$ref": "removed"}
-      - "changed"
-      - "$call":
-        - "map"
-        - "$call":
-          - "fn"
-          - - "key"
-          - "$call":
-            - "dict"
-            - "key"
-            - {"$ref": "key"}
-            - "before"
-            - {"$call": ["get", {"$ref": "old"}, {"$ref": "key"}]}
-            - "after"
-            - {"$call": ["get", {"$ref": "new"}, {"$ref": "key"}]}
-        - {"$ref": "changed"}
-  - {"$ref": "map"}
+compare: {$call: [fn, [[old, {$ref: map}], [new, {$ref: map}]],
+    {$call: [let,
+        {added: {$call: [filter,
+              {$call: [fn, [key], {$call: [not, {$call: [has, {$ref: old}, {$ref: key}]}]}]},
+              {$call: [keys, {$ref: new}]}]},
+          changed: {$call: [filter,
+              {$call: [fn, [key],
+                  {$call: [and, {$call: [has, {$ref: new}, {$ref: key}]},
+                      {$call: [ne, {$call: [get, {$ref: old}, {$ref: key}]},
+                          {$call: [get, {$ref: new}, {$ref: key}]}]}]}]},
+              {$call: [keys, {$ref: old}]}]},
+          removed: {$call: [filter,
+              {$call: [fn, [key], {$call: [not, {$call: [has, {$ref: new}, {$ref: key}]}]}]},
+              {$call: [keys, {$ref: old}]}]}},
+        {$call: [dict, added, {$ref: added}, removed, {$ref: removed}, changed,
+            {$call: [map,
+                {$call: [fn, [key],
+                    {$call: [dict, key, {$ref: key}, before,
+                        {$call: [get, {$ref: old}, {$ref: key}]}, after,
+                        {$call: [get, {$ref: new}, {$ref: key}]}]}]}, {$ref: changed}]}]}]},
+    {$ref: map}]}

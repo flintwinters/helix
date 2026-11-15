@@ -212,6 +212,10 @@ def parser():
                         ["runtime", "migrate-syntax"], "runtime migrate-syntax --write std tests/cases")
     migration.add_argument("paths", nargs="+", metavar="PATH", help="source files or directories (expected outputs excluded)")
     migration.add_argument("--write", action="store_true", help="rewrite source files; default only reports changes")
+    formatting = command(runtime, "format", "Check or rewrite source files with compact width-aware YAML and retained comments",
+                         ["runtime", "format"], "runtime format --write std")
+    formatting.add_argument("paths", nargs="+", metavar="PATH", help="YAML files or recursively searched directories")
+    formatting.add_argument("--write", action="store_true", help="rewrite changed files; default checks formatting")
     quality = group("quality", "Run regression suites and structural lint")
     docker = command(quality, "docker-nginx", "Discover Docker acceptance scenarios or clean a retained run",
                      ["quality", "docker-nginx"], "quality docker-nginx describe")

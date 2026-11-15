@@ -552,23 +552,23 @@ annotations:
             function: "/$call/1/mixed/$call/2"
             function_column: 14
             function_line: 11
-            line: 41
+            line: 19
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 53
+          - column: 40
             file: "std:test"
             function: "/batch/$call/2/$call/2"
-            function_column: 14
+            function_column: 9
             function_file: "std:validation"
-            function_line: 38
-            line: 132
+            function_line: 18
+            line: 148
             path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 75
+          - column: 73
             file: "std:test"
             function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 13
+            function_column: 21
             function_file: "std:test"
-            function_line: 132
-            line: 12
+            function_line: 147
+            line: 6
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
         column: 11
         data: -1
@@ -612,499 +612,23 @@ annotations:
             function: "/$call/1/mixed/$call/2"
             function_column: 14
             function_line: 11
-            line: 41
+            line: 19
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 53
+          - column: 40
             file: "std:test"
             function: "/batch/$call/2/$call/2"
-            function_column: 14
+            function_column: 9
             function_file: "std:validation"
-            function_line: 38
-            line: 132
+            function_line: 18
+            line: 148
             path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 75
+          - column: 73
             file: "std:test"
             function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 13
+            function_column: 21
             function_file: "std:test"
-            function_line: 132
-            line: 12
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
-        column: 11
-        data: -1
-        kind: negative
-        line: 17
-        message: negative input
-        path: "/$call/1/mixed/$call/2/$call/2/$call/2"
-        reference:
-          - "$call"
-          - 1
-          - mixed
-          - "$call"
-          - 2
-          - "$call"
-          - 2
-          - "$call"
-          - 2
-      input:
-        index: 1
-        value: -1
-      name: validation
-      outcome: failed
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - case
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:test"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - suite
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - results
-        - "$call"
-        - 1
-      source: "std:test"
-    type: map
-    value:
-      input:
-        index: 2
-        value: 2
-      name: validation
-      run:
-        kind: function
-        location:
-          path:
-            - table
-            - "$call"
-            - 2
-            - "$call"
-            - 1
-            - "$call"
-            - 1
-            - "$call"
-            - 2
-            - "$call"
-            - 6
-          source: "std:test"
-  - declaration:
-      code:
-        "$ref": function
-      location:
-        path:
-          - capture
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:test"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - case
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:test"
-    type: function
-    value:
-      kind: function
-      location:
-        path:
-          - table
-          - "$call"
-          - 2
-          - "$call"
-          - 1
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-          - "$call"
-          - 6
-        source: "std:test"
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - capture
-          - "$call"
-          - 3
-        source: "std:test"
-    kind: result
-    target:
-      path:
-        - capture
-        - "$call"
-        - 2
-      source: "std:test"
-    type: map
-    value:
-      outcome: passed
-      value: 20
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - case
-          - "$call"
-          - 3
-        source: "std:test"
-    kind: result
-    target:
-      path:
-        - case
-        - "$call"
-        - 2
-      source: "std:test"
-    type: map
-    value:
-      input:
-        index: 2
-        value: 2
-      name: validation
-      outcome: passed
-      value: 20
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - case
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:test"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - suite
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - results
-        - "$call"
-        - 1
-      source: "std:test"
-    type: map
-    value:
-      input:
-        index: 0
-        value: 0
-      name: validation
-      run:
-        kind: function
-        location:
-          path:
-            - table
-            - "$call"
-            - 2
-            - "$call"
-            - 1
-            - "$call"
-            - 1
-            - "$call"
-            - 2
-            - "$call"
-            - 6
-          source: "std:test"
-  - declaration:
-      code:
-        "$ref": function
-      location:
-        path:
-          - capture
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:test"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - case
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:test"
-    type: function
-    value:
-      kind: function
-      location:
-        path:
-          - table
-          - "$call"
-          - 2
-          - "$call"
-          - 1
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-          - "$call"
-          - 6
-        source: "std:test"
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - capture
-          - "$call"
-          - 3
-        source: "std:test"
-    kind: result
-    target:
-      path:
-        - capture
-        - "$call"
-        - 2
-      source: "std:test"
-    type: map
-    value:
-      outcome: passed
-      value: 0
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - case
-          - "$call"
-          - 3
-        source: "std:test"
-    kind: result
-    target:
-      path:
-        - case
-        - "$call"
-        - 2
-      source: "std:test"
-    type: map
-    value:
-      input:
-        index: 0
-        value: 0
-      name: validation
-      outcome: passed
-      value: 0
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - case
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:test"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - suite
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - results
-        - "$call"
-        - 1
-      source: "std:test"
-    type: map
-    value:
-      input:
-        index: 1
-        value: -1
-      name: validation
-      run:
-        kind: function
-        location:
-          path:
-            - table
-            - "$call"
-            - 2
-            - "$call"
-            - 1
-            - "$call"
-            - 1
-            - "$call"
-            - 2
-            - "$call"
-            - 6
-          source: "std:test"
-  - declaration:
-      code:
-        "$ref": function
-      location:
-        path:
-          - capture
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:test"
-    kind: parameter
-    runtime_values_omitted: true
-    target:
-      path:
-        - case
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:test"
-    type: function
-    value:
-      kind: function
-      location:
-        path:
-          - table
-          - "$call"
-          - 2
-          - "$call"
-          - 1
-          - "$call"
-          - 1
-          - "$call"
-          - 2
-          - "$call"
-          - 6
-        source: "std:test"
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - capture
-          - "$call"
-          - 3
-        source: "std:test"
-    kind: result
-    target:
-      path:
-        - capture
-        - "$call"
-        - 2
-      source: "std:test"
-    type: map
-    value:
-      error:
-        calls:
-          - column: 28
-            file: "std:validation"
-            function: "/$call/1/mixed/$call/2"
-            function_column: 14
-            function_line: 11
-            line: 41
-            path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 53
-            file: "std:test"
-            function: "/batch/$call/2/$call/2"
-            function_column: 14
-            function_file: "std:validation"
-            function_line: 38
-            line: 132
-            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 75
-            file: "std:test"
-            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 13
-            function_file: "std:test"
-            function_line: 132
-            line: 12
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
-        column: 11
-        data: -1
-        kind: negative
-        line: 17
-        message: negative input
-        path: "/$call/1/mixed/$call/2/$call/2/$call/2"
-        reference:
-          - "$call"
-          - 1
-          - mixed
-          - "$call"
-          - 2
-          - "$call"
-          - 2
-          - "$call"
-          - 2
-      outcome: failed
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - case
-          - "$call"
-          - 3
-        source: "std:test"
-    kind: result
-    target:
-      path:
-        - case
-        - "$call"
-        - 2
-      source: "std:test"
-    type: map
-    value:
-      error:
-        calls:
-          - column: 28
-            file: "std:validation"
-            function: "/$call/1/mixed/$call/2"
-            function_column: 14
-            function_line: 11
-            line: 41
-            path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 53
-            file: "std:test"
-            function: "/batch/$call/2/$call/2"
-            function_column: 14
-            function_file: "std:validation"
-            function_line: 38
-            line: 132
-            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 75
-            file: "std:test"
-            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 13
-            function_file: "std:test"
-            function_line: 132
-            line: 12
+            function_line: 147
+            line: 6
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
         column: 11
         data: -1
@@ -1504,23 +1028,23 @@ annotations:
             function: "/$call/1/mixed/$call/2"
             function_column: 14
             function_line: 11
-            line: 41
+            line: 19
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 53
+          - column: 40
             file: "std:test"
             function: "/batch/$call/2/$call/2"
-            function_column: 14
+            function_column: 9
             function_file: "std:validation"
-            function_line: 38
-            line: 132
+            function_line: 18
+            line: 148
             path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 75
+          - column: 73
             file: "std:test"
             function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 13
+            function_column: 21
             function_file: "std:test"
-            function_line: 132
-            line: 12
+            function_line: 147
+            line: 6
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
         column: 11
         data: -1
@@ -1564,23 +1088,499 @@ annotations:
             function: "/$call/1/mixed/$call/2"
             function_column: 14
             function_line: 11
-            line: 41
+            line: 19
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
-          - column: 53
+          - column: 40
             file: "std:test"
             function: "/batch/$call/2/$call/2"
-            function_column: 14
+            function_column: 9
             function_file: "std:validation"
-            function_line: 38
-            line: 132
+            function_line: 18
+            line: 148
             path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-          - column: 75
+          - column: 73
             file: "std:test"
             function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-            function_column: 13
+            function_column: 21
             function_file: "std:test"
-            function_line: 132
-            line: 12
+            function_line: 147
+            line: 6
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 11
+        data: -1
+        kind: negative
+        line: 17
+        message: negative input
+        path: "/$call/1/mixed/$call/2/$call/2/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - mixed
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+      input:
+        index: 1
+        value: -1
+      name: validation
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 2
+        value: 2
+      name: validation
+      run:
+        kind: function
+        location:
+          path:
+            - table
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 6
+          source: "std:test"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - table
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 6
+        source: "std:test"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value: 20
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 2
+        value: 2
+      name: validation
+      outcome: passed
+      value: 20
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 0
+        value: 0
+      name: validation
+      run:
+        kind: function
+        location:
+          path:
+            - table
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 6
+          source: "std:test"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - table
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 6
+        source: "std:test"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value: 0
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 0
+        value: 0
+      name: validation
+      outcome: passed
+      value: 0
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 1
+        value: -1
+      name: validation
+      run:
+        kind: function
+        location:
+          path:
+            - table
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 6
+          source: "std:test"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - table
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 6
+        source: "std:test"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 28
+            file: "std:validation"
+            function: "/$call/1/mixed/$call/2"
+            function_column: 14
+            function_line: 11
+            line: 19
+            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+          - column: 40
+            file: "std:test"
+            function: "/batch/$call/2/$call/2"
+            function_column: 9
+            function_file: "std:validation"
+            function_line: 18
+            line: 148
+            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+          - column: 73
+            file: "std:test"
+            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
+            function_column: 21
+            function_file: "std:test"
+            function_line: 147
+            line: 6
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 11
+        data: -1
+        kind: negative
+        line: 17
+        message: negative input
+        path: "/$call/1/mixed/$call/2/$call/2/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - mixed
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 28
+            file: "std:validation"
+            function: "/$call/1/mixed/$call/2"
+            function_column: 14
+            function_line: 11
+            line: 19
+            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+          - column: 40
+            file: "std:test"
+            function: "/batch/$call/2/$call/2"
+            function_column: 9
+            function_file: "std:validation"
+            function_line: 18
+            line: 148
+            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+          - column: 73
+            file: "std:test"
+            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
+            function_column: 21
+            function_file: "std:test"
+            function_line: 147
+            line: 6
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
         column: 11
         data: -1
@@ -1847,23 +1847,23 @@ root:
               function: "/$call/1/mixed/$call/2"
               function_column: 14
               function_line: 11
-              line: 41
+              line: 19
               path: "/batch/$call/2/$call/2/$call/2/$call/1"
-            - column: 53
+            - column: 40
               file: "std:test"
               function: "/batch/$call/2/$call/2"
-              function_column: 14
+              function_column: 9
               function_file: "std:validation"
-              function_line: 38
-              line: 132
+              function_line: 18
+              line: 148
               path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-            - column: 75
+            - column: 73
               file: "std:test"
               function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-              function_column: 13
+              function_column: 21
               function_file: "std:test"
-              function_line: 132
-              line: 12
+              function_line: 147
+              line: 6
               path: "/capture/$call/2/$call/1/$call/4/$call/1"
           column: 11
           data: -1

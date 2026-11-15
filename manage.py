@@ -274,6 +274,11 @@ def runtime(args, binary) -> int:
             options.extend(["--file", args.file])
         program = [] if args.file is not None else ["--", args.source]
         return subprocess.call([str(binary), "exec", *([args.output_format] if args.output_format else []), *options, *program], cwd=ROOT)
+    if command == "format":
+        from dataclasses import replace
+        from tooling.source_format import format_files
+        return format_files(replace(test_context(), binary=binary), args.paths,
+                            write=args.write, output_format=args.format)
     if command == "inventory":
         from dataclasses import replace
         from tooling.inventory import inventory

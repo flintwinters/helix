@@ -760,6 +760,21 @@ def verify_numeric_enum_overlap(ctx):
 
 
 def verify_format(ctx):
+    from tooling.source_format import retain_comments
+
+    compact = ctx.helix('fmt', '-', stdin='sum: {"$call": [fold, {"$ref": combine}, 0, {"$ref": xs}]}')
+    assert compact.returncode == 0 and compact.stdout == 'sum: {$call: [fold, {$ref: combine}, 0, {$ref: xs}]}\n', compact
+    annotated = '# header\nsum: {$call: [add, 1, 2]} # arithmetic\ntext: |\n  # literal content\n'
+    result = ctx.helix('fmt', '-', stdin=annotated)
+    retained = retain_comments(annotated, result.stdout)
+    assert '# header' in retained and '# arithmetic' in retained, retained
+    assert yaml.safe_load(retained) == yaml.safe_load(annotated), retained
+    assert retain_comments(retained, result.stdout) == retained, retained
+    for path in sorted((ctx.root / 'std').rglob('*.yaml')):
+        source = path.read_text()
+        result = ctx.helix('fmt', '-', stdin=source)
+        assert result.returncode == 0, (path, result)
+        assert retain_comments(source, result.stdout) == source, path
     # Every parsable golden source must format to an idempotent source document.
     # The implementation independently compares the complete source graphs before emitting.
     for case in sorted((ctx.root / 'tests/cases').glob('*.yaml')):
