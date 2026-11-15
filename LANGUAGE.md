@@ -29,19 +29,27 @@ On failure `status: error` and an `error:` block replaces `root:` with `kind`, `
 
 ## Expressions
 
-Calls, references and literal boundaries are explicit singleton maps:
+Calls, references and literal boundaries use explicit YAML local tags. Equivalent
+singleton maps remain supported, including in JSON source:
 
 ```yaml
 x: 2
-answer: {$call: [add, {$ref: x}, 1]}
+answer: !call [add, !ref x, 1]
 names: [add, x, 1]
-reserved_data: {$literal: {$call: [add, 1, 2]}}
+reserved_data: !literal {$call: [add, 1, 2]}
 ```
+
+`!call` is equivalent to `{$call: ...}`, `!ref` to `{$ref: ...}`, and
+`!literal` to `{$literal: ...}`. Tags normalize into the same representation
+before evaluation, including inside literal payloads. `!ref` treats its scalar
+text as a string regardless of quoting; tagged mapping keys are rejected.
+Unknown application tags are rejected. Functions use `!call [fn, ...]`; there
+is no separate function syntax.
 
 `$call` contains a nonempty sequence: an actor name or computed function expression followed by arguments. `$ref` contains a nonempty lexical name; it resolves through enclosing maps and function environments, with dotted names selecting members. `$literal` returns its complete payload as data, including any nested reserved maps. Only singleton maps with these keys select syntax. Malformed reserved forms fail explicitly. Other maps evaluate their values; sequences evaluate their elements as data sequences, never implicit calls. Scalars are literal regardless of quoting style. All runtime maps, including constructed maps and codec results, use lexicographic Unicode string-key order. Canonical mapping traversal makes source field order irrelevant; use a sequence or explicit control flow when ordering matters.
 
 `./manage.py runtime fmt FILE` emits width-aware source YAML without execution,
-using block layouts for functions, bindings, branches and iteration bodies. Short
+using local tags and block layouts for functions, bindings, branches and iteration bodies. Short
 expressions and data collections stay inline when they fit within 100 columns;
 larger collections use one entry per line.
 `./manage.py runtime format --write std` recursively formats library files while
@@ -51,7 +59,7 @@ editor formatting normalize away comments; batch formatting retains them.
 
 Legacy actor-first sequences require explicit offline conversion with `./manage.py runtime migrate-syntax --write FILE`; the runtime has no legacy fallback.
 
-The supported YAML subset has string mapping keys, finite scalars, sequences and mappings. Duplicate keys, cyclic aliases, custom tags and non-string keys are rejected. Acyclic aliases expand under resource bounds at the occurrence’s lexical scope; standard scalar tags (`!!str`, `!!int`, `!!float`, `!!bool`, `!!null`) and collection tags (`!!seq`, `!!map`) are supported. Integers include hexadecimal and octal notation within signed 64-bit bounds; floats remain finite. This is a semantic model over YAML representation nodes, not support for every YAML construct. JSON source has identical language meaning to equivalent YAML. Reformatting scalar styles or permuting mapping entries cannot change a program's meaning.
+The supported YAML subset has string mapping keys, finite scalars, sequences and mappings. Duplicate keys, cyclic aliases, unknown custom tags and non-string keys are rejected. Acyclic aliases expand under resource bounds at the occurrence’s lexical scope; standard scalar tags (`!!str`, `!!int`, `!!float`, `!!bool`, `!!null`) and collection tags (`!!seq`, `!!map`) are supported. Integers include hexadecimal and octal notation within signed 64-bit bounds; floats remain finite. This is a semantic model over YAML representation nodes, not support for every YAML construct. JSON source has identical language meaning to equivalent YAML. Reformatting scalar styles or permuting mapping entries cannot change a program's meaning.
 
 Ordinary result data is emitted without executable wrappers. To reexecute arbitrary result data, wrap the whole value in `{$literal: ...}` so reserved singleton maps stay data. Function and machine inspection graphs are not executable serialization.
 

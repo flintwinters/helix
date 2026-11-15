@@ -46,7 +46,7 @@ feature family. Completed audits do not retire these continuing rules.
 
 ## 0. Foundation — complete
 
-YAML representation graphs retain parent links, source spans and root-relative paths. Explicit `$call` and `$ref` forms use lexical lookup; `$literal` protects arbitrary data. Scalar style and mapping presentation order do not affect execution; execution detects cycles and emits structured diagnostics. Finished ordinary-data roots round-trip through YAML. `./manage.py` owns golden testing and structural linting through the hyperlinter submodule.
+YAML representation graphs retain parent links, source spans and root-relative paths. Explicit `!call` and `!ref` tags (equivalently `$call` and `$ref` singleton maps) use lexical lookup; `$literal` protects arbitrary data. Scalar style and mapping presentation order do not affect execution; execution detects cycles and emits structured diagnostics. Finished ordinary-data roots round-trip through YAML. `./manage.py` owns golden testing and structural linting through the hyperlinter submodule.
 
 ## 1. Core language — complete
 
@@ -128,7 +128,7 @@ Design decisions beyond that implemented boundary:
 - [x] Latest retained evaluated-value evidence includes producing source paths and spans, including local computed results; bounded ordinary-data summaries persist through snapshots and explicitly report truncation (`library`, `memory`). This is not an unbounded per-invocation trace
 - [x] Canonical key order, byte-stable zero-step restoration, localized live-parameter edits, and a bounded nested-call transition diff with unchanged embedded source objects are qualified (`snapshots`). Object names preserve sharing within a checkpoint; they are not persistent global identities across arbitrary graph changes
 - [x] Versioned execution format with compatibility fixtures and explicit rejection of unsupported format/runtime versions; version 1 migrates explicitly to version 2; future incompatible changes require a migration or documented rejection (`LANGUAGE.md#executable-disk-snapshots`)
-- [x] YAML representation boundaries decided: bounded acyclic aliases and standard tags are supported; cyclic aliases, custom tags and non-string keys are rejected (`yaml_model` golden and conformance suite).
+- [x] YAML representation boundaries decided: bounded acyclic aliases and standard tags are supported; cyclic aliases, unknown custom tags and non-string keys are rejected (`yaml_model` golden and conformance suite).
 
 ---
 

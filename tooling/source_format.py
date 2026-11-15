@@ -12,6 +12,9 @@ def positions(source):
 
     def visit(node, path):
         result[path] = (node.start_mark.line, node.start_mark.column)
+        if node.tag in ('!call', '!ref', '!literal'):
+            path = path + ('$' + node.tag[1:],)
+            result[path] = (node.start_mark.line, node.start_mark.column)
         if isinstance(node, yaml.MappingNode):
             for key, value in node.value:
                 visit(value, path + (key.value,))

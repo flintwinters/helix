@@ -23,6 +23,18 @@ def representations(value):
 def verify(h):
     verify_migration()
     for source, expected in [
+        ('!call [add, 20, 22]', 42),
+        ('!call [let, {"42": 7}, !ref 42]', 7),
+        ('!literal [!ref missing, !call [add, 1, 2]]',
+         [{'$ref': 'missing'}, {'$call': ['add', 1, 2]}]),
+        ('x: 40\na: &expr !call [add, !ref x, 2]\nb: *expr',
+         {'x': 40, 'a': 42, 'b': 42}),
+        ('!literal true', True),
+        ('x: 40\nanswer: !call [add, !ref x, 2]', {'x': 40, 'answer': 42}),
+        ('!call [let, {f: !call [fn, [x], !call [add, !ref x, 1]]}, !call [f, 41]]', 42),
+        ('!literal {$call: [raise, data]}', {'$call': ['raise', 'data']}),
+        ('a: {x: 1, value: &expr !ref x}\nb: {x: 2, value: *expr}',
+         {'a': {'x': 1, 'value': 1}, 'b': {'x': 2, 'value': 2}}),
         ('!!str 42', '42'), ('!!int "0x2a"', 42), ('0x2a', 42), ('0o52', 42),
         ('!!float "42"', 42.0), ('!!bool true', True), ('!!null null', None),
         ('!!seq [add, 1, 2]', ['add', 1, 2]), ('!!map {value: 42}', {'value': 42}),
@@ -37,7 +49,7 @@ def verify(h):
         assert type(state['root']) is type(expected), (source, state)
     for source in ('&loop [*loop]', '&loop {self: *loop}', '&key a: 1\n*key: 2',
                    '1: value', '.nan', '.inf', '9223372036854775808', '!unknown value',
-                   '---\n1\n---\n2'):
+                   '---\n1\n---\n2', '!call add', '!ref [x]', '!ref x: 1', '!call []', '!ref \"\"', '&loop !call [list, *loop]'):
         result = h.helix('run', '-', stdin=source)
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, (source, result)
     call = lambda actor, *args: {"$call": [actor, *args]}

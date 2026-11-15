@@ -7,6 +7,7 @@ use yaml_rust2::Yaml;
 /// Boundary rendering nodes keep source tokens separate from YAML numeric values.
 enum Encoded {
     Scalar(String),
+    Tagged(String, Box<Encoded>),
     List(Vec<Encoded>),
     Map(Vec<(String, Encoded)>),
 }
@@ -63,6 +64,7 @@ impl Encoded {
     fn inline(&self) -> &str {
         match self {
             Self::Scalar(text) => text,
+            Self::Tagged(..) => unreachable!("tags are source layout only"),
             Self::List(_) => "[]",
             Self::Map(_) => "{}",
         }
@@ -144,11 +146,26 @@ pub fn document(value: &Yaml) -> String {
 }
 
 impl Encoded {
+    /// Tags are source sugar only. Literal payloads retain their exact data representation.
+    fn tagged(self) -> Self {
+        match self {
+            Self::Map(mut entries) if entries.len() == 1
+                && matches!(entries[0].0.as_str(), "$call" | "$ref" | "$literal") => {
+                let (key, value) = entries.pop().unwrap();
+                let value = if key == "$literal" { value } else { value.tagged() };
+                Self::Tagged(key[1..].to_owned(), Box::new(value))
+            }
+            Self::Map(entries) => Self::Map(entries.into_iter().map(|(k, v)| (k, v.tagged())).collect()),
+            Self::List(items) => Self::List(items.into_iter().map(Self::tagged).collect()),
+            other => other,
+        }
+    }
     /// Source layout keeps short leaf expressions in flow collections.
     /// Runtime state emission deliberately retains its existing block contract.
     fn flow(&self) -> String {
         match self {
             Self::Scalar(text) => text.clone(),
+            Self::Tagged(tag, value) => format!("!{tag} {}", value.flow()),
             Self::List(items) => format!(
                 "[{}]",
                 items.iter().map(Self::flow).collect::<Vec<_>>().join(", ")
@@ -175,6 +192,12 @@ impl Encoded {
                 control || entries.iter().any(|(_, value)| value.structural())
             }
             Self::List(items) => items.iter().any(Self::structural),
+            Self::Tagged(tag, value) => {
+                (tag == "call" && matches!(value.as_ref(), Self::List(items)
+                    if matches!(items.first(), Some(Self::Scalar(actor))
+                        if matches!(actor.as_str(), "fn" | "let" | "if" | "try" | "until"))))
+                    || value.structural()
+            },
             Self::Scalar(_) => false,
         }
     }
@@ -182,6 +205,11 @@ impl Encoded {
         self.layout(indent, prefix, out, false);
     }
     fn layout(&self, indent: usize, prefix: &str, out: &mut String, force_block: bool) {
+        if let Self::Tagged(tag, value) = self {
+            let tagged_prefix = format!("{prefix}!{tag} ");
+            value.layout(indent, &tagged_prefix, out, force_block || self.structural());
+            return;
+        }
         let flow = self.flow();
         if !self.container()
             || (!force_block && !self.structural()
@@ -225,7 +253,7 @@ impl Encoded {
                     item.pretty(nested, "- ", out);
                 }
             }
-            Self::Scalar(_) => unreachable!(),
+            Self::Scalar(_) | Self::Tagged(..) => unreachable!(),
         }
     }
 }
@@ -233,7 +261,7 @@ impl Encoded {
 /// Canonical source layout preserves YAML representation values.
 pub(crate) fn source(graph: &crate::model::Graph) -> String {
     let mut out = String::new();
-    let source = Encoded::source(graph, crate::model::ROOT);
+    let source = Encoded::source(graph, crate::model::ROOT).tagged();
     match &source {
         Encoded::Map(entries)
             if entries.len() > 1
