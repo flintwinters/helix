@@ -86,6 +86,9 @@ def verify(h):
                 assert below(u, c), ("least upper bound", a, b, c)
             if below(c, a) and below(c, b):
                 assert below(c, m), ("greatest lower bound", a, b, c)
+    equal = batched(h, "equivalent", [[x, y] for x, y in pairs[:200]])
+    for (x, y), verdict in zip(pairs[:200], equal):
+        assert verdict == (below(x, y) and below(y, x)), ("equivalent", x, y)
     for left, right in identities:
         assert answer[key([left, right])], ("identity", left, right)
     print(f"type laws: {len(pool)} types, {len(pairs)} subtype pairs, {len(identities)} identities, {len(VALUES)} membership witnesses")

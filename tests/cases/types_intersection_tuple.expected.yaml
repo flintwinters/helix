@@ -43,6 +43,20 @@ objects:
     kind: program
     sources:
       - code:
+          bad_keys:
+            "$call":
+              - try
+              - "$call":
+                  - map_of
+                  - integer
+                  - 3
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
           bad_member:
             "$call":
               - try
@@ -93,6 +107,40 @@ objects:
                   - integer
                   - string
               - "$ref": unit
+          equivalence:
+            "$call":
+              - list
+              - "$call":
+                  - equivalent
+                  - "$call":
+                      - union
+                      - integer
+                      - string
+                  - "$call":
+                      - union
+                      - string
+                      - integer
+              - "$call":
+                  - equivalent
+                  - "$call":
+                      - intersection
+                      - integer
+                      - any
+                  - integer
+              - "$call":
+                  - equivalent
+                  - integer
+                  - float
+              - "$call":
+                  - eq
+                  - "$call":
+                      - union
+                      - integer
+                      - string
+                  - "$call":
+                      - union
+                      - string
+                      - integer
           glb_below_each:
             "$call":
               - list
@@ -137,6 +185,85 @@ objects:
               - violations
               - 10
               - "$ref": band
+          keyed:
+            "$call":
+              - map_of
+              - integer
+              - "$call":
+                  - enum
+                  - a
+                  - b
+          keyed_membership:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - v
+                  - "$call":
+                      - is
+                      - "$ref": v
+                      - "$ref": keyed
+              - "$call":
+                  - list
+                  - {}
+                  - a: 1
+                  - a: 1
+                    b: 2
+                  - c: 1
+                  - a: x
+          keyed_reflection:
+            "$ref": keyed
+          keyed_subtyping:
+            "$call":
+              - list
+              - "$call":
+                  - subtype
+                  - "$ref": keyed
+                  - "$call":
+                      - map_of
+                      - integer
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - map_of
+                      - integer
+                  - "$ref": keyed
+              - "$call":
+                  - subtype
+                  - "$ref": keyed
+                  - "$call":
+                      - map_of
+                      - integer
+                      - string
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - literal
+                      - "$literal":
+                          a: x
+                  - "$call":
+                      - map_of
+                      - string
+                      - "$call":
+                          - literal
+                          - a
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - literal
+                      - "$literal":
+                          a: x
+                  - "$call":
+                      - map_of
+                      - string
+                      - "$call":
+                          - literal
+                          - b
+          keyed_violations:
+            "$call":
+              - violations
+              - c: 1
+              - "$ref": keyed
           nested:
             "$call":
               - is
@@ -330,6 +457,7 @@ objects:
                   - "$ref": unit
         source: "<root>"
 root:
+  bad_keys: type
   bad_member: type
   band:
     of:
@@ -348,6 +476,11 @@ root:
     - false
   disjoint_has_no_member: false
   disjoint_is_bottom: true
+  equivalence:
+    - true
+    - true
+    - false
+    - false
   glb_below_each:
     - true
     - true
@@ -374,6 +507,41 @@ root:
           - 2
         source: "<root>"
       rule: refinement
+  keyed:
+    keys:
+      type: enum
+      values:
+        - a
+        - b
+    of: integer
+    type: map
+  keyed_membership:
+    - true
+    - true
+    - true
+    - false
+    - false
+  keyed_reflection:
+    keys:
+      type: enum
+      values:
+        - a
+        - b
+    of: integer
+    type: map
+  keyed_subtyping:
+    - true
+    - false
+    - true
+    - true
+    - false
+  keyed_violations:
+    - actual: c
+      actual_present: true
+      at: /c
+      expected: "one of [a, b]"
+      message: "key c does not fit one of [a, b]"
+      rule: key
   nested: true
   number:
     of:

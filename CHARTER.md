@@ -336,7 +336,7 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
   - [ ] Explore difference, complement and negation only within a defined universe and documented decidable fragment
 - [ ] Extend structured collection types
   - [x] Fixed-length tuples and heterogeneous positions (`tuple_of`; `types_intersection_tuple`)
-  - [ ] Typed map keys
+  - [x] Typed map keys (`map_of(V, K)`; `types_intersection_tuple`)
   - [ ] Record row constraints and explicit width/depth subtyping rules
 - [x] Add function-signature types beyond coarse `function` membership and per-call annotations (`types_function_signatures`, `types_function_purity`)
   - [x] Describe parameter and result types, including higher-order functions (`function_of`; `types_function_signatures`)
@@ -347,11 +347,11 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
   - [ ] Define guardedness, unfolding, equality and termination of checking
   - [ ] Distinguish recursive descriptions from erroneous evaluation cycles
 - [ ] Make type relationships and equivalence explicit
-  - [ ] Define the subtyping order and semantic equivalence separately from structural declaration `eq`
+  - [x] Define the subtyping order and semantic equivalence separately from structural declaration `eq` (`subtype`, `equivalent` as mutual subtyping, `eq` unchanged; `type_laws`)
   - [ ] Specify refinement implication and constraint composition: which facts are decidable, require evidence or remain unknown
   - [ ] Normalize types without losing original declarations or provenance; state when normalization is canonical and preserves meaning
 - [ ] Connect inheritance to the algebra
-  - [ ] Combine inherited constraints by intersection
+  - [x] Combine inherited constraints by intersection (`class_constraint_intersection`; `LANGUAGE.md`)
   - [x] State default selection and explicit override rules separately from membership (`class_defaults`; realization fills defaults, explicit child values override them, and structural membership neither fills nor demands the default value; `LANGUAGE.md#classes-machines-and-drift`)
 - [ ] Integrate every new former with the existing type system
   - [ ] Document membership, subtyping, equivalence, reflection, serialization and failure behavior

@@ -33,3 +33,22 @@
 "reflection": {"$call": ["list", {"$ref": "pair"}, {"$ref": "band"}]}
 "nested": {"$call": ["is", {"x": {"$call": ["list", 1, "a"]}}, {"$call": ["record", "x", {"$ref": "pair"}]}]}
 "bad_member": {"$call": ["try", {"$call": ["tuple_of", "integer", 3]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}]}
+"keyed": {"$call": ["map_of", "integer", {"$call": ["enum", "a", "b"]}]}
+"keyed_membership":
+  "$call": ["map", {"$call": ["fn", ["v"], {"$call": ["is", {"$ref": "v"}, {"$ref": "keyed"}]}]}, {"$call": ["list", {}, {"a": 1}, {"a": 1, "b": 2}, {"c": 1}, {"a": "x"}]}]
+"keyed_violations": {"$call": ["violations", {"c": 1}, {"$ref": "keyed"}]}
+"keyed_subtyping":
+  "$call": ["list",
+    {"$call": ["subtype", {"$ref": "keyed"}, {"$call": ["map_of", "integer"]}]},
+    {"$call": ["subtype", {"$call": ["map_of", "integer"]}, {"$ref": "keyed"}]},
+    {"$call": ["subtype", {"$ref": "keyed"}, {"$call": ["map_of", "integer", "string"]}]},
+    {"$call": ["subtype", {"$call": ["literal", {"$literal": {"a": "x"}}]}, {"$call": ["map_of", "string", {"$call": ["literal", "a"]}]}]},
+    {"$call": ["subtype", {"$call": ["literal", {"$literal": {"a": "x"}}]}, {"$call": ["map_of", "string", {"$call": ["literal", "b"]}]}]}]
+"keyed_reflection": {"$ref": "keyed"}
+"equivalence":
+  "$call": ["list",
+    {"$call": ["equivalent", {"$call": ["union", "integer", "string"]}, {"$call": ["union", "string", "integer"]}]},
+    {"$call": ["equivalent", {"$call": ["intersection", "integer", "any"]}, "integer"]},
+    {"$call": ["equivalent", "integer", "float"]},
+    {"$call": ["eq", {"$call": ["union", "integer", "string"]}, {"$call": ["union", "string", "integer"]}]}]
+"bad_keys": {"$call": ["try", {"$call": ["map_of", "integer", 3]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}]}

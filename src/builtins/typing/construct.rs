@@ -53,6 +53,11 @@ pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Valu
             Err(Fault { cause: None, kind: "type".into(), message, arg: Some(0), data: Some(data) })
         }
         "subtype" => Ok(Value::Boolean(subtype(&type_arg(args, 0)?, &type_arg(args, 1)?, pred))),
+        // Mutual subtyping: exactly as strong as `subtype`, so `false` also means unproved.
+        "equivalent" => {
+            let (a, b) = (type_arg(args, 0)?, type_arg(args, 1)?);
+            Ok(Value::Boolean(subtype(&a, &b, pred) && subtype(&b, &a, pred)))
+        }
         _ => unreachable!("`{actor}` is not a type builtin"),
     }
 }
@@ -106,7 +111,8 @@ pub(crate) fn function_type(params: Vec<Value>, result: Value, pure: bool) -> Va
 /// Descriptor assembly and immutable transformation belong to std:type_descriptor.
 pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Option<crate::model::PolicyCall>, Fault> {
     match actor {
-        "list_of" | "map_of" | "optional" => { type_arg(args, 0)?; }
+        "list_of" | "optional" => { type_arg(args, 0)?; }
+        "map_of" => { (0..args.len()).try_for_each(|i| type_arg(args, i).map(drop))?; }
         "default" => {
             let ty = type_arg(args, 0)?;
             let found = check_ty(&args[1], &ty, pred);
