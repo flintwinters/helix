@@ -49,6 +49,8 @@ pub(super) fn covered_by(value: &Value, target: &Ty, pred: &mut Pred) -> bool {
         (_, Ty::Any) => true,
         (_, Ty::Enum(values)) => values.iter().any(|member| equal(value, member)),
         (_, Ty::Union(members)) => members.iter().any(|member| covered_by(value, member, pred)),
+        (_, Ty::Intersection(members)) => members.iter().all(|member| covered_by(value, member, pred)),
+        (Value::Array(items), Ty::Tuple(types)) => items.len() == types.len() && items.iter().zip(types).all(|(item, ty)| covered_by(item, ty, pred)),
         (Value::Array(items), Ty::List(element)) => items.iter().all(|item| covered_by(item, element, pred)),
         (Value::Hash(items), Ty::Map(element)) => items.values().all(|item| covered_by(item, element, pred)),
         (Value::Hash(items), Ty::Record(fields)) => record_subtype(&record_fields(items), fields, pred),
@@ -68,6 +70,7 @@ pub(super) fn may_overlap(value: &Value, target: &Ty) -> bool {
         Ty::Never => return false,
         Ty::Refine(base, _) => return may_overlap(value, base),
         Ty::Union(members) => return members.iter().any(|member| may_overlap(value, member)),
+        Ty::Intersection(members) => return members.iter().all(|member| may_overlap(value, member)),
         Ty::Enum(values) => return values.iter().any(|member| equal(value, member)),
         _ => {}
     }
@@ -76,6 +79,7 @@ pub(super) fn may_overlap(value: &Value, target: &Ty) -> bool {
     }
     match (value, target) {
         (Value::Array(_), Ty::List(_)) => true,
+        (Value::Array(items), Ty::Tuple(types)) => items.len() == types.len(),
         (Value::Hash(_), Ty::Map(_) | Ty::Record(_) | Ty::Class(..)) => true,
         (Value::Function(_), Ty::Function | Ty::Fn(..)) | (Value::Machine(_), Ty::Vm) => true,
         _ => holds(value, target, &mut |_| Err("static".into())),

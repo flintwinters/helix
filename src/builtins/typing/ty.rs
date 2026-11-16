@@ -95,7 +95,11 @@ pub(crate) enum Ty {
     /// A closed record that also pins the fixed values a class set explicitly and must satisfy its
     /// whole-record constraints; defaults filled in by realization are not pinned.
     Class(Vec<(String, Field)>, Vec<(String, Value)>, Vec<Value>),
+    /// Fixed-length list with one type per position.
+    Tuple(Vec<Ty>),
     Union(Vec<Ty>),
+    /// Greatest lower bound: a value must fit every member.
+    Intersection(Vec<Ty>),
     Enum(Vec<Value>),
     /// A base type plus the raw source of a predicate.
     Refine(Box<Ty>, Value),
@@ -123,7 +127,7 @@ impl PartialEq for Ty {
                 fa == fb && va == vb && ca.len() == cb.len()
                     && ca.iter().zip(cb).all(|(a, b)| same_predicate(a, b))
             }
-            (Self::Union(a), Self::Union(b)) => a == b,
+            (Self::Union(a), Self::Union(b)) | (Self::Tuple(a), Self::Tuple(b)) | (Self::Intersection(a), Self::Intersection(b)) => a == b,
             // Enum membership and fixed values deliberately retain language equality.
             (Self::Enum(a), Self::Enum(b)) => a == b,
             (Self::Refine(a, pa), Self::Refine(b, pb)) => a == b && same_predicate(pa, pb),
@@ -238,6 +242,14 @@ impl Ty {
                         Value::Array(members) if !members.is_empty() => Ok(Ty::Union(members.iter().map(Ty::parse).collect::<Result<_, _>>()?)),
                         _ => Err("a `union` needs a non-empty list `of` types".into()),
                     },
+                    "intersection" => match member(map, "of")? {
+                        Value::Array(members) if !members.is_empty() => Ok(Ty::Intersection(members.iter().map(Ty::parse).collect::<Result<_, _>>()?)),
+                        _ => Err("an `intersection` needs a non-empty list `of` types".into()),
+                    },
+                    "tuple" => match member(map, "of")? {
+                        Value::Array(members) => Ok(Ty::Tuple(members.iter().map(Ty::parse).collect::<Result<_, _>>()?)),
+                        _ => Err("a `tuple` needs a list `of` position types".into()),
+                    },
                     "enum" => match member(map, "values")? {
                         Value::Array(values) if !values.is_empty() => Ok(Ty::Enum(values.to_vec())),
                         _ => Err("an `enum` needs a non-empty list of `values`".into()),
@@ -300,11 +312,16 @@ impl Ty {
             (Ty::Any, _) | (_, Ty::Any) => true,
             (Ty::Union(members), _) => members.iter().any(|m| m.overlaps(other)),
             (_, Ty::Union(members)) => members.iter().any(|m| self.overlaps(m)),
+            // Disjoint from one member is disjoint from the intersection; joint emptiness stays unproved.
+            (Ty::Intersection(members), _) => members.iter().all(|m| m.overlaps(other)),
+            (_, Ty::Intersection(members)) => members.iter().all(|m| self.overlaps(m)),
             (Ty::Refine(base, _), _) => base.overlaps(other),
             (_, Ty::Refine(base, _)) => self.overlaps(base),
             (Ty::Enum(values), _) => values.iter().any(|v| super::literal::may_overlap(v, other)),
             (_, Ty::Enum(values)) => values.iter().any(|v| super::literal::may_overlap(v, self)),
             (Ty::List(_), Ty::List(_)) | (Ty::Map(_), Ty::Map(_)) => true,
+            (Ty::Tuple(a), Ty::Tuple(b)) => a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.overlaps(y)),
+            (Ty::Tuple(items), Ty::List(element)) | (Ty::List(element), Ty::Tuple(items)) => items.iter().all(|item| item.overlaps(element)),
             (Ty::Map(_), Ty::Record(_) | Ty::Class(..)) | (Ty::Record(_) | Ty::Class(..), Ty::Map(_)) => true,
             (Ty::Record(a) | Ty::Class(a, ..), Ty::Record(b) | Ty::Class(b, ..)) => record_disjoint_field(a, b).is_none(),
             // Secret handles are ordinary maps. Shape inference must not turn an
@@ -348,6 +365,8 @@ impl Ty {
             Ty::Record(_) => "record".into(),
             Ty::Class(..) => "class".into(),
             Ty::Union(members) => members.iter().map(Ty::name).collect::<Vec<_>>().join(" | "),
+            Ty::Intersection(members) => members.iter().map(|m| format!("({})", m.name())).collect::<Vec<_>>().join(" & "),
+            Ty::Tuple(items) => format!("tuple of ({})", items.iter().map(Ty::name).collect::<Vec<_>>().join(", ")),
             Ty::Enum(values) => format!("one of [{}]", values.iter().map(show).collect::<Vec<_>>().join(", ")),
             Ty::Refine(base, _) => format!("refined {}", base.name()),
         }
@@ -464,6 +483,11 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
                 }
             }
         }
+        (Ty::Tuple(items), Value::Array(values)) if items.len() == values.len() =>
+            items.iter().zip(values.iter()).enumerate().for_each(|(i, (item, value))| check(value, item, &inside(at, &i.to_string()), pred, out)),
+        (Ty::Tuple(items), Value::Array(values)) =>
+            out.push(Violation::new(at, ty, Some(value), "length", format!("expected {} items, got {}", items.len(), values.len()))),
+        (Ty::Intersection(members), _) => members.iter().for_each(|member| check(value, member, at, pred, out)),
         (Ty::Union(members), _) => {
             let before = out.len();
             let mut accepted = false;
@@ -539,7 +563,8 @@ pub(super) fn validate_defaults(ty: &Ty, pred: &mut Pred) -> Vec<Violation> {
                 }
             }
             Ty::List(inner) | Ty::Map(inner) | Ty::Refine(inner, _) => pending.push(Work::Type(at, inner)),
-            Ty::Union(members) => pending.extend(members.iter().rev().map(|member| Work::Type(at.clone(), member))),
+            Ty::Union(members) | Ty::Intersection(members) => pending.extend(members.iter().rev().map(|member| Work::Type(at.clone(), member))),
+            Ty::Tuple(items) => pending.extend(items.iter().enumerate().rev().map(|(i, item)| Work::Type(inside(&at, &i.to_string()), item))),
             Ty::Fn(params, result, _) => {
                 pending.push(Work::Type(inside(&at, "result"), result));
                 pending.extend(params.iter().enumerate().rev().map(|(i, param)| Work::Type(inside(&at, &i.to_string()), param)));
@@ -570,9 +595,15 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
         return true;
     }
     match (a, b) {
+        // Union is the least upper bound and intersection the greatest lower bound: these four rules
+        // are exact. `(Intersection, _)` below is only sound, since a bound may need several members.
+        (_, Ty::Intersection(members)) => members.iter().all(|m| subtype(a, m, pred)),
         (Ty::Union(members), _) => members.iter().all(|m| subtype(m, b, pred)),
         (Ty::Enum(values), _) => values.iter().all(|v| super::literal::covered_by(v, b, pred)),
         (_, Ty::Union(members)) => members.iter().any(|m| subtype(a, m, pred)),
+        (Ty::Intersection(members), _) => disjoint_members(members) || members.iter().any(|m| subtype(m, b, pred)),
+        (Ty::Tuple(x), Ty::Tuple(y)) => x.len() == y.len() && x.iter().zip(y).all(|(p, q)| subtype(p, q, pred)),
+        (Ty::Tuple(items), Ty::List(element)) => items.iter().all(|item| subtype(item, element, pred)),
         (Ty::Refine(base, _), _) => subtype(base, b, pred),
         (Ty::Promise(a), Ty::Promise(b)) => super::promise::includes(a, b),
         (Ty::Promise(_), Ty::Vm) => true,
@@ -588,6 +619,11 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
         }
         _ => false,
     }
+}
+
+/// Some pair of members is definitely disjoint, so the intersection is empty and below everything.
+fn disjoint_members(members: &[Ty]) -> bool {
+    members.iter().enumerate().any(|(i, m)| members[i + 1..].iter().any(|n| !m.overlaps(n)))
 }
 
 pub(super) fn record_subtype(fa: &[(String, Field)], fb: &[(String, Field)], pred: &mut Pred) -> bool {

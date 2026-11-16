@@ -331,11 +331,11 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
 
 - [ ] Complete the value-set algebra
   - [x] Define types by the values they admit, with explicit top (`any`) and bottom (`never`, no inhabitants), distinct from the literal `null` type (`types_bottom` golden case)
-  - [ ] Add intersections alongside unions; document their interaction with refinements, optional fields and open/closed records
-  - [ ] Define union as least upper bound and intersection as greatest lower bound wherever the supported fragment can represent them; specify approximations explicitly
+  - [x] Add intersections alongside unions; document their interaction with refinements, optional fields and open/closed records (`intersection`; `types_intersection_tuple`; `LANGUAGE.md`)
+  - [x] Define union as least upper bound and intersection as greatest lower bound wherever the supported fragment can represent them; specify approximations explicitly (exact rules for `T <: intersection` and `union <: T`; sound-only `intersection <: T`)
   - [ ] Explore difference, complement and negation only within a defined universe and documented decidable fragment
 - [ ] Extend structured collection types
-  - [ ] Fixed-length tuples and heterogeneous positions
+  - [x] Fixed-length tuples and heterogeneous positions (`tuple_of`; `types_intersection_tuple`)
   - [ ] Typed map keys
   - [ ] Record row constraints and explicit width/depth subtyping rules
 - [x] Add function-signature types beyond coarse `function` membership and per-call annotations (`types_function_signatures`, `types_function_purity`)

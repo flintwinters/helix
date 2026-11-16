@@ -30,6 +30,10 @@ build: !call
           - {default: !call [get, !ref args, 1], of: !call [get, !ref args, 0]}
       - !call [eq, !ref actor, union]
       - !call [descriptor, union, {of: !ref args}]
+      - !call [eq, !ref actor, intersection]
+      - !call [descriptor, intersection, {of: !ref args}]
+      - !call [eq, !ref actor, tuple_of]
+      - !call [descriptor, tuple, {of: !ref args}]
       - !call [eq, !ref actor, enum]
       - !call [descriptor, enum, {values: !ref args}]
       - !call [eq, !ref actor, literal]

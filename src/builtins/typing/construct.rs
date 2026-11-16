@@ -120,7 +120,7 @@ pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Op
             params.iter().try_for_each(|param| Ty::parse(param).map(drop)).map_err(|why| Fault::at(0, "type", why))?;
             type_arg(args, 1)?;
         }
-        "union" => { (0..args.len()).try_for_each(|i| type_arg(args, i).map(drop))?; }
+        "union" | "intersection" | "tuple_of" => { (0..args.len()).try_for_each(|i| type_arg(args, i).map(drop))?; }
         "enum" | "literal" => {}
         "secret" => match &args[0] {
             Value::String(reference) if !reference.is_empty() => {}
