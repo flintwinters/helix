@@ -9,11 +9,12 @@ import json
 
 from tests.suites.contracts import checked
 
-BASE = ["any", "never", "null", "integer", "string",
+TREE = {"type": "rec", "name": "t", "of": {"type": "union", "of": ["integer", {"type": "list", "of": {"type": "var", "name": "t"}}]}}
+BASE = ["any", "never", TREE, "integer", "string",
         {"type": "list", "of": "integer"}, {"type": "tuple", "of": ["integer", "string"]},
         {"type": "tuple", "of": []}, {"type": "record", "fields": {"x": "integer"}},
         {"type": "union", "of": ["integer", "string"]}]
-VALUES = [None, 1, 1.5, "x", [], [1], [1, "x"], ["x", 1], [1, 2], {}, {"x": 1}, {"x": "x"}]
+VALUES = [None, [[1], [[2]]], [["x"]], 1, 1.5, "x", [], [1], [1, "x"], ["x", 1], [1, 2], {}, {"x": 1}, {"x": "x"}]
 
 
 def union(a, b):

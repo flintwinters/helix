@@ -1,0 +1,43 @@
+# Named recursive types: explicit binder `rec`/`var`, guardedness, membership, coinductive subtyping.
+"tree": {"$call": ["rec", "t", {"$call": ["union", "integer", {"$call": ["list_of", {"$call": ["var", "t"]}]}]}]}
+"nested_ints": {"$call": ["rec", "u", {"$call": ["union", "integer", {"$call": ["list_of", {"$call": ["var", "u"]}]}]}]}
+"nonempty": {"$call": ["rec", "t", {"$call": ["union", "integer", {"$call": ["tuple_of", {"$call": ["var", "t"]}, {"$call": ["var", "t"]}]}]}]}
+"node": {"$call": ["rec", "n", {"$call": ["record", "value", "integer", "next", {"$call": ["optional", {"$call": ["var", "n"]}]}]}]}
+"membership":
+  "$call": ["map", {"$call": ["fn", ["v"], {"$call": ["is", {"$ref": "v"}, {"$ref": "tree"}]}]},
+    {"$call": ["list", 1, [], {"$call": ["list", 1, {"$call": ["list", 2, {"$call": ["list", 3]}]}]}, {"$call": ["list", 1, "x"]}, {"$call": ["list", {"$call": ["list", {"$call": ["list", "x"]}]}]}, "x"]}]
+"deep_violation": {"$call": ["violations", {"$call": ["list", 1, {"$call": ["list", "x"]}]}, {"$ref": "tree"}]}
+"node_membership":
+  "$call": ["list",
+    {"$call": ["is", {"value": 1}, {"$ref": "node"}]},
+    {"$call": ["is", {"value": 1, "next": {"value": 2, "next": {"value": 3}}}, {"$ref": "node"}]},
+    {"$call": ["is", {"value": 1, "next": {"value": "x"}}, {"$ref": "node"}]}]
+"subtyping":
+  "$call": ["list",
+    {"$call": ["subtype", {"$ref": "tree"}, {"$ref": "tree"}]},
+    {"$call": ["subtype", {"$ref": "tree"}, {"$ref": "nested_ints"}]},
+    {"$call": ["subtype", {"$ref": "nested_ints"}, {"$ref": "tree"}]},
+    {"$call": ["equivalent", {"$ref": "tree"}, {"$ref": "nested_ints"}]},
+    {"$call": ["subtype", "integer", {"$ref": "tree"}]},
+    {"$call": ["subtype", {"$call": ["list_of", "integer"]}, {"$ref": "tree"}]},
+    {"$call": ["subtype", {"$ref": "tree"}, {"$call": ["list_of", "integer"]}]},
+    {"$call": ["subtype", {"$ref": "tree"}, "any"]},
+    {"$call": ["subtype", {"$ref": "node"}, {"$ref": "node"}]},
+    {"$call": ["subtype", {"$ref": "tree"}, {"$call": ["union", "integer", {"$call": ["list_of", {"$ref": "tree"}]}]}]}]
+"reflection": {"$ref": "tree"}
+"literal_coverage": {"$call": ["subtype", {"$call": ["literal", {"$literal": ["a", ["b"]]}]}, {"$call": ["rec", "s", {"$call": ["union", "string", {"$call": ["list_of", {"$call": ["var", "s"]}]}]}]}]}
+"unguarded": {"$call": ["try", {"$call": ["rec", "t", {"$call": ["union", "integer", {"$call": ["var", "t"]}]}]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}]}
+"unbound": {"$call": ["try", {"$call": ["is", 1, {"$call": ["var", "t"]}]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}]}
+"empty_name": {"$call": ["try", {"$call": ["var", ""]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}]}
+"renamed_node": {"$call": ["rec", "m", {"$call": ["record", "value", "integer", "next", {"$call": ["optional", {"$call": ["var", "m"]}]}]}]}
+"alpha_renamed":
+  "$call": ["list",
+    {"$call": ["eq", {"$ref": "node"}, {"$ref": "renamed_node"}]},
+    {"$call": ["subtype", {"$ref": "node"}, {"$ref": "renamed_node"}]},
+    {"$call": ["equivalent", {"$ref": "node"}, {"$ref": "renamed_node"}]}]
+"uninhabited": {"$call": ["rec", "n", {"$call": ["record", "next", {"$call": ["var", "n"]}]}]}
+"uninhabited_terminates":
+  "$call": ["list",
+    {"$call": ["is", {}, {"$ref": "uninhabited"}]},
+    {"$call": ["is", {"next": {}}, {"$ref": "uninhabited"}]},
+    {"$call": ["subtype", {"$ref": "uninhabited"}, {"$ref": "node"}]}]

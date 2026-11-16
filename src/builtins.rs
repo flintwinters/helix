@@ -129,6 +129,8 @@ const ACTORS: &[Descriptor] = &[
     actor("default", 2, Some(2), Evaluation::Policy("type_descriptor")),
     actor("union", 1, None, Evaluation::Policy("type_descriptor")),
     actor("intersection", 1, None, Evaluation::Policy("type_descriptor")),
+    actor("rec", 2, Some(2), Evaluation::Policy("type_descriptor")),
+    actor("var", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("tuple_of", 0, None, Evaluation::Policy("type_descriptor")),
     actor("enum", 1, None, Evaluation::Policy("type_descriptor")),
     actor("literal", 1, Some(1), Evaluation::Policy("type_descriptor")),

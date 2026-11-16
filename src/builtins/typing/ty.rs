@@ -104,6 +104,10 @@ pub(crate) enum Ty {
     Enum(Vec<Value>),
     /// A base type plus the raw source of a predicate.
     Refine(Box<Ty>, Value),
+    /// `rec name. body`: the body with `Var(name)` standing for the whole type again. Equal to its
+    /// own unfolding; guardedness (see `close`) makes every unfolding consume structure.
+    Rec(String, Box<Ty>),
+    Var(String),
 }
 
 /// Proofs require the same retained predicate, not merely language-equal captured values.
@@ -129,6 +133,8 @@ impl PartialEq for Ty {
                 fa == fb && va == vb && ca.len() == cb.len()
                     && ca.iter().zip(cb).all(|(a, b)| same_predicate(a, b))
             }
+            (Self::Rec(a, x), Self::Rec(b, y)) => a == b && x == y,
+            (Self::Var(a), Self::Var(b)) => a == b,
             (Self::Union(a), Self::Union(b)) | (Self::Tuple(a), Self::Tuple(b)) | (Self::Intersection(a), Self::Intersection(b)) => a == b,
             // Enum membership and fixed values deliberately retain language equality.
             (Self::Enum(a), Self::Enum(b)) => a == b,
@@ -214,7 +220,7 @@ fn member<'a>(map: &'a Hash, key: &str) -> Result<&'a Value, String> {
 }
 
 impl Ty {
-    pub(crate) fn parse(ty: &Value) -> Result<Ty, String> {
+    pub(crate) fn parse_open(ty: &Value) -> Result<Ty, String> {
         match ty {
             Value::String(name) => Ok(match name.as_str() {
                 "any" => Ty::Any,
@@ -238,19 +244,27 @@ impl Ty {
                         super::promise::validate(ty)?;
                         Ok(Ty::Promise(ty.clone()))
                     }
-                    "list" => Ok(Ty::List(Box::new(Ty::parse(member(map, "of")?)?))),
-                    "map" => Ok(Ty::Map(Box::new(Ty::parse(member(map, "of")?)?), Box::new(match map.get(&s("keys")) { Some(keys) => Ty::parse(keys)?, None => Ty::Any }))),
+                    "list" => Ok(Ty::List(Box::new(Ty::parse_open(member(map, "of")?)?))),
+                    "map" => Ok(Ty::Map(Box::new(Ty::parse_open(member(map, "of")?)?), Box::new(match map.get(&s("keys")) { Some(keys) => Ty::parse_open(keys)?, None => Ty::Any }))),
                     "union" => match member(map, "of")? {
-                        Value::Array(members) if !members.is_empty() => Ok(Ty::Union(members.iter().map(Ty::parse).collect::<Result<_, _>>()?)),
+                        Value::Array(members) if !members.is_empty() => Ok(Ty::Union(members.iter().map(Ty::parse_open).collect::<Result<_, _>>()?)),
                         _ => Err("a `union` needs a non-empty list `of` types".into()),
                     },
                     "intersection" => match member(map, "of")? {
-                        Value::Array(members) if !members.is_empty() => Ok(Ty::Intersection(members.iter().map(Ty::parse).collect::<Result<_, _>>()?)),
+                        Value::Array(members) if !members.is_empty() => Ok(Ty::Intersection(members.iter().map(Ty::parse_open).collect::<Result<_, _>>()?)),
                         _ => Err("an `intersection` needs a non-empty list `of` types".into()),
                     },
                     "tuple" => match member(map, "of")? {
-                        Value::Array(members) => Ok(Ty::Tuple(members.iter().map(Ty::parse).collect::<Result<_, _>>()?)),
+                        Value::Array(members) => Ok(Ty::Tuple(members.iter().map(Ty::parse_open).collect::<Result<_, _>>()?)),
                         _ => Err("a `tuple` needs a list `of` position types".into()),
+                    },
+                    "rec" => match (member(map, "name")?, member(map, "of")?) {
+                        (Value::String(name), body) if !name.is_empty() => Ok(Ty::Rec(name.clone(), Box::new(Ty::parse_open(body)?))),
+                        _ => Err("a `rec` type needs a non-empty string `name` and a type `of`".into()),
+                    },
+                    "var" => match member(map, "name")? {
+                        Value::String(name) if !name.is_empty() => Ok(Ty::Var(name.clone())),
+                        _ => Err("a `var` type needs a non-empty string `name`".into()),
                     },
                     "enum" => match member(map, "values")? {
                         Value::Array(values) if !values.is_empty() => Ok(Ty::Enum(values.to_vec())),
@@ -264,10 +278,10 @@ impl Ty {
                             Some(Value::Boolean(pure)) => *pure,
                             Some(_) => return Err("a `function` type's `pure` must be a boolean".into()),
                         };
-                        Ok(Ty::Fn(params.iter().map(Ty::parse).collect::<Result<_, _>>()?, Box::new(Ty::parse(member(map, "result")?)?), pure))
+                        Ok(Ty::Fn(params.iter().map(Ty::parse_open).collect::<Result<_, _>>()?, Box::new(Ty::parse_open(member(map, "result")?)?), pure))
                     }
                     "refine" => {
-                        let base = Ty::parse(member(map, "of")?)?;
+                        let base = Ty::parse_open(member(map, "of")?)?;
                         let predicate = member(map, "check")?;
                         predicate_shape(predicate).map_err(|why| format!("a `refine` type's `check`: {why}"))?;
                         Ok(Ty::Refine(Box::new(base), predicate.clone()))
@@ -284,6 +298,85 @@ impl Ty {
                 }
             }
             other => Err(format!("expected a type, got {}", type_name(other))),
+        }
+    }
+
+    /// Parse a complete type: every `var` is bound by an enclosing `rec` and guarded.
+    pub(crate) fn parse(ty: &Value) -> Result<Ty, String> {
+        let parsed = Ty::parse_open(ty)?;
+        parsed.close(&mut Vec::new(), &mut Vec::new())?;
+        Ok(parsed)
+    }
+
+    /// Scope and guardedness: a `var` must name an enclosing `rec` and sit under a list, map, tuple,
+    /// record, class or function, never directly under only unions, intersections, refinements or
+    /// other `rec`s (`rec t. t | integer` has no values to find and is rejected). Linear in the type.
+    pub(crate) fn close(&self, bound: &mut Vec<String>, unguarded: &mut Vec<String>) -> Result<(), String> {
+        match self {
+            Ty::Var(name) if !bound.contains(name) => Err(format!("type variable `{name}` is not bound by an enclosing `rec`")),
+            Ty::Var(name) if unguarded.contains(name) => Err(format!("type variable `{name}` is unguarded: it must sit under a list, map, tuple, record or function")),
+            Ty::Rec(name, body) => {
+                bound.push(name.clone());
+                unguarded.push(name.clone());
+                let result = body.close(bound, unguarded);
+                bound.pop();
+                unguarded.pop();
+                result
+            }
+            Ty::Union(members) | Ty::Intersection(members) => members.iter().try_for_each(|m| m.close(bound, unguarded)),
+            Ty::Refine(base, _) => base.close(bound, unguarded),
+            Ty::List(_) | Ty::Map(..) | Ty::Tuple(_) | Ty::Record(_) | Ty::Class(..) | Ty::Fn(..) => {
+                let saved = std::mem::take(unguarded);
+                let result = self.children().into_iter().try_for_each(|child| child.close(bound, unguarded));
+                *unguarded = saved;
+                result
+            }
+            _ => Ok(()),
+        }
+    }
+
+    /// Directly nested types.
+    fn children(&self) -> Vec<&Ty> {
+        match self {
+            Ty::List(x) | Ty::Refine(x, _) | Ty::Rec(_, x) => vec![x],
+            Ty::Map(x, k) => vec![x, k],
+            Ty::Fn(params, result, _) => params.iter().chain([&**result]).collect(),
+            Ty::Record(fields) | Ty::Class(fields, ..) => fields.iter().map(|(_, f)| &f.ty).collect(),
+            Ty::Union(m) | Ty::Intersection(m) | Ty::Tuple(m) => m.iter().collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    fn map_children(&self, f: &mut dyn FnMut(&Ty) -> Ty) -> Ty {
+        let field = |f: &mut dyn FnMut(&Ty) -> Ty, (n, x): &(String, Field)| (n.clone(), Field { ty: f(&x.ty), ..x.clone() });
+        match self {
+            Ty::List(x) => Ty::List(Box::new(f(x))),
+            Ty::Map(x, k) => Ty::Map(Box::new(f(x)), Box::new(f(k))),
+            Ty::Fn(params, result, pure) => Ty::Fn(params.iter().map(|p| f(p)).collect(), Box::new(f(result)), *pure),
+            Ty::Record(fields) => Ty::Record(fields.iter().map(|x| field(f, x)).collect()),
+            Ty::Class(fields, fixed, constraints) => Ty::Class(fields.iter().map(|x| field(f, x)).collect(), fixed.clone(), constraints.clone()),
+            Ty::Union(m) => Ty::Union(m.iter().map(|x| f(x)).collect()),
+            Ty::Intersection(m) => Ty::Intersection(m.iter().map(|x| f(x)).collect()),
+            Ty::Tuple(m) => Ty::Tuple(m.iter().map(|x| f(x)).collect()),
+            Ty::Refine(x, p) => Ty::Refine(Box::new(f(x)), p.clone()),
+            Ty::Rec(n, x) => Ty::Rec(n.clone(), Box::new(f(x))),
+            other => other.clone(),
+        }
+    }
+
+    fn substitute(&self, name: &str, with: &Ty) -> Ty {
+        match self {
+            Ty::Var(n) if n == name => with.clone(),
+            Ty::Rec(n, _) if n == name => self.clone(),
+            _ => self.map_children(&mut |child| child.substitute(name, with)),
+        }
+    }
+
+    /// One unfolding of a recursive type (identity for any other type).
+    pub(crate) fn unfold(&self) -> Ty {
+        match self {
+            Ty::Rec(name, body) => body.substitute(name, self),
+            other => other.clone(),
         }
     }
 
@@ -312,6 +405,8 @@ impl Ty {
             (Ty::Never, _) | (_, Ty::Never) => false,
             (Ty::Promise(_), Ty::Vm | Ty::Promise(_)) | (Ty::Vm, Ty::Promise(_)) => true,
             (Ty::Any, _) | (_, Ty::Any) => true,
+            // Unfolding could recurse forever through required fields; stay conservative.
+            (Ty::Rec(..) | Ty::Var(_), _) | (_, Ty::Rec(..) | Ty::Var(_)) => true,
             (Ty::Union(members), _) => members.iter().any(|m| m.overlaps(other)),
             (_, Ty::Union(members)) => members.iter().any(|m| self.overlaps(m)),
             // Disjoint from one member is disjoint from the intersection; joint emptiness stays unproved.
@@ -369,6 +464,7 @@ impl Ty {
             Ty::Class(..) => "class".into(),
             Ty::Union(members) => members.iter().map(Ty::name).collect::<Vec<_>>().join(" | "),
             Ty::Intersection(members) => members.iter().map(|m| format!("({})", m.name())).collect::<Vec<_>>().join(" & "),
+            Ty::Rec(name, _) | Ty::Var(name) => name.clone(),
             Ty::Tuple(items) => format!("tuple of ({})", items.iter().map(Ty::name).collect::<Vec<_>>().join(", ")),
             Ty::Enum(values) => format!("one of [{}]", values.iter().map(show).collect::<Vec<_>>().join(", ")),
             Ty::Refine(base, _) => format!("refined {}", base.name()),
@@ -421,12 +517,12 @@ impl Field {
     pub(super) fn parse(spec: &Value) -> Result<Field, String> {
         if let Value::Hash(map) = spec {
             match text(map, "type") {
-                Some("optional") => return Ok(Field { ty: Ty::parse(member(map, "of")?)?, required: false, default: None }),
-                Some("default") => return Ok(Field { ty: Ty::parse(member(map, "of")?)?, required: false, default: Some(member(map, "default")?.clone()) }),
+                Some("optional") => return Ok(Field { ty: Ty::parse_open(member(map, "of")?)?, required: false, default: None }),
+                Some("default") => return Ok(Field { ty: Ty::parse_open(member(map, "of")?)?, required: false, default: Some(member(map, "default")?.clone()) }),
                 _ => {}
             }
         }
-        Ok(Field { ty: Ty::parse(spec)?, required: true, default: None })
+        Ok(Field { ty: Ty::parse_open(spec)?, required: true, default: None })
     }
 }
 
@@ -493,6 +589,7 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
                 }
             }
         }
+        (Ty::Rec(..), _) => check(value, &ty.unfold(), at, pred, out),
         (Ty::Tuple(items), Value::Array(values)) if items.len() == values.len() =>
             items.iter().zip(values.iter()).enumerate().for_each(|(i, (item, value))| check(value, item, &inside(at, &i.to_string()), pred, out)),
         (Ty::Tuple(items), Value::Array(values)) =>
@@ -572,7 +669,7 @@ pub(super) fn validate_defaults(ty: &Ty, pred: &mut Pred) -> Vec<Violation> {
                     }
                 }
             }
-            Ty::List(inner) | Ty::Refine(inner, _) => pending.push(Work::Type(at, inner)),
+            Ty::List(inner) | Ty::Refine(inner, _) | Ty::Rec(_, inner) => pending.push(Work::Type(at, inner)),
             Ty::Map(inner, keys) => { pending.push(Work::Type(at.clone(), keys)); pending.push(Work::Type(at, inner)); }
             Ty::Union(members) | Ty::Intersection(members) => pending.extend(members.iter().rev().map(|member| Work::Type(at.clone(), member))),
             Ty::Tuple(items) => pending.extend(items.iter().enumerate().rev().map(|(i, item)| Work::Type(inside(&at, &i.to_string()), item))),
@@ -604,6 +701,9 @@ pub fn violations(value: &Value, ty: &Value, pred: &mut Pred) -> Result<Vec<Viol
 pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
     if a == b || *a == Ty::Never || *b == Ty::Any {
         return true;
+    }
+    if matches!(a, Ty::Rec(..)) || matches!(b, Ty::Rec(..)) {
+        return subtype_recursive(a, b, pred);
     }
     match (a, b) {
         // Union is the least upper bound and intersection the greatest lower bound: these four rules
@@ -638,6 +738,26 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
 /// Some pair of members is definitely disjoint, so the intersection is empty and below everything.
 fn disjoint_members(members: &[Ty]) -> bool {
     members.iter().enumerate().any(|(i, m)| members[i + 1..].iter().any(|n| !m.overlaps(n)))
+}
+
+const MAX_ASSUMPTIONS: usize = 256;
+
+thread_local! {
+    /// Pairs under proof: meeting one again assumes it (greatest fixed point), which is what lets a
+    /// recursive type be compared with itself. Bounded, so exhaustion is unproved rather than a loop.
+    static ASSUMED: std::cell::RefCell<Vec<(Ty, Ty)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn subtype_recursive(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
+    let seen = ASSUMED.with(|stack| {
+        let stack = stack.borrow();
+        if stack.len() >= MAX_ASSUMPTIONS { Some(false) } else { stack.iter().any(|(x, y)| x == a && y == b).then_some(true) }
+    });
+    if let Some(answer) = seen { return answer; }
+    ASSUMED.with(|stack| stack.borrow_mut().push((a.clone(), b.clone())));
+    let answer = if matches!(a, Ty::Rec(..)) { subtype(&a.unfold(), b, pred) } else { subtype(a, &b.unfold(), pred) };
+    ASSUMED.with(|stack| stack.borrow_mut().pop());
+    answer
 }
 
 pub(super) fn record_subtype(fa: &[(String, Field)], fb: &[(String, Field)], pred: &mut Pred) -> bool {

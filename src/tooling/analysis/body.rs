@@ -32,7 +32,7 @@ fn type_cost(ty: &Ty, limit: usize, byte_limit: usize) -> Option<(usize, usize)>
         size = size.checked_add(1)?;
         if size > limit { return None; }
         match ty {
-            Ty::List(item) | Ty::Refine(item, _) => pending.push(item),
+            Ty::List(item) | Ty::Refine(item, _) | Ty::Rec(_, item) => pending.push(item),
             Ty::Map(item, keys) => { pending.push(item); pending.push(keys); }
             Ty::Fn(params, result, _) => {
                 if params.len() + 1 > limit - size { return None; }
@@ -62,7 +62,7 @@ fn type_cost(ty: &Ty, limit: usize, byte_limit: usize) -> Option<(usize, usize)>
                 }
             }
             Ty::Any | Ty::Never | Ty::Int | Ty::Float | Ty::Str | Ty::Bool
-                | Ty::Null | Ty::Secret | Ty::Function | Ty::Vm | Ty::Promise(_) => {}
+                | Ty::Null | Ty::Secret | Ty::Function | Ty::Vm | Ty::Promise(_) | Ty::Var(_) => {}
         }
         if size > limit || bytes > byte_limit { return None; }
         if pending.len() > limit - size { return None; }
@@ -506,7 +506,7 @@ impl Checker<'_> {
                             defaults |= fields.iter().any(|(_, field)| field.default.is_some());
                             pending.extend(fields.iter().map(|(_, field)| &field.ty));
                         }
-                        Ty::List(item) | Ty::Refine(item, _) => pending.push(item),
+                        Ty::List(item) | Ty::Refine(item, _) | Ty::Rec(_, item) => pending.push(item),
                         Ty::Map(item, keys) => { pending.push(item); pending.push(keys); }
                         Ty::Union(members) | Ty::Intersection(members) | Ty::Tuple(members) => pending.extend(members),
                         Ty::Fn(params, result, _) => { pending.extend(params); pending.push(result); }
@@ -597,6 +597,11 @@ impl Checker<'_> {
                     ("union", 1..) => Some(describe("union", [("of", Value::Array(args.iter().map(|&arg| self.type_value(arg, depth + 1)).collect::<Option<Vec<_>>>()?.into()))])),
                     ("intersection", 1..) => Some(describe("intersection", [("of", Value::Array(args.iter().map(|&arg| self.type_value(arg, depth + 1)).collect::<Option<Vec<_>>>()?.into()))])),
                     ("tuple_of", _) => Some(describe("tuple", [("of", Value::Array(args.iter().map(|&arg| self.type_value(arg, depth + 1)).collect::<Option<Vec<_>>>()?.into()))])),
+                    ("rec", 2) => {
+                        let name @ Value::String(_) = self.scalar(args[0])? else { return None };
+                        Some(describe("rec", [("name", name), ("of", self.type_value(args[1], depth + 1)?)]))
+                    }
+                    ("var", 1) => Some(describe("var", [("name", self.scalar(args[0])?)])),
                     ("enum", 1..) => Some(describe("enum", [("values", Value::Array(args.iter().map(|&arg| self.scalar(arg)).collect::<Option<Vec<_>>>()?.into()))])),
                     ("literal", 1) => Some(describe("literal", [("value", self.scalar(args[0])?)])),
                     (kind @ ("function_of" | "pure_function_of"), 2) => {
@@ -691,6 +696,8 @@ fn search_type(ty: &Ty) -> Option<Value> {
         Ty::Intersection(members) => describe("intersection", [("of",Value::Array(members.iter().map(search_type).collect::<Option<Vec<_>>>()?.into()))]),
         Ty::Tuple(items) => describe("tuple", [("of",Value::Array(items.iter().map(search_type).collect::<Option<Vec<_>>>()?.into()))]),
         Ty::Enum(values) => describe("enum", [("values",Value::Array(values.clone().into()))]),
+        Ty::Rec(name, of) => describe("rec", [("name", s(name)), ("of", search_type(of)?)]),
+        Ty::Var(name) => describe("var", [("name", s(name))]),
         Ty::Class(..) | Ty::Refine(..) | Ty::Promise(..) => return None,
         _ => s(&ty.name()),
     })

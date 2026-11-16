@@ -20,7 +20,7 @@ pub(crate) fn descriptor<const N: usize>(kind: &str, entries: [(&str, Value); N]
 
 /// The argument at `at` as a validated type, or a fault blaming it.
 fn type_arg(args: &[Value], at: usize) -> Result<Ty, Fault> {
-    Ty::parse(&args[at]).map_err(|why| Fault::at(at, "type", why))
+    Ty::parse_open(&args[at]).map_err(|why| Fault::at(at, "type", why))
 }
 
 fn spec_arg(args: &[Value], at: usize, pred: &mut Pred) -> Result<Field, Fault> {
@@ -90,7 +90,7 @@ pub(super) fn reflect(ty: &Value, member_name: &str) -> Result<Value, Fault> {
 
 /// `{type: refine, of: base, check: <fn source>}`; `base` must be a type.
 pub fn refine(base: Value, check: Value) -> Result<Value, Fault> {
-    Ty::parse(&base).map_err(|why| Fault::at(0, "type", why))?;
+    Ty::parse_open(&base).map_err(|why| Fault::at(0, "type", why))?;
     Ok(descriptor("refine", [("of", base), ("check", check)]))
 }
 
@@ -123,10 +123,20 @@ pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Op
         }
         "function_of" | "pure_function_of" => {
             let Value::Array(params) = &args[0] else { return Err(Fault::expected(0, "a list of parameter types", &args[0])) };
-            params.iter().try_for_each(|param| Ty::parse(param).map(drop)).map_err(|why| Fault::at(0, "type", why))?;
+            params.iter().try_for_each(|param| Ty::parse_open(param).map(drop)).map_err(|why| Fault::at(0, "type", why))?;
             type_arg(args, 1)?;
         }
         "union" | "intersection" | "tuple_of" => { (0..args.len()).try_for_each(|i| type_arg(args, i).map(drop))?; }
+        "rec" => {
+            let Value::String(name) = &args[0] else { return Err(Fault::expected(0, "a string type variable name", &args[0])) };
+            if name.is_empty() { return Err(Fault::at(0, "type", "a type variable name must not be empty".into())); }
+            let body = type_arg(args, 1)?;
+            Ty::Rec(name.clone(), Box::new(body)).close(&mut Vec::new(), &mut Vec::new()).map_err(|why| Fault::at(1, "type", why))?;
+        }
+        "var" => match &args[0] {
+            Value::String(name) if !name.is_empty() => {}
+            other => return Err(Fault::expected(0, "a non-empty string type variable name", other)),
+        },
         "enum" | "literal" => {}
         "secret" => match &args[0] {
             Value::String(reference) if !reference.is_empty() => {}

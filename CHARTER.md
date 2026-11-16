@@ -343,9 +343,9 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
   - [x] Define parameter/result variance and callable compatibility: parameters contravariant, result covariant, same arity; membership evaluates a function's declared annotations without calling it, and unannotated results promise only `any`
   - [x] Express effect contracts: `pure_function_of` demands source-provable freedom from `effect`/`step`, with callee parameters promised pure by their own annotations (`types_function_purity`)
   - [x] Check statically that code reachable from a `type_time` region meets the purity contract before it runs (a definite `effect` is a `type` error; calls the scan cannot see through are listed `unchecked`)
-- [ ] Support named recursive types
-  - [ ] Define guardedness, unfolding, equality and termination of checking
-  - [ ] Distinguish recursive descriptions from erroneous evaluation cycles
+- [x] Support named recursive types
+  - [x] Define guardedness, unfolding, equality and termination of checking (`rec`/`var`; `types_recursive`; `LANGUAGE.md`)
+  - [x] Distinguish recursive descriptions from erroneous evaluation cycles (recursion is an explicit `rec` binder in the descriptor; a self-referential binding remains a cycle error)
 - [ ] Make type relationships and equivalence explicit
   - [x] Define the subtyping order and semantic equivalence separately from structural declaration `eq` (`subtype`, `equivalent` as mutual subtyping, `eq` unchanged; `type_laws`)
   - [ ] Specify refinement implication and constraint composition: which facts are decidable, require evidence or remain unknown
