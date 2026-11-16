@@ -71,7 +71,7 @@ annotations:
                   - name
                   - "$call"
                   - 2
-                source: "std:orchestration"
+                source: "std:provider"
             of: string
             type: refine
           of:
@@ -85,7 +85,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:orchestration"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -100,7 +100,7 @@ annotations:
                   - name
                   - "$call"
                   - 2
-                source: "std:orchestration"
+                source: "std:provider"
             of: string
             type: refine
           of:
@@ -114,7 +114,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:orchestration"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -127,7 +127,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:orchestration"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -187,7 +187,7 @@ annotations:
               - name
               - "$call"
               - 2
-            source: "std:orchestration"
+            source: "std:provider"
         of: string
         type: refine
       type: list
@@ -225,7 +225,7 @@ annotations:
               - name
               - "$call"
               - 2
-            source: "std:orchestration"
+            source: "std:provider"
         of: string
         type: refine
       type: list
@@ -261,7 +261,7 @@ annotations:
               - name
               - "$call"
               - 2
-            source: "std:orchestration"
+            source: "std:provider"
         of: string
         type: refine
       type: list
@@ -274,6 +274,7 @@ annotations:
           - "$call":
               - list_of
               - "$ref": string
+          - "$ref": provider.name
       location:
         path:
           - plan
@@ -283,6 +284,7 @@ annotations:
           - 1
         source: "std:dependency"
     kind: parameter
+    runtime_values_omitted: true
     target:
       path:
         - planned
@@ -295,6 +297,17 @@ annotations:
         - 1
       source: "std:orchestration"
     type:
+      keys:
+        check:
+          kind: function
+          location:
+            path:
+              - name
+              - "$call"
+              - 2
+            source: "std:provider"
+        of: string
+        type: refine
       of:
         of: string
         type: list
@@ -934,6 +947,7 @@ annotations:
           - "$call":
               - list_of
               - "$ref": string
+          - "$ref": provider.name
       location:
         path:
           - plan
@@ -943,6 +957,7 @@ annotations:
           - 1
         source: "std:dependency"
     kind: parameter
+    runtime_values_omitted: true
     target:
       path:
         - planned
@@ -955,6 +970,17 @@ annotations:
         - 1
       source: "std:orchestration"
     type:
+      keys:
+        check:
+          kind: function
+          location:
+            path:
+              - name
+              - "$call"
+              - 2
+            source: "std:provider"
+        of: string
+        type: refine
       of:
         of: string
         type: list
@@ -1594,6 +1620,7 @@ annotations:
           - "$call":
               - list_of
               - "$ref": string
+          - "$ref": provider.name
       location:
         path:
           - plan
@@ -1603,6 +1630,7 @@ annotations:
           - 1
         source: "std:dependency"
     kind: parameter
+    runtime_values_omitted: true
     target:
       path:
         - planned
@@ -1615,6 +1643,17 @@ annotations:
         - 1
       source: "std:orchestration"
     type:
+      keys:
+        check:
+          kind: function
+          location:
+            path:
+              - name
+              - "$call"
+              - 2
+            source: "std:provider"
+        of: string
+        type: refine
       of:
         of: string
         type: list
@@ -2097,68 +2136,6 @@ annotations:
         - package
       file_b:
         - package
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "std:dependency"
-    type: map
-    value:
-      file_a:
-        - package
-      file_b:
-        - package
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-      source: "std:dependency"
-    type:
-      of: string
-      type: list
-    value:
-      - file_a
-      - file_b
 annotations_truncated: true
 root:
   coalesced:
@@ -2184,24 +2161,24 @@ root:
             function: /require
             function_column: 3
             function_file: "std:orchestration"
-            function_line: 163
-            line: 104
+            function_line: 158
+            line: 98
             path: "/planned/$call/2/$call/2"
           - column: 11
             file: "std:orchestration"
             function: /planned
             function_column: 3
             function_file: "std:orchestration"
-            function_line: 98
-            line: 93
+            function_line: 92
+            line: 87
             path: "/plan_checked/$call/2/$call/2"
           - column: 15
             file: "std:orchestration"
             function: /plan_checked
             function_column: 3
             function_file: "std:orchestration"
-            function_line: 84
-            line: 67
+            function_line: 78
+            line: 61
             path: "/plan/$call/2/$call/1"
         column: 15
         data:
@@ -2215,7 +2192,7 @@ root:
           status: blocked
         file: "std:orchestration"
         kind: orchestration_dependency_cycle
-        line: 169
+        line: 164
         message: Resource prerequisites contain a cycle
         path: "/require/$call/2/$call/3"
         reference:
@@ -2279,48 +2256,48 @@ root:
             function: /require
             function_column: 3
             function_file: "std:orchestration"
-            function_line: 163
-            line: 340
+            function_line: 158
+            line: 335
             path: "/validate_references/$call/2/$call/1/$call/2"
           - column: 11
             file: "std:orchestration"
             function: "/validate_references/$call/2/$call/1"
             function_column: 11
             function_file: "std:orchestration"
-            function_line: 337
-            line: 337
+            function_line: 332
+            line: 332
             path: "/validate_references/$call/2/$call/1"
           - column: 19
             file: "std:orchestration"
             function: /validate_references
             function_column: 3
             function_file: "std:orchestration"
-            function_line: 332
-            line: 184
+            function_line: 327
+            line: 179
             path: "/resource_graph/$call/2/$call/1/$call/2/$call/3"
           - column: 11
             file: "std:orchestration"
             function: "/resource_graph/$call/2/$call/1"
             function_column: 11
             function_file: "std:orchestration"
-            function_line: 177
-            line: 177
+            function_line: 172
+            line: 172
             path: "/resource_graph/$call/2/$call/1"
           - column: 19
             file: "std:orchestration"
             function: /resource_graph
             function_column: 3
             function_file: "std:orchestration"
-            function_line: 172
-            line: 94
+            function_line: 167
+            line: 88
             path: "/plan_checked/$call/2/$call/2/$call/1"
           - column: 15
             file: "std:orchestration"
             function: /plan_checked
             function_column: 3
             function_file: "std:orchestration"
-            function_line: 84
-            line: 67
+            function_line: 78
+            line: 61
             path: "/plan/$call/2/$call/1"
         column: 15
         data:
@@ -2329,7 +2306,7 @@ root:
           target: missing
         file: "std:orchestration"
         kind: orchestration_missing_reference
-        line: 169
+        line: 164
         message: Resource composition references an unknown prerequisite or handler
         path: "/require/$call/2/$call/3"
         reference:

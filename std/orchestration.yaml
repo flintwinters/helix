@@ -35,13 +35,7 @@ invoke: !call
           - [error]
           - !call [dict, status, failed, error, !ref error]
 lists: !call [import, "std:list"]
-name: !call
-  - refine
-  - !ref string
-  - !call
-      - fn
-      - [s]
-      - !call [gt, !call [len, !ref s], 0]
+name: !ref provider.name
 names: !call [list_of, !ref name]
 notifiers: !call
   - fn
@@ -128,6 +122,7 @@ prerequisites_succeeded: !call
           - fn
           - [id]
           - !call [succeeded, !call [get, !ref results, !ref id]]
+provider: !call [import, "std:provider"]
 report: !call
   - fn
   - [resources, handlers]

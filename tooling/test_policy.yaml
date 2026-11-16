@@ -61,7 +61,7 @@ plan:
           - {suite: {$ref: name}, action: skip, reason: disabled while blessing expectations}
           - $call:
             - if
-            - {$call: [and, {$call: [eq, {$ref: requested}, []]}, {$call: [has, [docker_nginx, docker_linux, ssh_nginx, docker_facts, facts_smoke], {$ref: name}]}]}
+            - {$call: [and, {$call: [eq, {$ref: requested}, []]}, {$call: [has, [docker_nginx, docker_linux, ssh_nginx, docker_facts], {$ref: name}]}]}
             - {suite: {$ref: name}, action: skip, reason: {$call: [concat, 'requires explicit --suite ', {$ref: name}, ' (explicit fixture or workstation observation)']}}
             - {suite: {$ref: name}, action: run}
       - {$ref: ordered}

@@ -140,7 +140,7 @@ annotations:
                   - name
                   - "$call"
                   - 2
-                source: "std:orchestration"
+                source: "std:provider"
             of: string
             type: refine
           of:
@@ -154,7 +154,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:orchestration"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -169,7 +169,7 @@ annotations:
                   - name
                   - "$call"
                   - 2
-                source: "std:orchestration"
+                source: "std:provider"
             of: string
             type: refine
           of:
@@ -183,7 +183,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:orchestration"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -196,7 +196,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:orchestration"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -291,7 +291,7 @@ annotations:
                   - name
                   - "$call"
                   - 2
-                source: "std:orchestration"
+                source: "std:provider"
             of: string
             type: refine
           of:
@@ -305,7 +305,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:orchestration"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -320,7 +320,7 @@ annotations:
                   - name
                   - "$call"
                   - 2
-                source: "std:orchestration"
+                source: "std:provider"
             of: string
             type: refine
           of:
@@ -334,7 +334,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:orchestration"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -347,7 +347,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:orchestration"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -402,7 +402,7 @@ annotations:
               - name
               - "$call"
               - 2
-            source: "std:orchestration"
+            source: "std:provider"
         of: string
         type: refine
       type: list
@@ -439,7 +439,7 @@ annotations:
               - name
               - "$call"
               - 2
-            source: "std:orchestration"
+            source: "std:provider"
         of: string
         type: refine
       type: list
@@ -475,7 +475,7 @@ annotations:
               - name
               - "$call"
               - 2
-            source: "std:orchestration"
+            source: "std:provider"
         of: string
         type: refine
       type: list
@@ -488,6 +488,7 @@ annotations:
           - "$call":
               - list_of
               - "$ref": string
+          - "$ref": provider.name
       location:
         path:
           - plan
@@ -497,6 +498,7 @@ annotations:
           - 1
         source: "std:dependency"
     kind: parameter
+    runtime_values_omitted: true
     target:
       path:
         - planned
@@ -509,6 +511,17 @@ annotations:
         - 1
       source: "std:orchestration"
     type:
+      keys:
+        check:
+          kind: function
+          location:
+            path:
+              - name
+              - "$call"
+              - 2
+            source: "std:provider"
+        of: string
+        type: refine
       of:
         of: string
         type: list
@@ -1118,6 +1131,7 @@ annotations:
           - "$call":
               - list_of
               - "$ref": string
+          - "$ref": provider.name
       location:
         path:
           - plan
@@ -1127,6 +1141,7 @@ annotations:
           - 1
         source: "std:dependency"
     kind: parameter
+    runtime_values_omitted: true
     target:
       path:
         - planned
@@ -1139,6 +1154,17 @@ annotations:
         - 1
       source: "std:orchestration"
     type:
+      keys:
+        check:
+          kind: function
+          location:
+            path:
+              - name
+              - "$call"
+              - 2
+            source: "std:provider"
+        of: string
+        type: refine
       of:
         of: string
         type: list
@@ -1748,6 +1774,7 @@ annotations:
           - "$call":
               - list_of
               - "$ref": string
+          - "$ref": provider.name
       location:
         path:
           - plan
@@ -1757,6 +1784,7 @@ annotations:
           - 1
         source: "std:dependency"
     kind: parameter
+    runtime_values_omitted: true
     target:
       path:
         - planned
@@ -1769,6 +1797,17 @@ annotations:
         - 1
       source: "std:orchestration"
     type:
+      keys:
+        check:
+          kind: function
+          location:
+            path:
+              - name
+              - "$call"
+              - 2
+            source: "std:provider"
+        of: string
+        type: refine
       of:
         of: string
         type: list
@@ -1929,65 +1968,6 @@ annotations:
     value:
       configuration:
         - package
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "std:dependency"
-    type: map
-    value:
-      configuration:
-        - package
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-      source: "std:dependency"
-    type:
-      of: string
-      type: list
-    value:
-      - configuration
 annotations_truncated: true
 root:
   changed: true

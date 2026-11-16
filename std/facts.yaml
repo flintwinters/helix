@@ -480,13 +480,7 @@
           - !call [text.split, !ref s, "\n"]
     lists: !call [import, "std:list"]
     mandatory: [identity, platform]
-    name: !call
-      - refine
-      - !ref string
-      - !call
-          - fn
-          - [s]
-          - !call [gt, !call [len, !ref s], 0]
+    name: !ref provider.name
     network_parse: !call
       - fn
       - [source]
@@ -733,9 +727,9 @@
       - custom_versions
       - !call [list_of, !call [record, name, !ref name, version, !ref name]]
       - facts
-      - !call [map_of, !ref result_type]
+      - !call [map_of, !ref result_type, !ref name]
       - custom
-      - !call [map_of, !ref result_type]
+      - !call [map_of, !ref result_type, !ref name]
       - started
       - !ref result_type
       - finished

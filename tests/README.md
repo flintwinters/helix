@@ -506,7 +506,6 @@ All artifacts live under `runtime/`; all entrypoints use `manage.py`:
 ```sh
 ./manage.py test --suite host_facts
 HELIX_DOCKER_SUDO=1 ./manage.py test --suite docker_facts
-./manage.py test --suite facts_smoke
 ```
 
 `host_facts` is a normal suite covering schemas, pure parsers, selector admission,
@@ -519,12 +518,11 @@ provider application, no-op repetition, timestamp independence, changed consumed
 facts, unselected changes, denied observation and container recreation.
 It installs fixture prerequisites before observation and verifies collection does
 not change installed packages or the fixture resource. No collector is installed.
-`facts_smoke` is explicitly selected because it observes this Ubuntu workstation;
-it only reads facts and independently checks platform, CPU, memory and packages. Host command, VM and test deadlines retain their defaults.
-It changes no workstation configuration. Normally booted systemd service facts,
+Qualification is isolated in the pinned container; no suite observes the developer
+host, so results do not depend on the host OS. Normally booted systemd service facts,
 other Ubuntu releases, Ubuntu Linux-resource management and Ansible migration are
 outside this qualification. Inspect saved source/state and Docker command records
-in `runtime/host-facts/`, `runtime/docker-facts/` and `runtime/facts-smoke/`.
+in `runtime/host-facts/` and `runtime/docker-facts/`.
 
 Native HTTP acceptance runs within `python manage.py test --suite effects`.
 Independent clients exercise dynamic and binary responses, concurrent handlers,

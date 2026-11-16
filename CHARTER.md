@@ -585,7 +585,7 @@ Each claim is bounded by its operator contract; none is general machine manageme
   its transitive dependents. Two container-resident controllers configure each
   other over pinned SSH. Not established: services, boot persistence, templates,
   cron, firewall, concurrent-controller or fleet recovery.
-- **Typed facts** (`std:facts`, `host_facts`, `docker_facts`, `facts_smoke`).
+- **Typed facts** (`std:facts`, `host_facts`, `docker_facts`).
   Versioned schema with explicit `unknown`/`inaccessible` states; caller-granted
   read-only, uncached, bounded and selectable collection; custom facts;
   consumed facts recorded in the review so a plan goes stale when they change.

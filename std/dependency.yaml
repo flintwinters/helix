@@ -15,7 +15,7 @@ done: !call
 maps: !call [import, "std:map"]
 plan: !call
   - fn
-  - [[tasks, !call [map_of, !call [list_of, !ref string]]]]
+  - [[tasks, !call [map_of, !call [list_of, !ref string], !ref provider.name]]]
   - !call
       - let
       - final: !call
@@ -56,6 +56,7 @@ plan: !call
               - !call [eq, !call [len, !call [get, !ref final, pending]], 0]
               - finished
               - blocked
+provider: !call [import, "std:provider"]
 ready: !call
   - fn
   - [pending, order]

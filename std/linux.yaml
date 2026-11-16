@@ -516,7 +516,7 @@
       - target
       - !ref id_type
       - resources
-      - !call [map_of, !call [union, !ref map, !ref null_type]]
+      - !call [map_of, !call [union, !ref map, !ref null_type], !ref id_type]
     observe_state: !call
       - fn
       - [config]

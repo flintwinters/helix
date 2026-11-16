@@ -39,7 +39,7 @@ annotations:
                   - name
                   - "$call"
                   - 2
-                source: "std:inventory"
+                source: "std:provider"
             of: string
             type: refine
           of:
@@ -51,7 +51,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             type: list
@@ -75,7 +75,7 @@ annotations:
                               - name
                               - "$call"
                               - 2
-                            source: "std:inventory"
+                            source: "std:provider"
                         of: string
                         type: refine
                       jump_host:
@@ -87,7 +87,7 @@ annotations:
                                 - name
                                 - "$call"
                                 - 2
-                              source: "std:inventory"
+                              source: "std:provider"
                           of: string
                           type: refine
                         type: optional
@@ -116,7 +116,7 @@ annotations:
                                 - name
                                 - "$call"
                                 - 2
-                              source: "std:inventory"
+                              source: "std:provider"
                           of: string
                           type: refine
                         type: optional
@@ -130,7 +130,7 @@ annotations:
                       - name
                       - "$call"
                       - 2
-                    source: "std:inventory"
+                    source: "std:provider"
                 of: string
                 type: refine
             type: record
@@ -149,7 +149,7 @@ annotations:
                             - name
                             - "$call"
                             - 2
-                          source: "std:inventory"
+                          source: "std:provider"
                       of: string
                       type: refine
                     type: optional
@@ -162,7 +162,7 @@ annotations:
                             - name
                             - "$call"
                             - 2
-                          source: "std:inventory"
+                          source: "std:provider"
                       of: string
                       type: refine
                     type: optional
@@ -195,7 +195,7 @@ annotations:
                             - name
                             - "$call"
                             - 2
-                          source: "std:inventory"
+                          source: "std:provider"
                       of: string
                       type: refine
                     type: optional
@@ -209,7 +209,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:inventory"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -222,7 +222,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:inventory"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -234,7 +234,7 @@ annotations:
                       - name
                       - "$call"
                       - 2
-                    source: "std:inventory"
+                    source: "std:provider"
                 of: string
                 type: refine
             type: record
@@ -322,7 +322,7 @@ annotations:
                                 - name
                                 - "$call"
                                 - 2
-                              source: "std:inventory"
+                              source: "std:provider"
                           of: string
                           type: refine
                         jump_host:
@@ -334,7 +334,7 @@ annotations:
                                   - name
                                   - "$call"
                                   - 2
-                                source: "std:inventory"
+                                source: "std:provider"
                             of: string
                             type: refine
                           type: optional
@@ -363,7 +363,7 @@ annotations:
                                   - name
                                   - "$call"
                                   - 2
-                                source: "std:inventory"
+                                source: "std:provider"
                             of: string
                             type: refine
                           type: optional
@@ -377,7 +377,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:inventory"
+                      source: "std:provider"
                   of: string
                   type: refine
               type: record
@@ -390,7 +390,7 @@ annotations:
                   - name
                   - "$call"
                   - 2
-                source: "std:inventory"
+                source: "std:provider"
             of: string
             type: refine
         type: record
@@ -446,7 +446,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             type: list
@@ -461,7 +461,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             type: list
@@ -476,7 +476,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             type: list
@@ -491,7 +491,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             type: list
@@ -763,7 +763,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             jump_host:
@@ -775,7 +775,7 @@ annotations:
                       - name
                       - "$call"
                       - 2
-                    source: "std:inventory"
+                    source: "std:provider"
                 of: string
                 type: refine
               type: optional
@@ -804,7 +804,7 @@ annotations:
                       - name
                       - "$call"
                       - 2
-                    source: "std:inventory"
+                    source: "std:provider"
                 of: string
                 type: refine
               type: optional
@@ -961,7 +961,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             jump_host:
@@ -973,7 +973,7 @@ annotations:
                       - name
                       - "$call"
                       - 2
-                    source: "std:inventory"
+                    source: "std:provider"
                 of: string
                 type: refine
               type: optional
@@ -1002,7 +1002,7 @@ annotations:
                       - name
                       - "$call"
                       - 2
-                    source: "std:inventory"
+                    source: "std:provider"
                 of: string
                 type: refine
               type: optional
@@ -1161,7 +1161,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             jump_host:
@@ -1173,7 +1173,7 @@ annotations:
                       - name
                       - "$call"
                       - 2
-                    source: "std:inventory"
+                    source: "std:provider"
                 of: string
                 type: refine
               type: optional
@@ -1202,7 +1202,7 @@ annotations:
                       - name
                       - "$call"
                       - 2
-                    source: "std:inventory"
+                    source: "std:provider"
                 of: string
                 type: refine
               type: optional
@@ -1253,7 +1253,7 @@ annotations:
                   - name
                   - "$call"
                   - 2
-                source: "std:inventory"
+                source: "std:provider"
             of: string
             type: refine
           of:
@@ -1265,7 +1265,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             type: list
@@ -1289,7 +1289,7 @@ annotations:
                               - name
                               - "$call"
                               - 2
-                            source: "std:inventory"
+                            source: "std:provider"
                         of: string
                         type: refine
                       jump_host:
@@ -1301,7 +1301,7 @@ annotations:
                                 - name
                                 - "$call"
                                 - 2
-                              source: "std:inventory"
+                              source: "std:provider"
                           of: string
                           type: refine
                         type: optional
@@ -1330,7 +1330,7 @@ annotations:
                                 - name
                                 - "$call"
                                 - 2
-                              source: "std:inventory"
+                              source: "std:provider"
                           of: string
                           type: refine
                         type: optional
@@ -1344,7 +1344,7 @@ annotations:
                       - name
                       - "$call"
                       - 2
-                    source: "std:inventory"
+                    source: "std:provider"
                 of: string
                 type: refine
             type: record
@@ -1363,7 +1363,7 @@ annotations:
                             - name
                             - "$call"
                             - 2
-                          source: "std:inventory"
+                          source: "std:provider"
                       of: string
                       type: refine
                     type: optional
@@ -1376,7 +1376,7 @@ annotations:
                             - name
                             - "$call"
                             - 2
-                          source: "std:inventory"
+                          source: "std:provider"
                       of: string
                       type: refine
                     type: optional
@@ -1409,7 +1409,7 @@ annotations:
                             - name
                             - "$call"
                             - 2
-                          source: "std:inventory"
+                          source: "std:provider"
                       of: string
                       type: refine
                     type: optional
@@ -1423,7 +1423,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:inventory"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -1436,7 +1436,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:inventory"
+                      source: "std:provider"
                   of: string
                   type: refine
                 type: list
@@ -1448,7 +1448,7 @@ annotations:
                       - name
                       - "$call"
                       - 2
-                    source: "std:inventory"
+                    source: "std:provider"
                 of: string
                 type: refine
             type: record
@@ -1536,7 +1536,7 @@ annotations:
                                 - name
                                 - "$call"
                                 - 2
-                              source: "std:inventory"
+                              source: "std:provider"
                           of: string
                           type: refine
                         jump_host:
@@ -1548,7 +1548,7 @@ annotations:
                                   - name
                                   - "$call"
                                   - 2
-                                source: "std:inventory"
+                                source: "std:provider"
                             of: string
                             type: refine
                           type: optional
@@ -1577,7 +1577,7 @@ annotations:
                                   - name
                                   - "$call"
                                   - 2
-                                source: "std:inventory"
+                                source: "std:provider"
                             of: string
                             type: refine
                           type: optional
@@ -1591,7 +1591,7 @@ annotations:
                         - name
                         - "$call"
                         - 2
-                      source: "std:inventory"
+                      source: "std:provider"
                   of: string
                   type: refine
               type: record
@@ -1604,7 +1604,7 @@ annotations:
                   - name
                   - "$call"
                   - 2
-                source: "std:inventory"
+                source: "std:provider"
             of: string
             type: refine
         type: record
@@ -1659,7 +1659,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             type: list
@@ -1674,7 +1674,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             type: list
@@ -1689,7 +1689,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             type: list
@@ -1704,7 +1704,7 @@ annotations:
                     - name
                     - "$call"
                     - 2
-                  source: "std:inventory"
+                  source: "std:provider"
               of: string
               type: refine
             type: list
@@ -1773,7 +1773,7 @@ root:
             function: /require
             function_column: 3
             function_file: "std:inventory"
-            function_line: 192
+            function_line: 187
             line: 19
             path: "/add_hosts/$call/2/$call/1/$call/2/$call/2"
           - column: 11
@@ -1790,23 +1790,23 @@ root:
             function_column: 3
             function_file: "std:inventory"
             function_line: 8
-            line: 233
+            line: 228
             path: "/resolve_checked/$call/2/$call/1/catalog/$call/1/$call/2"
           - column: 15
             file: "std:inventory"
             function: "/resolve_checked/$call/2/$call/1/catalog/$call/1"
             function_column: 15
             function_file: "std:inventory"
-            function_line: 230
-            line: 230
+            function_line: 225
+            line: 225
             path: "/resolve_checked/$call/2/$call/1/catalog/$call/1"
           - column: 11
             file: "std:inventory"
             function: /resolve_checked
             function_column: 3
             function_file: "std:inventory"
-            function_line: 223
-            line: 205
+            function_line: 218
+            line: 200
             path: "/resolve/$call/2/$call/1"
         column: 15
         data:
@@ -1814,7 +1814,7 @@ root:
           source: duplicate
         file: "std:inventory"
         kind: inventory_duplicate_host
-        line: 198
+        line: 193
         message: Host identities must be unique across all inventory inputs
         path: "/require/$call/2/$call/3"
         phase: type
@@ -1846,7 +1846,7 @@ root:
               rule: type
         file: "std:inventory"
         kind: type
-        line: 206
+        line: 201
         message: "1 type violation: expected record | record, got map"
         path: "/resolve/$call/2/$call/1/$call/1/$call/1"
         phase: type
@@ -1871,55 +1871,55 @@ root:
             function: /require
             function_column: 3
             function_file: "std:inventory"
-            function_line: 192
-            line: 360
+            function_line: 187
+            line: 355
             path: "/validate_hosts/$call/2/$call/1/$call/2"
           - column: 11
             file: "std:inventory"
             function: "/validate_hosts/$call/2/$call/1"
             function_column: 11
             function_file: "std:inventory"
-            function_line: 357
-            line: 357
+            function_line: 352
+            line: 352
             path: "/validate_hosts/$call/2/$call/1"
           - column: 15
             file: "std:inventory"
             function: /validate_hosts
             function_column: 3
             function_file: "std:inventory"
-            function_line: 352
-            line: 189
+            function_line: 347
+            line: 184
             path: "/requested/$call/2/$call/1"
           - column: 11
             file: "std:inventory"
             function: /requested
             function_column: 3
             function_file: "std:inventory"
-            function_line: 185
-            line: 305
+            function_line: 180
+            line: 300
             path: "/select_targets/$call/2/$call/1/included"
           - column: 19
             file: "std:inventory"
             function: /select_targets
             function_column: 3
             function_file: "std:inventory"
-            function_line: 294
-            line: 261
+            function_line: 289
+            line: 256
             path: "/resolve_checked/$call/2/$call/2/$call/6"
           - column: 11
             file: "std:inventory"
             function: /resolve_checked
             function_column: 3
             function_file: "std:inventory"
-            function_line: 223
-            line: 205
+            function_line: 218
+            line: 200
             path: "/resolve/$call/2/$call/1"
         column: 15
         data:
           host: missing
         file: "std:inventory"
         kind: inventory_missing_host
-        line: 198
+        line: 193
         message: Inventory references an unknown host
         path: "/require/$call/2/$call/3"
         phase: type
