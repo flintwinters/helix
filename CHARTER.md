@@ -361,17 +361,17 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
 
 Current annotations and refinements enforce contracts during evaluation. `type_time` explicitly evaluates pure code; it does not infer types or prove unexecuted code safe. The non-executing `check` command provides conservative diagnostics, while `check --evaluate` collects evaluation failures. The goals below extend those boundaries; the formal guarantees belong under "Strengthening and proving the type system."
 
-- [ ] Define a statically checkable fragment and the guarantees a successful check provides
+- [x] Define a statically checkable fragment and the guarantees a successful check provides
   - [x] Check annotated function bodies without calling them (a small literal fragment: scalars, annotated parameters, arithmetic, comparison, `if`, calls of named functions; definite mismatches are errors, possible ones `unchecked`)
   - [x] Check both conditional branches in the supported static fragment without executing effects (`static` body and source-traversal regressions); unsupported value reasoning remains unchecked
   - [x] Report unresolved dynamic or value-dependent obligations as unchecked rather than passed (`static`, declarative annotation and production-policy regressions)
-- [ ] Decide the scope of type inference
-  - [ ] Infer supported expression and binding types using the authoritative type algebra
-  - [ ] Specify where annotations are required and how inferred types interact with unannotated code
-- [ ] Connect static results to runtime contracts
-  - [ ] Reuse the authoritative membership and subtype rules instead of maintaining competing semantics
+- [x] Decide the scope of type inference
+  - [x] Infer supported expression and binding types using the authoritative type algebra (including unannotated function results; `static`)
+  - [x] Specify where annotations are required and how inferred types interact with unannotated code
+- [x] Connect static results to runtime contracts
+  - [x] Reuse the authoritative membership and subtype rules instead of maintaining competing semantics (`Ty::below`/`Ty::overlaps`)
   - [x] Retain runtime checks for obligations outside the supported static fragment (`type_algebra`, annotated golden cases); a clean static report is not proof of successful execution
-  - [ ] Produce structured diagnostics with source blame and explicit unknown/resource-exhausted outcomes
+  - [x] Produce structured diagnostics with source blame and explicit unknown/resource-exhausted outcomes (`unchecked` kind `unchecked` vs `exhausted`; `static`)
 
 ### Strengthening and proving the type system
 

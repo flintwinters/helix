@@ -78,7 +78,7 @@ pub(super) struct Findings {
 }
 
 pub(super) fn check(graph: &Graph) -> Findings {
-    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new(), invalid_annotations: HashSet::new() };
+    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new(), invalid_annotations: HashSet::new(), exhausted: HashSet::new() };
     let mut pending = vec![ROOT];
     while let Some(id) = pending.pop() {
         match graph.syntax(id) {
@@ -107,11 +107,19 @@ struct Checker<'g> {
     findings: Findings,
     type_memo: HashMap<(NodeId, usize), Option<Value>>,
     invalid_annotations: HashSet<NodeId>,
+    exhausted: HashSet<NodeId>,
 }
 
 impl Checker<'_> {
     fn error(&mut self, at: NodeId, message: String) {
         self.findings.errors.push(self.graph.error(at, "type", message));
+    }
+    /// A bound of the analysis, not of the program, made a result unknown. Reported as its own
+    /// `exhausted` kind in the `unchecked` list so it is never mistaken for an unsupported form.
+    fn exhaust(&mut self, at: NodeId, message: &str) {
+        if self.exhausted.insert(at) {
+            self.findings.unchecked.push(self.graph.error(at, "exhausted", message.into()));
+        }
     }
     fn unchecked(&mut self, at: NodeId, message: String) {
         self.findings.unchecked.push(self.graph.error(at, "unchecked", message));
@@ -125,8 +133,12 @@ impl Checker<'_> {
         if !self.active.insert(id) {
             return None;
         }
-        let found = self.infer_node(id).filter(|ty|
-            type_cost(ty, MAX_TYPE_SHAPE_NODES, crate::model::MAX_VALUE_SIZE).is_some());
+        let found = self.infer_node(id);
+        let found = if found.as_ref().is_some_and(|ty|
+            type_cost(ty, MAX_TYPE_SHAPE_NODES, crate::model::MAX_VALUE_SIZE).is_none()) {
+            self.exhaust(id, "the inferred type exceeds the analysis shape budget, so it is treated as unknown");
+            None
+        } else { found };
         self.active.remove(&id);
         self.memo.insert(id, found.clone());
         found
@@ -391,7 +403,9 @@ impl Checker<'_> {
         }
         let result = match self.graph.call(function)?.get(3) {
             Some(&annotation) => self.annotation(annotation)?,
-            None => Ty::Any,
+            // No declared result: the body's inferred type is a sound upper bound on the
+            // runtime result (parameters without annotations stay unknown, hence `any`).
+            None => self.graph.call(function)?.get(2).and_then(|&body| self.infer(body)).unwrap_or(Ty::Any),
         };
         type_cost(&result, remaining, remaining_bytes)?;
         let pure = self.graph.effects(function, &|_| None) == Effects::None;
@@ -436,7 +450,7 @@ impl Checker<'_> {
     }
 
     fn unchecked_annotation(&mut self, annotation: NodeId, message: &str) {
-        if !self.invalid_annotations.contains(&annotation) {
+        if !self.invalid_annotations.contains(&annotation) && !self.exhausted.contains(&annotation) {
             self.unchecked(annotation, message.into());
         }
     }
@@ -476,9 +490,17 @@ impl Checker<'_> {
     /// The type a literal annotation expression denotes.
     fn annotation(&mut self, id: NodeId) -> Option<Ty> {
         let value = self.type_value(id, 0)?;
-        // Descriptor DAGs share values, but Ty::parse expands their structure.
-        // Bound that expanded work before asking the authoritative parser.
-        let mut pending = vec![&value];
+        if Self::annotation_budget(&value).is_none() {
+            self.exhaust(id, "the annotation exceeds the analysis shape budget, so it is not checked");
+            return None;
+        }
+        self.parse_annotation(id, &value)
+    }
+
+    /// Descriptor DAGs share values, but `Ty::parse` expands their structure.
+    /// Bound that expanded work before asking the authoritative parser.
+    fn annotation_budget(value: &Value) -> Option<()> {
+        let mut pending = vec![value];
         let mut remaining = MAX_TYPE_SHAPE_NODES;
         let mut remaining_bytes = crate::model::MAX_VALUE_SIZE;
         while let Some(value) = pending.pop() {
@@ -496,7 +518,11 @@ impl Checker<'_> {
                 _ => {}
             }
         }
-        match Ty::parse(&value) {
+        Some(())
+    }
+
+    fn parse_annotation(&mut self, id: NodeId, value: &Value) -> Option<Ty> {
+        match Ty::parse(value) {
             Ok(ty) => {
                 let mut pending = vec![&ty];
                 let mut defaults = false;
@@ -529,6 +555,7 @@ impl Checker<'_> {
 
     fn type_value(&mut self, id: NodeId, depth: usize) -> Option<Value> {
         if depth > MAX_TYPE_CONSTRUCTOR_DEPTH {
+            self.exhaust(id, "the annotation nests deeper than the analysis constructor limit, so it is not checked");
             return None;
         }
         if let Some(value) = self.type_memo.get(&(id, depth)) {
@@ -676,7 +703,7 @@ impl Checker<'_> {
 
 /// Search evidence uses the checker's bounded annotation and inference rules.
 pub(crate) fn evidence(graph: &Graph, function: NodeId) -> Yaml {
-    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new(), invalid_annotations: HashSet::new() };
+    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new(), invalid_annotations: HashSet::new(), exhausted: HashSet::new() };
     let signature = checker.function_type(function);
     let rendered = signature.as_ref().map(|t| s(&t.name())).unwrap_or(Value::Null);
     let declared = signature.as_ref().and_then(search_type).unwrap_or(Value::Null);

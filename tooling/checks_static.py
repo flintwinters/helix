@@ -22,6 +22,7 @@ def check(ctx):
         verify_record_boundaries(ctx)
         verify_annotation_bounds(ctx)
         verify_numeric_enum_overlap(ctx)
+        verify_unannotated_inference(ctx)
         verify_computed_heads(ctx)
         verify_retired_closure(ctx)
         verify_repository_modules(ctx)
@@ -681,8 +682,22 @@ def verify_annotation_bounds(ctx):
     for name, source in unproved:
         code, report = static_report(ctx, json.dumps(source))
         assert code == 0 and report['diagnostics'] == [], (name, report)
-        assert any(item['path'] == '/produce/$call/3' and 'outside the supported' in item['message']
+        # Analysis-budget exhaustion is a distinct outcome from an unsupported form.
+        kind, text = ('exhausted', 'budget') if name.endswith('_budget') else ('unchecked', 'outside the supported')
+        assert any(item['path'] == '/produce/$call/3' and item['kind'] == kind and text in item['message']
                    for item in report['unchecked']), (name, report)
+
+
+def verify_unannotated_inference(ctx):
+    """An unannotated result is inferred from the body; inference never replaces a declaration."""
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+    program = {'one': call('fn', [], 1), 'twice': call('fn', [['x', 'integer']], call('add', {'$ref': 'x'}, 1))}
+    wrong = {**program, 'bad': call('fn', [], call('one'), 'string'), 'bad2': call('fn', [], call('twice', 1), 'string')}
+    code, report = static_report(ctx, json.dumps(wrong))
+    assert code == 1 and {d['path'] for d in report['diagnostics']} == {'/bad/$call/2', '/bad2/$call/2'}, report
+    code, report = static_report(ctx, json.dumps({**program, 'ok': call('fn', [], call('one'), 'integer')}))
+    assert code == 0 and report['diagnostics'] == [], report
 
 
 def verify_computed_heads(ctx):
