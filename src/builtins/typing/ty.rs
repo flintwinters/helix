@@ -600,8 +600,10 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
         (_, Ty::Intersection(members)) => members.iter().all(|m| subtype(a, m, pred)),
         (Ty::Union(members), _) => members.iter().all(|m| subtype(m, b, pred)),
         (Ty::Enum(values), _) => values.iter().all(|v| super::literal::covered_by(v, b, pred)),
+        // A member may sit below the whole target, or the whole intersection below one union alternative.
+        (Ty::Intersection(members), _) => disjoint_members(members) || members.iter().any(|m| subtype(m, b, pred))
+            || matches!(b, Ty::Union(targets) if targets.iter().any(|t| subtype(a, t, pred))),
         (_, Ty::Union(members)) => members.iter().any(|m| subtype(a, m, pred)),
-        (Ty::Intersection(members), _) => disjoint_members(members) || members.iter().any(|m| subtype(m, b, pred)),
         (Ty::Tuple(x), Ty::Tuple(y)) => x.len() == y.len() && x.iter().zip(y).all(|(p, q)| subtype(p, q, pred)),
         (Ty::Tuple(items), Ty::List(element)) => items.iter().all(|item| subtype(item, element, pred)),
         (Ty::Refine(base, _), _) => subtype(base, b, pred),
