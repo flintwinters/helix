@@ -159,7 +159,7 @@ impl PromisedSystem {
     pub fn snapshot(&self) -> Result<String, String> {
         let mut machines = serde_json::Map::new();
         for (name, vm) in &self.machines {
-            machines.insert(name.clone(), serde_json::from_str(&vm.snapshot()?).map_err(|e| e.to_string())?);
+            machines.insert(name.clone(), vm.snapshot_tree()?);
         }
         let text = serde_json::to_string_pretty(&json!({"format":"helix-promised-system", "version":1,
             "machines":machines,"deliveries":self.deliveries,"cursor":self.cursor})).map_err(|e| e.to_string())?;
@@ -178,7 +178,7 @@ impl PromisedSystem {
         let saved_machines = document["machines"].as_object().ok_or("expected participant map")?;
         if saved_machines.is_empty() || saved_machines.len() > MAX_PARTICIPANTS { return Err("invalid participant count".into()); }
         for (name, saved) in saved_machines {
-            machines.insert(name.clone(), Vm::restore(&saved.to_string())?);
+            machines.insert(name.clone(), Vm::restore_tree(saved.clone())?);
         }
         validate_machines(&machines)?;
         let mut system = Self { machines, deliveries: Vec::new(), cursor: 0 };

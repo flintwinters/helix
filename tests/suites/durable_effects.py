@@ -126,7 +126,7 @@ def verify(h):
         random_checkpoint = base / 'random.json'
         random_checkpoint.write_text(json.dumps({'format': 'helix-effects', 'version': 1,
             'phase': 'in_flight', 'authority': 'caller-required', 'host': {'exit_code': 0, 'random_seed': 7},
-            'snapshot': json.loads(saved.stdout)}))
+            'snapshot': yaml.safe_load(saved.stdout)}))
         seed = (7 * 6364136223846793005 + 1442695040888963407) & ((1 << 64) - 1)
         first_value = seed >> 1
         next_seed = (seed * 6364136223846793005 + 1442695040888963407) & ((1 << 64) - 1)

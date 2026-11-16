@@ -7,6 +7,7 @@ use std::sync::Arc;
 mod codec;
 mod graph;
 mod state;
+mod yaml;
 pub(crate) mod validate;
 use codec::Wire;
 type R<T> = Result<T, String>;
@@ -246,6 +247,14 @@ impl Decoder {
 impl Vm {
     /// Save complete execution state without executing it or opening imports.
     pub fn snapshot(&self) -> Result<String, String> {
+        let text = crate::emit::document(&to_yaml(&self.snapshot_tree()?)?);
+        if text.len() > MAX_BYTES {
+            return Err("snapshot exceeds byte budget".into());
+        }
+        Ok(text)
+    }
+    /// The snapshot document as a value tree, for embedding in larger durable documents.
+    pub(crate) fn snapshot_tree(&self) -> Result<J, String> {
         let mut e = Encoder {
             program: None,
             caller: None,
@@ -257,30 +266,25 @@ impl Vm {
         let machine = e.v(&Arc::new(self.clone()))?;
         let doc = serde_json::json!({"format":"helix-execution", "version":VERSION,
             "runtime":env!("CARGO_PKG_VERSION"), "machine":machine, "objects":e.objects});
-        let text = serde_json::to_string_pretty(&doc).map_err(|e| e.to_string())?;
-        if text.len() > MAX_BYTES {
+        if doc.to_string().len() > MAX_BYTES {
             return Err("snapshot exceeds byte budget".into());
         }
-        Ok(text + "\n")
+        Ok(doc)
     }
     /// Restore a validated snapshot. This never grants permission to perform effects.
     pub fn restore(snapshot: &str) -> Result<Self, String> {
         if snapshot.len() > MAX_BYTES {
             return Err("snapshot exceeds byte budget".into());
         }
-        let mut doc: J = match serde_json::from_str(snapshot) {
+        // JSON is a YAML subset; the strict JSON parser is simply the fast path.
+        let doc: J = match serde_json::from_str(snapshot) {
             Ok(doc) => doc,
-            Err(_) => {
-                let graph = Graph::parse_data(snapshot)
-                    .map_err(|e| format!("invalid snapshot: {}", e.message))?;
-                let data = graph
-                    .data(ROOT)
-                    .plain_yaml()
-                    .ok_or("snapshot must be ordinary data")?;
-                let json = crate::emit::json_document(&data).map_err(str::to_owned)?;
-                serde_json::from_str(&json).map_err(|e| format!("invalid snapshot: {e}"))?
-            }
+            Err(_) => yaml::parse(snapshot)?,
         };
+        Self::restore_tree(doc)
+    }
+    /// Restore from a snapshot document already parsed into a value tree.
+    pub(crate) fn restore_tree(mut doc: J) -> Result<Self, String> {
         keys(
             &doc,
             &["format", "version", "runtime", "machine", "objects"],
@@ -333,6 +337,23 @@ impl Vm {
         machine.verify_promises()?;
         Ok((*machine).clone())
     }
+}
+
+/// The snapshot tree is built as JSON values; YAML is its canonical text spelling.
+fn to_yaml(j: &J) -> R<yaml_rust2::Yaml> {
+    use yaml_rust2::Yaml;
+    Ok(match j {
+        J::Null => Yaml::Null,
+        J::Bool(b) => Yaml::Boolean(*b),
+        J::Number(n) => n.as_i64().map(Yaml::Integer).ok_or("snapshot integer exceeds 64 bits")?,
+        J::String(s) => Yaml::String(s.clone()),
+        J::Array(items) => Yaml::Array(items.iter().map(to_yaml).collect::<R<_>>()?),
+        J::Object(map) => Yaml::Hash(
+            map.iter()
+                .map(|(k, v)| Ok((Yaml::String(k.clone()), to_yaml(v)?)))
+                .collect::<R<_>>()?,
+        ),
+    })
 }
 
 // Object presentation order never changes the identity of a source reference.

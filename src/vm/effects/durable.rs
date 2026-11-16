@@ -86,7 +86,7 @@ impl Checkpoint {
                     .ok_or("invalid saved random state")?,
             )
         };
-        let vm = Vm::restore(&doc["snapshot"].to_string())?;
+        let vm = Vm::restore_tree(doc["snapshot"].clone())?;
         if phase == "in_flight" && vm.pending_effect().is_none() {
             return Err("in-flight checkpoint has no pending request".into());
         }
@@ -130,7 +130,7 @@ impl Checkpoint {
         Ok((checkpoint, vm.resume_signal()))
     }
     pub(crate) fn save(&self, vm: &Vm, phase: &str, host: &EffectHost) -> Result<(), String> {
-        let snapshot: J = serde_json::from_str(&vm.snapshot()?).map_err(|e| e.to_string())?;
+        let snapshot: J = vm.snapshot_tree()?;
         let text=serde_json::to_vec_pretty(&serde_json::json!({"format":"helix-effects","version":1,"phase":phase,
             "host":{"exit_code":host.exit_code,"random_seed":host.random_seed},"snapshot":snapshot,"authority":"caller-required"})).map_err(|e|e.to_string())?;
         if text.len() as u64 > MAX_BYTES {

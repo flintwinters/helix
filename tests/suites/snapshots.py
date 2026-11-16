@@ -13,10 +13,7 @@ def verify(h):
         result = h.helix(command, '-', *args, stdin=source)
         assert result.returncode in (0, 1), (command, result)
         assert not result.stderr, (command, result.stderr)
-        # Checkpoints have a canonical JSON wire spelling. Avoid repeatedly
-        # reparsing large embedded source graphs through the slower YAML parser.
-        parse = json.loads if command == 'snapshot' or '--steps' in args else yaml.safe_load
-        return result, parse(result.stdout)
+        return result, yaml.load(result.stdout, Loader=getattr(yaml, 'CSafeLoader', yaml.SafeLoader))
 
     program = {'$call': ['let', {'f': {'$call': ['fn', [['x', 'integer']],
         {'$call': ['add', {'$ref': 'x'}, 3]}, 'integer']}}, {'$call': ['f', 7]}]}
@@ -146,6 +143,15 @@ def verify(h):
     for damaged in ('', '{', json.dumps({'status': 'finished', 'root': 42})):
         result, report = invoke('restore', damaged)
         assert result.returncode == 1 and report['errors'][0]['kind'] == 'snapshot', report
+
+    # Written snapshots are block YAML; the loader refuses YAML features a snapshot never uses.
+    written = h.helix('snapshot', '-', '--steps', '2', stdin=text).stdout
+    assert written.startswith('format: helix-execution\n'), written[:80]
+    anchor = written.replace('runtime: ', 'runtime: &r ', 1)
+    for forged in (anchor, written.replace('runtime: ', 'runtime: !!str ', 1), written + '---\n' + written,
+                   written.replace('version: 2', 'version: 2\nversion: 2', 1)):
+        result, report = invoke('restore', forged)
+        assert result.returncode == 1 and report['errors'][0]['kind'] == 'snapshot', (forged[:200], report)
 
     compatibility = (h.root / 'tests/fixtures/snapshots/v1-ready.json').read_text()
     _, restored = invoke('restore', compatibility)
