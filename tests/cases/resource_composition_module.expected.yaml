@@ -132,6 +132,17 @@ annotations:
     type:
       fields:
         handlers:
+          keys:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:orchestration"
+            of: string
+            type: refine
           of:
             fields:
               requires:
@@ -150,6 +161,17 @@ annotations:
             type: record
           type: map
         resources:
+          keys:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:orchestration"
+            of: string
+            type: refine
           of:
             fields:
               notify:
@@ -261,6 +283,17 @@ annotations:
     type:
       fields:
         handlers:
+          keys:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:orchestration"
+            of: string
+            type: refine
           of:
             fields:
               requires:
@@ -279,6 +312,17 @@ annotations:
             type: record
           type: map
         resources:
+          keys:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:orchestration"
+            of: string
+            type: refine
           of:
             fields:
               notify:
@@ -1944,74 +1988,6 @@ annotations:
       type: list
     value:
       - configuration
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:map"
-    type: map
-    value:
-      configuration:
-        - package
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:map"
-    type:
-      of: string
-      type: list
-    value: []
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - select
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value: {}
 annotations_truncated: true
 root:
   changed: true

@@ -31,6 +31,17 @@ annotations:
     type:
       fields:
         groups:
+          keys:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:inventory"
+            of: string
+            type: refine
           of:
             of:
               check:
@@ -1234,6 +1245,17 @@ annotations:
     type:
       fields:
         groups:
+          keys:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:inventory"
+            of: string
+            type: refine
           of:
             of:
               check:

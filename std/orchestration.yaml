@@ -13,9 +13,9 @@ document: !call
   - version
   - !call [literal, 1]
   - resources
-  - !call [map_of, !ref resource]
+  - !call [map_of, !ref resource, !ref name]
   - handlers
-  - !call [map_of, !ref handler]
+  - !call [map_of, !ref handler, !ref name]
 handler: !call [record, requires, !ref names]
 handler_ok: !call
   - fn
