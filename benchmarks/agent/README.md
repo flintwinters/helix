@@ -3,6 +3,8 @@
 `./manage.py quality agent-bench` owns model coding experiments.
 `./manage.py test --suite agent_bench` verifies the harness offline; paid model
 calls are explicit experiments, never part of the default regression suite.
+The current [50-attempt workspace baseline](baseline-workspace-5x10-v3.json) uses
+protocol v3; earlier final-chat measurements are retained below as historical data.
 
 ## Protocol v3: edit, execute, submit saved files
 
@@ -70,6 +72,7 @@ use of GPT-6 was approved by the user.
 ./manage.py quality agent-bench run --mode cli --model openai/gpt-6-luna --trials 10 --jobs 4 --samples 5
 ./manage.py quality agent-bench score --directory runtime/agent-bench/RUN
 ./manage.py quality agent-bench report --directory runtime/agent-bench/RUN
+./manage.py quality agent-bench report --audit --directory runtime/agent-bench/RUN
 ./manage.py quality agent-bench report --replay --directory runtime/agent-bench/RUN
 ```
 
@@ -86,7 +89,9 @@ workspace edits, CLI results, conversations, frozen evaluation files and scores.
 `report.json` updates through generation/scoring/complete phases. The manifest
 records protocol/task versions, context delivery, concurrency, sampling, model
 catalog, Git/binary/context fingerprints and platform. `report` is read-only and
-build-free. `score` replays saved submissions without API calls, respects frozen
+build-free. `report --audit` recomputes the tested workspace fingerprint and checks
+that the archived submission and evaluation copy still match the submitted files;
+it makes no model or runtime calls. `score` replays saved submissions without API calls, respects frozen
 evaluation directories and writes separate replay measurements.
 
 Every model CLI operation, including rejected argv, is recorded through the
@@ -164,4 +169,41 @@ The explicit run command was:
 
 ```sh
 ./manage.py quality agent-bench run --mode cli --model openai/gpt-6-luna --trials 10 --samples 5 --directory runtime/agent-bench/luna-cli-5x10-v2
+```
+
+
+## Recorded workspace run (protocol v3)
+
+The [audited summary](baseline-workspace-5x10-v3.json) and
+[all 50 per-attempt records](attempts-workspace-5x10-v3.json) measure the corrected
+workspace workflow with ten attempts on each task, using the approved GPT-6 Luna
+model. All 50 submitted saved workspaces passed all six hidden cases. The
+summary's submission audit verifies every tested workspace fingerprint, archived
+source hash and frozen evaluation copy. It is reproducible with `report --audit`.
+
+There were 52 public-test executions: two initially failed, and the model edited
+and retested their code before submission. [Repair traces](workspace-repairs-v3.json)
+preserve those write/test/submit sequences. The model received no hidden-case
+feedback. The [SQLite audit](baseline-workspace-attribution-v3.json) accounts for
+all 79 actual CLI calls, including 52 public tests, with model identity and ten
+distinct trial IDs for every task. All 404 workspace/CLI/submission tool requests
+are recorded separately in the local run directory.
+
+Generation used four workers and took 246.9 seconds. After every worker finished,
+isolated correctness/timing evaluation took 384.2 seconds. The 350 model requests
+consumed 3,271,871 total tokens and reported $0.09931623 in API cost. The small live
+pilot is separate and is not counted among these 50 attempts.
+
+This is a new baseline rather than a controlled estimate of a single change:
+workspace tools, progressive document access, budgets and submission rules differ
+from protocol v2. The earlier 46/50 score described final chat-source submissions,
+which could differ from code the model had tested. It must not be treated as the
+completion rate of this workspace workflow. Results remain scoped to these five
+pure coding tasks and this model; per-task uncertainty is recorded in the summary.
+
+Raw responses, edit logs, workspaces and full hidden-case observations are retained
+in `runtime/agent-bench/luna-workspace-5x10-v3/`. The explicit command was:
+
+```sh
+./manage.py quality agent-bench run --mode cli --model openai/gpt-6-luna --trials 10 --jobs 4 --samples 5 --directory runtime/agent-bench/luna-workspace-5x10-v3
 ```

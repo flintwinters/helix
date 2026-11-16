@@ -149,6 +149,16 @@ def verify_cli(h, directory):
         assert generated['submitted_sha256'] == bench.digest(TASKS['sum-squares']['reference']), generated
         assert 'fake-secret' not in (target / 'conversation.json').read_text()
         assert records[-1]['caller_role'] == 'benchmark-model'
+        import shutil
+        shutil.copytree(target / 'workspace', target / 'evaluation')
+        shutil.copy2(target / 'workspace/candidate.yaml', target / 'candidate.yaml')
+        row = {'task': 'sum-squares', 'trial': 1, 'artifact': target.name,
+               'evaluation_directory': 'evaluation', 'source_sha256': generated['submitted_sha256'], **generated}
+        audit = bench.submission_audit(directory, [row])
+        assert audit['verified'] == 1, audit
+        (target / 'evaluation/candidate.yaml').write_text('0')
+        audit = bench.submission_audit(directory, [row])
+        assert audit['verified'] == 0 and not audit['submissions'][0]['source_matches_submission'], audit
         verify_saved_submission(h, target, identity)
 
 

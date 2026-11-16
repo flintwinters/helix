@@ -457,6 +457,36 @@ def replay(root, args, ctx):
     return {'directory': str(directory), 'summary': report['summary']}
 
 
+def submission_audit(directory, rows):
+    from tooling.agent_cli import fingerprint
+    audited = []
+    for row in rows:
+        if not row.get('submitted_sha256'):
+            continue
+        item = {'task': row['task'], 'trial': row['trial'],
+                'successful_public_tests': row.get('public_test_successes', 0)}
+        try:
+            attempt = (directory / row['artifact']).resolve()
+            evaluation = (attempt / row['evaluation_directory']).resolve()
+            if not attempt.is_relative_to(directory.resolve()) or not evaluation.is_relative_to(attempt):
+                raise ValueError('artifact directory escapes the saved run')
+            workspace = attempt / 'workspace'
+            actual = hashlib.sha256((evaluation / 'candidate.yaml').read_bytes()).hexdigest()
+            item.update({
+                'source_matches_submission': actual == row['source_sha256'] == row['submitted_sha256']
+                    == hashlib.sha256((attempt / 'candidate.yaml').read_bytes()).hexdigest(),
+                'workspace_matches_tested_fingerprint': fingerprint(attempt) == row['submitted_workspace_sha256'],
+                'evaluation_matches_workspace': all(path.read_bytes() == (evaluation / path.relative_to(workspace)).read_bytes()
+                    for path in workspace.rglob('*') if path.is_file()),
+            })
+            item['verified'] = item['successful_public_tests'] > 0 and all(item[key] for key in (
+                'source_matches_submission', 'workspace_matches_tested_fingerprint', 'evaluation_matches_workspace'))
+        except (OSError, ValueError, KeyError) as error:
+            item.update({'verified': False, 'error': str(error)})
+        audited.append(item)
+    return {'submissions': audited, 'verified': sum(item['verified'] for item in audited), 'total': len(audited)}
+
+
 def saved_report(args):
     if not args.directory:
         raise ValueError('report requires --directory')
@@ -464,7 +494,8 @@ def saved_report(args):
     manifest = json.loads((directory / 'manifest.json').read_text())
     filename = 'replay.json' if getattr(args, 'replay', False) else 'report.json'
     report = json.loads((directory / filename).read_text())
-    return {'evaluation_source': filename, 'evaluation': report.get('evaluation'), 'execution': report.get('execution'), 'directory': str(directory), 'provenance': {key: manifest.get(key) for key in (
+    audit = submission_audit(directory, report['rows']) if getattr(args, 'audit', False) else None
+    return {'submission_audit': audit, 'evaluation_source': filename, 'evaluation': report.get('evaluation'), 'execution': report.get('execution'), 'directory': str(directory), 'provenance': {key: manifest.get(key) for key in (
         'schema', 'protocol_version', 'context_delivery', 'jobs', 'max_turns', 'max_tool_calls', 'task_version', 'model', 'trials', 'samples', 'temperature', 'max_tokens',
         'context_sha256', 'task_source_sha256', 'git_revision', 'git_diff_sha256', 'binary_sha256',
         'environment', 'timing_contract')}, 'mode': manifest.get('mode', 'one-shot'),
