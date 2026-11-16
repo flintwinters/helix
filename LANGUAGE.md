@@ -576,8 +576,9 @@ an unpromised external system still requires the existing host effect contracts.
 `./manage.py runtime snapshot program.yaml --steps 20` emits a versioned
 executable checkpoint. `./manage.py runtime restore checkpoint.json` runs it in a
 fresh process; adding `--steps N` saves another checkpoint after at most N
-transitions. JSON is the canonical YAML-compatible wire spelling for version 2;
-the loader also accepts ordinary YAML within the existing data-parser size/depth bounds. Mapping presentation order has no execution meaning. Existing `step`/`inspect` documents
+transitions. block YAML is the canonical spelling written for version 2. The loader accepts that
+and the JSON flow spelling earlier checkpoints used, within snapshot byte, object and
+nesting budgets; anchors, aliases and tags are refused. Mapping presentation order has no execution meaning. Existing `step`/`inspect` documents
 remain observational, and `resume` still means pure source recovery. Without
 `--steps`, restore follows `run` exit statuses: only finished execution succeeds.
 Saving a valid unfinished checkpoint succeeds; a saved error state still exits 1.

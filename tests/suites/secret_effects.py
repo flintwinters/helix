@@ -58,7 +58,7 @@ def verify(h):
         assert frozen.returncode == 0, frozen
         document = {'format': 'helix-effects', 'version': 1, 'authority': 'caller-required',
                     'phase': 'ready', 'host': {'exit_code': 0, 'random_seed': None},
-                    'snapshot': json.loads(frozen.stdout)}
+                    'snapshot': yaml.safe_load(frozen.stdout)}
         pending = base / 'pending.json'
         pending.write_text(json.dumps(document))
         resumed = h.helix('perform', *grants, '--resume-checkpoint', str(pending))

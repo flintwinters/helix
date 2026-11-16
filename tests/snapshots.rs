@@ -1,5 +1,22 @@
 //! Public snapshot contracts, run through manage.py test --suite library.
 use helix::{Status, Vm};
+use yaml_rust2::Yaml;
+
+/// Snapshots are written as YAML; tests edit them as JSON value trees.
+fn tree(snapshot: &str) -> serde_json::Value {
+    fn convert(y: &Yaml) -> serde_json::Value {
+        match y {
+            Yaml::Null => serde_json::Value::Null,
+            Yaml::Boolean(b) => (*b).into(),
+            Yaml::Integer(i) => (*i).into(),
+            Yaml::String(s) => s.clone().into(),
+            Yaml::Array(a) => a.iter().map(convert).collect(),
+            Yaml::Hash(h) => h.iter().map(|(k, v)| (k.as_str().unwrap().to_owned(), convert(v))).collect(),
+            other => panic!("unexpected snapshot scalar {other:?}"),
+        }
+    }
+    convert(&yaml_rust2::YamlLoader::load_from_str(snapshot).unwrap()[0])
+}
 fn run(mut vm: Vm) -> Vm {
     vm.run();
     vm
@@ -75,7 +92,7 @@ fn effects_and_interruptions_retain_completed_outcomes() {
 #[test]
 fn malformed_version_and_references_are_rejected() {
     let saved = Vm::load("42").snapshot().unwrap();
-    let mut doc: serde_json::Value = serde_json::from_str(&saved).unwrap();
+    let mut doc: serde_json::Value = tree(&saved);
     doc["version"] = 99.into();
     assert!(Vm::restore(&doc.to_string()).is_err());
     doc["version"] = 1.into();
@@ -118,7 +135,7 @@ fn evaluated_evidence_is_bounded_and_rejects_forged_metadata() {
     vm.run();
     assert_eq!(vm.status(), Status::Finished);
     assert_eq!(vm.evaluated_values()["truncated"].as_bool(), Some(true));
-    let saved: serde_json::Value = serde_json::from_str(&vm.snapshot().unwrap()).unwrap();
+    let saved: serde_json::Value = tree(&vm.snapshot().unwrap());
     for (field, value) in [("evaluated_units", serde_json::json!(0)),
         ("evaluated", serde_json::json!([]))] {
         let mut changed = saved.clone();
@@ -193,7 +210,7 @@ fn promise_refuses_oversized_external_state_without_losing_serializability() {
 #[test]
 fn restored_promises_cannot_claim_unregistered_behavior() {
     let machine = Vm::load("42").with_promise(reversible_promise()).unwrap();
-    let mut document: serde_json::Value = serde_json::from_str(&machine.snapshot().unwrap()).unwrap();
+    let mut document: serde_json::Value = tree(&machine.snapshot().unwrap());
     let root = document["machine"].as_str().unwrap().to_owned();
     // Mutate through the ordinary value codec rather than relying on internal
     // pointer identities: promise strings must still undergo declaration validation.
@@ -264,7 +281,7 @@ fn effect_promises_intersect_without_granting_authority() {
     assert!(allowed.with_promise(effects_promise(&[])).is_err());
     let restored = Vm::restore(&allowed.snapshot().unwrap()).unwrap();
     assert_eq!(restored.state(), allowed.state());
-    let mut damaged: serde_json::Value = serde_json::from_str(&allowed.snapshot().unwrap()).unwrap();
+    let mut damaged: serde_json::Value = tree(&allowed.snapshot().unwrap());
     let root = damaged["machine"].as_str().unwrap().to_owned();
     let promises = &mut damaged["objects"][&root]["value"]["promises"];
     *promises = serde_json::from_str(&promises.to_string().replace("\"time\"", "\"exit\"")).unwrap();
