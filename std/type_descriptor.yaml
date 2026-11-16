@@ -10,7 +10,14 @@ build: !call
       - !call [eq, !ref actor, list_of]
       - !call [descriptor, list, {of: !call [get, !ref args, 0]}]
       - !call [eq, !ref actor, map_of]
-      - !call [descriptor, map, {of: !call [get, !ref args, 0]}]
+      - !call
+          - if
+          - !call [gt, !call [len, !ref args], 1]
+          - !call
+              - descriptor
+              - map
+              - {keys: !call [get, !ref args, 1], of: !call [get, !ref args, 0]}
+          - !call [descriptor, map, {of: !call [get, !ref args, 0]}]
       - !call [eq, !ref actor, function_of]
       - !call
           - descriptor
@@ -30,6 +37,14 @@ build: !call
           - {default: !call [get, !ref args, 1], of: !call [get, !ref args, 0]}
       - !call [eq, !ref actor, union]
       - !call [descriptor, union, {of: !ref args}]
+      - !call [eq, !ref actor, intersection]
+      - !call [descriptor, intersection, {of: !ref args}]
+      - !call [eq, !ref actor, tuple_of]
+      - !call [descriptor, tuple, {of: !ref args}]
+      - !call [eq, !ref actor, rec]
+      - !call [descriptor, rec, {name: !call [get, !ref args, 0], of: !call [get, !ref args, 1]}]
+      - !call [eq, !ref actor, var]
+      - !call [descriptor, var, {name: !call [get, !ref args, 0]}]
       - !call [eq, !ref actor, enum]
       - !call [descriptor, enum, {values: !ref args}]
       - !call [eq, !ref actor, literal]

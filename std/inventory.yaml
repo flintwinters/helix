@@ -138,7 +138,7 @@ document: !call
   - hosts
   - !call [list_of, !ref host]
   - groups
-  - !call [map_of, !call [list_of, !ref name]]
+  - !call [map_of, !call [list_of, !ref name], !ref name]
   - overrides
   - !call [list_of, !ref override]
 dynamic_input: !call [list_of, !call [record, source, !ref name, hosts, !call [list_of, !ref host]]]

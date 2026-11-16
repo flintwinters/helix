@@ -63,6 +63,17 @@ annotations:
     type:
       fields:
         handlers:
+          keys:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:orchestration"
+            of: string
+            type: refine
           of:
             fields:
               requires:
@@ -81,6 +92,17 @@ annotations:
             type: record
           type: map
         resources:
+          keys:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:orchestration"
+            of: string
+            type: refine
           of:
             fields:
               notify:
@@ -2137,32 +2159,6 @@ annotations:
     value:
       - file_a
       - file_b
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:map"
-    type: map
-    value:
-      file_a:
-        - package
-      file_b:
-        - package
 annotations_truncated: true
 root:
   coalesced:

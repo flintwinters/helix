@@ -170,6 +170,8 @@ def verify(h):
     verify_predicates(h)
     from tests.suites.subtype_laws import verify as verify_subtypes
     verify_subtypes(h)
+    from tests.suites.type_laws import verify as verify_laws
+    verify_laws(h)
     verify_constraint_descriptors(h)
     verify_fixed_origins(h)
     from tests.suites.descriptor_policy import verify as verify_descriptors

@@ -1,0 +1,260 @@
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - v
+        - "$call":
+            - le
+            - "$call":
+                - get
+                - "$ref": v
+                - min
+            - "$call":
+                - get
+                - "$ref": v
+                - max
+    environment: []
+    kind: function
+    location:
+      path:
+        - ordered
+      source: "<root>"
+    program:
+      ref: object2
+  object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - v
+        - "$call":
+            - gt
+            - "$call":
+                - get
+                - "$ref": v
+                - min
+            - 0
+    environment: []
+    kind: function
+    location:
+      path:
+        - positive
+      source: "<root>"
+    program:
+      ref: object2
+  object2:
+    kind: program
+    sources:
+      - code:
+          base:
+            "$call":
+              - class
+              - base
+              - "$call":
+                  - record
+                  - min
+                  - "$ref": integer
+                  - max
+                  - "$ref": integer
+          both:
+            "$call":
+              - inherit
+              - both
+              - "$call":
+                  - list
+                  - "$ref": left
+                  - "$ref": right
+              - max: 5
+                min: 1
+          child_below_parents:
+            "$call":
+              - list
+              - "$call":
+                  - subtype
+                  - "$ref": both
+                  - "$ref": left
+              - "$call":
+                  - subtype
+                  - "$ref": both
+                  - "$ref": right
+          constraint_count:
+            "$call":
+              - len
+              - "$call":
+                  - get
+                  - "$ref": both
+                  - constraints
+          flipped:
+            "$call":
+              - inherit
+              - flipped
+              - "$call":
+                  - list
+                  - "$ref": right
+                  - "$ref": left
+              - max: 5
+                min: 1
+          left:
+            "$call":
+              - constrain
+              - "$ref": base
+              - "$ref": ordered
+          ordered:
+            "$call":
+              - fn
+              - - v
+              - "$call":
+                  - le
+                  - "$call":
+                      - get
+                      - "$ref": v
+                      - min
+                  - "$call":
+                      - get
+                      - "$ref": v
+                      - max
+          parent_order_equivalent:
+            "$call":
+              - equivalent
+              - "$ref": both
+              - "$ref": flipped
+          parents_not_below_child:
+            "$call":
+              - list
+              - "$call":
+                  - subtype
+                  - "$ref": left
+                  - "$ref": both
+              - "$call":
+                  - subtype
+                  - "$ref": right
+                  - "$ref": both
+          positive:
+            "$call":
+              - fn
+              - - v
+              - "$call":
+                  - gt
+                  - "$call":
+                      - get
+                      - "$ref": v
+                      - min
+                  - 0
+          right:
+            "$call":
+              - constrain
+              - "$ref": base
+              - "$ref": positive
+        source: "<root>"
+root:
+  base:
+    concrete: false
+    fields:
+      max: integer
+      min: integer
+    name: base
+    parents: []
+    provenance:
+      max:
+        type: base
+      min:
+        type: base
+    type: class
+    values: {}
+  both:
+    concrete: true
+    constraints:
+      - ref: object0
+      - ref: object1
+    fields:
+      max: integer
+      min: integer
+    name: both
+    parents:
+      - base
+      - base
+    provenance:
+      max:
+        type: base
+        value: both
+        value_kind: explicit
+      min:
+        type: base
+        value: both
+        value_kind: explicit
+    type: class
+    values:
+      max: 5
+      min: 1
+  child_below_parents:
+    - true
+    - true
+  constraint_count: 2
+  flipped:
+    concrete: true
+    constraints:
+      - ref: object1
+      - ref: object0
+    fields:
+      max: integer
+      min: integer
+    name: flipped
+    parents:
+      - base
+      - base
+    provenance:
+      max:
+        type: base
+        value: flipped
+        value_kind: explicit
+      min:
+        type: base
+        value: flipped
+        value_kind: explicit
+    type: class
+    values:
+      max: 5
+      min: 1
+  left:
+    concrete: false
+    constraints:
+      - ref: object0
+    fields:
+      max: integer
+      min: integer
+    name: base
+    parents: []
+    provenance:
+      max:
+        type: base
+      min:
+        type: base
+    type: class
+    values: {}
+  ordered:
+    ref: object0
+  parent_order_equivalent: true
+  parents_not_below_child:
+    - false
+    - false
+  positive:
+    ref: object1
+  right:
+    concrete: false
+    constraints:
+      - ref: object1
+    fields:
+      max: integer
+      min: integer
+    name: base
+    parents: []
+    provenance:
+      max:
+        type: base
+      min:
+        type: base
+    type: class
+    values: {}
+status: finished

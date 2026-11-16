@@ -32,13 +32,14 @@ fn type_cost(ty: &Ty, limit: usize, byte_limit: usize) -> Option<(usize, usize)>
         size = size.checked_add(1)?;
         if size > limit { return None; }
         match ty {
-            Ty::List(item) | Ty::Map(item) | Ty::Refine(item, _) => pending.push(item),
+            Ty::List(item) | Ty::Refine(item, _) | Ty::Rec(_, item) => pending.push(item),
+            Ty::Map(item, keys) => { pending.push(item); pending.push(keys); }
             Ty::Fn(params, result, _) => {
                 if params.len() + 1 > limit - size { return None; }
                 pending.extend(params);
                 pending.push(result);
             }
-            Ty::Union(members) => {
+            Ty::Union(members) | Ty::Intersection(members) | Ty::Tuple(members) => {
                 if members.len() > limit - size { return None; }
                 pending.extend(members);
             }
@@ -61,7 +62,7 @@ fn type_cost(ty: &Ty, limit: usize, byte_limit: usize) -> Option<(usize, usize)>
                 }
             }
             Ty::Any | Ty::Never | Ty::Int | Ty::Float | Ty::Str | Ty::Bool
-                | Ty::Null | Ty::Secret | Ty::Function | Ty::Vm | Ty::Promise(_) => {}
+                | Ty::Null | Ty::Secret | Ty::Function | Ty::Vm | Ty::Promise(_) | Ty::Var(_) => {}
         }
         if size > limit || bytes > byte_limit { return None; }
         if pending.len() > limit - size { return None; }
@@ -197,7 +198,7 @@ impl Checker<'_> {
                         }
                     }
                 }
-                Some(if remaining.is_some() { Ty::Record(fields) } else { Ty::Map(Box::new(Ty::Any)) })
+                Some(if remaining.is_some() { Ty::Record(fields) } else { Ty::Map(Box::new(Ty::Any), Box::new(Ty::Any)) })
             }
             _ => None,
         }
@@ -264,7 +265,7 @@ impl Checker<'_> {
                 }
                 Some(Ty::Record(fields))
             }
-            "eq" | "ne" | "is" | "has" | "subtype" => Some(Ty::Bool),
+            "eq" | "ne" | "is" | "has" | "subtype" | "equivalent" => Some(Ty::Bool),
             "str" | "type" => Some(Ty::Str),
             "int" | "len" => Some(Ty::Int),
             "float" => Some(Ty::Float),
@@ -505,8 +506,9 @@ impl Checker<'_> {
                             defaults |= fields.iter().any(|(_, field)| field.default.is_some());
                             pending.extend(fields.iter().map(|(_, field)| &field.ty));
                         }
-                        Ty::List(item) | Ty::Map(item) | Ty::Refine(item, _) => pending.push(item),
-                        Ty::Union(members) => pending.extend(members),
+                        Ty::List(item) | Ty::Refine(item, _) | Ty::Rec(_, item) => pending.push(item),
+                        Ty::Map(item, keys) => { pending.push(item); pending.push(keys); }
+                        Ty::Union(members) | Ty::Intersection(members) | Ty::Tuple(members) => pending.extend(members),
                         Ty::Fn(params, result, _) => { pending.extend(params); pending.push(result); }
                         _ => {}
                     }
@@ -590,8 +592,16 @@ impl Checker<'_> {
                     }
                     ("list_of", 1) => Some(describe("list", [("of", self.type_value(args[0], depth + 1)?)])),
                     ("map_of", 1) => Some(describe("map", [("of", self.type_value(args[0], depth + 1)?)])),
+                    ("map_of", 2) => Some(describe("map", [("of", self.type_value(args[0], depth + 1)?), ("keys", self.type_value(args[1], depth + 1)?)])),
                     ("optional", 1) => Some(describe("optional", [("of", self.type_value(args[0], depth + 1)?)])),
                     ("union", 1..) => Some(describe("union", [("of", Value::Array(args.iter().map(|&arg| self.type_value(arg, depth + 1)).collect::<Option<Vec<_>>>()?.into()))])),
+                    ("intersection", 1..) => Some(describe("intersection", [("of", Value::Array(args.iter().map(|&arg| self.type_value(arg, depth + 1)).collect::<Option<Vec<_>>>()?.into()))])),
+                    ("tuple_of", _) => Some(describe("tuple", [("of", Value::Array(args.iter().map(|&arg| self.type_value(arg, depth + 1)).collect::<Option<Vec<_>>>()?.into()))])),
+                    ("rec", 2) => {
+                        let name @ Value::String(_) = self.scalar(args[0])? else { return None };
+                        Some(describe("rec", [("name", name), ("of", self.type_value(args[1], depth + 1)?)]))
+                    }
+                    ("var", 1) => Some(describe("var", [("name", self.scalar(args[0])?)])),
                     ("enum", 1..) => Some(describe("enum", [("values", Value::Array(args.iter().map(|&arg| self.scalar(arg)).collect::<Option<Vec<_>>>()?.into()))])),
                     ("literal", 1) => Some(describe("literal", [("value", self.scalar(args[0])?)])),
                     (kind @ ("function_of" | "pure_function_of"), 2) => {
@@ -678,11 +688,16 @@ pub(crate) fn evidence(graph: &Graph, function: NodeId) -> Yaml {
 fn search_type(ty: &Ty) -> Option<Value> {
     Some(match ty {
         Ty::List(of) => describe("list", [("of", search_type(of)?)]),
-        Ty::Map(of) => describe("map", [("of", search_type(of)?)]),
+        Ty::Map(of, keys) if **keys == Ty::Any => describe("map", [("of", search_type(of)?)]),
+        Ty::Map(of, keys) => describe("map", [("of", search_type(of)?), ("keys", search_type(keys)?)]),
         Ty::Fn(params,result,pure) => describe("function", [("params",Value::Array(params.iter().map(search_type).collect::<Option<Vec<_>>>()?.into())),("result",search_type(result)?),("pure",Value::Boolean(*pure))]),
         Ty::Record(fields) => describe("record", [("fields",Value::Hash(fields.iter().map(|(n,f)|Some((s(n), if f.required { search_type(&f.ty)? } else if let Some(default)=&f.default { describe("default", [("of",search_type(&f.ty)?),("default",default.clone())]) } else { describe("optional", [("of",search_type(&f.ty)?)]) }))).collect::<Option<Hash>>()?))]),
         Ty::Union(members) => describe("union", [("of",Value::Array(members.iter().map(search_type).collect::<Option<Vec<_>>>()?.into()))]),
+        Ty::Intersection(members) => describe("intersection", [("of",Value::Array(members.iter().map(search_type).collect::<Option<Vec<_>>>()?.into()))]),
+        Ty::Tuple(items) => describe("tuple", [("of",Value::Array(items.iter().map(search_type).collect::<Option<Vec<_>>>()?.into()))]),
         Ty::Enum(values) => describe("enum", [("values",Value::Array(values.clone().into()))]),
+        Ty::Rec(name, of) => describe("rec", [("name", s(name)), ("of", search_type(of)?)]),
+        Ty::Var(name) => describe("var", [("name", s(name))]),
         Ty::Class(..) | Ty::Refine(..) | Ty::Promise(..) => return None,
         _ => s(&ty.name()),
     })

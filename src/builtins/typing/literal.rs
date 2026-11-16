@@ -49,8 +49,11 @@ pub(super) fn covered_by(value: &Value, target: &Ty, pred: &mut Pred) -> bool {
         (_, Ty::Any) => true,
         (_, Ty::Enum(values)) => values.iter().any(|member| equal(value, member)),
         (_, Ty::Union(members)) => members.iter().any(|member| covered_by(value, member, pred)),
+        (_, Ty::Intersection(members)) => members.iter().all(|member| covered_by(value, member, pred)),
+        (_, Ty::Rec(..)) => covered_by(value, &target.unfold(), pred),
+        (Value::Array(items), Ty::Tuple(types)) => items.len() == types.len() && items.iter().zip(types).all(|(item, ty)| covered_by(item, ty, pred)),
         (Value::Array(items), Ty::List(element)) => items.iter().all(|item| covered_by(item, element, pred)),
-        (Value::Hash(items), Ty::Map(element)) => items.values().all(|item| covered_by(item, element, pred)),
+        (Value::Hash(items), Ty::Map(element, keys)) => items.iter().all(|(key, item)| covered_by(key, keys, pred) && covered_by(item, element, pred)),
         (Value::Hash(items), Ty::Record(fields)) => record_subtype(&record_fields(items), fields, pred),
         (Value::Hash(items), Ty::Class(fields, fixed, constraints)) if constraints.is_empty() => {
             record_subtype(&record_fields(items), fields, pred)
@@ -68,6 +71,8 @@ pub(super) fn may_overlap(value: &Value, target: &Ty) -> bool {
         Ty::Never => return false,
         Ty::Refine(base, _) => return may_overlap(value, base),
         Ty::Union(members) => return members.iter().any(|member| may_overlap(value, member)),
+        Ty::Intersection(members) => return members.iter().all(|member| may_overlap(value, member)),
+        Ty::Rec(..) => return may_overlap(value, &target.unfold()),
         Ty::Enum(values) => return values.iter().any(|member| equal(value, member)),
         _ => {}
     }
@@ -76,7 +81,8 @@ pub(super) fn may_overlap(value: &Value, target: &Ty) -> bool {
     }
     match (value, target) {
         (Value::Array(_), Ty::List(_)) => true,
-        (Value::Hash(_), Ty::Map(_) | Ty::Record(_) | Ty::Class(..)) => true,
+        (Value::Array(items), Ty::Tuple(types)) => items.len() == types.len(),
+        (Value::Hash(_), Ty::Map(..) | Ty::Record(_) | Ty::Class(..)) => true,
         (Value::Function(_), Ty::Function | Ty::Fn(..)) | (Value::Machine(_), Ty::Vm) => true,
         _ => holds(value, target, &mut |_| Err("static".into())),
     }
@@ -88,7 +94,7 @@ mod tests {
 
     #[test]
     fn maps_overlap_records_and_classes_with_a_shared_empty_member() {
-        let map = Ty::Map(Box::new(Ty::Int));
+        let map = Ty::Map(Box::new(Ty::Int), Box::new(Ty::Any));
         let empty = Value::Hash(Hash::new());
         for structured in [Ty::Record(Vec::new()), Ty::Class(Vec::new(), Vec::new(), Vec::new())] {
             assert!(holds(&empty, &map, &mut |_| Err("no predicate expected".into())));

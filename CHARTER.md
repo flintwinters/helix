@@ -331,27 +331,27 @@ Grow a coherent algebra of descriptions, with a stated meaning for each operatio
 
 - [ ] Complete the value-set algebra
   - [x] Define types by the values they admit, with explicit top (`any`) and bottom (`never`, no inhabitants), distinct from the literal `null` type (`types_bottom` golden case)
-  - [ ] Add intersections alongside unions; document their interaction with refinements, optional fields and open/closed records
-  - [ ] Define union as least upper bound and intersection as greatest lower bound wherever the supported fragment can represent them; specify approximations explicitly
+  - [x] Add intersections alongside unions; document their interaction with refinements, optional fields and open/closed records (`intersection`; `types_intersection_tuple`; `LANGUAGE.md`)
+  - [x] Define union as least upper bound and intersection as greatest lower bound wherever the supported fragment can represent them; specify approximations explicitly (exact rules for `T <: intersection` and `union <: T`; sound-only `intersection <: T`)
   - [ ] Explore difference, complement and negation only within a defined universe and documented decidable fragment
 - [ ] Extend structured collection types
-  - [ ] Fixed-length tuples and heterogeneous positions
-  - [ ] Typed map keys
+  - [x] Fixed-length tuples and heterogeneous positions (`tuple_of`; `types_intersection_tuple`)
+  - [x] Typed map keys (`map_of(V, K)`; `types_intersection_tuple`)
   - [ ] Record row constraints and explicit width/depth subtyping rules
 - [x] Add function-signature types beyond coarse `function` membership and per-call annotations (`types_function_signatures`, `types_function_purity`)
   - [x] Describe parameter and result types, including higher-order functions (`function_of`; `types_function_signatures`)
   - [x] Define parameter/result variance and callable compatibility: parameters contravariant, result covariant, same arity; membership evaluates a function's declared annotations without calling it, and unannotated results promise only `any`
   - [x] Express effect contracts: `pure_function_of` demands source-provable freedom from `effect`/`step`, with callee parameters promised pure by their own annotations (`types_function_purity`)
   - [x] Check statically that code reachable from a `type_time` region meets the purity contract before it runs (a definite `effect` is a `type` error; calls the scan cannot see through are listed `unchecked`)
-- [ ] Support named recursive types
-  - [ ] Define guardedness, unfolding, equality and termination of checking
-  - [ ] Distinguish recursive descriptions from erroneous evaluation cycles
+- [x] Support named recursive types
+  - [x] Define guardedness, unfolding, equality and termination of checking (`rec`/`var`; `types_recursive`; `LANGUAGE.md`)
+  - [x] Distinguish recursive descriptions from erroneous evaluation cycles (recursion is an explicit `rec` binder in the descriptor; a self-referential binding remains a cycle error)
 - [ ] Make type relationships and equivalence explicit
-  - [ ] Define the subtyping order and semantic equivalence separately from structural declaration `eq`
+  - [x] Define the subtyping order and semantic equivalence separately from structural declaration `eq` (`subtype`, `equivalent` as mutual subtyping, `eq` unchanged; `type_laws`)
   - [ ] Specify refinement implication and constraint composition: which facts are decidable, require evidence or remain unknown
   - [ ] Normalize types without losing original declarations or provenance; state when normalization is canonical and preserves meaning
 - [ ] Connect inheritance to the algebra
-  - [ ] Combine inherited constraints by intersection
+  - [x] Combine inherited constraints by intersection (`class_constraint_intersection`; `LANGUAGE.md`)
   - [x] State default selection and explicit override rules separately from membership (`class_defaults`; realization fills defaults, explicit child values override them, and structural membership neither fills nor demands the default value; `LANGUAGE.md#classes-machines-and-drift`)
 - [ ] Integrate every new former with the existing type system
   - [ ] Document membership, subtyping, equivalence, reflection, serialization and failure behavior

@@ -33,7 +33,7 @@ response: !call
   - status
   - !ref integer
   - headers
-  - !call [list_of, !call [list_of, !ref string]]
+  - !call [list_of, !call [tuple_of, !ref string, !ref string]]
   - body
   - !call
       - union

@@ -1,0 +1,124 @@
+root:
+  alpha_renamed:
+    - false
+    - true
+    - true
+  deep_violation:
+    - actual:
+        - 1
+        - - x
+      actual_present: true
+      at: /
+      expected: "integer | list of t"
+      message: "expected integer | list of t, got list"
+      rule: type
+  empty_name: type
+  literal_coverage: true
+  membership:
+    - true
+    - true
+    - true
+    - false
+    - false
+    - false
+  nested_ints:
+    name: u
+    of:
+      of:
+        - integer
+        - of:
+            name: u
+            type: var
+          type: list
+      type: union
+    type: rec
+  node:
+    name: "n"
+    of:
+      fields:
+        next:
+          of:
+            name: "n"
+            type: var
+          type: optional
+        value: integer
+      type: record
+    type: rec
+  node_membership:
+    - true
+    - true
+    - false
+  nonempty:
+    name: t
+    of:
+      of:
+        - integer
+        - of:
+            - name: t
+              type: var
+            - name: t
+              type: var
+          type: tuple
+      type: union
+    type: rec
+  reflection:
+    name: t
+    of:
+      of:
+        - integer
+        - of:
+            name: t
+            type: var
+          type: list
+      type: union
+    type: rec
+  renamed_node:
+    name: m
+    of:
+      fields:
+        next:
+          of:
+            name: m
+            type: var
+          type: optional
+        value: integer
+      type: record
+    type: rec
+  subtyping:
+    - true
+    - true
+    - true
+    - true
+    - true
+    - true
+    - false
+    - true
+    - true
+    - true
+  tree:
+    name: t
+    of:
+      of:
+        - integer
+        - of:
+            name: t
+            type: var
+          type: list
+      type: union
+    type: rec
+  unbound: "type variable `t` is not bound by an enclosing `rec`"
+  unguarded: "type variable `t` is unguarded: it must sit under a list, map, tuple, record or function"
+  uninhabited:
+    name: "n"
+    of:
+      fields:
+        next:
+          name: "n"
+          type: var
+      type: record
+    type: rec
+  uninhabited_terminates:
+    - false
+    - false
+    - false
+status: finished
