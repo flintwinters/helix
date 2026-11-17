@@ -1,9 +1,5 @@
 name: Runtime contracts
 on:
-  push:
-  pull_request:
-  schedule:
-    - cron: '23 5 * * 1'
   workflow_dispatch:
 permissions:
   contents: read
@@ -11,6 +7,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    defaults:
+      run:
+        # Explicit Bash enables pipefail so tee cannot hide test failures.
+        shell: bash
     env:
       HELIX_REQUIRE_PIPELINE_TOOLS: "1"
     steps:

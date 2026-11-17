@@ -20,6 +20,8 @@ def checked(h, source):
 
 
 def harness(h):
+    from tests.suites.ci_workflow import verify as verify_ci
+    verify_ci(h)
     import contextlib
     import io
     from unittest.mock import patch

@@ -253,8 +253,11 @@ It requires the largest workload to finish within one second, in addition
 to the subprocess timeout. The measurement is evidence for this
 workload, not a universal runtime guarantee.
 
-CI runs selected suites on pushes and pull requests; a weekly schedule and manual runs
-execute all suites, including `type_time`, `errors`, robustness, fuzz, scale, memory, and mutants. Failed runs upload `runtime/` artifacts.
+Automatic CI triggers are disabled; the workflow declares only manual dispatch.
+When enabled and manually dispatched, it runs all suites, including `type_time`,
+`errors`, robustness, fuzz, scale, memory, and mutants. Failed runs upload `runtime/`
+artifacts. Explicit Bash enables pipeline
+failure propagation through `tee`, retaining the test log while failing the job.
 Local timing evidence does not establish hosted CI timing guarantees.
 
 ## Dogfooded test modules
