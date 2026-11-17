@@ -29,23 +29,36 @@ class AgentParser(argparse.ArgumentParser):
 DEFAULT_TEST_JOBS = 4
 
 SUITES = {
+    "agent_bench": "Offline agent benchmark contracts, independent oracles and usage accounting",
     "yaml_model": "Representation-independent explicit syntax, data roundtrip and deterministic effects",
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
     "interactive": "REPL, dependency watch, completion and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
+    "nginx_types": "Pure class realization, defaults and provenance feeding the existing nginx lifecycle",
+    "target_coordination": "Cross-journal target exclusion and persistent crash uncertainty for cooperating controllers",
+    "secret_effects": "Opaque host secret inputs, suppressed captures, fresh grants and safe durable reconciliation",
+    "durable_effects": "Disk effect recovery, controller death, uncertain-outcome reconciliation and fresh grants",
+    "snapshots": "Fresh-process executable restoration, editable locals, imported sources and malformed snapshots",
     "long_commands": "Bounded command deadlines, capture, progress, retry classification and process-group cancellation",
+    "ssh_host": "Real OpenSSH remote commands: host-key verification, exact argument transport and classified connection, authentication and privilege failures",
     "effects": "Capability-controlled host effects, deterministic inputs, failures and pending requests",
     "startup": "Build-free discovery stays independent of execution and test-only imports",
     "type_time": "First-class type reflection, pure phase isolation, errors and shared resource bounds",
+    "docker_facts": "Opt-in pinned Ubuntu 26.10 local and real SSH facts acceptance",
+    "host_facts": "Typed explicit local/SSH observations, custom facts and reviewed dependencies",
     "host_inventory": "Pure typed host inventory, explicit override provenance, validated dynamic inputs and target selection",
     "resource_composition": "Validated resource dependencies, coalesced change handlers, failure gating and typed pinned modules",
     "provider_contract": "Typed provider lifecycle, pure previews, explicit ownership and independently verified mutations",
     "command_provider": "Guarded command resources, explicit result predicates, fresh reviews and real subprocess postconditions",
+    "ssh_nginx": "Opt-in disposable SSH nginx convergence, review, drift and durable recovery acceptance",
     "docker_nginx": "Opt-in Docker nginx convergence, drift and failure acceptance against independently observed Linux state",
+    "docker_linux": "Opt-in Docker Debian resources and mutually configuring Helix peers, against independently observed state",
     "golden": "Exact YAML states, deterministic evaluation, and finished-root round trips",
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",
     "cli": "Runtime and project CLI contracts, imports, inventory, and recovery",
+    "source_reflection": "Authoritative syntax reflection, typed identities, lexical bindings and bounded type evidence",
+    "search": "Composable source reflection, streaming discovery, structural queries and explicit probes",
     "pipeline": "helix exec inline/stdin execution, raw strings, YAML/JSON results, errors and jq/yq shell pipes",
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
     "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",
@@ -122,11 +135,21 @@ def parser():
     for name, description in {
         "fmt": "Emit canonical YAML source without executing",
         "step": "Inspect a program after a bounded number of transitions",
+        "system-snapshot": "Form promised participants and save their coordinated execution state",
+        "system-restore": "Restore all promised participants and communication together",
+        "snapshot": "Save executable state after a bounded number of transitions",
+        "restore": "Restore executable state; optionally save after more transitions",
+        "checkpoint": "Inspect durable effects and recovery action without execution",
+        "target-release": "Acknowledge independently established target quiescence after recovery",
         "trace": "Stream evaluation transitions as YAML documents",
         "watch": "Re-run when program or transitive import contents change",
     }.items():
         leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} program.yaml")
-        leaf.add_argument("file", metavar="FILE", help="source file (or - except for watch)")
+        file_help = {"system-snapshot": "participant source manifest, or - for stdin",
+                     "system-restore": "complete promised-system checkpoint, or - for stdin"}.get(name, "source file (or - except for watch)")
+        leaf.add_argument("file", metavar="FILE", help=file_help)
+        if name in ("snapshot", "restore", "system-snapshot", "system-restore"):
+            leaf.add_argument("--steps", type=int, default=0 if name in ("snapshot", "system-snapshot") else None, help="transitions before saving; restore runs to completion when omitted")
         if name == "step":
             leaf.add_argument("--steps", type=int, default=1, help="number of transitions (default: 1)")
         if name == "trace":
@@ -134,6 +157,9 @@ def parser():
         if name == "watch":
             leaf.add_argument("--interval-ms", type=int, default=250, help="poll interval in milliseconds")
             leaf.add_argument("--iterations", type=int, help="exit after this many run attempts")
+    reconcile = command(runtime, "reconcile", "Record an independently observed uncertain-effect outcome", ["runtime", "reconcile"], "runtime reconcile checkpoint.json observed.yaml")
+    reconcile.add_argument("file", help="effect checkpoint file")
+    reconcile.add_argument("outcome", help="exact request and observed ok/error outcome")
     for name, description in {"repl": "Evaluate one YAML document per input line",
                               "lsp": "Serve the Language Server Protocol over stdio",
                               "schema": "Print the program JSON Schema"}.items():
@@ -150,7 +176,13 @@ def parser():
     formats = pipeline.add_mutually_exclusive_group()
     formats.add_argument("--json", dest="output_format", action="store_const", const="--json", help="emit JSON, including quoted string results, for jq/yq")
     formats.add_argument("--yaml", dest="output_format", action="store_const", const="--yaml", help="emit YAML, including quoted string results, for yq")
+    pipeline.add_argument("--input", help="ordinary-data file, or - for stdin")
+    pipeline.add_argument("--file", help="query source file")
+    pipeline.add_argument("--stream", action="store_true", help="incremental JSONL list-producing query")
     pipeline.add_argument("source", nargs="?", default="-", metavar="PROGRAM", help="inline YAML, or - for stdin (default)")
+    search = command(runtime, "search", "Stream source index, parse source, or explicitly probe selected functions",
+                     ["runtime", "search"], "runtime search index std --no-std")
+    search.add_argument("extra", nargs=argparse.REMAINDER, help="index [PATH ...] | parse FILE | probe --cases FILE [--root PATH]")
     inline = command(runtime, "eval", "Evaluate inline YAML and emit VM state",
                      ["runtime", "eval"], "runtime eval '{$call: [add, 20, 22]}'")
     inline.add_argument("source", metavar="SOURCE", help="YAML program quoted as one shell argument; use -- before a leading dash")
@@ -180,6 +212,10 @@ def parser():
                         ["runtime", "migrate-syntax"], "runtime migrate-syntax --write std tests/cases")
     migration.add_argument("paths", nargs="+", metavar="PATH", help="source files or directories (expected outputs excluded)")
     migration.add_argument("--write", action="store_true", help="rewrite source files; default only reports changes")
+    formatting = command(runtime, "format", "Check or rewrite source files with structured width-aware YAML and retained comments",
+                         ["runtime", "format"], "runtime format --write std")
+    formatting.add_argument("paths", nargs="+", metavar="PATH", help="YAML files or recursively searched directories")
+    formatting.add_argument("--write", action="store_true", help="rewrite changed files; default checks formatting")
     quality = group("quality", "Run regression suites and structural lint")
     docker = command(quality, "docker-nginx", "Discover Docker acceptance scenarios or clean a retained run",
                      ["quality", "docker-nginx"], "quality docker-nginx describe")
@@ -189,6 +225,24 @@ def parser():
     audit = command(quality, "migration-audit", "Compare migrated source outcomes against existing golden expectations",
             ["quality", "migration-audit"], "quality migration-audit")
     audit.add_argument("--baseline", help="read golden expectations from a Git revision instead of the working tree")
+    bench = command(quality, "agent-bench", "Measure repeated one-shot coding with objective oracles and CLI timings",
+                    ["quality", "agent-bench"], "quality agent-bench run --trials 10")
+    bench.add_argument("action", choices=("list", "models", "run", "score", "report"))
+    bench.add_argument("--mode", choices=("one-shot", "cli"), default="cli", help="CLI-enabled bounded agent or a single completion without tools")
+    bench.add_argument("--max-turns", type=int, default=16, help="maximum model requests per CLI-enabled attempt")
+    bench.add_argument("--max-tool-calls", type=int, default=32, help="maximum workspace/CLI/submission calls per CLI-enabled attempt")
+    bench.add_argument("--jobs", type=int, default=4, help="independent generation workers; evaluation and timings remain isolated")
+    bench.add_argument("--model", default="openai/gpt-6.1-luna", help="exact OpenRouter model ID")
+    bench.add_argument("--trials", type=int, default=10, help="independent completions per task")
+    bench.add_argument("--task", action="append", help="task ID; repeat to select several")
+    bench.add_argument("--samples", type=int, default=3, help="timing samples after one warmup")
+    bench.add_argument("--max-tokens", type=int, default=4096, help="completion token ceiling per model request")
+    bench.add_argument("--temperature", type=float, default=0.7)
+    bench.add_argument("--directory", help="artifact directory; required for score, generated for run")
+    bench.add_argument("--audit", action="store_true", help="report saved-file/test/evaluation fingerprint integrity without running models or code")
+    bench.add_argument("--replay", action="store_true", help="report the saved replay evaluation instead of original timings")
+    bench.add_argument("--dry-run", action="store_true", help="validate references and save prompts without API calls")
+
     testing = command(quality, "test", "Run regression suites or discover their contracts",
                       ["quality", "test"], "quality test --suite golden --suite cli")
     testing.add_argument("--bless", action="store_true", help="rewrite golden expectations; requires only golden or default suite selection")

@@ -1,3 +1,1719 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - batch
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:validation"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - batch
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - "{name: core, stock: 3}"
+      - "{name: broken"
+      - "{name: debt, stock: -2}"
+      - "{stock: 1}"
+      - "{name: cli, stock: 2}"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - batch
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:validation"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - "$call"
+        - 1
+        - batch
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - "$call"
+          - 1
+          - batch
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - enumerate
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - batch
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:validation"
+    type: list
+    value:
+      - "{name: core, stock: 3}"
+      - "{name: broken"
+      - "{name: debt, stock: -2}"
+      - "{stock: 1}"
+      - "{name: cli, stock: 2}"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - enumerate
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type: integer
+    value: 5
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - enumerate
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - enumerate
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - - 0
+        - "{name: core, stock: 3}"
+      - - 1
+        - "{name: broken"
+      - - 2
+        - "{name: debt, stock: -2}"
+      - - 3
+        - "{stock: 1}"
+      - - 4
+        - "{name: cli, stock: 2}"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - table
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    target:
+      path:
+        - batch
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:validation"
+    type: list
+    value:
+      - input:
+          index: 0
+          value: "{name: core, stock: 3}"
+        name: validation
+      - input:
+          index: 1
+          value: "{name: broken"
+        name: validation
+      - input:
+          index: 2
+          value: "{name: debt, stock: -2}"
+        name: validation
+      - input:
+          index: 3
+          value: "{stock: 1}"
+        name: validation
+      - input:
+          index: 4
+          value: "{name: cli, stock: 2}"
+        name: validation
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - table
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - batch
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:validation"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - batch
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:validation"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - suite
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - table
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:test"
+    type: list
+    value:
+      - input:
+          index: 0
+          value: "{name: core, stock: 3}"
+        name: validation
+        run:
+          kind: function
+          location:
+            path:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+            source: "std:test"
+      - input:
+          index: 1
+          value: "{name: broken"
+        name: validation
+        run:
+          kind: function
+          location:
+            path:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+            source: "std:test"
+      - input:
+          index: 2
+          value: "{name: debt, stock: -2}"
+        name: validation
+        run:
+          kind: function
+          location:
+            path:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+            source: "std:test"
+      - input:
+          index: 3
+          value: "{stock: 1}"
+        name: validation
+        run:
+          kind: function
+          location:
+            path:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+            source: "std:test"
+      - input:
+          index: 4
+          value: "{name: cli, stock: 2}"
+        name: validation
+        run:
+          kind: function
+          location:
+            path:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+            source: "std:test"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 0
+        value: "{name: core, stock: 3}"
+      name: validation
+      run:
+        kind: function
+        location:
+          path:
+            - table
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 6
+          source: "std:test"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - table
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 6
+        source: "std:test"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - batch
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{name: core, stock: 3}"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value: core
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 0
+        value: "{name: core, stock: 3}"
+      name: validation
+      outcome: passed
+      value: core
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 1
+        value: "{name: broken"
+      name: validation
+      run:
+        kind: function
+        location:
+          path:
+            - table
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 6
+          source: "std:test"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - table
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 6
+        source: "std:test"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - batch
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{name: broken"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 59
+            function: /parse
+            function_column: 3
+            function_file: "std:yaml"
+            function_line: 19
+            line: 35
+            path: "/$call/1/batch/$call/2/$call/2/$call/1"
+          - column: 31
+            file: "std:validation"
+            function: "/$call/1/batch/$call/2"
+            function_column: 7
+            function_line: 35
+            line: 29
+            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+          - column: 43
+            file: "std:test"
+            function: "/batch/$call/2/$call/2"
+            function_column: 11
+            function_file: "std:validation"
+            function_line: 27
+            line: 251
+            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+          - column: 64
+            file: "std:test"
+            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
+            function_column: 23
+            function_file: "std:test"
+            function_line: 249
+            line: 9
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 29
+        file: "std:yaml"
+        kind: parse
+        line: 21
+        message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
+        path: "/parse/$call/2/$call/1"
+        reference:
+          - parse
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 59
+            function: /parse
+            function_column: 3
+            function_file: "std:yaml"
+            function_line: 19
+            line: 35
+            path: "/$call/1/batch/$call/2/$call/2/$call/1"
+          - column: 31
+            file: "std:validation"
+            function: "/$call/1/batch/$call/2"
+            function_column: 7
+            function_line: 35
+            line: 29
+            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+          - column: 43
+            file: "std:test"
+            function: "/batch/$call/2/$call/2"
+            function_column: 11
+            function_file: "std:validation"
+            function_line: 27
+            line: 251
+            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+          - column: 64
+            file: "std:test"
+            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
+            function_column: 23
+            function_file: "std:test"
+            function_line: 249
+            line: 9
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 29
+        file: "std:yaml"
+        kind: parse
+        line: 21
+        message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
+        path: "/parse/$call/2/$call/1"
+        reference:
+          - parse
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+      input:
+        index: 1
+        value: "{name: broken"
+      name: validation
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 2
+        value: "{name: debt, stock: -2}"
+      name: validation
+      run:
+        kind: function
+        location:
+          path:
+            - table
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 6
+          source: "std:test"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - table
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 6
+        source: "std:test"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - batch
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{name: debt, stock: -2}"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 36
+            function: "/$call/1/validate"
+            function_column: 12
+            function_line: 16
+            line: 35
+            path: "/$call/1/batch/$call/2/$call/2"
+          - column: 31
+            file: "std:validation"
+            function: "/$call/1/batch/$call/2"
+            function_column: 7
+            function_line: 35
+            line: 29
+            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+          - column: 43
+            file: "std:test"
+            function: "/batch/$call/2/$call/2"
+            function_column: 11
+            function_file: "std:validation"
+            function_line: 27
+            line: 251
+            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+          - column: 64
+            file: "std:test"
+            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
+            function_column: 23
+            function_file: "std:test"
+            function_line: 249
+            line: 9
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 13
+        kind: assertion
+        line: 27
+        message: stock must be nonnegative
+        path: "/$call/1/validate/$call/2/$call/2/$call/1/$call/1"
+        reference:
+          - "$call"
+          - 1
+          - validate
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 36
+            function: "/$call/1/validate"
+            function_column: 12
+            function_line: 16
+            line: 35
+            path: "/$call/1/batch/$call/2/$call/2"
+          - column: 31
+            file: "std:validation"
+            function: "/$call/1/batch/$call/2"
+            function_column: 7
+            function_line: 35
+            line: 29
+            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+          - column: 43
+            file: "std:test"
+            function: "/batch/$call/2/$call/2"
+            function_column: 11
+            function_file: "std:validation"
+            function_line: 27
+            line: 251
+            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+          - column: 64
+            file: "std:test"
+            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
+            function_column: 23
+            function_file: "std:test"
+            function_line: 249
+            line: 9
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 13
+        kind: assertion
+        line: 27
+        message: stock must be nonnegative
+        path: "/$call/1/validate/$call/2/$call/2/$call/1/$call/1"
+        reference:
+          - "$call"
+          - 1
+          - validate
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+      input:
+        index: 2
+        value: "{name: debt, stock: -2}"
+      name: validation
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 3
+        value: "{stock: 1}"
+      name: validation
+      run:
+        kind: function
+        location:
+          path:
+            - table
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 6
+          source: "std:test"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - table
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 6
+        source: "std:test"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - batch
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{stock: 1}"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 36
+            function: "/$call/1/validate"
+            function_column: 12
+            function_line: 16
+            line: 35
+            path: "/$call/1/batch/$call/2/$call/2"
+          - column: 31
+            file: "std:validation"
+            function: "/$call/1/batch/$call/2"
+            function_column: 7
+            function_line: 35
+            line: 29
+            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+          - column: 43
+            file: "std:test"
+            function: "/batch/$call/2/$call/2"
+            function_column: 11
+            function_file: "std:validation"
+            function_line: 27
+            line: 251
+            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+          - column: 64
+            file: "std:test"
+            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
+            function_column: 23
+            function_file: "std:test"
+            function_line: 249
+            line: 9
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 52
+        kind: missing
+        line: 21
+        message: "no key `name`"
+        path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - validate
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - name
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 36
+            function: "/$call/1/validate"
+            function_column: 12
+            function_line: 16
+            line: 35
+            path: "/$call/1/batch/$call/2/$call/2"
+          - column: 31
+            file: "std:validation"
+            function: "/$call/1/batch/$call/2"
+            function_column: 7
+            function_line: 35
+            line: 29
+            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+          - column: 43
+            file: "std:test"
+            function: "/batch/$call/2/$call/2"
+            function_column: 11
+            function_file: "std:validation"
+            function_line: 27
+            line: 251
+            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+          - column: 64
+            file: "std:test"
+            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
+            function_column: 23
+            function_file: "std:test"
+            function_line: 249
+            line: 9
+            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        column: 52
+        kind: missing
+        line: 21
+        message: "no key `name`"
+        path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - validate
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - name
+          - "$call"
+          - 2
+      input:
+        index: 3
+        value: "{stock: 1}"
+      name: validation
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 4
+        value: "{name: cli, stock: 2}"
+      name: validation
+      run:
+        kind: function
+        location:
+          path:
+            - table
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 6
+          source: "std:test"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - table
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 6
+        source: "std:test"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - batch
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{name: cli, stock: 2}"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value: cli
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 4
+        value: "{name: cli, stock: 2}"
+      name: validation
+      outcome: passed
+      value: cli
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 0
+        value: "{name: core, stock: 3}"
+      name: validation
+      run:
+        kind: function
+        location:
+          path:
+            - table
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 6
+          source: "std:test"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - table
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 6
+        source: "std:test"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - batch
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{name: core, stock: 3}"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value: core
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 0
+        value: "{name: core, stock: 3}"
+      name: validation
+      outcome: passed
+      value: core
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      input:
+        index: 1
+        value: "{name: broken"
+      name: validation
+      run:
+        kind: function
+        location:
+          path:
+            - table
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 6
+          source: "std:test"
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - capture
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:test"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - table
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 6
+        source: "std:test"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - parse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:yaml"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - batch
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "{name: broken"
+annotations_truncated: true
 root:
   batch:
     failed: 3
@@ -13,38 +1729,38 @@ root:
           calls:
             - column: 59
               function: /parse
-              function_column: 10
+              function_column: 3
               function_file: "std:yaml"
-              function_line: 3
+              function_line: 19
               line: 35
               path: "/$call/1/batch/$call/2/$call/2/$call/1"
-            - column: 28
+            - column: 31
               file: "std:validation"
               function: "/$call/1/batch/$call/2"
               function_column: 7
               function_line: 35
-              line: 41
+              line: 29
               path: "/batch/$call/2/$call/2/$call/2/$call/1"
-            - column: 53
+            - column: 43
               file: "std:test"
               function: "/batch/$call/2/$call/2"
-              function_column: 14
+              function_column: 11
               function_file: "std:validation"
-              function_line: 38
-              line: 132
+              function_line: 27
+              line: 251
               path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-            - column: 75
+            - column: 64
               file: "std:test"
               function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-              function_column: 13
+              function_column: 23
               function_file: "std:test"
-              function_line: 132
-              line: 12
+              function_line: 249
+              line: 9
               path: "/capture/$call/2/$call/1/$call/4/$call/1"
-          column: 86
+          column: 29
           file: "std:yaml"
           kind: parse
-          line: 3
+          line: 21
           message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
           path: "/parse/$call/2/$call/1"
           reference:
@@ -66,28 +1782,28 @@ root:
               function_line: 16
               line: 35
               path: "/$call/1/batch/$call/2/$call/2"
-            - column: 28
+            - column: 31
               file: "std:validation"
               function: "/$call/1/batch/$call/2"
               function_column: 7
               function_line: 35
-              line: 41
+              line: 29
               path: "/batch/$call/2/$call/2/$call/2/$call/1"
-            - column: 53
+            - column: 43
               file: "std:test"
               function: "/batch/$call/2/$call/2"
-              function_column: 14
+              function_column: 11
               function_file: "std:validation"
-              function_line: 38
-              line: 132
+              function_line: 27
+              line: 251
               path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-            - column: 75
+            - column: 64
               file: "std:test"
               function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-              function_column: 13
+              function_column: 23
               function_file: "std:test"
-              function_line: 132
-              line: 12
+              function_line: 249
+              line: 9
               path: "/capture/$call/2/$call/1/$call/4/$call/1"
           column: 13
           kind: assertion
@@ -119,28 +1835,28 @@ root:
               function_line: 16
               line: 35
               path: "/$call/1/batch/$call/2/$call/2"
-            - column: 28
+            - column: 31
               file: "std:validation"
               function: "/$call/1/batch/$call/2"
               function_column: 7
               function_line: 35
-              line: 41
+              line: 29
               path: "/batch/$call/2/$call/2/$call/2/$call/1"
-            - column: 53
+            - column: 43
               file: "std:test"
               function: "/batch/$call/2/$call/2"
-              function_column: 14
+              function_column: 11
               function_file: "std:validation"
-              function_line: 38
-              line: 132
+              function_line: 27
+              line: 251
               path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
-            - column: 75
+            - column: 64
               file: "std:test"
               function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
-              function_column: 13
+              function_column: 23
               function_file: "std:test"
-              function_line: 132
-              line: 12
+              function_line: 249
+              line: 9
               path: "/capture/$call/2/$call/1/$call/4/$call/1"
           column: 52
           kind: missing
@@ -539,15 +2255,15 @@ root:
         calls:
           - column: 9
             function: /parse
-            function_column: 10
+            function_column: 3
             function_file: "std:yaml"
-            function_line: 3
+            function_line: 19
             line: 126
             path: "/$call/1/load_config/$call/2/$call/1"
-        column: 86
+        column: 29
         file: "std:yaml"
         kind: parse
-        line: 3
+        line: 21
         message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 7 line 2 column 1 (YAML line 2, column 1)"
         path: "/parse/$call/2/$call/1"
         reference:

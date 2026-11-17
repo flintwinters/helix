@@ -1,45 +1,73 @@
 # Helix
 
-Helix is an experimental Rust runtime with YAML source, immutable execution values, and readable YAML results and diagnostics. Programs are YAML representation graphs: singleton `$call`, `$ref` and `$literal` maps distinguish calls, lexical references and literal data. Quoting and mapping presentation order have no execution meaning; runtime maps use canonical string-key order. APIs, syntax and tooling should be discoverable by people and agents. The earlier C++ implementation lives in `flintwinters/helixcpp`.
+Think like a mathematician would.
 
 ## Motivation
 
-Make execution as readable and explicit as source. Prioritize structured, agent-consumable outputs and hierarchical discovery. Retaining a machine must preserve its meaning while another version advances. Ordinary data round-trips through YAML; function and machine inspection graphs do not promise executable disk restoration.
+Make execution as readable and explicit as source. Helix is an experimental Rust
+runtime whose YAML representation graphs describe immutable execution values and
+machines. Retaining a machine must preserve its meaning while another advances.
+Ordinary data round-trips through YAML; inspection is not executable restoration.
+External source/state edits do not invalidate completed work or certify edited values.
 
-The ultimate application is declarative machine configuration through first-class types: resolve a machine description purely before applying effects (`CHARTER.md`). The type/class algebra, pure regions, constraints, state comparison and explicit host effects exist. A scoped Docker nginx workload exercises reviewed application and fresh reconciliation; general declarative machine application and the reversibility promise remain future work. Keep the build bootstrap independent of Helix execution.
+The defining application is declarative machine configuration: resolve and validate
+purely, then apply explicitly authorized effects. Keep build bootstrap independent of
+Helix execution. Expose APIs and CLI tooling; building a UI is out of scope.
+Complexity must earn its place through concrete workloads, under
+[CHARTER.md](CHARTER.md), especially its admission and consolidation rules.
 
-Complexity must earn its place through concrete workloads. `CHARTER.md` section 12 governs feature admission and consolidation; roadmap entries alone do not justify expansion. Dogfood substantive development work for two reasons: accomplish the work and strengthen Helix through real language, library and runtime feedback. A useful dogfood need not be shorter than its host-language equivalent. Prefer ordinary functions and reusable capabilities composed for the workload; do not encode a particular harness workflow as a public library API or build speculative generality. Existing ownership decisions are revisable: give each responsibility one implementation, and use independent observations and fault-injection tests to detect its failures rather than duplicate its decisions in another language. Like retiring `closure` for `let` plus `fn`, simplification should remove mechanisms and interactions.
+Dogfood substantive development work both to accomplish it and to improve Helix
+through real language, library and runtime feedback. Useful dogfood need not be
+shorter than host code. Compose ordinary reusable functions for a workload instead
+of exposing its fixed harness workflow as a public API. Keep one implementation of
+each responsibility; independent observations and fault injection detect failures
+without duplicating the same decisions in another language.
 
-## Architecture
+## Architecture and authoritative entrypoints
 
-- Project tooling defaults to concise, scoped text with actionable failures; complete versioned JSON is explicit. Optimize agent output for decision-relevant information and progressive discovery, not serialization alone. Completed text test results appear as suites finish; final policy aggregation can fail independently. Wrappers preserve language and pipeline wire contracts, including complete JSON reports.
-- `src/model.rs` defines source graphs, dedicated runtime values and explicit execution state. Code, collections and machine versions share immutable storage with copy-on-write updates. Runtime functions and VMs are distinct from ordinary lists/maps.
-- `src/graph.rs` preserves lexical topology and source spans; `src/graph/syntax.rs` is the authoritative syntax boundary over YAML representation nodes. Source analyses share exact-name-first lexical selection, keeping parameter members distinct from their base's contracts. Inspectable references are source-qualified paths with string-key and integer-index segments; arena indices and allocation addresses have no language meaning.
-- `src/eval.rs` is the exhaustive outer dispatcher; `src/eval/` owns source evaluation, scopes, iteration and host interactions within the same iterative engine. Calls, annotations, error unwinding, memoization, cycle guards, resource budgets and phase state are explicit. Functions retain original code and lexical environments; execution never emits or reparses function source.
-- `src/tooling/analysis/` owns conservative non-executing diagnostics and canonical source formatting; its LSP uses the same diagnostics. Production library and tooling modules exercise these checks in the static suite; policy mutations verify field, literal, callback and missing-name feedback. Name checks reuse runtime lexical declarations and remain conservative about dynamic members. Annotation resolution and expanded inferred types are bounded; precision loss retains explicit unresolved obligations through shared type relations. Collection checks preserve empty-input callback skipping. Sibling interactive and inspection tooling reuse the linker and VM. CLI `check --evaluate` retains evaluation-based error collection; plain `check` never executes.
-- `src/vm.rs` supplies immutable stepping, running, inspection and independent-error checking. Nested machines advance through an iterative scheduler, without recursively running another interpreter. Terminal stepping preserves state. VM checking collects reached evaluation failures in ordinary order without run preflight, preserving shared budgets and captured-input history; it does not statically analyze uncalled bodies.
-- `src/builtins.rs` and `src/builtins/` own pure host operations and type/class validation. Public type constructors validate declarations through the shared parser before delegating assembly to embedded Helix modules; record replacement validates retained fields while discarding the replaced spec. Drift/convergence similarly delegate planning through ordinary calls in the same engine. The linker attaches required policy modules to the source graph. A single actor registry owns builtin identity, arity and evaluation policy. Literal subtype proofs cover numeric equality representations through bounded structural checks. Refinements and whole-record constraints request predicates through the same engine; deterministic host traversals retain completed predicate answers. Host callbacks never execute Helix. A failing cleanup replaces the original outcome.
-- Class realization enforces fixed values and whole-record constraints; adding a constraint invalidates realization. Class construction and type parsing share constraint-shape validation before any predicate execution. Proofs and inherited constraints use exact predicate source/capture identity; public value equality is not evidence of interchangeable predicates. Inheritance requires exact agreement among competing declarations and winning value representations; explicit values retain priority over equal defaults. Explicit provenance kinds distinguish fixed values from defaults independently of display labels; membership checks field schemas, explicitly fixed values and whole-record constraints. Drift/convergence compare configured values and preserve extra observed state, so an empty plan is not equivalent to closed-record membership.
-- Explicit `type_time` regions have phase-local memoization and shared work/data budgets. Run preflight evaluates regions outside `try`/`vm` operands and function-body regions proven parameter-independent by a conservative source scan before the first run-time step (`src/eval/preflight.rs`); an outermost region records the pre-existing frame values it reads (`type_time_inputs`), preserving distinguishable ordinary-data representations while deduplicating exact repeats. Pure phases evaluate immutable linked file and embedded modules under the same rules; loading and import authorization precede execution. Determinism depends on the complete linked source and recorded inputs; caught errors retain phase information. Effect requests are rejected in pure phases before reaching a host.
-- Effects yield explicit requests and retain completed outcomes in machine state. `src/vm/effects.rs` supplies caller-authorized host adapters, separate from immutable machines. External events interrupt and resume in-memory continuations; inspection is not disk restoration. Grants are host inputs, never authority carried by source or saved state. Executable grants are not an OS sandbox.
-- Local command lifecycle policy belongs to the caller-owned host: total time/output budgets, metadata progress, cancellation and explicitly classified retries share one request boundary. Unix process groups support cleanup, not containment or rollback; durable and remote recovery remain separate obligations.
-- `src/link.rs` links and deduplicates literal imports before execution, preserving isolated module scopes and source identities. Confined loading authorizes canonical file roots supplied by the caller; source and recovery data cannot grant permissions. This is import confinement, not OS isolation.
-- `src/value.rs`, `src/inspect.rs` and `src/emit.rs` own exact numeric comparison, cycle-aware structural function equality, stack-bounded retirement of retained execution graphs, source-aware object views and YAML/JSON boundaries. Execution inspection lives under `src/inspect/`, separate from dispatch. Ordinary data stays compact; function/machine results add named objects beside their value projection. Inspection does not execute the inspected machine.
-- Pure failed-run recovery freezes completed ordinary-data fields and retries other fields from source. It does not restore active execution. Original source blame, navigable call chains, error causes and scalar values remain public contracts.
-- `std/` supplies pure testing, configuration vocabulary, reflection, collection and data-only YAML libraries. `std:test` owns assertions, generators, selection and reports; `std:fuzz` owns robustness mutation generation. `tooling/test_policy.yaml` owns test-suite planning, failed-suite selection from validated saved reports and report aggregation. Public repository test-policy functions carry Helix input/result contracts. Golden checks compose the existing `std:test` assertions and reports in Helix for determinism, ordinary-root replay and exact expectation comparison. Python captures executions, validates terminal states, supervises replay and performs scoped expectation writes only after the checks pass; CI never blesses. The host consumes the check report without reimplementing its comparisons; harness fault injection independently verifies failure detection. Goldens cover intentionally observable serialization contracts; semantic tests assert values without retaining helper/module inspection graphs. Python also independently validates suite-policy consistency, mutation coverage and authority, and detects interpreter failures; startup checks and build bootstrap remain independent of Helix. Parsing YAML data never reconstructs executable functions or machines.
-- `std:inventory` resolves static and caller-supplied dynamic host data into validated, explicit targets with connection provenance. Groups select hosts without configuration precedence; ordered overrides are explicit. Inventory describes connections, never grants authority or performs discovery.
-- `std:orchestration` validates resource dependencies before invoking ordinary Helix callbacks. It reuses `std:dependency`, skips failed dependents, and coalesces change notifications into deferred handlers whose prerequisites succeeded. Effects remain in the existing engine; composition does not confer authority or imply rollback.
-- `std:provider` owns the typed resource lifecycle: pure data plans, explicit ownership and removal, exact ordinary-data review matching before application (including numeric representations), and observation-based postconditions. Provider callbacks use the existing effect engine; metadata grants no authority. General package/file/service providers, concurrent-controller locking and durable recovery remain separate work.
-- `std:command` adapts local command resources to that lifecycle with explicit observation guards and pure failure/change predicates. Its apply wrapper reports actual change after verification; commands carry no inferred idempotence or rollback guarantee.
-- `tooling/usage_log.py` observes each runtime invocation through `manage.py`, and `tooling/usage_log.yaml` (a Helix program over `std:sqlite` run under `perform` with a write grant on the log directory) owns the `calls` table and insert in `runtime/usage.sqlite3`; reporting stays read-only Python so it works without a build. Logging never affects the forwarded process, and direct binary calls are not covered.
-- `std:nginx` composes those existing provider and orchestration contracts for one typed container workload. Helix owns desired-state policy; fixture helpers own package/file/process mechanisms. Fresh resource observations and HTTP activation gate success. Its disposable Docker acceptance suite supplies independent failure/reconciliation evidence, not general service management, SSH or restored continuations.
-- Tests combine golden source/error contracts, ordinary-data fixpoints, dogfooded laws, public execution APIs, retained-state and pause checks, capability/resource boundaries, mutation sensitivity, and time/memory observations. Mutation execution preserves source-relative import context. `manage.py` is the authoritative tooling entrypoint; command discovery lives in `tooling/cli.py`, and `tooling/test_runner.py` owns explicit per-run test contexts. `LANGUAGE.md` owns core semantics, `LIBRARY.md` library contracts and `HOST.md` host-operation contracts; the static suite checks local manual navigation. Keep the main `README.md` concise: orientation, quickstart and links. Detailed operational and testing guidance belongs in focused manuals and `tests/README.md`.
+- [LANGUAGE.md](LANGUAGE.md) owns syntax and execution semantics;
+  [src/model.rs](src/model.rs), [src/graph.rs](src/graph.rs) and
+  [src/eval.rs](src/eval.rs) lead into the immutable model and iterative engine.
+- [src/vm.rs](src/vm.rs) owns public machine execution;
+  [src/snapshot.rs](src/snapshot.rs) owns versioned restoration.
+  Snapshot closure and portability boundaries belong to charter section 2.
+- [HOST.md](HOST.md) owns capabilities, effects, command/SSH lifecycle and durable
+  recovery. Authority comes from callers, never source or saved state. Journals refuse
+  uncertain replay; process cleanup is not remote fencing, rollback or exactly-once execution.
+- [LIBRARY.md](LIBRARY.md) owns embedded library contracts. Declarative application
+  composes types, inventory, orchestration and providers through the existing engine.
+  Fixture/operator contracts under [tests/README.md](tests/README.md) define qualified
+  environments; passing a scoped workload does not qualify general fleets or services.
+- [manage.py](manage.py) is the single tooling/testing entrypoint;
+  [tooling/cli.py](tooling/cli.py) owns discovery and
+  [tooling/test_runner.py](tooling/test_runner.py) owns explicit test contexts.
+  [tests/README.md](tests/README.md) owns testing operations and evidence.
+  Use the CLI wrappers so runtime invocations reach the SQLite usage log.
+  Golden checks compose general `std:test` assertions and reports in Helix.
+  Python captures and validates observations, supervises ordinary-root replay and
+  writes explicitly blessed expectations after checks pass; it does not duplicate
+  Helix comparisons. Goldens cover observable serialization contracts; semantic
+  tests assert focused values. Harness fault injection independently checks rejection.
+- [src/tooling/](src/tooling/) leads into analysis, reflection, search and editor tooling.
+  Reuse authoritative syntax and lexical selection. Static analysis never executes;
+  unknown evidence stays explicit, and evaluated-value provenance stays bounded.
 
-## Current Big Tasks
+Follow these entrypoints into source instead of duplicating inventories or operational
+instructions here. Keep the [README](README.md) concise. Prefer scoped, actionable
+agent-consumable output with progressive discovery and explicit complete JSON reports.
 
-Consolidation under `CHARTER.md` section 12 is complete for the scoped Docker nginx workload and its exposed phase, type/class, builtin/library and reference boundaries. Runtime semantics, ordinary Helix policy and independent host supervision retain distinct authority; the redundant `closure` form is retired in favor of `let` plus `fn`. Next strengthen measured development feedback from actual production-policy workloads before selecting further expansion. Keep independent bootstrap and host validation; this milestone does not complete section 11's broader replacement promise.
+## Current big tasks
 
-1. Measure and improve development feedback on actual production-policy workloads. Use substantive dogfooding to improve both the tooling and Helix itself, retaining independent bootstrap and host failure detection. Evaluate the reusable capabilities and language feedback it produces, not the amount of code migrated.
-2. Design validated, versioned disk snapshots and reversibility-promise syntax, preserving complete explicit continuation state and readable execution references.
-3. Build declarative machine application on capability-controlled effects, using the scoped Ansible replacement roadmap in `CHARTER.md` section 11; extend replay and interruption guarantees alongside validated disk snapshots, then extend CLI stepping and inspection into an interactive debugger.
-4. Preserve evaluated-value source locations beyond errors/inspection, and maintain the explicit YAML representation model as syntax and tooling evolve.
+1. Measure production-policy feedback and harden the concrete Linux/Docker workloads,
+   including independent failure detection, exact reviews, convergence and recovery.
+   A real playbook migration must declare its supported scope before provider expansion.
+2. Enforce and inspect the charter's closed, explicitly bound and open future-dependency
+   boundaries. Shared immutable storage does not establish environmental closure.
+3. Extend reversible/distributed execution only for concrete workloads. Independent
+   remote restoration, same-target coordination/fencing, fleet recovery and secret-bearing
+   ordinary data remain separate obligations; coordinated peers have a joint snapshot boundary.
+4. Preserve the explicit YAML representation model and bounded source evidence as syntax
+   and tooling evolve. Do not turn provenance into unbounded execution history.
+
+5. Measure agent usability with repeatable model coding tasks;
+   [benchmarks/agent/README.md](benchmarks/agent/README.md) owns the experiment protocol.

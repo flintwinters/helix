@@ -3,11 +3,15 @@ use std::process::ExitCode;
 use crate::tooling::{analysis, inspection, interactive};
 
 pub fn dispatch(args: &[String]) -> Option<ExitCode> {
+    if args.first().is_some_and(|x| x == "search") { return Some(super::search::command(&args[1..])); }
     if args
         .get(1)
         .is_some_and(|arg| matches!(arg.as_str(), "--help" | "-h"))
     {
         return None;
+    }
+    if args.first().is_some_and(|x| x == "exec") && args.iter().skip(1).take_while(|x| x.as_str() != "--").any(|x| matches!(x.as_str(), "--stream" | "--input" | "--file")) {
+        return Some(super::stream::command(&args[1..]));
     }
     let words: Vec<&str> = args.iter().map(String::as_str).collect();
     Some(match words.as_slice() {
@@ -27,6 +31,21 @@ pub fn dispatch(args: &[String]) -> Option<ExitCode> {
         },
         ["repl"] => interactive::repl(),
         ["completion", shell] => interactive::completion(shell),
+        ["target-release", path] => super::snapshots::target_release(path),
+        ["checkpoint", path] => super::snapshots::checkpoint(path),
+        ["reconcile", path, outcome] => super::snapshots::reconcile(path, outcome),
+        ["system-snapshot", path] => super::peers::command(path, false, Some(0)),
+        ["system-restore", path] => super::peers::command(path, true, None),
+        [mode @ ("system-snapshot" | "system-restore"), path, "--steps", count] => match count.parse() {
+            Ok(count) => super::peers::command(path, *mode == "system-restore", Some(count)),
+            Err(_) => usage("--steps requires a nonnegative integer"),
+        },
+        ["snapshot", path] => super::snapshots::command(path, false, Some(0)),
+        ["restore", path] => super::snapshots::command(path, true, None),
+        [mode @ ("snapshot" | "restore"), path, "--steps", count] => match count.parse() {
+            Ok(count) => super::snapshots::command(path, *mode == "restore", Some(count)),
+            Err(_) => usage("--steps requires a nonnegative integer"),
+        },
         ["inspect", path] => inspection::inspect(path),
         ["step", path] => inspection::step(path, 1),
         ["step", path, "--steps", count] => match count.parse() {

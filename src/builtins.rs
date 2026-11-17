@@ -11,9 +11,10 @@ use crate::model::PolicyCall;
 
 mod collection;
 mod data;
+mod search;
 mod fault;
 mod number;
-mod typing;
+pub(crate) mod typing;
 mod value;
 
 pub use fault::Fault;
@@ -44,7 +45,7 @@ pub(crate) enum Form {
 /// Evaluation policy; strict families retain their existing operation implementations.
 #[derive(Clone, Copy)]
 pub(crate) enum Evaluation {
-    Number, Collection, Typing, Data, Equal, NotEqual, Not, Text, Type, Assert, Raise,
+    Search, Number, Collection, Typing, Data, Equal, NotEqual, Not, Text, Type, Assert, Raise,
     Form(Form),
     /// Eager arguments followed by a machine operation handled by the request dispatcher.
     Engine,
@@ -64,10 +65,16 @@ const fn actor(name: &'static str, min: usize, max: Option<usize>, evaluation: E
 }
 
 const ACTORS: &[Descriptor] = &[
+    actor("promise", 2, Some(2), Evaluation::Typing),
+    actor("mixin", 2, Some(2), Evaluation::Typing),
     actor("vm", 1, Some(1), Evaluation::Form(Form::Vm)),
     actor("step", 1, Some(1), Evaluation::Engine),
     actor("inspect", 1, Some(1), Evaluation::Engine),
     actor("effect", 2, Some(2), Evaluation::Engine),
+    actor("http_serve", 2, Some(2), Evaluation::Engine),
+    actor("source_subtype", 2, Some(2), Evaluation::Search),
+    actor("regex_find", 2, Some(2), Evaluation::Search),
+    actor("source_parse", 1, Some(1), Evaluation::Data),
     actor("json_parse", 1, Some(1), Evaluation::Data),
     actor("json_dump", 1, Some(1), Evaluation::Data),
     actor("csv_parse", 1, Some(1), Evaluation::Data),
@@ -114,13 +121,17 @@ const ACTORS: &[Descriptor] = &[
     actor("float", 1, Some(1), Evaluation::Number),
     actor("type", 1, Some(1), Evaluation::Type),
     actor("list_of", 1, Some(1), Evaluation::Policy("type_descriptor")),
-    actor("map_of", 1, Some(1), Evaluation::Policy("type_descriptor")),
+    actor("map_of", 1, Some(2), Evaluation::Policy("type_descriptor")),
     actor("record", 0, None, Evaluation::Policy("type_descriptor")),
     actor("function_of", 2, Some(2), Evaluation::Policy("type_descriptor")),
     actor("pure_function_of", 2, Some(2), Evaluation::Policy("type_descriptor")),
     actor("optional", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("default", 2, Some(2), Evaluation::Policy("type_descriptor")),
     actor("union", 1, None, Evaluation::Policy("type_descriptor")),
+    actor("intersection", 1, None, Evaluation::Policy("type_descriptor")),
+    actor("rec", 2, Some(2), Evaluation::Policy("type_descriptor")),
+    actor("var", 1, Some(1), Evaluation::Policy("type_descriptor")),
+    actor("tuple_of", 0, None, Evaluation::Policy("type_descriptor")),
     actor("enum", 1, None, Evaluation::Policy("type_descriptor")),
     actor("literal", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("refine", 2, Some(2), Evaluation::Form(Form::Refine)),
@@ -132,6 +143,7 @@ const ACTORS: &[Descriptor] = &[
     actor("violations", 2, Some(2), Evaluation::Typing),
     actor("expect", 2, Some(2), Evaluation::Typing),
     actor("subtype", 2, Some(2), Evaluation::Typing),
+    actor("equivalent", 2, Some(2), Evaluation::Typing),
     actor("secret", 1, Some(1), Evaluation::Policy("type_descriptor")),
     actor("class", 2, Some(3), Evaluation::Typing),
     actor("extend", 4, Some(4), Evaluation::Typing),
@@ -169,6 +181,7 @@ pub fn apply(name: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault
         Evaluation::Not => boolean(&args[0], 0).map(|b| Value::Boolean(!b)),
         Evaluation::Typing => typing::apply(actor.name, args, pred),
         Evaluation::Collection => collection::apply(actor.name, args),
+        Evaluation::Search => search::apply(actor.name, args),
         Evaluation::Data => data::apply(actor.name, &args[0]),
         Evaluation::Text => text(&args[0]),
         Evaluation::Type => Ok(Value::String(type_name(&args[0]).to_string())),

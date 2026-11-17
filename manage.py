@@ -176,6 +176,12 @@ def main() -> int:
     if args is None:
         return 0
     command = args.command
+    if command == "agent-bench":
+        from tooling.agent_bench import dispatch
+        if args.action in ("list", "models", "report"):
+            return dispatch(ROOT, args)
+        with frozen_test_context(test_context(), args.format) as (frozen, code):
+            return code or dispatch(ROOT, args, frozen)
     if command == "docker-nginx":
         from tests.suites.docker_nginx import dispatch
         return dispatch(ROOT, args.action, args.run_id, args.format)
@@ -257,18 +263,35 @@ def runtime(args, binary) -> int:
         if forwarded[:1] == ["perform"]:
             return perform_forwarded(binary, forwarded)
         return subprocess.call([str(binary), *forwarded], cwd=ROOT)
+    if command == "search":
+        return subprocess.call([str(binary), "search", *args.extra], cwd=ROOT)
+    if command == "reconcile":
+        return subprocess.call([str(binary), command, args.file, args.outcome], cwd=ROOT)
     if command == "eval":
         return subprocess.run([str(binary), *(["check", "--evaluate"] if args.check else ["run"]), "-"],
                               input=args.source, text=True, cwd=ROOT).returncode
     if command == "exec":
-        return subprocess.call([str(binary), "exec", *([args.output_format] if args.output_format else []), "--", args.source], cwd=ROOT)
+        options = []
+        if args.stream:
+            options.append("--stream")
+        if args.input is not None:
+            options.extend(["--input", args.input])
+        if args.file is not None:
+            options.extend(["--file", args.file])
+        program = [] if args.file is not None else ["--", args.source]
+        return subprocess.call([str(binary), "exec", *([args.output_format] if args.output_format else []), *options, *program], cwd=ROOT)
+    if command == "format":
+        from dataclasses import replace
+        from tooling.source_format import format_files
+        return format_files(replace(test_context(), binary=binary), args.paths,
+                            write=args.write, output_format=args.format)
     if command == "inventory":
         from dataclasses import replace
         from tooling.inventory import inventory
         return inventory(replace(test_context(), binary=binary).helix, ROOT)
     if command in ("run", "recover", "resume", "check"):
         return subprocess.call([str(binary), command, *(["--evaluate"] if command == "check" and args.evaluate else []), args.file], cwd=ROOT)
-    if command in ("fmt", "step", "trace", "watch", "state", "repl", "schema", "lsp", "completion"):
+    if command in ("fmt", "step", "snapshot", "restore", "system-snapshot", "system-restore", "checkpoint", "target-release", "trace", "watch", "state", "repl", "schema", "lsp", "completion"):
         extra = [args.file] if hasattr(args, "file") else []
         for name in ("steps", "limit", "interval_ms", "iterations"):
             value = getattr(args, name, None)

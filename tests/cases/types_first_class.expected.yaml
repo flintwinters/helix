@@ -1,3 +1,30 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - checked_constructor
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked_result
+        - "$call"
+        - 1
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - list_type
+        source: "<root>"
 objects:
   object0:
     bindings:

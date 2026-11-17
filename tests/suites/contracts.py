@@ -49,11 +49,15 @@ def harness(h):
     verify_reports(h)
     from tests.suites.docker_nginx import verify_harness
     verify_harness(h)
+    from tests.suites.docker_linux import verify_harness as verify_linux_harness
+    verify_linux_harness(h)
     for output, code in [("", 0), ("[", 0), ("status: ready", 0),
                          ("status: finished", 0), ("status: error", 1),
                          ("status: finished\nroot: 1", 1), ("", -11)]:
         assert h.malformed_state(output, code), (output, code)
     assert h.malformed_state("status: finished\nroot: null", 0) is None
+    timeout = h.malformed_state("status: finished\nroot: null", 124)
+    assert timeout and "timeout" in timeout and "panic" not in timeout, timeout
     assert h.malformed_state("status: error\nerror: {kind: type, message: bad, line: 1, column: 2}", 1) is None
     assert h.root_section("status: finished\nroot:\n  a: 1\n") == "a: 1\n"
     assert h.root_section("status: finished\nroot:\n  a: 1\nmode: check\n") == "a: 1\n"
@@ -227,6 +231,20 @@ def imports(h):
         (base / "shared.yaml").unlink()
         result = h.helix("run", str(main))
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None
+        # Directory entrypoints retain local imports and canonical file identity.
+        package = base / "package"
+        package.mkdir()
+        (package / "value.yaml").write_text("value: 21\n")
+        (package / "main.yaml").write_text('s: {$call: [import, value.yaml]}\nvalue: {$ref: s.value}\n')
+        main.write_text('a: {$call: [import, package]}\nb: {$call: [import, package/main.yaml]}\nanswer: {$call: [add, {$ref: a.value}, {$ref: b.value}]}\n')
+        result = h.helix("run", str(main))
+        assert result.returncode == 0 and yaml.safe_load(result.stdout)["root"]["answer"] == 42
+        (package / "main.yaml").write_text('again: {$call: [import, ../package]}\n')
+        result = h.helix("run", str(main))
+        assert result.returncode == 1 and "circular import" in result.stdout
+        (package / "main.yaml").unlink()
+        result = h.helix("run", str(main))
+        assert result.returncode == 1 and "main.yaml" in result.stdout
         # A module cannot capture the importing file's lexical bindings.
         (base / "shared.yaml").write_text('{"value": {"$call": ["add", {"$ref": "private"}, 1]}}')
         main.write_text('{"private": 9, "s": {"$call": ["import", "shared.yaml"]}}')
@@ -319,7 +337,7 @@ def scale(h):
         elapsed = time.perf_counter() - started
         assert len(root) == count and root[f"v{count - 1}"] == count
         print(f"scale: {1 + 4 * count} nodes, {elapsed:.3f}s (debug CLI + Python decode)")
-        assert elapsed < (1 if count == 2500 else 10), "scale workload exceeded its time budget"
+        assert elapsed < (0.8 if count == 2500 else 10), "scale workload exceeded its time budget"
 
 def execution(h):
     import os

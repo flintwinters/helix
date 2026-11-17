@@ -1,3 +1,1083 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - abs
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - absolute
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: -3
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - abs
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - abs
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 3
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - abs
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - absolute
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: -2.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - abs
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - abs
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2.5
+  - declaration:
+      code:
+        "$ref": numbers
+      location:
+        path:
+          - sum
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - aggregates
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        of:
+          - integer
+          - float
+        type: union
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": math.number
+      location:
+        path:
+          - sum
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - sum
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": numbers
+      location:
+        path:
+          - product
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - aggregates
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        of:
+          - integer
+          - float
+        type: union
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": math.number
+      location:
+        path:
+          - product
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - product
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": numbers
+      location:
+        path:
+          - sum
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - aggregates
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        of:
+          - integer
+          - float
+        type: union
+      type: list
+    value:
+      - 1
+      - 2.5
+  - declaration:
+      code:
+        "$ref": math.number
+      location:
+        path:
+          - sum
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - sum
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 3.5
+  - declaration:
+      code:
+        "$ref": numbers
+      location:
+        path:
+          - product
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - aggregates
+        - "$call"
+        - 4
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        of:
+          - integer
+          - float
+        type: union
+      type: list
+    value:
+      - 2
+      - 1.5
+  - declaration:
+      code:
+        "$ref": math.number
+      location:
+        path:
+          - product
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - product
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 3.0
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - sort_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bad_sort
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 3
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 3
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 3
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - clamp
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 10
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - clamp
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - clamp
+          - "$call"
+          - 1
+          - 2
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 3
+        - "$call"
+        - 3
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - clamp
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 10
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - clamp
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - clamp
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - clamp
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - clamp
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - clamp
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4.5
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - reverse
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - heterogeneous
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+      - two
+      - ~
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - reverse
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - reverse
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - ~
+      - two
+      - 1
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - ranges
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - ranges
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: integer
+    value: 0
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - ranges
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "<root>"
+    type: integer
+    value: 3
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - sign
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - signs
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: -0.5
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - sign
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - sign
+        - "$call"
+        - 2
+      source: "std:math"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - sign
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - signs
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - sign
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - sign
+        - "$call"
+        - 2
+      source: "std:math"
+    type: integer
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - sign
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - signs
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4.5
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - sign
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - sign
+        - "$call"
+        - 2
+      source: "std:math"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - square
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - square
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1.5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - square
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - square
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2.25
 objects:
   object0:
     bindings:
@@ -2085,66 +3165,228 @@ root:
     calls:
       - column: 30
         function: /abs
-        function_column: 10
+        function_column: 3
         function_file: "std:math"
-        function_line: 6
+        function_line: 4
         line: 28
         path: "/bad_abs/$call/1"
-    column: 30
+    column: 50
     data:
       violations:
-        - argument: "n"
+        - actual: x
+          actual_present: true
+          argument: "n"
+          argument_location:
+            column: 50
+            line: 28
+            path: "/bad_abs/$call/1/$call/1"
+            reference:
+              path:
+                - bad_abs
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+              source: "<root>"
           at: /
+          expected: "integer | float"
           message: "expected integer | float, got string"
+          rule: type
     kind: type
     line: 28
     message: "1 type violation in the arguments of `/abs`: expected integer | float, got string"
-    path: "/bad_abs/$call/1"
+    path: "/bad_abs/$call/1/$call/1"
     reference:
       - bad_abs
       - "$call"
       - 1
+      - "$call"
+      - 1
   bad_min:
     violations:
-      - argument: a
+      - actual: a
+        actual_present: true
+        argument: a
+        argument_location:
+          column: 25
+          line: 32
+          path: "/bad_min/$call/1/$call/1"
+          reference:
+            path:
+              - bad_min
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+            source: "<root>"
         at: /
+        expected: "integer | float"
         message: "expected integer | float, got string"
-      - argument: b
+        rule: type
+      - actual: b
+        actual_present: true
+        argument: b
+        argument_location:
+          column: 30
+          line: 32
+          path: "/bad_min/$call/1/$call/2"
+          reference:
+            path:
+              - bad_min
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+            source: "<root>"
         at: /
+        expected: "integer | float"
         message: "expected integer | float, got string"
+        rule: type
   bad_product:
     violations:
-      - argument: xs
+      - actual: {}
+        actual_present: true
+        argument: xs
+        argument_location:
+          column: 29
+          line: 42
+          path: "/bad_product/$call/1/$call/1"
+          reference:
+            path:
+              - bad_product
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+            source: "<root>"
         at: /
+        expected: "list of integer | float"
         message: "expected list of integer | float, got map"
+        rule: type
   bad_range:
     violations:
-      - argument: "n"
+      - actual: 2.5
+        actual_present: true
+        argument: "n"
+        argument_location:
+          column: 27
+          line: 52
+          path: "/bad_range/$call/1/$call/1"
+          reference:
+            path:
+              - bad_range
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+            source: "<root>"
         at: /
+        expected: integer
         message: "expected integer, got float"
+        rule: type
   bad_reverse:
     violations:
-      - argument: xs
+      - actual: abc
+        actual_present: true
+        argument: xs
+        argument_location:
+          column: 29
+          line: 47
+          path: "/bad_reverse/$call/1/$call/1"
+          reference:
+            path:
+              - bad_reverse
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+            source: "<root>"
         at: /
+        expected: list
         message: "expected list, got string"
+        rule: type
   bad_sort:
     violations:
-      - argument: before
+      - actual: 0
+        actual_present: true
+        argument: before
+        argument_location:
+          column: 33
+          line: 62
+          path: "/bad_sort/$call/1/$call/2"
+          reference:
+            path:
+              - bad_sort
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+            source: "<root>"
         at: /
+        expected: function
         message: "expected function, got integer"
+        rule: type
   bad_sum:
     violations:
-      - argument: xs
+      - actual: x
+        actual_present: true
+        argument: xs
+        argument_location:
+          column: 25
+          line: 37
+          path: "/bad_sum/$call/1/$call/1"
+          reference:
+            path:
+              - bad_sum
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+            source: "<root>"
         at: /1
+        expected: "integer | float"
         message: "expected integer | float, got string"
-      - argument: xs
+        rule: type
+      - actual: false
+        actual_present: true
+        argument: xs
+        argument_location:
+          column: 25
+          line: 37
+          path: "/bad_sum/$call/1/$call/1"
+          reference:
+            path:
+              - bad_sum
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+            source: "<root>"
         at: /2
+        expected: "integer | float"
         message: "expected integer | float, got boolean"
+        rule: type
   bad_unique:
     violations:
-      - argument: xs
+      - actual: {}
+        actual_present: true
+        argument: xs
+        argument_location:
+          column: 28
+          line: 57
+          path: "/bad_unique/$call/1/$call/1"
+          reference:
+            path:
+              - bad_unique
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+            source: "<root>"
         at: /
+        expected: list
         message: "expected list, got map"
+        rule: type
   bounds:
     - 2.5
     - 3

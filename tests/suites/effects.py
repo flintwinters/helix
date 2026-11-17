@@ -11,6 +11,8 @@ import yaml
 
 
 def verify(h):
+    from tests.suites.http_server import verify as verify_http
+    verify_http(h)
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
             if self.path == '/redirect':

@@ -15,6 +15,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:queue` | `enqueue(xs, value)`, `peek(xs, fallback)`, `dequeue(xs)`; front at index zero |
 | `std:map` | `merge(left, right)` (shallow, right wins), `remove(source, key)` (one string key; missing is harmless), `select(source, keys)`, `omit(source, keys)` |
 | `std:machine` | Abstract machine classes `host`, `packages`, `files`, `services`, `users`, their combination `machine`, the `port` refinement, and fleet checks `hostnames(fleet)` / `unique_hostnames(fleet)` over realized configs |
+| `std:facts` | Explicit typed Ubuntu observations, pure fact projection and reviewed provider configuration ([facts contracts](#ubuntu-facts-and-reviewed-configuration)) |
 | `std:inventory` | `resolve(document, dynamic, selection)` (validated host inventory, explicit connection overrides with provenance, and a reviewable target list) |
 | `std:fuzz` | `plan(source)` (ordered damaged-source slice plans) |
 | `std:text` | `split(source, separator)` (literal, non-overlapping), `join(parts, separator)` |
@@ -23,6 +24,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:dependency` | `plan(tasks)` (stable dependency batches and blocked-task report) |
 | `std:provider` | `plan(provider, args, before, context)`, `check(provider, args, context)`, `apply(provider, args, context, reviewed)` ([typed resource lifecycle](HOST.md#resource-provider-contract)) |
 | `std:sqlite` | `query(path, sql, params)` (rows as maps), `execute(path, sql, params)` (changed rows), `request(path, sql, params, write)` ([`sqlite` effect](HOST.md#host-effects-and-explicit-grants)) |
+| `std:ssh` | `check(host, become, extra)` (observed missing remote tools), `bootstrap(host, become, extra, install)` (declared installer, then re-check), `run(host, become, program, args)` ([SSH effects](HOST.md#ssh-remote-commands)) |
 | `std:command` | `make(config)`, `plan`, `check`, `apply` ([guarded command resources](HOST.md#guarded-command-resources)) |
 | `std:orchestration` | `plan(document)`, `run(document, execute)` (validated resource dependencies and coalesced, deferred change handlers) |
 | `std:types` | `from_fields(specs)`, `without_field(t,name)`, `optional_field(spec)`, `optional_fields(t)`, `redeclare(t,parents)` |
@@ -32,6 +34,8 @@ Standard libraries are Helix source embedded in the executable:
 `std:set`, `std:stack`, and `std:queue` use ordinary lists; `[]` is empty and `len` gives size (normalize sets first). Set operations use structural equality, including numeric equality, and remove duplicates while retaining first encounter order. Union visits left then right; intersection and difference retain left order. `contains` and `is_subset` accept duplicates. Stack and queue `peek` require an explicit fallback, returned only when empty; null and false remain ordinary stored values. Empty `pop` and `dequeue` return `[]`. Every operation is immutable and checks list arguments. List copies and repeated membership scans suit small inputs; set operations can take quadratic time and bounded folds retain the runtime iteration limit.
 
 `std:group` exports `by(xs, key)`: group a list into a map using a function returning a string key. Empty and Unicode keys are valid. Keys use canonical string-key order, and each group's items retain input order. The key function runs once per item; callback failures propagate. List and function arguments are checked even for empty input. Immutable map/list copying can take quadratic time and total allocations; use small inputs within the runtime iteration limit.
+
+`std:ssh.check(host, become, extra)` runs one read-only remote `command -v` pass (under the connection identity) for `sh`'s companions the SSH file effects invoke (`cat`, `mktemp`, `wc`, `chmod`, `mv`, `rm`), `sudo` when `become` is non-null, and the names in `extra` (absolute paths work), returning `{host, ok, missing}`. A check that cannot run is an error (`ssh_prerequisite_check` carrying the remote reply, or the SSH effect's own failure), never an empty gap list. `bootstrap(host, become, extra, install)` does nothing when nothing is missing (`changed: false`, `installer: null`); otherwise it runs the caller-declared `install: {program, args}` (escalated through `become` when set), re-checks, and reports `{host, ok, changed, missing, installer}` where `ok` reflects the fresh observation, not the installer's exit status. No package manager is inferred, installers carry no idempotence or rollback promise, and the caller's `--allow-ssh` grant still governs everything. `run(host, become, program, args)` is the plain `ssh_command` wrapper with an optional escalation user.
 
 `std:fuzz.plan` describes each line prefix followed by deletion of that line, then character prefixes at offsets 0, 5, 10 and so on (strictly before the end). It preserves duplicates and line terminators, recognizes CRLF as one boundary and also recognizes LF, CR, vertical tab, form feed, U+001C–U+001E, U+0085, U+2028 and U+2029. Empty input yields no variants; offsets count Unicode scalars. This pure policy supports host-supervised malformed-input testing: process crashes and timeouts must still be detected outside Helix. Each variant is a list of `[start, end]` source-slice spans; hosts concatenate those slices to materialize one damaged input at a time. The plan preserves mutation policy in Helix without retaining quadratic output text. Scanning immutable strings and accumulating spans can still consume quadratic work; runtime budgets apply.
 
@@ -171,3 +175,177 @@ field. Dumping uses CRLF record endings and quotes empty fields and fields
 containing commas, quotes or newlines. Empty rows and non-string cells raise
 `type`; malformed input raises `parse`. Valid rows round-trip exactly through
 `parse(dump(rows))`. Parser graph/nesting and evaluator value limits apply.
+
+
+## Scoped nginx workload
+
+`std:nginx` composes the existing provider and orchestration modules for one
+Debian container workload. It exports `resolve`, `observe`, `plan`, `check`,
+`apply`, `verify`, `explain`, the composable `configuration` class, and its
+input/observation schemas. Every public operation realizes map or class inputs in
+a pure region before planning or requesting observation. The class reuses the
+input schema, defaults `port` to 8080 and `state` to `present`, and retains class
+constraints. `explain` emits versioned ordinary data with resolved `values` and
+field `provenance`; the latter records class labels and explicit/default origins,
+not full declaration source spans. Optional `ssh_target` selects
+a caller-granted SSH alias; otherwise it uses local commands. Both paths share
+pure planning, exact fresh-review matching and observed postconditions. This is
+a fixture-qualified workload, not a generic service manager. Inputs, entrypoint,
+resource semantics and host prerequisites are authoritative in the
+[operator contract](tests/fixtures/docker_nginx/README.md).
+
+## Typed Linux host resources
+
+`std:linux` declares Debian `groups`, `users`, `packages`, `directories`, `files` and
+`symlinks` as one configuration, with `resolve`, `explain`, `observe`, `plan`, `check`,
+`apply`, `verify`, `graph`, the `configuration` class and input/observation schemas. Resources
+are identified `kind:key`; prerequisites (a user's group, owners, declared ancestors, explicit
+`after`) derive a dependency graph that is validated before effects and is part of the review.
+Removal requires explicit `state: absent` and runs in reverse order; omission never deletes. It
+reuses `std:provider` and `std:orchestration`, with a helper executable (`std:helper`, shared
+framing for local and SSH command effects) supplying mechanisms only. Fixture-qualified; see the
+[operator contract](tests/fixtures/docker_linux/README.md).
+Resolution rejects conflicting filesystem kinds and invalid dependency graphs, including
+absent-resource references. Helpers receive the operation and `-` in argv and request JSON
+on stdin; file contents retain exact UTF-8 bytes. Failed application may have changed state
+and requires fresh observation; it does not imply rollback or remote process fencing.
+
+
+## Ubuntu facts and reviewed configuration
+
+`std:facts` supports Ubuntu 26.10 on x86_64 over local commands (`target: null`)
+or an existing caller-granted SSH alias (`target: alias`). Collection installs no
+collector and needs no remote Python. `selectors` lists the supported builtin
+names; `catalog` describes their commands, parsers and value types.
+
+- `gather(target, {select: [...], custom: [...]})` explicitly collects an uncached,
+  version 1 ordinary-data snapshot. `identity` and `platform` are always included. Optional selectors are
+  `package_manager`, `service_manager`, `network`,
+  `mounts`, `storage`, `cpu`, `memory`, `packages` and `services`.
+- Each result has `{status, value, diagnostic}`. `known` contains a validated
+  value; `unknown`, `inaccessible` and `unsupported` contain null and an explicit
+  diagnostic. A missing machine ID is an `unknown` member of the identity value.
+  Failed observations never become empty inventories. Installed systemd tools
+  and an active systemd manager are different observations; containers without
+  the manager report `services` as unsupported.
+- `platform` contains `ID`, `VERSION_ID` and `VERSION_CODENAME` parsed from
+  OS-release as data. `identity` contains architecture, kernel, hostname,
+  machine ID, boot ID and mount namespace. CPU is an online processor count;
+  memory is total bytes. Network, mounts and storage use validated native command
+  JSON projections. Packages contain installed `{name, version, state}` rows; services contain
+  running unit records. Snapshots retain started/finished epoch-second results.
+- Custom entries explicitly select `{name, version, value_type, command}`.
+  `command` is `{program, args}` and must print JSON `{version: 1, value: ...}`;
+  `value_type` validates the value. There are at most 32 custom entries, with
+  unique names disjoint from builtin selectors. Declaration versions belong in
+  reviews and should change when custom semantics or schemas change. Commands
+  are trusted read-only observation code; declarations confer no authority.
+
+`validate_request`, `validate_snapshot`, `value(snapshot, name)`,
+`evidence(snapshot)` and `same_evidence(left, right)` are pure. Evidence retains
+target, platform/identity, selectors, custom versions and result statuses/values.
+Canonical YAML comparison preserves distinguishable numeric representations;
+timestamps and diagnostics are excluded. Selected facts are the declared
+configuration dependency set; there is no automatic dependency tracing.
+
+`check(target, request, configure)` gathers facts and calls `configure` purely
+with their evidence projection. The callback returns
+`{provider: descriptor, arguments: value, context: provider_context}` using the
+existing [provider lifecycle](HOST.md#resource-provider-contract). Class
+constraints and resource or inventory-group selection can use these supplied
+values. The result is `{version: 1, evidence, review}`. Configuration receives
+no timestamps or diagnostic timing. `plan(snapshot, configure, before)` provides
+a pure preview from a supplied validated snapshot and provider observation.
+
+`apply(target, request, configure, review)` always gathers fresh observations,
+rejects changed fact evidence, reruns pure configuration, and delegates to
+`std:provider.apply` for fresh resource review and postcondition verification.
+Unknown identity/platform and loss of their observation authority fail before
+mutation. A supplied snapshot is for pure planning, not fresh authorization.
+Failures of collection are data; invalid requests, unavailable required values,
+unsupported configuration platforms and stale fact evidence raise structured
+errors. Effectful assembly helpers remain private lexical bindings; the exported
+`apply` entrypoint always performs this fresh collection protocol.
+
+[The read-only example](tests/programs/facts_observe.yaml) uses only existing
+command grants. [Ubuntu acceptance](tests/README.md#ubuntu-facts-qualification)
+qualifies local and SSH collection and a disposable fixture resource. It does
+not extend the Debian-specific `std:linux` provider to Ubuntu, qualify normally
+booted systemd services, or migrate this workstation's Ansible configuration.
+
+## HTTP and actors
+
+[HTTP.md](HTTP.md) documents `std:http` response helpers, exact routing and static
+files, plus `std:actor` serialized turns and interchangeable persistence callbacks.
+Listening and external storage still require caller-owned host grants.
+
+## Source search
+
+`std:source` exposes `parse(text)`, `walk(source)`, `select(source, predicate)`,
+`node(source, reference)`, `code_at(source, reference)` and
+`enclosing_functions(source, reference)`. Parsing never executes source. A source
+record stores normalized `code` once and lists semantic nodes with `reference`,
+`parent`, `children`, `kind` and 1-based `location`. References contain `source`
+and a `path` of string keys and integer indices. `$literal` is opaque to semantic
+walking. Scalar values and declaration annotations remain ordinary data.
+
+`std:search` supplies `functions(record)`, `documentation(record)`,
+`keep(record, predicate)`, `project(record, fields)`, `name_matches`,
+`signature_matches`, `text_matches`, `regex`, `effect_finding`, `result_type`,
+`parameter_type`, `calls(source, name)`, `references(source, name)`,
+`match(source, reference, pattern)`, `body_matches(source, pattern)` and
+`reachable(edges, start, limit)`. Type relations return a status and basis;
+unknown evidence is `unresolved`. Declared types and inferred result types are
+separate. Inference is the static checker's bounded fragment, never execution.
+`keep` preserves diagnostics and summaries. Projections retain identity,
+location and basis. Reachability consumes compact `{from, to}` edges and reports
+whether traversal completed within its bound.
+
+Patterns are tagged ordinary data: `{tag: wildcard}`, `{tag: exact, value: ...}`,
+`{tag: capture, name: x, of: PATTERN}` (`of` defaults to wildcard),
+`{tag: reference, name: x}`, `{tag: call, head: PATTERN, args: [PATTERN, ...]}`,
+`{tag: sequence, items: [...]}` and `{tag: mapping, fields: {key: PATTERN}}`.
+Mapping patterns match specified fields; `exact: true` also checks field count.
+Sequences and call arguments require exact lengths. Captures retain value,
+source reference and location; repeated captures require ordinary equality.
+Executable call/reference/literal wrappers are distinct from mapping shapes.
+Matching establishes syntax, not behavioral equivalence.
+
+`regex_find(pattern, text)` and `std:text.regex` return UTF-8 byte spans and
+capture text/spans (unmatched groups are null). The full match is capture zero.
+Patterns are limited to 16 KiB, text to 1 MB, compiled automata to 1 MB each,
+nesting to 64 and results to 4096 matches. Invalid patterns raise `regex`;
+exceeded bounds raise `limit`.
+
+Source-aware pipelines can use `function_candidates(source)` and
+`select_functions(source, predicate)` to retain the source's shared code while
+adding a `selection` list. `select_bodies(source, pattern)` and
+`select_results(source, pattern)` refine that selection in later stages.
+`result_expressions(source, reference)` follows explicit `if`, `cond`, `let` and
+`type_time` result syntax; other expressions remain expressions to match, without
+claims about the values they evaluate to. `result_matches` returns each possible
+expression with its syntax basis and capture evidence. Runnable query files live
+in `examples/search/`; combine `reusable-functions.yaml` and
+`returning-records.yaml` with `exec --stream --file`.
+
+`source_subtype(left, right)` is the bounded checker's non-executing structural
+proof relation. It never invokes predicates. `std:search` uses it to distinguish
+matches from unresolved type relationships; a failed proof is not a negative
+behavioral claim.
+
+`declared_result_type(record, wanted)` selects explicit result contracts;
+`result_type` selects inferred evidence. Unannotated parameters and widened `any`
+evidence remain unresolved. `relationship(actual, wanted, basis)` centralizes
+that policy. Function evidence also supplies a rendered signature for regex
+queries. `project` retains type/effect evidence and passes diagnostic/summary
+records through intact.
+
+Within reflected nodes, `parent` is null or `{up: N}` (remove `N` typed path
+segments); `children` are relative typed paths to append to the node's path.
+These relationships preserve source-qualified identity without repeating full
+ancestor paths at every edge. Scalar contents are read from the shared `code`.
+
+Reflection stops before its evidence exceeds 8 MB and validates the completed
+record against ordinary-data bounds. Expanded typed paths can exhaust those
+bounds even for a small source; indexing emits a `limit` diagnostic and an
+incomplete summary, while `source_parse` raises `limit`.

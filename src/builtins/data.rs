@@ -26,6 +26,7 @@ pub(super) fn apply(actor: &str, value: &Value) -> Result<Value, Fault> {
                 return Err(Fault::expected(0, "string", value));
             };
             match actor {
+                "source_parse" => crate::tooling::source::parse(text).map_err(|e| Fault {kind:e.kind,message:e.message,arg:Some(0),data:None,cause:None}),
                 "yaml_parse" => yaml::parse(text),
                 "json_parse" => json::parse(text),
                 "csv_parse" => csv::parse(text),

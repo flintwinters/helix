@@ -1,0 +1,118 @@
+# Managed-host prerequisites for the `ssh_*` effects. `check` observes with one read-only remote command
+# under the connection identity; `bootstrap` runs a caller-declared installer (optionally escalated through
+# the grant's `become`) only for an observed gap and then re-checks, so success means the tools are
+# present, never merely that the installer exited zero. No package manager is assumed or inferred, and
+# nothing here grants authority: the host must already carry the matching `--allow-ssh` grant.
+# Install only observed gaps with `install: {program, args}`, then verify by observation.
+# Returns `{host, ok, changed, missing, installer}`; `installer` is the remote reply or null when nothing was missing.
+bootstrap: !call
+  - fn
+  - [host, become, extra, install]
+  - !call
+      - let
+      - {before: !call [check, !ref host, !ref become, !ref extra]}
+      - !call
+          - if
+          - !call [get, !ref before, ok]
+          - !call [dict, host, !ref host, ok, true, changed, false, missing, [], installer, ~]
+          # `let` bindings run on use, so ordering is an explicit left-to-right list: install, then observe.
+          - !call
+              - let
+              - steps: !call
+                  - list
+                  - !call
+                      - run
+                      - !ref host
+                      - !ref become
+                      - !call [get, !ref install, program]
+                      - !call [get, !ref install, args]
+                  - !call [check, !ref host, !ref become, !ref extra]
+              - !call
+                  - let
+                  - {after: !call [get, !ref steps, 1], installer: !call [get, !ref steps, 0]}
+                  - !call
+                      - dict
+                      - host
+                      - !ref host
+                      - ok
+                      - !call [get, !ref after, ok]
+                      - changed
+                      - true
+                      - missing
+                      - !call [get, !ref after, missing]
+                      - installer
+                      - !ref installer
+# `{host, ok, missing}`: names from `tools`, `sudo` when `become` is set, and `extra` that are not found by
+# `command -v` (so absolute paths work). A check that cannot run is an error, never an empty gap list.
+check: !call
+  - fn
+  - [host, become, extra]
+  - !call
+      - let
+      - wanted: !call
+          - concat
+          - !call
+              - if
+              - !call [eq, !ref become, ~]
+              - !ref tools
+              - !call [concat, !ref tools, [sudo]]
+          - !ref extra
+      - !call
+          - let
+          - reply: !call
+              - run
+              - !ref host
+              - ~
+              - sh
+              - !call [concat, ["-c", !ref script, helix-check], !ref wanted]
+          - !call
+              - if
+              - !call [eq, !call [get, !ref reply, code], 0]
+              - !call
+                  - let
+                  - missing: !call
+                      - filter
+                      - !call
+                          - fn
+                          - [name]
+                          - !call [not, !call [eq, !ref name, ""]]
+                      - !call [text.split, !call [get, !ref reply, stdout], "\n"]
+                  - !call
+                      - dict
+                      - host
+                      - !ref host
+                      - ok
+                      - !call [eq, !call [len, !ref missing], 0]
+                      - missing
+                      - !ref missing
+              - !call
+                  - raise
+                  - ssh_prerequisite_check
+                  - The prerequisite check did not run on the remote host
+                  - !ref reply
+# One remote program, escalated only when `become` names a granted user (null for none).
+run: !call
+  - fn
+  - [host, become, program, args]
+  - !call
+      - effect
+      - ssh_command
+      - !call
+          - if
+          - !call [eq, !ref become, ~]
+          - !call [dict, host, !ref host, program, !ref program, args, !ref args]
+          - !call
+              - dict
+              - host
+              - !ref host
+              - program
+              - !ref program
+              - args
+              - !ref args
+              - become
+              - !ref become
+script: "for tool do command -v \"$tool\" >/dev/null 2>&1 || printf '%s\\n' \"$tool\"; done"
+text: !call [import, "std:text"]
+# Tools the `ssh_file_read` and `ssh_file_write` effects invoke on the remote host (`sh` itself must exist
+# for any request to run). Escalation adds `sudo`.
+tools: [sh, cat, mktemp, wc, chmod, mv, rm]

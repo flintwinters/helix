@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "command": "usage",
+  "status": "ok",
+  "query": [
+    {
+      "caller_role": "benchmark-model",
+      "model": "openai/gpt-6-luna",
+      "benchmark_run": "luna-workspace-5x10-v3",
+      "benchmark_task": "dependency-plan",
+      "cli_calls": 19,
+      "trials": 10,
+      "failed_cli_calls": 0,
+      "public_test_calls": 10
+    },
+    {
+      "caller_role": "benchmark-model",
+      "model": "openai/gpt-6-luna",
+      "benchmark_run": "luna-workspace-5x10-v3",
+      "benchmark_task": "group-totals",
+      "cli_calls": 17,
+      "trials": 10,
+      "failed_cli_calls": 1,
+      "public_test_calls": 11
+    },
+    {
+      "caller_role": "benchmark-model",
+      "model": "openai/gpt-6-luna",
+      "benchmark_run": "luna-workspace-5x10-v3",
+      "benchmark_task": "stable-unique",
+      "cli_calls": 15,
+      "trials": 10,
+      "failed_cli_calls": 1,
+      "public_test_calls": 11
+    },
+    {
+      "caller_role": "benchmark-model",
+      "model": "openai/gpt-6-luna",
+      "benchmark_run": "luna-workspace-5x10-v3",
+      "benchmark_task": "sum-squares",
+      "cli_calls": 12,
+      "trials": 10,
+      "failed_cli_calls": 0,
+      "public_test_calls": 10
+    },
+    {
+      "caller_role": "benchmark-model",
+      "model": "openai/gpt-6-luna",
+      "benchmark_run": "luna-workspace-5x10-v3",
+      "benchmark_task": "word-counts",
+      "cli_calls": 16,
+      "trials": 10,
+      "failed_cli_calls": 1,
+      "public_test_calls": 10
+    }
+  ]
+}

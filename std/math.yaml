@@ -1,54 +1,45 @@
-# Helix explicit syntax; migrated from legacy source.
 # Numeric contracts are ordinary Helix types, shared with std:list.
-# Import with `m: {$call: [import, std:math]}`, call as `{$call: [m.max, 3, 9]}`.
-"number": {"$call": ["union", {"$ref": "integer"}, {"$ref": "float"}]}
-"abs":
-  "$call":
-  - "fn"
-  - - - "n"
-      - {"$ref": "number"}
-  - {"$call": ["if", {"$call": ["lt", {"$ref": "n"}, 0]}, {"$call": ["neg", {"$ref": "n"}]}, {"$ref": "n"}]}
-  - {"$ref": "number"}
-"sign":
-  "$call":
-  - "fn"
-  - - - "n"
-      - {"$ref": "number"}
-  - {"$call": ["cond", {"$call": ["lt", {"$ref": "n"}, 0]}, -1, {"$call": ["gt", {"$ref": "n"}, 0]}, 1, 0]}
-  - {"$ref": "integer"}
-"min":
-  "$call":
-  - "fn"
-  - - - "a"
-      - {"$ref": "number"}
-    - - "b"
-      - {"$ref": "number"}
-  - {"$call": ["if", {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}, {"$ref": "a"}, {"$ref": "b"}]}
-  - {"$ref": "number"}
-"max":
-  "$call":
-  - "fn"
-  - - - "a"
-      - {"$ref": "number"}
-    - - "b"
-      - {"$ref": "number"}
-  - {"$call": ["if", {"$call": ["gt", {"$ref": "a"}, {"$ref": "b"}]}, {"$ref": "a"}, {"$ref": "b"}]}
-  - {"$ref": "number"}
-"clamp":
-  "$call":
-  - "fn"
-  - - - "n"
-      - {"$ref": "number"}
-    - - "lo"
-      - {"$ref": "number"}
-    - - "hi"
-      - {"$ref": "number"}
-  - {"$call": ["max", {"$ref": "lo"}, {"$call": ["min", {"$ref": "n"}, {"$ref": "hi"}]}]}
-  - {"$ref": "number"}
-"square":
-  "$call":
-  - "fn"
-  - - - "n"
-      - {"$ref": "number"}
-  - {"$call": ["mul", {"$ref": "n"}, {"$ref": "n"}]}
-  - {"$ref": "number"}
+# Import with `m: !call [import, std:math]`, call as `!call [m.max, 3, 9]`.
+abs: !call
+  - fn
+  - [["n", !ref number]]
+  - !call
+      - if
+      - !call [lt, !ref "n", 0]
+      - !call [neg, !ref "n"]
+      - !ref "n"
+  - !ref number
+clamp: !call
+  - fn
+  - [["n", !ref number], [lo, !ref number], [hi, !ref number]]
+  - !call [max, !ref lo, !call [min, !ref "n", !ref hi]]
+  - !ref number
+max: !call
+  - fn
+  - [[a, !ref number], [b, !ref number]]
+  - !call
+      - if
+      - !call [gt, !ref a, !ref b]
+      - !ref a
+      - !ref b
+  - !ref number
+min: !call
+  - fn
+  - [[a, !ref number], [b, !ref number]]
+  - !call
+      - if
+      - !call [lt, !ref a, !ref b]
+      - !ref a
+      - !ref b
+  - !ref number
+number: !call [union, !ref integer, !ref float]
+sign: !call
+  - fn
+  - [["n", !ref number]]
+  - !call [cond, !call [lt, !ref "n", 0], -1, !call [gt, !ref "n", 0], 1, 0]
+  - !ref integer
+square: !call
+  - fn
+  - [["n", !ref number]]
+  - !call [mul, !ref "n", !ref "n"]
+  - !ref number

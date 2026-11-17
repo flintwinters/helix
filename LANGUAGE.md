@@ -29,20 +29,37 @@ On failure `status: error` and an `error:` block replaces `root:` with `kind`, `
 
 ## Expressions
 
-Calls, references and literal boundaries are explicit singleton maps:
+Calls, references and literal boundaries use explicit YAML local tags. Equivalent
+singleton maps remain supported, including in JSON source:
 
 ```yaml
 x: 2
-answer: {$call: [add, {$ref: x}, 1]}
+answer: !call [add, !ref x, 1]
 names: [add, x, 1]
-reserved_data: {$literal: {$call: [add, 1, 2]}}
+reserved_data: !literal {$call: [add, 1, 2]}
 ```
+
+`!call` is equivalent to `{$call: ...}`, `!ref` to `{$ref: ...}`, and
+`!literal` to `{$literal: ...}`. Tags normalize into the same representation
+before evaluation, including inside literal payloads. `!ref` treats its scalar
+text as a string regardless of quoting; tagged mapping keys are rejected.
+Unknown application tags are rejected. Functions use `!call [fn, ...]`; there
+is no separate function syntax.
 
 `$call` contains a nonempty sequence: an actor name or computed function expression followed by arguments. `$ref` contains a nonempty lexical name; it resolves through enclosing maps and function environments, with dotted names selecting members. `$literal` returns its complete payload as data, including any nested reserved maps. Only singleton maps with these keys select syntax. Malformed reserved forms fail explicitly. Other maps evaluate their values; sequences evaluate their elements as data sequences, never implicit calls. Scalars are literal regardless of quoting style. All runtime maps, including constructed maps and codec results, use lexicographic Unicode string-key order. Canonical mapping traversal makes source field order irrelevant; use a sequence or explicit control flow when ordering matters.
 
+`./manage.py runtime fmt FILE` emits width-aware source YAML without execution,
+using local tags and block layouts for functions, bindings, branches and iteration bodies. Short
+expressions and data collections stay inline when they fit within 100 columns;
+larger collections use one entry per line.
+`./manage.py runtime format --write std` recursively formats library files while
+retaining comments near their structural locations; omit `--write` to check.
+Formatting verifies the parsed program is unchanged. Single-document `fmt` and
+editor formatting normalize away comments; batch formatting retains them.
+
 Legacy actor-first sequences require explicit offline conversion with `./manage.py runtime migrate-syntax --write FILE`; the runtime has no legacy fallback.
 
-The supported YAML subset has string mapping keys, finite scalars, sequences and mappings. Duplicate keys, cyclic aliases, custom tags and non-string keys are rejected. Acyclic aliases expand under resource bounds at the occurrence’s lexical scope; standard scalar tags (`!!str`, `!!int`, `!!float`, `!!bool`, `!!null`) and collection tags (`!!seq`, `!!map`) are supported. Integers include hexadecimal and octal notation within signed 64-bit bounds; floats remain finite. This is a semantic model over YAML representation nodes, not support for every YAML construct. JSON source has identical language meaning to equivalent YAML. Reformatting scalar styles or permuting mapping entries cannot change a program's meaning.
+The supported YAML subset has string mapping keys, finite scalars, sequences and mappings. Duplicate keys, cyclic aliases, unknown custom tags and non-string keys are rejected. Acyclic aliases expand under resource bounds at the occurrence’s lexical scope; standard scalar tags (`!!str`, `!!int`, `!!float`, `!!bool`, `!!null`) and collection tags (`!!seq`, `!!map`) are supported. Integers include hexadecimal and octal notation within signed 64-bit bounds; floats remain finite. This is a semantic model over YAML representation nodes, not support for every YAML construct. JSON source has identical language meaning to equivalent YAML. Reformatting scalar styles or permuting mapping entries cannot change a program's meaning.
 
 Ordinary result data is emitted without executable wrappers. To reexecute arbitrary result data, wrap the whole value in `{$literal: ...}` so reserved singleton maps stay data. Function and machine inspection graphs are not executable serialization.
 
@@ -96,7 +113,26 @@ objects:
 
 Ordinary data retains its compact representation. An inspection graph keeps the normal `root` or `error` projection and places its named `objects` table beside it in the state envelope, so recursive lexical references stay finite and ordinary user keys cannot collide with metadata. It is **not a resumable file format**; loading this output yields ordinary data, not reconstructed functions or machines. Machines compare by logical execution state rather than allocation identity. Transition counts and continuation details are implementation details: wait for a status or observable condition rather than counting steps.
 
-The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Disk snapshots, restoration validation, reversibility-promise syntax and debugger UI are separate future work. Explicit host effects are described below.
+Successful `expect`, function parameter and result checks add an optional
+`annotations` history beside the ordinary state projection and in machine
+inspection. Each entry records its kind, target source reference, governing
+declaration's source reference and original code, evaluated type, and checked
+value. Thus a named or computed declaration remains distinguishable from the
+descriptor it produced; ordinary values are not wrapped or changed. Retained
+machine versions preserve their own histories. Ordinary data is exact; runtime
+functions are summarized by kind and source location, and machines by kind and
+status. Such rows carry `runtime_values_omitted: true`: captured environments and
+continuations are neither traversed nor retained by the evidence. Ordinary maps
+are not object summaries merely because their fields resemble these markers.
+The retained prefix uses at most 16,384 value/string-byte units (or the smaller
+configured per-value budget), with the existing nesting limit;
+`annotations_truncated: true` explicitly marks omitted later evidence, without
+turning a successful computation into failure. Programs that perform no annotation
+checks have no such metadata. This is inspection evidence, not executable snapshot
+restoration: data-only types still round-trip through a `$literal` root, while
+predicate functions and machine graphs require their original sources to execute.
+
+The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Executable disk snapshots and restoration validation use the separate versioned format described below. Machine promises enforce bounded reversibility as described below. Explicit host effects are described below.
 
 ## Type rules
 
@@ -145,8 +181,13 @@ copying costs and all policy execution shares the caller's resource budgets.
 same field parser as `record`. A malformed retained field raises `type` at the
 input record argument; replacing that malformed field itself is allowed because
 its old spec is discarded. Migration: repair or remove malformed sibling specs
-before extending a hand-built record. Validation checks declaration shape without
-running refinement predicates or rechecking default values against their types.
+before extending a hand-built record. Record construction and value checking also
+validate declared defaults through the ordinary predicate engine, even when a
+supplied field hides a default or an empty collection hides its element type.
+Invalid defaults are declaration errors with structured expected/actual values and
+`declaration_path`, not ordinary membership rejection. Checking never inserts a
+default into the supplied value. Structural parsing and `subtype` remain proof-only:
+they validate descriptor shape but do not execute default predicates or certify defaults.
 Repeated extensions also reparse growing field sets; they do not certify or cache
 the validity of arbitrary descriptor data.
 
@@ -158,9 +199,17 @@ positive: {$call: [at_least, 1]}
 valid: {$call: [is, 5, {$ref: positive}]}
 ```
 
-The pure type constructors are `list_of`, `map_of`, `record` (alternating field names and specs), `optional`, `default`, `union`, `enum`, `literal`, `refine`, `function_of` and `pure_function_of`. Records are closed. `fields` returns a record or class's field specs as a map, including optional/default wrappers; `with_field` adds or replaces a record field. The `std:types` module derives records using ordinary functions: `from_fields(specs)` reconstructs a record from reflection, `without_field(t, name)` drops a field (an absent name is unchanged), and `optional_fields(t)` makes required fields optional while retaining existing optional fields and defaults. These functions use canonical field order and return fresh records; projecting a class's fields does not copy its parents, fixed values or provenance; `redeclare(class, parents)` recovers a class instead: it re-runs `extend` with the fields and values that provenance attributes to the class itself and preserves the complete original constraint list, using the existing subtype proof to reject loss of inherited requirements (then `realize` if it was realized), so constructor-produced descriptors are recovered `eq` to the original when given the original parent classes and raises the usual `type` or `conflict` error otherwise. They fold over the existing checked constructors, with no separate type evaluator. `{$call: [subtype, {$ref: a}, {$ref: b}]}` checks the existing structural type algebra conservatively: arbitrary predicates are not proved equivalent. `{$call: [violations, {$ref: value}, {$ref: t}]}` returns every nested violation; `{$call: [expect, {$ref: value}, {$ref: t}]}` returns the value or raises a structured type error containing those violations.
+The pure type constructors are `list_of`, `map_of`, `record` (alternating field names and specs), `optional`, `default`, `union`, `intersection`, `tuple_of`, `enum`, `literal`, `refine`, `function_of` and `pure_function_of`. Records are closed. `fields` returns a record or class's field specs as a map, including optional/default wrappers; `with_field` adds or replaces a record field. The `std:types` module derives records using ordinary functions: `from_fields(specs)` reconstructs a record from reflection, `without_field(t, name)` drops a field (an absent name is unchanged), and `optional_fields(t)` makes required fields optional while retaining existing optional fields and defaults. These functions use canonical field order and return fresh records; projecting a class's fields does not copy its parents, fixed values or provenance; `redeclare(class, parents)` recovers a class instead: it re-runs `extend` with the fields and values that provenance attributes to the class itself and preserves the complete original constraint list, using the existing subtype proof to reject loss of inherited requirements (then `realize` if it was realized), so constructor-produced descriptors are recovered `eq` to the original when given the original parent classes and raises the usual `type` or `conflict` error otherwise. They fold over the existing checked constructors, with no separate type evaluator. `{$call: [subtype, {$ref: a}, {$ref: b}]}` checks the existing structural type algebra conservatively: arbitrary predicates are not proved equivalent. `{$call: [violations, {$ref: value}, {$ref: t}]}` returns every nested violation; `{$call: [expect, {$ref: value}, {$ref: t}]}` returns the value or raises a structured type error containing those violations.
 
 Subtyping uses conservative internal type identity and `any` as the top type. Predicate identity requires the same retained source and exact captured values, including numeric representations; independently written but equivalent predicates may remain unproved. Bind and reuse a predicate when it is intended to represent the same obligation. Lists and maps are covariant in their element type. A union is below a type when every alternative is below it; a type is below a union when one alternative covers it. Enums and literals accept values by structural equality, including exact mixed integer/float equality. Subtyping must cover every representation equal to each listed value, rather than checking only the representation written in the declaration. Scalar alternatives and structural collection checks are bounded; proofs involving arbitrary predicates over representation-varying collections may be declined. A refinement is below its base; proving a value belongs to a refinement still runs its predicate. Closed records admit no fields outside the target record, each source field must have a subtype of the corresponding target field, and every required target field must be required in the source. Defaults do not change membership. Unproved relationships return `false`; no theorem prover runs for arbitrary predicates.
+
+`union` is the least upper bound and `intersection` the greatest lower bound of their members (`{type: intersection, of: [...]}`, at least one member). A value belongs to an intersection when it fits every member, and its violations are the union of each failing member's violations at their own paths. Subtyping is exact for `T <: intersection(Bs)` (below every member) and sound but incomplete for `intersection(As) <: T` (some member is below `T`, or two members are definitely disjoint, which makes the intersection empty and below everything); a bound needing several members jointly is unproved. Refinements intersect by running every predicate. Closed records stay closed, so the intersection of two records with different field sets has no inhabitants; merge fields with `with_field`, `extend` or `inherit` instead. Optional fields keep their per-member meaning: each member independently admits or demands the field. No normalization rewrites an intersection and its declaration is retained as written.
+
+`tuple_of(T0, ..., Tn)` (`{type: tuple, of: [...]}`, possibly empty) admits exactly the lists with one item per position, each fitting its type; a wrong length is one `length` violation at the list, and a wrong item is blamed at `/index`. Tuples are covariant per position, only same-length tuples are related, and a tuple is below `list_of U` when every position is below `U`. A list type is never below a tuple. Records are closed, so there is no width subtyping: a record is below another only with the same field set, depth-wise; open rows are not provided. `map_of(V, K)` optionally types the keys: every key must fit `K` (a violation with rule `key` at the entry's path), and omitting `K` means `any`, so existing descriptors are unchanged (`{type: map, of: V, keys: K}`). Maps are covariant in both. 
+
+`rec(name, body)` declares a recursive type (`{type: rec, name, of}`) and `var(name)` (`{type: var, name}`) refers to the nearest enclosing `rec` of that name: `rec(t, union(integer, list_of(var(t))))` is nested lists of integers. The binder is explicit data, so a type's meaning never depends on the surrounding scope and it round-trips like any descriptor; a binding that refers to itself through ordinary evaluation is still an evaluation cycle error. Constructors accept a `var` before its `rec` exists so bodies can be built from parts; `rec`, membership, subtyping and annotations require a complete type. **Guardedness:** a `var` must sit under a list, map, tuple, record, class or function type, never only under unions, intersections, refinements or other `rec`s, so `rec(t, union(integer, var(t)))` is a `type` error naming the variable; an unbound `var` is a `type` error. **Unfolding:** a `rec` is equivalent to its body with each `var` replaced by the whole `rec`. Membership unfolds on demand and terminates because every unfolding consumes part of the finite value. Subtyping is coinductive: a pair of types met again while being proved is assumed, the assumption stack is bounded (256) and exhaustion is unproved (`false`). `eq` is declaration equality, so alpha-renamed recursive types are not `eq` but are `equivalent` when the proof goes through. Overlap with recursive types is conservative (assumed possible), and a recursive type with no finite inhabitants, such as `rec(n, record(next, var(n)))`, is not discovered to be empty by `subtype`.
+
+`{$call: [equivalent, a, b]}` is mutual subtyping: it is true only when both directions are proved, so `false` means "not proved equivalent", not "different" (`union(a, b)` and `union(b, a)` are equivalent but not `eq`; `integer` and `float` are neither). `eq` stays declaration equality. A class's constraints from several parents are intersected: the child keeps the deduplicated union of its parents' predicates, so it is below every parent and no parent is below it, and parent order does not change the result (`class_constraint_intersection`).
 
 For example, `literal(1)` accepts both `1` and `1.0`, so it is below `integer | float` but not below `integer` alone. The same rule applies inside lists and maps. Code that previously used an integral numeric literal to narrow an integer field should use `refine(integer, predicate)` with an equality predicate when the integer representation is required, or permit both numeric types. This corrects subtype proofs; literal membership and numeric equality are unchanged.
 
@@ -172,6 +221,16 @@ order (including missing required fields), then unexpected fields in canonical
 key order. Nested violations stay together at their field or index. A rejected
 union emits one violation at the checked value, with alternatives named in
 declaration order, rather than concatenating each alternative's violations.
+Each entry contains `at` (inside the checked value), a readable `expected` type
+label, the original `actual` value, `actual_present`, a stable `rule`, and
+`message`. Missing fields have `actual_present: false`; a present null has
+`actual_present: true`. Predicate entries also carry `predicate` source, path,
+reference segments and line/column, identifying the named or inline rule.
+Predicate rejection is a normal violation. A raised error or non-boolean result
+raises `predicate` from `is`, `violations`, `expect`, annotations or default
+validation, blamed on the predicate with collected violations and, for a raised
+error, its original `cause`. Unions retain failures from predicates they reached;
+they skip later alternatives after an accepting alternative.
 Refinements check the base first and only run their predicate if the base passes;
 this also applies when the base is another refinement. Refinements can wrap the
 existing type constructors and serve as collection elements or required,
@@ -219,7 +278,7 @@ File and embedded `std:` imports use the same pure evaluation boundary. The load
 
 `{$call: [import, helpers.yaml]}` loads a Helix document. Relative paths resolve from the importing file's directory; stdin resolves from the working directory. All imports are linked at load time, including imports inside functions and unchosen branches. The specifier is a literal string, quoted or plain, never an evaluated expression. Missing files, unknown standard modules and circular dependencies fail before execution, outside `try` handlers.
 
-A library normally exports a map. Every key is public; its definitions resolve lexically inside the library and cannot see the importing program's names. Files are identified by canonical path and linked once per program. Imports can themselves import other libraries. There is no package registry, version resolver or implicit search path.
+A library normally exports a map. Every key is public; its definitions resolve lexically inside the library and cannot see the importing program's names. A directory import loads its `main.yaml`; imports inside it resolve relative to that directory. Single-file libraries remain ordinary YAML files; directory entrypoints are optional for multi-file libraries and hierarchies. Standard modules are imported as `std:name`. Files are identified by canonical path and linked once per program. Imports can themselves import other libraries. There is no package registry, version resolver or implicit search path.
 
 ```yaml
 math: {$call: [import, 'std:math']}
@@ -303,7 +362,7 @@ are not expressions. Migration: unresolved names that previously passed plain
 `check` now fail it, including in uncalled bodies; fix the name or provide the
 lexical binding. LSP diagnostics use the same check and source locations.
 
-Plain `check` also runs a small non-executing type check (`src/tooling/analysis/body.rs`) over literals, annotated parameters, arithmetic, comparison, `if`, structural maps, constant-key record `get`/`set`, calls of named functions and literal annotation expressions (including `record` and `with_field`). It traverses computed call heads as well as operands, so annotated inline function bodies and nested `type_time` regions are checked even when the call target itself is unproved. Literal data remains opaque. It compares annotated function bodies with their declared results, call arguments with parameter types, and `type_time` regions for effectful execution. Constructing or returning a function does not execute its body; invoking a visible function does. Computed callees remain unproved, while `pure_function_of` retains its stronger transitive contract. A mismatch whose types share no value, or an `effect` inside a region, is a `type` diagnostic. A mismatch that may or may not hold, or an expression outside the fragment, is listed in the report's `unchecked` list and does not fail the check; the LSP shows only definite errors.
+Plain `check` also runs a small non-executing type check (`src/tooling/analysis/body.rs`) over literals, annotated parameters, arithmetic, comparison, `if`, structural maps, constant-key record `get`/`set`, calls of named functions and literal annotation expressions (including `record` and `with_field`). It traverses computed call heads as well as operands, so annotated inline function bodies and nested `type_time` regions are checked even when the call target itself is unproved. Literal data remains opaque. It checks explicit `expect(value, type)` annotations, annotated function bodies against their declared results, call arguments against parameter types, and `type_time` regions for effectful execution. Every written function parameter annotation is inspected even when the function is uncalled; supported declarations are validated, and unsupported declarations receive an explicit `unchecked` obligation. Constructing or returning a function does not execute its body; invoking a visible function does. Computed callees remain unproved, while `pure_function_of` retains its stronger transitive contract. A mismatch whose types share no value, or an `effect` inside a region, is a `type` diagnostic. A mismatch that may or may not hold, or an expression outside the fragment, is listed in the report's `unchecked` list and does not fail the check; the LSP shows only definite errors.
 
 Structural map inference retains known fields even when a sibling expression is unknown. Every written field is present; unknown field types remain `any`. Required fields with incompatible types or missing required fields establish definite failure, while incompatible optional fields may overlap by omission. Dynamic keys, optional-key reads, unsupported callbacks and `$literal` data remain outside this structural fragment. The production test-policy regressions require plain `check` to reject an integer `status` or string `exit_code` without executing orchestration; this does not prove the entire policy or replace independent host validation.
 
@@ -311,7 +370,9 @@ Sequence inference combines element types, retaining `any` for unknown elements.
 
 Strings up to 256 UTF-8 bytes retain their exact literal type, allowing plain `check` to reject a misspelled constant against a literal or enum annotation. Longer strings widen to `string`. Sequences retain at most 32 type alternatives, collapsing adjacent repeats. Inferred type trees use the same 4096-node limit as annotation shapes, with field names and direct literal strings limited to the runtime value-size budget. Collection and function-signature construction account for expanded child types before retaining them, so compact alias graphs cannot expand into unbounded inferred trees. Oversized collections widen to `list` or `map`; other oversized results remain unknown. Widening still checks child expressions and reports unresolved obligations where a contract cannot be proved. These are analysis precision limits, not total process-memory limits or changes to execution semantics.
 
-Annotation aliases follow explicit `$ref` lookups without executing them; scalar strings remain literal type names even when a binding has the same spelling. Cycles, more than eight constructor levels, expanded descriptors beyond 4096 values/keys, or expanded strings beyond the runtime value-size limit remain unchecked. Memoized alias resolution prevents repeated source expansion; the descriptor budget also bounds the work passed to the shared type parser. These limits affect analysis only, not runtime type semantics.
+Annotation aliases follow explicit `$ref` lookups without executing them; scalar strings remain literal type names even when a binding has the same spelling. Safely materialized malformed declarations, including unknown literal type names, produce structured `type` diagnostics at the annotation expression. Computed annotations outside this fragment remain `unchecked`; the checker does not evaluate arbitrary expressions, load imports or execute predicates to decide them. Cycles, more than eight constructor levels, expanded descriptors beyond 4096 values/keys, or expanded strings beyond the runtime value-size limit remain unchecked. Memoized alias resolution prevents repeated source expansion; the descriptor budget also bounds the work passed to the shared type parser. These limits affect analysis only, not runtime type semantics. All independent annotation obligations in the written source are visited; a failed declaration or value does not stop checks of sibling annotations. This is bounded static analysis, not a promise to compute every terminating type-time expression. Plain `check` preserves its versioned `mode: static` report (`status: ok` or `error`, `diagnostics` and `unchecked`), rather than emitting an evaluated VM root. Exit codes are 0 without definite errors, 1 with diagnostics and 2 for usage or input-file failures; a zero exit does not discharge listed `unchecked` obligations. The maintained static suite applies the production mutation generator to annotated source and checks this report contract without executing the damaged programs.
+
+**Static fragment, inference scope and guarantees.** The statically checked fragment is exactly what `body.rs` infers: literals, annotated parameters, arithmetic/comparison/boolean forms, `if`, `let`, `expect`, structural maps and sequences, constant-key `get`/`set`, `map`/`filter` with visible callbacks, calls of declared functions, and literal annotation expressions. Inference uses the runtime's type algebra (`Ty::below` for proved membership, `Ty::overlaps` for definite disjointness); the checker has no competing relation. Annotations are never required: an unannotated parameter has no static type (`any`), and an unannotated function result is inferred from its body, so a caller sees a precise result without a declaration. A declared annotation always wins over inference and remains enforced at run time. Each obligation has one of three outcomes: `diagnostics` (the types share no value, so the program certainly fails when the obligation is reached), `unchecked` with kind `unchecked` (outside the fragment or only possibly satisfied), or `unchecked` with kind `exhausted` (an analysis bound was hit: the 4096-node shape budget, value-size budget or constructor depth; the result is treated as unknown). A clean report guarantees only that no definite mismatch exists in the fragment; it does not discharge `unchecked` or `exhausted` entries, prove termination, or prove run-time success.
 
 `./manage.py check --evaluate FILE` (or `helix check --evaluate FILE`) evaluates the current pure language and collects independent errors across sequence entries in order and mapping fields by canonical key, deduplicating failures reached through multiple dependents. It uses the same annotations, evaluator, and import policy as `run`; it does not enter type time or statically analyze uncalled function bodies or unchosen branches. Output includes `mode: check`, with `root` on success or an `errors` list on failure. Only errors raised inside explicit `type_time` regions carry `phase: type`; repeated failures of the same dependency are deduplicated within each phase. This replaces the former top-level `phase: type` marker on check output; consumers should inspect `mode` for collection mode and each error’s `phase` for type-time origin. Exit codes are 0 for success, 1 for program errors and 2 for usage or input-file failures. Successful ordinary-data roots retain the YAML round-trip contract; function/machine roots use the named inspection contract.
 
@@ -362,7 +423,7 @@ budgets; this migration does not add observation, application or disk recovery.
 
 ## Error kinds
 
-`permission` (a denied file import), `effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `conflict` (incompatible class parents), `abstract` (unfilled required fields on realization), `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (syntax/value, call, dependency or import nesting), `limit` (work/data/graph or iteration budgets), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
+`permission` (a denied file import), `effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `predicate` (a type predicate raised or returned a non-boolean), `conflict` (incompatible class parents), `abstract` (unfilled required fields on realization), `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (syntax/value, call, dependency or import nesting), `limit` (work/data/graph or iteration budgets), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
 
 ## Testing in Helix
 
@@ -423,3 +484,232 @@ See [Host effects and explicit grants](HOST.md#host-effects-and-explicit-grants)
 #### Bounded command operations
 
 See [Bounded command operations](HOST.md#bounded-command-operations).
+
+
+## Evaluated-value source evidence
+
+The Rust API `Vm::evaluated_values()` returns ordinary data with `values` and
+`truncated` fields, independently of errors and machine inspection. Each row
+associates a completed expression's value with its source-qualified `location`,
+`line`, and `column`. This includes computed function-body results and local
+iteration results; later evaluations of the same source expression replace its
+earlier retained result. References retain the producing expression's evidence,
+not a separate history of every lexical read. Equal values at different source
+locations remain distinct rows.
+
+Evidence has a separate 16,384-unit cap (also bounded by the machine's value-size
+limit). If a row cannot fit, `truncated` becomes true and earlier evidence remains;
+this is the latest **retained** value per expression, not an execution trace or
+complete per-occurrence dataflow. Functions and machines become shallow ordinary
+summaries with `runtime_values_omitted: true`; evidence never retains their live
+captures or continuations. Value equality, ordinary output, and execution budgets
+retain their existing semantics. Executable snapshots persist this evidence and
+validate its source locations and storage accounting on restore. Version 1 states
+migrate with empty evidence because it was not recorded by that runtime.
+
+## Machine promises
+
+`{$call: [promise, durable, [reversible]]}` constructs a first-class promise type.
+Its ordinary-data descriptor is `{type: promise, name: durable, requires: [reversible]}`.
+Requirements may include other promise descriptors, composing their named
+obligations. Requirements also accept `{effects: [operation, ...]}`. Every list
+applies, so composition intersects the permitted operations; an empty list forbids
+all effects. Admission and restoration check completed history and pending work,
+and transitions reject prohibited requests before host dispatch. Effect permissions
+never grant authority to a target. Unknown behavioral requirements are rejected.
+Names alone do not establish membership.
+
+`{$call: [mixin, machine, promise_type]}` returns an independent machine version
+with that promise attached. For `reversible`, admission checks complete snapshot
+representability. Every subsequent transition preserves representability or stops with a bounded
+promise error and the previous continuation. The original machine remains usable.
+Promise types work with annotations, `is`, `expect` and `subtype`; a composed promise
+includes its declared parents and every promise type is a subtype of `vm`.
+Snapshots preserve attached obligations. The Rust API accepts the same descriptor
+through `Vm::with_promise(Yaml)`.
+
+The `reversible` behavioral contract covers bounded execution, explicit interruption inputs,
+and communication inside a coordinated promised system. Arbitrary host dispatch
+and direct `Vm::resolve_effect` remain refused: an externally completed action
+cannot be rolled back if its reply exceeds the serialization budget.
+Independent-error checking is also refused on promised machines. Ordinary
+machines retain their existing effect and checking contracts. Promises do not
+grant authority, encrypt ordinary data, undo effects outside their system, or
+automatically invalidate memoized results after source edits.
+
+### Communication between promised machines
+
+`PromisedSystem` owns named promised VM versions and their committed delivery
+receipts. The complete system is the restoration boundary: both participants and
+communication history rewind together. Restoring just a client cannot rewind a
+server that continues outside that snapshot.
+
+A sender yields `{$call: [effect, peer_send, {to: server, value: DATA}]}` and the
+receiver yields `{$call: [effect, peer_receive, {from: client}]}`. Their explicit
+participant names must match. A rendezvous resolves the sender with `null` and
+the receiver with the sent ordinary value, recording both request identities.
+Both new machine states and the receipt are checked for serializability before
+publishing the new immutable system version. Rejection leaves the previous
+system intact; there is no partially committed delivery.
+
+The Rust API `PromisedSystem::deliver(sender, send_id, receiver, receive_id)`
+requires the expected request IDs. Repeating an already committed delivery is a
+no-op within that system history. The receiver may compute a result and send it
+back in another rendezvous. A checkpoint between request acceptance and reply
+therefore retains the server's progress without repeating the accepted request.
+Retained system branches remain independent.
+
+`./manage.py runtime system-snapshot system.yaml --steps N` creates a joint
+checkpoint from `{participants: {name: SOURCE_STRING, ...}}`. Each source is
+explicitly admitted with the reversible promise. `system-restore checkpoint.json`
+continues the aggregate; `--steps N` emits another checkpoint. Source files are
+not needed after the initial checkpoint. The deterministic round-robin scheduler
+persists its cursor and shares progress among runnable machines and matching
+rendezvous. An unfinished, nonfailed system with no available transition reports `blocked`,
+not success; terminal systems retain `finished` or `error`.
+The ordinary state report contains `status`, `machines`, and `delivery_count`.
+The versioned joint format is separate from a single-machine execution snapshot.
+The aggregate is bounded to 128 participants, 100,000 delivery receipts and
+32 MiB of serialized state, including its trailing newline. Receipt history is
+retained with participant effect outcomes and validated for consistency on
+restore. `PromisedSystem::signal(name, event)` and `resume_signal(name)` retain
+interruption state within the same aggregate; an interrupted participant cannot
+rendezvous until resumed. Extracting a participant does not create a new valid
+communication history from already completed peer effects.
+
+This implements a coordinated local execution boundary, not a network transport
+or independent checkpoint protocol between remote processes. Communication with
+an unpromised external system still requires the existing host effect contracts.
+
+## Executable disk snapshots
+
+`./manage.py runtime snapshot program.yaml --steps 20` emits a versioned
+executable checkpoint. `./manage.py runtime restore checkpoint.json` runs it in a
+fresh process; adding `--steps N` saves another checkpoint after at most N
+transitions. block YAML is the canonical spelling written for version 2. The loader accepts that
+and the JSON flow spelling earlier checkpoints used, within snapshot byte, object and
+nesting budgets; anchors, aliases and tags are refused. Mapping presentation order has no execution meaning. Existing `step`/`inspect` documents
+remain observational, and `resume` still means pure source recovery. Without
+`--steps`, restore follows `run` exit statuses: only finished execution succeeds.
+Saving a valid unfinished checkpoint succeeds; a saved error state still exits 1.
+
+The snapshot embeds linked representation graphs, source-qualified path
+references, captured environments, intermediate values, pending continuations,
+iteration and predicate progress, phase/memo state, resource budgets, annotation
+history, nested machines and effect outcomes. Restoration neither reparses
+function source nor opens imports. Object-table names express sharing within a
+snapshot and are not operating-system addresses. Source locations are preserved
+from the embedded graph. A live parameter's `environment` argument values can be
+edited; doing so branches the computation. Completed memoized work is retained,
+so editing source alone does not invalidate dependent completed work.
+
+Version 2 requires the matching runtime package version and rejects unknown
+formats, fields, references, cycles, invalid graph topology and out-of-bounds
+continuations. Compatibility fixtures live in `tests/fixtures/snapshots/`.
+Version 1 execution documents migrate with empty promise and evaluated-value
+evidence fields; their existing continuations are preserved. Ordinary inspection
+and pure recovery documents are rejected. Future incompatible schema changes require a
+version increment and an explicit migration or rejection path. Snapshot budgets
+are 32 MiB, 100,000 shared objects and 128 codec levels; these supplement existing
+execution limits. Exceeding a snapshot budget fails saving without changing the
+machine. Promised machines enforce these bounds at admission and transitions;
+source edits do not invalidate completed work. Retained provenance records prior
+execution, not proof that an externally edited value arose from it. Secret-safe
+serialization of arbitrary ordinary data remains outside this contract.
+
+A snapshot is executable input. Its data carries no host grants. Restoring and
+running yields pending effects without applying them; a caller must supply a
+fresh authorized host. Completed outcomes stay completed. An externally started
+operation whose reply was never recorded is uncertain, and must not be blindly
+replayed merely because its VM request is still pending.
+
+### Streaming execution inputs
+
+`helix exec --input DATA --file QUERY` evaluates QUERY once, then invokes its
+one-argument function with ordinary YAML data from DATA (`-` means stdin).
+`helix exec --stream --file QUERY` consumes JSONL incrementally; each invocation
+uses fresh execution state and returns a list of ordinary-data output records.
+Empty lists suppress records. Outputs flush per input; earlier outputs survive a
+later failure. Queries link once, retaining their immutable lexical captures.
+`--json` and `--yaml` control single-input output; streaming always emits JSONL.
+Inline queries remain accepted. Inputs never become executable source.
+
+### Streaming source discovery and explicit probes
+
+`helix search index [PATH ...] [--library PATH_OR_STD_MODULE] [--no-std]`
+recursively observes selected paths and embedded standard modules. Without paths
+it selects the current directory. Repeated `--library` adds roots or embedded
+modules. Git tracking has no meaning. Canonical paths and embedded identities
+are deduplicated, and directory symlinks are not followed during discovery.
+Explicit files accept any extension; discovered source uses `.yaml`/`.yml` and
+prose uses `.md`/`.markdown`/`.txt`. File observations are bounded to 1 MB each.
+
+Default excluded directory names are `.git`, `.hg`, `.svn`, `.worktrees`,
+`.claude`, `.codex`, `target`, `runtime`, `node_modules`, `vendor`, `.venv`,
+`venv`, `__pycache__`, `dist` and `build`. `--no-default-excludes` disables them;
+an explicitly selected directory is always visited. `search parse FILE_OR_STDIN`
+reflects one source without linking imports. Both operations emit version 1
+JSONL. Index emits source, function, call, reference and documentation records,
+individual diagnostic records and a final completeness summary. Incomplete
+scans exit 1, argument errors exit 2; a complete empty selection succeeds.
+No indexing operation evaluates annotations, function bodies or host effects.
+Literal imports use the ordinary confined linker with selected filesystem roots.
+Resolved edges may name imported definitions. Unsupported aliases and computed
+callees remain unresolved; `none_found` means the conservative scan found no
+effect, not that execution has been tested.
+
+Example pipeline (query files return a function):
+
+```sh
+helix search index std --no-std \
+  | helix exec --stream --file queries/functions.yaml \
+  | helix exec --stream --file queries/named.yaml
+```
+
+`queries/functions.yaml`:
+
+```yaml
+$call: [let, {s: {$call: [import, 'std:search']}},
+  {$call: [fn, [record], {$call: [s.keep, {$ref: record}, {$ref: s.functions}]}]}]
+```
+
+`queries/named.yaml`:
+
+```yaml
+$call: [let, {s: {$call: [import, 'std:search']}},
+  {$call: [fn, [record], {$call: [s.keep, {$ref: record},
+    {$call: [fn, [candidate], {$call: [s.name_matches, {$ref: candidate}, 'map|filter']}]}]}]}]
+```
+
+`helix search probe --cases examples.yaml [--harness harness.yaml] [--root PATH]`
+reads selected function records on stdin. Other records pass through. Each case
+is `{args: [...], expected: VALUE}`; `expected` is optional. The default adapter
+loads the module and selects the exported function through its result record.
+Internal source definitions are unsupported. A harness is a function receiving
+the selected function and argument list, returning a zero-argument thunk; it can
+adapt an exported factory to a captured closure. Module setup, harness setup and
+invocation share a 2,000,000-transition allowance per example, in addition to the
+ordinary evaluator bounds. Each example starts afresh. Imports require explicit
+`--root` grants; there is no host-effect dispatch. The selected source is reread
+and must exactly match the indexed `revision` (the complete source text).
+Results distinguish `observed`, `matched`, `mismatch`, `source_changed`,
+`execution_error`, `attempted_effect`, `unsupported_target`, `unsupported_result`
+and `exhausted_budget`. Probe records retain input, source blame and the revision
+actually executed. Examples establish observations only for their supplied inputs.
+
+Streaming query/probe inputs share a 16 MB per-record byte bound and the ordinary
+data graph size/nesting bounds. The stream does not accumulate prior records.
+For source-aware queries that preserve code through multiple stages, try:
+
+```sh
+helix search index std --no-std \
+  | helix exec --stream --file examples/search/reusable-functions.yaml \
+  | helix exec --stream --file examples/search/returning-records.yaml
+```
+
+`probe --max-steps N` replaces the default per-example transition allowance;
+`N` must be positive. Setup and invocation consume the same allowance. Choose a
+smaller allowance for exploratory probes of unknown candidates. Probe export
+selection examines actual function values in the initialized result (including
+lists and result wrappers), preserving their captures. A definition instantiated
+as multiple exported functions is reported as ambiguous.

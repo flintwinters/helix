@@ -199,6 +199,8 @@ impl Atomic {
                     Value::Array(self.nodes.iter().map(|n| graph.reference(*n)).collect()),
                 ),
                 ("operation", operation),
+                ("predicate_cause", self.cause.clone().unwrap_or(Value::Null)),
+                ("predicate_failed", Value::Boolean(self.predicate_failed)),
                 (
                     "predicate_answers",
                     Value::Array(
@@ -227,6 +229,7 @@ impl Request {
         };
         let number = |n: usize| Value::Integer(n as i64);
         match self {
+            Self::Serve(_, _, _) => object("http_serve", Vec::new()),
             Self::TypeEnd { previous, memo } => object(
                 "type_time_return",
                 vec![
@@ -308,25 +311,26 @@ impl Request {
                     ("values", values(vs)),
                 ],
             ),
-            Self::Call(site, f, vs) => object(
+            Self::Call(site, f, vs, ns) => object(
                 "call",
                 vec![
                     ("site", g.reference(*site)),
                     ("function", function(f)),
                     ("arguments", values(vs)),
+                    ("argument_sources", nodes(ns)),
                 ],
             ),
             Self::CallTrace(site, f) => object(
                 "call_trace",
                 vec![("site", g.reference(*site)), ("function", function(f))],
             ),
-            Self::CallArgument(site, vs) | Self::CallResolved(site, vs) => object(
+            Self::CallArgument(site, vs, ns) | Self::CallResolved(site, vs, ns) => object(
                 if matches!(self, Self::CallArgument(..)) {
                     "call_argument"
                 } else {
                     "call_resolved"
                 },
-                vec![("site", g.reference(*site)), ("arguments", values(vs))],
+                vec![("site", g.reference(*site)), ("arguments", values(vs)), ("argument_sources", nodes(ns))],
             ),
             Self::CallEnd {
                 environment,
@@ -353,16 +357,17 @@ impl Request {
                     ("body", g.reference(*body)),
                 ],
             ),
-            Self::ResultAnnotation(id, v) | Self::ResultChecked(id, v) => object(
-                if matches!(self, Self::ResultAnnotation(..)) {
-                    "result_annotation"
-                } else {
-                    "result_checked"
-                },
-                vec![("body", g.reference(*id)), ("value", v.clone())],
+            Self::ResultAnnotation(id, declaration, v) => object(
+                "result_annotation",
+                vec![("body", g.reference(*id)), ("declaration", g.reference(*declaration)), ("value", v.clone())],
+            ),
+            Self::ResultChecked(id, declaration, v, ty) => object(
+                "result_checked",
+                vec![("body", g.reference(*id)), ("declaration", g.reference(*declaration)), ("value", v.clone()), ("type", ty.clone())],
             ),
             Self::Parameters {
                 site,
+                origin,
                 function: f,
                 args,
                 index,
@@ -370,10 +375,12 @@ impl Request {
             }
             | Self::ParameterChecked {
                 site,
+                origin,
                 function: f,
                 args,
                 index,
                 found,
+                ..
             } => object(
                 if matches!(self, Self::Parameters { .. }) {
                     "parameters"
@@ -381,15 +388,17 @@ impl Request {
                     "parameter_checked"
                 },
                 vec![
-                    ("site", g.reference(*site)),
+                    ("site", origin.program.graph.reference(*site)),
                     ("function", function(f)),
                     ("arguments", values(args)),
+                    ("argument_sources", Value::Array(origin.args.iter().map(|node| origin.program.graph.reference(*node)).collect())),
                     ("index", number(*index)),
                     ("violations", values(found)),
                 ],
             ),
             Self::ParameterType {
                 site,
+                origin,
                 function: f,
                 args,
                 index,
@@ -398,9 +407,10 @@ impl Request {
             } => object(
                 "parameter_type",
                 vec![
-                    ("site", g.reference(*site)),
+                    ("site", origin.program.graph.reference(*site)),
                     ("function", function(f)),
                     ("arguments", values(args)),
+                    ("argument_sources", Value::Array(origin.args.iter().map(|node| origin.program.graph.reference(*node)).collect())),
                     ("index", number(*index)),
                     ("violations", values(found)),
                     ("annotation", g.reference(*annotation)),
@@ -460,13 +470,13 @@ impl Request {
                     ("base", v.clone()),
                 ],
             ),
-            Self::Atomic(operation) | Self::PredicateEnd(operation) => object(
-                if matches!(self, Self::Atomic(..)) {
-                    "atomic"
-                } else {
-                    "predicate_return"
-                },
+            Self::Atomic(operation) => object(
+                "atomic",
                 vec![("operation", operation.view(g))],
+            ),
+            Self::PredicateEnd(operation, predicate) => object(
+                "predicate_return",
+                vec![("operation", operation.view(g)), ("checking_predicate", Value::Boolean(*predicate))],
             ),
             Self::SignatureOf(site, f, _) => object(
                 "signature",

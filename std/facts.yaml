@@ -1,0 +1,952 @@
+# Explicit uncached observations; only the fresh-collection apply wrapper is exported.
+# Pure parsers and projections are public; effectful assembly helpers remain lexical.
+!call
+  - let
+  - apply: !call
+      - fn
+      - [target, request, configure, review]
+      - !call
+          - apply_snapshot
+          - !call [gather, !ref target, !ref request]
+          - !ref configure
+          - !call [type_time, !call [provider.data, !call [expect, !ref review, !ref review_type]]]
+    apply_snapshot: !call
+      - fn
+      - [snapshot, configure, review]
+      - !call
+          - let
+          - {configured: !call [configuration, !ref snapshot, !ref configure]}
+          - !call
+              - if
+              - !call
+                  - eq
+                  - !call [yaml_dump, !call [evidence, !ref snapshot]]
+                  - !call [yaml_dump, !call [get, !ref review, evidence]]
+              - !call
+                  - dict
+                  - version
+                  - 1
+                  - evidence
+                  - !call [evidence, !ref snapshot]
+                  - review
+                  - !call
+                      - provider.apply
+                      - !call [get, !ref configured, provider]
+                      - !call [get, !ref configured, arguments]
+                      - !call [get, !ref configured, context]
+                      - !call [get, !ref review, review]
+              - !call
+                  - raise
+                  - facts_stale_review
+                  - "Fresh identity, platform or selected facts differ from reviewed evidence"
+    assembled: !call
+      - fn
+      - [target, request, started, observations, custom, finished]
+      - !call
+          - dict
+          - version
+          - 1
+          - target
+          - !ref target
+          - selectors
+          - !call [selected, !ref request]
+          - custom_versions
+          - !call
+              - map
+              - !call
+                  - fn
+                  - [d]
+                  - !call
+                      - dict
+                      - name
+                      - !call [get, !ref d, name]
+                      - version
+                      - !call [get, !ref d, version]
+              - !call [get, !ref request, custom]
+          - facts
+          - !ref observations
+          - custom
+          - !ref custom
+          - started
+          - !ref started
+          - finished
+          - !ref finished
+    catalog:
+      cpu:
+        command: {args: [_NPROCESSORS_ONLN], program: getconf}
+        parse: !call
+          - fn
+          - [source]
+          - !call [json_parse, !ref source]
+        value_type: !ref positive
+      identity:
+        command:
+          args:
+            - "-c"
+            - "set -eu; uname -m; uname -r; uname -n; if test -s /etc/machine-id; then cat /etc/machine-id; else printf '%s\\n' -; fi; cat /proc/sys/kernel/random/boot_id; readlink /proc/self/ns/mnt"
+          program: sh
+        parse: !call
+          - fn
+          - [source]
+          - !call [identity_parse, !ref source]
+        value_type: !call
+          - record
+          - architecture
+          - !ref name
+          - kernel
+          - !ref name
+          - hostname
+          - !ref name
+          - machine_id
+          - !ref result_type
+          - boot_id
+          - !ref name
+          - namespace
+          - !ref name
+      memory:
+        command:
+          args:
+            - "/^MemTotal:/ {printf \"%.0f\\n\", $2 * 1024; found=1} END {if (!found) exit 1}"
+            - /proc/meminfo
+          program: awk
+        parse: !call
+          - fn
+          - [source]
+          - !call [json_parse, !ref source]
+        value_type: !ref positive
+      mounts:
+        command:
+          args: ["--json", "--list", "--output", "TARGET,SOURCE,FSTYPE,OPTIONS"]
+          program: findmnt
+        parse: !call
+          - fn
+          - [source]
+          - !call [json_parse, !ref source]
+        value_type: !call
+          - record
+          - filesystems
+          - !call
+              - list_of
+              - !call
+                  - record
+                  - target
+                  - !ref string
+                  - source
+                  - !ref string
+                  - fstype
+                  - !ref string
+                  - options
+                  - !ref string
+      network:
+        command: {args: ["-j", address, show], program: ip}
+        parse: !ref network_parse
+        value_type: !call
+          - list_of
+          - !call
+              - record
+              - ifindex
+              - !ref integer
+              - ifname
+              - !ref string
+              - addr_info
+              - !call
+                  - list_of
+                  - !call [record, family, !ref string, local, !ref string, prefixlen, !ref integer]
+      package_manager:
+        command: {args: ["-c", command -v dpkg-query], program: sh}
+        parse: !call
+          - fn
+          - [source]
+          - !call [lines, !ref source]
+        value_type: !ref strings
+      packages:
+        command:
+          args: ["-W", "-f=${binary:Package},${Version},${db:Status-Status}\\n"]
+          program: dpkg-query
+        parse: !call
+          - fn
+          - [source]
+          - !call [packages_parse, !ref source]
+        value_type: !call
+          - list_of
+          - !call [record, name, !ref string, version, !ref string, state, !ref string]
+      platform:
+        command: {args: [/etc/os-release], program: cat}
+        parse: !call
+          - fn
+          - [source]
+          - !call [os_release, !ref source]
+        value_type: !call
+          - record
+          - ID
+          - !ref name
+          - VERSION_ID
+          - !ref name
+          - VERSION_CODENAME
+          - !ref name
+      service_manager:
+        command:
+          args:
+            - "-c"
+            - "if command -v systemctl >/dev/null 2>&1; then if test -d /run/systemd/system; then systemctl --system show --property=Version --value >/dev/null || exit $?; printf '\"systemd\"\\n'; else printf '\"installed-inactive\"\\n'; fi; else printf '\"unavailable\"\\n'; fi"
+          program: sh
+        parse: !call
+          - fn
+          - [source]
+          - !call [json_parse, !ref source]
+        value_type: !ref string
+      services:
+        command:
+          args:
+            - "-c"
+            - "test -d /run/systemd/system || exit 69; exec systemctl --no-pager --json=short --type=service --state=running list-units"
+          program: sh
+        parse: !call
+          - fn
+          - [source]
+          - !call [services_parse, !ref source]
+        value_type: !call
+          - list_of
+          - !call [record, unit, !ref name, active, !ref string, sub, !ref string]
+      storage:
+        command:
+          args: ["--json", "--list", "--bytes", "--output", "NAME,TYPE,SIZE"]
+          program: lsblk
+        parse: !call
+          - fn
+          - [source]
+          - !call [json_parse, !ref source]
+        value_type: !call
+          - record
+          - blockdevices
+          - !call
+              - list_of
+              - !call [record, name, !ref string, type, !ref string, size, !ref integer]
+    check: !call
+      - fn
+      - [target, request, configure]
+      - !call [check_snapshot, !call [gather, !ref target, !ref request], !ref configure]
+    check_snapshot: !call
+      - fn
+      - [snapshot, configure]
+      - !call
+          - let
+          - {configured: !call [configuration, !ref snapshot, !ref configure]}
+          - !call
+              - dict
+              - version
+              - 1
+              - evidence
+              - !call [evidence, !ref snapshot]
+              - review
+              - !call
+                  - provider.check
+                  - !call [get, !ref configured, provider]
+                  - !call [get, !ref configured, arguments]
+                  - !call [get, !ref configured, context]
+    command_type: !call [record, program, !ref name, args, !ref strings]
+    configuration: !call
+      - fn
+      - [snapshot, configure]
+      - !call
+          - type_time
+          - !call
+              - expect
+              - !call
+                  - call
+                  - !ref configure
+                  - !call [evidence, !call [supported, !call [validate_snapshot, !ref snapshot]]]
+              - !ref configuration_type
+    configuration_type: !call
+      - record
+      - provider
+      - !ref provider.descriptor
+      - arguments
+      - !ref any
+      - context
+      - !ref provider.context_type
+    custom_decode: !call
+      - fn
+      - [declaration, reply]
+      - !call
+          - if
+          - !call [eq, !call [get, !ref reply, code], 0]
+          - !call
+              - let
+              - output: !call
+                  - expect
+                  - !call [json_parse, !call [get, !ref reply, stdout]]
+                  - !call [record, version, !call [literal, 1], value, !ref any]
+              - !call
+                  - known
+                  - !call
+                      - expect
+                      - !call [get, !ref output, value]
+                      - !call [get, !ref declaration, value_type]
+          - !call [failure, inaccessible, !ref reply]
+    custom_observe: !call
+      - fn
+      - [target, declaration]
+      - !call
+          - try
+          - !call
+              - custom_decode
+              - !ref declaration
+              - !call [dispatch, !ref target, !call [get, !ref declaration, command]]
+          - !call
+              - fn
+              - [error]
+              - !call [failure, inaccessible, !ref error]
+    custom_type: !call
+      - record
+      - name
+      - !ref name
+      - version
+      - !ref name
+      - value_type
+      - !ref any
+      - command
+      - !ref command_type
+    decode: !call
+      - fn
+      - [name, reply]
+      - !call
+          - let
+          - {spec: !call [get, !ref catalog, !ref name]}
+          - !call
+              - if
+              - !call [eq, !call [get, !ref reply, code], 0]
+              - !call
+                  - known
+                  - !call
+                      - expect
+                      - !call [call, !call [get, !ref spec, parse], !call [get, !ref reply, stdout]]
+                      - !call [get, !ref spec, value_type]
+              - !call
+                  - failure
+                  - !call
+                      - cond
+                      - !call [has, [126, 127], !call [get, !ref reply, code]]
+                      - unsupported
+                      - !call [eq, !call [get, !ref reply, code], 69]
+                      - unsupported
+                      - inaccessible
+                  - !ref reply
+    decode_time: !call
+      - fn
+      - [reply]
+      - !call
+          - if
+          - !call [eq, !call [get, !ref reply, code], 0]
+          - !call
+              - known
+              - !call [expect, !call [json_parse, !call [get, !ref reply, stdout]], !ref integer]
+          - !call [failure, inaccessible, !ref reply]
+    dispatch: !call
+      - fn
+      - [target, request]
+      - !call
+          - if
+          - !call [eq, !ref target, ~]
+          - !call [effect, command, !ref request]
+          - !call
+              - ssh.run
+              - !ref target
+              - ~
+              - !call [get, !ref request, program]
+              - !call [get, !ref request, args]
+    evidence: !call
+      - fn
+      - [snapshot]
+      - !call
+          - let
+          - {s: !call [validate_snapshot, !ref snapshot]}
+          - !call
+              - dict
+              - version
+              - 1
+              - target
+              - !call [get, !ref s, target]
+              - selectors
+              - !call [get, !ref s, selectors]
+              - custom_versions
+              - !call [get, !ref s, custom_versions]
+              - facts
+              - !call [project_results, !call [get, !ref s, facts]]
+              - custom
+              - !call [project_custom, !call [get, !ref s, custom]]
+    fact_evidence: !call
+      - fn
+      - [name, result]
+      - !call
+          - if
+          - !call
+              - and
+              - !call [eq, !ref name, identity]
+              - !call [eq, !call [get, !ref result, status], known]
+          - !call
+              - set
+              - !call [result_evidence, !ref result]
+              - value
+              - !call
+                  - set
+                  - !call [get, !ref result, value]
+                  - machine_id
+                  - !call
+                      - result_evidence
+                      - !call [get, !call [get, !ref result, value], machine_id]
+          - !call [result_evidence, !ref result]
+    failure: !call
+      - fn
+      - [status, diagnostic]
+      - !call [dict, status, !ref status, value, ~, diagnostic, !ref diagnostic]
+    gather: !call
+      - fn
+      - [target, request]
+      - !call
+          - gather_validated
+          - !call [expect, !ref target, !call [union, !call [literal, ~], !ref name]]
+          - !call [type_time, !call [validate_request, !ref request]]
+    gather_validated: !call
+      - fn
+      - [target, request]
+      - !call
+          - assembled
+          - !ref target
+          - !ref request
+          - !call [timestamp, !ref target]
+          - !call
+              - fold
+              - !call
+                  - fn
+                  - [out, name]
+                  - !call [set, !ref out, !ref name, !call [observe, !ref target, !ref name]]
+              - {}
+              - !call [selected, !ref request]
+          - !call
+              - fold
+              - !call
+                  - fn
+                  - [out, decl]
+                  - !call
+                      - set
+                      - !ref out
+                      - !call [get, !ref decl, name]
+                      - !call [custom_observe, !ref target, !ref decl]
+              - {}
+              - !call [get, !ref request, custom]
+          - !call [timestamp, !ref target]
+    identity_parse: !call
+      - fn
+      - [source]
+      - !call
+          - let
+          - {rows: !call [lines, !ref source]}
+          - !call
+              - if
+              - !call [eq, !call [len, !ref rows], 6]
+              - !call
+                  - dict
+                  - architecture
+                  - !call [get, !ref rows, 0]
+                  - kernel
+                  - !call [get, !ref rows, 1]
+                  - hostname
+                  - !call [get, !ref rows, 2]
+                  - machine_id
+                  - !call
+                      - if
+                      - !call [eq, !call [get, !ref rows, 3], "-"]
+                      - !call [failure, unknown, machine-id is absent]
+                      - !call [known, !call [get, !ref rows, 3]]
+                  - boot_id
+                  - !call [get, !ref rows, 4]
+                  - namespace
+                  - !call [get, !ref rows, 5]
+              - !call [raise, facts_validation, Incomplete identity observation]
+    known: !call
+      - fn
+      - [value]
+      - !call [dict, status, known, value, !ref value, diagnostic, ~]
+    lines: !call
+      - fn
+      - [s]
+      - !call
+          - filter
+          - !call
+              - fn
+              - [line]
+              - !call [ne, !ref line, ""]
+          - !call [text.split, !ref s, "\n"]
+    lists: !call [import, "std:list"]
+    mandatory: [identity, platform]
+    name: !ref provider.name
+    network_parse: !call
+      - fn
+      - [source]
+      - !call
+          - map
+          - !call
+              - fn
+              - [link]
+              - !call
+                  - dict
+                  - ifindex
+                  - !call [get, !ref link, ifindex, ~]
+                  - ifname
+                  - !call [get, !ref link, ifname, ~]
+                  - addr_info
+                  - !call
+                      - map
+                      - !call
+                          - fn
+                          - [address]
+                          - !call
+                              - dict
+                              - family
+                              - !call [get, !ref address, family, ~]
+                              - local
+                              - !call [get, !ref address, local, ~]
+                              - prefixlen
+                              - !call [get, !ref address, prefixlen, ~]
+                      - !call [get, !ref link, addr_info, []]
+          - !call [expect, !call [json_parse, !ref source], !call [list_of, !ref map]]
+    observe: !call
+      - fn
+      - [target, name]
+      - !call
+          - try
+          - !call
+              - decode
+              - !ref name
+              - !call
+                  - dispatch
+                  - !ref target
+                  - !call [get, !call [get, !ref catalog, !ref name], command]
+          - !call
+              - fn
+              - [error]
+              - !call [failure, inaccessible, !ref error]
+    os_release: !call
+      - fn
+      - [source]
+      - !call
+          - let
+          - fields: !call
+              - fold
+              - !call
+                  - fn
+                  - [out, line]
+                  - !call
+                      - let
+                      - {pair: !call [text.split, !ref line, "="]}
+                      - !call
+                          - if
+                          - !call
+                              - has
+                              - [ID, VERSION_ID, VERSION_CODENAME]
+                              - !call [get, !ref pair, 0]
+                          - !call
+                              - set
+                              - !ref out
+                              - !call [get, !ref pair, 0]
+                              - !call
+                                  - unquote
+                                  - !call
+                                      - text.join
+                                      - !call [slice, !ref pair, 1, !call [len, !ref pair]]
+                                      - "="
+                          - !ref out
+              - {}
+              - !call [lines, !ref source]
+          - !call
+              - expect
+              - !ref fields
+              - !call [record, ID, !ref name, VERSION_ID, !ref name, VERSION_CODENAME, !ref name]
+    package_rows: !call
+      - fn
+      - [source]
+      - !call
+          - map
+          - !call
+              - fn
+              - [row]
+              - !call
+                  - let
+                  - {r: !ref row}
+                  - !call
+                      - if
+                      - !call [eq, !call [len, !ref r], 3]
+                      - !call
+                          - dict
+                          - name
+                          - !call [get, !ref r, 0]
+                          - version
+                          - !call [get, !ref r, 1]
+                          - state
+                          - !call [get, !ref r, 2]
+                      - !call [raise, facts_validation, Malformed package row]
+          - !call [csv_parse, !ref source]
+    packages_parse: !call
+      - fn
+      - [source]
+      - !call
+          - filter
+          - !call
+              - fn
+              - [row]
+              - !call [eq, !call [get, !ref row, state], installed]
+          - !call [package_rows, !ref source]
+    plan: !call
+      - fn
+      - [snapshot, configure, before]
+      - !call
+          - let
+          - {configured: !call [configuration, !ref snapshot, !ref configure]}
+          - !call
+              - dict
+              - version
+              - 1
+              - evidence
+              - !call [evidence, !ref snapshot]
+              - review
+              - !call
+                  - provider.plan
+                  - !call [get, !ref configured, provider]
+                  - !call [get, !ref configured, arguments]
+                  - !ref before
+                  - !call [get, !ref configured, context]
+    positive: !call
+      - refine
+      - !ref integer
+      - !call
+          - fn
+          - ["n"]
+          - !call [gt, !ref "n", 0]
+    project_custom: !call
+      - fn
+      - [results]
+      - !call
+          - fold
+          - !call
+              - fn
+              - [out, name]
+              - !call
+                  - set
+                  - !ref out
+                  - !ref name
+                  - !call [result_evidence, !call [get, !ref results, !ref name]]
+          - {}
+          - !call [keys, !ref results]
+    project_results: !call
+      - fn
+      - [results]
+      - !call
+          - fold
+          - !call
+              - fn
+              - [out, name]
+              - !call
+                  - set
+                  - !ref out
+                  - !ref name
+                  - !call [fact_evidence, !ref name, !call [get, !ref results, !ref name]]
+          - {}
+          - !call [keys, !ref results]
+    provider: !call [import, "std:provider"]
+    request_type: !call [record, select, !ref strings, custom, !call [list_of, !ref custom_type]]
+    result_evidence: !call
+      - fn
+      - [result]
+      - !call
+          - dict
+          - status
+          - !call [get, !ref result, status]
+          - value
+          - !call [get, !ref result, value]
+    result_type: !call
+      - record
+      - status
+      - !call [enum, known, unknown, inaccessible, unsupported]
+      - value
+      - !ref any
+      - diagnostic
+      - !ref any
+    review_type: !call [record, version, !call [literal, 1], evidence, !ref any, review, !ref any]
+    same_evidence: !call
+      - fn
+      - [left, right]
+      - !call
+          - eq
+          - !call [yaml_dump, !call [evidence, !ref left]]
+          - !call [yaml_dump, !call [evidence, !ref right]]
+    selected: !call
+      - fn
+      - [request]
+      - !call [lists.unique, !call [concat, !ref mandatory, !call [get, !ref request, select]]]
+    selectors:
+      - platform
+      - identity
+      - package_manager
+      - service_manager
+      - network
+      - mounts
+      - storage
+      - cpu
+      - memory
+      - packages
+      - services
+    services_parse: !call
+      - fn
+      - [source]
+      - !call
+          - map
+          - !call
+              - fn
+              - [row]
+              - !call
+                  - expect
+                  - !call
+                      - dict
+                      - unit
+                      - !call [get, !ref row, unit, ~]
+                      - active
+                      - !call [get, !ref row, active, ~]
+                      - sub
+                      - !call [get, !ref row, sub, ~]
+                  - !call [record, unit, !ref name, active, !ref string, sub, !ref string]
+          - !call [json_parse, !ref source]
+    snapshot_type: !call
+      - record
+      - version
+      - !call [literal, 1]
+      - target
+      - !call [union, !call [literal, ~], !ref name]
+      - selectors
+      - !ref strings
+      - custom_versions
+      - !call [list_of, !call [record, name, !ref name, version, !ref name]]
+      - facts
+      - !call [map_of, !ref result_type, !ref name]
+      - custom
+      - !call [map_of, !ref result_type, !ref name]
+      - started
+      - !ref result_type
+      - finished
+      - !ref result_type
+    ssh: !call [import, "std:ssh"]
+    strings: !call [list_of, !ref string]
+    supported: !call
+      - fn
+      - [snapshot]
+      - !call
+          - let
+          - identity: !call [value, !ref snapshot, identity]
+            platform: !call [value, !ref snapshot, platform]
+          - !call
+              - if
+              - !call
+                  - and
+                  - !call [eq, !call [get, !ref platform, ID], ubuntu]
+                  - !call [eq, !call [get, !ref platform, VERSION_ID], "26.10"]
+                  - !call [eq, !call [get, !ref identity, architecture], x86_64]
+              - !ref snapshot
+              - !call [raise, facts_validation, Qualified facts require Ubuntu 26.10 on x86_64]
+    text: !call [import, "std:text"]
+    timestamp: !call
+      - fn
+      - [target]
+      - !call
+          - try
+          - !call [decode_time, !call [dispatch, !ref target, {args: ["+%s"], program: date}]]
+          - !call
+              - fn
+              - [error]
+              - !call [failure, inaccessible, !ref error]
+    unquote: !call
+      - fn
+      - [s]
+      - !call
+          - cond
+          - !call [eq, !call [slice, !ref s, 0, 1], "\""]
+          - !call [json_parse, !ref s]
+          - !call [eq, !call [slice, !ref s, 0, 1], "'"]
+          - !call
+              - if
+              - !call
+                  - eq
+                  - !call [slice, !ref s, !call [sub, !call [len, !ref s], 1], !call [len, !ref s]]
+                  - "'"
+              - !call [slice, !ref s, 1, !call [sub, !call [len, !ref s], 1]]
+              - !call [raise, facts_validation, Unclosed OS-release value]
+          - !ref s
+    validate_request: !call
+      - fn
+      - [request]
+      - !call
+          - let
+          - custom_names: !call
+              - map
+              - !call
+                  - fn
+                  - [x]
+                  - !call [get, !ref x, name]
+              - !call [get, !ref r, custom]
+            r: !call [expect, !ref request, !ref request_type]
+          - !call
+              - if
+              - !call
+                  - and
+                  - !call [le, !call [len, !ref custom_names], 32]
+                  - !call
+                      - eq
+                      - !call
+                          - duplicates
+                          - !call [concat, !call [get, !ref r, select], !ref custom_names]
+                      - []
+                  - !call
+                      - lists.all
+                      - !call [get, !ref r, select]
+                      - !call
+                          - fn
+                          - [s]
+                          - !call [has, !ref selectors, !ref s]
+                  - !call
+                      - lists.all
+                      - !ref custom_names
+                      - !call
+                          - fn
+                          - [s]
+                          - !call [not, !call [has, !ref selectors, !ref s]]
+                  - !call
+                      - lists.all
+                      - !call [get, !ref r, custom]
+                      - !call
+                          - fn
+                          - [x]
+                          - !call [subtype, !call [get, !ref x, value_type], !ref any]
+              - !ref r
+              - !call
+                  - raise
+                  - facts_validation
+                  - "Unknown or duplicate selectors, invalid custom type, or more than 32 custom facts"
+    validate_snapshot: !call
+      - fn
+      - [snapshot]
+      - !call
+          - let
+          - {s: !call [provider.data, !call [expect, !ref snapshot, !ref snapshot_type]]}
+          - !call
+              - if
+              - !call
+                  - and
+                  - !call [eq, !call [duplicates, !call [get, !ref s, selectors]], []]
+                  - !call
+                      - lists.all
+                      - !call [get, !ref s, selectors]
+                      - !call
+                          - fn
+                          - [name]
+                          - !call
+                              - validated_fact
+                              - !ref name
+                              - !call [get, !call [get, !ref s, facts], !ref name]
+                  - !call
+                      - eq
+                      - !call
+                          - yaml_dump
+                          - !call
+                              - lists.unique
+                              - !call [concat, !ref mandatory, !call [get, !ref s, selectors]]
+                      - !call [yaml_dump, !call [get, !ref s, selectors]]
+                  - !call
+                      - eq
+                      - !call [keys, !call [get, !ref s, facts]]
+                      - !call
+                          - keys
+                          - !call
+                              - fold
+                              - !call
+                                  - fn
+                                  - [out, name]
+                                  - !call [set, !ref out, !ref name, true]
+                              - {}
+                              - !call [get, !ref s, selectors]
+              - !ref s
+              - !call [raise, facts_validation, Snapshot selectors do not match observations]
+    validated_fact: !call
+      - fn
+      - [name, result]
+      - !call
+          - get
+          - !call
+              - list
+              - !call
+                  - if
+                  - !call [eq, !call [get, !ref result, status], known]
+                  - !call
+                      - expect
+                      - !call [get, !ref result, value]
+                      - !call [get, !call [get, !ref catalog, !ref name], value_type]
+                  - !call [expect, !call [get, !ref result, value], !call [literal, ~]]
+              - true
+          - 1
+    value: !call
+      - fn
+      - [snapshot, name]
+      - !call
+          - let
+          - result: !call
+              - get
+              - !call [get, !ref snapshot, facts]
+              - !ref name
+              - !call [get, !call [get, !ref snapshot, custom], !ref name, ~]
+          - !call
+              - if
+              - !call [eq, !call [get, !ref result, status], known]
+              - !call [get, !ref result, value]
+              - !call [raise, facts_validation, Requested fact is unavailable]
+  - !call
+      - dict
+      - selectors
+      - !ref selectors
+      - catalog
+      - !ref catalog
+      - request_type
+      - !ref request_type
+      - snapshot_type
+      - !ref snapshot_type
+      - result_type
+      - !ref result_type
+      - validate_request
+      - !ref validate_request
+      - validate_snapshot
+      - !ref validate_snapshot
+      - value
+      - !ref value
+      - evidence
+      - !ref evidence
+      - same_evidence
+      - !ref same_evidence
+      - os_release
+      - !ref os_release
+      - identity_parse
+      - !ref identity_parse
+      - packages_parse
+      - !ref packages_parse
+      - services_parse
+      - !ref services_parse
+      - network_parse
+      - !ref network_parse
+      - decode
+      - !ref decode
+      - custom_decode
+      - !ref custom_decode
+      - gather
+      - !ref gather
+      - plan
+      - !ref plan
+      - check
+      - !ref check
+      - apply
+      - !ref apply

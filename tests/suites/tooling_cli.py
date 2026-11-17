@@ -123,10 +123,10 @@ def verify(h):
     from tooling.cli import parse
     for name, path in catalog["shortcuts"].items():
         extra = {"run": ["-"], "check": ["-"], "recover": ["-"], "resume": ["-"],
-                 "fmt": ["-"], "step": ["-"], "trace": ["-"], "watch": ["example.yaml"],
+                 "fmt": ["-"], "format": ["std"], "step": ["-"], "snapshot": ["-"], "restore": ["-"], "system-snapshot": ["-"], "system-restore": ["-"], "checkpoint": ["checkpoint.json"], "target-release": ["target.lock"], "reconcile": ["checkpoint.json", "observed.yaml"], "trace": ["-"], "watch": ["example.yaml"],
                  "state": ["-"], "completion": ["bash"], "sandbox": ["-", "-"], "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
                  "lint": ["--format=text"], "test": ["--suite", "cli"], "migrate-syntax": ["tests/cases"],
-                 "docker-nginx": ["describe"]}.get(name, [])
+                 "docker-nginx": ["describe"], "agent-bench": ["list"]}.get(name, [])
         short, full = parse([name, *extra]), parse([*path, *extra])
         assert {k: v for k, v in vars(short).items() if k != "help_parser"} == {
             k: v for k, v in vars(full).items() if k != "help_parser"
@@ -210,12 +210,34 @@ def verify_usage_log(h):
     assert invoke("eval", "1", HELIX_USAGE_LOG="0").returncode == 0
     assert invoke("std", "math").returncode == 0
     rows = sqlite3.connect(database).execute(
-        "SELECT command, exit_code, program, stdin_program FROM calls ORDER BY id").fetchall()
-    assert rows == [("eval", 0, '{"$call": ["add", 20, 22]}', 0), ("eval", 1, '{"$call": ["div", 1, 0]}', 0),
-                    ("std", 0, None, 0)], rows
+        "SELECT command, exit_code, program, stdin_program, stdout, stderr FROM calls ORDER BY id").fetchall()
+    assert [row[:4] for row in rows] == [("eval", 0, '{"$call": ["add", 20, 22]}', 0),
+                                         ("eval", 1, '{"$call": ["div", 1, 0]}', 0), ("std", 0, None, 0)], rows
+    identity = sqlite3.connect(database).execute("SELECT caller_role, model FROM calls ORDER BY id").fetchall()
+    assert identity == [('implementer', None)] * 3, identity
+    # Output is stored completely and identically to what the caller received.
+    assert [row[4:] for row in rows[:2]] == [(ok.stdout, ""), (failed.stdout, failed.stderr)], rows
+    assert rows[2][4] == invoke("std", "math").stdout, rows
+    # A program read from stdin is captured, and the child still receives it.
+    piped = subprocess.run([sys.executable, str(h.root / "manage.py"), "run", "-"], cwd=h.root, input="[1, 2]\n",
+                           capture_output=True, text=True, timeout=120, env=env)
+    last = sqlite3.connect(database).execute(
+        "SELECT program, stdin_program, stdout FROM calls ORDER BY id DESC LIMIT 1").fetchone()
+    assert piped.returncode == 0 and last == ("[1, 2]\n", 1, piped.stdout), (piped, last)
     report = json.loads(invoke("--format=json", "usage", "--sql", "SELECT COUNT(*) AS n FROM calls").stdout)
-    assert report["query"] == [{"n": 3}]
+    assert report["query"] == [{"n": 5}]
     assert invoke("usage", "--sql", "DELETE FROM calls").returncode == 2
     unusable = invoke("usage", HELIX_USAGE_DB=str(h.root / "runtime" / "missing" / "usage.sqlite3"))
     assert unusable.returncode == 2 and "usage log unavailable" in unusable.stderr
+    database.unlink()
+    # A database created before output capture gains the columns without losing rows.
+    legacy = sqlite3.connect(database)
+    legacy.execute("CREATE TABLE calls (id INTEGER PRIMARY KEY, started_at TEXT NOT NULL, duration_ms INTEGER,"
+                   " command TEXT NOT NULL, argv TEXT NOT NULL, cwd TEXT NOT NULL, exit_code INTEGER,"
+                   " program_path TEXT, program TEXT, program_sha256 TEXT, stdin_program INTEGER NOT NULL, agent TEXT)")
+    legacy.execute("INSERT INTO calls (started_at, command, argv, cwd, stdin_program) VALUES ('t', 'old', '[]', '.', 0)")
+    legacy.commit(), legacy.close()
+    assert invoke("eval", "1").returncode == 0
+    assert sqlite3.connect(database).execute("SELECT command, stdout FROM calls ORDER BY id").fetchall() == [
+        ("old", None), ("eval", "root: 1\nstatus: finished\n")]
     database.unlink()

@@ -1,3 +1,31 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - optional_fields
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - optional_fields
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields:
+        count:
+          default: 0
+          of: integer
+          type: default
+        name:
+          of: string
+          type: optional
+      type: record
 objects:
   object0:
     bindings: {}

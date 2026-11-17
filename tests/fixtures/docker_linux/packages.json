@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "snapshot": "same Debian snapshot as ../docker_nginx/versions.json",
+  "jq": "1.6-2.1+deb12u1",
+  "tree": "2.1.0-1"
+}

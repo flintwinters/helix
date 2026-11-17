@@ -1,3 +1,83 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - explicitly_combined
+        - "$call"
+        - 1
+        - "$call"
+        - 3
+        - settings
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      keep: 1
+      shared: 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - explicitly_combined
+        - "$call"
+        - 1
+        - "$call"
+        - 3
+        - settings
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value:
+      new: 2
+      shared: 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - merge
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - merge
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      keep: 1
+      new: 2
+      shared: 2
 root:
   emptied:
     packages: []

@@ -4,9 +4,16 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+regex = "1"
 yaml-rust2 = "0.13.0"
 serde_json = { version = "1.0", features = ["preserve_order", "arbitrary_precision"] }
 rusqlite = { version = "0.42", features = ["bundled", "hooks"] }
+
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
+bytes = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "macros", "io-util"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

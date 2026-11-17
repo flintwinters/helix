@@ -1,0 +1,618 @@
+objects:
+  object0:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - gt
+            - "$ref": "n"
+            - 0
+    environment: []
+    kind: function
+    location:
+      path:
+        - positive
+        - "$call"
+        - 2
+      source: "<root>"
+    program:
+      ref: object2
+  object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - "n"
+        - "$call":
+            - lt
+            - "$ref": "n"
+            - 10
+    environment: []
+    kind: function
+    location:
+      path:
+        - small
+        - "$call"
+        - 2
+      source: "<root>"
+    program:
+      ref: object2
+  object2:
+    kind: program
+    sources:
+      - code:
+          bad_keys:
+            "$call":
+              - try
+              - "$call":
+                  - map_of
+                  - integer
+                  - 3
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          bad_member:
+            "$call":
+              - try
+              - "$call":
+                  - tuple_of
+                  - integer
+                  - 3
+              - "$call":
+                  - fn
+                  - - e
+                  - "$call":
+                      - get
+                      - "$ref": e
+                      - kind
+          band:
+            "$call":
+              - intersection
+              - "$ref": positive
+              - "$ref": small
+          below_glb:
+            "$call":
+              - list
+              - "$call":
+                  - subtype
+                  - "$ref": band
+                  - "$ref": band
+              - "$call":
+                  - subtype
+                  - integer
+                  - "$ref": band
+              - "$call":
+                  - subtype
+                  - "$ref": positive
+                  - "$ref": band
+          disjoint_has_no_member:
+            "$call":
+              - is
+              - 1
+              - "$call":
+                  - intersection
+                  - integer
+                  - string
+          disjoint_is_bottom:
+            "$call":
+              - subtype
+              - "$call":
+                  - intersection
+                  - integer
+                  - string
+              - "$ref": unit
+          equivalence:
+            "$call":
+              - list
+              - "$call":
+                  - equivalent
+                  - "$call":
+                      - union
+                      - integer
+                      - string
+                  - "$call":
+                      - union
+                      - string
+                      - integer
+              - "$call":
+                  - equivalent
+                  - "$call":
+                      - intersection
+                      - integer
+                      - any
+                  - integer
+              - "$call":
+                  - equivalent
+                  - integer
+                  - float
+              - "$call":
+                  - eq
+                  - "$call":
+                      - union
+                      - integer
+                      - string
+                  - "$call":
+                      - union
+                      - string
+                      - integer
+          glb_below_each:
+            "$call":
+              - list
+              - "$call":
+                  - subtype
+                  - "$ref": band
+                  - "$ref": positive
+              - "$call":
+                  - subtype
+                  - "$ref": band
+                  - "$ref": small
+              - "$call":
+                  - subtype
+                  - "$ref": band
+                  - integer
+          glb_of_supertypes:
+            "$call":
+              - subtype
+              - integer
+              - "$call":
+                  - intersection
+                  - any
+                  - "$ref": number
+          intersection_membership:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - v
+                  - "$call":
+                      - is
+                      - "$ref": v
+                      - "$ref": band
+              - "$call":
+                  - list
+                  - 5
+                  - 0
+                  - 10
+                  - x
+          intersection_violations:
+            "$call":
+              - violations
+              - 10
+              - "$ref": band
+          keyed:
+            "$call":
+              - map_of
+              - integer
+              - "$call":
+                  - enum
+                  - a
+                  - b
+          keyed_membership:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - v
+                  - "$call":
+                      - is
+                      - "$ref": v
+                      - "$ref": keyed
+              - "$call":
+                  - list
+                  - {}
+                  - a: 1
+                  - a: 1
+                    b: 2
+                  - c: 1
+                  - a: x
+          keyed_reflection:
+            "$ref": keyed
+          keyed_subtyping:
+            "$call":
+              - list
+              - "$call":
+                  - subtype
+                  - "$ref": keyed
+                  - "$call":
+                      - map_of
+                      - integer
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - map_of
+                      - integer
+                  - "$ref": keyed
+              - "$call":
+                  - subtype
+                  - "$ref": keyed
+                  - "$call":
+                      - map_of
+                      - integer
+                      - string
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - literal
+                      - "$literal":
+                          a: x
+                  - "$call":
+                      - map_of
+                      - string
+                      - "$call":
+                          - literal
+                          - a
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - literal
+                      - "$literal":
+                          a: x
+                  - "$call":
+                      - map_of
+                      - string
+                      - "$call":
+                          - literal
+                          - b
+          keyed_violations:
+            "$call":
+              - violations
+              - c: 1
+              - "$ref": keyed
+          nested:
+            "$call":
+              - is
+              - x:
+                  "$call":
+                    - list
+                    - 1
+                    - a
+              - "$call":
+                  - record
+                  - x
+                  - "$ref": pair
+          number:
+            "$call":
+              - union
+              - integer
+              - float
+          pair:
+            "$call":
+              - tuple_of
+              - integer
+              - string
+          positive:
+            "$call":
+              - refine
+              - integer
+              - "$call":
+                  - fn
+                  - - "n"
+                  - "$call":
+                      - gt
+                      - "$ref": "n"
+                      - 0
+          reflection:
+            "$call":
+              - list
+              - "$ref": pair
+              - "$ref": band
+          small:
+            "$call":
+              - refine
+              - integer
+              - "$call":
+                  - fn
+                  - - "n"
+                  - "$call":
+                      - lt
+                      - "$ref": "n"
+                      - 10
+          tuple_length_violation:
+            "$call":
+              - violations
+              - "$call":
+                  - list
+                  - 1
+              - "$ref": pair
+          tuple_membership:
+            "$call":
+              - map
+              - "$call":
+                  - fn
+                  - - v
+                  - "$call":
+                      - is
+                      - "$ref": v
+                      - "$ref": pair
+              - "$call":
+                  - list
+                  - "$call":
+                      - list
+                      - 1
+                      - a
+                  - "$call":
+                      - list
+                      - a
+                      - 1
+                  - "$call":
+                      - list
+                      - 1
+                  - "$call":
+                      - list
+                      - 1
+                      - a
+                      - 2
+                  - {}
+          tuple_position_violation:
+            "$call":
+              - violations
+              - "$call":
+                  - list
+                  - 1
+                  - 2
+              - "$ref": pair
+          tuple_subtyping:
+            "$call":
+              - list
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - tuple_of
+                      - integer
+                      - integer
+                  - "$call":
+                      - tuple_of
+                      - "$ref": number
+                      - "$ref": number
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - tuple_of
+                      - "$ref": number
+                  - "$call":
+                      - tuple_of
+                      - integer
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - tuple_of
+                      - integer
+                  - "$call":
+                      - tuple_of
+                      - integer
+                      - integer
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - tuple_of
+                      - integer
+                      - integer
+                  - "$call":
+                      - list_of
+                      - "$ref": number
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - list_of
+                      - integer
+                  - "$call":
+                      - tuple_of
+                      - integer
+              - "$call":
+                  - subtype
+                  - "$ref": unit
+                  - "$call":
+                      - list_of
+                      - never
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - literal
+                      - "$literal":
+                          - 1
+                          - a
+                  - "$ref": pair
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - literal
+                      - "$literal":
+                          - a
+                          - b
+                  - "$call":
+                      - tuple_of
+                      - string
+                      - string
+              - "$call":
+                  - subtype
+                  - "$call":
+                      - literal
+                      - "$literal":
+                          - a
+                  - "$call":
+                      - tuple_of
+                      - string
+                      - string
+          unit:
+            "$call":
+              - tuple_of
+          unit_membership:
+            "$call":
+              - list
+              - "$call":
+                  - is
+                  - []
+                  - "$ref": unit
+              - "$call":
+                  - is
+                  - "$call":
+                      - list
+                      - 1
+                  - "$ref": unit
+        source: "<root>"
+root:
+  bad_keys: type
+  bad_member: type
+  band:
+    of:
+      - check:
+          ref: object0
+        of: integer
+        type: refine
+      - check:
+          ref: object1
+        of: integer
+        type: refine
+    type: intersection
+  below_glb:
+    - true
+    - false
+    - false
+  disjoint_has_no_member: false
+  disjoint_is_bottom: true
+  equivalence:
+    - true
+    - true
+    - false
+    - false
+  glb_below_each:
+    - true
+    - true
+    - true
+  glb_of_supertypes: true
+  intersection_membership:
+    - true
+    - false
+    - false
+    - false
+  intersection_violations:
+    - actual: 10
+      actual_present: true
+      at: /
+      expected: refined integer
+      message: failed its refinement check
+      predicate:
+        column: 42
+        line: 4
+        path: "/small/$call/2"
+        reference:
+          - small
+          - "$call"
+          - 2
+        source: "<root>"
+      rule: refinement
+  keyed:
+    keys:
+      type: enum
+      values:
+        - a
+        - b
+    of: integer
+    type: map
+  keyed_membership:
+    - true
+    - true
+    - true
+    - false
+    - false
+  keyed_reflection:
+    keys:
+      type: enum
+      values:
+        - a
+        - b
+    of: integer
+    type: map
+  keyed_subtyping:
+    - true
+    - false
+    - true
+    - true
+    - false
+  keyed_violations:
+    - actual: c
+      actual_present: true
+      at: /c
+      expected: "one of [a, b]"
+      message: "key c does not fit one of [a, b]"
+      rule: key
+  nested: true
+  number:
+    of:
+      - integer
+      - float
+    type: union
+  pair:
+    of:
+      - integer
+      - string
+    type: tuple
+  positive:
+    check:
+      ref: object0
+    of: integer
+    type: refine
+  reflection:
+    - of:
+        - integer
+        - string
+      type: tuple
+    - of:
+        - check:
+            ref: object0
+          of: integer
+          type: refine
+        - check:
+            ref: object1
+          of: integer
+          type: refine
+      type: intersection
+  small:
+    check:
+      ref: object1
+    of: integer
+    type: refine
+  tuple_length_violation:
+    - actual:
+        - 1
+      actual_present: true
+      at: /
+      expected: "tuple of (integer, string)"
+      message: "expected 2 items, got 1"
+      rule: length
+  tuple_membership:
+    - true
+    - false
+    - false
+    - false
+    - false
+  tuple_position_violation:
+    - actual: 2
+      actual_present: true
+      at: /1
+      expected: string
+      message: "expected string, got integer"
+      rule: type
+  tuple_subtyping:
+    - true
+    - false
+    - false
+    - true
+    - false
+    - true
+    - false
+    - true
+    - false
+  unit:
+    of: []
+    type: tuple
+  unit_membership:
+    - true
+    - false
+status: finished

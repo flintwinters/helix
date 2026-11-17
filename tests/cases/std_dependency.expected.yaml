@@ -1,1037 +1,1764 @@
-objects:
-  object0:
-    bindings:
-      ready:
-        code:
-          path:
-            - ready
-          source: "std:dependency"
-    code:
-      "$call":
-        - fn
-        - - state
-        - "$call":
-            - eq
-            - "$call":
-                - len
-                - "$call":
-                    - ready
-                    - "$call":
-                        - get
-                        - "$ref": state
-                        - pending
-                    - "$call":
-                        - get
-                        - "$ref": state
-                        - order
-            - 0
-    environment: []
-    kind: function
-    location:
+annotations:
+  - declaration:
+      code:
+        "$call":
+          - map_of
+          - "$call":
+              - list_of
+              - "$ref": string
+          - "$ref": provider.name
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:dependency"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
       path:
-        - done
-      source: "std:dependency"
-    program:
-      ref: object8
-  object1:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - left
-            - "$ref": map
-          - - right
-            - "$ref": map
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - result
-                  - key
-                - "$call":
-                    - set
-                    - "$ref": result
-                    - "$ref": key
-                    - "$call":
-                        - get
-                        - "$ref": right
-                        - "$ref": key
-            - "$ref": left
-            - "$call":
-                - keys
-                - "$ref": right
-        - "$ref": map
-    environment: []
-    kind: function
-    location:
-      path:
-        - merge
-      source: "std:map"
-    program:
-      ref: object8
-  object2:
-    bindings:
-      select:
-        code:
-          path:
-            - select
-          source: "std:map"
-    code:
-      "$call":
-        - fn
-        - - - source
-            - "$ref": map
-          - - requested
-            - "$call":
-                - list_of
-                - "$ref": string
-        - "$call":
-            - select
-            - "$ref": source
-            - "$call":
-                - filter
-                - "$call":
-                    - fn
-                    - - name
-                    - "$call":
-                        - not
-                        - "$call":
-                            - has
-                            - "$ref": requested
-                            - "$ref": name
-                - "$call":
-                    - keys
-                    - "$ref": source
-        - "$ref": map
-    environment: []
-    kind: function
-    location:
-      path:
-        - omit
-      source: "std:map"
-    program:
-      ref: object8
-  object3:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - source
-            - "$ref": map
-          - - key
-            - "$ref": string
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - result
-                  - name
-                - "$call":
-                    - if
-                    - "$call":
-                        - eq
-                        - "$ref": name
-                        - "$ref": key
-                    - "$ref": result
-                    - "$call":
-                        - set
-                        - "$ref": result
-                        - "$ref": name
-                        - "$call":
-                            - get
-                            - "$ref": source
-                            - "$ref": name
-            - {}
-            - "$call":
-                - keys
-                - "$ref": source
-        - "$ref": map
-    environment: []
-    kind: function
-    location:
-      path:
-        - remove
-      source: "std:map"
-    program:
-      ref: object8
-  object4:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - source
-            - "$ref": map
-          - - requested
-            - "$call":
-                - list_of
-                - "$ref": string
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - result
-                  - name
-                - "$call":
-                    - if
-                    - "$call":
-                        - has
-                        - "$ref": requested
-                        - "$ref": name
-                    - "$call":
-                        - set
-                        - "$ref": result
-                        - "$ref": name
-                        - "$call":
-                            - get
-                            - "$ref": source
-                            - "$ref": name
-                    - "$ref": result
-            - {}
-            - "$call":
-                - keys
-                - "$ref": source
-        - "$ref": map
-    environment: []
-    kind: function
-    location:
-      path:
-        - select
-      source: "std:map"
-    program:
-      ref: object8
-  object5:
-    bindings:
-      done:
-        code:
-          path:
-            - done
-          source: "std:dependency"
-      step:
-        code:
-          path:
-            - step
-          source: "std:dependency"
-    code:
-      "$call":
-        - fn
-        - - - tasks
-            - "$call":
-                - map_of
-                - "$call":
-                    - list_of
-                    - "$ref": string
-        - "$call":
-            - let
-            - final:
-                "$call":
-                  - until
-                  - "$ref": done
-                  - "$ref": step
-                  - "$ref": initial
-              initial:
-                "$call":
-                  - set
-                  - "$call":
-                      - set
-                      - {}
-                      - pending
-                      - "$ref": tasks
-                  - order
-                  - []
-              missing:
-                "$call":
-                  - fold
-                  - "$call":
-                      - fn
-                      - - acc
-                        - task
-                      - "$call":
-                          - concat
-                          - "$ref": acc
-                          - "$call":
-                              - map
-                              - "$call":
-                                  - fn
-                                  - - dep
-                                  - "$call":
-                                      - set
-                                      - "$call":
-                                          - set
-                                          - {}
-                                          - task
-                                          - "$ref": task
-                                      - dependency
-                                      - "$ref": dep
-                              - "$call":
-                                  - filter
-                                  - "$call":
-                                      - fn
-                                      - - dep
-                                      - "$call":
-                                          - not
-                                          - "$call":
-                                              - has
-                                              - "$ref": tasks
-                                              - "$ref": dep
-                                  - "$call":
-                                      - get
-                                      - "$ref": tasks
-                                      - "$ref": task
-                  - []
-                  - "$call":
-                      - keys
-                      - "$ref": tasks
-            - "$call":
-                - set
-                - "$call":
-                    - set
-                    - "$ref": final
-                    - missing
-                    - "$ref": missing
-                - status
-                - "$call":
-                    - if
-                    - "$call":
-                        - eq
-                        - "$call":
-                            - len
-                            - "$call":
-                                - get
-                                - "$ref": final
-                                - pending
-                        - 0
-                    - finished
-                    - blocked
-    environment: []
-    kind: function
-    location:
-      path:
-        - plan
-      source: "std:dependency"
-    program:
-      ref: object8
-  object6:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - pending
-          - order
-        - "$call":
-            - filter
-            - "$call":
-                - fn
-                - - task
-                - "$call":
-                    - fold
-                    - "$call":
-                        - fn
-                        - - ok
-                          - dep
-                        - "$call":
-                            - and
-                            - "$ref": ok
-                            - "$call":
-                                - has
-                                - "$ref": order
-                                - "$ref": dep
-                    - true
-                    - "$call":
-                        - get
-                        - "$ref": pending
-                        - "$ref": task
-            - "$call":
-                - keys
-                - "$ref": pending
-    environment: []
-    kind: function
-    location:
-      path:
-        - ready
-      source: "std:dependency"
-    program:
-      ref: object8
-  object7:
-    bindings:
-      maps.omit:
-        code:
-          path:
-            - omit
-          source: "std:map"
-      ready:
-        code:
-          path:
-            - ready
-          source: "std:dependency"
-    code:
-      "$call":
-        - fn
-        - - state
-        - "$call":
-            - let
-            - batch:
-                "$call":
-                  - ready
-                  - "$ref": pending
-                  - "$ref": order
-              order:
-                "$call":
-                  - get
-                  - "$ref": state
-                  - order
-              pending:
-                "$call":
-                  - get
-                  - "$ref": state
-                  - pending
-            - "$call":
-                - set
-                - "$call":
-                    - set
-                    - {}
-                    - order
-                    - "$call":
-                        - concat
-                        - "$ref": order
-                        - "$ref": batch
-                - pending
-                - "$call":
-                    - maps.omit
-                    - "$ref": pending
-                    - "$ref": batch
-    environment: []
-    kind: function
-    location:
+        - batches
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      keys:
+        check:
+          kind: function
+          location:
+            path:
+              - name
+              - "$call"
+              - 2
+            source: "std:provider"
+        of: string
+        type: refine
+      of:
+        of: string
+        type: list
+      type: map
+    value:
+      first: []
+      last:
+        - first
+      other: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
       path:
         - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
       source: "std:dependency"
-    program:
-      ref: object8
-  object8:
-    kind: program
-    sources:
-      - code:
-          batches:
-            "$call":
-              - d.plan
-              - first: []
-                last:
-                  - first
-                other: []
-          batches_ok:
-            "$call":
-              - assert
-              - "$call":
-                  - eq
-                  - "$call":
-                      - get
-                      - "$ref": batches
-                      - order
-                  - - first
-                    - other
-                    - last
-          cycle:
-            "$call":
-              - d.plan
-              - a:
-                  - b
-                b:
-                  - a
-                downstream:
-                  - a
-                free: []
-          cycle_ok:
-            "$call":
-              - assert
-              - "$call":
-                  - eq
-                  - "$ref": cycle
-                  - missing: []
-                    order:
-                      - free
-                    pending:
-                      a:
-                        - b
-                      b:
-                        - a
-                      downstream:
-                        - a
-                    status: blocked
-          d:
-            "$call":
-              - import
-              - "std:dependency"
-          duplicates:
-            "$call":
-              - d.plan
-              - end:
-                  - start
-                  - start
-                start: []
-          duplicates_ok:
-            "$call":
-              - assert
-              - "$call":
-                  - eq
-                  - "$call":
-                      - get
-                      - "$ref": duplicates
-                      - order
-                  - - start
-                    - end
-          empty:
-            "$call":
-              - d.plan
-              - {}
-          empty_ok:
-            "$call":
-              - assert
-              - "$call":
-                  - eq
-                  - "$ref": empty
-                  - missing: []
-                    order: []
-                    pending: {}
-                    status: finished
-          independent:
-            "$call":
-              - d.plan
-              - "": []
-                a: []
-                z: []
-                "🙂": []
-          missing:
-            "$call":
-              - d.plan
-              - a:
-                  - absent
-                b:
-                  - "no"
-                  - "no"
-                independent: []
-          missing_ok:
-            "$call":
-              - assert
-              - "$call":
-                  - eq
-                  - "$call":
-                      - get
-                      - "$ref": missing
-                      - missing
-                  - - dependency: absent
-                      task: a
-                    - dependency: "no"
-                      task: b
-                    - dependency: "no"
-                      task: b
-          pending_order:
-            "$call":
-              - assert
-              - "$call":
-                  - eq
-                  - "$call":
-                      - keys
-                      - "$call":
-                          - get
-                          - "$ref": missing
-                          - pending
-                  - - a
-                    - b
-          self_cycle:
-            "$call":
-              - d.plan
-              - self:
-                  - self
-          stable:
-            "$call":
-              - assert
-              - "$call":
-                  - eq
-                  - "$call":
-                      - get
-                      - "$ref": independent
-                      - order
-                  - - ""
-                    - a
-                    - z
-                    - "🙂"
-          unicode:
-            "$call":
-              - d.plan
-              - "": []
-                "🙂":
-                  - ""
-          unicode_ok:
-            "$call":
-              - assert
-              - "$call":
-                  - eq
-                  - "$call":
-                      - get
-                      - "$ref": unicode
-                      - order
-                  - - ""
-                    - "🙂"
-          wrong_arity:
-            "$call":
-              - try
-              - "$call":
-                  - d.plan
-              - "$call":
-                  - fn
-                  - - e
-                  - "$call":
-                      - get
-                      - "$ref": e
-                      - kind
-          wrong_dependency:
-            "$call":
-              - try
-              - "$call":
-                  - d.plan
-                  - a:
-                      - ~
-              - "$call":
-                  - fn
-                  - - e
-                  - "$call":
-                      - get
-                      - "$ref": e
-                      - kind
-          wrong_list:
-            "$call":
-              - try
-              - "$call":
-                  - d.plan
-                  - a: b
-              - "$call":
-                  - fn
-                  - - e
-                  - "$call":
-                      - get
-                      - "$ref": e
-                      - kind
-          wrong_map:
-            "$call":
-              - try
-              - "$call":
-                  - d.plan
-                  - []
-              - "$call":
-                  - fn
-                  - - e
-                  - "$call":
-                      - get
-                      - "$ref": e
-                      - kind
-        source: "<root>"
-      - code:
-          done:
-            "$call":
-              - fn
-              - - state
-              - "$call":
-                  - eq
-                  - "$call":
-                      - len
-                      - "$call":
-                          - ready
-                          - "$call":
-                              - get
-                              - "$ref": state
-                              - pending
-                          - "$call":
-                              - get
-                              - "$ref": state
-                              - order
-                  - 0
-          maps:
-            "$call":
-              - import
-              - "std:map"
-          plan:
-            "$call":
-              - fn
-              - - - tasks
-                  - "$call":
-                      - map_of
-                      - "$call":
-                          - list_of
-                          - "$ref": string
-              - "$call":
-                  - let
-                  - final:
-                      "$call":
-                        - until
-                        - "$ref": done
-                        - "$ref": step
-                        - "$ref": initial
-                    initial:
-                      "$call":
-                        - set
-                        - "$call":
-                            - set
-                            - {}
-                            - pending
-                            - "$ref": tasks
-                        - order
-                        - []
-                    missing:
-                      "$call":
-                        - fold
-                        - "$call":
-                            - fn
-                            - - acc
-                              - task
-                            - "$call":
-                                - concat
-                                - "$ref": acc
-                                - "$call":
-                                    - map
-                                    - "$call":
-                                        - fn
-                                        - - dep
-                                        - "$call":
-                                            - set
-                                            - "$call":
-                                                - set
-                                                - {}
-                                                - task
-                                                - "$ref": task
-                                            - dependency
-                                            - "$ref": dep
-                                    - "$call":
-                                        - filter
-                                        - "$call":
-                                            - fn
-                                            - - dep
-                                            - "$call":
-                                                - not
-                                                - "$call":
-                                                    - has
-                                                    - "$ref": tasks
-                                                    - "$ref": dep
-                                        - "$call":
-                                            - get
-                                            - "$ref": tasks
-                                            - "$ref": task
-                        - []
-                        - "$call":
-                            - keys
-                            - "$ref": tasks
-                  - "$call":
-                      - set
-                      - "$call":
-                          - set
-                          - "$ref": final
-                          - missing
-                          - "$ref": missing
-                      - status
-                      - "$call":
-                          - if
-                          - "$call":
-                              - eq
-                              - "$call":
-                                  - len
-                                  - "$call":
-                                      - get
-                                      - "$ref": final
-                                      - pending
-                              - 0
-                          - finished
-                          - blocked
-          ready:
-            "$call":
-              - fn
-              - - pending
-                - order
-              - "$call":
-                  - filter
-                  - "$call":
-                      - fn
-                      - - task
-                      - "$call":
-                          - fold
-                          - "$call":
-                              - fn
-                              - - ok
-                                - dep
-                              - "$call":
-                                  - and
-                                  - "$ref": ok
-                                  - "$call":
-                                      - has
-                                      - "$ref": order
-                                      - "$ref": dep
-                          - true
-                          - "$call":
-                              - get
-                              - "$ref": pending
-                              - "$ref": task
-                  - "$call":
-                      - keys
-                      - "$ref": pending
-          step:
-            "$call":
-              - fn
-              - - state
-              - "$call":
-                  - let
-                  - batch:
-                      "$call":
-                        - ready
-                        - "$ref": pending
-                        - "$ref": order
-                    order:
-                      "$call":
-                        - get
-                        - "$ref": state
-                        - order
-                    pending:
-                      "$call":
-                        - get
-                        - "$ref": state
-                        - pending
-                  - "$call":
-                      - set
-                      - "$call":
-                          - set
-                          - {}
-                          - order
-                          - "$call":
-                              - concat
-                              - "$ref": order
-                              - "$ref": batch
-                      - pending
-                      - "$call":
-                          - maps.omit
-                          - "$ref": pending
-                          - "$ref": batch
-        source: "std:dependency"
-      - code:
-          merge:
-            "$call":
-              - fn
-              - - - left
-                  - "$ref": map
-                - - right
-                  - "$ref": map
-              - "$call":
-                  - fold
-                  - "$call":
-                      - fn
-                      - - result
-                        - key
-                      - "$call":
-                          - set
-                          - "$ref": result
-                          - "$ref": key
-                          - "$call":
-                              - get
-                              - "$ref": right
-                              - "$ref": key
-                  - "$ref": left
-                  - "$call":
-                      - keys
-                      - "$ref": right
-              - "$ref": map
-          omit:
-            "$call":
-              - fn
-              - - - source
-                  - "$ref": map
-                - - requested
-                  - "$call":
-                      - list_of
-                      - "$ref": string
-              - "$call":
-                  - select
-                  - "$ref": source
-                  - "$call":
-                      - filter
-                      - "$call":
-                          - fn
-                          - - name
-                          - "$call":
-                              - not
-                              - "$call":
-                                  - has
-                                  - "$ref": requested
-                                  - "$ref": name
-                      - "$call":
-                          - keys
-                          - "$ref": source
-              - "$ref": map
-          remove:
-            "$call":
-              - fn
-              - - - source
-                  - "$ref": map
-                - - key
-                  - "$ref": string
-              - "$call":
-                  - fold
-                  - "$call":
-                      - fn
-                      - - result
-                        - name
-                      - "$call":
-                          - if
-                          - "$call":
-                              - eq
-                              - "$ref": name
-                              - "$ref": key
-                          - "$ref": result
-                          - "$call":
-                              - set
-                              - "$ref": result
-                              - "$ref": name
-                              - "$call":
-                                  - get
-                                  - "$ref": source
-                                  - "$ref": name
-                  - {}
-                  - "$call":
-                      - keys
-                      - "$ref": source
-              - "$ref": map
-          select:
-            "$call":
-              - fn
-              - - - source
-                  - "$ref": map
-                - - requested
-                  - "$call":
-                      - list_of
-                      - "$ref": string
-              - "$call":
-                  - fold
-                  - "$call":
-                      - fn
-                      - - result
-                        - name
-                      - "$call":
-                          - if
-                          - "$call":
-                              - has
-                              - "$ref": requested
-                              - "$ref": name
-                          - "$call":
-                              - set
-                              - "$ref": result
-                              - "$ref": name
-                              - "$call":
-                                  - get
-                                  - "$ref": source
-                                  - "$ref": name
-                          - "$ref": result
-                  - {}
-                  - "$call":
-                      - keys
-                      - "$ref": source
-              - "$ref": map
+    type: map
+    value:
+      first: []
+      last:
+        - first
+      other: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
         source: "std:map"
-root:
-  batches:
-    missing: []
-    order:
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:dependency"
+    type:
+      of: string
+      type: list
+    value:
       - first
       - other
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      first: []
+      last:
+        - first
+      other: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value:
       - last
-    pending: {}
-    status: finished
-  batches_ok: ~
-  cycle:
-    missing: []
-    order:
-      - free
-    pending:
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      last:
+        - first
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      last:
+        - first
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:dependency"
+    type: map
+    value:
+      last:
+        - first
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:dependency"
+    type:
+      of: string
+      type: list
+    value:
+      - last
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      last:
+        - first
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:dependency"
+    type: map
+    value:
+      first: []
+      last:
+        - first
+      other: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:dependency"
+    type:
+      of: string
+      type: list
+    value:
+      - first
+      - other
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      first: []
+      last:
+        - first
+      other: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value:
+      - last
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      last:
+        - first
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      last:
+        - first
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:dependency"
+    type: map
+    value:
+      last:
+        - first
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:dependency"
+    type:
+      of: string
+      type: list
+    value:
+      - last
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      last:
+        - first
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$call":
+          - map_of
+          - "$call":
+              - list_of
+              - "$ref": string
+          - "$ref": provider.name
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:dependency"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - cycle
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      keys:
+        check:
+          kind: function
+          location:
+            path:
+              - name
+              - "$call"
+              - 2
+            source: "std:provider"
+        of: string
+        type: refine
+      of:
+        of: string
+        type: list
+      type: map
+    value:
       a:
         - b
       b:
         - a
       downstream:
         - a
-    status: blocked
-  cycle_ok: ~
-  d:
-    done:
-      ref: object0
-    maps:
-      merge:
-        ref: object1
-      omit:
-        ref: object2
-      remove:
-        ref: object3
-      select:
-        ref: object4
-    plan:
-      ref: object5
-    ready:
-      ref: object6
-    step:
-      ref: object7
-  duplicates:
-    missing: []
-    order:
-      - start
-      - end
-    pending: {}
-    status: finished
-  duplicates_ok: ~
-  empty:
-    missing: []
-    order: []
-    pending: {}
-    status: finished
-  empty_ok: ~
-  independent:
-    missing: []
-    order:
-      - ""
-      - a
-      - z
-      - "🙂"
-    pending: {}
-    status: finished
-  missing:
-    missing:
-      - dependency: absent
-        task: a
-      - dependency: "no"
-        task: b
-      - dependency: "no"
-        task: b
-    order:
-      - independent
-    pending:
+      free: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:dependency"
+    type: map
+    value:
       a:
-        - absent
+        - b
       b:
-        - "no"
-        - "no"
-    status: blocked
-  missing_ok: ~
-  pending_order: ~
-  self_cycle:
-    missing: []
-    order: []
-    pending:
-      self:
-        - self
-    status: blocked
-  stable: ~
-  unicode:
-    missing: []
-    order:
-      - ""
-      - "🙂"
-    pending: {}
-    status: finished
-  unicode_ok: ~
-  wrong_arity: arity
-  wrong_dependency: type
-  wrong_list: type
-  wrong_map: type
-status: finished
+        - a
+      downstream:
+        - a
+      free: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:dependency"
+    type:
+      of: string
+      type: list
+    value:
+      - free
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      a:
+        - b
+      b:
+        - a
+      downstream:
+        - a
+      free: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value:
+      - a
+      - b
+      - downstream
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      a:
+        - b
+      b:
+        - a
+      downstream:
+        - a
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      a:
+        - b
+      b:
+        - a
+      downstream:
+        - a
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:dependency"
+    type: map
+    value:
+      a:
+        - b
+      b:
+        - a
+      downstream:
+        - a
+      free: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:dependency"
+    type:
+      of: string
+      type: list
+    value:
+      - free
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      a:
+        - b
+      b:
+        - a
+      downstream:
+        - a
+      free: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value:
+      - a
+      - b
+      - downstream
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      a:
+        - b
+      b:
+        - a
+      downstream:
+        - a
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      a:
+        - b
+      b:
+        - a
+      downstream:
+        - a
+  - declaration:
+      code:
+        "$call":
+          - map_of
+          - "$call":
+              - list_of
+              - "$ref": string
+          - "$ref": provider.name
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:dependency"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - duplicates
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      keys:
+        check:
+          kind: function
+          location:
+            path:
+              - name
+              - "$call"
+              - 2
+            source: "std:provider"
+        of: string
+        type: refine
+      of:
+        of: string
+        type: list
+      type: map
+    value:
+      end:
+        - start
+        - start
+      start: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:dependency"
+    type: map
+    value:
+      end:
+        - start
+        - start
+      start: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:dependency"
+    type:
+      of: string
+      type: list
+    value:
+      - start
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      end:
+        - start
+        - start
+      start: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value:
+      - end
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      end:
+        - start
+        - start
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      end:
+        - start
+        - start
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:dependency"
+    type: map
+    value:
+      end:
+        - start
+        - start
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:dependency"
+    type:
+      of: string
+      type: list
+    value:
+      - end
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      end:
+        - start
+        - start
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:dependency"
+    type: map
+    value:
+      end:
+        - start
+        - start
+      start: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:dependency"
+    type:
+      of: string
+      type: list
+    value:
+      - start
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      end:
+        - start
+        - start
+      start: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value:
+      - end
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      end:
+        - start
+        - start
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      end:
+        - start
+        - start
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:dependency"
+    type: map
+    value:
+      end:
+        - start
+        - start
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - step
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:dependency"
+    type:
+      of: string
+      type: list
+    value:
+      - end
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      end:
+        - start
+        - start
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$call":
+          - map_of
+          - "$call":
+              - list_of
+              - "$ref": string
+          - "$ref": provider.name
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:dependency"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - empty
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      keys:
+        check:
+          kind: function
+          location:
+            path:
+              - name
+              - "$call"
+              - 2
+            source: "std:provider"
+        of: string
+        type: refine
+      of:
+        of: string
+        type: list
+      type: map
+    value: {}
+error:
+  calls:
+    - column: 16
+      function: /plan
+      function_column: 3
+      function_file: "std:dependency"
+      function_line: 17
+      line: 8
+      path: /independent
+  column: 37
+  data:
+    violations:
+      - actual: ""
+        actual_present: true
+        argument: tasks
+        argument_location:
+          column: 37
+          line: 8
+          path: "/independent/$call/1"
+          reference:
+            path:
+              - independent
+              - "$call"
+              - 1
+            source: "<root>"
+        at: /
+        expected: refined string
+        message: key  does not fit refined string
+        rule: key
+  kind: type
+  line: 8
+  message: "1 type violation in the arguments of `/plan`: key  does not fit refined string"
+  path: "/independent/$call/1"
+  reference:
+    - independent
+    - "$call"
+    - 1
+status: error

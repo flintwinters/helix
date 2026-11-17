@@ -135,9 +135,11 @@ reconciliation. General machine application remains future work. The
 [charter](CHARTER.md) tracks that work and the suspend/resume design.
 
 The language, Rust API, and saved-state format are experimental and may change.
-Saved states have no format version or migration support yet. Keep source and
-the runtime revision together when reproducibility matters. Recovery can retry
-unfinished fields after an error, but cannot restore active calls or iterations.
+Versioned snapshots restore bounded execution, including active calls and
+iterations; YAML inspection output is a separate format. Keep the runtime revision
+when reproducibility matters. [Effect journals](HOST.md#durable-effect-checkpoints)
+require explicit reconciliation before resuming uncertain host requests. Pure
+failed-run recovery can separately retry unfinished fields after an error.
 
 ## Development
 
@@ -175,9 +177,6 @@ and needs Git, Node.js, and npm; the command sets it up when needed.
 - [AGENTS.md](AGENTS.md): architecture, invariants, and change discipline.
 - [std/](std/): bundled libraries written in Helix; `./manage.py std` lists them.
 
-The earlier C++ experiment lives in
-[flintwinters/helixcpp](https://github.com/flintwinters/helixcpp).
-
 ### Change workflow
 
 - Keep implementation and regression coverage in the same logical checkpoint.
@@ -201,9 +200,10 @@ to discover embedded libraries and read their source.
 
 Every runtime invocation made through `./manage.py` (`run`, `eval`, `exec`, `cli`,
 `perform`, `check`, ...) is recorded in `runtime/usage.sqlite3` (table `calls`: command,
-argv, source text or file contents, exit code, duration, caller). Analyse it with
+argv, complete source text including stdin programs, stdout, stderr, exit code, duration, caller). Analyse it with
 `./manage.py inspect usage` (summary), `--schema`, or read-only `--sql 'SELECT ...'`.
-Stdin programs are flagged but not captured. `HELIX_USAGE_LOG=0` disables logging,
+Output is teed without altering the child's descriptors; streams attached to a terminal and
+the interactive `lsp`, `repl` and `watch` commands are stored as NULL. `HELIX_USAGE_LOG=0` disables logging,
 `HELIX_USAGE_DB` relocates it, `HELIX_AGENT` labels the caller (`claude-code` is
 inferred from `CLAUDECODE`). Test runs do not log, and the installed `helix` binary
 or `target/` executables invoked directly bypass the log. The log is written by

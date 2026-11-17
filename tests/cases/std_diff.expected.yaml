@@ -1,3 +1,589 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - add_null
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - add_null
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value:
+      "n": ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 3
+        source: "std:diff"
+    kind: result
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+      source: "std:diff"
+    type: map
+    value:
+      added:
+        - "n"
+      changed: []
+      removed: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - empty
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - empty
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 3
+        source: "std:diff"
+    kind: result
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+      source: "std:diff"
+    type: map
+    value:
+      added: []
+      changed: []
+      removed: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - identity
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "": false
+      gone: ~
+      nested:
+        x: 1
+      same:
+        - ~
+        - false
+        - 0
+      z: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - identity
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value:
+      "": false
+      gone: ~
+      nested:
+        x: 1
+      same:
+        - ~
+        - false
+        - 0
+      z: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 3
+        source: "std:diff"
+    kind: result
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+      source: "std:diff"
+    type: map
+    value:
+      added: []
+      changed: []
+      removed: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - numeric_equality
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "n": 1
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - numeric_equality
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value:
+      "n": 1.0
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 3
+        source: "std:diff"
+    kind: result
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+      source: "std:diff"
+    type: map
+    value:
+      added: []
+      changed: []
+      removed: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - report
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "": false
+      gone: ~
+      nested:
+        x: 1
+      same:
+        - ~
+        - false
+        - 0
+      z: ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - report
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value:
+      "": 0
+      a: false
+      nested:
+        x: 2
+      same:
+        - ~
+        - false
+        - 0
+      z: ~
+      "🙂": ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 3
+        source: "std:diff"
+    kind: result
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+      source: "std:diff"
+    type: map
+    value:
+      added:
+        - a
+        - "🙂"
+      changed:
+        - after: 0
+          before: false
+          key: ""
+        - after:
+            x: 2
+          before:
+            x: 1
+          key: nested
+      removed:
+        - gone
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - remove_null
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "n": ~
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - remove_null
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 3
+        source: "std:diff"
+    kind: result
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+      source: "std:diff"
+    type: map
+    value:
+      added: []
+      changed: []
+      removed:
+        - "n"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - reordered
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      a: 1
+      b: 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - reordered
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value:
+      a: 1
+      b: 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 3
+        source: "std:diff"
+    kind: result
+    target:
+      path:
+        - compare
+        - "$call"
+        - 2
+      source: "std:diff"
+    type: map
+    value:
+      added: []
+      changed: []
+      removed: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - wrong_new
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - compare
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:diff"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 1
+        - wrong_old
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: map
+    value: {}
 root:
   add_null: ~
   empty: ~

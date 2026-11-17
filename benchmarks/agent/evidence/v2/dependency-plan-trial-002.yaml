@@ -1,0 +1,94 @@
+solve: !call
+  - fn
+  - [input]
+  - !call
+      - let
+      - done: !call
+          - fn
+          - [state]
+          - !call
+              - eq
+              - !call
+                  - len
+                  - !call
+                      - ready
+                      - !call [get, !ref state, pending]
+                      - !call [get, !ref state, completed]
+              - 0
+        m: !call [import, "std:map"]
+        find_missing: !call
+          - fn
+          - [source]
+          - !call
+              - fold
+              - !call
+                  - fn
+                  - [acc, task]
+                  - !call
+                      - fold
+                      - !call
+                          - fn
+                          - [inner, dependency]
+                          - !call
+                              - if
+                              - !call [has, !ref source, !ref dependency]
+                              - !ref inner
+                              - !call
+                                  - append
+                                  - !ref inner
+                                  - {dependency: !ref dependency, task: !ref task}
+                      - !ref acc
+                      - !call [get, !ref source, !ref task]
+              - []
+              - !call [keys, !ref source]
+        ready: !call
+          - fn
+          - [pending, completed]
+          - !call
+              - filter
+              - !call
+                  - fn
+                  - [task]
+                  - !call
+                      - fold
+                      - !call
+                          - fn
+                          - [ok, dependency]
+                          - !call [and, !ref ok, !call [has, !ref completed, !ref dependency]]
+                      - true
+                      - !call [get, !ref pending, !ref task]
+              - !call [keys, !ref pending]
+        step: !call
+          - fn
+          - [state]
+          - !call
+              - let
+              - batch: !call
+                  - ready
+                  - !call [get, !ref state, pending]
+                  - !call [get, !ref state, completed]
+              - completed: !call [concat, !call [get, !ref state, completed], !ref batch]
+                order: !call [concat, !call [get, !ref state, order], !ref batch]
+                pending: !call
+                  - fold
+                  - !call
+                      - fn
+                      - [remaining, task]
+                      - !call [m.remove, !ref remaining, !ref task]
+                  - !call [get, !ref state, pending]
+                  - !ref batch
+      - !call
+          - let
+          - state: !call
+              - until
+              - !ref done
+              - !ref step
+              - {completed: [], order: [], pending: !ref input}
+          - find_missing: !call [find_missing, !ref input]
+            order: !call [get, !ref state, order]
+            pending: !call [get, !ref state, pending]
+            status: !call
+              - if
+              - !call [eq, !call [len, !call [keys, !call [get, !ref state, pending]]], 0]
+              - finished
+              - blocked

@@ -96,8 +96,12 @@ def options():
 class Docker:
     """Bounded Docker subprocesses with retained output and owned-resource cleanup."""
 
-    def __init__(self, root, run_id=None):
+    # Fixture directory under tests/fixtures holding the Dockerfile and host helper.
+    fixture = "docker_nginx"
+
+    def __init__(self, root, run_id=None, *, ssh=False):
         self.root = root
+        self.ssh = ssh
         self.run_id = run_id or uuid.uuid4().hex
         if not re.fullmatch(r"[a-f0-9]{32}", self.run_id):
             raise ValueError("run id must be the 32 lowercase hex characters in the report")
@@ -126,7 +130,10 @@ class Docker:
             timeout = min(timeout, max(0.1, deadline - time.monotonic()))
         self.serial += 1
         prefix = self.artifacts / f"command-{self.serial:04d}"
-        command = ["docker", *map(str, args)]
+        sudo = os.environ.get("HELIX_DOCKER_SUDO", "0")
+        if sudo not in {"0", "1"}:
+            raise ValueError("HELIX_DOCKER_SUDO must be 0 or 1")
+        command = [*(["sudo", "-n"] if sudo == "1" else []), "docker", *map(str, args)]
         prefix.with_suffix(".stdin").write_text(input_text or "")
         with prefix.with_suffix(".stdin").open() as source, prefix.with_suffix(".stdout").open("w+") as out, prefix.with_suffix(".stderr").open("w+") as err:
             start = time.monotonic()
@@ -165,13 +172,14 @@ class Docker:
         context.mkdir()
         for name in ("Cargo.toml", "Cargo.lock"):
             shutil.copy2(self.root / name, context / name)
-        for name in ("src", "std", "completions", "editor", "tests/programs", "tests/fixtures/docker_nginx"):
+        for name in ("src", "std", "completions", "editor", "tests/programs", f"tests/fixtures/{self.fixture}"):
             shutil.copytree(self.root / name, context / name)
         self.command("build", "--force-rm", "--platform", VERSIONS["platform"], "--label", f"{LABEL}={self.run_id}",
                      "--build-arg", "HELIX_BUILDER_IMAGE=" + VERSIONS["builder"],
                      "--build-arg", "HELIX_RUNTIME_IMAGE=" + VERSIONS["image"],
                      "--build-arg", "HELIX_PACKAGE_SNAPSHOT=" + VERSIONS["package_snapshot"],
-                     "-t", self.image, "-f", str(context / "tests/fixtures/docker_nginx/Dockerfile"), str(context), timeout=1800)
+                     "--build-arg", "HELIX_SSH_ACCEPTANCE=" + ("1" if self.ssh else "0"),
+                     "-t", self.image, "-f", str(context / f"tests/fixtures/{self.fixture}/Dockerfile"), str(context), timeout=1800)
         image = self.command("image", "inspect", self.image)
         (self.artifacts / "image.json").write_text(image.stdout)
         self.command("network", "create", "--label", f"{LABEL}={self.run_id}", self.network)
@@ -185,7 +193,7 @@ class Docker:
         self.container = f"helix-nginx-{self.run_id}"
         self.command("run", "-d", "--name", self.container, "--label", f"{LABEL}={self.run_id}",
                      "--platform", VERSIONS["platform"], "--network", self.network, "--pids-limit", "256", "--memory", "512m",
-                     "--publish", "127.0.0.1::8080", self.image)
+                     "--publish", "127.0.0.1::8080", *(["--publish", "127.0.0.1::2222"] if self.ssh else []), self.image)
         self.wait_supervisor()
         metadata = json.loads(self.command("inspect", self.container).stdout)[0]
         assert metadata["HostConfig"]["Privileged"] is False and metadata["HostConfig"]["PidMode"] != "host", metadata["HostConfig"]
@@ -251,20 +259,7 @@ class Docker:
         args = self.controller_args(mode, inputs, review, grant=grant, timeout_ms=timeout_ms)
         request = {"mode": mode, "config": inputs, **({"before" if mode == "plan" else "review": review} if review is not None else {})}
         result = self.command("exec", "-i", self.container, *args, input_text=json.dumps(request), timeout=timeout_ms / 1000 + 15, check=False)
-        state = yaml.safe_load(result.stderr)
-        assert isinstance(state, dict) and state.get("status") in {"finished", "error", "signaled"}, result
-        engine_code = 0 if state["status"] == "finished" else 1
-        problem = __import__("tooling.test_runner", fromlist=["malformed_state"]).malformed_state(result.stderr, engine_code)
-        assert problem is None, (problem, result.stdout, result.stderr)
-        if state["status"] != "finished":
-            assert result.returncode == 1, result
-            return {"status": "failed", "error": state.get("error"), "engine_status": state["status"]}
-        report = json.loads(result.stdout)
-        assert report == state["root"], (report, state)
-        expected_code = (1 if report.get("status") in {"failed", "invalid", "unsupported", "skipped"}
-                         else 2 if report.get("status") == "changed" and not report.get("applied") else 0)
-        assert result.returncode == expected_code, (result.returncode, report)
-        return report
+        return controller_report(result)
 
     def fixture_process(self, source):
         launcher = "import subprocess,sys; p=subprocess.Popen(['python3','-c',sys.argv[1]],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True); print(p.pid)"
@@ -428,6 +423,13 @@ def baseline(d):
     actions = d.actions()
     resolved = d.controller("resolve", inputs)
     assert resolved == inputs, resolved
+    explained = d.controller("explain", inputs)
+    assert explained["format"] == "helix.nginx.configuration.v1" and explained["values"] == inputs, explained
+    assert all(row["value_kind"] == "explicit" for row in explained["provenance"].values() if "value" in row), explained
+    defaulted = {key: value for key, value in inputs.items() if key not in ("port", "state")}
+    explained_defaults = d.controller("explain", defaulted)
+    assert explained_defaults["values"] == {**defaulted, "port": 8080, "state": "present"}, explained_defaults
+    assert explained_defaults["provenance"]["port"]["value_kind"] == "default", explained_defaults
     observation = d.controller("observe", inputs)
     assert {"target", "package_version", "files", "service", "response"} <= observation.keys(), observation
     pure = d.controller("plan", inputs, observation)
@@ -436,7 +438,8 @@ def baseline(d):
     assert first == second and first["status"] == "changed", (first, second)
     assert first["dependencies"] == expected_dependencies(), first
     assert d.probe() == before and d.actions() == actions
-    d.apply(inputs, review=first)
+    # Apply omitted defaults against the review of the same resolved values.
+    d.apply(defaulted, review=first)
     d.converged(inputs)
     for _ in range(2):
         before, actions = d.probe(), d.actions()
@@ -921,3 +924,21 @@ def verify_harness(h):
         assert set(json.loads(output.getvalue())["scenarios"]) == set(SCENARIOS)
     finally:
         shutil.rmtree(d.artifacts)
+
+
+def controller_report(result):
+    import yaml
+    state = yaml.safe_load(result.stderr)
+    assert isinstance(state, dict) and state.get("status") in {"finished", "error", "signaled"}, result
+    engine_code = 0 if state["status"] == "finished" else 1
+    problem = __import__("tooling.test_runner", fromlist=["malformed_state"]).malformed_state(result.stderr, engine_code)
+    assert problem is None, (problem, result.stdout, result.stderr)
+    if state["status"] != "finished":
+        assert result.returncode == 1, result
+        return {"status": "failed", "error": state.get("error"), "engine_status": state["status"]}
+    report = json.loads(result.stdout)
+    assert report == state["root"], (report, state)
+    expected_code = (1 if report.get("status") in {"failed", "invalid", "unsupported", "skipped"}
+                     else 2 if report.get("status") == "changed" and not report.get("applied") else 0)
+    assert result.returncode == expected_code, (result.returncode, report)
+    return report

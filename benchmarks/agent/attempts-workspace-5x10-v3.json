@@ -1,0 +1,1961 @@
+{
+  "schema": "helix.agent-bench.v1",
+  "protocol_version": 3,
+  "execution": {
+    "jobs": 4,
+    "generation_wall_ms": 246932.64376197476,
+    "evaluation_wall_ms": 384219.33836798416
+  },
+  "attempts": [
+    {
+      "task": "sum-squares",
+      "trial": 1,
+      "model_requests": 8,
+      "tool_calls": 10,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 22853.204401908442,
+      "attempt_generation_wall_ms": 24256.66805700166,
+      "usage": {
+        "prompt_tokens": 80174,
+        "completion_tokens": 630,
+        "total_tokens": 80804,
+        "cost": 0.001861215
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 236,
+      "source_sha256": "3bcbee104da610f5923c5730b6a2ab51443b650c202a9f2bf28041c1c6ce92d5",
+      "submitted_sha256": "3bcbee104da610f5923c5730b6a2ab51443b650c202a9f2bf28041c1c6ce92d5",
+      "submitted_workspace_sha256": "7028e86bac73c090eb841010fc05b376df558e54b1e5c5f883afbb9d7486ab53",
+      "error": null,
+      "runtime_ratio_to_reference": 1.0576311436164063,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          76.62005996098742,
+          75.79199899919331,
+          74.68099903780967,
+          80.59285202762112,
+          73.07130098342896
+        ],
+        "median_cli_wall_ms": 75.79199899919331
+      }
+    },
+    {
+      "task": "sum-squares",
+      "trial": 2,
+      "model_requests": 8,
+      "tool_calls": 10,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 23992.45105497539,
+      "attempt_generation_wall_ms": 24920.319156022742,
+      "usage": {
+        "prompt_tokens": 81605,
+        "completion_tokens": 680,
+        "total_tokens": 82285,
+        "cost": 0.00198597
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 208,
+      "source_sha256": "56b1756892ca527987b097448f64aaa08d162dccca57bd1af87e690f44d8d81f",
+      "submitted_sha256": "56b1756892ca527987b097448f64aaa08d162dccca57bd1af87e690f44d8d81f",
+      "submitted_workspace_sha256": "af6917f33fd1fd004b4535457d56fb28ab93b005923b2ad06662c6fe8b1fc671",
+      "error": null,
+      "runtime_ratio_to_reference": 1.2002275005326954,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          86.01074398029596,
+          95.07462801411748,
+          75.22581395460293,
+          82.57973898435012,
+          90.77106299810112
+        ],
+        "median_cli_wall_ms": 86.01074398029596
+      }
+    },
+    {
+      "task": "sum-squares",
+      "trial": 3,
+      "model_requests": 6,
+      "tool_calls": 8,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 17268.671022960916,
+      "attempt_generation_wall_ms": 18702.658027992584,
+      "usage": {
+        "prompt_tokens": 41815,
+        "completion_tokens": 486,
+        "total_tokens": 42301,
+        "cost": 0.00082353
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 208,
+      "source_sha256": "56b1756892ca527987b097448f64aaa08d162dccca57bd1af87e690f44d8d81f",
+      "submitted_sha256": "56b1756892ca527987b097448f64aaa08d162dccca57bd1af87e690f44d8d81f",
+      "submitted_workspace_sha256": "af6917f33fd1fd004b4535457d56fb28ab93b005923b2ad06662c6fe8b1fc671",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1315885755949158,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          82.08484196802601,
+          74.3005049880594,
+          81.09193900600076,
+          102.91164403315634,
+          67.30362499365583
+        ],
+        "median_cli_wall_ms": 81.09193900600076
+      }
+    },
+    {
+      "task": "sum-squares",
+      "trial": 4,
+      "model_requests": 4,
+      "tool_calls": 6,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 9042.883943009656,
+      "attempt_generation_wall_ms": 9911.032330011949,
+      "usage": {
+        "prompt_tokens": 26472,
+        "completion_tokens": 316,
+        "total_tokens": 26788,
+        "cost": 0.001489035
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 224,
+      "source_sha256": "c989b1e145957d8688fe9cbf5fe4eee855cf9a4450ee2013f703e4508d89fc54",
+      "submitted_sha256": "c989b1e145957d8688fe9cbf5fe4eee855cf9a4450ee2013f703e4508d89fc54",
+      "submitted_workspace_sha256": "bda536e5d784d907bc8550053cb7ece644c686986c344deaf74c294481c9f79f",
+      "error": null,
+      "runtime_ratio_to_reference": 1.2674447660431571,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          90.82766994833946,
+          84.82208597706631,
+          93.56720698997378,
+          88.45590800046921,
+          91.33432700764388
+        ],
+        "median_cli_wall_ms": 90.82766994833946
+      }
+    },
+    {
+      "task": "sum-squares",
+      "trial": 5,
+      "model_requests": 7,
+      "tool_calls": 9,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 23901.24362107599,
+      "attempt_generation_wall_ms": 24851.846904028207,
+      "usage": {
+        "prompt_tokens": 70011,
+        "completion_tokens": 686,
+        "total_tokens": 70697,
+        "cost": 0.00186103
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 224,
+      "source_sha256": "c989b1e145957d8688fe9cbf5fe4eee855cf9a4450ee2013f703e4508d89fc54",
+      "submitted_sha256": "c989b1e145957d8688fe9cbf5fe4eee855cf9a4450ee2013f703e4508d89fc54",
+      "submitted_workspace_sha256": "bda536e5d784d907bc8550053cb7ece644c686986c344deaf74c294481c9f79f",
+      "error": null,
+      "runtime_ratio_to_reference": 1.7987821273958309,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          128.90438601607457,
+          157.1976690320298,
+          183.78418404608965,
+          93.95995899103582,
+          93.975963012781
+        ],
+        "median_cli_wall_ms": 128.90438601607457
+      }
+    },
+    {
+      "task": "sum-squares",
+      "trial": 6,
+      "model_requests": 6,
+      "tool_calls": 6,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 16814.24925295869,
+      "attempt_generation_wall_ms": 17793.91508200206,
+      "usage": {
+        "prompt_tokens": 36677,
+        "completion_tokens": 462,
+        "total_tokens": 37139,
+        "cost": 0.001591945
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 197,
+      "source_sha256": "4b631fab6991cfa738d032cc29a2e7bc038bf3c1cfd5459dd903ac08bc85d434",
+      "submitted_sha256": "4b631fab6991cfa738d032cc29a2e7bc038bf3c1cfd5459dd903ac08bc85d434",
+      "submitted_workspace_sha256": "5ffa8347c03ff74a7047aeefbcb8e380840dc03aa499b4190aa855b9630225d7",
+      "error": null,
+      "runtime_ratio_to_reference": 1.246177620095034,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          93.54874299606308,
+          81.36913098860532,
+          73.03308101836592,
+          92.19127299729735,
+          89.30362301180139
+        ],
+        "median_cli_wall_ms": 89.30362301180139
+      }
+    },
+    {
+      "task": "sum-squares",
+      "trial": 7,
+      "model_requests": 6,
+      "tool_calls": 8,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 16057.233193074353,
+      "attempt_generation_wall_ms": 16832.033719983883,
+      "usage": {
+        "prompt_tokens": 51261,
+        "completion_tokens": 438,
+        "total_tokens": 51699,
+        "cost": 0.00125578
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 214,
+      "source_sha256": "5353556ef9ff5997219f57a10e276aa73e0be1413d4ce47fd3f9a203277a9792",
+      "submitted_sha256": "5353556ef9ff5997219f57a10e276aa73e0be1413d4ce47fd3f9a203277a9792",
+      "submitted_workspace_sha256": "0e20f06ca1315d7e05757326f4789fdd7689dd33b0fe1c9364625b3584b8749d",
+      "error": null,
+      "runtime_ratio_to_reference": 1.2428697042248587,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          96.43579699331895,
+          82.32962404144928,
+          84.54484702087939,
+          89.06657103216276,
+          116.60150799434632
+        ],
+        "median_cli_wall_ms": 89.06657103216276
+      }
+    },
+    {
+      "task": "sum-squares",
+      "trial": 8,
+      "model_requests": 7,
+      "tool_calls": 7,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 16023.709729954135,
+      "attempt_generation_wall_ms": 17055.032119969837,
+      "usage": {
+        "prompt_tokens": 59961,
+        "completion_tokens": 457,
+        "total_tokens": 60418,
+        "cost": 0.00138912
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 236,
+      "source_sha256": "3bcbee104da610f5923c5730b6a2ab51443b650c202a9f2bf28041c1c6ce92d5",
+      "submitted_sha256": "3bcbee104da610f5923c5730b6a2ab51443b650c202a9f2bf28041c1c6ce92d5",
+      "submitted_workspace_sha256": "7028e86bac73c090eb841010fc05b376df558e54b1e5c5f883afbb9d7486ab53",
+      "error": null,
+      "runtime_ratio_to_reference": 1.0288077222007683,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          78.84533802280203,
+          64.31579700438306,
+          72.91952101513743,
+          77.78561901068315,
+          73.72645399300382
+        ],
+        "median_cli_wall_ms": 73.72645399300382
+      }
+    },
+    {
+      "task": "sum-squares",
+      "trial": 9,
+      "model_requests": 6,
+      "tool_calls": 7,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 15560.423618007917,
+      "attempt_generation_wall_ms": 16395.742666034494,
+      "usage": {
+        "prompt_tokens": 48691,
+        "completion_tokens": 532,
+        "total_tokens": 49223,
+        "cost": 0.0022004150000000003
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 214,
+      "source_sha256": "5353556ef9ff5997219f57a10e276aa73e0be1413d4ce47fd3f9a203277a9792",
+      "submitted_sha256": "5353556ef9ff5997219f57a10e276aa73e0be1413d4ce47fd3f9a203277a9792",
+      "submitted_workspace_sha256": "0e20f06ca1315d7e05757326f4789fdd7689dd33b0fe1c9364625b3584b8749d",
+      "error": null,
+      "runtime_ratio_to_reference": 1.2257272930549972,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          87.47707400470972,
+          69.23846696736291,
+          94.31004797806963,
+          87.83811097964644,
+          91.28535201307386
+        ],
+        "median_cli_wall_ms": 87.83811097964644
+      }
+    },
+    {
+      "task": "sum-squares",
+      "trial": 10,
+      "model_requests": 5,
+      "tool_calls": 6,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 10561.137167911511,
+      "attempt_generation_wall_ms": 11682.975592033472,
+      "usage": {
+        "prompt_tokens": 29717,
+        "completion_tokens": 425,
+        "total_tokens": 30142,
+        "cost": 0.00102598
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 214,
+      "source_sha256": "d592cd21e3a1db64669b53f7380947fcc13b166daf35a0f6d4d5d23f2ae5b2da",
+      "submitted_sha256": "d592cd21e3a1db64669b53f7380947fcc13b166daf35a0f6d4d5d23f2ae5b2da",
+      "submitted_workspace_sha256": "a450513b03bfbcae582bbe9bb83583b7f8d03680a13ed1905fc05b27726a51f3",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1478652142152914,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          107.81902499729767,
+          108.70440502185374,
+          74.1663440130651,
+          76.02524699177593,
+          82.25835603661835
+        ],
+        "median_cli_wall_ms": 82.25835603661835
+      }
+    },
+    {
+      "task": "word-counts",
+      "trial": 1,
+      "model_requests": 7,
+      "tool_calls": 7,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 15146.74160303548,
+      "attempt_generation_wall_ms": 15962.284273002297,
+      "usage": {
+        "prompt_tokens": 50788,
+        "completion_tokens": 333,
+        "total_tokens": 51121,
+        "cost": 0.00196174
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 110,
+      "source_sha256": "79b1a8382dea8a764466c56aaa4e0e1c38cc0536b8f264ac6554300a1e6d2074",
+      "submitted_sha256": "79b1a8382dea8a764466c56aaa4e0e1c38cc0536b8f264ac6554300a1e6d2074",
+      "submitted_workspace_sha256": "1aa4a87da77f1cc9dc0c7cc982fb09f8aabf24010996fddf782b2bb21e196457",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1045028781926904,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          102.18577005434781,
+          110.89272005483508,
+          116.69161601457745,
+          125.16603898257017,
+          122.4077699589543
+        ],
+        "median_cli_wall_ms": 116.69161601457745
+      }
+    },
+    {
+      "task": "word-counts",
+      "trial": 2,
+      "model_requests": 5,
+      "tool_calls": 7,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 10875.148686056491,
+      "attempt_generation_wall_ms": 11602.67717303941,
+      "usage": {
+        "prompt_tokens": 32525,
+        "completion_tokens": 317,
+        "total_tokens": 32842,
+        "cost": 0.00150515
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 104,
+      "source_sha256": "a669948b54d7800cf7accde09a170ce9eb4f265c62b09dffd9ec1bc0bd6e9a8f",
+      "submitted_sha256": "a669948b54d7800cf7accde09a170ce9eb4f265c62b09dffd9ec1bc0bd6e9a8f",
+      "submitted_workspace_sha256": "9dcee234c8a194ac36440d1e3cf86f416f0030a139b1da74f83b20424cee07e6",
+      "error": null,
+      "runtime_ratio_to_reference": 1.138882664095632,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          120.32386800274253,
+          118.12590196495876,
+          145.06192796397954,
+          116.82331602787599,
+          175.83093501161784
+        ],
+        "median_cli_wall_ms": 120.32386800274253
+      }
+    },
+    {
+      "task": "word-counts",
+      "trial": 3,
+      "model_requests": 5,
+      "tool_calls": 7,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 13452.752446988598,
+      "attempt_generation_wall_ms": 15233.669521985576,
+      "usage": {
+        "prompt_tokens": 40301,
+        "completion_tokens": 276,
+        "total_tokens": 40577,
+        "cost": 0.00096556
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 104,
+      "source_sha256": "2831a08b60a998c9b97f7f01a0d4a34f071f17321de138101dd77d144e4b8e94",
+      "submitted_sha256": "2831a08b60a998c9b97f7f01a0d4a34f071f17321de138101dd77d144e4b8e94",
+      "submitted_workspace_sha256": "bfb266c88ec61d1470736bae5664e30fca4a89671fc7178f808afb701b744abb",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1579999724252599,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          271.44406002480537,
+          208.59393599675968,
+          115.18956697545946,
+          95.5207459628582,
+          122.34362697927281
+        ],
+        "median_cli_wall_ms": 122.34362697927281
+      }
+    },
+    {
+      "task": "word-counts",
+      "trial": 4,
+      "model_requests": 5,
+      "tool_calls": 8,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 10499.800510995556,
+      "attempt_generation_wall_ms": 12393.21041299263,
+      "usage": {
+        "prompt_tokens": 45590,
+        "completion_tokens": 415,
+        "total_tokens": 46005,
+        "cost": 0.001290695
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 94,
+      "source_sha256": "ff780652f1f4da646bb604e8e0243dce088310382461fee52f07fb18ce7f8cff",
+      "submitted_sha256": "ff780652f1f4da646bb604e8e0243dce088310382461fee52f07fb18ce7f8cff",
+      "submitted_workspace_sha256": "4e46f8e05101810612efbbbeaf65a6166d9fdfd84a053f3be27c59bb45df7d78",
+      "error": null,
+      "runtime_ratio_to_reference": 1.0832431624182903,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          114.44550997111946,
+          112.26839799201116,
+          116.97563400957733,
+          110.17862497828901,
+          123.13501100288704
+        ],
+        "median_cli_wall_ms": 114.44550997111946
+      }
+    },
+    {
+      "task": "word-counts",
+      "trial": 5,
+      "model_requests": 5,
+      "tool_calls": 7,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 11748.662272002548,
+      "attempt_generation_wall_ms": 13101.270643004682,
+      "usage": {
+        "prompt_tokens": 40301,
+        "completion_tokens": 310,
+        "total_tokens": 40611,
+        "cost": 0.00098256
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 104,
+      "source_sha256": "2831a08b60a998c9b97f7f01a0d4a34f071f17321de138101dd77d144e4b8e94",
+      "submitted_sha256": "2831a08b60a998c9b97f7f01a0d4a34f071f17321de138101dd77d144e4b8e94",
+      "submitted_workspace_sha256": "bfb266c88ec61d1470736bae5664e30fca4a89671fc7178f808afb701b744abb",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1414648878177072,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          91.69397101504728,
+          155.20092099905014,
+          120.59668201254681,
+          121.760712005198,
+          106.91167699405923
+        ],
+        "median_cli_wall_ms": 120.59668201254681
+      }
+    },
+    {
+      "task": "word-counts",
+      "trial": 6,
+      "model_requests": 5,
+      "tool_calls": 7,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 10883.439317985903,
+      "attempt_generation_wall_ms": 12146.47731097648,
+      "usage": {
+        "prompt_tokens": 40289,
+        "completion_tokens": 343,
+        "total_tokens": 40632,
+        "cost": 0.00099825
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 92,
+      "source_sha256": "dc06a9197788c15961de6e4d8587ba8d3829dd7b9d60c256a0ee9f681de456af",
+      "submitted_sha256": "dc06a9197788c15961de6e4d8587ba8d3829dd7b9d60c256a0ee9f681de456af",
+      "submitted_workspace_sha256": "a4dbe8a82e479d68bc18889ada4247d497624c04eca23bcfc273e2bd05953558",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1603399268503576,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          91.68392099672928,
+          122.59084504330531,
+          105.0337619963102,
+          132.63145502423868,
+          152.60880399728194
+        ],
+        "median_cli_wall_ms": 122.59084504330531
+      }
+    },
+    {
+      "task": "word-counts",
+      "trial": 7,
+      "model_requests": 5,
+      "tool_calls": 7,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 9550.697561062407,
+      "attempt_generation_wall_ms": 11204.570749017876,
+      "usage": {
+        "prompt_tokens": 40301,
+        "completion_tokens": 304,
+        "total_tokens": 40605,
+        "cost": 0.00097956
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 104,
+      "source_sha256": "2831a08b60a998c9b97f7f01a0d4a34f071f17321de138101dd77d144e4b8e94",
+      "submitted_sha256": "2831a08b60a998c9b97f7f01a0d4a34f071f17321de138101dd77d144e4b8e94",
+      "submitted_workspace_sha256": "bfb266c88ec61d1470736bae5664e30fca4a89671fc7178f808afb701b744abb",
+      "error": null,
+      "runtime_ratio_to_reference": 1.0846072977555001,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          110.73741299333051,
+          84.90082703065127,
+          196.45865896018222,
+          114.58963196491823,
+          136.29579404368997
+        ],
+        "median_cli_wall_ms": 114.58963196491823
+      }
+    },
+    {
+      "task": "word-counts",
+      "trial": 8,
+      "model_requests": 9,
+      "tool_calls": 11,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 19855.307429039385,
+      "attempt_generation_wall_ms": 21321.84456998948,
+      "usage": {
+        "prompt_tokens": 81840,
+        "completion_tokens": 750,
+        "total_tokens": 82590,
+        "cost": 0.001733685
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 104,
+      "source_sha256": "a669948b54d7800cf7accde09a170ce9eb4f265c62b09dffd9ec1bc0bd6e9a8f",
+      "submitted_sha256": "a669948b54d7800cf7accde09a170ce9eb4f265c62b09dffd9ec1bc0bd6e9a8f",
+      "submitted_workspace_sha256": "9dcee234c8a194ac36440d1e3cf86f416f0030a139b1da74f83b20424cee07e6",
+      "error": null,
+      "runtime_ratio_to_reference": 1.176786133745836,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          118.59682598151267,
+          124.32840000838041,
+          125.60307298554108,
+          129.52604098245502,
+          105.41937401285395
+        ],
+        "median_cli_wall_ms": 124.32840000838041
+      }
+    },
+    {
+      "task": "word-counts",
+      "trial": 9,
+      "model_requests": 5,
+      "tool_calls": 7,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 9808.133619080763,
+      "attempt_generation_wall_ms": 10567.447223002091,
+      "usage": {
+        "prompt_tokens": 32525,
+        "completion_tokens": 299,
+        "total_tokens": 32824,
+        "cost": 0.00058604
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 104,
+      "source_sha256": "a669948b54d7800cf7accde09a170ce9eb4f265c62b09dffd9ec1bc0bd6e9a8f",
+      "submitted_sha256": "a669948b54d7800cf7accde09a170ce9eb4f265c62b09dffd9ec1bc0bd6e9a8f",
+      "submitted_workspace_sha256": "9dcee234c8a194ac36440d1e3cf86f416f0030a139b1da74f83b20424cee07e6",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1113256468125645,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          117.41244699805975,
+          204.15524404961616,
+          126.72861502505839,
+          107.8607690287754,
+          93.80987798795104
+        ],
+        "median_cli_wall_ms": 117.41244699805975
+      }
+    },
+    {
+      "task": "word-counts",
+      "trial": 10,
+      "model_requests": 4,
+      "tool_calls": 6,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 9188.377726997714,
+      "attempt_generation_wall_ms": 9940.267544996459,
+      "usage": {
+        "prompt_tokens": 24614,
+        "completion_tokens": 257,
+        "total_tokens": 24871,
+        "cost": 0.00049601
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 104,
+      "source_sha256": "a669948b54d7800cf7accde09a170ce9eb4f265c62b09dffd9ec1bc0bd6e9a8f",
+      "submitted_sha256": "a669948b54d7800cf7accde09a170ce9eb4f265c62b09dffd9ec1bc0bd6e9a8f",
+      "submitted_workspace_sha256": "9dcee234c8a194ac36440d1e3cf86f416f0030a139b1da74f83b20424cee07e6",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1282504211724749,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          101.06138401897624,
+          216.9307880103588,
+          119.20056300004944,
+          106.20895202737302,
+          164.84842996578664
+        ],
+        "median_cli_wall_ms": 119.20056300004944
+      }
+    },
+    {
+      "task": "group-totals",
+      "trial": 1,
+      "model_requests": 7,
+      "tool_calls": 9,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 17984.151472046506,
+      "attempt_generation_wall_ms": 19263.975122012198,
+      "usage": {
+        "prompt_tokens": 70138,
+        "completion_tokens": 644,
+        "total_tokens": 70782,
+        "cost": 0.002730055
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 533,
+      "source_sha256": "a31a3673b9961047d2088aa6d47e74121d7d5bbe5fa701de7387ac31146652a3",
+      "submitted_sha256": "a31a3673b9961047d2088aa6d47e74121d7d5bbe5fa701de7387ac31146652a3",
+      "submitted_workspace_sha256": "a3af97910a71e68f64d223f619ca53d2abc3df0ecf979b9529cfeaa76982bd7e",
+      "error": null,
+      "runtime_ratio_to_reference": 0.5257989409233914,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          127.99137696856633,
+          98.39779499452561,
+          90.61261202441528,
+          92.7551900385879,
+          92.63431001454592
+        ],
+        "median_cli_wall_ms": 92.7551900385879
+      }
+    },
+    {
+      "task": "group-totals",
+      "trial": 2,
+      "model_requests": 8,
+      "tool_calls": 8,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 18379.84538503224,
+      "attempt_generation_wall_ms": 19096.944026998244,
+      "usage": {
+        "prompt_tokens": 83283,
+        "completion_tokens": 527,
+        "total_tokens": 83810,
+        "cost": 0.0029194250000000002
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 294,
+      "source_sha256": "72b7a430afd91aad524754de67f949923e077e0cdd85f21761c25d6d588f953d",
+      "submitted_sha256": "72b7a430afd91aad524754de67f949923e077e0cdd85f21761c25d6d588f953d",
+      "submitted_workspace_sha256": "563b3244288693dba8be09e10b2464a6661d7216c06657703fdf0c55f717bcf1",
+      "error": null,
+      "runtime_ratio_to_reference": 0.5812636910492458,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          88.63130497047678,
+          102.82346303574741,
+          102.33837901614606,
+          112.80247900867835,
+          102.53962100250646
+        ],
+        "median_cli_wall_ms": 102.53962100250646
+      }
+    },
+    {
+      "task": "group-totals",
+      "trial": 3,
+      "model_requests": 8,
+      "tool_calls": 10,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 21567.65252701007,
+      "attempt_generation_wall_ms": 22812.790961004794,
+      "usage": {
+        "prompt_tokens": 86687,
+        "completion_tokens": 591,
+        "total_tokens": 87278,
+        "cost": 0.002147805
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 299,
+      "source_sha256": "93a18126eb294faf32fb8fda9c2d22cea36b5df6a280c7d51ca2ae1ae4bbda1c",
+      "submitted_sha256": "93a18126eb294faf32fb8fda9c2d22cea36b5df6a280c7d51ca2ae1ae4bbda1c",
+      "submitted_workspace_sha256": "98e7f57b485bcdb8f32ac2b582cd44d00223dff1381431c932ac3ddbd3dc4bc2",
+      "error": null,
+      "runtime_ratio_to_reference": 0.5713899662197642,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          100.02673196140677,
+          114.62258803658187,
+          100.79781600506976,
+          102.54062997410074,
+          91.8096189852804
+        ],
+        "median_cli_wall_ms": 100.79781600506976
+      }
+    },
+    {
+      "task": "group-totals",
+      "trial": 4,
+      "model_requests": 7,
+      "tool_calls": 9,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 20715.048637997825,
+      "attempt_generation_wall_ms": 21851.412863004953,
+      "usage": {
+        "prompt_tokens": 66891,
+        "completion_tokens": 754,
+        "total_tokens": 67645,
+        "cost": 0.001714595
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 264,
+      "source_sha256": "2e33656a5b2baa22765cd8759b8782dd0e2e729c322d6364fefd8ae1a9fb7b0a",
+      "submitted_sha256": "2e33656a5b2baa22765cd8759b8782dd0e2e729c322d6364fefd8ae1a9fb7b0a",
+      "submitted_workspace_sha256": "b757bd210e540475d4c09cae3836c1526f8e9989fd0cc15f0a407051ceb43d04",
+      "error": null,
+      "runtime_ratio_to_reference": 0.6092048689231356,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          197.6577789755538,
+          146.74338302575052,
+          105.46027700183913,
+          91.24418400460854,
+          107.46867099078372
+        ],
+        "median_cli_wall_ms": 107.46867099078372
+      }
+    },
+    {
+      "task": "group-totals",
+      "trial": 5,
+      "model_requests": 10,
+      "tool_calls": 10,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 30334.023413073737,
+      "attempt_generation_wall_ms": 31573.690738005098,
+      "usage": {
+        "prompt_tokens": 115456,
+        "completion_tokens": 770,
+        "total_tokens": 116226,
+        "cost": 0.00298979
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 249,
+      "source_sha256": "9eae4d6b37168a6f023e6827239dc806fe6e9dd3e70a139b49a3199f78e80afc",
+      "submitted_sha256": "9eae4d6b37168a6f023e6827239dc806fe6e9dd3e70a139b49a3199f78e80afc",
+      "submitted_workspace_sha256": "c17b47b814d0f8e2a0c06d89bf00524cde96b5619a64ca66d0d9942ef50d9f80",
+      "error": null,
+      "runtime_ratio_to_reference": 0.5816327499483306,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          121.5746839880012,
+          102.60472598019987,
+          102.84246498486027,
+          102.56012197351083,
+          93.3199089486152
+        ],
+        "median_cli_wall_ms": 102.60472598019987
+      }
+    },
+    {
+      "task": "group-totals",
+      "trial": 6,
+      "model_requests": 7,
+      "tool_calls": 9,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 20801.882825850043,
+      "attempt_generation_wall_ms": 22433.97759902291,
+      "usage": {
+        "prompt_tokens": 69813,
+        "completion_tokens": 577,
+        "total_tokens": 70390,
+        "cost": 0.0017836549999999999
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 598,
+      "source_sha256": "966c8f0f3fb932a3a1cc2fd26253afd836108cf5372f48870b2d47c9f85a02ce",
+      "submitted_sha256": "966c8f0f3fb932a3a1cc2fd26253afd836108cf5372f48870b2d47c9f85a02ce",
+      "submitted_workspace_sha256": "615d35ec877b31963275c4172041f09383c8e5bf34c8930942ec8abbf44c2b05",
+      "error": null,
+      "runtime_ratio_to_reference": 0.7806362414597591,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          152.61619701050222,
+          203.86294700438157,
+          137.71055301185697,
+          132.48110603308305,
+          127.29304301319644
+        ],
+        "median_cli_wall_ms": 137.71055301185697
+      }
+    },
+    {
+      "task": "group-totals",
+      "trial": 7,
+      "model_requests": 8,
+      "tool_calls": 8,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 22880.55391702801,
+      "attempt_generation_wall_ms": 23819.91816801019,
+      "usage": {
+        "prompt_tokens": 74233,
+        "completion_tokens": 625,
+        "total_tokens": 74858,
+        "cost": 0.00263585
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 622,
+      "source_sha256": "1ad8a40940d8fafe6592e67b7adffbae478e4e72a44ac9a330cc40ca1c2029db",
+      "submitted_sha256": "1ad8a40940d8fafe6592e67b7adffbae478e4e72a44ac9a330cc40ca1c2029db",
+      "submitted_workspace_sha256": "0a381bc2eea439557a15f3d47e6d948b6860a05a3a36dc73b4ac510d4c27e220",
+      "error": null,
+      "runtime_ratio_to_reference": 0.7576872550565594,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          150.95134900184348,
+          81.61190495593473,
+          136.4754699752666,
+          91.24512097332627,
+          133.66216601571068
+        ],
+        "median_cli_wall_ms": 133.66216601571068
+      }
+    },
+    {
+      "task": "group-totals",
+      "trial": 8,
+      "model_requests": 10,
+      "tool_calls": 12,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 33125.39032904897,
+      "attempt_generation_wall_ms": 34394.90693702828,
+      "usage": {
+        "prompt_tokens": 104504,
+        "completion_tokens": 994,
+        "total_tokens": 105498,
+        "cost": 0.003464
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 486,
+      "source_sha256": "d23df81e6ae6a7382f5d32185206fe37e8b9529cc595545825de4de79db53c31",
+      "submitted_sha256": "d23df81e6ae6a7382f5d32185206fe37e8b9529cc595545825de4de79db53c31",
+      "submitted_workspace_sha256": "a095a55b822f120d9a8356c3efa50f92f9eff18e287a79873e4e4889e6487389",
+      "error": null,
+      "runtime_ratio_to_reference": 0.5667600371267587,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          85.1459460100159,
+          100.75874300673604,
+          99.98105902923271,
+          101.84380295686424,
+          81.4543729647994
+        ],
+        "median_cli_wall_ms": 99.98105902923271
+      }
+    },
+    {
+      "task": "group-totals",
+      "trial": 9,
+      "model_requests": 14,
+      "tool_calls": 16,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 47246.491490048356,
+      "attempt_generation_wall_ms": 48826.93824794842,
+      "usage": {
+        "prompt_tokens": 236386,
+        "completion_tokens": 1084,
+        "total_tokens": 237470,
+        "cost": 0.00498254
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 377,
+      "source_sha256": "302c678ae71178c31a83004978a20f74bb630c6040072b7ef2d309be8f1732ed",
+      "submitted_sha256": "302c678ae71178c31a83004978a20f74bb630c6040072b7ef2d309be8f1732ed",
+      "submitted_workspace_sha256": "ac31e82d5b18955714ad244af45bfc2d301a7d8a85932bd97b94ce20397ee166",
+      "error": null,
+      "runtime_ratio_to_reference": 0.8117732589840658,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          135.0783440284431,
+          150.38015198661014,
+          143.20337498793378,
+          153.2300179824233,
+          124.18699800036848
+        ],
+        "median_cli_wall_ms": 143.20337498793378
+      }
+    },
+    {
+      "task": "group-totals",
+      "trial": 10,
+      "model_requests": 10,
+      "tool_calls": 12,
+      "cli_calls": 2,
+      "public_test_calls": 2,
+      "public_test_successes": 1,
+      "generation_ms": 30510.171541012824,
+      "attempt_generation_wall_ms": 31727.265502966475,
+      "usage": {
+        "prompt_tokens": 112054,
+        "completion_tokens": 932,
+        "total_tokens": 112986,
+        "cost": 0.003389705
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 697,
+      "source_sha256": "d7f20595f545b82c0d0616871e2b287935680a4b9816936d3687558b3ce60dfb",
+      "submitted_sha256": "d7f20595f545b82c0d0616871e2b287935680a4b9816936d3687558b3ce60dfb",
+      "submitted_workspace_sha256": "cc4fcba6c76a2e7bfac635c01e0460e1f2fcdbd685e1a7070bb6e2f10eb35160",
+      "error": null,
+      "runtime_ratio_to_reference": 0.5276698749806846,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          93.08523795334622,
+          100.12458602432162,
+          81.12548402277753,
+          88.46589998574927,
+          99.28652603412047
+        ],
+        "median_cli_wall_ms": 93.08523795334622
+      }
+    },
+    {
+      "task": "stable-unique",
+      "trial": 1,
+      "model_requests": 6,
+      "tool_calls": 6,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 12075.61479602009,
+      "attempt_generation_wall_ms": 13016.550611995626,
+      "usage": {
+        "prompt_tokens": 35964,
+        "completion_tokens": 356,
+        "total_tokens": 36320,
+        "cost": 0.0015541
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 99,
+      "source_sha256": "f1a3c8ae727a0ec20e452aa52542f6279355a91e3f35889187bbcfc4721793b5",
+      "submitted_sha256": "f1a3c8ae727a0ec20e452aa52542f6279355a91e3f35889187bbcfc4721793b5",
+      "submitted_workspace_sha256": "2cbe95ec05f590804b4be7c8a24a111dd401259714fba211bd0a6eb491083292",
+      "error": null,
+      "runtime_ratio_to_reference": 0.9785341974578061,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          81.17299800505862,
+          79.51889699324965,
+          82.05199998337775,
+          88.64715503295884,
+          68.83976300014183
+        ],
+        "median_cli_wall_ms": 81.17299800505862
+      }
+    },
+    {
+      "task": "stable-unique",
+      "trial": 2,
+      "model_requests": 8,
+      "tool_calls": 8,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 20022.151834971737,
+      "attempt_generation_wall_ms": 21343.630896997638,
+      "usage": {
+        "prompt_tokens": 80514,
+        "completion_tokens": 567,
+        "total_tokens": 81081,
+        "cost": 0.002877405
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 99,
+      "source_sha256": "1580106542b73f0725e7068d9dfbfacb775844e837332df34254d22a70758681",
+      "submitted_sha256": "1580106542b73f0725e7068d9dfbfacb775844e837332df34254d22a70758681",
+      "submitted_workspace_sha256": "d0a423cba1ed7b64f9d1b89ab9524c16d0604aad475baf36c1acb9173abf03b8",
+      "error": null,
+      "runtime_ratio_to_reference": 1.0686531090376818,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          126.55708199599758,
+          70.88442199165002,
+          73.15040100365877,
+          106.10192298190668,
+          88.64869200624526
+        ],
+        "median_cli_wall_ms": 88.64869200624526
+      }
+    },
+    {
+      "task": "stable-unique",
+      "trial": 3,
+      "model_requests": 7,
+      "tool_calls": 7,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 14059.31477912236,
+      "attempt_generation_wall_ms": 14771.034134028014,
+      "usage": {
+        "prompt_tokens": 60331,
+        "completion_tokens": 358,
+        "total_tokens": 60689,
+        "cost": 0.00225835
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 99,
+      "source_sha256": "f1a3c8ae727a0ec20e452aa52542f6279355a91e3f35889187bbcfc4721793b5",
+      "submitted_sha256": "f1a3c8ae727a0ec20e452aa52542f6279355a91e3f35889187bbcfc4721793b5",
+      "submitted_workspace_sha256": "2cbe95ec05f590804b4be7c8a24a111dd401259714fba211bd0a6eb491083292",
+      "error": null,
+      "runtime_ratio_to_reference": 1.2323790998743007,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          126.67124602012336,
+          93.53237296454608,
+          65.34957705298439,
+          102.23036300158128,
+          134.659256960731
+        ],
+        "median_cli_wall_ms": 102.23036300158128
+      }
+    },
+    {
+      "task": "stable-unique",
+      "trial": 4,
+      "model_requests": 7,
+      "tool_calls": 7,
+      "cli_calls": 3,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 13641.288488986902,
+      "attempt_generation_wall_ms": 15357.588434009813,
+      "usage": {
+        "prompt_tokens": 36038,
+        "completion_tokens": 324,
+        "total_tokens": 36362,
+        "cost": 0.00099746
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 103,
+      "source_sha256": "9f5724b16959be91bc82a02b3ee8a6cbea76ad580ee4b7e402f7f2b915466fcf",
+      "submitted_sha256": "9f5724b16959be91bc82a02b3ee8a6cbea76ad580ee4b7e402f7f2b915466fcf",
+      "submitted_workspace_sha256": "908a2d4d6768b3539e1c5d00599d7196e2d054cf51a00eae302f7978a8c89c76",
+      "error": null,
+      "runtime_ratio_to_reference": 1.18721834652929,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          135.78836794476956,
+          72.90804799413309,
+          87.5020069652237,
+          113.90085896709934,
+          98.48411299753934
+        ],
+        "median_cli_wall_ms": 98.48411299753934
+      }
+    },
+    {
+      "task": "stable-unique",
+      "trial": 5,
+      "model_requests": 10,
+      "tool_calls": 10,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 26706.41509606503,
+      "attempt_generation_wall_ms": 27963.658903026953,
+      "usage": {
+        "prompt_tokens": 116566,
+        "completion_tokens": 707,
+        "total_tokens": 117273,
+        "cost": 0.0030714500000000003
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 99,
+      "source_sha256": "1580106542b73f0725e7068d9dfbfacb775844e837332df34254d22a70758681",
+      "submitted_sha256": "1580106542b73f0725e7068d9dfbfacb775844e837332df34254d22a70758681",
+      "submitted_workspace_sha256": "d0a423cba1ed7b64f9d1b89ab9524c16d0604aad475baf36c1acb9173abf03b8",
+      "error": null,
+      "runtime_ratio_to_reference": 1.0803254804451379,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          90.65014496445656,
+          116.00397696020082,
+          74.16613196255639,
+          89.61695799371228,
+          85.43573302449659
+        ],
+        "median_cli_wall_ms": 89.61695799371228
+      }
+    },
+    {
+      "task": "stable-unique",
+      "trial": 6,
+      "model_requests": 4,
+      "tool_calls": 6,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 7719.012461020611,
+      "attempt_generation_wall_ms": 8941.344666003715,
+      "usage": {
+        "prompt_tokens": 26776,
+        "completion_tokens": 376,
+        "total_tokens": 27152,
+        "cost": 0.001554365
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 99,
+      "source_sha256": "f1a3c8ae727a0ec20e452aa52542f6279355a91e3f35889187bbcfc4721793b5",
+      "submitted_sha256": "f1a3c8ae727a0ec20e452aa52542f6279355a91e3f35889187bbcfc4721793b5",
+      "submitted_workspace_sha256": "2cbe95ec05f590804b4be7c8a24a111dd401259714fba211bd0a6eb491083292",
+      "error": null,
+      "runtime_ratio_to_reference": 0.9475080458677125,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          88.94092903938144,
+          78.5477920435369,
+          78.59926501987502,
+          80.33166395034641,
+          76.18968596216291
+        ],
+        "median_cli_wall_ms": 78.59926501987502
+      }
+    },
+    {
+      "task": "stable-unique",
+      "trial": 7,
+      "model_requests": 4,
+      "tool_calls": 6,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 7941.467238997575,
+      "attempt_generation_wall_ms": 8671.959039987996,
+      "usage": {
+        "prompt_tokens": 24631,
+        "completion_tokens": 302,
+        "total_tokens": 24933,
+        "cost": 0.00141369
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 99,
+      "source_sha256": "f1a3c8ae727a0ec20e452aa52542f6279355a91e3f35889187bbcfc4721793b5",
+      "submitted_sha256": "f1a3c8ae727a0ec20e452aa52542f6279355a91e3f35889187bbcfc4721793b5",
+      "submitted_workspace_sha256": "2cbe95ec05f590804b4be7c8a24a111dd401259714fba211bd0a6eb491083292",
+      "error": null,
+      "runtime_ratio_to_reference": 0.942873217064882,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          76.34286599932238,
+          82.37175800604746,
+          74.57942300243303,
+          78.21478898404166,
+          80.96122101414949
+        ],
+        "median_cli_wall_ms": 78.21478898404166
+      }
+    },
+    {
+      "task": "stable-unique",
+      "trial": 8,
+      "model_requests": 8,
+      "tool_calls": 8,
+      "cli_calls": 2,
+      "public_test_calls": 2,
+      "public_test_successes": 1,
+      "generation_ms": 23054.918208916206,
+      "attempt_generation_wall_ms": 24520.70839202497,
+      "usage": {
+        "prompt_tokens": 52082,
+        "completion_tokens": 645,
+        "total_tokens": 52727,
+        "cost": 0.001443215
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 261,
+      "source_sha256": "09c9d8afc6c998a70ba1fcbe91747f85ddf9eb71223558367234d5d21333406c",
+      "submitted_sha256": "09c9d8afc6c998a70ba1fcbe91747f85ddf9eb71223558367234d5d21333406c",
+      "submitted_workspace_sha256": "984bd474ef26b9269e837d7ca00aa27c1a91ca5487268530df0e82ffa0948bf2",
+      "error": null,
+      "runtime_ratio_to_reference": 0.7615254849530677,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          64.88325900863856,
+          60.6584950000979,
+          65.36484300158918,
+          62.832714000251144,
+          63.17132996628061
+        ],
+        "median_cli_wall_ms": 63.17132996628061
+      }
+    },
+    {
+      "task": "stable-unique",
+      "trial": 9,
+      "model_requests": 7,
+      "tool_calls": 7,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 18477.66912606312,
+      "attempt_generation_wall_ms": 19174.278315971605,
+      "usage": {
+        "prompt_tokens": 53889,
+        "completion_tokens": 421,
+        "total_tokens": 54310,
+        "cost": 0.001725065
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 99,
+      "source_sha256": "f1a3c8ae727a0ec20e452aa52542f6279355a91e3f35889187bbcfc4721793b5",
+      "submitted_sha256": "f1a3c8ae727a0ec20e452aa52542f6279355a91e3f35889187bbcfc4721793b5",
+      "submitted_workspace_sha256": "2cbe95ec05f590804b4be7c8a24a111dd401259714fba211bd0a6eb491083292",
+      "error": null,
+      "runtime_ratio_to_reference": 1.0132253470416697,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          76.11832401016727,
+          84.93293798528612,
+          80.12250595493242,
+          85.82480298355222,
+          84.05075600603595
+        ],
+        "median_cli_wall_ms": 84.05075600603595
+      }
+    },
+    {
+      "task": "stable-unique",
+      "trial": 10,
+      "model_requests": 4,
+      "tool_calls": 6,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 8937.733178958297,
+      "attempt_generation_wall_ms": 9655.198174004909,
+      "usage": {
+        "prompt_tokens": 24619,
+        "completion_tokens": 336,
+        "total_tokens": 24955,
+        "cost": 0.00053403
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 87,
+      "source_sha256": "84edf59ac3370eca0d16fe57991e385672bebc6049c54e442af9e2dd5a483d5b",
+      "submitted_sha256": "84edf59ac3370eca0d16fe57991e385672bebc6049c54e442af9e2dd5a483d5b",
+      "submitted_workspace_sha256": "0a5069373f746fa8d4dc6c6212e3fc80281ccb19f8e665d403bfdd0238a95bad",
+      "error": null,
+      "runtime_ratio_to_reference": 1.0494736311694977,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          77.28580298135057,
+          69.93503996636719,
+          152.8603180195205,
+          87.05768402433023,
+          88.32798700314015
+        ],
+        "median_cli_wall_ms": 87.05768402433023
+      }
+    },
+    {
+      "task": "dependency-plan",
+      "trial": 1,
+      "model_requests": 9,
+      "tool_calls": 9,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 25109.22993218992,
+      "attempt_generation_wall_ms": 26920.452769030817,
+      "usage": {
+        "prompt_tokens": 105595,
+        "completion_tokens": 526,
+        "total_tokens": 106121,
+        "cost": 0.00365064
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 109,
+      "source_sha256": "909b1e04a3f34f957ba499c8c807f4ed07500c89a3d56b39fab00104acde32b2",
+      "submitted_sha256": "909b1e04a3f34f957ba499c8c807f4ed07500c89a3d56b39fab00104acde32b2",
+      "submitted_workspace_sha256": "76c0b61aa23918176172f42e9e586f9a5118011f3ddf192aaf2b3f587c71c0f9",
+      "error": null,
+      "runtime_ratio_to_reference": 1.589832267378391,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          5009.304510022048,
+          5258.9475979912095,
+          3495.903883012943,
+          4890.799116983544,
+          3519.5858079823665
+        ],
+        "median_cli_wall_ms": 4890.799116983544
+      }
+    },
+    {
+      "task": "dependency-plan",
+      "trial": 2,
+      "model_requests": 9,
+      "tool_calls": 9,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 24601.183422957547,
+      "attempt_generation_wall_ms": 26011.11635804409,
+      "usage": {
+        "prompt_tokens": 100871,
+        "completion_tokens": 493,
+        "total_tokens": 101364,
+        "cost": 0.003062385
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 109,
+      "source_sha256": "909b1e04a3f34f957ba499c8c807f4ed07500c89a3d56b39fab00104acde32b2",
+      "submitted_sha256": "909b1e04a3f34f957ba499c8c807f4ed07500c89a3d56b39fab00104acde32b2",
+      "submitted_workspace_sha256": "76c0b61aa23918176172f42e9e586f9a5118011f3ddf192aaf2b3f587c71c0f9",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1374444189948663,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          3979.3431169819087,
+          3275.086449983064,
+          3499.1189159918576,
+          3453.3552990178578,
+          3831.3744770130143
+        ],
+        "median_cli_wall_ms": 3499.1189159918576
+      }
+    },
+    {
+      "task": "dependency-plan",
+      "trial": 3,
+      "model_requests": 9,
+      "tool_calls": 9,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 28747.052574937697,
+      "attempt_generation_wall_ms": 30277.340550965164,
+      "usage": {
+        "prompt_tokens": 109767,
+        "completion_tokens": 559,
+        "total_tokens": 110326,
+        "cost": 0.003762335
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 109,
+      "source_sha256": "909b1e04a3f34f957ba499c8c807f4ed07500c89a3d56b39fab00104acde32b2",
+      "submitted_sha256": "909b1e04a3f34f957ba499c8c807f4ed07500c89a3d56b39fab00104acde32b2",
+      "submitted_workspace_sha256": "76c0b61aa23918176172f42e9e586f9a5118011f3ddf192aaf2b3f587c71c0f9",
+      "error": null,
+      "runtime_ratio_to_reference": 1.4249327206057485,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          5096.476550970692,
+          3484.6854240167886,
+          4383.5188369848765,
+          3786.2875390565023,
+          4482.482131046709
+        ],
+        "median_cli_wall_ms": 4383.5188369848765
+      }
+    },
+    {
+      "task": "dependency-plan",
+      "trial": 4,
+      "model_requests": 7,
+      "tool_calls": 7,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 18216.051088063978,
+      "attempt_generation_wall_ms": 19520.8718420472,
+      "usage": {
+        "prompt_tokens": 55688,
+        "completion_tokens": 420,
+        "total_tokens": 56108,
+        "cost": 0.00235444
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 117,
+      "source_sha256": "9f824b09dc516954dcc68fe0ddc9806a5556c9cefc8379272289374d74ad1344",
+      "submitted_sha256": "9f824b09dc516954dcc68fe0ddc9806a5556c9cefc8379272289374d74ad1344",
+      "submitted_workspace_sha256": "98219a144dab18b7289c909aaa6076402e5fafee6ddb748c5f372f05e1e0c7fe",
+      "error": null,
+      "runtime_ratio_to_reference": 1.3298217337475717,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          5763.6508290306665,
+          4090.9290210111067,
+          3296.0466090007685,
+          3473.725187999662,
+          5436.6327849566005
+        ],
+        "median_cli_wall_ms": 4090.9290210111067
+      }
+    },
+    {
+      "task": "dependency-plan",
+      "trial": 5,
+      "model_requests": 6,
+      "tool_calls": 6,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 10387.087930983398,
+      "attempt_generation_wall_ms": 11201.616780017503,
+      "usage": {
+        "prompt_tokens": 48739,
+        "completion_tokens": 318,
+        "total_tokens": 49057,
+        "cost": 0.001956875
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 121,
+      "source_sha256": "88774aaf575dd42b4aca8f828180dd26a9ea89be8cf6514fe42b8e1fb34bd4d7",
+      "submitted_sha256": "88774aaf575dd42b4aca8f828180dd26a9ea89be8cf6514fe42b8e1fb34bd4d7",
+      "submitted_workspace_sha256": "190f287086aa7a2dff152677b67a8570836eaeaebb0b754ed1c68186004f13e8",
+      "error": null,
+      "runtime_ratio_to_reference": 1.2001081603013597,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          3723.636222013738,
+          4102.021976024844,
+          3474.0198790095747,
+          3580.3568090195768,
+          3691.891308990307
+        ],
+        "median_cli_wall_ms": 3691.891308990307
+      }
+    },
+    {
+      "task": "dependency-plan",
+      "trial": 6,
+      "model_requests": 8,
+      "tool_calls": 8,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 19450.57204796467,
+      "attempt_generation_wall_ms": 21196.13398099318,
+      "usage": {
+        "prompt_tokens": 76445,
+        "completion_tokens": 425,
+        "total_tokens": 76870,
+        "cost": 0.002440695
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 109,
+      "source_sha256": "909b1e04a3f34f957ba499c8c807f4ed07500c89a3d56b39fab00104acde32b2",
+      "submitted_sha256": "909b1e04a3f34f957ba499c8c807f4ed07500c89a3d56b39fab00104acde32b2",
+      "submitted_workspace_sha256": "76c0b61aa23918176172f42e9e586f9a5118011f3ddf192aaf2b3f587c71c0f9",
+      "error": null,
+      "runtime_ratio_to_reference": 1.3821766624288419,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          4629.286598996259,
+          4251.988425967284,
+          3271.0642170277424,
+          5636.719947040547,
+          3381.3584280433133
+        ],
+        "median_cli_wall_ms": 4251.988425967284
+      }
+    },
+    {
+      "task": "dependency-plan",
+      "trial": 7,
+      "model_requests": 9,
+      "tool_calls": 9,
+      "cli_calls": 3,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 17058.279705874156,
+      "attempt_generation_wall_ms": 19368.99176897714,
+      "usage": {
+        "prompt_tokens": 80050,
+        "completion_tokens": 448,
+        "total_tokens": 80498,
+        "cost": 0.0025031199999999997
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 109,
+      "source_sha256": "909b1e04a3f34f957ba499c8c807f4ed07500c89a3d56b39fab00104acde32b2",
+      "submitted_sha256": "909b1e04a3f34f957ba499c8c807f4ed07500c89a3d56b39fab00104acde32b2",
+      "submitted_workspace_sha256": "76c0b61aa23918176172f42e9e586f9a5118011f3ddf192aaf2b3f587c71c0f9",
+      "error": null,
+      "runtime_ratio_to_reference": 1.4332705332012998,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          3372.776106989477,
+          6802.708919974975,
+          3334.387090988457,
+          6859.957126027439,
+          4409.168439975474
+        ],
+        "median_cli_wall_ms": 4409.168439975474
+      }
+    },
+    {
+      "task": "dependency-plan",
+      "trial": 8,
+      "model_requests": 8,
+      "tool_calls": 8,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 18330.859106907155,
+      "attempt_generation_wall_ms": 19955.36310801981,
+      "usage": {
+        "prompt_tokens": 79942,
+        "completion_tokens": 597,
+        "total_tokens": 80539,
+        "cost": 0.00253648
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 117,
+      "source_sha256": "9f824b09dc516954dcc68fe0ddc9806a5556c9cefc8379272289374d74ad1344",
+      "submitted_sha256": "9f824b09dc516954dcc68fe0ddc9806a5556c9cefc8379272289374d74ad1344",
+      "submitted_workspace_sha256": "98219a144dab18b7289c909aaa6076402e5fafee6ddb748c5f372f05e1e0c7fe",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1946583542056242,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          3696.1017529829405,
+          3478.9236100041308,
+          3390.647030028049,
+          3675.12607696699,
+          3784.4241459970362
+        ],
+        "median_cli_wall_ms": 3675.12607696699
+      }
+    },
+    {
+      "task": "dependency-plan",
+      "trial": 9,
+      "model_requests": 7,
+      "tool_calls": 8,
+      "cli_calls": 2,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 12283.526929968502,
+      "attempt_generation_wall_ms": 13913.431969995145,
+      "usage": {
+        "prompt_tokens": 63139,
+        "completion_tokens": 444,
+        "total_tokens": 63583,
+        "cost": 0.0022926
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 121,
+      "source_sha256": "88774aaf575dd42b4aca8f828180dd26a9ea89be8cf6514fe42b8e1fb34bd4d7",
+      "submitted_sha256": "88774aaf575dd42b4aca8f828180dd26a9ea89be8cf6514fe42b8e1fb34bd4d7",
+      "submitted_workspace_sha256": "190f287086aa7a2dff152677b67a8570836eaeaebb0b754ed1c68186004f13e8",
+      "error": null,
+      "runtime_ratio_to_reference": 1.1819525423295658,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          3217.9126249975525,
+          3541.3638440077193,
+          4670.915639959276,
+          5734.721799963154,
+          3636.0392029746436
+        ],
+        "median_cli_wall_ms": 3636.0392029746436
+      }
+    },
+    {
+      "task": "dependency-plan",
+      "trial": 10,
+      "model_requests": 6,
+      "tool_calls": 6,
+      "cli_calls": 1,
+      "public_test_calls": 1,
+      "public_test_successes": 1,
+      "generation_ms": 13076.485128025524,
+      "attempt_generation_wall_ms": 13764.052014041226,
+      "usage": {
+        "prompt_tokens": 40020,
+        "completion_tokens": 466,
+        "total_tokens": 40486,
+        "cost": 0.00158684
+      },
+      "response_model": "openai/gpt-6-luna",
+      "provider": "OpenAI",
+      "finish_reason": "tool_calls",
+      "source_bytes": 107,
+      "source_sha256": "1450afc8791e9fcef976cdab0b3fd3a4e9fb3da4c39bead77c43d35911918b99",
+      "submitted_sha256": "1450afc8791e9fcef976cdab0b3fd3a4e9fb3da4c39bead77c43d35911918b99",
+      "submitted_workspace_sha256": "a7b0e28d72392e40870362d5ebfa3b44c0b5047945eb1ed70f596f65c1130ac2",
+      "error": null,
+      "runtime_ratio_to_reference": 1.2034003213294735,
+      "score": {
+        "passed": true,
+        "cases_passed": 6,
+        "cases_total": 6,
+        "cli_wall_ms": [
+          3862.3225850169547,
+          3296.5450690244325,
+          3454.4673989876173,
+          4191.398676019162,
+          3702.0189800532535
+        ],
+        "median_cli_wall_ms": 3702.0189800532535
+      }
+    }
+  ]
+}

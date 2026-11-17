@@ -1,3 +1,55 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - square
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - nested
+        - "$call"
+        - 1
+        - callback
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - square
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - square
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 16
 objects:
   object0:
     bindings:

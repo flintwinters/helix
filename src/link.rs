@@ -229,6 +229,7 @@ impl Linker<'_> {
                     ));
                 };
                 let path = dir.join(&spec);
+                let path = if path.is_dir() { path.join("main.yaml") } else { path };
                 self.files.push(path.clone());
                 let read_path = if let Some(allowed) = &self.allowed {
                     let canonical = path.canonicalize().map_err(|_| {

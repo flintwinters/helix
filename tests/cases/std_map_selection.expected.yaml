@@ -1,3 +1,935 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_omit
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_omit
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+      - a
+      - z
+      - "é"
+      - "🙂"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_select
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_select
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_sources
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_sources
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - x
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_sources
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - empty_sources
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - x
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - nested
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - nested
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omitted
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omitted
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - a
+      - "é"
+      - a
+      - missing
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:map"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:map"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+      - z
+      - "🙂"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      z: ~
+      "🙂": 4
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - omit
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      z: ~
+      "🙂": 4
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - selected
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - selected
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - "🙂"
+      - z
+      - a
+      - z
+      - missing
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 3
+        source: "std:map"
+    kind: result
+    target:
+      path:
+        - select
+        - "$call"
+        - 2
+      source: "std:map"
+    type: map
+    value:
+      a: false
+      z: ~
+      "🙂": 4
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - wrong_omit_keys
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - wrong_omit_member
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - omit
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - wrong_omit_source
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - wrong_select_keys
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - wrong_select_member
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: map
+    value:
+      "":
+        nested:
+          - 1
+          - 2
+      a: false
+      z: ~
+      "é": 3
+      "🙂": 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - select
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:map"
+    kind: parameter
+    target:
+      path:
+        - wrong_select_source
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value: []
 objects:
   object0:
     bindings: {}

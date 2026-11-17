@@ -1,3 +1,2173 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - absent_index
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - absent_index
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - absent_index
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bad_boolean
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - bad_boolean
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - bad_boolean
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - bad_boolean
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bad_callback
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - group_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bad_group_key
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - group_by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - bad_group_key
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - bad_group_key
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - group_by
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - group_by
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - bad_group_key
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - take
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - take
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - take
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - drop
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - drop
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - drop
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - take
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - take
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 10
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 10
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - take
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - drop
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 4
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - drop
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 4
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 10
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 10
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - drop
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - take
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 5
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - take
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 5
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - take
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - take
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - drop
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 6
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - drop
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - bounds
+        - "$call"
+        - 6
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - drop
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - count
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - count
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+      - 2
+      - 3
+      - 4
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - count
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - count
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - count
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - count
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - count
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - drop
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - 1
+      - 2
+      - 3
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - drop
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 3
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - min
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - min
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - drop
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - drop
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value:
+      - 3
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - first
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - empty_first
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": list
+      location:
+        path:
+          - flatten
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - empty_flat
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: list
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - flatten
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - flatten
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - flat_map
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - empty_flat
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - flat_map
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - empty_flat
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - empty_flat
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": list
+      location:
+        path:
+          - flatten
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - flat_map
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of: list
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - flatten
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - flatten
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - flat_map
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - flat_map
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - last
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - empty_last
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - empty_logic
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - any
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - empty_logic
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - empty_logic
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - empty_logic
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - any
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - any
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - empty_logic
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - empty_logic
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - empty_logic
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - group_by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - empty_maps
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - group_by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - empty_maps
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - empty_maps
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:group"
+    kind: parameter
+    target:
+      path:
+        - group_by
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - by
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:group"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - group_by
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - empty_maps
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - by
+          - "$call"
+          - 3
+        source: "std:group"
+    kind: result
+    target:
+      path:
+        - by
+        - "$call"
+        - 2
+      source: "std:group"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - group_by
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - group_by
+        - "$call"
+        - 2
+      source: "std:list"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - frequencies
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - empty_maps
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - frequencies
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - frequencies
+        - "$call"
+        - 2
+      source: "std:list"
+    type: map
+    value: {}
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - enumerate
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - empty_pairs
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - enumerate
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:list"
+    type: integer
+    value: 0
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - enumerate
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - enumerate
+        - "$call"
+        - 2
+      source: "std:list"
+    type: list
+    value: []
+annotations_truncated: true
 objects:
   object0:
     bindings:

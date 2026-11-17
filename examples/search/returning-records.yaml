@@ -1,0 +1,14 @@
+$call:
+- let
+- search: {$call: [import, 'std:search']}
+- $call:
+  - fn
+  - [record]
+  - $call:
+    - if
+    - {$call: [eq, {$ref: record.kind}, source]}
+    - $call:
+      - let
+      - selected: {$call: [search.select_results, {$ref: record}, {tag: mapping, fields: {}}]}
+      - $call: [if, {$call: [gt, {$call: [len, {$ref: selected.selection}]}, 0]}, [{$ref: selected}], []]
+    - $call: [if, {$call: [has, [diagnostic, summary], {$ref: record.kind}]}, [{$ref: record}], []]

@@ -65,6 +65,34 @@ fn equivalent(source: &str) -> Vm {
     stepped
 }
 #[test]
+fn successful_annotations_survive_retained_branches_without_wrapping_values() {
+    let source = r#"{"$call":["let",{"f":{"$call":["fn",[["n","integer"]],{"$ref":"n"},"integer"]}},{"$call":["expect",{"$call":["f",7]},"integer"]}]}"#;
+    let ready = Vm::load(source);
+    let original = ready.inspect();
+    let mut paused = ready.clone();
+    while active(&paused) && paused.state()["annotations"].as_vec().is_none() {
+        paused = paused.step();
+    }
+    let retained = paused.inspect();
+    assert!(paused.state()["annotations"].as_vec().is_some());
+    let mut run_branch = paused.clone();
+    run_branch.run();
+    let step_branch = finish_by_steps(paused.clone());
+    assert_eq!(run_branch, step_branch);
+    assert_eq!(root(&run_branch), Yaml::Integer(7));
+    assert_eq!(paused.inspect(), retained);
+    assert_eq!(ready.inspect(), original);
+    let state = run_branch.state();
+    let rows = state["annotations"].as_vec().unwrap();
+    assert_eq!(rows.len(), 3);
+    for (row, kind) in rows.iter().zip(["parameter", "result", "expect"]) {
+        assert_eq!(row["kind"].as_str(), Some(kind));
+        assert_eq!(row["declaration"]["code"].as_str(), Some("integer"));
+        assert_eq!(row["type"].as_str(), Some("integer"));
+        assert_eq!(row["value"], Yaml::Integer(7));
+    }
+}
+#[test]
 fn type_time_file_modules_retain_loaded_source_across_steps_and_branches() {
     let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("runtime")
         .join(format!("type-time-source-{}", std::process::id()));

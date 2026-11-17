@@ -1,4 +1,4 @@
-//! Block-style YAML output. Helix owns the emitter because the written text is a public contract:
+//! Block-style YAML states and compact source formatting. The written text is a public contract:
 //! a string that would re-read as something else (a number or a boolean)
 //! must stay quoted, or a serialized state would not round-trip.
 
@@ -7,6 +7,7 @@ use yaml_rust2::Yaml;
 /// Boundary rendering nodes keep source tokens separate from YAML numeric values.
 enum Encoded {
     Scalar(String),
+    Tagged(String, Box<Encoded>),
     List(Vec<Encoded>),
     Map(Vec<(String, Encoded)>),
 }
@@ -39,7 +40,16 @@ impl Encoded {
             Kind::Map(entries) => Self::Map(
                 entries
                     .iter()
-                    .map(|(key, id)| (string(key, false), Self::source(graph, *id)))
+                    .map(|(key, id)| {
+                        (
+                            if matches!(key.as_str(), "$call" | "$ref" | "$literal") {
+                                key.clone()
+                            } else {
+                                string(key, false)
+                            },
+                            Self::source(graph, *id),
+                        )
+                    })
                     .collect(),
             ),
         }
@@ -54,6 +64,7 @@ impl Encoded {
     fn inline(&self) -> &str {
         match self {
             Self::Scalar(text) => text,
+            Self::Tagged(..) => unreachable!("tags are source layout only"),
             Self::List(_) => "[]",
             Self::Map(_) => "{}",
         }
@@ -134,9 +145,137 @@ pub fn document(value: &Yaml) -> String {
     Encoded::value(value, false).document()
 }
 
+impl Encoded {
+    /// Tags are source sugar only. Literal payloads retain their exact data representation.
+    fn tagged(self) -> Self {
+        match self {
+            Self::Map(mut entries) if entries.len() == 1
+                && matches!(entries[0].0.as_str(), "$call" | "$ref" | "$literal") => {
+                let (key, value) = entries.pop().unwrap();
+                let value = if key == "$literal" { value } else { value.tagged() };
+                Self::Tagged(key[1..].to_owned(), Box::new(value))
+            }
+            Self::Map(entries) => Self::Map(entries.into_iter().map(|(k, v)| (k, v.tagged())).collect()),
+            Self::List(items) => Self::List(items.into_iter().map(Self::tagged).collect()),
+            other => other,
+        }
+    }
+    /// Source layout keeps short leaf expressions in flow collections.
+    /// Runtime state emission deliberately retains its existing block contract.
+    fn flow(&self) -> String {
+        match self {
+            Self::Scalar(text) => text.clone(),
+            Self::Tagged(tag, value) => format!("!{tag} {}", value.flow()),
+            Self::List(items) => format!(
+                "[{}]",
+                items.iter().map(Self::flow).collect::<Vec<_>>().join(", ")
+            ),
+            Self::Map(entries) => format!(
+                "{{{}}}",
+                entries
+                    .iter()
+                    .map(|(key, value)| format!("{key}: {}", value.flow()))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+        }
+    }
+    /// Structural forms introduce bodies or branches. Keep their boundaries visible,
+    /// including when an enclosing expression would otherwise fit on one line.
+    fn structural(&self) -> bool {
+        match self {
+            Self::Map(entries) => {
+                let control = entries.len() == 1 && entries[0].0 == "$call"
+                    && matches!(&entries[0].1, Self::List(items)
+                        if matches!(items.first(), Some(Self::Scalar(actor))
+                            if matches!(actor.as_str(), "fn" | "let" | "if" | "try" | "until")));
+                control || entries.iter().any(|(_, value)| value.structural())
+            }
+            Self::List(items) => items.iter().any(Self::structural),
+            Self::Tagged(tag, value) => {
+                (tag == "call" && matches!(value.as_ref(), Self::List(items)
+                    if matches!(items.first(), Some(Self::Scalar(actor))
+                        if matches!(actor.as_str(), "fn" | "let" | "if" | "try" | "until"))))
+                    || value.structural()
+            },
+            Self::Scalar(_) => false,
+        }
+    }
+    fn pretty(&self, indent: usize, prefix: &str, out: &mut String) {
+        self.layout(indent, prefix, out, false);
+    }
+    fn layout(&self, indent: usize, prefix: &str, out: &mut String, force_block: bool) {
+        if let Self::Tagged(tag, value) = self {
+            let tagged_prefix = format!("{prefix}!{tag} ");
+            value.layout(indent, &tagged_prefix, out, force_block || self.structural());
+            return;
+        }
+        let flow = self.flow();
+        if !self.container()
+            || (!force_block && !self.structural()
+                && indent + prefix.chars().count() + flow.chars().count() <= 100)
+        {
+            out.push_str(&" ".repeat(indent));
+            out.push_str(prefix);
+            out.push_str(&flow);
+            out.push('\n');
+            return;
+        }
+        // A sequence's mapping entry can start directly after its dash.
+        if prefix == "- " {
+            if let Self::Map(entries) = self {
+                for (index, (key, value)) in entries.iter().enumerate() {
+                    if index == 0 {
+                        value.layout(indent, &format!("- {key}: "), out, key == "$call" && self.structural());
+                    } else {
+                        value.pretty(indent + 2, &format!("{key}: "), out);
+                    }
+                }
+                return;
+            }
+        }
+        let nested = if prefix.is_empty() {
+            indent
+        } else {
+            out.push_str(&" ".repeat(indent));
+            out.push_str(prefix.trim_end());
+            out.push('\n');
+            indent + if prefix.starts_with("- ") && prefix != "- " { 4 } else { 2 }
+        };
+        match self {
+            Self::Map(entries) => {
+                for (key, value) in entries {
+                    value.layout(nested, &format!("{key}: "), out, key == "$call" && self.structural());
+                }
+            }
+            Self::List(items) => {
+                for item in items {
+                    item.pretty(nested, "- ", out);
+                }
+            }
+            Self::Scalar(_) | Self::Tagged(..) => unreachable!(),
+        }
+    }
+}
+
 /// Canonical source layout preserves YAML representation values.
 pub(crate) fn source(graph: &crate::model::Graph) -> String {
-    Encoded::source(graph, crate::model::ROOT).document()
+    let mut out = String::new();
+    let source = Encoded::source(graph, crate::model::ROOT).tagged();
+    match &source {
+        Encoded::Map(entries)
+            if entries.len() > 1
+                || entries.first().is_some_and(|(key, _)| {
+                    !matches!(key.as_str(), "$call" | "$ref" | "$literal")
+                }) =>
+        {
+            for (key, value) in entries {
+                value.pretty(0, &format!("{key}: "), &mut out);
+            }
+        }
+        _ => source.pretty(0, "", &mut out),
+    }
+    out
 }
 
 /// Pure source recovery freezes only ordinary-data root fields. Runtime objects are retried

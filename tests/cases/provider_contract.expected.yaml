@@ -1,3 +1,1868 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": descriptor
+      location:
+        path:
+          - checked
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type:
+      fields:
+        apply: function
+        arguments: any
+        capabilities:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        check: boolean
+        diff: boolean
+        failure:
+          type: literal
+          value: stop
+        id:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+        observation: any
+        observe: function
+        plan: function
+        platforms:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        result: any
+        revision:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+        version:
+          type: literal
+          value: 1
+      type: record
+    value:
+      apply:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - apply
+          source: "<root>"
+      arguments: string
+      capabilities:
+        - file_read
+        - file_write
+      check: true
+      diff: true
+      failure: stop
+      id: test.content
+      observation: string
+      observe:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - observe
+          source: "<root>"
+      plan:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - plan
+          source: "<root>"
+      platforms:
+        - test-linux
+      result:
+        type: literal
+        value: ~
+      revision: "1.0.0"
+      version: 1
+  - declaration:
+      code:
+        "$call":
+          - get
+          - "$ref": p
+          - arguments
+      location:
+        path:
+          - checked
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    target:
+      path:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type: string
+    value: new
+  - declaration:
+      code:
+        "$ref": context_type
+      location:
+        path:
+          - checked
+          - "$call"
+          - 2
+          - "$call"
+          - 3
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type:
+      fields:
+        allow_remove: boolean
+        capabilities:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        managed: boolean
+        platform:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+      type: record
+    value:
+      allow_remove: false
+      capabilities:
+        - file_read
+        - file_write
+      managed: true
+      platform: test-linux
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - checked_types
+        - "$call"
+        - 2
+        - "$call"
+        - 5
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type: list
+    value:
+      - file_read
+      - file_write
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked_types
+        - "$call"
+        - 2
+        - "$call"
+        - 5
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:provider"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - checked_types
+          - "$call"
+          - 2
+          - "$call"
+          - 5
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - file_read
+      - file_write
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$call":
+          - get
+          - "$ref": p
+          - observation
+      location:
+        path:
+          - plan_checked
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 3
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    target:
+      path:
+        - plan_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type: string
+    value: old
+  - declaration:
+      code:
+        "$ref": steps_type
+      location:
+        path:
+          - planned
+          - "$call"
+          - 2
+          - "$call"
+          - 5
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - planned
+        - "$call"
+        - 2
+        - "$call"
+        - 5
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type:
+      of:
+        fields:
+          field:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          from:
+            of: any
+            type: optional
+          op:
+            type: enum
+            values:
+              - set
+              - remove
+          to: any
+        type: record
+      type: list
+    value:
+      - field: /content
+        op: set
+        to: new
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - valid_steps
+        - "$call"
+        - 2
+        - "$call"
+        - 4
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    type: list
+    value:
+      - field: /content
+        op: set
+        to: new
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - valid_steps
+        - "$call"
+        - 2
+        - "$call"
+        - 4
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:provider"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - valid_steps
+          - "$call"
+          - 2
+          - "$call"
+          - 4
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:provider"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - field: /content
+        op: set
+        to: new
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$ref": descriptor
+      location:
+        path:
+          - checked
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type:
+      fields:
+        apply: function
+        arguments: any
+        capabilities:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        check: boolean
+        diff: boolean
+        failure:
+          type: literal
+          value: stop
+        id:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+        observation: any
+        observe: function
+        plan: function
+        platforms:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        result: any
+        revision:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+        version:
+          type: literal
+          value: 1
+      type: record
+    value:
+      apply:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - apply
+          source: "<root>"
+      arguments: string
+      capabilities:
+        - file_read
+        - file_write
+      check: true
+      diff: true
+      failure: stop
+      id: test.content
+      observation: string
+      observe:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - observe
+          source: "<root>"
+      plan:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - plan
+          source: "<root>"
+      platforms:
+        - test-linux
+      result:
+        type: literal
+        value: ~
+      revision: "1.0.0"
+      version: 1
+  - declaration:
+      code:
+        "$ref": descriptor
+      location:
+        path:
+          - checked
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type:
+      fields:
+        apply: function
+        arguments: any
+        capabilities:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        check: boolean
+        diff: boolean
+        failure:
+          type: literal
+          value: stop
+        id:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+        observation: any
+        observe: function
+        plan: function
+        platforms:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        result: any
+        revision:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+        version:
+          type: literal
+          value: 1
+      type: record
+    value:
+      apply:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - apply
+          source: "<root>"
+      arguments: string
+      capabilities:
+        - file_read
+        - file_write
+      check: true
+      diff: true
+      failure: stop
+      id: test.content
+      observation: string
+      observe:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - observe
+          source: "<root>"
+      plan:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - plan
+          source: "<root>"
+      platforms:
+        - test-linux
+      result:
+        type: literal
+        value: ~
+      revision: "1.0.0"
+      version: 1
+  - declaration:
+      code:
+        "$call":
+          - get
+          - "$ref": p
+          - arguments
+      location:
+        path:
+          - checked
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    target:
+      path:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type: string
+    value: new
+  - declaration:
+      code:
+        "$ref": context_type
+      location:
+        path:
+          - checked
+          - "$call"
+          - 2
+          - "$call"
+          - 3
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type:
+      fields:
+        allow_remove: boolean
+        capabilities:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        managed: boolean
+        platform:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+      type: record
+    value:
+      allow_remove: false
+      capabilities: []
+      managed: true
+      platform: test-linux
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - checked_types
+        - "$call"
+        - 2
+        - "$call"
+        - 5
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type: list
+    value:
+      - file_read
+      - file_write
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked_types
+        - "$call"
+        - 2
+        - "$call"
+        - 5
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:provider"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - checked_types
+          - "$call"
+          - 2
+          - "$call"
+          - 5
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - file_read
+      - file_write
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: 0
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: false
+  - declaration:
+      code:
+        "$ref": descriptor
+      location:
+        path:
+          - checked
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type:
+      fields:
+        apply: function
+        arguments: any
+        capabilities:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        check: boolean
+        diff: boolean
+        failure:
+          type: literal
+          value: stop
+        id:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+        observation: any
+        observe: function
+        plan: function
+        platforms:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        result: any
+        revision:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+        version:
+          type: literal
+          value: 1
+      type: record
+    value:
+      apply:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - apply
+          source: "<root>"
+      arguments: string
+      capabilities:
+        - file_read
+        - file_write
+      check: true
+      diff: true
+      failure: stop
+      id: test.content
+      observation: string
+      observe:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - observe
+          source: "<root>"
+      plan:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - spec
+            - plan
+          source: "<root>"
+      platforms:
+        - test-linux
+      result:
+        type: literal
+        value: ~
+      revision: "1.0.0"
+      version: 1
+  - declaration:
+      code:
+        "$call":
+          - get
+          - "$ref": p
+          - arguments
+      location:
+        path:
+          - checked
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    target:
+      path:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type: string
+    value: old
+  - declaration:
+      code:
+        "$ref": context_type
+      location:
+        path:
+          - checked
+          - "$call"
+          - 2
+          - "$call"
+          - 3
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type:
+      fields:
+        allow_remove: boolean
+        capabilities:
+          of:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          type: list
+        managed: boolean
+        platform:
+          check:
+            kind: function
+            location:
+              path:
+                - name
+                - "$call"
+                - 2
+              source: "std:provider"
+          of: string
+          type: refine
+      type: record
+    value:
+      allow_remove: false
+      capabilities:
+        - file_read
+        - file_write
+      managed: true
+      platform: test-linux
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - checked_types
+        - "$call"
+        - 2
+        - "$call"
+        - 5
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type: list
+    value:
+      - file_read
+      - file_write
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked_types
+        - "$call"
+        - 2
+        - "$call"
+        - 5
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:provider"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - checked_types
+          - "$call"
+          - 2
+          - "$call"
+          - 5
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value:
+      - file_read
+      - file_write
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+  - declaration:
+      code:
+        "$call":
+          - get
+          - "$ref": p
+          - observation
+      location:
+        path:
+          - plan_checked
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+          - "$call"
+          - 3
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    target:
+      path:
+        - plan_checked
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type: string
+    value: old
+  - declaration:
+      code:
+        "$ref": steps_type
+      location:
+        path:
+          - planned
+          - "$call"
+          - 2
+          - "$call"
+          - 5
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:provider"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - planned
+        - "$call"
+        - 2
+        - "$call"
+        - 5
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:provider"
+    type:
+      of:
+        fields:
+          field:
+            check:
+              kind: function
+              location:
+                path:
+                  - name
+                  - "$call"
+                  - 2
+                source: "std:provider"
+            of: string
+            type: refine
+          from:
+            of: any
+            type: optional
+          op:
+            type: enum
+            values:
+              - set
+              - remove
+          to: any
+        type: record
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - valid_steps
+        - "$call"
+        - 2
+        - "$call"
+        - 4
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:provider"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - all
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - valid_steps
+        - "$call"
+        - 2
+        - "$call"
+        - 4
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+      source: "std:provider"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - valid_steps
+          - "$call"
+          - 2
+          - "$call"
+          - 4
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+        source: "std:provider"
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:list"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": function
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:list"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "std:list"
+    type: function
+    value:
+      kind: function
+      location:
+        path:
+          - all
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+        source: "std:list"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - find_index
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - find_index
+        - "$call"
+        - 2
+      source: "std:list"
+    type: integer
+    value: -1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - all
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - all
+        - "$call"
+        - 2
+      source: "std:list"
+    type: boolean
+    value: true
+annotations_truncated: true
 root:
   changed:
     applied: false
@@ -23,22 +1888,26 @@ root:
     applied: false
     error:
       calls:
-        - column: 104
+        - column: 23
           file: "std:provider"
           function: /checked
-          function_column: 8
+          function_column: 3
           function_file: "std:provider"
-          function_line: 24
-          line: 59
+          function_line: 81
+          line: 261
           path: "/plan/$call/2/$call/1/$call/1/$call/5"
-      column: 39
+      column: 42
       data:
         violations:
-          - at: /
+          - actual: 42
+            actual_present: true
+            at: /
+            expected: string
             message: "expected string, got integer"
+            rule: type
       file: "std:provider"
       kind: type
-      line: 30
+      line: 86
       message: "1 type violation: expected string, got integer"
       path: "/checked/$call/2/$call/2/$call/1/$call/1"
       phase: type
@@ -104,42 +1973,42 @@ root:
     applied: false
     error:
       calls:
-        - column: 12
+        - column: 11
           file: "std:provider"
           function: /require
-          function_column: 8
+          function_column: 3
           function_file: "std:provider"
-          function_line: 12
-          line: 90
+          function_line: 298
+          line: 382
           path: "/valid_steps/$call/2/$call/4"
-        - column: 7
+        - column: 11
           file: "std:provider"
           function: /valid_steps
-          function_column: 8
+          function_column: 3
           function_file: "std:provider"
-          function_line: 82
-          line: 80
+          function_line: 363
+          line: 289
           path: "/planned/$call/2/$call/5"
-        - column: 7
+        - column: 11
           file: "std:provider"
           function: /planned
-          function_column: 8
+          function_column: 3
           function_file: "std:provider"
-          function_line: 71
-          line: 68
+          function_line: 280
+          line: 273
           path: "/plan_checked/$call/2/$call/2"
-        - column: 27
+        - column: 15
           file: "std:provider"
           function: /plan_checked
-          function_column: 8
+          function_column: 3
           function_file: "std:provider"
-          function_line: 62
-          line: 59
+          function_line: 267
+          line: 256
           path: "/plan/$call/2/$call/1/$call/1"
-      column: 45
+      column: 15
       file: "std:provider"
       kind: provider_removal_denied
-      line: 15
+      line: 304
       message: Removal requires explicit caller consent in addition to managed ownership
       path: "/require/$call/2/$call/3"
       phase: type
@@ -157,18 +2026,18 @@ root:
     applied: false
     error:
       calls:
-        - column: 7
+        - column: 11
           file: "std:provider"
           function: /apply_checked
-          function_column: 8
+          function_column: 3
           function_file: "std:provider"
-          function_line: 130
-          line: 127
+          function_line: 21
+          line: 10
           path: "/apply/$call/2/$call/1"
-      column: 9
+      column: 15
       file: "std:provider"
       kind: provider_stale_plan
-      line: 142
+      line: 42
       message: The reviewed plan does not match fresh provider state and caller inputs
       path: "/apply_checked/$call/2/$call/2/$call/3"
       reference:

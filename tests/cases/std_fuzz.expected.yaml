@@ -1,3 +1,1762 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:fuzz"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - boundaries
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "a\u000bb\u000cc\u001cd\u001de\u001ef\u0085g\u2028h\u2029"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - scan
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - lines
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 16
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
+      - 10
+      - 11
+      - 12
+      - 13
+      - 14
+      - 15
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - prefixes
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - generate
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 2
+          - 16
+      - - - 0
+          - 2
+      - - - 0
+          - 2
+        - - 4
+          - 16
+      - - - 0
+          - 4
+      - - - 0
+          - 4
+        - - 6
+          - 16
+      - - - 0
+          - 6
+      - - - 0
+          - 6
+        - - 8
+          - 16
+      - - - 0
+          - 8
+      - - - 0
+          - 8
+        - - 10
+          - 16
+      - - - 0
+          - 10
+      - - - 0
+          - 10
+        - - 12
+          - 16
+      - - - 0
+          - 12
+      - - - 0
+          - 12
+        - - 14
+          - 16
+      - - - 0
+          - 14
+      - - - 0
+          - 14
+        - - 16
+          - 16
+      - - - 0
+          - 0
+      - - - 0
+          - 5
+      - - - 0
+          - 10
+      - - - 0
+          - 15
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - plan
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - plan
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 2
+          - 16
+      - - - 0
+          - 2
+      - - - 0
+          - 2
+        - - 4
+          - 16
+      - - - 0
+          - 4
+      - - - 0
+          - 4
+        - - 6
+          - 16
+      - - - 0
+          - 6
+      - - - 0
+          - 6
+        - - 8
+          - 16
+      - - - 0
+          - 8
+      - - - 0
+          - 8
+        - - 10
+          - 16
+      - - - 0
+          - 10
+      - - - 0
+          - 10
+        - - 12
+          - 16
+      - - - 0
+          - 12
+      - - - 0
+          - 12
+        - - 14
+          - 16
+      - - - 0
+          - 14
+      - - - 0
+          - 14
+        - - 16
+          - 16
+      - - - 0
+          - 0
+      - - - 0
+          - 5
+      - - - 0
+          - 10
+      - - - 0
+          - 15
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:fuzz"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - crlf
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "a\r\nb\rc\n"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - scan
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - lines
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 6
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - prefixes
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 2
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - generate
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 3
+          - 7
+      - - - 0
+          - 3
+      - - - 0
+          - 3
+        - - 5
+          - 7
+      - - - 0
+          - 5
+      - - - 0
+          - 5
+        - - 7
+          - 7
+      - - - 0
+          - 0
+      - - - 0
+          - 5
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - plan
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - plan
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 3
+          - 7
+      - - - 0
+          - 3
+      - - - 0
+          - 3
+        - - 5
+          - 7
+      - - - 0
+          - 5
+      - - - 0
+          - 5
+        - - 7
+          - 7
+      - - - 0
+          - 0
+      - - - 0
+          - 5
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:fuzz"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - empty
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: ""
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - scan
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 0
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - lines
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 0
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - prefixes
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 0
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - generate
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - plan
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - plan
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:fuzz"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - lines
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "a: 1\nb: 2\n"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - scan
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - lines
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - prefixes
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 2
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - generate
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 5
+          - 10
+      - - - 0
+          - 5
+      - - - 0
+          - 5
+        - - 10
+          - 10
+      - - - 0
+          - 0
+      - - - 0
+          - 5
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - plan
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - plan
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 5
+          - 10
+      - - - 0
+          - 5
+      - - - 0
+          - 5
+        - - 10
+          - 10
+      - - - 0
+          - 0
+      - - - 0
+          - 5
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:fuzz"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - single
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: abcdef
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - scan
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - lines
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 2
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - prefixes
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 2
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - generate
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 6
+          - 6
+      - - - 0
+          - 0
+      - - - 0
+          - 5
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - plan
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - plan
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 6
+          - 6
+      - - - 0
+          - 0
+      - - - 0
+          - 5
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:fuzz"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - unicode
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "🙂é世界éx"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - scan
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - lines
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 2
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - prefixes
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 2
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - generate
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 7
+          - 7
+      - - - 0
+          - 0
+      - - - 0
+          - 5
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - plan
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - plan
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 7
+          - 7
+      - - - 0
+          - 0
+      - - - 0
+          - 5
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - plan
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:fuzz"
+    kind: parameter
+    target:
+      path:
+        - "$call"
+        - 2
+        - unterminated
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "a\nb"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - scan
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - lines
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 4
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+      - 1
+      - 2
+      - 3
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:list"
+    kind: parameter
+    target:
+      path:
+        - render
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - prefixes
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+      source: "std:fuzz"
+    type: integer
+    value: 1
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": integer
+      location:
+        path:
+          - range
+          - "$call"
+          - 3
+        source: "std:list"
+    kind: result
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of: integer
+      type: list
+    value:
+      - 0
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - generate
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - generate
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 2
+          - 3
+      - - - 0
+          - 2
+      - - - 0
+          - 2
+        - - 3
+          - 3
+      - - - 0
+          - 0
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - plan
+          - "$call"
+          - 3
+        source: "std:fuzz"
+    kind: result
+    target:
+      path:
+        - plan
+        - "$call"
+        - 2
+      source: "std:fuzz"
+    type: list
+    value:
+      - - - 0
+          - 0
+      - - - 0
+          - 0
+        - - 2
+          - 3
+      - - - 0
+          - 2
+      - - - 0
+          - 2
+        - - 3
+          - 3
+      - - - 0
+          - 0
 root:
   boundaries:
     - - - 0

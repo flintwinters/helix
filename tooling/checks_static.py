@@ -12,6 +12,8 @@ def check(ctx):
         checks_docs.verify(ctx)
         verify_checks(ctx)
         verify_bodies(ctx)
+        verify_declarative_annotations(ctx)
+        verify_raw_descriptors(ctx)
         verify_policy_result_fields(ctx)
         verify_string_literals(ctx)
         verify_iteration_callbacks(ctx)
@@ -20,6 +22,7 @@ def check(ctx):
         verify_record_boundaries(ctx)
         verify_annotation_bounds(ctx)
         verify_numeric_enum_overlap(ctx)
+        verify_unannotated_inference(ctx)
         verify_computed_heads(ctx)
         verify_retired_closure(ctx)
         verify_repository_modules(ctx)
@@ -284,6 +287,41 @@ def verify_string_literals(ctx):
     assert code == 0 and report['diagnostics'] == [] and report['unchecked'], report
 
 
+def verify_raw_descriptors(ctx):
+    """Ordinary descriptor data is checked without evaluating source-looking data."""
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    record = {'type': 'record', 'fields': {'name': 'string'}}
+    for program in (call('expect', {'name': 7}, record),
+                    call('let', {'schema': record}, call('expect', {'name': 7}, {'$ref': 'schema'})),
+                    call('expect', 1, {'$literal': {'type': 'list', 'of': 'integer'}})):
+        code, report = static_report(ctx, json.dumps(program))
+        assert code == 1 and any(row['kind'] == 'type' for row in report['diagnostics']), report
+    for descriptor in ({'type': 'list'}, {'type': 'record', 'fields': {'bad': 3}},
+                       {'$literal': {'type': 'unknown'}}):
+        code, report = static_report(ctx, json.dumps(call('expect', 1, descriptor)))
+        assert code == 1 and any(row['path'] == '/$call/2' and 'invalid type declaration' in row['message']
+                                 for row in report['diagnostics']), report
+    for descriptor in (record, {'$literal': record}):
+        code, report = static_report(ctx, json.dumps(call('expect', {'name': 'valid'}, descriptor)))
+        assert code == 0 and not report['diagnostics'] and not report['unchecked'], report
+
+    hostile = {'$call': ['raise', 'must_not_execute', 'opaque data']}
+    opaque = call('expect', {'$literal': hostile}, {'$literal': {'type': 'literal', 'value': hostile}})
+    code, report = static_report(ctx, json.dumps(opaque))
+    assert code == 0 and not report['diagnostics'] and report['unchecked'], report
+    ran = ctx.helix('run', '-', stdin=json.dumps(opaque))
+    assert ran.returncode == 0 and yaml.safe_load(ran.stdout)['root'] == hostile, ran
+
+    default = {'type': 'record', 'fields': {'value': {'type': 'default', 'of': 'integer', 'default': 'bad'}}}
+    code, report = static_report(ctx, json.dumps(call('expect', {'value': 1}, default)))
+    assert code == 0 and not report['diagnostics'] and any('default' in row['message'] for row in report['unchecked']), report
+    oversized = {'type': 'literal', 'value': 'x' * 1_000_001}
+    code, report = static_report(ctx, json.dumps(call('expect', 'x', {'$literal': oversized})))
+    assert code == 0 and not report['diagnostics'] and report['unchecked'], report
+
+
 def verify_iteration_callbacks(ctx):
     """Callback obligations distinguish known nonempty inputs from possible emptiness."""
     import copy
@@ -370,6 +408,68 @@ def verify_iteration_callbacks(ctx):
     code, report = static_report(ctx, json.dumps(call('map', increment, [1, 'two'])))
     assert code == 0 and report['diagnostics'] == [] and any(
         item['path'] == '/$call/1' for item in report['unchecked']), report
+
+
+def verify_declarative_annotations(ctx):
+    """All written annotation obligations are checked or explicitly unresolved."""
+    from tests.suites.source_contracts import location
+
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+
+    source = {
+        'a': call('expect', 'wrong', 'integer'),
+        'b': call('expect', {'name': 7}, call('record', 'name', 'string')),
+        'c': call('fn', [], False, 'string'),
+        'dynamic_value': call('expect', call('effect', 'time', None), 'integer'),
+        'dynamic_type': call('expect', 1, call('if', True, 'integer', 'string')),
+        'uncalled': call('fn', [['value', call('if', True, 'integer', 'string')]], None),
+    }
+    text = json.dumps(source, indent=2)
+    code, report = static_report(ctx, text)
+    assert code == 1, report
+    expected = {'/a/$call/1', '/b/$call/1/name', '/c/$call/2'}
+    assert {item['path'] for item in report['diagnostics']} == expected, report
+    for item in report['diagnostics']:
+        assert (item['line'], item['column']) == location(text, item['path']), item
+    assert {'/dynamic_value/$call/1', '/dynamic_type/$call/2', '/uncalled/$call/1/0/1'} <= {
+        item['path'] for item in report['unchecked']}, report
+    assert 'root' not in report and 'pending_effect' not in report, report
+
+    for annotation in ('UnknownType', 7, call('list_of', 'UnknownType')):
+        for expression, path in (
+            (call('expect', 1, annotation), '/$call/2'),
+            (call('fn', [['value', annotation]], None), '/$call/1/0/1'),
+            (call('fn', [], None, annotation), '/$call/3'),
+        ):
+            text = json.dumps(expression, indent=2)
+            code, report = static_report(ctx, text)
+            assert code == 1 and any(item['path'] == path and 'invalid type declaration' in item['message']
+                                     for item in report['diagnostics']), report
+            assert not any(item['path'] == path for item in report['unchecked']), report
+            assert all((item['line'], item['column']) == location(text, item['path'])
+                       for item in report['diagnostics']), report
+
+    # An annotation preserves the underlying value type for later obligations.
+    valid = call('fn', [], call('expect', 7, 'integer'), 'integer')
+    code, report = static_report(ctx, json.dumps(valid))
+    assert code == 0 and not report['diagnostics'] and not report['unchecked'], report
+    opaque = {'$literal': call('expect', 'wrong', 'integer')}
+    code, report = static_report(ctx, json.dumps(opaque))
+    assert code == 0 and not report['diagnostics'] and not report['unchecked'], report
+
+    # Reuse production robustness generation, but exercise plain static check.
+    # Neither effects nor a computed annotation may be executed by these checks.
+    damaged = json.dumps(call('fn', [['x', 'integer']],
+        call('expect', call('add', {'$ref': 'x'}, 1), 'integer'), 'integer'))
+    for variant in ctx.mutations(damaged):
+        process = ctx.helix('check', '-', stdin=variant)
+        result = yaml.safe_load(process.stdout)
+        assert process.returncode in (0, 1) and not process.stderr, process
+        assert isinstance(result, dict) and result.get('version') == 1 and result.get('mode') == 'static', process
+        assert isinstance(result.get('diagnostics'), list) and isinstance(result.get('unchecked'), list), result
+        assert result['status'] == ('error' if process.returncode else 'ok'), result
+        assert bool(result['diagnostics']) == bool(process.returncode), result
 
 
 def verify_name_resolution(ctx):
@@ -548,8 +648,8 @@ def verify_annotation_bounds(ctx):
         assert result.returncode == 0 and yaml.safe_load(result.stdout)['root']['answer'] == body, (name, result)
     source = annotated({'Alias': 'integer'}, 'Alias')
     code, report = static_report(ctx, json.dumps(source))
-    assert code == 0 and report['diagnostics'] == [] and any(
-        item['path'] == '/produce/$call/3' for item in report['unchecked']), report
+    assert code == 1 and any(item['path'] == '/produce/$call/3' and
+        'invalid type declaration' in item['message'] for item in report['diagnostics']), report
 
     aliases = {'alias0': 'integer'}
     aliases.update({f'alias{i}': ref(f'alias{i - 1}') for i in range(1, 80)})
@@ -582,8 +682,22 @@ def verify_annotation_bounds(ctx):
     for name, source in unproved:
         code, report = static_report(ctx, json.dumps(source))
         assert code == 0 and report['diagnostics'] == [], (name, report)
-        assert any(item['path'] == '/produce/$call/3' and 'outside the supported' in item['message']
+        # Analysis-budget exhaustion is a distinct outcome from an unsupported form.
+        kind, text = ('exhausted', 'budget') if name.endswith('_budget') else ('unchecked', 'outside the supported')
+        assert any(item['path'] == '/produce/$call/3' and item['kind'] == kind and text in item['message']
                    for item in report['unchecked']), (name, report)
+
+
+def verify_unannotated_inference(ctx):
+    """An unannotated result is inferred from the body; inference never replaces a declaration."""
+    def call(actor, *args):
+        return {'$call': [actor, *args]}
+    program = {'one': call('fn', [], 1), 'twice': call('fn', [['x', 'integer']], call('add', {'$ref': 'x'}, 1))}
+    wrong = {**program, 'bad': call('fn', [], call('one'), 'string'), 'bad2': call('fn', [], call('twice', 1), 'string')}
+    code, report = static_report(ctx, json.dumps(wrong))
+    assert code == 1 and {d['path'] for d in report['diagnostics']} == {'/bad/$call/2', '/bad2/$call/2'}, report
+    code, report = static_report(ctx, json.dumps({**program, 'ok': call('fn', [], call('one'), 'integer')}))
+    assert code == 0 and report['diagnostics'] == [], report
 
 
 def verify_computed_heads(ctx):
@@ -661,6 +775,40 @@ def verify_numeric_enum_overlap(ctx):
 
 
 def verify_format(ctx):
+    from tooling.source_format import retain_comments
+
+    compact = ctx.helix('fmt', '-', stdin='sum: {"$call": [fold, {"$ref": combine}, 0, {"$ref": xs}]}')
+    assert compact.returncode == 0 and compact.stdout == 'sum: !call [fold, !ref combine, 0, !ref xs]\n', compact
+    structured = 'double: {$call: [fn, [x], {$call: [mul, {$ref: x}, 2]}]}'
+    expected = ('double: !call\n  - fn\n  - [x]\n'
+                '  - !call [mul, !ref x, 2]\n')
+    result = ctx.helix('fmt', '-', stdin=structured)
+    assert (result.returncode, result.stdout) == (0, expected), result
+    # Structural forms must remain visible through enclosing calls and data.
+    for actor in ('fn', 'let', 'if', 'try', 'until'):
+        source = json.dumps({'outer': {'$call': ['wrap', {'$call': [actor, [], 1, 2]}]}})
+        result = ctx.helix('fmt', '-', stdin=source)
+        assert result.returncode == 0 and f'- {actor}\n' in result.stdout, result
+        # The runtime formatter checks complete normalized graph equality.
+        again = ctx.helix('fmt', '-', stdin=result.stdout)
+        assert (again.returncode, again.stdout) == (0, result.stdout), again
+    # Long ordinary collections also break into entries rather than wrapped flow.
+    source = json.dumps({'items': [f'item_{index:02d}' for index in range(20)]})
+    result = ctx.helix('fmt', '-', stdin=source)
+    assert result.returncode == 0 and 'items:\n  - item_00\n' in result.stdout, result
+    assert yaml.safe_load(result.stdout) == json.loads(source), result
+    annotated = '# header\nsum: {$call: [add, 1, 2]} # arithmetic\ntext: |\n  # literal content\n'
+    result = ctx.helix('fmt', '-', stdin=annotated)
+    retained = retain_comments(annotated, result.stdout)
+    assert '# header' in retained and '# arithmetic' in retained, retained
+    verified = ctx.helix('fmt', '-', stdin=retained)
+    assert (verified.returncode, verified.stdout) == (0, result.stdout), verified
+    assert retain_comments(retained, result.stdout) == retained, retained
+    for path in sorted((ctx.root / 'std').rglob('*.yaml')):
+        source = path.read_text()
+        result = ctx.helix('fmt', '-', stdin=source)
+        assert result.returncode == 0, (path, result)
+        assert retain_comments(source, result.stdout) == source, path
     # Every parsable golden source must format to an idempotent source document.
     # The implementation independently compares the complete source graphs before emitting.
     for case in sorted((ctx.root / 'tests/cases').glob('*.yaml')):

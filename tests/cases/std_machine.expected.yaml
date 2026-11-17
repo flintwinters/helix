@@ -1,3 +1,680 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique_hostnames
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:machine"
+    kind: parameter
+    target:
+      path:
+        - clashing
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - concrete: true
+        fields:
+          files:
+            default: {}
+            of:
+              of: string
+              type: map
+            type: default
+          hostname: string
+          packages:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+          services:
+            default: {}
+            of:
+              of:
+                type: enum
+                values:
+                  - running
+                  - stopped
+              type: map
+            type: default
+          users:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+        name: web1
+        parents:
+          - machine
+        provenance:
+          files:
+            type: files
+            value: default of files
+            value_kind: default
+          hostname:
+            type: host
+            value: web1
+            value_kind: explicit
+          packages:
+            type: packages
+            value: web1
+            value_kind: explicit
+          services:
+            type: services
+            value: web1
+            value_kind: explicit
+          users:
+            type: users
+            value: web1
+            value_kind: explicit
+        type: class
+        values:
+          files: {}
+          hostname: w1
+          packages:
+            - nginx
+          services:
+            nginx: running
+          users:
+            - deploy
+      - concrete: true
+        fields:
+          files:
+            default: {}
+            of:
+              of: string
+              type: map
+            type: default
+          hostname: string
+          packages:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+          services:
+            default: {}
+            of:
+              of:
+                type: enum
+                values:
+                  - running
+                  - stopped
+              type: map
+            type: default
+          users:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+        name: dup
+        parents:
+          - machine
+        provenance:
+          files:
+            type: files
+            value: default of files
+            value_kind: default
+          hostname:
+            type: host
+            value: dup
+            value_kind: explicit
+          packages:
+            type: packages
+            value: default of packages
+            value_kind: default
+          services:
+            type: services
+            value: default of services
+            value_kind: default
+          users:
+            type: users
+            value: default of users
+            value_kind: default
+        type: class
+        values:
+          files: {}
+          hostname: w1
+          packages: []
+          services: {}
+          users: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - hostnames
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:machine"
+    kind: parameter
+    target:
+      path:
+        - unique_hostnames
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:machine"
+    type: list
+    value:
+      - concrete: true
+        fields:
+          files:
+            default: {}
+            of:
+              of: string
+              type: map
+            type: default
+          hostname: string
+          packages:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+          services:
+            default: {}
+            of:
+              of:
+                type: enum
+                values:
+                  - running
+                  - stopped
+              type: map
+            type: default
+          users:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+        name: web1
+        parents:
+          - machine
+        provenance:
+          files:
+            type: files
+            value: default of files
+            value_kind: default
+          hostname:
+            type: host
+            value: web1
+            value_kind: explicit
+          packages:
+            type: packages
+            value: web1
+            value_kind: explicit
+          services:
+            type: services
+            value: web1
+            value_kind: explicit
+          users:
+            type: users
+            value: web1
+            value_kind: explicit
+        type: class
+        values:
+          files: {}
+          hostname: w1
+          packages:
+            - nginx
+          services:
+            nginx: running
+          users:
+            - deploy
+      - concrete: true
+        fields:
+          files:
+            default: {}
+            of:
+              of: string
+              type: map
+            type: default
+          hostname: string
+          packages:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+          services:
+            default: {}
+            of:
+              of:
+                type: enum
+                values:
+                  - running
+                  - stopped
+              type: map
+            type: default
+          users:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+        name: dup
+        parents:
+          - machine
+        provenance:
+          files:
+            type: files
+            value: default of files
+            value_kind: default
+          hostname:
+            type: host
+            value: dup
+            value_kind: explicit
+          packages:
+            type: packages
+            value: default of packages
+            value_kind: default
+          services:
+            type: services
+            value: default of services
+            value_kind: default
+          users:
+            type: users
+            value: default of users
+            value_kind: default
+        type: class
+        values:
+          files: {}
+          hostname: w1
+          packages: []
+          services: {}
+          users: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - hostnames
+          - "$call"
+          - 3
+        source: "std:machine"
+    kind: result
+    target:
+      path:
+        - hostnames
+        - "$call"
+        - 2
+      source: "std:machine"
+    type: list
+    value:
+      - w1
+      - w1
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - unique_hostnames
+          - "$call"
+          - 3
+        source: "std:machine"
+    kind: result
+    target:
+      path:
+        - unique_hostnames
+        - "$call"
+        - 2
+      source: "std:machine"
+    type: boolean
+    value: false
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - unique_hostnames
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:machine"
+    kind: parameter
+    target:
+      path:
+        - unique
+        - "$call"
+        - 1
+      source: "<root>"
+    type: list
+    value:
+      - concrete: true
+        fields:
+          files:
+            default: {}
+            of:
+              of: string
+              type: map
+            type: default
+          hostname: string
+          packages:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+          services:
+            default: {}
+            of:
+              of:
+                type: enum
+                values:
+                  - running
+                  - stopped
+              type: map
+            type: default
+          users:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+        name: web1
+        parents:
+          - machine
+        provenance:
+          files:
+            type: files
+            value: default of files
+            value_kind: default
+          hostname:
+            type: host
+            value: web1
+            value_kind: explicit
+          packages:
+            type: packages
+            value: web1
+            value_kind: explicit
+          services:
+            type: services
+            value: web1
+            value_kind: explicit
+          users:
+            type: users
+            value: web1
+            value_kind: explicit
+        type: class
+        values:
+          files: {}
+          hostname: w1
+          packages:
+            - nginx
+          services:
+            nginx: running
+          users:
+            - deploy
+      - concrete: true
+        fields:
+          files:
+            default: {}
+            of:
+              of: string
+              type: map
+            type: default
+          hostname: string
+          packages:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+          services:
+            default: {}
+            of:
+              of:
+                type: enum
+                values:
+                  - running
+                  - stopped
+              type: map
+            type: default
+          users:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+        name: web2
+        parents:
+          - machine
+        provenance:
+          files:
+            type: files
+            value: default of files
+            value_kind: default
+          hostname:
+            type: host
+            value: web2
+            value_kind: explicit
+          packages:
+            type: packages
+            value: default of packages
+            value_kind: default
+          services:
+            type: services
+            value: default of services
+            value_kind: default
+          users:
+            type: users
+            value: default of users
+            value_kind: default
+        type: class
+        values:
+          files: {}
+          hostname: w2
+          packages: []
+          services: {}
+          users: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - hostnames
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:machine"
+    kind: parameter
+    target:
+      path:
+        - unique_hostnames
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "std:machine"
+    type: list
+    value:
+      - concrete: true
+        fields:
+          files:
+            default: {}
+            of:
+              of: string
+              type: map
+            type: default
+          hostname: string
+          packages:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+          services:
+            default: {}
+            of:
+              of:
+                type: enum
+                values:
+                  - running
+                  - stopped
+              type: map
+            type: default
+          users:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+        name: web1
+        parents:
+          - machine
+        provenance:
+          files:
+            type: files
+            value: default of files
+            value_kind: default
+          hostname:
+            type: host
+            value: web1
+            value_kind: explicit
+          packages:
+            type: packages
+            value: web1
+            value_kind: explicit
+          services:
+            type: services
+            value: web1
+            value_kind: explicit
+          users:
+            type: users
+            value: web1
+            value_kind: explicit
+        type: class
+        values:
+          files: {}
+          hostname: w1
+          packages:
+            - nginx
+          services:
+            nginx: running
+          users:
+            - deploy
+      - concrete: true
+        fields:
+          files:
+            default: {}
+            of:
+              of: string
+              type: map
+            type: default
+          hostname: string
+          packages:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+          services:
+            default: {}
+            of:
+              of:
+                type: enum
+                values:
+                  - running
+                  - stopped
+              type: map
+            type: default
+          users:
+            default: []
+            of:
+              of: string
+              type: list
+            type: default
+        name: web2
+        parents:
+          - machine
+        provenance:
+          files:
+            type: files
+            value: default of files
+            value_kind: default
+          hostname:
+            type: host
+            value: web2
+            value_kind: explicit
+          packages:
+            type: packages
+            value: default of packages
+            value_kind: default
+          services:
+            type: services
+            value: default of services
+            value_kind: default
+          users:
+            type: users
+            value: default of users
+            value_kind: default
+        type: class
+        values:
+          files: {}
+          hostname: w2
+          packages: []
+          services: {}
+          users: []
+  - declaration:
+      code:
+        "$ref": list
+      location:
+        path:
+          - hostnames
+          - "$call"
+          - 3
+        source: "std:machine"
+    kind: result
+    target:
+      path:
+        - hostnames
+        - "$call"
+        - 2
+      source: "std:machine"
+    type: list
+    value:
+      - w1
+      - w2
+  - declaration:
+      code:
+        "$ref": boolean
+      location:
+        path:
+          - unique_hostnames
+          - "$call"
+          - 3
+        source: "std:machine"
+    kind: result
+    target:
+      path:
+        - unique_hostnames
+        - "$call"
+        - 2
+      source: "std:machine"
+    type: boolean
+    value: true
 objects:
   object0:
     bindings: {}

@@ -12,12 +12,14 @@ RUN cargo build --locked --release
 
 FROM ${HELIX_RUNTIME_IMAGE}
 ARG HELIX_PACKAGE_SNAPSHOT
+ARG HELIX_SSH_ACCEPTANCE=0
 # No package refresh is needed during resource application. nginx remains absent.
 RUN test -n "$HELIX_PACKAGE_SNAPSHOT" && rm -f /etc/apt/sources.list.d/* && \
     printf 'deb [check-valid-until=no] http://snapshot.debian.org/archive/debian/%s bookworm main\n' "$HELIX_PACKAGE_SNAPSHOT" > /etc/apt/sources.list && \
     printf '#!/bin/sh\nexit 101\n' > /usr/sbin/policy-rc.d && chmod 755 /usr/sbin/policy-rc.d && \
     apt-get -o Acquire::Check-Valid-Until=false update && \
     apt-get install -y --no-install-recommends python3 ca-certificates && \
+    if [ "$HELIX_SSH_ACCEPTANCE" = 1 ]; then apt-get install -y --no-install-recommends openssh-server; fi && \
     test ! -e /usr/sbin/nginx
 COPY --from=build /build/target/release/helix /usr/local/bin/helix
 COPY tests/fixtures/docker_nginx /opt/helix-fixture

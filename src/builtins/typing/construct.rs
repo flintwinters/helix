@@ -4,7 +4,7 @@
 use crate::value::Hash;
 use crate::value::Value;
 
-use super::ty::{holds, mapping, subtype, text, violations, Field, Pred, Ty, Violation};
+use super::ty::{check_ty, validate_defaults, mapping, subtype, text, violations, Field, Pred, Ty, Violation};
 use crate::builtins::fault::Fault;
 use crate::model::string as s;
 
@@ -20,11 +20,21 @@ pub(crate) fn descriptor<const N: usize>(kind: &str, entries: [(&str, Value); N]
 
 /// The argument at `at` as a validated type, or a fault blaming it.
 fn type_arg(args: &[Value], at: usize) -> Result<Ty, Fault> {
-    Ty::parse(&args[at]).map_err(|why| Fault::at(at, "type", why))
+    Ty::parse_open(&args[at]).map_err(|why| Fault::at(at, "type", why))
 }
 
-fn spec_arg(args: &[Value], at: usize) -> Result<Field, Fault> {
-    Field::parse(&args[at]).map_err(|why| Fault::at(at, "type", why))
+fn spec_arg(args: &[Value], at: usize, pred: &mut Pred) -> Result<Field, Fault> {
+    let field = Field::parse(&args[at]).map_err(|why| Fault::at(at, "type", why))?;
+    validate_field(&field, at, pred)?;
+    Ok(field)
+}
+
+pub(super) fn validate_field(field: &Field, arg: usize, pred: &mut Pred) -> Result<(), Fault> {
+    let found = validate_defaults(&Ty::Record(vec![("field".into(), field.clone())]), pred);
+    predicate_fault(&found, arg)?;
+    if found.is_empty() { return Ok(()); }
+    Err(Fault { cause: None, kind: "type".into(), message: format!("invalid declared default: {}", found[0].message()),
+        arg: Some(arg), data: Some(mapping([("violations", Value::Array(found.iter().map(Violation::to_value).collect()))])) })
 }
 
 pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Value, Fault> {
@@ -43,12 +53,31 @@ pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Valu
             Err(Fault { cause: None, kind: "type".into(), message, arg: Some(0), data: Some(data) })
         }
         "subtype" => Ok(Value::Boolean(subtype(&type_arg(args, 0)?, &type_arg(args, 1)?, pred))),
+        // Mutual subtyping: exactly as strong as `subtype`, so `false` also means unproved.
+        "equivalent" => {
+            let (a, b) = (type_arg(args, 0)?, type_arg(args, 1)?);
+            Ok(Value::Boolean(subtype(&a, &b, pred) && subtype(&b, &a, pred)))
+        }
         _ => unreachable!("`{actor}` is not a type builtin"),
     }
 }
 
 fn violations_arg(args: &[Value], pred: &mut Pred) -> Result<Vec<Violation>, Fault> {
-    violations(&args[0], &args[1], pred).map_err(|why| Fault::at(1, "type", why))
+    let found = violations(&args[0], &args[1], pred).map_err(|why| Fault::at(1, "type", why))?;
+    predicate_fault(&found, 1)?;
+    if found.iter().any(Violation::is_declaration) {
+        return Err(Fault { cause: None, kind: "type".into(), message: "invalid declared default".into(), arg: Some(1),
+            data: Some(mapping([("violations", Value::Array(found.iter().map(Violation::to_value).collect()))])) });
+    }
+    Ok(found)
+}
+
+fn predicate_fault(found: &[Violation], arg: usize) -> Result<(), Fault> {
+    if let Some(broken) = found.iter().find(|v| v.rule() == "predicate_error") {
+        return Err(Fault { kind: "predicate".into(), message: broken.message().into(), arg: Some(arg),
+            data: Some(mapping([("violations", Value::Array(found.iter().map(Violation::to_value).collect()))])), cause: None });
+    }
+    Ok(())
 }
 
 /// `fields` / `parents` of a record or class type, as the data it was declared with.
@@ -61,7 +90,7 @@ pub(super) fn reflect(ty: &Value, member_name: &str) -> Result<Value, Fault> {
 
 /// `{type: refine, of: base, check: <fn source>}`; `base` must be a type.
 pub fn refine(base: Value, check: Value) -> Result<Value, Fault> {
-    Ty::parse(&base).map_err(|why| Fault::at(0, "type", why))?;
+    Ty::parse_open(&base).map_err(|why| Fault::at(0, "type", why))?;
     Ok(descriptor("refine", [("of", base), ("check", check)]))
 }
 
@@ -82,19 +111,32 @@ pub(crate) fn function_type(params: Vec<Value>, result: Value, pure: bool) -> Va
 /// Descriptor assembly and immutable transformation belong to std:type_descriptor.
 pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Option<crate::model::PolicyCall>, Fault> {
     match actor {
-        "list_of" | "map_of" | "optional" => { type_arg(args, 0)?; }
+        "list_of" | "optional" => { type_arg(args, 0)?; }
+        "map_of" => { (0..args.len()).try_for_each(|i| type_arg(args, i).map(drop))?; }
         "default" => {
             let ty = type_arg(args, 0)?;
-            if !holds(&args[1], &ty, pred) {
+            let found = check_ty(&args[1], &ty, pred);
+            predicate_fault(&found, 0)?;
+            if !found.is_empty() {
                 return Err(Fault::at(1, "type", format!("default does not fit {}", ty.name())));
             }
         }
         "function_of" | "pure_function_of" => {
             let Value::Array(params) = &args[0] else { return Err(Fault::expected(0, "a list of parameter types", &args[0])) };
-            params.iter().try_for_each(|param| Ty::parse(param).map(drop)).map_err(|why| Fault::at(0, "type", why))?;
+            params.iter().try_for_each(|param| Ty::parse_open(param).map(drop)).map_err(|why| Fault::at(0, "type", why))?;
             type_arg(args, 1)?;
         }
-        "union" => { (0..args.len()).try_for_each(|i| type_arg(args, i).map(drop))?; }
+        "union" | "intersection" | "tuple_of" => { (0..args.len()).try_for_each(|i| type_arg(args, i).map(drop))?; }
+        "rec" => {
+            let Value::String(name) = &args[0] else { return Err(Fault::expected(0, "a string type variable name", &args[0])) };
+            if name.is_empty() { return Err(Fault::at(0, "type", "a type variable name must not be empty".into())); }
+            let body = type_arg(args, 1)?;
+            Ty::Rec(name.clone(), Box::new(body)).close(&mut Vec::new(), &mut Vec::new()).map_err(|why| Fault::at(1, "type", why))?;
+        }
+        "var" => match &args[0] {
+            Value::String(name) if !name.is_empty() => {}
+            other => return Err(Fault::expected(0, "a non-empty string type variable name", other)),
+        },
         "enum" | "literal" => {}
         "secret" => match &args[0] {
             Value::String(reference) if !reference.is_empty() => {}
@@ -107,7 +149,7 @@ pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Op
             let mut names = std::collections::BTreeSet::new();
             for (i, pair) in args.chunks_exact(2).enumerate() {
                 let Value::String(name) = &pair[0] else { return Err(Fault::expected(2 * i, "string field name", &pair[0])) };
-                spec_arg(args, 2 * i + 1)?;
+                spec_arg(args, 2 * i + 1, pred)?;
                 if !names.insert(name) {
                     return Err(Fault::at(2 * i, "type", format!("duplicate field `{name}`")));
                 }
@@ -119,15 +161,16 @@ pub(super) fn prepare(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Op
                 return Err(Fault::at(0, "type", "`with_field` extends a record; classes grow with `extend`".into()));
             }
             if !matches!(&args[1], Value::String(_)) { return Err(Fault::expected(1, "string field name", &args[1])); }
-            spec_arg(args, 2)?;
+            spec_arg(args, 2, pred)?;
             let Some(Value::Hash(fields)) = record.get(&s("fields")) else {
                 return Err(Fault::at(0, "type", "malformed record type".into()));
             };
             // The replacement may repair a malformed removed field, but every
             // surviving declaration must meet the same contract as `record`.
-            // Parsing checks shape without running defaults or predicates.
+            // Validate surviving defaults through the same predicate engine.
             for (_, spec) in fields.iter().filter(|(name, _)| *name != &args[1]) {
-                Field::parse(spec).map_err(|why| Fault::at(0, "type", why))?;
+                let field = Field::parse(spec).map_err(|why| Fault::at(0, "type", why))?;
+                validate_field(&field, 0, pred)?;
             }
         }
         _ => return Ok(None),

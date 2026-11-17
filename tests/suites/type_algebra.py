@@ -153,6 +153,14 @@ def verify_redeclaration(h):
 
 
 def verify(h):
+    from tests.suites.raw_defaults import verify as verify_raw_defaults
+    verify_raw_defaults(h)
+    from tests.suites.declarative_diagnostics import verify as verify_diagnostics
+    verify_diagnostics(h)
+    from tests.suites.annotation_evidence import verify as verify_annotations
+    verify_annotations(h)
+    from tests.suites.declarative_violations import verify as verify_violations
+    verify_violations(h)
     verify_redeclaration(h)
     from tests.suites.class_realization import verify as verify_realization
     verify_realization(h)
@@ -162,6 +170,8 @@ def verify(h):
     verify_predicates(h)
     from tests.suites.subtype_laws import verify as verify_subtypes
     verify_subtypes(h)
+    from tests.suites.type_laws import verify as verify_laws
+    verify_laws(h)
     verify_constraint_descriptors(h)
     verify_fixed_origins(h)
     from tests.suites.descriptor_policy import verify as verify_descriptors
@@ -211,15 +221,21 @@ def verify(h):
             result = h.helix('run', '-', stdin=json.dumps({"$call": expression}))
             assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, result
             error = yaml.safe_load(result.stdout)['error']
-            assert error['kind'] == 'type' and 'function `check`' in error['message'], error
+            assert error['kind'] == 'type' and '`check`' in error['message'] and 'function' in error['message'], error
     rejected = checked(h, '{"$call": ["violations", 1, {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["x"], false]}]}]}')
-    broken = checked(h, '{"$call": ["violations", 1, {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["x"], 1]}]}]}')
+    process = h.helix('run', '-', stdin='{"$call": ["violations", 1, {"$call": ["refine", {"$ref": "integer"}, {"$call": ["fn", ["x"], 1]}]}]}')
+    assert process.returncode == 1 and h.malformed_state(process.stdout, 1) is None, process
+    error = yaml.safe_load(process.stdout)['error']
+    assert error['kind'] == 'predicate', error
+    broken = error['data']['violations']
     assert rejected[0]['message'] == 'failed its refinement check'
-    assert broken == [{'at': '/', 'message': 'refinement check failed to run: returned integer, expected boolean'}]
+    assert len(broken) == 1 and broken[0]['rule'] == 'predicate_error'
+    assert broken[0]['message'] == 'refinement check failed to run: returned integer, expected boolean'
     constraint = checked(h, '{"$call": ["try", {"$call": ["realize", {"$call": ["constrain", {"$call": ["class", "checked", {"$call": ["record"]}, {}]}, {"$call": ["fn", ["x"], 1]}]}]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}')
     message = 'constraint 0 of `checked` failed to run: returned integer, expected boolean'
-    assert constraint['kind'] == 'type' and constraint['message'] == message, constraint
-    assert constraint['data']['violations'] == [{'at': '/', 'message': message}], constraint
+    assert constraint['kind'] == 'predicate' and constraint['message'] == message, constraint
+    violation, = constraint['data']['violations']
+    assert violation['at'] == '/' and violation['message'] == message and violation['rule'] == 'predicate_error', constraint
     print(f'types: {len(specs)} descriptions x {len(values)} values = {len(expected)} independent membership judgments')
     source = '{"base": {"$call": ["class", "base", {"$call": ["record", "x", {"$ref": "integer"}]}, {"x": 1}]}, "a": {"$call": ["extend", "a", {"$call": ["list", {"$ref": "base"}]}, {"$call": ["record", "y", {"$ref": "string"}]}, {"y": "v"}]}, "b": {"$call": ["extend", "b", {"$call": ["list", {"$ref": "base"}]}, {"$call": ["record", "z", {"$ref": "boolean"}]}, {"z": true}]}, "ab": {"$call": ["realize", {"$call": ["extend", "joined", {"$call": ["list", {"$ref": "a"}, {"$ref": "b"}]}, {"$call": ["record"]}, {}]}]}, "ba": {"$call": ["realize", {"$call": ["extend", "joined", {"$call": ["list", {"$ref": "b"}, {"$ref": "a"}]}, {"$call": ["record"]}, {}]}]}, "missing": {"$call": ["try", {"$call": ["realize", {"$call": ["class", "needs", {"$call": ["record", "x", {"$ref": "integer"}, "y", {"$ref": "string"}]}, {}]}]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}}'
     root = checked(h, source)
@@ -286,8 +302,11 @@ def verify_constraint_descriptors(h):
         "empty_list": call("is", [], call("list_of", ref("pending"))),
         "invalid_field": call("is", {"x": "wrong"}, ref("pending")),
         "concrete": ref("pending.concrete"),
-        "reached": call("violations", {"x": 1}, ref("pending"))})
+        "reached": call("try", call("violations", {"x": 1}, ref("pending")), call("fn", ["error"], ref("error")))})
     result = checked(h, json.dumps(source))
     assert result["subtype"] is True and result["empty_list"] is True, result
     assert result["invalid_field"] is False and result["concrete"] is False, result
-    assert len(result["reached"]) == 1 and "predicate invoked" in result["reached"][0]["message"], result
+    reached = result["reached"]
+    assert reached["kind"] == "predicate" and reached["cause"]["kind"] == "probe", reached
+    violation, = reached["data"]["violations"]
+    assert "predicate invoked" in violation["message"] and violation["rule"] == "predicate_error", reached

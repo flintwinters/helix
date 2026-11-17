@@ -1,3 +1,267 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": endpoint
+      location:
+        path:
+          - checked_value
+          - "$call"
+          - 2
+        source: "<root>"
+    kind: expect
+    runtime_values_omitted: true
+    target:
+      path:
+        - checked_value
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      fields:
+        host: string
+        port:
+          check:
+            kind: function
+            location:
+              path:
+                - in_port
+              source: "<root>"
+          of: integer
+          type: refine
+      type: record
+    value:
+      host: h
+      port: 22
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - url
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    target:
+      path:
+        - good
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: a
+  - declaration:
+      code:
+        "$ref": port
+      location:
+        path:
+          - url
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "<root>"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - good
+        - "$call"
+        - 2
+      source: "<root>"
+    type:
+      check:
+        kind: function
+        location:
+          path:
+            - in_port
+          source: "<root>"
+      of: integer
+      type: refine
+    value: 80
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - url
+          - "$call"
+          - 3
+        source: "<root>"
+    kind: result
+    target:
+      path:
+        - url
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "a:80"
+  - declaration:
+      code:
+        "$ref": endpoint
+      location:
+        path:
+          - describe
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - good_record
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      fields:
+        host: string
+        port:
+          check:
+            kind: function
+            location:
+              path:
+                - in_port
+              source: "<root>"
+          of: integer
+          type: refine
+      type: record
+    value:
+      host: h
+      port: 1
+  - declaration:
+      code:
+        "$ref": port
+      location:
+        path:
+          - typed_map
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - typed_map
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      check:
+        kind: function
+        location:
+          path:
+            - in_port
+          source: "<root>"
+      of: integer
+      type: refine
+    value: 1
+  - declaration:
+      code:
+        "$ref": port
+      location:
+        path:
+          - typed_map
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - typed_map
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      check:
+        kind: function
+        location:
+          path:
+            - in_port
+          source: "<root>"
+      of: integer
+      type: refine
+    value: 2
+  - declaration:
+      code:
+        "$ref": port
+      location:
+        path:
+          - typed_map
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - typed_map
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      check:
+        kind: function
+        location:
+          path:
+            - in_port
+          source: "<root>"
+      of: integer
+      type: refine
+    value: 3
+  - declaration:
+      code:
+        "$ref": port
+      location:
+        path:
+          - typed_map_bad
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "<root>"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - typed_map_bad
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      check:
+        kind: function
+        location:
+          path:
+            - in_port
+          source: "<root>"
+      of: integer
+      type: refine
+    value: 1
 objects:
   object0:
     bindings:
@@ -262,31 +526,104 @@ root:
         function_line: 10
         line: 19
         path: "/bad_args/$call/1"
-    column: 31
+    column: 49
     data:
       violations:
-        - argument: host
+        - actual: 1
+          actual_present: true
+          argument: host
+          argument_location:
+            column: 49
+            line: 19
+            path: "/bad_args/$call/1/$call/1"
+            reference:
+              path:
+                - bad_args
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+              source: "<root>"
           at: /
+          expected: string
           message: "expected string, got integer"
-        - argument: p
+          rule: type
+        - actual: 0
+          actual_present: true
+          argument: p
+          argument_location:
+            column: 52
+            line: 19
+            path: "/bad_args/$call/1/$call/2"
+            reference:
+              path:
+                - bad_args
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+              source: "<root>"
           at: /
+          expected: refined integer
           message: failed its refinement check
+          predicate:
+            column: 10
+            line: 3
+            path: /in_port
+            reference:
+              - in_port
+            source: "<root>"
+          rule: refinement
     kind: type
     line: 19
     message: "2 type violations in the arguments of `/url`: expected string, got integer"
-    path: "/bad_args/$call/1"
+    path: "/bad_args/$call/1/$call/1"
     reference:
       - bad_args
       - "$call"
       - 1
+      - "$call"
+      - 1
   bad_record:
     violations:
-      - argument: e
+      - actual: 1
+        actual_present: true
+        argument: e
+        argument_location:
+          column: 28
+          line: 31
+          path: "/bad_record/$call/1/$call/1"
+          reference:
+            path:
+              - bad_record
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+            source: "<root>"
         at: /host
+        expected: string
         message: "expected string, got integer"
-      - argument: e
+        rule: type
+      - actual: ~
+        actual_present: false
+        argument: e
+        argument_location:
+          column: 28
+          line: 31
+          path: "/bad_record/$call/1/$call/1"
+          reference:
+            path:
+              - bad_record
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+            source: "<root>"
         at: /port
+        expected: refined integer
         message: "missing field `port`"
+        rule: required
   checked_value:
     host: h
     port: 22
@@ -319,8 +656,19 @@ root:
   typed_map_bad: "1 type violation in the arguments of `/typed_map_bad/$call/1/$call/1`: failed its refinement check"
   unchecked_value:
     violations:
-      - at: /port
+      - actual: 0
+        actual_present: true
+        at: /port
+        expected: refined integer
         message: failed its refinement check
+        predicate:
+          column: 10
+          line: 3
+          path: /in_port
+          reference:
+            - in_port
+          source: "<root>"
+        rule: refinement
   url:
     ref: object3
   wrong_result: "1 type violation in the result: expected string, got integer"

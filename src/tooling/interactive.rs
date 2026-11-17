@@ -9,12 +9,20 @@ use crate::model::{Status, Vm};
 
 /// Shared CLI command inventory, also used by command validation and shell completions.
 pub const COMMANDS: &[&str] = &[
+    "search",
     "exec",
     "run",
     "sandbox",
     "perform",
     "recover",
     "resume",
+    "system-snapshot",
+    "system-restore",
+    "snapshot",
+    "restore",
+    "reconcile",
+    "checkpoint",
+    "target-release",
     "check",
     "std",
     "fmt",

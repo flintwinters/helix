@@ -1,0 +1,2 @@
+solve: {$call: [fn, [input], {$call: [unique, {$ref: input}]}]}
+unique: {$call: [import, 'std:list']}

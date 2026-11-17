@@ -87,17 +87,27 @@ pub(crate) enum Ty {
     /// it to be provably free of effects.
     Fn(Vec<Ty>, Box<Ty>, bool),
     Vm,
+    Promise(Value),
     List(Box<Ty>),
-    Map(Box<Ty>),
+    /// Value type, then the type every key must fit.
+    Map(Box<Ty>, Box<Ty>),
     /// Closed: a value may not carry fields the record does not declare.
     Record(Vec<(String, Field)>),
     /// A closed record that also pins the fixed values a class set explicitly and must satisfy its
     /// whole-record constraints; defaults filled in by realization are not pinned.
     Class(Vec<(String, Field)>, Vec<(String, Value)>, Vec<Value>),
+    /// Fixed-length list with one type per position.
+    Tuple(Vec<Ty>),
     Union(Vec<Ty>),
+    /// Greatest lower bound: a value must fit every member.
+    Intersection(Vec<Ty>),
     Enum(Vec<Value>),
     /// A base type plus the raw source of a predicate.
     Refine(Box<Ty>, Value),
+    /// `rec name. body`: the body with `Var(name)` standing for the whole type again. Equal to its
+    /// own unfolding; guardedness (see `close`) makes every unfolding consume structure.
+    Rec(String, Box<Ty>),
+    Var(String),
 }
 
 /// Proofs require the same retained predicate, not merely language-equal captured values.
@@ -114,14 +124,18 @@ impl PartialEq for Ty {
             | (Self::Str, Self::Str) | (Self::Bool, Self::Bool)
             | (Self::Null, Self::Null) | (Self::Secret, Self::Secret)
             | (Self::Function, Self::Function) | (Self::Vm, Self::Vm) => true,
+            (Self::Promise(a), Self::Promise(b)) => a.same_view(b),
             (Self::Fn(pa, ra, ea), Self::Fn(pb, rb, eb)) => pa == pb && ra == rb && ea == eb,
-            (Self::List(a), Self::List(b)) | (Self::Map(a), Self::Map(b)) => a == b,
+            (Self::List(a), Self::List(b)) => a == b,
+            (Self::Map(a, ka), Self::Map(b, kb)) => a == b && ka == kb,
             (Self::Record(a), Self::Record(b)) => a == b,
             (Self::Class(fa, va, ca), Self::Class(fb, vb, cb)) => {
                 fa == fb && va == vb && ca.len() == cb.len()
                     && ca.iter().zip(cb).all(|(a, b)| same_predicate(a, b))
             }
-            (Self::Union(a), Self::Union(b)) => a == b,
+            (Self::Rec(a, x), Self::Rec(b, y)) => a == b && x == y,
+            (Self::Var(a), Self::Var(b)) => a == b,
+            (Self::Union(a), Self::Union(b)) | (Self::Tuple(a), Self::Tuple(b)) | (Self::Intersection(a), Self::Intersection(b)) => a == b,
             // Enum membership and fixed values deliberately retain language equality.
             (Self::Enum(a), Self::Enum(b)) => a == b,
             (Self::Refine(a, pa), Self::Refine(b, pb)) => a == b && same_predicate(pa, pb),
@@ -141,6 +155,11 @@ pub(crate) struct Field {
 pub struct Violation {
     at: String,
     message: String,
+    expected: String,
+    actual: Option<Value>,
+    rule: &'static str,
+    predicate: Option<Value>,
+    declaration_path: Option<String>,
 }
 
 pub(super) fn mapping<const N: usize>(entries: [(&str, Value); N]) -> Value {
@@ -148,16 +167,43 @@ pub(super) fn mapping<const N: usize>(entries: [(&str, Value); N]) -> Value {
 }
 
 impl Violation {
+    pub(super) fn new(at: &str, expected: &Ty, actual: Option<&Value>, rule: &'static str, message: String) -> Self {
+        Self { at: at.into(), message, expected: expected.name(), actual: actual.cloned(), rule, predicate: None, declaration_path: None }
+    }
+
+    pub(super) fn predicate(mut self, predicate: &Value) -> Self {
+        if let Value::Function(function) = predicate {
+            let graph = &function.program.graph;
+            let mut location = match graph.reference(function.node) { Value::Hash(h) => h, _ => unreachable!() };
+            location.insert(s("reference"), location.get(&s("path")).unwrap().clone());
+            location.insert(s("path"), s(&graph.path(function.node)));
+            location.insert(s("line"), Value::Integer(graph.span(function.node).line as i64));
+            location.insert(s("column"), Value::Integer(graph.span(function.node).col as i64));
+            self.predicate = Some(Value::Hash(location));
+        }
+        self
+    }
     pub fn at(&self) -> &str {
         &self.at
     }
+
+    pub fn is_declaration(&self) -> bool { self.declaration_path.is_some() }
+
+    pub fn rule(&self) -> &str { self.rule }
 
     pub fn message(&self) -> &str {
         &self.message
     }
 
     pub fn to_value(&self) -> Value {
-        mapping([("at", s(&self.at)), ("message", s(&self.message))])
+        let Value::Hash(mut fields) = mapping([
+            ("at", s(&self.at)), ("message", s(&self.message)),
+            ("expected", s(&self.expected)), ("actual", self.actual.clone().unwrap_or(Value::Null)),
+            ("actual_present", Value::Boolean(self.actual.is_some())), ("rule", s(self.rule)),
+        ]) else { unreachable!() };
+        if let Some(path) = &self.declaration_path { fields.insert(s("declaration_path"), s(path)); }
+        if let Some(predicate) = &self.predicate { fields.insert(s("predicate"), predicate.clone()); }
+        Value::Hash(fields)
     }
 }
 
@@ -174,7 +220,7 @@ fn member<'a>(map: &'a Hash, key: &str) -> Result<&'a Value, String> {
 }
 
 impl Ty {
-    pub(crate) fn parse(ty: &Value) -> Result<Ty, String> {
+    pub(crate) fn parse_open(ty: &Value) -> Result<Ty, String> {
         match ty {
             Value::String(name) => Ok(match name.as_str() {
                 "any" => Ty::Any,
@@ -185,7 +231,7 @@ impl Ty {
                 "boolean" => Ty::Bool,
                 "null" => Ty::Null,
                 "list" => Ty::List(Box::new(Ty::Any)),
-                "map" => Ty::Map(Box::new(Ty::Any)),
+                "map" => Ty::Map(Box::new(Ty::Any), Box::new(Ty::Any)),
                 "secret" => Ty::Secret,
                 "function" => Ty::Function,
                 "vm" => Ty::Vm,
@@ -194,11 +240,31 @@ impl Ty {
             Value::Hash(map) => {
                 let kind = text(map, "type").ok_or("a type map needs a string `type`")?;
                 match kind {
-                    "list" => Ok(Ty::List(Box::new(Ty::parse(member(map, "of")?)?))),
-                    "map" => Ok(Ty::Map(Box::new(Ty::parse(member(map, "of")?)?))),
+                    "promise" => {
+                        super::promise::validate(ty)?;
+                        Ok(Ty::Promise(ty.clone()))
+                    }
+                    "list" => Ok(Ty::List(Box::new(Ty::parse_open(member(map, "of")?)?))),
+                    "map" => Ok(Ty::Map(Box::new(Ty::parse_open(member(map, "of")?)?), Box::new(match map.get(&s("keys")) { Some(keys) => Ty::parse_open(keys)?, None => Ty::Any }))),
                     "union" => match member(map, "of")? {
-                        Value::Array(members) if !members.is_empty() => Ok(Ty::Union(members.iter().map(Ty::parse).collect::<Result<_, _>>()?)),
+                        Value::Array(members) if !members.is_empty() => Ok(Ty::Union(members.iter().map(Ty::parse_open).collect::<Result<_, _>>()?)),
                         _ => Err("a `union` needs a non-empty list `of` types".into()),
+                    },
+                    "intersection" => match member(map, "of")? {
+                        Value::Array(members) if !members.is_empty() => Ok(Ty::Intersection(members.iter().map(Ty::parse_open).collect::<Result<_, _>>()?)),
+                        _ => Err("an `intersection` needs a non-empty list `of` types".into()),
+                    },
+                    "tuple" => match member(map, "of")? {
+                        Value::Array(members) => Ok(Ty::Tuple(members.iter().map(Ty::parse_open).collect::<Result<_, _>>()?)),
+                        _ => Err("a `tuple` needs a list `of` position types".into()),
+                    },
+                    "rec" => match (member(map, "name")?, member(map, "of")?) {
+                        (Value::String(name), body) if !name.is_empty() => Ok(Ty::Rec(name.clone(), Box::new(Ty::parse_open(body)?))),
+                        _ => Err("a `rec` type needs a non-empty string `name` and a type `of`".into()),
+                    },
+                    "var" => match member(map, "name")? {
+                        Value::String(name) if !name.is_empty() => Ok(Ty::Var(name.clone())),
+                        _ => Err("a `var` type needs a non-empty string `name`".into()),
                     },
                     "enum" => match member(map, "values")? {
                         Value::Array(values) if !values.is_empty() => Ok(Ty::Enum(values.to_vec())),
@@ -212,14 +278,12 @@ impl Ty {
                             Some(Value::Boolean(pure)) => *pure,
                             Some(_) => return Err("a `function` type's `pure` must be a boolean".into()),
                         };
-                        Ok(Ty::Fn(params.iter().map(Ty::parse).collect::<Result<_, _>>()?, Box::new(Ty::parse(member(map, "result")?)?), pure))
+                        Ok(Ty::Fn(params.iter().map(Ty::parse_open).collect::<Result<_, _>>()?, Box::new(Ty::parse_open(member(map, "result")?)?), pure))
                     }
                     "refine" => {
-                        let base = Ty::parse(member(map, "of")?)?;
+                        let base = Ty::parse_open(member(map, "of")?)?;
                         let predicate = member(map, "check")?;
-                        if !is_function(predicate) {
-                            return Err("a `refine` type needs a function `check`".into());
-                        }
+                        predicate_shape(predicate).map_err(|why| format!("a `refine` type's `check`: {why}"))?;
                         Ok(Ty::Refine(Box::new(base), predicate.clone()))
                     }
                     "record" | "class" => {
@@ -234,6 +298,85 @@ impl Ty {
                 }
             }
             other => Err(format!("expected a type, got {}", type_name(other))),
+        }
+    }
+
+    /// Parse a complete type: every `var` is bound by an enclosing `rec` and guarded.
+    pub(crate) fn parse(ty: &Value) -> Result<Ty, String> {
+        let parsed = Ty::parse_open(ty)?;
+        parsed.close(&mut Vec::new(), &mut Vec::new())?;
+        Ok(parsed)
+    }
+
+    /// Scope and guardedness: a `var` must name an enclosing `rec` and sit under a list, map, tuple,
+    /// record, class or function, never directly under only unions, intersections, refinements or
+    /// other `rec`s (`rec t. t | integer` has no values to find and is rejected). Linear in the type.
+    pub(crate) fn close(&self, bound: &mut Vec<String>, unguarded: &mut Vec<String>) -> Result<(), String> {
+        match self {
+            Ty::Var(name) if !bound.contains(name) => Err(format!("type variable `{name}` is not bound by an enclosing `rec`")),
+            Ty::Var(name) if unguarded.contains(name) => Err(format!("type variable `{name}` is unguarded: it must sit under a list, map, tuple, record or function")),
+            Ty::Rec(name, body) => {
+                bound.push(name.clone());
+                unguarded.push(name.clone());
+                let result = body.close(bound, unguarded);
+                bound.pop();
+                unguarded.pop();
+                result
+            }
+            Ty::Union(members) | Ty::Intersection(members) => members.iter().try_for_each(|m| m.close(bound, unguarded)),
+            Ty::Refine(base, _) => base.close(bound, unguarded),
+            Ty::List(_) | Ty::Map(..) | Ty::Tuple(_) | Ty::Record(_) | Ty::Class(..) | Ty::Fn(..) => {
+                let saved = std::mem::take(unguarded);
+                let result = self.children().into_iter().try_for_each(|child| child.close(bound, unguarded));
+                *unguarded = saved;
+                result
+            }
+            _ => Ok(()),
+        }
+    }
+
+    /// Directly nested types.
+    fn children(&self) -> Vec<&Ty> {
+        match self {
+            Ty::List(x) | Ty::Refine(x, _) | Ty::Rec(_, x) => vec![x],
+            Ty::Map(x, k) => vec![x, k],
+            Ty::Fn(params, result, _) => params.iter().chain([&**result]).collect(),
+            Ty::Record(fields) | Ty::Class(fields, ..) => fields.iter().map(|(_, f)| &f.ty).collect(),
+            Ty::Union(m) | Ty::Intersection(m) | Ty::Tuple(m) => m.iter().collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    fn map_children(&self, f: &mut dyn FnMut(&Ty) -> Ty) -> Ty {
+        let field = |f: &mut dyn FnMut(&Ty) -> Ty, (n, x): &(String, Field)| (n.clone(), Field { ty: f(&x.ty), ..x.clone() });
+        match self {
+            Ty::List(x) => Ty::List(Box::new(f(x))),
+            Ty::Map(x, k) => Ty::Map(Box::new(f(x)), Box::new(f(k))),
+            Ty::Fn(params, result, pure) => Ty::Fn(params.iter().map(|p| f(p)).collect(), Box::new(f(result)), *pure),
+            Ty::Record(fields) => Ty::Record(fields.iter().map(|x| field(f, x)).collect()),
+            Ty::Class(fields, fixed, constraints) => Ty::Class(fields.iter().map(|x| field(f, x)).collect(), fixed.clone(), constraints.clone()),
+            Ty::Union(m) => Ty::Union(m.iter().map(|x| f(x)).collect()),
+            Ty::Intersection(m) => Ty::Intersection(m.iter().map(|x| f(x)).collect()),
+            Ty::Tuple(m) => Ty::Tuple(m.iter().map(|x| f(x)).collect()),
+            Ty::Refine(x, p) => Ty::Refine(Box::new(f(x)), p.clone()),
+            Ty::Rec(n, x) => Ty::Rec(n.clone(), Box::new(f(x))),
+            other => other.clone(),
+        }
+    }
+
+    fn substitute(&self, name: &str, with: &Ty) -> Ty {
+        match self {
+            Ty::Var(n) if n == name => with.clone(),
+            Ty::Rec(n, _) if n == name => self.clone(),
+            _ => self.map_children(&mut |child| child.substitute(name, with)),
+        }
+    }
+
+    /// One unfolding of a recursive type (identity for any other type).
+    pub(crate) fn unfold(&self) -> Ty {
+        match self {
+            Ty::Rec(name, body) => body.substitute(name, self),
+            other => other.clone(),
         }
     }
 
@@ -260,20 +403,28 @@ impl Ty {
     pub(crate) fn overlaps(&self, other: &Ty) -> bool {
         match (self, other) {
             (Ty::Never, _) | (_, Ty::Never) => false,
+            (Ty::Promise(_), Ty::Vm | Ty::Promise(_)) | (Ty::Vm, Ty::Promise(_)) => true,
             (Ty::Any, _) | (_, Ty::Any) => true,
+            // Unfolding could recurse forever through required fields; stay conservative.
+            (Ty::Rec(..) | Ty::Var(_), _) | (_, Ty::Rec(..) | Ty::Var(_)) => true,
             (Ty::Union(members), _) => members.iter().any(|m| m.overlaps(other)),
             (_, Ty::Union(members)) => members.iter().any(|m| self.overlaps(m)),
+            // Disjoint from one member is disjoint from the intersection; joint emptiness stays unproved.
+            (Ty::Intersection(members), _) => members.iter().all(|m| m.overlaps(other)),
+            (_, Ty::Intersection(members)) => members.iter().all(|m| self.overlaps(m)),
             (Ty::Refine(base, _), _) => base.overlaps(other),
             (_, Ty::Refine(base, _)) => self.overlaps(base),
             (Ty::Enum(values), _) => values.iter().any(|v| super::literal::may_overlap(v, other)),
             (_, Ty::Enum(values)) => values.iter().any(|v| super::literal::may_overlap(v, self)),
-            (Ty::List(_), Ty::List(_)) | (Ty::Map(_), Ty::Map(_)) => true,
-            (Ty::Map(_), Ty::Record(_) | Ty::Class(..)) | (Ty::Record(_) | Ty::Class(..), Ty::Map(_)) => true,
+            (Ty::List(_), Ty::List(_)) | (Ty::Map(..), Ty::Map(..)) => true,
+            (Ty::Tuple(a), Ty::Tuple(b)) => a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.overlaps(y)),
+            (Ty::Tuple(items), Ty::List(element)) | (Ty::List(element), Ty::Tuple(items)) => items.iter().all(|item| item.overlaps(element)),
+            (Ty::Map(..), Ty::Record(_) | Ty::Class(..)) | (Ty::Record(_) | Ty::Class(..), Ty::Map(..)) => true,
             (Ty::Record(a) | Ty::Class(a, ..), Ty::Record(b) | Ty::Class(b, ..)) => record_disjoint_field(a, b).is_none(),
             // Secret handles are ordinary maps. Shape inference must not turn an
             // unproved relation with their specialized schema into definite failure.
-            (Ty::Secret, Ty::Map(_) | Ty::Record(_) | Ty::Class(..))
-                | (Ty::Map(_) | Ty::Record(_) | Ty::Class(..), Ty::Secret) => true,
+            (Ty::Secret, Ty::Map(..) | Ty::Record(_) | Ty::Class(..))
+                | (Ty::Map(..) | Ty::Record(_) | Ty::Class(..), Ty::Secret) => true,
             (Ty::Function | Ty::Fn(..), Ty::Function | Ty::Fn(..)) => true,
             (Ty::Int, Ty::Int) | (Ty::Float, Ty::Float) | (Ty::Str, Ty::Str) | (Ty::Bool, Ty::Bool) | (Ty::Null, Ty::Null) | (Ty::Secret, Ty::Secret) | (Ty::Vm, Ty::Vm) => true,
             _ => false,
@@ -303,13 +454,18 @@ impl Ty {
             Ty::Function => "function".into(),
             Ty::Fn(params, result, pure) => format!("{}function ({}) -> {}", if *pure { "pure " } else { "" }, params.iter().map(Ty::name).collect::<Vec<_>>().join(", "), result.name()),
             Ty::Vm => "vm".into(),
+            Ty::Promise(_) => "promised vm".into(),
             Ty::List(of) if **of == Ty::Any => "list".into(),
             Ty::List(of) => format!("list of {}", of.name()),
-            Ty::Map(of) if **of == Ty::Any => "map".into(),
-            Ty::Map(of) => format!("map of {}", of.name()),
+            Ty::Map(of, keys) if **of == Ty::Any && **keys == Ty::Any => "map".into(),
+            Ty::Map(of, keys) if **keys == Ty::Any => format!("map of {}", of.name()),
+            Ty::Map(of, keys) => format!("map of {} keyed by {}", of.name(), keys.name()),
             Ty::Record(_) => "record".into(),
             Ty::Class(..) => "class".into(),
             Ty::Union(members) => members.iter().map(Ty::name).collect::<Vec<_>>().join(" | "),
+            Ty::Intersection(members) => members.iter().map(|m| format!("({})", m.name())).collect::<Vec<_>>().join(" & "),
+            Ty::Rec(name, _) | Ty::Var(name) => name.clone(),
+            Ty::Tuple(items) => format!("tuple of ({})", items.iter().map(Ty::name).collect::<Vec<_>>().join(", ")),
             Ty::Enum(values) => format!("one of [{}]", values.iter().map(show).collect::<Vec<_>>().join(", ")),
             Ty::Refine(base, _) => format!("refined {}", base.name()),
         }
@@ -329,16 +485,21 @@ fn fixed_values(class: &Hash) -> Result<Vec<(String, Value)>, String> {
     Ok(fixed)
 }
 
+pub(super) fn predicate_shape(value: &Value) -> Result<(), String> {
+    let Value::Function(function) = value else { return Err("must be a function".into()); };
+    let parameters = function.program.graph.parameters(function.node)
+        .map_err(|_| "must have a valid parameter declaration".to_string())?;
+    if parameters.len() != 1 { return Err("must take exactly 1 parameter".into()); }
+    Ok(())
+}
+
 /// Validate declaration shape independently of whether a value reaches its predicates.
 pub(super) fn constraints(class: &Hash) -> Result<Vec<Value>, String> {
     match class.get(&s("constraints")) {
         None => Ok(Vec::new()),
         Some(Value::Array(items)) => items.iter().enumerate().map(|(index, item)| {
-            if is_function(item) {
-                Ok(item.clone())
-            } else {
-                Err(format!("class constraint {index} must be a function"))
-            }
+            predicate_shape(item).map_err(|why| format!("class constraint {index}: {why}"))?;
+            Ok(item.clone())
         }).collect(),
         Some(_) => Err("class `constraints` must be a list of functions".into()),
     }
@@ -356,12 +517,12 @@ impl Field {
     pub(super) fn parse(spec: &Value) -> Result<Field, String> {
         if let Value::Hash(map) = spec {
             match text(map, "type") {
-                Some("optional") => return Ok(Field { ty: Ty::parse(member(map, "of")?)?, required: false, default: None }),
-                Some("default") => return Ok(Field { ty: Ty::parse(member(map, "of")?)?, required: false, default: Some(member(map, "default")?.clone()) }),
+                Some("optional") => return Ok(Field { ty: Ty::parse_open(member(map, "of")?)?, required: false, default: None }),
+                Some("default") => return Ok(Field { ty: Ty::parse_open(member(map, "of")?)?, required: false, default: Some(member(map, "default")?.clone()) }),
                 _ => {}
             }
         }
-        Ok(Field { ty: Ty::parse(spec)?, required: true, default: None })
+        Ok(Field { ty: Ty::parse_open(spec)?, required: true, default: None })
     }
 }
 
@@ -382,7 +543,7 @@ fn inside(at: &str, key: &str) -> String {
 }
 
 fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violation>) {
-    let mismatch = |out: &mut Vec<Violation>| out.push(Violation { at: at.into(), message: format!("expected {}, got {}", ty.name(), type_name(value)) });
+    let mismatch = |out: &mut Vec<Violation>| out.push(Violation::new(at, ty, Some(value), "type", format!("expected {}, got {}", ty.name(), type_name(value))));
     match (ty, value) {
         (Ty::Any, _) | (Ty::Int, Value::Integer(_)) | (Ty::Float, Value::Float(_)) | (Ty::Str, Value::String(_)) | (Ty::Bool, Value::Boolean(_)) | (Ty::Null, Value::Null) => {}
         (Ty::Function, _) if is_function(value) => {}
@@ -391,15 +552,23 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
             Ok(declared) => {
                 let unproven = matches!((&declared, ty), (Ty::Fn(.., false), Ty::Fn(.., true))) && subtype(&declared.purely(), ty, pred);
                 let note = if unproven { " (not provably pure)" } else { "" };
-                out.push(Violation { at: at.into(), message: format!("expected {}, got {}{note}", ty.name(), declared.name()) })
+                out.push(Violation::new(at, ty, Some(value), "signature", format!("expected {}, got {}{note}", ty.name(), declared.name())))
             }
-            Err(why) => out.push(Violation { at: at.into(), message: format!("signature check failed to run: {why}") }),
+            Err(why) => out.push(Violation::new(at, ty, Some(value), "signature_error", format!("signature check failed to run: {why}"))),
         },
         (Ty::Vm, Value::Machine(_)) => {}
+        (Ty::Promise(promise), Value::Machine(machine)) if machine.promises().iter().any(|p| super::promise::includes(p, promise)) => {}
         (Ty::Secret, Value::Hash(h)) if h.len() == 2 && text(h, "type") == Some("secret") && text(h, "ref").is_some() => {}
-        (Ty::Secret, Value::String(_)) => out.push(Violation { at: at.into(), message: "a secret is a handle (`[secret, ref]`), not an inline string".into() }),
+        (Ty::Secret, Value::String(_)) => out.push(Violation::new(at, ty, Some(value), "secret", "a secret is a handle (`[secret, ref]`), not an inline string".into())),
         (Ty::List(of), Value::Array(items)) => items.iter().enumerate().for_each(|(i, item)| check(item, of, &inside(at, &i.to_string()), pred, out)),
-        (Ty::Map(of), Value::Hash(h)) => h.iter().for_each(|(k, v)| check(v, of, &inside(at, &show(k)), pred, out)),
+        (Ty::Map(of, keys), Value::Hash(h)) => h.iter().for_each(|(k, v)| {
+            let here = inside(at, &show(k));
+            let mut bad = Vec::new();
+            check(k, keys, &here, pred, &mut bad);
+            if bad.iter().any(|b| b.rule == "predicate_error") { out.extend(bad); }
+            else if !bad.is_empty() { out.push(Violation::new(&here, keys, Some(k), "key", format!("key {} does not fit {}", show(k), keys.name()))); }
+            check(v, of, &here, pred, out)
+        }),
         (Ty::Record(fields), Value::Hash(h)) => check_record(fields, h, at, pred, out),
         (Ty::Class(fields, fixed, constraints), Value::Hash(h)) => {
             let before = out.len();
@@ -407,20 +576,38 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
             for (name, pinned) in fixed {
                 let (here, reported) = (inside(at, name), out.iter().any(|v| v.at == inside(at, name)));
                 if !reported && !h.get(&s(name)).is_some_and(|v| equal(v, pinned)) {
-                    out.push(Violation { at: here, message: format!("field `{name}` must equal {}", show(pinned)) });
+                    out.push(Violation::new(&here, &Ty::Enum(vec![pinned.clone()]), h.get(&s(name)), "fixed", format!("field `{name}` must equal {}", show(pinned))));
                 }
             }
             if out.len() == before {
                 for (i, constraint) in constraints.iter().enumerate() {
                     match predicate(pred, constraint, value) {
                         Ok(true) => {}
-                        Ok(false) => out.push(Violation { at: at.into(), message: format!("constraint {i} does not hold") }),
-                        Err(why) => out.push(Violation { at: at.into(), message: format!("constraint {i} failed to run: {why}") }),
+                        Ok(false) => out.push(Violation::new(at, ty, Some(value), "constraint", format!("constraint {i} does not hold")).predicate(constraint)),
+                        Err(why) => out.push(Violation::new(at, ty, Some(value), "predicate_error", format!("constraint {i} failed to run: {why}")).predicate(constraint)),
                     }
                 }
             }
         }
-        (Ty::Union(members), _) if members.iter().any(|m| holds(value, m, pred)) => {}
+        (Ty::Rec(..), _) => check(value, &ty.unfold(), at, pred, out),
+        (Ty::Tuple(items), Value::Array(values)) if items.len() == values.len() =>
+            items.iter().zip(values.iter()).enumerate().for_each(|(i, (item, value))| check(value, item, &inside(at, &i.to_string()), pred, out)),
+        (Ty::Tuple(items), Value::Array(values)) =>
+            out.push(Violation::new(at, ty, Some(value), "length", format!("expected {} items, got {}", items.len(), values.len()))),
+        (Ty::Intersection(members), _) => members.iter().for_each(|member| check(value, member, at, pred, out)),
+        (Ty::Union(members), _) => {
+            let before = out.len();
+            let mut accepted = false;
+            for member in members {
+                let mut branch = Vec::new();
+                check(value, member, at, pred, &mut branch);
+                if branch.is_empty() { accepted = true; break; }
+                // A rejected alternative is ordinary union behavior. A broken predicate
+                // is not evidence that an alternative excludes this value.
+                out.extend(branch.into_iter().filter(|v| v.rule == "predicate_error"));
+            }
+            if !accepted && out.len() == before { mismatch(out); }
+        }
         (Ty::Enum(values), _) if values.iter().any(|v| equal(v, value)) => {}
         (Ty::Refine(base, check_fn), _) => {
             let before = out.len();
@@ -428,8 +615,8 @@ fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violat
             if out.len() == before {
                 match predicate(pred, check_fn, value) {
                     Ok(true) => {}
-                    Ok(false) => out.push(Violation { at: at.into(), message: "failed its refinement check".into() }),
-                    Err(why) => out.push(Violation { at: at.into(), message: format!("refinement check failed to run: {why}") }),
+                    Ok(false) => out.push(Violation::new(at, ty, Some(value), "refinement", "failed its refinement check".into()).predicate(check_fn)),
+                    Err(why) => out.push(Violation::new(at, ty, Some(value), "predicate_error", format!("refinement check failed to run: {why}")).predicate(check_fn)),
                 }
             }
         }
@@ -441,12 +628,12 @@ fn check_record(fields: &[(String, Field)], h: &Hash, at: &str, pred: &mut Pred,
     for (name, field) in fields {
         match h.get(&s(name)) {
             Some(v) => check(v, &field.ty, &inside(at, name), pred, out),
-            None if field.required => out.push(Violation { at: inside(at, name), message: format!("missing field `{name}`") }),
+            None if field.required => out.push(Violation::new(&inside(at, name), &field.ty, None, "required", format!("missing field `{name}`"))),
             None => {}
         }
     }
     for k in h.keys().filter(|k| !fields.iter().any(|(name, _)| s(name) == **k)) {
-        out.push(Violation { at: inside(at, &show(k)), message: format!("unexpected field `{}`", show(k)) });
+        out.push(Violation::new(&inside(at, &show(k)), &Ty::Never, h.get(k), "closed_record", format!("unexpected field `{}`", show(k))));
     }
 }
 
@@ -456,18 +643,57 @@ pub(super) fn holds(value: &Value, ty: &Ty, pred: &mut Pred) -> bool {
     out.is_empty()
 }
 
+/// Check declared defaults independently of supplied values. Parsing remains structural;
+/// predicates use the caller's existing resumable predicate engine.
+pub(super) fn validate_defaults(ty: &Ty, pred: &mut Pred) -> Vec<Violation> {
+    enum Work<'a> { Type(String, &'a Ty), Default(String, &'a Ty, &'a Value) }
+    let mut out = Vec::new();
+    let mut pending = vec![Work::Type("/".to_string(), ty)];
+    while let Some(work) = pending.pop() {
+        let (at, ty) = match work {
+            Work::Type(at, ty) => (at, ty),
+            Work::Default(path, ty, value) => {
+                let start = out.len();
+                check(value, ty, &path, pred, &mut out);
+                for violation in &mut out[start..] { violation.declaration_path = Some(path.clone()); }
+                continue;
+            }
+        };
+        match ty {
+            Ty::Record(fields) | Ty::Class(fields, ..) => {
+                for (name, field) in fields.iter().rev() {
+                    let path = inside(&at, name);
+                    pending.push(Work::Type(path.clone(), &field.ty));
+                    if let Some(value) = &field.default {
+                        pending.push(Work::Default(inside(&path, "default"), &field.ty, value));
+                    }
+                }
+            }
+            Ty::List(inner) | Ty::Refine(inner, _) | Ty::Rec(_, inner) => pending.push(Work::Type(at, inner)),
+            Ty::Map(inner, keys) => { pending.push(Work::Type(at.clone(), keys)); pending.push(Work::Type(at, inner)); }
+            Ty::Union(members) | Ty::Intersection(members) => pending.extend(members.iter().rev().map(|member| Work::Type(at.clone(), member))),
+            Ty::Tuple(items) => pending.extend(items.iter().enumerate().rev().map(|(i, item)| Work::Type(inside(&at, &i.to_string()), item))),
+            Ty::Fn(params, result, _) => {
+                pending.push(Work::Type(inside(&at, "result"), result));
+                pending.extend(params.iter().enumerate().rev().map(|(i, param)| Work::Type(inside(&at, &i.to_string()), param)));
+            }
+            _ => {}
+        }
+    }
+    out
+}
+
 /// Every place `value` does not fit the parsed type.
 pub(super) fn check_ty(value: &Value, ty: &Ty, pred: &mut Pred) -> Vec<Violation> {
-    let mut out = Vec::new();
+    let mut out = validate_defaults(ty, pred);
+    if !out.is_empty() { return out; }
     check(value, ty, "/", pred, &mut out);
     out
 }
 
 /// Every place `value` does not fit `ty`; `Err` when `ty` is not a type at all.
 pub fn violations(value: &Value, ty: &Value, pred: &mut Pred) -> Result<Vec<Violation>, String> {
-    let mut out = Vec::new();
-    check(value, &Ty::parse(ty)?, "/", pred, &mut out);
-    Ok(out)
+    Ok(check_ty(value, &Ty::parse(ty)?, pred))
 }
 
 /// Whether every value of `a` is a value of `b`. Sound but incomplete: a refinement of `b` is only
@@ -476,23 +702,62 @@ pub(super) fn subtype(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
     if a == b || *a == Ty::Never || *b == Ty::Any {
         return true;
     }
+    if matches!(a, Ty::Rec(..)) || matches!(b, Ty::Rec(..)) {
+        return subtype_recursive(a, b, pred);
+    }
     match (a, b) {
+        // Union is the least upper bound and intersection the greatest lower bound: these four rules
+        // are exact. `(Intersection, _)` below is only sound, since a bound may need several members.
+        (_, Ty::Intersection(members)) => members.iter().all(|m| subtype(a, m, pred)),
         (Ty::Union(members), _) => members.iter().all(|m| subtype(m, b, pred)),
         (Ty::Enum(values), _) => values.iter().all(|v| super::literal::covered_by(v, b, pred)),
+        // A member may sit below the whole target, or the whole intersection below one union alternative.
+        (Ty::Intersection(members), _) => disjoint_members(members) || members.iter().any(|m| subtype(m, b, pred))
+            || matches!(b, Ty::Union(targets) if targets.iter().any(|t| subtype(a, t, pred))),
         (_, Ty::Union(members)) => members.iter().any(|m| subtype(a, m, pred)),
+        (Ty::Tuple(x), Ty::Tuple(y)) => x.len() == y.len() && x.iter().zip(y).all(|(p, q)| subtype(p, q, pred)),
+        (Ty::Tuple(items), Ty::List(element)) => items.iter().all(|item| subtype(item, element, pred)),
         (Ty::Refine(base, _), _) => subtype(base, b, pred),
+        (Ty::Promise(a), Ty::Promise(b)) => super::promise::includes(a, b),
+        (Ty::Promise(_), Ty::Vm) => true,
         (Ty::Fn(..), Ty::Function) => true,
         // Parameters are contravariant, the result covariant: a function that accepts more and
         // promises more can stand wherever the narrower signature is expected.
         // A pure function stands wherever an unconstrained one is expected, never the reverse.
         (Ty::Fn(pa, ra, ea), Ty::Fn(pb, rb, eb)) => (*ea || !*eb) && pa.len() == pb.len() && pa.iter().zip(pb).all(|(x, y)| subtype(y, x, pred)) && subtype(ra, rb, pred),
-        (Ty::List(x), Ty::List(y)) | (Ty::Map(x), Ty::Map(y)) => subtype(x, y, pred),
+        (Ty::List(x), Ty::List(y)) => subtype(x, y, pred),
+        (Ty::Map(x, kx), Ty::Map(y, ky)) => subtype(x, y, pred) && subtype(kx, ky, pred),
         (Ty::Record(fa) | Ty::Class(fa, ..), Ty::Record(fb)) => record_subtype(fa, fb, pred),
         (Ty::Class(fa, xa, ca), Ty::Class(fb, xb, cb)) => {
             record_subtype(fa, fb, pred) && xb.iter().all(|(n, v)| xa.iter().any(|(m, w)| m == n && equal(v, w))) && cb.iter().all(|c| ca.iter().any(|a| same_predicate(a, c)))
         }
         _ => false,
     }
+}
+
+/// Some pair of members is definitely disjoint, so the intersection is empty and below everything.
+fn disjoint_members(members: &[Ty]) -> bool {
+    members.iter().enumerate().any(|(i, m)| members[i + 1..].iter().any(|n| !m.overlaps(n)))
+}
+
+const MAX_ASSUMPTIONS: usize = 256;
+
+thread_local! {
+    /// Pairs under proof: meeting one again assumes it (greatest fixed point), which is what lets a
+    /// recursive type be compared with itself. Bounded, so exhaustion is unproved rather than a loop.
+    static ASSUMED: std::cell::RefCell<Vec<(Ty, Ty)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn subtype_recursive(a: &Ty, b: &Ty, pred: &mut Pred) -> bool {
+    let seen = ASSUMED.with(|stack| {
+        let stack = stack.borrow();
+        if stack.len() >= MAX_ASSUMPTIONS { Some(false) } else { stack.iter().any(|(x, y)| x == a && y == b).then_some(true) }
+    });
+    if let Some(answer) = seen { return answer; }
+    ASSUMED.with(|stack| stack.borrow_mut().push((a.clone(), b.clone())));
+    let answer = if matches!(a, Ty::Rec(..)) { subtype(&a.unfold(), b, pred) } else { subtype(a, &b.unfold(), pred) };
+    ASSUMED.with(|stack| stack.borrow_mut().pop());
+    answer
 }
 
 pub(super) fn record_subtype(fa: &[(String, Field)], fb: &[(String, Field)], pred: &mut Pred) -> bool {
@@ -550,7 +815,7 @@ mod overlap_tests {
         let expected = Ty::Record(vec![("known".into(), required(Ty::Str)), ("unknown".into(), required(Ty::Str))]);
         assert_eq!(actual.disjoint_field(&expected).as_deref(), Some("known"));
         assert!(!actual.overlaps(&expected));
-        for map in [actual, Ty::Map(Box::new(Ty::Any)), Ty::Class(vec![], vec![], vec![])] {
+        for map in [actual, Ty::Map(Box::new(Ty::Any), Box::new(Ty::Any)), Ty::Class(vec![], vec![], vec![])] {
             assert!(map.overlaps(&Ty::Secret));
             assert!(Ty::Secret.overlaps(&map));
         }

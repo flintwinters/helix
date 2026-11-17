@@ -2,6 +2,7 @@
 //! Parent links define lexical/object resolution; paths are always root-relative.
 
 mod effects;
+pub(crate) mod http;
 mod scope;
 mod syntax;
 pub(crate) use effects::Effects;
@@ -314,6 +315,7 @@ struct Builder<'src> {
     /// Open containers; for maps, `key` holds the pending key awaiting its value.
     stack: Vec<(NodeId, Option<String>)>,
     error: Option<HelixError>,
+    tag_wrappers: Vec<NodeId>,
 }
 
 impl Builder<'_> {
@@ -400,6 +402,13 @@ impl Builder<'_> {
             span: span(&at),
         });
         id
+    }
+
+    /// Anchors on tagged nodes name the entire normalized expression.
+    fn anchor_node(&mut self, anchor: usize, id: NodeId) {
+        let target = self.tag_wrappers.last().copied()
+            .filter(|wrapper| self.graph.parent(id) == Some(*wrapper)).unwrap_or(id);
+        self.anchors.insert(anchor, Anchor::Node(target));
     }
 
     /// Expand acyclic graph sharing at occurrence sites; anchor names carry no authority.
@@ -514,17 +523,35 @@ impl MarkedEventReceiver for Builder<'_> {
             Event::MappingStart(_, tag) => tag.as_ref().map(|tag| (tag, Some("map"))),
             _ => None,
         };
+        let local = tagged.and_then(|(tag, _)| {
+            (tag.handle == "!" && matches!(tag.suffix.as_str(), "call" | "ref" | "literal"))
+                .then_some(tag.suffix.as_str())
+        });
         if let Some((tag, container)) = tagged {
-            if tag.handle != "tag:yaml.org,2002:"
+            if local.is_some() {
+                if self.awaiting_key() {
+                    return self.fail("unsupported", "Helix tags cannot annotate mapping keys", at);
+                }
+                if (local == Some("call") && container != Some("seq"))
+                    || (local == Some("ref") && container.is_some())
+                {
+                    return self.fail("parse", "!call requires a sequence; !ref requires a scalar", at);
+                }
+            } else if tag.handle != "tag:yaml.org,2002:"
                 || container.is_some_and(|expected| tag.suffix != expected)
                 || (container.is_none()
-                    && !matches!(
-                        tag.suffix.as_str(),
-                        "str" | "int" | "float" | "bool" | "null"
-                    ))
+                    && !matches!(tag.suffix.as_str(), "str" | "int" | "float" | "bool" | "null"))
             {
                 return self.fail("unsupported", "unsupported YAML tag", at);
             }
+        }
+        if let Some(tag) = local {
+            if self.graph.nodes.len() + 1 >= MAX_NODES || self.stack.len() + 1 >= MAX_NESTING {
+                return self.fail("limit", "tag expansion exceeds syntax limits", at);
+            }
+            let wrapper = self.add(Kind::Map(Vec::new()), at);
+            self.stack.push((wrapper, Some(format!("${tag}"))));
+            self.tag_wrappers.push(wrapper);
         }
         if self.graph.nodes.len() >= MAX_NODES
             && matches!(
@@ -534,12 +561,15 @@ impl MarkedEventReceiver for Builder<'_> {
         {
             return self.fail("limit", &format!("graph exceeds {MAX_NODES} nodes"), at);
         }
+        let closes_node = matches!(ev, Event::Scalar(..) | Event::SequenceEnd | Event::MappingEnd);
         match ev {
             Event::Scalar(text, style, anchor, tag) => {
                 let text = self.block_scalar(text, style, at);
                 let plain = style == TScalarStyle::Plain;
                 let value = match tag.as_ref().map(|tag| tag.suffix.as_str()) {
-                    Some("str") => Yaml::String(text.clone()),
+                    Some("str" | "ref") => Yaml::String(text.clone()),
+                    Some("literal") if plain => infer(&text),
+                    Some("literal") => Yaml::String(text.clone()),
                     Some(kind) => {
                         let value = infer(&text);
                         match (kind, value) {
@@ -584,7 +614,7 @@ impl MarkedEventReceiver for Builder<'_> {
                 }
                 let id = self.add(Kind::Scalar { value }, at);
                 if anchor != 0 {
-                    self.anchors.insert(anchor, Anchor::Node(id));
+                    self.anchor_node(anchor, id);
                 }
             }
             Event::SequenceStart(anchor, _) | Event::MappingStart(anchor, _) => {
@@ -606,7 +636,7 @@ impl MarkedEventReceiver for Builder<'_> {
                 let id = self.add(kind, at);
                 self.stack.push((id, None));
                 if anchor != 0 {
-                    self.anchors.insert(anchor, Anchor::Node(id));
+                    self.anchor_node(anchor, id);
                 }
             }
             Event::SequenceEnd | Event::MappingEnd => {
@@ -621,6 +651,12 @@ impl MarkedEventReceiver for Builder<'_> {
             }
             Event::Alias(anchor) => self.alias(anchor, at),
             _ => {}
+        }
+        if closes_node
+            && self.tag_wrappers.last().is_some_and(|wrapper| self.stack.last().is_some_and(|(id, _)| id == wrapper))
+        {
+            self.stack.pop();
+            self.tag_wrappers.pop();
         }
     }
 }

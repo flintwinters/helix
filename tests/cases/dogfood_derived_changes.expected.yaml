@@ -1,3 +1,182 @@
+annotations:
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - optional_fields
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - optional_fields
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields:
+        content:
+          of: string
+          type: optional
+        mode:
+          of: integer
+          type: optional
+        path:
+          of: string
+          type: optional
+      type: record
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - optional_fields
+          - "$call"
+          - 3
+        source: "std:types"
+    kind: result
+    target:
+      path:
+        - optional_fields
+        - "$call"
+        - 2
+      source: "std:types"
+    type: map
+    value:
+      fields:
+        arguments:
+          of:
+            of: string
+            type: list
+          type: optional
+        enabled:
+          of: boolean
+          type: optional
+        name:
+          of: string
+          type: optional
+      type: record
+  - declaration:
+      code:
+        "$ref": file_change
+      location:
+        path:
+          - empty_patch
+          - "$call"
+          - 2
+        source: "<root>"
+    kind: expect
+    target:
+      path:
+        - empty_patch
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      fields:
+        changes:
+          fields:
+            content:
+              of: string
+              type: optional
+            mode:
+              of: integer
+              type: optional
+            path:
+              of: string
+              type: optional
+          type: record
+        revision: integer
+        ticket: string
+      type: record
+    value:
+      changes: {}
+      revision: 0
+      ticket: OPS-43
+  - declaration:
+      code:
+        "$ref": file_change
+      location:
+        path:
+          - file_valid
+          - "$call"
+          - 2
+        source: "<root>"
+    kind: expect
+    target:
+      path:
+        - file_valid
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      fields:
+        changes:
+          fields:
+            content:
+              of: string
+              type: optional
+            mode:
+              of: integer
+              type: optional
+            path:
+              of: string
+              type: optional
+          type: record
+        revision: integer
+        ticket: string
+      type: record
+    value:
+      changes:
+        content: "listen: 8080\n"
+        mode: 420
+      revision: 3
+      ticket: OPS-42
+  - declaration:
+      code:
+        "$ref": service_change
+      location:
+        path:
+          - service_valid
+          - "$call"
+          - 2
+        source: "<root>"
+    kind: expect
+    target:
+      path:
+        - service_valid
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      fields:
+        changes:
+          fields:
+            arguments:
+              of:
+                of: string
+                type: list
+              type: optional
+            enabled:
+              of: boolean
+              type: optional
+            name:
+              of: string
+              type: optional
+          type: record
+        revision: integer
+        ticket: string
+      type: record
+    value:
+      changes:
+        arguments:
+          - "--reload"
+        enabled: true
+      revision: 8
+      ticket: OPS-42
 objects:
   object0:
     bindings:
@@ -859,15 +1038,19 @@ root:
     revision: 3
     ticket: OPS-42
   foreign_field:
-    - at: /changes/mode
+    - actual: 420
+      actual_present: true
+      at: /changes/mode
+      expected: never
       message: "unexpected field `mode`"
+      rule: closed_record
   invalid_type:
     calls:
       - column: 7
         function: /optional_fields
-        function_column: 10
+        function_column: 3
         function_file: "std:types"
-        function_line: 63
+        function_line: 27
         line: 27
         path: "/audited_change/$call/2/$call/6"
       - column: 29
@@ -879,7 +1062,7 @@ root:
     column: 37
     file: "std:types"
     kind: type
-    line: 68
+    line: 31
     message: "expected a record or class type, got string"
     path: "/optional_fields/$call/2/$call/1/specs/$call/1"
     phase: type
@@ -893,11 +1076,19 @@ root:
       - "$call"
       - 1
   missing_audit:
-    - at: /ticket
+    - actual: ~
+      actual_present: false
+      at: /ticket
+      expected: string
       message: "missing field `ticket`"
+      rule: required
   null_patch:
-    - at: /changes
+    - actual: ~
+      actual_present: true
+      at: /changes
+      expected: record
       message: "expected record, got null"
+      rule: type
   service_change:
     fields:
       changes:
@@ -955,13 +1146,29 @@ root:
     without_field:
       ref: object6
   wrong_audit:
-    - at: /revision
+    - actual: next
+      actual_present: true
+      at: /revision
+      expected: integer
       message: "expected integer, got string"
-    - at: /ticket
+      rule: type
+    - actual: 42
+      actual_present: true
+      at: /ticket
+      expected: string
       message: "expected string, got integer"
+      rule: type
   wrong_nested:
-    - at: /changes/content
+    - actual: false
+      actual_present: true
+      at: /changes/content
+      expected: string
       message: "expected string, got boolean"
-    - at: /changes/mode
+      rule: type
+    - actual: "0644"
+      actual_present: true
+      at: /changes/mode
+      expected: integer
       message: "expected integer, got string"
+      rule: type
 status: finished

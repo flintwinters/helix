@@ -32,13 +32,14 @@ fn type_cost(ty: &Ty, limit: usize, byte_limit: usize) -> Option<(usize, usize)>
         size = size.checked_add(1)?;
         if size > limit { return None; }
         match ty {
-            Ty::List(item) | Ty::Map(item) | Ty::Refine(item, _) => pending.push(item),
+            Ty::List(item) | Ty::Refine(item, _) | Ty::Rec(_, item) => pending.push(item),
+            Ty::Map(item, keys) => { pending.push(item); pending.push(keys); }
             Ty::Fn(params, result, _) => {
                 if params.len() + 1 > limit - size { return None; }
                 pending.extend(params);
                 pending.push(result);
             }
-            Ty::Union(members) => {
+            Ty::Union(members) | Ty::Intersection(members) | Ty::Tuple(members) => {
                 if members.len() > limit - size { return None; }
                 pending.extend(members);
             }
@@ -61,7 +62,7 @@ fn type_cost(ty: &Ty, limit: usize, byte_limit: usize) -> Option<(usize, usize)>
                 }
             }
             Ty::Any | Ty::Never | Ty::Int | Ty::Float | Ty::Str | Ty::Bool
-                | Ty::Null | Ty::Secret | Ty::Function | Ty::Vm => {}
+                | Ty::Null | Ty::Secret | Ty::Function | Ty::Vm | Ty::Promise(_) | Ty::Var(_) => {}
         }
         if size > limit || bytes > byte_limit { return None; }
         if pending.len() > limit - size { return None; }
@@ -77,7 +78,7 @@ pub(super) struct Findings {
 }
 
 pub(super) fn check(graph: &Graph) -> Findings {
-    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new() };
+    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new(), invalid_annotations: HashSet::new(), exhausted: HashSet::new() };
     let mut pending = vec![ROOT];
     while let Some(id) = pending.pop() {
         match graph.syntax(id) {
@@ -105,11 +106,20 @@ struct Checker<'g> {
     active: HashSet<NodeId>,
     findings: Findings,
     type_memo: HashMap<(NodeId, usize), Option<Value>>,
+    invalid_annotations: HashSet<NodeId>,
+    exhausted: HashSet<NodeId>,
 }
 
 impl Checker<'_> {
     fn error(&mut self, at: NodeId, message: String) {
         self.findings.errors.push(self.graph.error(at, "type", message));
+    }
+    /// A bound of the analysis, not of the program, made a result unknown. Reported as its own
+    /// `exhausted` kind in the `unchecked` list so it is never mistaken for an unsupported form.
+    fn exhaust(&mut self, at: NodeId, message: &str) {
+        if self.exhausted.insert(at) {
+            self.findings.unchecked.push(self.graph.error(at, "exhausted", message.into()));
+        }
     }
     fn unchecked(&mut self, at: NodeId, message: String) {
         self.findings.unchecked.push(self.graph.error(at, "unchecked", message));
@@ -123,8 +133,12 @@ impl Checker<'_> {
         if !self.active.insert(id) {
             return None;
         }
-        let found = self.infer_node(id).filter(|ty|
-            type_cost(ty, MAX_TYPE_SHAPE_NODES, crate::model::MAX_VALUE_SIZE).is_some());
+        let found = self.infer_node(id);
+        let found = if found.as_ref().is_some_and(|ty|
+            type_cost(ty, MAX_TYPE_SHAPE_NODES, crate::model::MAX_VALUE_SIZE).is_none()) {
+            self.exhaust(id, "the inferred type exceeds the analysis shape budget, so it is treated as unknown");
+            None
+        } else { found };
         self.active.remove(&id);
         self.memo.insert(id, found.clone());
         found
@@ -196,7 +210,7 @@ impl Checker<'_> {
                         }
                     }
                 }
-                Some(if remaining.is_some() { Ty::Record(fields) } else { Ty::Map(Box::new(Ty::Any)) })
+                Some(if remaining.is_some() { Ty::Record(fields) } else { Ty::Map(Box::new(Ty::Any), Box::new(Ty::Any)) })
             }
             _ => None,
         }
@@ -243,6 +257,7 @@ impl Checker<'_> {
                 let (then, otherwise) = (self.infer(operands[1]), self.infer(operands[2]));
                 Some(Ty::Union(vec![then?, otherwise?]))
             }
+            "expect" => self.annotated_value(operands[0], operands[1], "the value of `expect`"),
             "let" => self.infer(operands[1]),
             "type_time" => self.infer(operands[0]),
             "map" | "filter" => self.collection(actor.name, operands[0], operands[1]),
@@ -262,7 +277,7 @@ impl Checker<'_> {
                 }
                 Some(Ty::Record(fields))
             }
-            "eq" | "ne" | "is" | "has" | "subtype" => Some(Ty::Bool),
+            "eq" | "ne" | "is" | "has" | "subtype" | "equivalent" => Some(Ty::Bool),
             "str" | "type" => Some(Ty::Str),
             "int" | "len" => Some(Ty::Int),
             "float" => Some(Ty::Float),
@@ -388,7 +403,9 @@ impl Checker<'_> {
         }
         let result = match self.graph.call(function)?.get(3) {
             Some(&annotation) => self.annotation(annotation)?,
-            None => Ty::Any,
+            // No declared result: the body's inferred type is a sound upper bound on the
+            // runtime result (parameters without annotations stay unknown, hence `any`).
+            None => self.graph.call(function)?.get(2).and_then(|&body| self.infer(body)).unwrap_or(Ty::Any),
         };
         type_cost(&result, remaining, remaining_bytes)?;
         let pure = self.graph.effects(function, &|_| None) == Effects::None;
@@ -415,25 +432,50 @@ impl Checker<'_> {
         }
     }
 
-    /// An annotated function's body must be able to produce its declared result.
+    /// Every declaration is inspected even when the function is never called.
     fn function(&mut self, function: NodeId) {
+        if let Ok(parameters) = self.graph.parameters(function) {
+            for (_, annotation) in parameters {
+                if let Some(annotation) = annotation {
+                    if self.annotation(annotation).is_none() {
+                        self.unchecked_annotation(annotation, "the parameter annotation is outside the supported static type fragment");
+                    }
+                }
+            }
+        }
         let Some(items) = self.graph.call(function) else { return };
         let (Some(&body), Some(&annotation)) = (items.get(2), items.get(3)) else { return };
-        let Some(declared) = self.annotation(annotation) else {
-            return self.unchecked(annotation, "the declared result annotation is outside the supported static type fragment, so the body is not checked against it".into());
+        let what = format!("the body of `{}`", self.graph.path(function));
+        self.annotated_value(body, annotation, &what);
+    }
+
+    fn unchecked_annotation(&mut self, annotation: NodeId, message: &str) {
+        if !self.invalid_annotations.contains(&annotation) && !self.exhausted.contains(&annotation) {
+            self.unchecked(annotation, message.into());
+        }
+    }
+
+    /// Value annotations and function results share one non-executing obligation.
+    /// `expect` returns its original value; checking does not invent a converted value.
+    fn annotated_value(&mut self, body: NodeId, annotation: NodeId, what: &str) -> Option<Ty> {
+        let declared = self.annotation(annotation);
+        let actual = self.infer(body);
+        let Some(declared) = declared else {
+            self.unchecked_annotation(annotation, "the annotation is outside the supported static type fragment, so its value is not checked against it");
+            return actual;
         };
-        let path = self.graph.path(function);
-        match self.infer(body) {
+        match &actual {
             Some(actual) if !actual.overlaps(&declared) => {
                 let field = actual.disjoint_field(&declared);
                 let at = field.as_ref().and_then(|field| self.result_field(body, field)).unwrap_or(body);
                 let field = field.map_or(String::new(), |name| format!(" at field `{name}`"));
-                self.error(at, format!("the body of `{path}` is {}, declared {}{field}", actual.name(), declared.name()));
+                self.error(at, format!("{what} is {}, declared {}{field}", actual.name(), declared.name()));
             }
-            Some(actual) if !actual.below(&declared) => self.unchecked(body, format!("the body of `{path}` may not be {}; it is {}", declared.name(), actual.name())),
+            Some(actual) if !actual.below(&declared) => self.unchecked(body, format!("{what} may not be {}; it is {}", declared.name(), actual.name())),
             Some(_) => {}
-            None => self.unchecked(body, format!("the body of `{path}` has no static type; declared {}", declared.name())),
+            None => self.unchecked(body, format!("{what} has no static type; declared {}", declared.name())),
         }
+        actual
     }
 
     /// Code a `type_time` region can reach must be free of effects, or it fails when run.
@@ -448,9 +490,17 @@ impl Checker<'_> {
     /// The type a literal annotation expression denotes.
     fn annotation(&mut self, id: NodeId) -> Option<Ty> {
         let value = self.type_value(id, 0)?;
-        // Descriptor DAGs share values, but Ty::parse expands their structure.
-        // Bound that expanded work before asking the authoritative parser.
-        let mut pending = vec![&value];
+        if Self::annotation_budget(&value).is_none() {
+            self.exhaust(id, "the annotation exceeds the analysis shape budget, so it is not checked");
+            return None;
+        }
+        self.parse_annotation(id, &value)
+    }
+
+    /// Descriptor DAGs share values, but `Ty::parse` expands their structure.
+    /// Bound that expanded work before asking the authoritative parser.
+    fn annotation_budget(value: &Value) -> Option<()> {
+        let mut pending = vec![value];
         let mut remaining = MAX_TYPE_SHAPE_NODES;
         let mut remaining_bytes = crate::model::MAX_VALUE_SIZE;
         while let Some(value) = pending.pop() {
@@ -468,11 +518,44 @@ impl Checker<'_> {
                 _ => {}
             }
         }
-        Ty::parse(&value).ok()
+        Some(())
+    }
+
+    fn parse_annotation(&mut self, id: NodeId, value: &Value) -> Option<Ty> {
+        match Ty::parse(value) {
+            Ok(ty) => {
+                let mut pending = vec![&ty];
+                let mut defaults = false;
+                while let Some(part) = pending.pop() {
+                    match part {
+                        Ty::Record(fields) | Ty::Class(fields, ..) => {
+                            defaults |= fields.iter().any(|(_, field)| field.default.is_some());
+                            pending.extend(fields.iter().map(|(_, field)| &field.ty));
+                        }
+                        Ty::List(item) | Ty::Refine(item, _) | Ty::Rec(_, item) => pending.push(item),
+                        Ty::Map(item, keys) => { pending.push(item); pending.push(keys); }
+                        Ty::Union(members) | Ty::Intersection(members) | Ty::Tuple(members) => pending.extend(members),
+                        Ty::Fn(params, result, _) => { pending.extend(params); pending.push(result); }
+                        _ => {}
+                    }
+                }
+                if defaults {
+                    self.unchecked_annotation(id, "default values require runtime declaration validation; static checking only establishes their type shape");
+                }
+                Some(ty)
+            }
+            Err(why) => {
+                if self.invalid_annotations.insert(id) {
+                    self.error(id, format!("invalid type declaration: {why}"));
+                }
+                None
+            }
+        }
     }
 
     fn type_value(&mut self, id: NodeId, depth: usize) -> Option<Value> {
         if depth > MAX_TYPE_CONSTRUCTOR_DEPTH {
+            self.exhaust(id, "the annotation nests deeper than the analysis constructor limit, so it is not checked");
             return None;
         }
         if let Some(value) = self.type_memo.get(&(id, depth)) {
@@ -488,6 +571,7 @@ impl Checker<'_> {
                 Syntax::Reference(name) => name,
                 // Ordinary strings are type values, never implicit lexical references.
                 Syntax::Scalar(Yaml::String(name)) => break Some(s(name)),
+                Syntax::Scalar(_) => break self.scalar(target),
                 _ => break self.type_constructor(target, depth),
             };
             match self.graph.lexical_site(target, name) {
@@ -509,6 +593,7 @@ impl Checker<'_> {
 
     fn type_constructor(&mut self, id: NodeId, depth: usize) -> Option<Value> {
         match self.graph.syntax(id) {
+            Syntax::Mapping(_) | Syntax::Sequence(_) | Syntax::Literal(_) => self.data_value(id, depth),
             Syntax::Call(items) => {
                 let args = &items[1..];
                 match (self.graph.identifier(items[0])?, args.len()) {
@@ -534,8 +619,16 @@ impl Checker<'_> {
                     }
                     ("list_of", 1) => Some(describe("list", [("of", self.type_value(args[0], depth + 1)?)])),
                     ("map_of", 1) => Some(describe("map", [("of", self.type_value(args[0], depth + 1)?)])),
+                    ("map_of", 2) => Some(describe("map", [("of", self.type_value(args[0], depth + 1)?), ("keys", self.type_value(args[1], depth + 1)?)])),
                     ("optional", 1) => Some(describe("optional", [("of", self.type_value(args[0], depth + 1)?)])),
                     ("union", 1..) => Some(describe("union", [("of", Value::Array(args.iter().map(|&arg| self.type_value(arg, depth + 1)).collect::<Option<Vec<_>>>()?.into()))])),
+                    ("intersection", 1..) => Some(describe("intersection", [("of", Value::Array(args.iter().map(|&arg| self.type_value(arg, depth + 1)).collect::<Option<Vec<_>>>()?.into()))])),
+                    ("tuple_of", _) => Some(describe("tuple", [("of", Value::Array(args.iter().map(|&arg| self.type_value(arg, depth + 1)).collect::<Option<Vec<_>>>()?.into()))])),
+                    ("rec", 2) => {
+                        let name @ Value::String(_) = self.scalar(args[0])? else { return None };
+                        Some(describe("rec", [("name", name), ("of", self.type_value(args[1], depth + 1)?)]))
+                    }
+                    ("var", 1) => Some(describe("var", [("name", self.scalar(args[0])?)])),
                     ("enum", 1..) => Some(describe("enum", [("values", Value::Array(args.iter().map(|&arg| self.scalar(arg)).collect::<Option<Vec<_>>>()?.into()))])),
                     ("literal", 1) => Some(describe("literal", [("value", self.scalar(args[0])?)])),
                     (kind @ ("function_of" | "pure_function_of"), 2) => {
@@ -550,6 +643,52 @@ impl Checker<'_> {
         }
     }
 
+    /// Materialize only data expressions, after bounding the entire expansion.
+    /// Inside `$literal`, executable-looking maps remain opaque ordinary data.
+    fn data_value(&self, id: NodeId, depth: usize) -> Option<Value> {
+        use crate::model::Kind;
+        let mut pending = vec![(id, false, depth)];
+        let mut nodes = MAX_TYPE_SHAPE_NODES;
+        let mut bytes = crate::model::MAX_VALUE_SIZE;
+        while let Some((node, quoted, depth)) = pending.pop() {
+            nodes = nodes.checked_sub(1)?;
+            if depth > MAX_TYPE_CONSTRUCTOR_DEPTH { return None; }
+            if !quoted {
+                match self.graph.syntax(node) {
+                    Syntax::Literal(value) => { pending.push((value, true, depth)); continue; }
+                    Syntax::Call(_) | Syntax::Reference(_) | Syntax::Invalid(_) => return None,
+                    _ => {}
+                }
+            }
+            match self.graph.kind(node) {
+                Kind::Scalar { value: Yaml::String(text) } => bytes = bytes.checked_sub(text.len())?,
+                Kind::Scalar { .. } => {}
+                Kind::Seq(items) => {
+                    if items.len() > nodes.saturating_sub(pending.len()) { return None; }
+                    pending.extend(items.iter().map(|item| (*item, quoted, depth + 1)));
+                }
+                Kind::Map(fields) => {
+                    nodes = nodes.checked_sub(fields.len())?;
+                    if fields.len() > nodes.saturating_sub(pending.len()) { return None; }
+                    for (name, value) in fields {
+                        bytes = bytes.checked_sub(name.len())?;
+                        pending.push((*value, quoted, depth + 1));
+                    }
+                }
+            }
+        }
+        fn materialize(graph: &Graph, node: NodeId) -> Value {
+            match graph.syntax(node) {
+                Syntax::Literal(value) => graph.data(value),
+                Syntax::Mapping(fields) => Value::Hash(fields.iter()
+                    .map(|(name, value)| (s(name), materialize(graph, *value))).collect()),
+                Syntax::Sequence(items) => Value::Array(items.iter().map(|node| materialize(graph, *node)).collect()),
+                _ => graph.data(node), // prewalk proved this is a scalar
+            }
+        }
+        Some(materialize(self.graph, id))
+    }
+
     fn scalar(&self, id: NodeId) -> Option<Value> {
         match self.graph.syntax(id) {
             Syntax::Scalar(Yaml::Integer(i)) => Some(Value::Integer(*i)),
@@ -560,4 +699,33 @@ impl Checker<'_> {
             _ => None,
         }
     }
+}
+
+/// Search evidence uses the checker's bounded annotation and inference rules.
+pub(crate) fn evidence(graph: &Graph, function: NodeId) -> Yaml {
+    let mut checker = Checker { graph, memo: HashMap::new(), active: HashSet::new(), findings: Findings::default(), type_memo: HashMap::new(), invalid_annotations: HashSet::new(), exhausted: HashSet::new() };
+    let signature = checker.function_type(function);
+    let rendered = signature.as_ref().map(|t| s(&t.name())).unwrap_or(Value::Null);
+    let declared = signature.as_ref().and_then(search_type).unwrap_or(Value::Null);
+    let inferred = graph.call(function).and_then(|c| c.get(2)).and_then(|&b| checker.infer(b)).and_then(|t| search_type(&t)).unwrap_or(Value::Null);
+    Value::Hash([(s("declared"), declared), (s("signature"), rendered), (s("inferred_result"), inferred),
+        (s("unresolved"), Value::Array(checker.findings.unchecked.iter().chain(checker.findings.errors.iter()).map(|e| e.to_value()).collect()))].into_iter().collect()).plain_yaml().unwrap()
+}
+
+fn search_type(ty: &Ty) -> Option<Value> {
+    Some(match ty {
+        Ty::List(of) => describe("list", [("of", search_type(of)?)]),
+        Ty::Map(of, keys) if **keys == Ty::Any => describe("map", [("of", search_type(of)?)]),
+        Ty::Map(of, keys) => describe("map", [("of", search_type(of)?), ("keys", search_type(keys)?)]),
+        Ty::Fn(params,result,pure) => describe("function", [("params",Value::Array(params.iter().map(search_type).collect::<Option<Vec<_>>>()?.into())),("result",search_type(result)?),("pure",Value::Boolean(*pure))]),
+        Ty::Record(fields) => describe("record", [("fields",Value::Hash(fields.iter().map(|(n,f)|Some((s(n), if f.required { search_type(&f.ty)? } else if let Some(default)=&f.default { describe("default", [("of",search_type(&f.ty)?),("default",default.clone())]) } else { describe("optional", [("of",search_type(&f.ty)?)]) }))).collect::<Option<Hash>>()?))]),
+        Ty::Union(members) => describe("union", [("of",Value::Array(members.iter().map(search_type).collect::<Option<Vec<_>>>()?.into()))]),
+        Ty::Intersection(members) => describe("intersection", [("of",Value::Array(members.iter().map(search_type).collect::<Option<Vec<_>>>()?.into()))]),
+        Ty::Tuple(items) => describe("tuple", [("of",Value::Array(items.iter().map(search_type).collect::<Option<Vec<_>>>()?.into()))]),
+        Ty::Enum(values) => describe("enum", [("values",Value::Array(values.clone().into()))]),
+        Ty::Rec(name, of) => describe("rec", [("name", s(name)), ("of", search_type(of)?)]),
+        Ty::Var(name) => describe("var", [("name", s(name))]),
+        Ty::Class(..) | Ty::Refine(..) | Ty::Promise(..) => return None,
+        _ => s(&ty.name()),
+    })
 }
