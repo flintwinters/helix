@@ -56,7 +56,8 @@ impl Graph {
     pub(crate) fn lexical_parent(&self, id: NodeId) -> Option<NodeId> {
         let parent = self.parent(id)?;
         if let Some(wrapper) = self.parent(parent) {
-            if self.call(wrapper).is_some_and(|items| items.contains(&id)) {
+            // A call wrapper has exactly one child, its operand sequence.
+            if self.call(wrapper).is_some() {
                 return Some(wrapper);
             }
         }
