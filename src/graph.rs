@@ -126,28 +126,12 @@ impl Graph {
         parts.reverse();
         parts
     }
+    /// The observable identity of a node's position; `reference` renders it.
+    pub fn location(&self, id: NodeId) -> crate::model::Location {
+        (self.source(id).unwrap_or("<root>").to_owned(), self.segments(id))
+    }
     pub fn reference(&self, id: NodeId) -> crate::value::Value {
-        use crate::model::{Segment, string as s};
-        use crate::value::Value as V;
-        V::Hash(
-            [
-                (s("source"), s(self.source(id).unwrap_or("<root>"))),
-                (
-                    s("path"),
-                    V::Array(
-                        self.segments(id)
-                            .into_iter()
-                            .map(|segment| match segment {
-                                Segment::Key(key) => V::String(key),
-                                Segment::Index(index) => V::Integer(index as i64),
-                            })
-                            .collect(),
-                    ),
-                ),
-            ]
-            .into_iter()
-            .collect(),
-        )
+        render_location(&self.location(id))
     }
 
     /// Shared code views are built once, bottom-up, over the immutable linked source arena.
@@ -762,4 +746,28 @@ fn block_keep(header: &str, indicator: char) -> bool {
         plain = true;
     }
     false
+}
+
+pub(crate) fn render_location((source, segments): &crate::model::Location) -> crate::value::Value {
+    use crate::model::{Segment, string as s};
+    use crate::value::Value as V;
+    V::Hash(
+        [
+            (s("source"), s(source)),
+            (
+                s("path"),
+                V::Array(
+                    segments
+                        .iter()
+                        .map(|segment| match segment {
+                            Segment::Key(key) => V::String(key.clone()),
+                            Segment::Index(index) => V::Integer(*index as i64),
+                        })
+                        .collect(),
+                ),
+            ),
+        ]
+        .into_iter()
+        .collect(),
+    )
 }

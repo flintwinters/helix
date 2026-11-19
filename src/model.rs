@@ -11,11 +11,13 @@ pub(crate) const ROOT: NodeId = 0;
 pub(crate) const MAX_NODES: usize = 100_000;
 pub(crate) const MAX_NESTING: usize = 64;
 pub(crate) const MAX_VALUE_SIZE: usize = 1_000_000;
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub(crate) enum Segment {
     Key(String),
     Index(usize),
 }
+/// A source name and the path from its root.
+pub(crate) type Location = (String, Vec<Segment>);
 pub(crate) type Outcome = Result<Value, HelixError>;
 
 #[derive(Clone, Debug)]
@@ -232,8 +234,18 @@ pub(crate) struct Limits {
 }
 
 /// Derived acceleration only: allocation identities never enter observable state.
+/// It covers every evaluated row, so lookups never scan the evidence.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct EvidenceIndex(pub(crate) HashMap<(usize, NodeId), (usize, usize, Arc<Program>)>);
+pub(crate) struct EvidenceIndex {
+    /// Row by program allocation and node; the program keeps the allocation live.
+    pub(crate) nodes: HashMap<(usize, NodeId), (usize, Arc<Program>)>,
+    /// Row by observable source location.
+    pub(crate) locations: HashMap<Location, usize>,
+    /// Projected units of each row.
+    pub(crate) units: Vec<usize>,
+    /// Row overhead of each node refused since the last new row.
+    pub(crate) absent: HashMap<(usize, NodeId), (usize, Arc<Program>)>,
+}
 impl PartialEq for EvidenceIndex {
     fn eq(&self, _: &Self) -> bool { true }
 }
