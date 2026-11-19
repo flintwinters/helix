@@ -86,7 +86,12 @@ def frozen_binary(binary, output_format=DEFAULT_FORMAT):
         with build_lock():
             code = _build_unlocked(output_format=output_format)
             if code == 0:
-                shutil.copy2(binary, snapshot)
+                # Cargo and linkers replace outputs instead of rewriting them, so a
+                # hard link freezes the executable without copying it per run.
+                try:
+                    os.link(binary, snapshot)
+                except OSError:
+                    shutil.copy2(binary, snapshot)
         yield (snapshot if code == 0 else None), code
 
 
