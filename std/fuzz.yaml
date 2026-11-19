@@ -125,17 +125,20 @@ scan_part: !call
   - !call
       - let
       - base: !call [get, !ref chunk, base]
-        text: !call [get, !ref chunk, text]
-        limit: !call [get, !ref chunk, limit]
-        width: !call [sub, !ref limit, !ref base]
-        index: !call [get, !ref state, index]
         # Consume lookahead only when it completes a CRLF. The next chunk
         # starts after that LF. A final chunk has no lookahead.
         end: !call
           - if
-          - !call [eq, !call [slice, !ref text, !call [sub, !ref width, 1], !call [len, !ref text]], "\r\n"]
+          - !call
+              - eq
+              - !call [slice, !ref text, !call [sub, !ref width, 1], !call [len, !ref text]]
+              - "\r\n"
           - !call [add, !ref limit, 1]
           - !ref limit
+        index: !call [get, !ref state, index]
+        limit: !call [get, !ref chunk, limit]
+        text: !call [get, !ref chunk, text]
+        width: !call [sub, !ref limit, !ref base]
       - !call
           - merge_chunk
           - !ref state
@@ -144,11 +147,22 @@ scan_part: !call
               - !call
                   - fold
                   - !ref scan_segment
-                  - !call [dict, index, !ref index, start, !call [get, !ref state, start], bounds, []]
+                  - !call
+                      - dict
+                      - index
+                      - !ref index
+                      - start
+                      - !call [get, !ref state, start]
+                      - bounds
+                      - []
                   - !call
                       - regex_find
-                      - '(?s:.*?)(?:\r\n|[\r\n\x0B\x0C\x1C-\x1E\x{85}\x{2028}\x{2029}])'
-                      - !call [slice, !ref text, !call [sub, !ref index, !ref base], !call [sub, !ref end, !ref base]]
+                      - "(?s:.*?)(?:\\r\\n|[\\r\\n\\x0B\\x0C\\x1C-\\x1E\\x{85}\\x{2028}\\x{2029}])"
+                      - !call
+                          - slice
+                          - !ref text
+                          - !call [sub, !ref index, !ref base]
+                          - !call [sub, !ref end, !ref base]
               - index
               - !ref end
 # Match through the first line terminator. Counting the matched text keeps
