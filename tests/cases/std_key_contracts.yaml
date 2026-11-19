@@ -1,16 +1,18 @@
 # std contracts now type map keys and header pairs: empty group/resource names and malformed headers are rejected.
-"inventory": {"$call": ["import", "std:inventory"]}
-"orchestration": {"$call": ["import", "std:orchestration"]}
-"http": {"$call": ["import", "std:http"]}
-"group_keys":
-  "$call": ["list",
-    {"$call": ["is", {"version": 1, "hosts": [], "groups": {"web": []}, "overrides": []}, {"$ref": "inventory.document"}]},
-    {"$call": ["is", {"version": 1, "hosts": [], "groups": {"": []}, "overrides": []}, {"$ref": "inventory.document"}]}]
-"resource_keys":
-  "$call": ["list",
-    {"$call": ["is", {"version": 1, "resources": {}, "handlers": {"": {"requires": []}}}, {"$ref": "orchestration.document"}]}]
-"header_pairs":
-  "$call": ["list",
-    {"$call": ["is", {"status": 200, "headers": [["a", "b"]], "body": ""}, {"$ref": "http.response"}]},
-    {"$call": ["is", {"status": 200, "headers": [["a"]], "body": ""}, {"$ref": "http.response"}]},
-    {"$call": ["is", {"status": 200, "headers": [["a", "b", "c"]], "body": ""}, {"$ref": "http.response"}]}]
+"$call":
+- "let"
+- "inventory": {"$call": ["import", "std:inventory"]}
+  "orchestration": {"$call": ["import", "std:orchestration"]}
+  "http": {"$call": ["import", "std:http"]}
+- "group_keys":
+    "$call": ["list",
+      {"$call": ["is", {"version": 1, "hosts": [], "groups": {"web": []}, "overrides": []}, {"$ref": "inventory.document"}]},
+      {"$call": ["is", {"version": 1, "hosts": [], "groups": {"": []}, "overrides": []}, {"$ref": "inventory.document"}]}]
+  "resource_keys":
+    "$call": ["list",
+      {"$call": ["is", {"version": 1, "resources": {}, "handlers": {"": {"requires": []}}}, {"$ref": "orchestration.document"}]}]
+  "header_pairs":
+    "$call": ["list",
+      {"$call": ["is", {"status": 200, "headers": [["a", "b"]], "body": ""}, {"$ref": "http.response"}]},
+      {"$call": ["is", {"status": 200, "headers": [["a"]], "body": ""}, {"$ref": "http.response"}]},
+      {"$call": ["is", {"status": 200, "headers": [["a", "b", "c"]], "body": ""}, {"$ref": "http.response"}]}]
