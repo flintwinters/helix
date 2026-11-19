@@ -1,7 +1,7 @@
 # Deterministic damaged-source generation for host-supervised parser/evaluator tests.
 # Unicode scalar offsets; all Python splitlines boundaries, with CRLF kept together.
 # Duplicates and order are intentional; each variant is a list of source slice spans.
-# Scan 256-scalar chunks with one-scalar lookahead; absolute cursor consumes seam CRLF once.
+# Scan 256-scalar chunks with one-scalar lookahead for CRLF at the seam.
 chunk: !call
   - fn
   - [source, size, base]
@@ -25,8 +25,6 @@ chunk: !call
           - !call [lt, !call [add, !ref base, 256], !ref size]
           - !call [add, !ref base, 256]
           - !ref size
-      - size
-      - !ref size
 finish: !call
   - fn
   - [size, scan]
@@ -107,7 +105,7 @@ render: !call
               - !call [list, !call [list, 0, !call [mul, !ref index, 5]]]
           - !call [l.range, !call [div, !call [add, !ref size, 4], 5]]
       - !call [concat, !ref lines, !ref prefixes]
-scan_advance: !call
+scan_end: !call
   - fn
   - [state, end]
   - !call
@@ -121,96 +119,47 @@ scan_advance: !call
           - append
           - !call [get, !ref state, bounds]
           - !call [list, !call [get, !ref state, start], !ref end]
-scan_character: !call
-  - fn
-  - [text, base, size, state, index, character]
-  - !call
-      - if
-      - !call
-          - has
-          -
-            - "\n"
-            - "\r"
-            - "\u000b"
-            - "\u000c"
-            - "\u001c"
-            - "\u001d"
-            - "\u001e"
-            - "\u0085"
-            - "\u2028"
-            - "\u2029"
-          - !ref character
-      - !call
-          - scan_advance
-          - !ref state
-          - !call
-              - add
-              - !ref index
-              - !call
-                  - if
-                  - !call
-                      - and
-                      - !call [eq, !ref character, "\r"]
-                      - !call [lt, !call [add, !ref index, 1], !ref size]
-                      - !call
-                          - eq
-                          - !call
-                              - slice
-                              - !ref text
-                              - !call [add, !call [sub, !ref index, !ref base], 1]
-                              - !call [add, !call [sub, !ref index, !ref base], 2]
-                          - "\n"
-                  - 2
-                  - 1
-      - !call [set, !ref state, index, !call [add, !ref index, 1]]
-scan_chunk: !call
-  - fn
-  - [text, base, limit, size, state]
-  - !call
-      - until
-      - !call
-          - fn
-          - [s]
-          - !call [ge, !call [get, !ref s, index], !ref limit]
-      - !call
-          - fn
-          - [s]
-          - !call [scan_index, !ref text, !ref base, !ref size, !ref s, !call [get, !ref s, index]]
-      - !ref state
-# Function arguments retain these computed values; local let bindings would
-# reevaluate the index, current character and end at each use in the next state.
-scan_index: !call
-  - fn
-  - [text, base, size, state, index]
-  - !call
-      - scan_character
-      - !ref text
-      - !ref base
-      - !ref size
-      - !ref state
-      - !ref index
-      - !call
-          - slice
-          - !ref text
-          - !call [sub, !ref index, !ref base]
-          - !call [add, !call [sub, !ref index, !ref base], 1]
 scan_part: !call
   - fn
   - [state, chunk]
   - !call
-      - merge_chunk
+      - let
+      - base: !call [get, !ref chunk, base]
+        text: !call [get, !ref chunk, text]
+        limit: !call [get, !ref chunk, limit]
+        width: !call [sub, !ref limit, !ref base]
+        index: !call [get, !ref state, index]
+        # Consume lookahead only when it completes a CRLF. The next chunk
+        # starts after that LF. A final chunk has no lookahead.
+        end: !call
+          - if
+          - !call [eq, !call [slice, !ref text, !call [sub, !ref width, 1], !call [len, !ref text]], "\r\n"]
+          - !call [add, !ref limit, 1]
+          - !ref limit
+      - !call
+          - merge_chunk
+          - !ref state
+          - !call
+              - set
+              - !call
+                  - fold
+                  - !ref scan_segment
+                  - !call [dict, index, !ref index, start, !call [get, !ref state, start], bounds, []]
+                  - !call
+                      - regex_find
+                      - '(?s:.*?)(?:\r\n|[\r\n\x0B\x0C\x1C-\x1E\x{85}\x{2028}\x{2029}])'
+                      - !call [slice, !ref text, !call [sub, !ref index, !ref base], !call [sub, !ref end, !ref base]]
+              - index
+              - !ref end
+# Match through the first line terminator. Counting the matched text keeps
+# offsets in Unicode scalars even though regex_find reports byte spans.
+scan_segment: !call
+  - fn
+  - [state, match]
+  - !call
+      - scan_end
       - !ref state
       - !call
-          - scan_chunk
-          - !call [get, !ref chunk, text]
-          - !call [get, !ref chunk, base]
-          - !call [get, !ref chunk, limit]
-          - !call [get, !ref chunk, size]
-          - !call
-              - dict
-              - index
-              - !call [get, !ref state, index]
-              - start
-              - !call [get, !ref state, start]
-              - bounds
-              - []
+          - add
+          - !call [get, !ref state, index]
+          - !call [len, !call [get, !call [get, !call [get, !ref match, captures], 0], text]]
