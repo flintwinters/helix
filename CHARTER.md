@@ -125,7 +125,8 @@ Standing decisions:
   agreement about already-delivered messages; the joint boundary stays in force.
 
 Not established: external rollback, secret-safe serialization, distributed
-rollback, remote fencing, independently restored remote participants.
+rollback, remote fencing, independently restored remote participants (see
+[beyond the joint restoration boundary](#beyond-the-joint-restoration-boundary--open)).
 
 ### Machine dependency closure and portability — open
 
@@ -160,6 +161,53 @@ environment is a separate contract.
   and open boundaries, reusing snapshot and capability representations instead of
   an independent dependency inventory. Incomplete knowledge stays explicit,
   including dependencies discovered only by future commands.
+
+### Beyond the joint restoration boundary — open
+
+The joint `PromisedSystem` checkpoint is the only established multi-participant
+restoration boundary. Four obligations lie beyond it. They are independent:
+evidence for one establishes none of the others, and none implies external
+rollback or exactly-once execution. Open an obligation only for a concrete
+workload that needs it (section 12); the others stay deferred.
+
+- [ ] Admission, required before work on any obligation below
+  - [ ] Name the workload, the obligations it needs and those it leaves deferred
+  - [ ] State the failure model: crash points, partitions, duplicated, delayed or
+    reordered messages, stale controllers and nonparticipating writers.
+    Unmodeled failures are outside the contract and documented as such.
+  - [ ] Qualify on a disposable multi-participant fixture behind `./manage.py`,
+    injecting each modeled failure at every commit and dispatch boundary and
+    observing outcomes independently of Helix's own reports
+- [ ] Independent remote restoration: one participant restores without the rest
+  - [ ] Representation and sequencing laws for monadic composition of
+    independently hosted promised computations, checked by law tests
+  - [ ] Delivery agreement: a restored participant and its peers agree on which
+    messages were delivered; a restoration contradicting a peer's receipts is
+    refused, never silently reconciled
+  - [ ] Participant identity and epoch, so a stale or duplicated restored copy
+    is detected before it communicates
+  - [ ] For the workload, independent restoration reaches the state joint
+    restoration would, or is refused
+- [ ] Remote fencing beyond one cooperating lock domain (bound today:
+  [target lock](HOST.md#coordinating-one-target-across-journals))
+  - [ ] A caller-authorized coordinator issues leases with monotonic fencing
+    tokens; source, inventory and restored state confer none
+  - [ ] The target, not only the controller, refuses mutations carrying an
+    expired or superseded token
+  - [ ] A partitioned controller stops before its next mutation; in-flight
+    requests stay uncertain and are reconciled explicitly
+  - [ ] Nonparticipating writers are detected by fresh observation and review
+    matching, never assumed absent
+- [ ] Fleet recovery: section 11's fleet orchestration and recovery list. It
+  composes per-host journals and target coordination; a fleet record never
+  replaces them.
+- [ ] Secret-bearing ordinary data (bound today: opaque caller-granted handles,
+  section 11)
+  - [ ] Secret-derived values never serialize as plaintext: snapshots, journals,
+    inspection, diagnostics and provenance summaries retain only handles or
+    redactions, and the propagation rule is stated in `LANGUAGE.md`
+  - [ ] Restoration requires the caller to supply secret inputs again
+  - [ ] Canary secrets through every serialization path, verified independently
 
 ## 3. Talking to the world — complete within supported adapter bounds
 
@@ -652,8 +700,8 @@ Each claim is bounded by its operator contract; none is general machine manageme
   canaries, failure thresholds; cross-host dependencies and delegated tasks with
   unambiguous targets and authority; health-gated rolling changes; reboot,
   disconnect and reconnect with bounded readiness waits
-- [ ] Stale plans and conflicting controllers beyond one cooperating lock domain:
-  remote fencing, partitions and nonparticipating writers
+- [ ] Stale plans and conflicting controllers beyond one cooperating lock domain
+  (remote fencing, partitions and nonparticipating writers: section 2)
 - [ ] Declare compensations and irreversible operations explicitly; external
   rollback is never implied by immutable VM state
 - [ ] Resume an interrupted multi-host run from one fleet-level record
@@ -813,8 +861,6 @@ complete. The reference manuals and suites keep the detail; these decisions stan
 Resolve these only when a concrete workload depends on them; section 12 controls
 admission.
 
-- [ ] What concrete monadic composition and transport/restoration protocol lets
-  independently hosted participants preserve the reversibility promise (section 2)?
 - [ ] How should secret-bearing observations and external secret managers extend
   the opaque-input boundary without persisting plaintext (section 11)?
 - [ ] Which real migration workload justifies the next provider/platform scope,

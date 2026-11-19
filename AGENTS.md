@@ -66,6 +66,7 @@ agent-consumable output with progressive discovery and explicit complete JSON re
 3. Extend reversible/distributed execution only for concrete workloads. Independent
    remote restoration, same-target coordination/fencing, fleet recovery and secret-bearing
    ordinary data remain separate obligations; coordinated peers have a joint snapshot boundary.
+   The charter's "beyond the joint restoration boundary" checklist gates and tracks them.
 4. Preserve the explicit YAML representation model and bounded source evidence as syntax
    and tooling evolve. Do not turn provenance into unbounded execution history.
 
