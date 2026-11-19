@@ -7,6 +7,7 @@
 //! `SPEC` is `std:NAME` for an embedded standard module, otherwise a path relative to the
 //! importing file (or to the working directory for the main program when it is not a file).
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -87,6 +88,7 @@ fn link_observed(
     let mut linker = Linker {
         graph,
         modules: Modules::default(),
+        explicit_imports: HashMap::new(),
         loaded: HashMap::new(),
         stack: Vec::new(),
         allowed,
@@ -103,9 +105,12 @@ fn link_observed(
     // Presentation follows explicit imports, not implicit builtin implementation edges.
     let mut pending = vec![ROOT];
     while let Some(root) = pending.pop() {
-        for import in linker.dependencies(root).0 {
-            let imported = linker.modules.linked[&import];
-            if linker.modules.visible_roots.insert(imported) { pending.push(imported); }
+        if let Some(imports) = linker.explicit_imports.remove(&root) {
+            for imported in imports {
+                if linker.modules.visible_roots.insert(imported) {
+                    pending.push(imported);
+                }
+            }
         }
     }
     Ok(linker.modules)
@@ -114,6 +119,8 @@ fn link_observed(
 struct Linker<'g> {
     graph: &'g mut Graph,
     modules: Modules,
+    /// Explicit import edges between module roots, collected during linking.
+    explicit_imports: HashMap<NodeId, Vec<NodeId>>,
     /// Module roots by identity key (canonical path, or `std:NAME`).
     loaded: HashMap<String, NodeId>,
     /// Identity keys of the files being loaded, outermost first: a repeat is a cycle.
@@ -133,13 +140,17 @@ impl Linker<'_> {
                 "imports nested deeper than 64 modules".into(),
             ));
         }
-        let (imports, policies) = self.dependencies(tree);
+        let (mut imports, policies) = self.dependencies(tree);
         for module in policies {
             self.policy(module)?;
         }
-        for import in imports {
-            let root = self.load(import, origin)?;
-            self.modules.linked.insert(import, root);
+        for import in &mut imports {
+            let root = self.load(*import, origin)?;
+            self.modules.linked.insert(*import, root);
+            *import = root;
+        }
+        if !imports.is_empty() {
+            self.explicit_imports.insert(tree, imports);
         }
         Ok(())
     }
@@ -152,10 +163,11 @@ impl Linker<'_> {
         while let Some(id) = pending.pop() {
             match self.graph.syntax(id) {
                 crate::graph::Syntax::Call(items) => {
-                    if let Some(module) = self.graph.form(id).and_then(crate::builtins::policy_module) {
+                    let actor = self.graph.identifier(items[0]);
+                    if let Some(module) = actor.and_then(crate::builtins::policy_module) {
                         if !policies.contains(&module) { policies.push(module); }
                     }
-                    if self.graph.form(id) == Some("import") && items.len() == 2 {
+                    if actor == Some("import") && items.len() == 2 {
                         found.push(id);
                     }
                     pending.extend(items.iter().rev());
@@ -210,7 +222,7 @@ impl Linker<'_> {
         let fail = |graph: &Graph, message: String| graph.error(spec_node, "import", message);
         let (key, label, source, next) = match spec.strip_prefix("std:") {
             Some(name) => match library::source(name) {
-                Some(src) => (spec.clone(), spec.clone(), src.to_string(), Origin::Std),
+                Some(src) => (spec.clone(), spec.clone(), Cow::Borrowed(src), Origin::Std),
                 None => {
                     return Err(fail(
                         self.graph,
@@ -264,7 +276,7 @@ impl Linker<'_> {
                     .display()
                     .to_string();
                 let next = Origin::Dir(path.parent().unwrap_or(Path::new(".")).to_path_buf());
-                (key, path.display().to_string(), source, next)
+                (key, path.display().to_string(), Cow::Owned(source), next)
             }
         };
         if let Some(at) = self.stack.iter().position(|(k, _)| *k == key) {
