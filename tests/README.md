@@ -358,8 +358,10 @@ Reports flag `SLOWDOWN` when median time exceeds the earliest five compatible ru
 by more than 20% and three median absolute deviations of observed noise. Matching
 host/environment, sampling settings and workload source keep comparisons relevant;
 the fixed early baseline reveals cumulative drift. First runs establish history.
-Flags are observational and do not fail the suite. Normal interpreter timeouts
-still apply. The weekly/manual full CI sweep includes this suite.
+The two mutation-planning workloads use pinned medians in
+`tests/fixtures/speed-baseline.json`. For matching inputs and benchmark environment,
+a median above the pinned value fails the suite with zero tolerance. Historical
+flags for other comparisons are observational. Normal interpreter timeouts still apply. The weekly/manual full CI sweep includes this suite.
 
 Workload epochs in `tests/suites/speed.py` separate fixed historical baselines.
 Advance only the affected epochs after measured improvements, and retain the

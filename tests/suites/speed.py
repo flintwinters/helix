@@ -165,6 +165,19 @@ def history_comparison(base, environment, name, source_hash, samples):
             "baseline_seconds": baseline, "change_percent": (current / baseline - 1) * 100}
 
 
+def pinned_comparison(baseline, environment, name, source_hash, median):
+    if baseline["comparison_environment"] != environment:
+        return None
+    for row in baseline["measurements"]:
+        if row["workload"] == name and row["source_sha256"] == source_hash:
+            limit = row["median_seconds"]
+            return {"status": "SLOWDOWN" if median > limit else "ok",
+                    "baseline_runs": 1, "baseline_seconds": limit,
+                    "change_percent": (median / limit - 1) * 100,
+                    "enforced": True}
+    return None
+
+
 def verify(h):
     base = h.root / "runtime" / "speed"
     base.mkdir(parents=True, exist_ok=True)
@@ -183,7 +196,7 @@ def verify(h):
             "sha256": hashlib.sha256(policy_source).hexdigest(), "artifact": "test_policy.source.yaml"}},
         "method": {"clock": "perf_counter_ns", "samples": SAMPLES, "warmups": WARMUPS,
                    "scope": "CLI process startup, file loading, evaluation and state emission; excludes build and Python YAML decoding",
-                   "policy": "correctness and subprocess timeout are enforced; timings are observations, not portable pass/fail thresholds"},
+                   "policy": "correctness, subprocess timeout, and compatible pinned medians are enforced"},
         "run_directory": str(artifact), "measurements": [],
     }
     report["comparison_environment"] = {
@@ -191,6 +204,8 @@ def verify(h):
         "machine": platform.machine(), "processor": platform.processor(),
         "profile": "debug", "samples": SAMPLES, "warmups": WARMUPS,
     }
+    baseline = json.loads((h.root / "tests" / "fixtures" / "speed-baseline.json").read_text())
+    slowdowns = []
     try:
         for name, source, expected, operations in workloads():
             program = artifact / f"{name}.yaml"
@@ -221,13 +236,18 @@ def verify(h):
                 if index >= WARMUPS:
                     samples.append(elapsed)
             source_hash = hashlib.sha256(source.encode()).hexdigest()
-            comparison = history_comparison(base, report["comparison_environment"], name, source_hash, samples)
+            median = statistics.median(samples)
+            environment = report["comparison_environment"]
+            comparison = pinned_comparison(baseline, environment, name, source_hash, median)
+            if comparison is None:
+                comparison = history_comparison(base, environment, name, source_hash, samples)
+            elif comparison["status"] == "SLOWDOWN":
+                slowdowns.append(f"{name}: {median:.6f}s > {comparison['baseline_seconds']:.6f}s")
             measurement.update(source_sha256=source_hash, comparison=comparison)
             detail = comparison["status"]
             if "change_percent" in comparison:
                 detail += f": {comparison['change_percent']:+.1f}% time vs baseline ({comparison['baseline_runs']} runs)"
             print(f"speed: {name}: {detail}", flush=True)
-            median = statistics.median(samples)
             measurement.update(median_seconds=median, min_seconds=min(samples), max_seconds=max(samples),
                                operations_per_second=operations / median)
             print(f"speed: {name}: median {median:.6f}s, range {min(samples):.6f}..{max(samples):.6f}s ({operations / median:.0f} operations/s)", flush=True)
@@ -236,10 +256,18 @@ def verify(h):
         (artifact / "report.json").write_text(content)
         (base / "report.json").write_text(content)
         print(f"speed: report and replay inputs/states: {artifact}", flush=True)
+    if slowdowns:
+        raise AssertionError("pinned speed baseline exceeded: " + ", ".join(slowdowns))
 
 
 def verify_comparison(base):
     """Deterministic policy contracts, using isolated project-local history."""
+    pinned = {"comparison_environment": {}, "measurements": [
+        {"workload": "w", "source_sha256": "hash", "median_seconds": 1.0}]}
+    for median, status in ((0.999, "ok"), (1.0, "ok"), (1.001, "SLOWDOWN")):
+        assert pinned_comparison(pinned, {}, "w", "hash", median)["status"] == status
+    assert pinned_comparison(pinned, {"host": "other"}, "w", "hash", 2) is None
+    assert pinned_comparison(pinned, {}, "w", "changed", 2) is None
     with tempfile.TemporaryDirectory(dir=base, prefix="policy-") as directory:
         root = Path(directory)
         assert history_comparison(root, {}, "w", "hash", [1] * 5)["status"] == "no baseline"
