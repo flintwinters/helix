@@ -1,6 +1,7 @@
 """Build/snapshot exclusion contracts, reached through manage.py test --suite harness."""
 from contextlib import contextmanager
 from dataclasses import replace
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -20,7 +21,7 @@ def verify(h):
         context = replace(h, root=root, binary=binary)
         events = []
         original_lock = manage.build_lock
-        original_copy = shutil.copy2
+        original_link = os.link
 
         def assert_locked(expected):
             with (root / 'runtime' / 'build.lock').open('a') as other:
@@ -30,7 +31,7 @@ def verify(h):
                     assert expected, 'build lock remained held while executing tests'
                 else:
                     fcntl.flock(other, fcntl.LOCK_UN)
-                    assert not expected, 'another open handle acquired the build lock during build/copy'
+                    assert not expected, 'another open handle acquired the build lock during build/snapshot'
 
         @contextmanager
         def observed_lock():
@@ -46,21 +47,26 @@ def verify(h):
             assert_locked(True)
             return 0
 
-        def copy(source, destination):
-            events.append('copy')
+        def link(source, destination):
+            events.append('link')
             assert_locked(True)
-            return original_copy(source, destination)
+            return original_link(source, destination)
+
+        def replace_binary(contents):
+            replacement = binary.with_suffix('.next')
+            replacement.write_bytes(contents)
+            replacement.replace(binary)
 
         with patch.object(manage, 'ROOT', root), patch.object(manage, 'build_lock', observed_lock), \
-             patch.object(manage, '_build_unlocked', side_effect=compile), patch.object(shutil, 'copy2', side_effect=copy):
+             patch.object(manage, '_build_unlocked', side_effect=compile), patch.object(os, 'link', side_effect=link):
             with manage.frozen_test_context(context) as (frozen, code):
                 assert code == 0 and frozen.binary != binary
                 snapshot = frozen.binary
                 assert snapshot.read_bytes() == binary.read_bytes()
                 assert frozen.root == context.root and frozen.timeout == context.timeout
-                assert events == ['enter', 'build', 'copy', 'exit'], events
+                assert events == ['enter', 'build', 'link', 'exit'], events
                 assert_locked(False)
-                binary.write_bytes(b'next executable generation')
+                replace_binary(b'next executable generation')
                 assert snapshot.read_bytes() == b'complete executable generation'
             assert not snapshot.exists(), 'snapshot directory survived its test context'
             events.clear()
@@ -76,6 +82,7 @@ def verify(h):
                 assert_locked(False)
 
         with patch.object(manage, 'ROOT', root), patch.object(manage, '_build_unlocked', return_value=0), \
+             patch.object(os, 'link', side_effect=OSError('cannot link')), \
              patch.object(shutil, 'copy2', side_effect=OSError('copy interrupted')):
             try:
                 with manage.frozen_test_context(context):
@@ -144,7 +151,7 @@ def verify(h):
             snapshot = Path(args[0])
             assert snapshot != binary and snapshot.read_bytes() == b'wrapper executable generation'
             assert_locked(False)
-            binary.write_bytes(b'concurrent rebuild')
+            replace_binary(b'concurrent rebuild')
             assert snapshot.read_bytes() == b'wrapper executable generation'
             invoked.append(snapshot)
             return 9

@@ -52,15 +52,26 @@ def collect_cases(check, cases, jobs):
         return [failure for failures in pool.map(check, cases) for failure in failures]
 
 
-def root_section(state: str) -> str | None:
-    """Extract ordinary root YAML for literal replay; object graphs are inspection only."""
+def load_yaml(source: str):
     import yaml
 
-    # Unicode line separators inside quoted scalars are not YAML physical lines.
-    lines = state.split("\n")
-    value = yaml.safe_load(state)
+    return yaml.load(source, Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader))
+
+
+def dump_yaml(value) -> str:
+    import yaml
+
+    return yaml.dump(value, Dumper=getattr(yaml, "CSafeDumper", yaml.SafeDumper),
+                     allow_unicode=False)
+
+
+def root_section(state: str) -> str | None:
+    """Extract ordinary root YAML for literal replay; object graphs are inspection only."""
+    value = load_yaml(state)
     if not isinstance(value, dict) or value.get("status") != "finished" or "objects" in value:
         return None
+    # Unicode line separators inside quoted scalars are not YAML physical lines.
+    lines = state.split("\n")
     index = next((i for i, line in enumerate(lines)
                   if line == "root:" or line.startswith("root: ")), None)
     if index is None:
@@ -147,7 +158,7 @@ def malformed_state(out: str, returncode: int) -> str | None:
     if returncode not in (0, 1):
         return f"exit code {returncode} (panic?)"
     try:
-        state = yaml.load(out, Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader))
+        state = load_yaml(out)
     except yaml.YAMLError as e:
         return f"state is not valid YAML: {e}"
     if not isinstance(state, dict) or "status" not in state:
@@ -226,17 +237,15 @@ class TestContext:
 
     def mutations(self, source: str):
         """Generate damaged inputs in Helix, keeping generator failures host-visible."""
-        import yaml
-
-        program = yaml.safe_dump({"$call": ["let", {
+        program = dump_yaml({"$call": ["let", {
             "fuzz": {"$call": ["import", "std:fuzz"]},
-        }, {"$call": ["fuzz.plan", source]}]}, allow_unicode=False)
+        }, {"$call": ["fuzz.plan", source]}]})
         result = self.helix("run", "-", stdin=program)
         problem = self.malformed_state(result.stdout, result.returncode)
         if problem is None and (result.returncode != 0 or result.stderr):
             problem = "generator did not finish cleanly"
         if problem is None:
-            state = yaml.safe_load(result.stdout)
+            state = load_yaml(result.stdout)
             variants = state.get("root")
             problem = mutation_plan_problem(source, variants)
         if problem is not None:
@@ -261,9 +270,10 @@ class TestContext:
 
         src = case.read_text()
         command = self.commands[case.parent]
+        args = shlex.split(command)
         try:
             for variant in chain((src,), self.mutations(src)):
-                run = self.helix(*shlex.split(command), "-", stdin=variant, cwd=case.parent)
+                run = self.helix(*args, "-", stdin=variant, cwd=case.parent)
                 if (why := self.malformed_state(run.stdout, run.returncode)) is not None:
                     return [test_failure(self.root, case, "robustness", why, command, run,
                                          source=variant, source_cwd=case.parent)]

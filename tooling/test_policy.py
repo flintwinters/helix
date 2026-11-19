@@ -136,18 +136,17 @@ def rerun(context, catalog, previous):
 
 
 def evaluate(context, operation, arguments, validate):
-    import yaml
+    from tooling.test_runner import dump_yaml, load_yaml
 
-    source = yaml.safe_dump({"$call": ["let", {
+    source = dump_yaml({"$call": ["let", {
         "policy": {"$call": ["import", str(context.root / "tooling" / "test_policy.yaml")]},
-    }, {"$call": [f"policy.{operation}", *({"$literal": arg} for arg in arguments)]}]},
-        allow_unicode=False)
+    }, {"$call": [f"policy.{operation}", *({"$literal": arg} for arg in arguments)]}]})
     result = context.helix("run", "-", stdin=source)
     problem = context.malformed_state(result.stdout, result.returncode)
     if problem is None and (result.returncode != 0 or result.stderr):
         problem = "policy did not finish cleanly"
     if problem is None:
-        value = yaml.safe_load(result.stdout)["root"]
+        value = load_yaml(result.stdout)["root"]
         if not validate(value):
             problem = "policy response violated the host observation/authority contract"
     if problem is not None:

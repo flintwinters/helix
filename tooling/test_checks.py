@@ -1,7 +1,6 @@
 """Run reusable std:test assertions over observations captured by a host."""
-import yaml
-
 from tooling.test_reports import failure
+from tooling.test_runner import dump_yaml, load_yaml
 
 
 def compare(context, observations):
@@ -9,7 +8,7 @@ def compare(context, observations):
     names = [row['name'] for row in observations]
     if not names or len(names) != len(set(names)):
         raise ValueError('comparison names must be nonempty and unique')
-    source = yaml.safe_dump({'$call': ['let', {
+    source = dump_yaml({'$call': ['let', {
         't': {'$call': ['import', 'std:test']},
     }, {'$call': ['t.table', {'$literal': [
         {'name': row['name'], 'input': {'actual': row['actual'], 'expected': row['expected']}}
@@ -17,13 +16,13 @@ def compare(context, observations):
     ]}, {'$call': ['fn', ['row'], {'$call': ['t.equal',
         {'$call': ['get', {'$ref': 'row'}, 'actual']},
         {'$call': ['get', {'$ref': 'row'}, 'expected']},
-    ]}]}]}]}, allow_unicode=False)
+    ]}]}]}]})
     result = context.helix('run', '-', stdin=source)
     problem = context.malformed_state(result.stdout, result.returncode)
     if problem is None and (result.returncode != 0 or result.stderr):
         problem = 'comparison process did not finish cleanly'
     if problem is None:
-        report = yaml.safe_load(result.stdout)['root']
+        report = load_yaml(result.stdout)['root']
         rows = report.get('results') if isinstance(report, dict) else None
         if (not isinstance(rows, list) or len(rows) != len(names)
                 or any(not isinstance(row, dict) or row.get('name') != name
