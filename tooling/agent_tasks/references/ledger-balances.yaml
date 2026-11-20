@@ -1,0 +1,38 @@
+l: !call [import, std:list]
+credit: !call [fn, [balances, account, delta], !call [set, !ref balances, !ref account, !call [add, !call [get, !ref balances, !ref account, 0], !ref delta]]]
+apply: !call
+  - fn
+  - [balances, op]
+  - !call
+    - let
+    - amount: !call [get, !ref op, amount]
+      kind: !call [get, !ref op, op]
+    - !call
+      - cond
+      - !call [eq, !ref kind, deposit]
+      - !call [credit, !ref balances, !call [get, !ref op, account], !ref amount]
+      - !call [eq, !ref kind, withdraw]
+      - !call [credit, !ref balances, !call [get, !ref op, account], !call [sub, 0, !ref amount]]
+      - !call [credit, !call [credit, !ref balances, !call [get, !ref op, from], !call [sub, 0, !ref amount]], !call [get, !ref op, to], !ref amount]
+solve: !call
+  - fn
+  - [ops]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [state, entry]
+      - !call
+        - let
+        - index: !call [get, !ref entry, 0]
+          op: !call [get, !ref entry, 1]
+          balances: !call [get, !ref state, balances]
+          kind: !call [get, !ref op, op]
+          debited: !call [cond, !call [eq, !ref kind, withdraw], !call [get, !ref op, account], !call [eq, !ref kind, transfer], !call [get, !ref op, from], null]
+        - !call
+          - if
+          - !call [and, !call [ne, !ref debited, null], !call [lt, !call [get, !ref balances, !ref debited, 0], !call [get, !ref op, amount]]]
+          - !call [set, !ref state, rejected, !call [append, !call [get, !ref state, rejected], !ref index]]
+          - !call [set, !ref state, balances, !call [apply, !ref balances, !ref op]]
+    - {balances: {}, rejected: []}
+    - !call [l.enumerate, !ref ops]

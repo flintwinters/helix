@@ -1,0 +1,2 @@
+d: !call [import, std:diff]
+solve: !call [fn, [input], !call [d.compare, !call [get, !ref input, before], !call [get, !ref input, after]]]

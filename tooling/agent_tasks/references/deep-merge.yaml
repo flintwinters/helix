@@ -1,0 +1,24 @@
+merge: !call
+  - fn
+  - [base, override]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [result, key]
+      - !call
+        - let
+        - old: !call [get, !ref result, !ref key, null]
+          new: !call [get, !ref override, !ref key]
+        - !call
+          - set
+          - !ref result
+          - !ref key
+          - !call
+            - if
+            - !call [and, !call [eq, !call [type, !ref old], map], !call [eq, !call [type, !ref new], map]]
+            - !call [merge, !ref old, !ref new]
+            - !ref new
+    - !ref base
+    - !call [keys, !ref override]
+solve: !call [fn, [input], !call [merge, !call [get, !ref input, base], !call [get, !ref input, override]]]

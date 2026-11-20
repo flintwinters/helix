@@ -1,0 +1,18 @@
+d: !call [import, std:diff]
+plan: !call
+  - fn
+  - [installed, diff]
+  - !call
+    - dict
+    - install
+    - !call [get, !ref diff, added]
+    - upgrade
+    - !call [map, !call [fn, [change], !call [dict, name, !call [get, !ref change, key], from, !call [get, !ref change, before], to, !call [get, !ref change, after]]], !call [get, !ref diff, changed]]
+    - remove
+    - !call [get, !ref diff, removed]
+    - unchanged
+    - !call [sub, !call [sub, !call [len, !ref installed], !call [len, !call [get, !ref diff, removed]]], !call [len, !call [get, !ref diff, changed]]]
+solve: !call
+  - fn
+  - [input]
+  - !call [plan, !call [get, !ref input, installed], !call [d.compare, !call [get, !ref input, installed], !call [get, !ref input, desired]]]

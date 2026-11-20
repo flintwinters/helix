@@ -1,0 +1,2 @@
+l: !call [import, std:list]
+solve: !call [fn, [xs], !call [fold, !call [fn, [totals, x], !call [append, !ref totals, !call [add, !call [l.last, !ref totals, 0], !ref x]]], [], !ref xs]]

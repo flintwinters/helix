@@ -1,0 +1,17 @@
+solve: !call
+  - fn
+  - [input]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [value, step]
+      - !call
+        - cond
+        - !call [and, !call [eq, !call [type, !ref step], string], !call [eq, !call [type, !ref value], map]]
+        - !call [get, !ref value, !ref step, null]
+        - !call [and, !call [eq, !call [type, !ref step], integer], !call [eq, !call [type, !ref value], list]]
+        - !call [get, !ref value, !ref step, null]
+        - null
+    - !call [json_parse, !call [get, !ref input, document]]
+    - !call [get, !ref input, path]

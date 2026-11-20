@@ -1,0 +1,21 @@
+solve: !call
+  - fn
+  - [rows]
+  - !call
+    - keys
+    # a map deduplicates the rules and returns them in Unicode order
+    - !call
+      - fold
+      - !call
+        - fn
+        - [rules, row]
+        - !call
+          - fold
+          - !call
+            - fn
+            - [acc, source]
+            - !call [set, !ref acc, !call [concat, "allow ", !call [get, !ref row, protocol], " ", !call [str, !call [get, !ref row, port]], " from ", !ref source], true]
+          - !ref rules
+          - !call [get, !ref row, sources]
+      - {}
+      - !ref rows

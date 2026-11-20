@@ -1,0 +1,19 @@
+l: !call [import, std:list]
+group: !call [fn, [found, i], !call [get, !call [get, !call [get, !call [get, !ref found, 0], captures], !ref i], text]]
+pad: !call [fn, [digits, width], !call [until, !call [fn, [s], !call [ge, !call [len, !ref s], !ref width]], !call [fn, [s], !call [concat, "0", !ref s]], !ref digits]]
+span: !call
+  - fn
+  - [prefix, first, last, suffix]
+  - !call
+    - map
+    - !call [fn, [number], !call [concat, !ref prefix, !call [pad, !call [str, !ref number], !call [len, !ref first]], !ref suffix]]
+    - !call [map, !call [fn, [i], !call [add, !call [int, !ref first], !ref i]], !call [l.range, !call [add, !call [sub, !call [int, !ref last], !call [int, !ref first]], 1]]]
+expand: !call
+  - fn
+  - [pattern, found]
+  - !call
+    - if
+    - !call [eq, !call [len, !ref found], 0]
+    - !call [list, !ref pattern]
+    - !call [span, !call [group, !ref found, 1], !call [group, !ref found, 2], !call [group, !ref found, 3], !call [group, !ref found, 4]]
+solve: !call [fn, [patterns], !call [l.flat_map, !ref patterns, !call [fn, [pattern], !call [expand, !ref pattern, !call [regex_find, '^(.*?)\[(\d+):(\d+)\](.*)$', !ref pattern]]]]]

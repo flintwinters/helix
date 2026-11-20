@@ -1,0 +1,25 @@
+children_of: !call
+  - fn
+  - [rows]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [result, row]
+      - !call
+        - let
+        - parent: !call [get, !ref row, parent]
+        - !call
+          - if
+          - !call [eq, !ref parent, null]
+          - !ref result
+          - !call [set, !ref result, !ref parent, !call [append, !call [get, !ref result, !ref parent, []], !call [get, !ref row, id]]]
+    - {}
+    - !ref rows
+build: !call [fn, [children, node], !call [dict, id, !ref node, children, !call [map, !call [fn, [child], !call [build, !ref children, !ref child]], !call [get, !ref children, !ref node, []]]]]
+solve: !call
+  - fn
+  - [rows]
+  - !call
+    - !call [fn, [children], !call [map, !call [fn, [row], !call [build, !ref children, !call [get, !ref row, id]]], !call [filter, !call [fn, [row], !call [eq, !call [get, !ref row, parent], null]], !ref rows]]]
+    - !call [children_of, !ref rows]

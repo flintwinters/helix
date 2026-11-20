@@ -1,0 +1,15 @@
+solve: !call
+  - fn
+  - [mapping]
+  - !call
+    - fold
+    # keys arrive in Unicode order, so every appended list stays sorted
+    - !call
+      - fn
+      - [result, key]
+      - !call
+        - let
+        - value: !call [get, !ref mapping, !ref key]
+        - !call [set, !ref result, !ref value, !call [append, !call [get, !ref result, !ref value, []], !ref key]]
+    - {}
+    - !call [keys, !ref mapping]

@@ -1,0 +1,25 @@
+t: !call [import, std:text]
+normalize: !call
+  - fn
+  - [path]
+  - !call
+    - concat
+    - /
+    - !call
+      - t.join
+      - !call
+        - fold
+        - !call
+          - fn
+          - [stack, part]
+          - !call
+            - cond
+            - !call [eq, !ref part, ..]
+            - !call [slice, !ref stack, 0, !call [if, !call [eq, !call [len, !ref stack], 0], 0, !call [sub, !call [len, !ref stack], 1]]]
+            - !call [eq, !ref part, .]
+            - !ref stack
+            - !call [append, !ref stack, !ref part]
+        - []
+        - !call [map, !call [fn, [m], !call [get, !call [get, !call [get, !ref m, captures], 0], text]], !call [regex_find, "[^/]+", !ref path]]
+      - /
+solve: !call [fn, [paths], !call [map, !ref normalize, !ref paths]]

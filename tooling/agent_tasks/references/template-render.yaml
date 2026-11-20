@@ -1,0 +1,22 @@
+t: !call [import, std:text]
+solve: !call
+  - fn
+  - [input]
+  - !call
+    - t.join
+    - !call
+      - map
+      - !call
+        - fn
+        - [m]
+        - !call
+          - let
+          - captures: !call [get, !ref m, captures]
+          - !call
+            - if
+            - !call [eq, !call [get, !ref captures, 1], null]
+            - !call [get, !call [get, !ref captures, 0], text]
+            - !call [get, !call [get, !ref input, values], !call [get, !call [get, !ref captures, 1], text], ""]
+      # every character is covered: a placeholder, a run without "{", or a lone "{"
+      - !call [regex_find, '\{\{([A-Za-z0-9_]+)\}\}|[^{]+|\{', !call [get, !ref input, template]]
+    - ""

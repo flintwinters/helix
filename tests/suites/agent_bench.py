@@ -16,7 +16,11 @@ def verify(h):
     assert parse(['agent-bench', 'run']).model == 'openai/gpt-6.1-luna'
     assert parse(['agent-bench', 'run']).trials == 10
     assert parse(['agent-bench', 'run']).jobs == 4
-    assert len(TASKS) == 5
+    assert len(TASKS) == 55
+    # Prompt-visible examples must agree with the hidden oracles they illustrate.
+    for name, definition in TASKS.items():
+        example = definition['example']
+        assert bench.same(oracle(name, example['input']), example['output']), name
     assert oracle('stable-unique', ['b', '', 'b', '雪', '']) == ['b', '', '雪']
     assert oracle('dependency-plan', {'z': [], 'a': ['z'], 'b': []}) == {
         'order': ['b', 'z', 'a'], 'pending': {}, 'missing': [], 'status': 'finished'}
@@ -31,6 +35,11 @@ def verify(h):
         {'category': 'zero', 'amount': -4, 'active': True},
     ]) == {'zero': 0}
     assert list(inputs('word-counts')) == list(inputs('word-counts'))
+    assert oracle('kv-config-parse', '=v\n k = v \n#x=1\n;y=2') == {'': 'v', ' k ': ' v ', ';y': '2'}
+    assert oracle('host-range-expand', ['n[08:10]', 'db']) == ['n08', 'n09', 'n10', 'db']
+    assert oracle('ledger-balances', [{'op': 'transfer', 'from': 'a', 'to': 'a', 'amount': 1}]) == {
+        'balances': {}, 'rejected': [0]}
+    assert oracle('disk-usage-rollup', [{'path': '/f', 'bytes': 3}]) == {'/': 3}
     assert bench.same({'a': [1]}, {'a': [1]})
     assert not bench.same(True, 1) and not bench.same(1.0, 1)
     assert not bench.same({'x': True}, {'x': 1})

@@ -18,7 +18,7 @@ from pathlib import Path
 
 import yaml
 
-from tooling.agent_tasks import TASKS, VERSION, inputs, oracle
+from tooling.agent_tasks import TASKS, VERSION, inputs, oracle, source_digest
 from tooling.output import emit
 
 API = 'https://openrouter.ai/api/v1'
@@ -361,7 +361,7 @@ def run(root, args, ctx):
                 'max_turns': getattr(args, 'max_turns', 16), 'max_tool_calls': getattr(args, 'max_tool_calls', 32),
                 'trials': args.trials, 'samples': args.samples, 'temperature': args.temperature,
                 'max_tokens': args.max_tokens, 'tasks': selected, 'context_sha256': digest(docs),
-                'task_source_sha256': digest((root / 'tooling/agent_tasks.py').read_text()),
+                'task_source_sha256': source_digest(),
                 'git_revision': subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, capture_output=True, text=True, check=True).stdout.strip(),
                 'git_diff_sha256': digest(subprocess.run(['git', 'diff', 'HEAD'], cwd=root, capture_output=True, text=True, check=True).stdout),
                 'binary_sha256': hashlib.sha256(ctx.binary.read_bytes()).hexdigest(),
@@ -434,7 +434,7 @@ def replay(root, args, ctx):
         raise ValueError('score requires --directory')
     directory = Path(args.directory).resolve()
     manifest = json.loads((directory / 'manifest.json').read_text())
-    if manifest['task_version'] != VERSION or manifest['task_source_sha256'] != digest((root / 'tooling/agent_tasks.py').read_text()):
+    if manifest['task_version'] != VERSION or manifest['task_source_sha256'] != source_digest():
         raise ValueError('task version changed; original scoring code is required')
     rows = []
     for task in manifest['tasks']:

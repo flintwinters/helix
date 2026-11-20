@@ -8,9 +8,15 @@ protocol v3; earlier final-chat measurements are retained below as historical da
 
 ## Protocol v3: edit, execute, submit saved files
 
-The task corpus remains version 2: sum of squares, word counts, grouped totals,
-stable deduplication and dependency planning. The default is ten independent
-attempts per task. Each exports `solve(input)` from `candidate.yaml`.
+Task corpus version 3 has 55 tasks under [tooling/agent_tasks/](../../tooling/agent_tasks/):
+the five version-2 tasks plus text processing, record reshaping, CSV/JSON/YAML
+formats, infrastructure plans and business reports. They range from one-line
+folds to multi-step pipelines, but target common programming work rather than
+puzzles: hidden cases scale input to 256 elements, so solutions must stay within
+the 10-second and value-budget limits by using Helix's cost model (parameters,
+not repeated `let` reads; regex tokenizing; std sorting). Each task's Python oracle
+and passing Helix reference live beside it. The baseline below predates corpus v3;
+no v3-corpus run is recorded yet. The default is ten independent attempts per task. Each exports `solve(input)` from `candidate.yaml`.
 
 Each CLI-assisted attempt has a separate workspace containing authoritative
 `LANGUAGE.md` and `LIBRARY.md` files and a read-only `public_test.yaml`. The test

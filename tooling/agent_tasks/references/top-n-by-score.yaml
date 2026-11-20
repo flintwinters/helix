@@ -1,0 +1,16 @@
+l: !call [import, std:list]
+before: !call
+  - fn
+  - [a, b]
+  - !call
+    - let
+    - sa: !call [get, !ref a, score]
+      sb: !call [get, !ref b, score]
+    - !call [or, !call [gt, !ref sa, !ref sb], !call [and, !call [eq, !ref sa, !ref sb], !call [lt, !call [get, !ref a, name], !call [get, !ref b, name]]]]
+solve: !call
+  - fn
+  - [input]
+  - !call
+    - map
+    - !call [fn, [row], !call [get, !ref row, name]]
+    - !call [l.take, !call [l.sort_by, !call [get, !ref input, records], !ref before], !call [get, !ref input, "n"]]

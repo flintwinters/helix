@@ -1,0 +1,14 @@
+l: !call [import, std:list]
+m: !call [import, std:math]
+solve: !call
+  - fn
+  - [input]
+  - !call
+    - let
+    - items: !call [get, !ref input, items]
+      size: !call [get, !ref input, size]
+      count: !call [len, !ref items]
+    - !call
+      - map
+      - !call [fn, [i], !call [slice, !ref items, !call [mul, !ref i, !ref size], !call [m.min, !ref count, !call [mul, !call [add, !ref i, 1], !ref size]]]]
+      - !call [l.range, !call [div, !call [add, !ref count, !ref size, -1], !ref size]]

@@ -1,0 +1,18 @@
+t: !call [import, std:text]
+group: !call [fn, [found, i], !call [get, !call [get, !call [get, !call [get, !ref found, 0], captures], !ref i], text]]
+assign: !call
+  - fn
+  - [settings, line, found]
+  - !call
+    - if
+    - !call [and, !call [gt, !call [len, !ref found], 0], !call [eq, !call [len, !call [regex_find, '^#', !ref line]], 0]]
+    - !call [set, !ref settings, !call [group, !ref found, 1], !call [group, !ref found, 2]]
+    - !ref settings
+solve: !call
+  - fn
+  - [source]
+  - !call
+    - fold
+    - !call [fn, [settings, line], !call [assign, !ref settings, !ref line, !call [regex_find, '^([^=]*)=(.*)$', !ref line]]]
+    - {}
+    - !call [t.split, !ref source, "\n"]

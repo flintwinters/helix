@@ -1,0 +1,27 @@
+t: !call [import, std:text]
+words: !call [fn, [pattern, text], !call [map, !call [fn, [m], !call [get, !call [get, !call [get, !ref m, captures], 0], text]], !call [regex_find, !ref pattern, !ref text]]]
+spaces: !call [fn, [text], !call [t.join, !call [map, !call [fn, [piece], !call [if, !call [eq, !ref piece, "+"], " ", !ref piece]], !call [words, '\+|[^+]+', !ref text]], ""]]
+add_pair: !call
+  - fn
+  - [params, key, value]
+  - !call [set, !ref params, !ref key, !call [append, !call [get, !ref params, !ref key, []], !ref value]]
+solve: !call
+  - fn
+  - [source]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [params, segment]
+      - !call
+        - !call
+          - fn
+          - [captures]
+          - !call
+            - add_pair
+            - !ref params
+            - !call [spaces, !call [get, !call [get, !ref captures, 1], text]]
+            - !call [if, !call [eq, !call [get, !ref captures, 3], null], "", !call [spaces, !call [get, !call [get, !ref captures, 3], text]]]
+        - !call [get, !call [get, !call [regex_find, '^([^=]*)(=(.*))?$', !ref segment], 0], captures]
+    - {}
+    - !call [words, "[^&]+", !ref source]

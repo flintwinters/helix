@@ -1,0 +1,19 @@
+t: !call [import, std:text]
+step: !call
+  - fn
+  - [state, line]
+  - !call
+    - let
+    - heading: !call [regex_find, '^(#{1,6}) (.+)$', !ref line]
+      group: !call [fn, [i], !call [get, !call [get, !call [get, !call [get, !ref heading, 0], captures], !ref i], text]]
+    - !call
+      - cond
+      - !call [gt, !call [len, !call [regex_find, '^```', !ref line]], 0]
+      - !call [set, !ref state, fenced, !call [not, !call [get, !ref state, fenced]]]
+      - !call [or, !call [get, !ref state, fenced], !call [eq, !call [len, !ref heading], 0]]
+      - !ref state
+      - !call [set, !ref state, headings, !call [append, !call [get, !ref state, headings], !call [dict, level, !call [len, !call [group, 1]], title, !call [group, 2]]]]
+solve: !call
+  - fn
+  - [source]
+  - !call [get, !call [fold, !ref step, {fenced: false, headings: []}, !call [t.split, !ref source, "\n"]], headings]

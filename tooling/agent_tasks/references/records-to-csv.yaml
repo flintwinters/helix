@@ -1,0 +1,12 @@
+solve: !call
+  - fn
+  - [input]
+  - !call
+    - let
+    - columns: !call [get, !ref input, columns]
+    - !call
+      - csv_dump
+      - !call
+        - concat
+        - !call [list, !ref columns]
+        - !call [map, !call [fn, [row], !call [map, !call [fn, [column], !call [get, !ref row, !ref column, ""]], !ref columns]], !call [get, !ref input, rows]]

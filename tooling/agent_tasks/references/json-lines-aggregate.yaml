@@ -1,0 +1,37 @@
+valid: !call
+  - fn
+  - [value]
+  - !call
+    - and
+    - !call [eq, !call [type, !ref value], map]
+    - !call [eq, !call [type, !call [get, !ref value, user, null]], string]
+    - !call [eq, !call [type, !call [get, !ref value, ms, null]], integer]
+tally: !call
+  - fn
+  - [state, value]
+  - !call
+    - if
+    - !call [valid, !ref value]
+    - !call
+      - let
+      - user: !call [get, !ref value, user]
+        users: !call [get, !ref state, users]
+        stats: !call [get, !ref users, !ref user, {events: 0, total_ms: 0}]
+      - !call
+        - set
+        - !ref state
+        - users
+        - !call
+          - set
+          - !ref users
+          - !ref user
+          - !call [dict, events, !call [add, !call [get, !ref stats, events], 1], total_ms, !call [add, !call [get, !ref stats, total_ms], !call [get, !ref value, ms]]]
+    - !call [set, !ref state, invalid, !call [add, !call [get, !ref state, invalid], 1]]
+solve: !call
+  - fn
+  - [source]
+  - !call
+    - fold
+    - !call [fn, [state, line], !call [tally, !ref state, !call [try, !call [json_parse, !ref line], !call [fn, [error], null]]]]
+    - {users: {}, invalid: 0}
+    - !call [map, !call [fn, [m], !call [get, !call [get, !call [get, !ref m, captures], 0], text]], !call [regex_find, "[^\n]+", !ref source]]

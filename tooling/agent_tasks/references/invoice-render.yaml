@@ -1,0 +1,22 @@
+l: !call [import, std:list]
+t: !call [import, std:text]
+money: !call
+  - fn
+  - [cents]
+  - !call
+    - let
+    - rest: !call [mod, !ref cents, 100]
+    - !call [concat, !call [str, !call [div, !ref cents, 100]], ., !call [if, !call [lt, !ref rest, 10], "0", ""], !call [str, !ref rest]]
+amount: !call [fn, [item], !call [mul, !call [get, !ref item, qty], !call [get, !ref item, unit_cents]]]
+solve: !call
+  - fn
+  - [items]
+  - !call
+    - concat
+    - !call
+      - t.join
+      - !call [map, !call [fn, [item], !call [concat, !call [get, !ref item, description], " x", !call [str, !call [get, !ref item, qty]], " = ", !call [money, !call [amount, !ref item]], "\n"]], !ref items]
+      - ""
+    - "TOTAL = "
+    - !call [money, !call [l.sum, !call [map, !ref amount, !ref items]]]
+    - "\n"
