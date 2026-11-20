@@ -1,13 +1,28 @@
 # Helix explicit syntax; migrated from legacy source.
-"debug": false
+debug: false
+lazy: !call
+  - if
+  - true
+  - 1
+  - !call [div, 1, 0]
 "n": 7
-"negated": {"$call": ["not", {"$ref": "debug"}]}
-"size": {"$call": ["if", {"$call": ["lt", {"$ref": "n"}, 10]}, "small", "big"]}
-"lazy": {"$call": ["if", true, 1, {"$call": ["div", 1, 0]}]}
-"nested":
-  "$call":
-  - "if"
-  - {"$call": ["not", {"$call": ["eq", {"$ref": "n"}, 7]}]}
+negated: !call [not, !ref debug]
+nested: !call
+  - if
+  - !call [not, !call [eq, !ref "n", 7]]
   - 0
-  - {"$call": ["if", {"$ref": "debug"}, 1, 2]}
-"symbol_branch": {"$call": ["if", {"$ref": "debug"}, {"$ref": "n"}, {"$call": ["mul", {"$ref": "n"}, 2]}]}
+  - !call
+      - if
+      - !ref debug
+      - 1
+      - 2
+size: !call
+  - if
+  - !call [lt, !ref "n", 10]
+  - small
+  - big
+symbol_branch: !call
+  - if
+  - !ref debug
+  - !ref "n"
+  - !call [mul, !ref "n", 2]

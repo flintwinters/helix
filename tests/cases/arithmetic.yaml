@@ -1,4 +1,4 @@
 # Helix explicit syntax; migrated from legacy source.
-"x": 2
-"y": {"$call": ["add", {"$ref": "x"}, 1]}
-"z": {"$call": ["mul", {"$call": ["sub", {"$ref": "y"}, 1]}, 5]}
+x: 2
+"y": !call [add, !ref x, 1]
+z: !call [mul, !call [sub, !ref "y", 1], 5]

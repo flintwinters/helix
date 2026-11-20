@@ -57,7 +57,7 @@ Standard modules dogfood ordinary function annotations. `std:math` exports `numb
 
 ## List helpers
 
-Import `{l: {$call: [import, 'std:list']}}`. Helpers take the list first; predicates and transforms are ordinary functions. All helpers are pure and preserve input order unless sorting explicitly changes it.
+Import `{l: !call [import, 'std:list']}`. Helpers take the list first; predicates and transforms are ordinary functions. All helpers are pure and preserve input order unless sorting explicitly changes it.
 
 | Helpers | Contract |
 |---------|----------|
@@ -81,13 +81,13 @@ Callbacks are checked as functions even for empty lists. Predicates must return 
 
 ## Testing in Helix
 
-Import `{t: {$call: [import, 'std:test']}}`. Testing policy runs as ordinary Helix; reports are
+Import `{t: !call [import, 'std:test']}`. Testing policy runs as ordinary Helix; reports are
 serializable values and failed cases do not abort the remaining cases.
 
 ```yaml
-t: {$call: [import, 'std:test']}
-report: {$call: [t.suite, [{name: arithmetic, run: {$call: [fn, [], {$call: [t.equal, {$call: [add, 2, 3]}, 5]}]}}, {name: expected_failure, run: {$call: [fn, [], {$call: [t.throws, {$call: [fn, [], {$call: [div, 1, 0]}]}, divide_by_zero]}]}}]]}
-checked: {$call: [t.require_pass, {$ref: report}]}
+t: !call [import, 'std:test']
+report: !call [t.suite, [{name: arithmetic, run: !call [fn, [], !call [t.equal, !call [add, 2, 3], 5]]}, {name: expected_failure, run: !call [fn, [], !call [t.throws, !call [fn, [], !call [div, 1, 0]], divide_by_zero]]}]]
+checked: !call [t.require_pass, !ref report]
 ```
 
 | Function | Contract |
@@ -108,12 +108,12 @@ checked: {$call: [t.require_pass, {$ref: report}]}
 | `failures(report)` | Return failed result records with replay inputs and errors intact. |
 | `tagged(cases, tag)` | Select case records in source order; absent tags behave as an empty list. |
 | `rerun(cases, report)` | Run source cases whose names failed in the report, preserving source order. Duplicate names select every matching source case; prefer unique names. |
-| `product(axes)` | Enumerate a finite Cartesian product in axis order, retaining duplicates. No axes yields `{$call: [[]]}`; an empty axis yields `[]`. |
+| `product(axes)` | Enumerate a finite Cartesian product in axis order, retaining duplicates. No axes yields `[[]]`; an empty axis yields `[]`. |
 | `lists(alphabet, max_length)` | Enumerate every list of length zero through the nonnegative bound, in length then alphabet order. Negative bounds raise `range`. |
 
-Use `{$call: [t.product, {$call: [list, {$ref: xs}, {$ref: ys}]}]}` for bounded pairs and `{$call: [t.lists, [-1, 0, 1], 3]}`
-for exhaustive short lists. Use `{$call: [t.suite, {$call: [t.tagged, {$ref: cases}, fast]}]}` to run a tag,
-then `{$call: [t.rerun, {$ref: cases}, {$ref: report}]}` to retry failed names. `combine` retains leaf failures
+Use `!call [t.product, !call [list, !ref xs, !ref ys]]` for bounded pairs and `!call [t.lists, [-1, 0, 1], 3]`
+for exhaustive short lists. Use `!call [t.suite, !call [t.tagged, !ref cases, fast]]` to run a tag,
+then `!call [t.rerun, !ref cases, !ref report]` to retry failed names. `combine` retains leaf failures
 without wrapping entire reports in captured callbacks. Supply
 fixture factories as functions so each case gets its own immutable environment.
 Expected states are ordinary table data compared with `equal`; this is semantic
@@ -289,7 +289,7 @@ Listening and external storage still require caller-owned host grants.
 `enclosing_functions(source, reference)`. Parsing never executes source. A source
 record stores normalized `code` once and lists semantic nodes with `reference`,
 `parent`, `children`, `kind` and 1-based `location`. References contain `source`
-and a `path` of string keys and integer indices. `$literal` is opaque to semantic
+and a `path` of string keys and integer indices. `!literal` is opaque to semantic
 walking. Scalar values and declaration annotations remain ordinary data.
 
 `std:search` supplies `functions(record)`, `documentation(record)`,

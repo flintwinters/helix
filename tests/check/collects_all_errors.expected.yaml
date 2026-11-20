@@ -33,7 +33,7 @@ annotations:
       host: a
       port: 22
 errors:
-  - column: 34
+  - column: 26
     data:
       violations:
         - actual: 0
@@ -42,30 +42,30 @@ errors:
           expected: refined integer
           message: failed its refinement check
           predicate:
-            column: 10
-            line: 3
+            column: 3
+            line: 11
             path: /in_port
             reference:
               - in_port
             source: "<root>"
           rule: refinement
     kind: type
-    line: 10
+    line: 2
     message: "1 type violation: failed its refinement check"
     path: "/bad_port/$call/1"
     reference:
       - bad_port
       - "$call"
       - 1
-  - column: 10
+  - column: 20
     kind: divide_by_zero
-    line: 13
+    line: 4
     message: "`div` by zero"
     path: /fleet/one
     reference:
       - fleet
       - one
-  - column: 33
+  - column: 55
     data:
       violations:
         - actual: 7
@@ -75,7 +75,7 @@ errors:
           message: "expected string, got integer"
           rule: type
     kind: type
-    line: 15
+    line: 4
     message: "1 type violation: expected string, got integer"
     path: "/fleet/three/$call/1"
     reference:
@@ -83,16 +83,16 @@ errors:
       - three
       - "$call"
       - 1
-  - column: 10
+  - column: 3
     kind: assertion
-    line: 17
+    line: 6
     message: values must be unique
     path: /fleet_unique
     reference:
       - fleet_unique
-  - column: 37
+  - column: 34
     kind: unbound
-    line: 11
+    line: 15
     message: "unbound symbol `nothing_here`"
     path: "/unbound_use/$call/2"
     reference:

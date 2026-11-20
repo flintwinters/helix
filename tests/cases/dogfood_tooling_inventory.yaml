@@ -1,25 +1,21 @@
 # Helix explicit syntax; migrated from legacy source.
-"shim": {"$call": ["import", "../../tooling/inventory.yaml"]}
-"files":
-- "path": "src/vm.rs"
-  "directory": "src"
-- "path": "std/group.yaml"
-  "directory": "std"
-- "path": "src/\u96EA.rs"
-  "directory": "src"
-- "path": "README.md"
-  "directory": "."
-"report": {"$call": ["shim.report", {"$ref": "files"}]}
-"empty": {"$call": ["shim.report", []]}
-"order":
-  "$call":
-  - "assert"
-  - "$call":
-    - "eq"
-    - "$call":
-      - "map"
-      - {"$call": ["fn", ["row"], {"$call": ["get", {"$ref": "row"}, "directory"]}]}
-      - {"$ref": "report"}
-    - - "."
-      - "src"
-      - "std"
+empty: !call [shim.report, []]
+files:
+  - {directory: src, path: src/vm.rs}
+  - {directory: std, path: std/group.yaml}
+  - {directory: src, path: "src/雪.rs"}
+  - {directory: ".", path: README.md}
+order: !call
+  - assert
+  - !call
+      - eq
+      - !call
+          - map
+          - !call
+              - fn
+              - [row]
+              - !call [get, !ref row, directory]
+          - !ref report
+      - [".", src, std]
+report: !call [shim.report, !ref files]
+shim: !call [import, "../../tooling/inventory.yaml"]

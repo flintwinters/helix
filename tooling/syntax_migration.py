@@ -1,7 +1,7 @@
 """Explicit, offline conversion of legacy Helix source; never used by execution."""
 from pathlib import Path
-import re
 import math
+import re
 
 import yaml
 from yaml.nodes import MappingNode, ScalarNode, SequenceNode
@@ -26,7 +26,7 @@ LegacyLoader.add_implicit_resolver("tag:yaml.org,2002:bool", re.compile(r"^(?:tr
 
 
 class SourceDumper(yaml.SafeDumper):
-    """Quote strings independent of PyYAML's older implicit scalar schema."""
+    """Emit canonical `!call`/`!ref`/`!literal` tags with explicitly quoted strings."""
 
 
 def _string(dumper, value):
@@ -34,14 +34,21 @@ def _string(dumper, value):
 
 
 def _mapping(dumper, value):
-    flow = True if len(value) == 1 and next(iter(value)) in ("$call", "$ref", "$literal") and len(str(value)) <= 110 else None
-    return dumper.represent_mapping("tag:yaml.org,2002:map", value, flow_style=flow)
+    if len(value) == 1:
+        (key, payload), = value.items()
+        if key == "$call" and isinstance(payload, list) and payload:
+            return dumper.represent_sequence("!call", payload, flow_style=True if len(str(payload)) <= 110 else None)
+        if key == "$ref" and isinstance(payload, str) and payload:
+            return dumper.represent_scalar("!ref", payload)
+        if key == "$literal":
+            node = dumper.represent_data(payload)
+            node.tag = "!literal"
+            return node
+    return dumper.represent_mapping("tag:yaml.org,2002:map", value)
 
 
 SourceDumper.add_representer(str, _string)
 SourceDumper.add_representer(dict, _mapping)
-
-
 def migrate_source(source: str, *, names=()) -> str:
     """Translate a legacy document; `names` supplies bindings outside a snippet.
 

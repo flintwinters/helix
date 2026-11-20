@@ -99,9 +99,9 @@ root:
       fixed: "yes"
       required: 1
   invalid:
-    column: 56
+    column: 31
     kind: type
-    line: 35
+    line: 21
     message: expected a class
     path: "/invalid/$call/1/$call/1"
     reference:

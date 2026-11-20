@@ -1,17 +1,24 @@
 # Explicitly authorized automatic convergence of the baseline on the granted peer.
 # Both planning and application happen in this container's Helix machine. The
 # caller grants only SSH; no local helper or Docker authority is available.
-$call:
-- let
-- linux: {$call: [import, 'std:linux']}
-  baseline: {$call: [import, '../docker_linux.yaml']}
-  config: {$call: [set, {$ref: baseline}, ssh_target, peer]}
-  report: {$call: [linux.apply, {$ref: config}, {$call: [linux.check, {$ref: config}]}]}
-- $call:
-  - get
-  - $call:
-    - list
-    - {$call: [effect, stdout, {$call: [json_dump, {$ref: report}]}]}
-    - {$call: [effect, exit, {$call: [if, {$call: [has, [changed, unchanged], {$ref: report.status}]}, 0, 1]}]}
-    - {$ref: report}
-  - 2
+!call
+  - let
+  - baseline: !call [import, "../docker_linux.yaml"]
+    config: !call [set, !ref baseline, ssh_target, peer]
+    linux: !call [import, "std:linux"]
+    report: !call [linux.apply, !ref config, !call [linux.check, !ref config]]
+  - !call
+      - get
+      - !call
+          - list
+          - !call [effect, stdout, !call [json_dump, !ref report]]
+          - !call
+              - effect
+              - exit
+              - !call
+                  - if
+                  - !call [has, [changed, unchanged], !ref report.status]
+                  - 0
+                  - 1
+          - !ref report
+      - 2

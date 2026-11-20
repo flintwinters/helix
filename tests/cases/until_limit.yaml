@@ -1,2 +1,12 @@
 # Helix explicit syntax; migrated from legacy source.
-"r": {"$call": ["until", {"$call": ["fn", ["n"], false]}, {"$call": ["fn", ["n"], {"$ref": "n"}]}, 0]}
+r: !call
+  - until
+  - !call
+      - fn
+      - ["n"]
+      - false
+  - !call
+      - fn
+      - ["n"]
+      - !ref "n"
+  - 0

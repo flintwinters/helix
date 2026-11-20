@@ -25,6 +25,8 @@ from pathlib import Path
 
 import yaml
 
+from tooling.source_format import SourceLoader
+
 DISABLE = "HELIX_USAGE_LOG"
 LOCATION = "HELIX_USAGE_DB"
 # Commands that talk to a peer or terminal interactively; their streams are never interposed.
@@ -48,7 +50,7 @@ def connect(root):
 
 def table_definition():
     """The table definition, as authored in the logging program."""
-    return yaml.safe_load(PROGRAM.read_text())["$call"][1]["schema"].strip()
+    return yaml.load(PROGRAM.read_text(), SourceLoader)["$call"][1]["schema"].strip()
 
 
 def _program(root, args):

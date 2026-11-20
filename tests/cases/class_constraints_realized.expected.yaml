@@ -155,9 +155,9 @@ annotations:
 root:
   accepted_concrete: false
   accepted_pending_converge:
-    column: 63
+    column: 31
     kind: abstract
-    line: 21
+    line: 32
     message: "class `service` is abstract; realize it first"
     path: "/$call/2/accepted_pending_converge/$call/1/$call/1"
     reference:
@@ -172,9 +172,9 @@ root:
   original_concrete: true
   original_plan: []
   pending_converge:
-    column: 54
+    column: 31
     kind: abstract
-    line: 20
+    line: 39
     message: "class `service` is abstract; realize it first"
     path: "/$call/2/pending_converge/$call/1/$call/1"
     reference:
@@ -186,9 +186,9 @@ root:
       - "$call"
       - 1
   pending_drift:
-    column: 48
+    column: 28
     kind: abstract
-    line: 19
+    line: 43
     message: "class `service` is abstract; realize it first"
     path: "/$call/2/pending_drift/$call/1/$call/1"
     reference:
@@ -203,7 +203,7 @@ root:
   rejected_concrete: false
   rejected_membership: false
   rejected_realization:
-    column: 39
+    column: 15
     data:
       violations:
         - actual:
@@ -214,8 +214,8 @@ root:
           expected: class
           message: "constraint 0 of `service` does not hold"
           predicate:
-            column: 47
-            line: 7
+            column: 11
+            line: 26
             path: "/$call/1/rejected/$call/2"
             reference:
               - "$call"
@@ -226,7 +226,7 @@ root:
             source: "<root>"
           rule: constraint
     kind: type
-    line: 22
+    line: 50
     message: "constraint 0 of `service` does not hold"
     path: "/$call/2/rejected_realization/$call/1"
     reference:

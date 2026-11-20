@@ -2,30 +2,54 @@
 # a non-boolean result or a raised error reports that the check failed to run,
 # and the predicate is never invoked when the base type already rejects the value.
 # Execution failures are structured predicate errors; catch them to inspect all outcomes.
-positive: {$call: [fn, [n], {$call: [gt, {$ref: n}, 0]}]}
-returns_integer: {$call: [fn, [n], {$ref: n}]}
-divides_by_zero: {$call: [fn, [n], {$call: [div, 1, 0]}]}
-rejects: {$call: [refine, {$ref: integer}, {$ref: positive}]}
-non_boolean: {$call: [refine, {$ref: integer}, {$ref: returns_integer}]}
-raising: {$call: [refine, {$ref: integer}, {$ref: divides_by_zero}]}
-accepted: {$call: [violations, 1, {$ref: rejects}]}
-rejected: {$call: [violations, -1, {$ref: rejects}]}
-base_gates_predicate: {$call: [violations, x, {$ref: raising}]}
-non_boolean_result: {$call: [try, {$call: [violations, 1, {$ref: non_boolean}]}, {$call: [fn, [e], {$ref: e}]}]}
-raised_error: {$call: [try, {$call: [violations, 1, {$ref: raising}]}, {$call: [fn, [e], {$ref: e}]}]}
-element_paths: {$call: [violations, [1, -2, x, 3, 0], {$call: [list_of, {$ref: rejects}]}]}
-field_paths:
-  $call:
-    - violations
-    - {low: 0, high: 2}
-    - $call: [record, high, {$ref: rejects}, low, {$ref: rejects}]
-caught_rejection:
-  $call:
-    - try
-    - $call: [expect, -1, {$ref: rejects}]
-    - $call: [fn, [e], {$call: [get, {$ref: e}, data]}]
-caught_non_boolean:
-  $call:
-    - try
-    - $call: [expect, 1, {$ref: non_boolean}]
-    - $call: [fn, [e], {$call: [get, {$ref: e}, data]}]
+accepted: !call [violations, 1, !ref rejects]
+base_gates_predicate: !call [violations, x, !ref raising]
+caught_non_boolean: !call
+  - try
+  - !call [expect, 1, !ref non_boolean]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, data]
+caught_rejection: !call
+  - try
+  - !call [expect, -1, !ref rejects]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, data]
+divides_by_zero: !call
+  - fn
+  - ["n"]
+  - !call [div, 1, 0]
+element_paths: !call [violations, [1, -2, x, 3, 0], !call [list_of, !ref rejects]]
+field_paths: !call
+  - violations
+  - {high: 2, low: 0}
+  - !call [record, high, !ref rejects, low, !ref rejects]
+non_boolean: !call [refine, !ref integer, !ref returns_integer]
+non_boolean_result: !call
+  - try
+  - !call [violations, 1, !ref non_boolean]
+  - !call
+      - fn
+      - [e]
+      - !ref e
+positive: !call
+  - fn
+  - ["n"]
+  - !call [gt, !ref "n", 0]
+raised_error: !call
+  - try
+  - !call [violations, 1, !ref raising]
+  - !call
+      - fn
+      - [e]
+      - !ref e
+raising: !call [refine, !ref integer, !ref divides_by_zero]
+rejected: !call [violations, -1, !ref rejects]
+rejects: !call [refine, !ref integer, !ref positive]
+returns_integer: !call
+  - fn
+  - ["n"]
+  - !ref "n"

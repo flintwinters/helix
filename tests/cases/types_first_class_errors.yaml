@@ -1,23 +1,66 @@
 # Helix explicit syntax; migrated from legacy source.
 # Computed callables and type arguments keep structured failures.
-"not_callable": {"$call": ["try", {"$call": ["call", 42, 1]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
-"bad_constructor":
-  "$call":
-  - "try"
-  - {"$call": ["list_of", {"$call": ["call", {"$call": ["fn", [], 42]}]}]}
-  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
-"bad_callback":
-  "$call":
-  - "try"
-  - {"$call": ["map", {"$call": ["if", true, 3, {"$call": ["fn", ["n"], {"$ref": "n"}]}]}, [1]]}
-  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
-"bad_let":
-  "$call":
-  - "try"
-  - {"$call": ["let", [], {"$call": ["fn", ["n"], {"$ref": "n"}]}]}
-  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
-"wrong_type":
-  "$call":
-  - "try"
-  - {"$call": ["call", {"$call": ["fn", [["t", {"$ref": "function"}]], {"$ref": "t"}]}, {"$ref": "integer"}]}
-  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+bad_callback: !call
+  - try
+  - !call
+      - map
+      - !call
+          - if
+          - true
+          - 3
+          - !call
+              - fn
+              - ["n"]
+              - !ref "n"
+      - [1]
+  - !call
+      - fn
+      - [e]
+      - !ref e
+bad_constructor: !call
+  - try
+  - !call
+      - list_of
+      - !call
+          - call
+          - !call
+              - fn
+              - []
+              - 42
+  - !call
+      - fn
+      - [e]
+      - !ref e
+bad_let: !call
+  - try
+  - !call
+      - let
+      - []
+      - !call
+          - fn
+          - ["n"]
+          - !ref "n"
+  - !call
+      - fn
+      - [e]
+      - !ref e
+not_callable: !call
+  - try
+  - !call [call, 42, 1]
+  - !call
+      - fn
+      - [e]
+      - !ref e
+wrong_type: !call
+  - try
+  - !call
+      - call
+      - !call
+          - fn
+          - [[t, !ref function]]
+          - !ref t
+      - !ref integer
+  - !call
+      - fn
+      - [e]
+      - !ref e

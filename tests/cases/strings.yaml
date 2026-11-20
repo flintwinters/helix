@@ -1,21 +1,20 @@
 # Helix explicit syntax; migrated from legacy source.
-"name": "world"
-"greeting": {"$call": ["concat", "hello, ", {"$ref": "name"}, "!"]}
-"length": {"$call": ["len", {"$ref": "greeting"}]}
-"unicode_length": {"$call": ["len", "h\xE9llo"]}
-"middle": {"$call": ["slice", {"$ref": "greeting"}, 7, 12]}
-"empty_slice": {"$call": ["slice", {"$ref": "name"}, 2, 2]}
-"has_sub": {"$call": ["has", {"$ref": "greeting"}, "world"]}
-"lacks_sub": {"$call": ["has", {"$ref": "greeting"}, "xyz"]}
-"ordered": {"$call": ["lt", "apple", "banana"]}
-"as_text":
-  "$call":
-  - "concat"
-  - "n="
-  - {"$call": ["str", 42]}
+as_text: !call
+  - concat
+  - n=
+  - !call [str, 42]
   - " ok="
-  - {"$call": ["str", true]}
+  - !call [str, true]
   - " x="
-  - {"$call": ["str", 1.5]}
+  - !call [str, 1.5]
   - " z="
-  - {"$call": ["str", null]}
+  - !call [str, ~]
+empty_slice: !call [slice, !ref name, 2, 2]
+greeting: !call [concat, "hello, ", !ref name, "!"]
+has_sub: !call [has, !ref greeting, world]
+lacks_sub: !call [has, !ref greeting, xyz]
+length: !call [len, !ref greeting]
+middle: !call [slice, !ref greeting, 7, 12]
+name: world
+ordered: !call [lt, apple, banana]
+unicode_length: !call [len, "héllo"]

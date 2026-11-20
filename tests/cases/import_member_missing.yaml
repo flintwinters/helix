@@ -1,5 +1,3 @@
 # Helix explicit syntax; migrated from legacy source.
-"m": {"$call": ["import", "std:math"]}
-"x":
-- "m.nope"
-- 1
+m: !call [import, "std:math"]
+x: [m.nope, 1]

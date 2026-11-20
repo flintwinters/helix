@@ -1,8 +1,8 @@
 root:
   caught:
-    column: 55
+    column: 25
     kind: missing
-    line: 3
+    line: 5
     message: no index 9
     path: "/caught/$call/1/$call/2"
     reference:

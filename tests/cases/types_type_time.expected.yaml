@@ -767,9 +767,9 @@ objects:
         source: "std:types"
 root:
   captured_error:
-    column: 37
+    column: 11
     kind: divide_by_zero
-    line: 30
+    line: 5
     message: "`div` by zero"
     path: "/captured_error/$call/1"
     reference:
@@ -777,9 +777,9 @@ root:
       - "$call"
       - 1
   caught_inside:
-    column: 45
+    column: 25
     kind: type
-    line: 23
+    line: 14
     message: "expected a type, got integer"
     path: "/caught_inside/$call/1/$call/1/$call/1"
     phase: type
@@ -794,7 +794,7 @@ root:
   caught_outside:
     column: 29
     kind: divide_by_zero
-    line: 27
+    line: 21
     message: "`div` by zero"
     path: "/caught_outside/$call/1/$call/1"
     phase: type
@@ -823,9 +823,9 @@ root:
     of: integer
     type: list
   rechecked:
-    column: 37
+    column: 11
     kind: divide_by_zero
-    line: 30
+    line: 5
     message: "`div` by zero"
     path: "/captured_error/$call/1"
     phase: type
@@ -834,9 +834,9 @@ root:
       - "$call"
       - 1
   runtime_after:
-    column: 36
+    column: 11
     kind: divide_by_zero
-    line: 29
+    line: 41
     message: "`div` by zero"
     path: "/runtime_after/$call/1"
     reference:

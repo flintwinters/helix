@@ -1,9 +1,9 @@
 root:
   bad_callback:
-    column: 23
+    column: 11
     kind: type
-    line: 12
-    message: "expected a function (`{$call: [fn, [params], body]}` or its name)"
+    line: 8
+    message: "expected a function (`!call [fn, [params], body]` or its name)"
     path: "/bad_callback/$call/1/$call/1"
     reference:
       - bad_callback
@@ -12,9 +12,9 @@ root:
       - "$call"
       - 1
   bad_constructor:
-    column: 27
+    column: 11
     kind: type
-    line: 7
+    line: 25
     message: "expected a type, got integer"
     path: "/bad_constructor/$call/1/$call/1"
     reference:
@@ -24,9 +24,9 @@ root:
       - "$call"
       - 1
   bad_let:
-    column: 23
+    column: 9
     kind: type
-    line: 17
+    line: 38
     message: "`let` bindings must be a map"
     path: "/bad_let/$call/1/$call/1"
     reference:
@@ -36,10 +36,10 @@ root:
       - "$call"
       - 1
   not_callable:
-    column: 54
+    column: 18
     kind: type
-    line: 3
-    message: "expected a function (`{$call: [fn, [params], body]}` or its name)"
+    line: 49
+    message: "expected a function (`!call [fn, [params], body]` or its name)"
     path: "/not_callable/$call/1/$call/1"
     reference:
       - not_callable
@@ -49,21 +49,21 @@ root:
       - 1
   wrong_type:
     calls:
-      - column: 24
+      - column: 11
         function: "/wrong_type/$call/1/$call/1"
-        function_column: 24
-        function_line: 22
-        line: 22
+        function_column: 11
+        function_line: 59
+        line: 59
         path: "/wrong_type/$call/1/$call/1"
-    column: 89
+    column: 14
     data:
       violations:
         - actual: integer
           actual_present: true
           argument: t
           argument_location:
-            column: 89
-            line: 22
+            column: 14
+            line: 62
             path: "/wrong_type/$call/1/$call/2"
             reference:
               path:
@@ -78,7 +78,7 @@ root:
           message: "expected function, got string"
           rule: type
     kind: type
-    line: 22
+    line: 62
     message: "1 type violation in the arguments of `/wrong_type/$call/1/$call/1`: expected function, got string"
     path: "/wrong_type/$call/1/$call/2"
     reference:

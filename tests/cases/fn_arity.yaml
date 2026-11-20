@@ -1,3 +1,6 @@
 # Helix explicit syntax; migrated from legacy source.
-"double": {"$call": ["fn", ["n"], {"$call": ["mul", {"$ref": "n"}, 2]}]}
-"bad": {"$call": ["double", 1, 2]}
+bad: !call [double, 1, 2]
+double: !call
+  - fn
+  - ["n"]
+  - !call [mul, !ref "n", 2]

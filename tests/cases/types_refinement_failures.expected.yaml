@@ -195,8 +195,8 @@ root:
         expected: refined integer
         message: "refinement check failed to run: returned integer, expected boolean"
         predicate:
-          column: 18
-          line: 6
+          column: 3
+          line: 53
           path: /returns_integer
           reference:
             - returns_integer
@@ -210,8 +210,8 @@ root:
         expected: refined integer
         message: failed its refinement check
         predicate:
-          column: 11
-          line: 5
+          column: 3
+          line: 39
           path: /positive
           reference:
             - positive
@@ -226,8 +226,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 11
-        line: 5
+        column: 3
+        line: 39
         path: /positive
         reference:
           - positive
@@ -245,8 +245,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 11
-        line: 5
+        column: 3
+        line: 39
         path: /positive
         reference:
           - positive
@@ -259,8 +259,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 11
-        line: 5
+        column: 3
+        line: 39
         path: /positive
         reference:
           - positive
@@ -272,7 +272,7 @@ root:
     of: integer
     type: refine
   non_boolean_result:
-    column: 18
+    column: 3
     data:
       violations:
         - actual: 1
@@ -281,15 +281,15 @@ root:
           expected: refined integer
           message: "refinement check failed to run: returned integer, expected boolean"
           predicate:
-            column: 18
-            line: 6
+            column: 3
+            line: 53
             path: /returns_integer
             reference:
               - returns_integer
             source: "<root>"
           rule: predicate_error
     kind: predicate
-    line: 6
+    line: 53
     message: "refinement check failed to run: returned integer, expected boolean"
     path: /returns_integer
     reference:
@@ -299,22 +299,22 @@ root:
   raised_error:
     cause:
       calls:
-        - column: 29
+        - column: 11
           function: /divides_by_zero
-          function_column: 18
-          function_line: 7
-          line: 15
+          function_column: 3
+          function_line: 22
+          line: 44
           path: "/raised_error/$call/1"
-      column: 36
+      column: 11
       kind: divide_by_zero
-      line: 7
+      line: 24
       message: "`div` by zero"
       path: "/divides_by_zero/$call/2"
       reference:
         - divides_by_zero
         - "$call"
         - 2
-    column: 18
+    column: 3
     data:
       violations:
         - actual: 1
@@ -323,15 +323,15 @@ root:
           expected: refined integer
           message: "refinement check failed to run: divide_by_zero: `div` by zero"
           predicate:
-            column: 18
-            line: 7
+            column: 3
+            line: 22
             path: /divides_by_zero
             reference:
               - divides_by_zero
             source: "<root>"
           rule: predicate_error
     kind: predicate
-    line: 7
+    line: 22
     message: "refinement check failed to run: divide_by_zero: `div` by zero"
     path: /divides_by_zero
     reference:
@@ -348,8 +348,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 11
-        line: 5
+        column: 3
+        line: 39
         path: /positive
         reference:
           - positive

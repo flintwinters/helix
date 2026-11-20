@@ -271,13 +271,13 @@ under `runtime/dogfood/`. This suite runs in fast CI and the default test run.
 Start a new module from [string_slices.yaml](dogfood/string_slices.yaml), a small
 property test, or [reports.yaml](dogfood/reports.yaml) for named cases and
 assertions. These executable examples are checked by the same suite; no
-expected-state file is needed. Calls use `{$call: [...]}` and references use
-`{$ref: name}`; a plain YAML list is data.
+expected-state file is needed. Calls use `!call [...]` and references use
+`!ref name`; a plain YAML list is data.
 
 The runner applies `t.require_pass` to the exported report, so captured failures
 fail the command while retaining later case results and nested error data.
 See [collections.yaml](dogfood/collections.yaml) for bounded property samples and
-composition of child reports. Use `{input: {$ref: variable}}` to put an evaluated
+composition of child reports. Use `{input: !ref variable}` to put an evaluated
 binding into a case record; a plain scalar map value is literal data. Keep host-specific tests
 in the Python contract suites and exact serialization contracts in golden cases.
 The collection laws exhaust all 40 lists of length zero through three over

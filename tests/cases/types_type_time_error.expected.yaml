@@ -1,5 +1,5 @@
 error:
-  column: 57
+  column: 43
   kind: type
   line: 2
   message: "expected a type, got integer"

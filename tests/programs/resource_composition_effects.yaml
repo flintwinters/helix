@@ -1,23 +1,22 @@
 # Embedded-only continuation fixture: hosts decide how to satisfy stdout effects.
-$call:
+!call
   - let
-  - orchestration: {$call: [import, 'std:orchestration']}
-  - $call:
+  - {orchestration: !call [import, "std:orchestration"]}
+  - !call
       - orchestration.run
-      - version: 1
+      - handlers: {restart: {requires: [package]}}
         resources:
-          package: {requires: [], notify: []}
-          config_a: {requires: [package], notify: [restart, restart]}
-          config_b: {requires: [package], notify: [restart]}
-        handlers:
-          restart: {requires: [package]}
-      - $call:
+          config_a: {notify: [restart, restart], requires: [package]}
+          config_b: {notify: [restart], requires: [package]}
+          package: {notify: [], requires: []}
+        version: 1
+      - !call
           - fn
           - [kind, id]
-          - $call:
+          - !call
               - get
-              - $call:
+              - !call
                   - list
-                  - {$call: [effect, stdout, {$call: [concat, {$ref: kind}, ':', {$ref: id}]}]}
+                  - !call [effect, stdout, !call [concat, !ref kind, ":", !ref id]]
                   - {status: changed}
               - 1

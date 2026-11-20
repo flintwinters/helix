@@ -1,31 +1,25 @@
 # Review targets without contacting any host. Dynamic discovery has already run
 # outside Helix; its ordinary-data result is supplied explicitly below.
-$call:
+!call
   - let
-  - inventory: {$call: [import, 'std:inventory']}
-  - $call:
+  - {inventory: !call [import, "std:inventory"]}
+  - !call
       - type_time
-      - $call:
+      - !call
           - inventory.resolve
-          - $literal:
-              version: 1
+          - !literal
+              groups: {production: [web, database]}
               hosts:
-                - id: controller
-                  connection: {transport: local}
-                - id: web
-                  connection: {transport: ssh, address: web.example, user: deploy}
-              groups:
-                production: [web, database]
+                - {connection: {transport: local}, id: controller}
+                - {connection: {address: web.example, transport: ssh, user: deploy}, id: web}
               overrides:
-                - source: production-port
-                  hosts: []
+                - connection: {port: 2222}
                   groups: [production]
-                  connection: {port: 2222}
-          - $literal:
-              - source: supplied-discovery
-                hosts:
-                  - id: database
-                    connection: {transport: ssh, address: db.example, user: deploy}
-          - $literal:
-              groups: [production]
-              exclude_hosts: [database]
+                  hosts: []
+                  source: production-port
+              version: 1
+          - !literal
+              - hosts:
+                  - {connection: {address: db.example, transport: ssh, user: deploy}, id: database}
+                source: supplied-discovery
+          - !literal {exclude_hosts: [database], groups: [production]}

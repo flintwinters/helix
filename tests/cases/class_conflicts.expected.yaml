@@ -291,14 +291,14 @@ root:
     mode: fast
     port: 1
   type_clash:
-    column: 32
+    column: 30
     data:
       field: mode
       sources:
         - a
         - b
     kind: conflict
-    line: 18
+    line: 49
     message: "field `mode` has different values from both `a` and `b`; resolve it in `ab`"
     path: "/type_clash/$call/1/$call/2"
     reference:

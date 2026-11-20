@@ -1,1 +1,4 @@
-emit: {$call: [fn, [], {$call: [effect, stdout, "phase probe\n"]}]}
+emit: !call
+  - fn
+  - []
+  - !call [effect, stdout, "phase probe\n"]

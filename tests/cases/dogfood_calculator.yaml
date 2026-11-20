@@ -1,60 +1,59 @@
 # Helix explicit syntax; migrated from legacy source.
 # Dogfood: evaluate an arithmetic tree written as plain data.
-"program":
-  "op": "add"
-  "args":
-  - "op": "mul"
-    "args": [2, 3]
-  - "op": "neg"
-    "args": [4]
-  - "op": "max"
-    "args":
-    - 7
-    - "op": "mul"
-      "args": [2, 5]
-    - 1
-"apply_op":
-  "$call":
-  - "fn"
-  - - "op"
-    - "xs"
-  - "$call":
-    - "cond"
-    - {"$call": ["eq", {"$ref": "op"}, "add"]}
-    - "$call":
-      - "fold"
-      - {"$call": ["fn", ["a", "b"], {"$call": ["add", {"$ref": "a"}, {"$ref": "b"}]}]}
-      - 0
-      - {"$ref": "xs"}
-    - {"$call": ["eq", {"$ref": "op"}, "mul"]}
-    - "$call":
-      - "fold"
-      - {"$call": ["fn", ["a", "b"], {"$call": ["mul", {"$ref": "a"}, {"$ref": "b"}]}]}
-      - 1
-      - {"$ref": "xs"}
-    - {"$call": ["eq", {"$ref": "op"}, "max"]}
-    - "$call":
-      - "fold"
-      - "$call":
-        - "fn"
-        - - "a"
-          - "b"
-        - {"$call": ["if", {"$call": ["gt", {"$ref": "a"}, {"$ref": "b"}]}, {"$ref": "a"}, {"$ref": "b"}]}
-      - {"$call": ["get", {"$ref": "xs"}, 0]}
-      - {"$ref": "xs"}
-    - {"$call": ["eq", {"$ref": "op"}, "neg"]}
-    - {"$call": ["neg", {"$call": ["get", {"$ref": "xs"}, 0]}]}
-    - null
-"calc":
-  "$call":
-  - "fn"
-  - - "node"
-  - "$call":
-    - "if"
-    - {"$call": ["eq", {"$call": ["type", {"$ref": "node"}]}, "integer"]}
-    - {"$ref": "node"}
-    - "$call":
-      - "apply_op"
-      - {"$call": ["get", {"$ref": "node"}, "op"]}
-      - {"$call": ["map", {"$ref": "calc"}, {"$call": ["get", {"$ref": "node"}, "args"]}]}
-"result": {"$call": ["calc", {"$ref": "program"}]}
+apply_op: !call
+  - fn
+  - [op, xs]
+  - !call
+      - cond
+      - !call [eq, !ref op, add]
+      - !call
+          - fold
+          - !call
+              - fn
+              - [a, b]
+              - !call [add, !ref a, !ref b]
+          - 0
+          - !ref xs
+      - !call [eq, !ref op, mul]
+      - !call
+          - fold
+          - !call
+              - fn
+              - [a, b]
+              - !call [mul, !ref a, !ref b]
+          - 1
+          - !ref xs
+      - !call [eq, !ref op, max]
+      - !call
+          - fold
+          - !call
+              - fn
+              - [a, b]
+              - !call
+                  - if
+                  - !call [gt, !ref a, !ref b]
+                  - !ref a
+                  - !ref b
+          - !call [get, !ref xs, 0]
+          - !ref xs
+      - !call [eq, !ref op, neg]
+      - !call [neg, !call [get, !ref xs, 0]]
+      - ~
+calc: !call
+  - fn
+  - [node]
+  - !call
+      - if
+      - !call [eq, !call [type, !ref node], integer]
+      - !ref node
+      - !call
+          - apply_op
+          - !call [get, !ref node, op]
+          - !call [map, !ref calc, !call [get, !ref node, args]]
+program:
+  args:
+    - {args: [2, 3], op: mul}
+    - {args: [4], op: neg}
+    - {args: [7, {args: [2, 5], op: mul}, 1], op: max}
+  op: add
+result: !call [calc, !ref program]

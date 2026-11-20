@@ -1,13 +1,11 @@
 # Helix explicit syntax; migrated from legacy source.
-"user":
-  "name": "ada"
-  "age": 36
-"name": {"$call": ["get", {"$ref": "user"}, "name"]}
-"missing_ok": {"$call": ["get", {"$ref": "user"}, "email", "n/a"]}
-"older": {"$call": ["set", {"$ref": "user"}, "age", 37]}
-"extended": {"$call": ["set", {"$ref": "user"}, "email", "ada@example.com"]}
-"names": {"$call": ["keys", {"$ref": "extended"}]}
-"size": {"$call": ["len", {"$ref": "user"}]}
-"has_name": {"$call": ["has", {"$ref": "user"}, "name"]}
-"has_email": {"$call": ["has", {"$ref": "user"}, "email"]}
-"same": {"$call": ["eq", {"$ref": "user"}, {"$call": ["set", {"$ref": "user"}, "age", 36]}]}
+extended: !call [set, !ref user, email, ada@example.com]
+has_email: !call [has, !ref user, email]
+has_name: !call [has, !ref user, name]
+missing_ok: !call [get, !ref user, email, n/a]
+name: !call [get, !ref user, name]
+names: !call [keys, !ref extended]
+older: !call [set, !ref user, age, 37]
+same: !call [eq, !ref user, !call [set, !ref user, age, 36]]
+size: !call [len, !ref user]
+user: {age: 36, name: ada}

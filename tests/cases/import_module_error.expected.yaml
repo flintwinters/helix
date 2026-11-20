@@ -1,5 +1,5 @@
 error:
-  column: 9
+  column: 13
   file: tests/cases/modules/fails.yaml
   kind: divide_by_zero
   line: 2

@@ -1,12 +1,18 @@
 # Helix explicit syntax; migrated from legacy source.
 # A runner report becomes a structured VM failure when the caller requires success.
-"t": {"$call": ["import", "std:test"]}
-"result":
-  "$call":
-  - "t.require_pass"
-  - "$call":
-    - "t.suite"
-    - - "name": "deliberate_mismatch"
-        "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["list", 1, 2]}, {"$call": ["list", 1, 3]}]}]}
-      - "name": "still_runs"
-        "run": {"$call": ["fn", [], {"$call": ["assert", true]}]}
+result: !call
+  - t.require_pass
+  - !call
+      - t.suite
+      -
+        - name: deliberate_mismatch
+          run: !call
+            - fn
+            - []
+            - !call [t.equal, !call [list, 1, 2], !call [list, 1, 3]]
+        - name: still_runs
+          run: !call
+            - fn
+            - []
+            - !call [assert, true]
+t: !call [import, "std:test"]

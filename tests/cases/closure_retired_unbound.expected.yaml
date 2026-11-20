@@ -1,7 +1,7 @@
 error:
-  column: 9
+  column: 5
   kind: unbound
-  line: 2
+  line: 3
   message: "unbound actor `closure`"
   path: "/$call/0"
   reference:

@@ -1,11 +1,11 @@
 root:
   custom:
-    column: 5
+    column: 11
     data:
       item: widget
       wanted: 3
     kind: out_of_stock
-    line: 6
+    line: 5
     message: no widgets left
     path: "/custom/$call/1"
     reference:

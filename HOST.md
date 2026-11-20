@@ -308,7 +308,7 @@ fencing or an exactly-once transport service.
 
 ## Host effects and explicit grants
 
-`{$call: [effect, {$ref: operation}, {$ref: payload}]}` yields an explicit request after evaluating its two arguments. Type time rejects effects before yielding. `Vm::run()` stops with `status: signaled`; the state contains `pending_effect` (identity, operation and payload). A host supplies a success value or structured failure through `resolve_effect`. Completed requests and outcomes remain in `effects`; resolving an already completed request does not execute it again. The versioned execution snapshot preserves this state across processes; durable host dispatch additionally requires the journal described below.
+`!call [effect, !ref operation, !ref payload]` yields an explicit request after evaluating its two arguments. Type time rejects effects before yielding. `Vm::run()` stops with `status: signaled`; the state contains `pending_effect` (identity, operation and payload). A host supplies a success value or structured failure through `resolve_effect`. Completed requests and outcomes remain in `effects`; resolving an already completed request does not execute it again. The versioned execution snapshot preserves this state across processes; durable host dispatch additionally requires the journal described below.
 
 Host applications use `Vm::signal(event)` to interrupt an active machine and
 `resume_signal()` to continue it. Events are bounded ordinary YAML data, visible
@@ -436,7 +436,7 @@ provider-specific observation is still needed to establish what happened remotel
 
 `perform --allow-secret NAME=FILE` grants a handle access to one caller-owned,
 private regular UTF-8 file (at most 1 MiB). The source carries
-`{$call: [secret, NAME]}` or its ordinary `{type: secret, ref: NAME}` descriptor.
+`!call [secret, NAME]` or its ordinary `{type: secret, ref: NAME}` descriptor.
 Use the handle as `command.stdin`, `ssh_command.stdin`, or `ssh_file_write.text`.
 Command/SSH grants are still required. Local commands now accept the same bounded
 optional UTF-8 stdin as SSH commands. Handles are never expanded in command arguments.

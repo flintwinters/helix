@@ -644,7 +644,7 @@ impl Checker<'_> {
     }
 
     /// Materialize only data expressions, after bounding the entire expansion.
-    /// Inside `$literal`, executable-looking maps remain opaque ordinary data.
+    /// Inside `!literal`, executable-looking maps remain opaque ordinary data.
     fn data_value(&self, id: NodeId, depth: usize) -> Option<Value> {
         use crate::model::Kind;
         let mut pending = vec![(id, false, depth)];

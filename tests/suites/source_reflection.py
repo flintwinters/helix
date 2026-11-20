@@ -4,8 +4,8 @@ import yaml
 
 
 def verify(h):
-    source = '''item: {$call: [fn, [[x, {$ref: integer}]], {$ref: x}, {$ref: integer}]}
-quoted: {$literal: {$call: [effect, time, {}]}}
+    source = '''item: !call [fn, [[x, !ref integer]], !ref x, !ref integer]
+quoted: !literal {$call: [effect, time, {}]}
 "1": ["雪"]
 '''
     result = h.helix("exec", "--json", json.dumps({"$call": ["source_parse", source]}))

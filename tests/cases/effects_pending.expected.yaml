@@ -18,9 +18,9 @@ root:
   status: signaled
   step_preserves_pending: true
   type_time:
-    column: 31
+    column: 37
     kind: purity
-    line: 27
+    line: 38
     message: effects are forbidden during type time
     path: "/$call/2/$call/10/$call/1/$call/1"
     phase: type

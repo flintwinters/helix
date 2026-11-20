@@ -1,8 +1,8 @@
 error:
-  column: 24
+  column: 21
   kind: type
-  line: 3
-  message: "expected a function (`{$call: [fn, [params], body]}` or its name)"
+  line: 2
+  message: "expected a function (`!call [fn, [params], body]` or its name)"
   path: "/r/$call/1"
   reference:
     - r

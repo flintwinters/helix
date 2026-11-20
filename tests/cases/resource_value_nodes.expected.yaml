@@ -1,14 +1,14 @@
 error:
   calls:
-    - column: 3
+    - column: 7
       function: "/$call/2"
-      function_column: 3
-      function_line: 5
-      line: 5
+      function_column: 7
+      function_line: 9
+      line: 9
       path: "/$call/2"
-  column: 28
+  column: 15
   kind: limit
-  line: 5
+  line: 11
   message: value exceeds 100000 nodes
   path: "/$call/2/$call/2"
   reference:

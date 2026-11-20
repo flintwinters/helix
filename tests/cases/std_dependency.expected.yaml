@@ -1726,22 +1726,22 @@ annotations:
     value: {}
 error:
   calls:
-    - column: 16
+    - column: 20
       function: /plan
       function_column: 3
       function_file: "std:dependency"
       function_line: 17
-      line: 8
+      line: 18
       path: /independent
-  column: 37
+  column: 29
   data:
     violations:
       - actual: ""
         actual_present: true
         argument: tasks
         argument_location:
-          column: 37
-          line: 8
+          column: 29
+          line: 18
           path: "/independent/$call/1"
           reference:
             path:
@@ -1754,7 +1754,7 @@ error:
         message: key  does not fit refined string
         rule: key
   kind: type
-  line: 8
+  line: 18
   message: "1 type violation in the arguments of `/plan`: key  does not fit refined string"
   path: "/independent/$call/1"
   reference:

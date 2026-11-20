@@ -1,15 +1,21 @@
 # Records visit declared fields before extras, recursively; maps use key order
 # and lists use index order. Source presentation order is intentionally reversed.
-$call:
+!call
   - let
-  - schema: {$call: [record, z, {$call: [map_of, {$ref: integer}]}, b, {$call: [list_of, {$call: [record, y, {$ref: boolean}, x, {$ref: integer}]}]}, a, {$ref: string}]}
-  - nested:
-      $call:
-        - violations
-        - z: {z: false, a: false}
-          b: [{y: 1, x: false, a_extra: 0}, {y: 1}]
-          z_extra: null
-          a_extra: null
-        - {$ref: schema}
-    union: {$call: [violations, null, {$call: [union, {$ref: string}, {$ref: integer}]}]}
-    root: {$call: [violations, [], {$ref: schema}]}
+  - schema: !call
+      - record
+      - z
+      - !call [map_of, !ref integer]
+      - b
+      - !call [list_of, !call [record, "y", !ref boolean, x, !ref integer]]
+      - a
+      - !ref string
+  - nested: !call
+      - violations
+      - a_extra: ~
+        b: [{a_extra: 0, x: false, "y": 1}, {"y": 1}]
+        z: {a: false, z: false}
+        z_extra: ~
+      - !ref schema
+    root: !call [violations, [], !ref schema]
+    union: !call [violations, ~, !call [union, !ref string, !ref integer]]

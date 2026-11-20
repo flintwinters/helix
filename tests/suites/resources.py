@@ -61,7 +61,7 @@ def verify(h):
         state = yaml.safe_load(result.stdout)
         assert result.returncode == 1 and state["error"]["kind"] in ("depth", "limit"), state
     # A long dependency chain has shallow syntax but a deep evaluator stack.
-    source = "".join(f'v{i}: {{$call: [add, {{$ref: v{i + 1}}}, 0]}}\n' for i in range(2000)) + "v2000: 0\n"
+    source = "".join(f'v{i}: !call [add, !ref v{i + 1}, 0]\n' for i in range(2000)) + "v2000: 0\n"
     failure(h, source, "depth")
     # Deep imports must stop during linking, including in an uncalled function.
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="limits-") as directory:

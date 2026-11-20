@@ -1,101 +1,126 @@
 # Helix explicit syntax; migrated from legacy source.
-"t": {"$call": ["import", "std:test"]}
-"factory":
-  "$call":
-  - "fn"
-  - - "offset"
-  - "$call":
-    - "fn"
-    - - "xs"
-    - "$call":
-      - "fold"
-      - "$call":
-        - "fn"
-        - - "acc"
-          - "n"
-        - "$call":
-          - "add"
-          - {"$ref": "acc"}
-          - "$call":
-            - "if"
-            - {"$call": ["lt", {"$ref": "n"}, 0]}
-            - {"$call": ["try", {"$call": ["div", 1, 0]}, {"$call": ["fn", ["e"], {"$ref": "offset"}]}]}
-            - {"$call": ["add", {"$ref": "n"}, {"$ref": "offset"}]}
-      - 0
-      - {"$ref": "xs"}
-"closures": {"$call": ["map", {"$ref": "factory"}, [-2, 0, 3]]}
-"composed":
-  "$call":
-  - "t.property"
-  - "captures + lazy recovery + nested folds stay independent"
+cleanup: !call
+  - t.equal
+  - !call
+      - try
+      - !call [finally, !call [div, 1, 0], !call [assert, true]]
+      - !call
+          - fn
+          - [e]
+          - !call [get, !ref e, kind]
+  - divide_by_zero
+closures: !call [map, !ref factory, [-2, 0, 3]]
+composed: !call
+  - t.property
+  - captures + lazy recovery + nested folds stay independent
   - [0, 1, 2]
-  - "$call":
-    - "fn"
-    - - "i"
-    - "$call":
-      - "let"
-      - "offset": {"$call": ["get", [-2, 0, 3], {"$ref": "i"}]}
-        "f": {"$call": ["get", {"$ref": "closures"}, {"$ref": "i"}]}
-      - "$call":
-        - "and"
-        - "$call":
-          - "eq"
-          - {"$call": ["call", {"$ref": "f"}, [-1, 0, 2]]}
-          - {"$call": ["add", 2, {"$call": ["mul", 3, {"$ref": "offset"}]}]}
-        - {"$call": ["eq", {"$call": ["call", {"$ref": "f"}, []]}, 0]}
-        - {"$call": ["eq", {"$call": ["call", {"$ref": "f"}, [4]]}, {"$call": ["add", 4, {"$ref": "offset"}]}]}
-"factorial":
-  "$call":
-  - "fn"
-  - - "n"
-  - "$call":
-    - "if"
-    - {"$call": ["le", {"$ref": "n"}, 1]}
-    - 1
-    - {"$call": ["mul", {"$ref": "n"}, {"$call": ["factorial", {"$call": ["sub", {"$ref": "n"}, 1]}]}]}
-"recursion":
-  "$call":
-  - "t.property"
+  - !call
+      - fn
+      - [i]
+      - !call
+          - let
+          - {f: !call [get, !ref closures, !ref i], offset: !call [get, [-2, 0, 3], !ref i]}
+          - !call
+              - and
+              - !call
+                  - eq
+                  - !call [call, !ref f, [-1, 0, 2]]
+                  - !call [add, 2, !call [mul, 3, !ref offset]]
+              - !call [eq, !call [call, !ref f, []], 0]
+              - !call [eq, !call [call, !ref f, [4]], !call [add, 4, !ref offset]]
+factorial: !call
+  - fn
+  - ["n"]
+  - !call
+      - if
+      - !call [le, !ref "n", 1]
+      - 1
+      - !call [mul, !ref "n", !call [factorial, !call [sub, !ref "n", 1]]]
+factory: !call
+  - fn
+  - [offset]
+  - !call
+      - fn
+      - [xs]
+      - !call
+          - fold
+          - !call
+              - fn
+              - [acc, "n"]
+              - !call
+                  - add
+                  - !ref acc
+                  - !call
+                      - if
+                      - !call [lt, !ref "n", 0]
+                      - !call
+                          - try
+                          - !call [div, 1, 0]
+                          - !call
+                              - fn
+                              - [e]
+                              - !ref offset
+                      - !call [add, !ref "n", !ref offset]
+          - 0
+          - !ref xs
+recursion: !call
+  - t.property
   - "recursive calls compose with callbacks, laziness and catch handlers"
   - [0, 1, 2, 3, 4, 5]
-  - "$call":
-    - "fn"
-    - - "n"
-    - "$call":
-      - "eq"
-      - "$call":
-        - "try"
-        - {"$call": ["call", {"$call": ["if", true, {"$ref": "factorial"}, {"$call": ["div", 1, 0]}]}, {"$ref": "n"}]}
-        - {"$call": ["fn", ["e"], -1]}
-      - {"$call": ["get", [1, 1, 2, 6, 24, 120], {"$ref": "n"}]}
-"shadow":
+  - !call
+      - fn
+      - ["n"]
+      - !call
+          - eq
+          - !call
+              - try
+              - !call
+                  - call
+                  - !call
+                      - if
+                      - true
+                      - !ref factorial
+                      - !call [div, 1, 0]
+                  - !ref "n"
+              - !call
+                  - fn
+                  - [e]
+                  - -1
+          - !call [get, [1, 1, 2, 6, 24, 120], !ref "n"]
+report: !call
+  - t.suite
+  -
+    - name: composed
+      run: !call
+        - fn
+        - []
+        - !call [t.require_pass, !ref composed]
+    - name: recursion
+      run: !call
+        - fn
+        - []
+        - !call [t.require_pass, !ref recursion]
+    - name: shadowing
+      run: !call
+        - fn
+        - []
+        - !ref shadowing
+    - name: cleanup
+      run: !call
+        - fn
+        - []
+        - !ref cleanup
+shadow:
+  f: !call
+    - fn
+    - ["n"]
+    - !call
+        - let
+        - {shifted: !call [add, !ref "n", 1]}
+        - !call
+            - fn
+            - [x]
+            - !call [add, !ref shifted, !ref x]
   "n": 100
-  "f":
-    "$call":
-    - "fn"
-    - - "n"
-    - "$call":
-      - "let"
-      - "shifted": {"$call": ["add", {"$ref": "n"}, 1]}
-      - {"$call": ["fn", ["x"], {"$call": ["add", {"$ref": "shifted"}, {"$ref": "x"}]}]}
-"shadowing": {"$call": ["t.equal", {"$call": ["map", {"$call": ["call", {"$ref": "shadow.f"}, 2]}, [0, 1, 2]]},
-    [3, 4, 5]]}
-"cleanup":
-  "$call":
-  - "t.equal"
-  - "$call":
-    - "try"
-    - {"$call": ["finally", {"$call": ["div", 1, 0]}, {"$call": ["assert", true]}]}
-    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-  - "divide_by_zero"
-"report":
-  "$call":
-  - "t.suite"
-  - - "name": "composed"
-      "run": {"$call": ["fn", [], {"$call": ["t.require_pass", {"$ref": "composed"}]}]}
-    - "name": "recursion"
-      "run": {"$call": ["fn", [], {"$call": ["t.require_pass", {"$ref": "recursion"}]}]}
-    - "name": "shadowing"
-      "run": {"$call": ["fn", [], {"$ref": "shadowing"}]}
-    - "name": "cleanup"
-      "run": {"$call": ["fn", [], {"$ref": "cleanup"}]}
+shadowing: !call [t.equal, !call [map, !call [call, !ref shadow.f, 2], [0, 1, 2]], [3, 4, 5]]
+t: !call [import, "std:test"]

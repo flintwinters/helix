@@ -1,5 +1,5 @@
 error:
-  column: 6
+  column: 10
   kind: arity
   line: 2
   message: "`not` takes 1 argument, got 2"

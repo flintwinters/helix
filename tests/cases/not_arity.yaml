@@ -1,2 +1,2 @@
 # Helix explicit syntax; migrated from legacy source.
-"x": {"$call": ["not", 1, 2]}
+x: !call [not, 1, 2]

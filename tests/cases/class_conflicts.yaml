@@ -1,78 +1,60 @@
 # Helix explicit syntax; migrated from legacy source.
-"a":
-  "$call":
-  - "class"
-  - "a"
-  - {"$call": ["record", "port", {"$ref": "integer"}, "mode", {"$ref": "string"}]}
-  - "mode": "fast"
-"b":
-  "$call":
-  - "class"
-  - "b"
-  - {"$call": ["record", "port", {"$ref": "string"}, "mode", {"$ref": "string"}]}
-  - "mode": "slow"
-"b2": {"$call": ["class", "b2", {"$call": ["record", "port", {"$ref": "integer"}]}, {}]}
-"type_clash":
-  "$call":
-  - "try"
-  - {"$call": ["extend", "ab", {"$call": ["list", {"$ref": "a"}, {"$ref": "b"}]}, {"$call": ["record"]}, {}]}
-  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
-"compatible_parents":
-  "$call":
-  - "try"
-  - {"$call": ["extend", "ab2", {"$call": ["list", {"$ref": "a"}, {"$ref": "b2"}]}, {"$call": ["record"]}, {}]}
-  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
-"mode_clash":
-  "$call":
-  - "try"
-  - "$call":
-    - "extend"
-    - "m"
-    - "$call":
-      - "list"
-      - {"$ref": "a"}
-      - {"$call": ["class", "c", {"$call": ["record", "mode", {"$ref": "string"}]}, {"mode": "slow"}]}
-    - {"$call": ["record"]}
-    - {}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
-"resolved":
-  "$call":
-  - "extend"
-  - "m2"
-  - "$call":
-    - "list"
-    - {"$ref": "a"}
-    - {"$call": ["class", "c", {"$call": ["record", "mode", {"$ref": "string"}]}, {"mode": "slow"}]}
-  - {"$call": ["record"]}
-  - "mode": "fast"
-"same_declaration_ok":
-  "$call":
-  - "get"
-  - "$call":
-    - "extend"
-    - "ok"
-    - {"$call": ["list", {"$ref": "a"}, {"$ref": "b2"}]}
-    - {"$call": ["record"]}
-    - "port": 1
-  - "values"
-"narrowing":
-  "$call":
-  - "get"
-  - "$call":
-    - "extend"
-    - "n"
-    - {"$call": ["list", {"$ref": "a"}]}
-    - {"$call": ["record", "port", {"$call": ["refine", {"$ref": "integer"}, {"$ref": "positive"}]}]}
-    - "port": 5
-  - "values"
-"positive": {"$call": ["fn", ["n"], {"$call": ["gt", {"$ref": "n"}, 0]}]}
-"widening":
-  "$call":
-  - "try"
-  - "$call":
-    - "extend"
-    - "w"
-    - {"$call": ["list", {"$ref": "a"}]}
-    - {"$call": ["record", "port", {"$ref": "any"}]}
-    - {}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}
+a: !call [class, a, !call [record, port, !ref integer, mode, !ref string], {mode: fast}]
+b: !call [class, b, !call [record, port, !ref string, mode, !ref string], {mode: slow}]
+b2: !call [class, b2, !call [record, port, !ref integer], {}]
+compatible_parents: !call
+  - try
+  - !call [extend, ab2, !call [list, !ref a, !ref b2], !call [record], {}]
+  - !call
+      - fn
+      - [e]
+      - !ref e
+mode_clash: !call
+  - try
+  - !call
+      - extend
+      - m
+      - !call [list, !ref a, !call [class, c, !call [record, mode, !ref string], {mode: slow}]]
+      - !call [record]
+      - {}
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, data]
+narrowing: !call
+  - get
+  - !call
+      - extend
+      - "n"
+      - !call [list, !ref a]
+      - !call [record, port, !call [refine, !ref integer, !ref positive]]
+      - {port: 5}
+  - values
+positive: !call
+  - fn
+  - ["n"]
+  - !call [gt, !ref "n", 0]
+resolved: !call
+  - extend
+  - m2
+  - !call [list, !ref a, !call [class, c, !call [record, mode, !ref string], {mode: slow}]]
+  - !call [record]
+  - {mode: fast}
+same_declaration_ok: !call
+  - get
+  - !call [extend, ok, !call [list, !ref a, !ref b2], !call [record], {port: 1}]
+  - values
+type_clash: !call
+  - try
+  - !call [extend, ab, !call [list, !ref a, !ref b], !call [record], {}]
+  - !call
+      - fn
+      - [e]
+      - !ref e
+widening: !call
+  - try
+  - !call [extend, w, !call [list, !ref a], !call [record, port, !ref any], {}]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, message]

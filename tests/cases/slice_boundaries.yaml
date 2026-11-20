@@ -1,7 +1,7 @@
 # Helix explicit syntax; migrated from legacy source.
-"ascii": {"$call": ["slice", "abcdef", 1, 5]}
-"unicode": {"$call": ["slice", "a\xE9\u96EA\U0001F642z", 1, 4]}
-"tail": {"$call": ["slice", "a\xE9\u96EA\U0001F642z", 3, 5]}
-"empty_end": {"$call": ["slice", "\xE9\u96EA\U0001F642", 3, 3]}
-"empty_middle": {"$call": ["slice", "\xE9\u96EA\U0001F642", 1, 1]}
-"empty": {"$call": ["slice", "", 0, 0]}
+ascii: !call [slice, abcdef, 1, 5]
+empty: !call [slice, "", 0, 0]
+empty_end: !call [slice, "é雪🙂", 3, 3]
+empty_middle: !call [slice, "é雪🙂", 1, 1]
+tail: !call [slice, "aé雪🙂z", 3, 5]
+unicode: !call [slice, "aé雪🙂z", 1, 4]

@@ -1,4 +1,4 @@
-//! Static import linking. `{$call: [import, SPEC]}` names its module with a literal, so every import is
+//! Static import linking. `!call [import, SPEC]` names its module with a literal, so every import is
 //! resolved when a program loads: the module's file is parsed and grafted into the graph as a
 //! detached subtree, once per file however many times it is imported. Loading is therefore
 //! deterministic, independent of evaluation order, and reports a missing file or a circular
@@ -20,7 +20,7 @@ use crate::model::HelixError;
 /// The modules a program imports: each import form's module root, and which nodes are such roots.
 use crate::model::Modules;
 impl Modules {
-    /// The root of the module the `{$call: [import, ...]}` node `import` loads.
+    /// The root of the module the `!call [import, ...]` node `import` loads.
     pub fn root_of(&self, import: NodeId) -> Option<NodeId> {
         self.linked.get(&import).copied()
     }
@@ -155,7 +155,7 @@ impl Linker<'_> {
         Ok(())
     }
 
-    /// Every `{$call: [import, ...]}` form in the subtree at `tree`, in document order.
+    /// Every `!call [import, ...]` form in the subtree at `tree`, in document order.
     fn dependencies(&self, tree: NodeId) -> (Vec<NodeId>, Vec<&'static str>) {
         let mut found = Vec::new();
         let mut policies = Vec::new();
@@ -205,7 +205,7 @@ impl Linker<'_> {
         Ok(())
     }
 
-    /// The root of the module imported by the `{$call: [import, SPEC]}` node `import`, loading it if new.
+    /// The root of the module imported by the `!call [import, SPEC]` node `import`, loading it if new.
     fn load(&mut self, import: NodeId, origin: &Origin) -> Result<NodeId, HelixError> {
         let Some(items) = self.graph.call(import) else {
             unreachable!("an import is a sequence")

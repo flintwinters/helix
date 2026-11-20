@@ -27,8 +27,8 @@ def verify(h):
         root = Path(directory)
         module = root / "math.yaml"
         module.write_text('''# searchable arithmetic 雪
-sum: {$call: [fn, [[x, {$ref: integer}]], {$call: [add, {$ref: x}, 1]}, {$ref: integer}]}
-quoted: {$literal: {$call: [fn, [], 7]}}
+sum: !call [fn, [[x, !ref integer]], !call [add, !ref x, 1], !ref integer]
+quoted: !literal {$call: [fn, [], 7]}
 ''')
         (root / "README.md").write_text("Searchable docs 雪\n")
         (root / "target").mkdir()
@@ -66,7 +66,7 @@ quoted: {$literal: {$call: [fn, [], 7]}}
         assert all(p["status"] == "source_changed" for p in changed), changed
         # A real multistage pipe preserves diagnostic/summary control records.
         query = root / "query.yaml"
-        query.write_text('''$call: [let, {s: {$call: [import, 'std:search']}}, {$call: [fn, [record], {$call: [s.keep, {$ref: record}, {$ref: s.functions}]}]}]
+        query.write_text('''$call: [let, {s: !call [import, 'std:search']}, !call [fn, [record], !call [s.keep, !ref record, !ref s.functions]]]
 ''')
         result = subprocess.run(["bash", "-o", "pipefail", "-c",
                                  '"$1" search index "$2" --no-std | "$1" exec --stream --file "$3" | "$1" exec --stream --file "$3"',
@@ -108,7 +108,7 @@ def verify_queries(h, source):
     for regex_pattern, text, count in [("雪", "a雪b", 1), ("(?P<n>[0-9]+)", "x12y", 1), ("z", "abc", 0)]:
         result = invoke(h, c("s.regex", regex_pattern, text))
         assert len(result) == count, result
-    result = h.helix("exec", '{$call: [regex_find, "[", text]}')
+    result = h.helix("exec", '!call [regex_find, "[", text]')
     assert result.returncode == 1 and "regex" in result.stderr, result
     for limited_pattern, limited_text in [("a" * 16385, ""), ("", "a" * 4096), ("[a-z]{1000000}", "")]:
         result = h.helix("exec", json.dumps({"$call": ["regex_find", limited_pattern, limited_text]}))
@@ -136,12 +136,12 @@ def verify_queries(h, source):
 
 def verify_audit(h, root):
     dependency = root / "dependency.yaml"
-    dependency.write_text('run: {$call: [fn, [], {$call: [effect, time, {}]}]}\n')
+    dependency.write_text('run: !call [fn, [], !call [effect, time, {}]]\n')
     main = root / "audit.yaml"
-    main.write_text('''dep: {$call: [import, dependency.yaml]}
-run: {$call: [fn, [], {$call: [dep.run]}]}
-dynamic: {$call: [fn, [f], {$call: [call, {$ref: f}]}]}
-recursive: {$call: [fn, [], {$call: [recursive]}]}
+    main.write_text('''dep: !call [import, dependency.yaml]
+run: !call [fn, [], !call [dep.run]]
+dynamic: !call [fn, [f], !call [call, !ref f]]
+recursive: !call [fn, [], !call [recursive]]
 ''')
     indexed = records(h.helix("search", "index", str(main), "--no-std"))
     functions = {r["name"]: r for r in indexed if r["kind"] == "function"}
@@ -163,10 +163,10 @@ recursive: {$call: [fn, [], {$call: [recursive]}]}
 
 def verify_probes(h, root):
     module = root / "probes.yaml"
-    module.write_text('''effectful: {$call: [fn, [], {$call: [effect, time, {}]}]}
-factory: {$call: [fn, [x], {$call: [fn, [], {$ref: x}]}]}
-error: {$call: [fn, [], {$call: [raise, example, failed]}]}
-loop: {$call: [fn, [], {$call: [until, {$call: [fn, [x], false]}, {$call: [fn, [x], {$ref: x}]}, 0]}]}
+    module.write_text('''effectful: !call [fn, [], !call [effect, time, {}]]
+factory: !call [fn, [x], !call [fn, [], !ref x]]
+error: !call [fn, [], !call [raise, example, failed]]
+loop: !call [fn, [], !call [until, !call [fn, [x], false], !call [fn, [x], !ref x], 0]]
 ''')
     functions = {r["name"]: r for r in records(h.helix("search", "index", str(module), "--no-std")) if r["kind"] == "function" and len(r["reference"]["path"]) == 1}
     cases = root / "probe-cases.yaml"
@@ -178,11 +178,11 @@ loop: {$call: [fn, [], {$call: [until, {$call: [fn, [x], false]}, {$call: [fn, [
     result = records(h.helix("search", "probe", "--cases", str(cases), "--max-steps", "5000", stdin=json.dumps(functions["loop"])+"\n"))
     assert result[0]["status"] == "exhausted_budget", result
     harness = root / "harness.yaml"
-    harness.write_text('{$call: [fn, [candidate, args], {$call: [call, {$ref: candidate}, {$call: [get, {$ref: args}, 0]}]}]}')
+    harness.write_text('!call [fn, [candidate, args], !call [call, !ref candidate, !call [get, !ref args, 0]]]')
     cases.write_text("- args: [7]\n  expected: 7\n")
     result = records(h.helix("search", "probe", "--cases", str(cases), "--harness", str(harness), stdin=json.dumps(functions["factory"])+"\n"))
     assert result[0]["status"] == "matched", result
-    harness.write_text('{$call: [fn, [candidate, args], {$call: [fn, [], {$call: [raise, harness, failed]}]}]}')
+    harness.write_text('!call [fn, [candidate, args], !call [fn, [], !call [raise, harness, failed]]]')
     result = records(h.helix("search", "probe", "--cases", str(cases), "--harness", str(harness), stdin=json.dumps(functions["factory"])+"\n"))
     assert result[0]["status"] == "execution_error", result
     assert yaml.safe_load(result[0]["detail"])["source_file"] == str(harness), result
@@ -191,7 +191,7 @@ loop: {$call: [fn, [], {$call: [until, {$call: [fn, [x], false]}, {$call: [fn, [
 
 def verify_streaming(h, root):
     query = root / "identity.yaml"
-    query.write_text('{$call: [fn, [x], [{$ref: x}]]}')
+    query.write_text('!call [fn, [x], [!ref x]]')
     process = subprocess.Popen([str(h.binary), "exec", "--stream", "--file", str(query)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=root)
     try:
         process.stdin.write('{"first":true}\n')
@@ -270,9 +270,9 @@ def verify_additional_roots(h, root):
     project, library = root / "project", root / "library"
     project.mkdir()
     library.mkdir()
-    (library / "lib.yaml").write_text('answer: {$call: [fn, [], 42]}\n')
+    (library / "lib.yaml").write_text('answer: !call [fn, [], 42]\n')
     main = project / "main.yaml"
-    main.write_text('library: {$call: [import, ../library/lib.yaml]}\nuse: {$call: [fn, [], {$call: [library.answer]}]}\n')
+    main.write_text('library: !call [import, ../library/lib.yaml]\nuse: !call [fn, [], !call [library.answer]]\n')
     denied = records(h.helix("search", "index", str(main), "--no-std"), 1)
     assert not denied[-1]["complete"], denied[-1]
     allowed = records(h.helix("search", "index", str(main), "--library", str(library), "--no-std"))

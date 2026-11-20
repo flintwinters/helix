@@ -1,12 +1,12 @@
 # Helix explicit syntax; migrated from legacy source.
-"a": 3
-"b": 5
-"lt": {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}
-"le": {"$call": ["le", {"$ref": "a"}, 3]}
-"gt": {"$call": ["gt", {"$ref": "a"}, {"$ref": "b"}]}
-"ge": {"$call": ["ge", {"$ref": "a"}, 4]}
-"eq_int": {"$call": ["eq", {"$ref": "a"}, 3]}
-"ne_int": {"$call": ["ne", {"$ref": "a"}, {"$ref": "b"}]}
-"eq_str": {"$call": ["eq", "x", "x"]}
-"eq_mixed": {"$call": ["eq", {"$ref": "a"}, "3"]}
-"eq_list": {"$call": ["eq", {"$call": ["add", 1, 1]}, 2]}
+a: 3
+b: 5
+eq_int: !call [eq, !ref a, 3]
+eq_list: !call [eq, !call [add, 1, 1], 2]
+eq_mixed: !call [eq, !ref a, "3"]
+eq_str: !call [eq, x, x]
+ge: !call [ge, !ref a, 4]
+gt: !call [gt, !ref a, !ref b]
+le: !call [le, !ref a, 3]
+lt: !call [lt, !ref a, !ref b]
+ne_int: !call [ne, !ref a, !ref b]

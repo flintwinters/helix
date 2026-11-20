@@ -65,8 +65,7 @@ feature family. Completed audits do not retire these continuing rules.
 ## 0–1. Foundation and core language — complete
 
 YAML representation graphs retain parent links, source spans and root-relative
-paths. Explicit `!call`/`!ref` tags (equivalently `$call`/`$ref` singleton maps)
-use lexical lookup; `$literal` protects arbitrary data. Scalar style and mapping
+paths. Explicit `!call`/`!ref` tags use lexical lookup; `!literal` protects arbitrary data. Scalar style and mapping
 order do not affect execution; cycles are detected and diagnostics are
 structured. Finished ordinary-data roots round-trip through YAML.
 
@@ -289,9 +288,9 @@ Principles that settle most design questions in this section:
   from the state, not from a debugger or a precedence table in the reader's head.
 
 ```yaml
-has_ssh: {$call: [class, {ssh_port: {type: port, default: 22}}]}
-server: {$call: [class, {hostname: string, packages: {$call: [list_of, {$ref: string}]}}]}
-web01: {$call: [inherit, {$call: [server, {$ref: has_ssh}]}, {hostname: web01, packages: [nginx]}]}
+has_ssh: !call [class, {ssh_port: {type: port, default: 22}}]
+server: !call [class, {hostname: string, packages: !call [list_of, !ref string]}]
+web01: !call [inherit, !call [server, !ref has_ssh], {hostname: web01, packages: [nginx]}]
 ```
 
 ### Declarative and first-class types — complete within documented bounds

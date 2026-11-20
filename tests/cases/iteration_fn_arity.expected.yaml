@@ -1,14 +1,14 @@
 error:
   calls:
-    - column: 24
+    - column: 7
       function: "/r/$call/1"
-      function_column: 24
-      function_line: 2
-      line: 2
+      function_column: 7
+      function_line: 5
+      line: 5
       path: "/r/$call/1"
-  column: 24
+  column: 7
   kind: arity
-  line: 2
+  line: 5
   message: "function `/r/$call/1` takes 2 arguments, got 1"
   path: "/r/$call/1"
   reference:

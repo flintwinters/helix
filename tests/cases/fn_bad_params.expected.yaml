@@ -1,7 +1,7 @@
 error:
-  column: 28
+  column: 5
   kind: type
-  line: 2
+  line: 4
   message: "parameters must be a list of names or `[name, type]` pairs"
   path: "/broken/$call/1"
   reference:

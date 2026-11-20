@@ -1,5 +1,5 @@
 error:
-  column: 1
+  column: 7
   kind: arity
   line: 2
   message: "`import` takes 1 argument, got 0"

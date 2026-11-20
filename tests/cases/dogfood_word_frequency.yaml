@@ -1,85 +1,61 @@
 # Helix explicit syntax; migrated from legacy source.
 # Dogfood: word frequency over inline text. There is no `split`, so words are cut out one
 # character at a time with a fold carrying `{words, word}`.
-"text": "the cat and the hat and the bat sat on the mat"
-"range":
-  "$call":
-  - "fn"
-  - - "lo"
-    - "hi"
-  - "$call":
-    - "until"
-    - "$call":
-      - "fn"
-      - - "xs"
-      - {"$call": ["eq", {"$call": ["len", {"$ref": "xs"}]}, {"$call": ["sub", {"$ref": "hi"}, {"$ref": "lo"}]}]}
-    - "$call":
-      - "fn"
-      - - "xs"
-      - {"$call": ["append", {"$ref": "xs"}, {"$call": ["add", {"$ref": "lo"}, {"$call": ["len", {"$ref": "xs"}]}]}]}
-    - []
-"chars":
-  "$call":
-  - "fn"
-  - - "s"
-  - "$call":
-    - "map"
-    - "$call":
-      - "fn"
-      - - "i"
-      - {"$call": ["slice", {"$ref": "s"}, {"$ref": "i"}, {"$call": ["add", {"$ref": "i"}, 1]}]}
-    - {"$call": ["range", 0, {"$call": ["len", {"$ref": "s"}]}]}
-"flush":
-  "$call":
-  - "fn"
-  - - "acc"
-  - "$call":
-    - "if"
-    - {"$call": ["eq", {"$call": ["get", {"$ref": "acc"}, "word"]}, ""]}
-    - {"$ref": "acc"}
-    - "words":
-        "$call":
-        - "append"
-        - {"$call": ["get", {"$ref": "acc"}, "words"]}
-        - {"$call": ["get", {"$ref": "acc"}, "word"]}
-      "word": ""
-"step":
-  "$call":
-  - "fn"
-  - - "acc"
-    - "c"
-  - "$call":
-    - "if"
-    - {"$call": ["eq", {"$ref": "c"}, " "]}
-    - {"$call": ["flush", {"$ref": "acc"}]}
-    - "$call":
-      - "set"
-      - {"$ref": "acc"}
-      - "word"
-      - {"$call": ["concat", {"$call": ["get", {"$ref": "acc"}, "word"]}, {"$ref": "c"}]}
-"split":
-  "$call":
-  - "fn"
-  - - "s"
-  - "$call":
-    - "get"
-    - "$call":
-      - "flush"
-      - {"$call": ["fold", {"$ref": "step"}, {"words": [], "word": ""}, {"$call": ["chars", {"$ref": "s"}]}]}
-    - "words"
-"words": {"$call": ["split", {"$ref": "text"}]}
-"counts":
-  "$call":
-  - "fold"
-  - "$call":
-    - "fn"
-    - - "acc"
-      - "w"
-    - "$call":
-      - "set"
-      - {"$ref": "acc"}
-      - {"$ref": "w"}
-      - {"$call": ["add", {"$call": ["get", {"$ref": "acc"}, {"$ref": "w"}, 0]}, 1]}
+chars: !call
+  - fn
+  - [s]
+  - !call
+      - map
+      - !call
+          - fn
+          - [i]
+          - !call [slice, !ref s, !ref i, !call [add, !ref i, 1]]
+      - !call [range, 0, !call [len, !ref s]]
+counts: !call
+  - fold
+  - !call
+      - fn
+      - [acc, w]
+      - !call [set, !ref acc, !ref w, !call [add, !call [get, !ref acc, !ref w, 0], 1]]
   - {}
-  - {"$ref": "words"}
-"distinct": {"$call": ["len", {"$call": ["keys", {"$ref": "counts"}]}]}
+  - !ref words
+distinct: !call [len, !call [keys, !ref counts]]
+flush: !call
+  - fn
+  - [acc]
+  - !call
+      - if
+      - !call [eq, !call [get, !ref acc, word], ""]
+      - !ref acc
+      - {word: "", words: !call [append, !call [get, !ref acc, words], !call [get, !ref acc, word]]}
+range: !call
+  - fn
+  - [lo, hi]
+  - !call
+      - until
+      - !call
+          - fn
+          - [xs]
+          - !call [eq, !call [len, !ref xs], !call [sub, !ref hi, !ref lo]]
+      - !call
+          - fn
+          - [xs]
+          - !call [append, !ref xs, !call [add, !ref lo, !call [len, !ref xs]]]
+      - []
+split: !call
+  - fn
+  - [s]
+  - !call
+      - get
+      - !call [flush, !call [fold, !ref step, {word: "", words: []}, !call [chars, !ref s]]]
+      - words
+step: !call
+  - fn
+  - [acc, c]
+  - !call
+      - if
+      - !call [eq, !ref c, " "]
+      - !call [flush, !ref acc]
+      - !call [set, !ref acc, word, !call [concat, !call [get, !ref acc, word], !ref c]]
+text: the cat and the hat and the bat sat on the mat
+words: !call [split, !ref text]

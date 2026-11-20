@@ -1,65 +1,54 @@
 # Helix explicit syntax; migrated from legacy source.
-"m": {"$call": ["import", "std:map"]}
-"left":
-  "z": 1
-  "shared":
-    "old": true
-  "absent": null
-"right":
-  "shared":
-    "new": true
-  "a": false
-"merged": {"$call": ["m.merge", {"$ref": "left"}, {"$ref": "right"}]}
-"merge_order":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["keys", {"$ref": "merged"}]}, ["a", "absent", "shared", "z"]]}
-"shallow": {"$call": ["assert", {"$call": ["eq", {"$call": ["get", {"$ref": "merged"}, "shared"]}, {"new": true}]}]}
-"unchanged": {"$call": ["assert", {"$call": ["eq", {"$call": ["get", {"$ref": "left"}, "shared"]}, {"old": true}]}]}
-"empty_merge": {"$call": ["m.merge", {}, {}]}
-"left_identity": {"$call": ["assert", {"$call": ["eq", {"$call": ["m.merge", {}, {"$ref": "left"}]}, {"$ref": "left"}]}]}
-"right_identity": {"$call": ["assert", {"$call": ["eq", {"$call": ["m.merge", {"$ref": "left"}, {}]}, {"$ref": "left"}]}]}
-"removed": {"$call": ["m.remove", {"$ref": "merged"}, "shared"]}
-"remove_order": {"$call": ["assert", {"$call": ["eq", {"$call": ["keys", {"$ref": "removed"}]}, ["a", "absent",
-          "z"]]}]}
-"missing":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["m.remove", {"$ref": "left"}, "missing"]}, {"$ref": "left"}]}
-"empty_remove": {"$call": ["m.remove", {}, "x"]}
-"only_key": {"$call": ["m.remove", {"x": 1}, "x"]}
-"unicode": {"$call": ["m.remove", {"$call": ["m.merge", {? "" : 1, "\xE9": 2}, {"\xE9": [null, false], "\U0001F642": 3}]},
-    ""]}
-"remove_null":
-  "$call":
-  - "assert"
-  - {"$call": ["not", {"$call": ["has", {"$call": ["m.remove", {"$ref": "left"}, "absent"]}, "absent"]}]}
-"idempotent":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["m.remove", {"$ref": "removed"}, "shared"]}, {"$ref": "removed"}]}
-"wrong_left":
-  "$call":
-  - "try"
-  - {"$call": ["m.merge", [], {}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_right":
-  "$call":
-  - "try"
-  - {"$call": ["m.merge", {}, null]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_source":
-  "$call":
-  - "try"
-  - {"$call": ["m.remove", [], "x"]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_key":
-  "$call":
-  - "try"
-  - {"$call": ["m.remove", {}, 1]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_arity":
-  "$call":
-  - "try"
-  - {"$call": ["m.merge", {}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+empty_merge: !call [m.merge, {}, {}]
+empty_remove: !call [m.remove, {}, x]
+idempotent: !call [assert, !call [eq, !call [m.remove, !ref removed, shared], !ref removed]]
+left: {absent: ~, shared: {old: true}, z: 1}
+left_identity: !call [assert, !call [eq, !call [m.merge, {}, !ref left], !ref left]]
+m: !call [import, "std:map"]
+merge_order: !call [assert, !call [eq, !call [keys, !ref merged], [a, absent, shared, z]]]
+merged: !call [m.merge, !ref left, !ref right]
+missing: !call [assert, !call [eq, !call [m.remove, !ref left, missing], !ref left]]
+only_key: !call [m.remove, {x: 1}, x]
+remove_null: !call [assert, !call [not, !call [has, !call [m.remove, !ref left, absent], absent]]]
+remove_order: !call [assert, !call [eq, !call [keys, !ref removed], [a, absent, z]]]
+removed: !call [m.remove, !ref merged, shared]
+right: {a: false, shared: {new: true}}
+right_identity: !call [assert, !call [eq, !call [m.merge, !ref left, {}], !ref left]]
+shallow: !call [assert, !call [eq, !call [get, !ref merged, shared], {new: true}]]
+unchanged: !call [assert, !call [eq, !call [get, !ref left, shared], {old: true}]]
+unicode: !call [m.remove, !call [m.merge, {"": 1, "é": 2}, {"é": [~, false], "🙂": 3}], ""]
+wrong_arity: !call
+  - try
+  - !call [m.merge, {}]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_key: !call
+  - try
+  - !call [m.remove, {}, 1]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_left: !call
+  - try
+  - !call [m.merge, [], {}]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_right: !call
+  - try
+  - !call [m.merge, {}, ~]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_source: !call
+  - try
+  - !call [m.remove, [], x]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]

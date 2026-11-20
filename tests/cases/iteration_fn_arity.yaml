@@ -1,2 +1,8 @@
 # Helix explicit syntax; migrated from legacy source.
-"r": {"$call": ["map", {"$call": ["fn", ["a", "b"], {"$ref": "a"}]}, [1, 2]]}
+r: !call
+  - map
+  - !call
+      - fn
+      - [a, b]
+      - !ref a
+  - [1, 2]

@@ -1,129 +1,142 @@
 # Helix explicit syntax; migrated from legacy source.
-"t": {"$call": ["import", "std:test"]}
-"m": {"$call": ["import", "std:map"]}
-"source":
-  "z": null
-  "a": false
-  ? ""
-  : "nested": [1, 2]
-  "\xE9": 3
-  "\U0001F642": 4
-"examples":
-  "$call":
-  - "t.suite"
-  - - "name": "select_order_and_values"
-      "run":
-        "$call":
-        - "fn"
+examples: !call
+  - t.suite
+  -
+    - name: select_order_and_values
+      run: !call
+        - fn
         - []
-        - "$call":
-          - "t.equal"
-          - {"$call": ["m.select", {"$ref": "source"}, {"$call": ["list", "\U0001F642", "a", "z", "z", "missing"]}]}
-          - "z": null
-            "a": false
-            "\U0001F642": 4
-    - "name": "select_key_order"
-      "run":
-        "$call":
-        - "fn"
+        - !call
+            - t.equal
+            - !call [m.select, !ref source, !call [list, "🙂", a, z, z, missing]]
+            - {a: false, z: ~, "🙂": 4}
+    - name: select_key_order
+      run: !call
+        - fn
         - []
-        - "$call":
-          - "t.equal"
-          - {"$call": ["keys", {"$call": ["m.select", {"$ref": "source"}, {"$call": ["list", "\U0001F642", "a",
-                      "z"]}]}]}
-          - {"$call": ["list", "a", "z", "\U0001F642"]}
-    - "name": "omit_key_order"
-      "run":
-        "$call":
-        - "fn"
+        - !call
+            - t.equal
+            - !call [keys, !call [m.select, !ref source, !call [list, "🙂", a, z]]]
+            - !call [list, a, z, "🙂"]
+    - name: omit_key_order
+      run: !call
+        - fn
         - []
-        - "$call":
-          - "t.equal"
-          - {"$call": ["keys", {"$call": ["m.omit", {"$ref": "source"}, {"$call": ["list", "a", "\xE9", "a", "missing"]}]}]}
-          - {"$call": ["list", "", "z", "\U0001F642"]}
-    - "name": "nested_value"
-      "run":
-        "$call":
-        - "fn"
+        - !call
+            - t.equal
+            - !call [keys, !call [m.omit, !ref source, !call [list, a, "é", a, missing]]]
+            - !call [list, "", z, "🙂"]
+    - name: nested_value
+      run: !call
+        - fn
         - []
-        - "$call":
-          - "t.equal"
-          - {"$call": ["m.select", {"$ref": "source"}, {"$call": ["list", ""]}]}
-          - ? ""
-            : "nested": [1, 2]
-    - "name": "select_empty"
-      "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["m.select", {"$ref": "source"}, []]}, {}]}]}
-    - "name": "empty_source"
-      "run":
-        "$call":
-        - "fn"
+        - !call [t.equal, !call [m.select, !ref source, !call [list, ""]], {"": {nested: [1, 2]}}]
+    - name: select_empty
+      run: !call
+        - fn
         - []
-        - "$call":
-          - "t.equal"
-          - "$call":
-            - "list"
-            - {"$call": ["m.select", {}, {"$call": ["list", "x"]}]}
-            - {"$call": ["m.omit", {}, {"$call": ["list", "x"]}]}
-          - {"$call": ["list", {}, {}]}
-    - "name": "bad_select_source"
-      "run": {"$call": ["fn", [], {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["m.select", [], []]}]},
-              "type"]}]}
-    - "name": "bad_omit_source"
-      "run": {"$call": ["fn", [], {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["m.omit", null, []]}]},
-              "type"]}]}
-    - "name": "bad_select_keys"
-      "run":
-        "$call":
-        - "fn"
+        - !call [t.equal, !call [m.select, !ref source, []], {}]
+    - name: empty_source
+      run: !call
+        - fn
         - []
-        - {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["m.select", {"$ref": "source"}, {}]}]}, "type"]}
-    - "name": "bad_omit_keys"
-      "run":
-        "$call":
-        - "fn"
+        - !call
+            - t.equal
+            - !call
+                - list
+                - !call [m.select, {}, !call [list, x]]
+                - !call [m.omit, {}, !call [list, x]]
+            - !call [list, {}, {}]
+    - name: bad_select_source
+      run: !call
+        - fn
         - []
-        - {"$call": ["t.throws", {"$call": ["fn", [], {"$call": ["m.omit", {"$ref": "source"}, "z"]}]}, "type"]}
-    - "name": "bad_select_member"
-      "run":
-        "$call":
-        - "fn"
+        - !call
+            - t.throws
+            - !call
+                - fn
+                - []
+                - !call [m.select, [], []]
+            - type
+    - name: bad_omit_source
+      run: !call
+        - fn
         - []
-        - "$call":
-          - "t.throws"
-          - {"$call": ["fn", [], {"$call": ["m.select", {"$ref": "source"}, {"$call": ["list", "z", false]}]}]}
-          - "type"
-    - "name": "bad_omit_member"
-      "run":
-        "$call":
-        - "fn"
+        - !call
+            - t.throws
+            - !call
+                - fn
+                - []
+                - !call [m.omit, ~, []]
+            - type
+    - name: bad_select_keys
+      run: !call
+        - fn
         - []
-        - "$call":
-          - "t.throws"
-          - {"$call": ["fn", [], {"$call": ["m.omit", {"$ref": "source"}, {"$call": ["list", null]}]}]}
-          - "type"
-"requests":
-  "$call":
-  - "list"
+        - !call
+            - t.throws
+            - !call
+                - fn
+                - []
+                - !call [m.select, !ref source, {}]
+            - type
+    - name: bad_omit_keys
+      run: !call
+        - fn
+        - []
+        - !call
+            - t.throws
+            - !call
+                - fn
+                - []
+                - !call [m.omit, !ref source, z]
+            - type
+    - name: bad_select_member
+      run: !call
+        - fn
+        - []
+        - !call
+            - t.throws
+            - !call
+                - fn
+                - []
+                - !call [m.select, !ref source, !call [list, z, false]]
+            - type
+    - name: bad_omit_member
+      run: !call
+        - fn
+        - []
+        - !call
+            - t.throws
+            - !call
+                - fn
+                - []
+                - !call [m.omit, !ref source, !call [list, ~]]
+            - type
+laws: !call
+  - t.property
+  - selection partitions source and is idempotent
+  - !ref requests
+  - !call
+      - fn
+      - [requested]
+      - !call
+          - let
+          - omitted: !call [m.omit, !ref source, !ref requested]
+            selected: !call [m.select, !ref source, !ref requested]
+          - !call
+              - and
+              - !call [eq, !call [m.select, !ref selected, !ref requested], !ref selected]
+              - !call [eq, !call [m.omit, !ref omitted, !ref requested], !ref omitted]
+              - !call [eq, !call [m.merge, !ref selected, !ref omitted], !ref source]
+              - !call [eq, !call [m.select, !ref omitted, !ref requested], {}]
+m: !call [import, "std:map"]
+report: !call [t.combine, !call [list, !ref examples, !ref laws]]
+requests: !call
+  - list
   - []
-  - {"$call": ["list", "missing"]}
-  - {"$call": ["list", "\U0001F642", "z", "z"]}
-  - {"$call": ["keys", {"$ref": "source"}]}
-"laws":
-  "$call":
-  - "t.property"
-  - "selection partitions source and is idempotent"
-  - {"$ref": "requests"}
-  - "$call":
-    - "fn"
-    - - "requested"
-    - "$call":
-      - "let"
-      - "selected": {"$call": ["m.select", {"$ref": "source"}, {"$ref": "requested"}]}
-        "omitted": {"$call": ["m.omit", {"$ref": "source"}, {"$ref": "requested"}]}
-      - "$call":
-        - "and"
-        - {"$call": ["eq", {"$call": ["m.select", {"$ref": "selected"}, {"$ref": "requested"}]}, {"$ref": "selected"}]}
-        - {"$call": ["eq", {"$call": ["m.omit", {"$ref": "omitted"}, {"$ref": "requested"}]}, {"$ref": "omitted"}]}
-        - {"$call": ["eq", {"$call": ["m.merge", {"$ref": "selected"}, {"$ref": "omitted"}]}, {"$ref": "source"}]}
-        - {"$call": ["eq", {"$call": ["m.select", {"$ref": "omitted"}, {"$ref": "requested"}]}, {}]}
-"report": {"$call": ["t.combine", {"$call": ["list", {"$ref": "examples"}, {"$ref": "laws"}]}]}
+  - !call [list, missing]
+  - !call [list, "🙂", z, z]
+  - !call [keys, !ref source]
+source: {"": {nested: [1, 2]}, a: false, z: ~, "é": 3, "🙂": 4}
+t: !call [import, "std:test"]

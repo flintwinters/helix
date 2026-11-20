@@ -6,8 +6,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 49
-        line: 4
+        column: 11
+        line: 19
         path: "/$call/1/positive/$call/2"
         reference:
           - "$call"
@@ -28,8 +28,8 @@ root:
         expected: refined refined integer
         message: failed its refinement check
         predicate:
-          column: 47
-          line: 5
+          column: 11
+          line: 58
           path: "/$call/1/small/$call/2"
           reference:
             - "$call"
@@ -47,8 +47,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 49
-        line: 4
+        column: 11
+        line: 19
         path: "/$call/1/positive/$call/2"
         reference:
           - "$call"
@@ -64,8 +64,8 @@ root:
       expected: refined refined integer
       message: failed its refinement check
       predicate:
-        column: 47
-        line: 5
+        column: 11
+        line: 58
         path: "/$call/1/small/$call/2"
         reference:
           - "$call"
@@ -81,8 +81,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 49
-        line: 4
+        column: 11
+        line: 19
         path: "/$call/1/positive/$call/2"
         reference:
           - "$call"
@@ -100,8 +100,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 49
-        line: 4
+        column: 11
+        line: 19
         path: "/$call/1/positive/$call/2"
         reference:
           - "$call"
@@ -117,8 +117,8 @@ root:
       expected: refined refined integer
       message: failed its refinement check
       predicate:
-        column: 47
-        line: 5
+        column: 11
+        line: 58
         path: "/$call/1/small/$call/2"
         reference:
           - "$call"
@@ -135,8 +135,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 49
-        line: 4
+        column: 11
+        line: 19
         path: "/$call/1/positive/$call/2"
         reference:
           - "$call"
@@ -152,8 +152,8 @@ root:
       expected: refined refined integer
       message: failed its refinement check
       predicate:
-        column: 47
-        line: 5
+        column: 11
+        line: 58
         path: "/$call/1/small/$call/2"
         reference:
           - "$call"

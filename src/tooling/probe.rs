@@ -160,7 +160,7 @@ fn example(
     let mut remaining = max_steps;
     let owned;
     let program = if let Some(name) = standard {
-        owned = format!("{{$call: [import, 'std:{name}']}}");
+        owned = format!("!call [import, 'std:{name}']");
         owned.as_str()
     } else {
         text.as_str()

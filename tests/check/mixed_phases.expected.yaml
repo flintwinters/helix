@@ -1,12 +1,12 @@
 errors:
-  - column: 12
+  - column: 16
     kind: divide_by_zero
     line: 2
     message: "`div` by zero"
     path: /failure
     reference:
       - failure
-  - column: 12
+  - column: 16
     kind: divide_by_zero
     line: 2
     message: "`div` by zero"

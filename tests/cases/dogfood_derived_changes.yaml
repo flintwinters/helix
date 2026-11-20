@@ -2,71 +2,51 @@
 # File and service change requests share audit metadata and partial-update policy.
 # Keep that policy in one function; their independently evolving resource fields
 # stay separate. These are validated proposals, not effects or an apply engine.
-"types": {"$call": ["import", "std:types"]}
-"file_resource": {"$call": ["record", "path", {"$ref": "string"}, "content", {"$ref": "string"}, "mode", {"$ref": "integer"}]}
-"service_resource":
-  "$call":
-  - "record"
-  - "name"
-  - {"$ref": "string"}
-  - "enabled"
-  - {"$ref": "boolean"}
-  - "arguments"
-  - {"$call": ["list_of", {"$ref": "string"}]}
-"audited_change":
-  "$call":
-  - "fn"
-  - - "resource_type"
-  - "$call":
-    - "record"
-    - "ticket"
-    - {"$ref": "string"}
-    - "revision"
-    - {"$ref": "integer"}
-    - "changes"
-    - {"$call": ["types.optional_fields", {"$ref": "resource_type"}]}
-"file_change": {"$call": ["type_time", {"$call": ["audited_change", {"$ref": "file_resource"}]}]}
-"service_change": {"$call": ["type_time", {"$call": ["audited_change", {"$ref": "service_resource"}]}]}
-"file_proposal":
-  "ticket": "OPS-42"
-  "revision": 3
-  "changes":
-    "content": "listen: 8080\n"
-    "mode": 420
-"service_proposal":
-  "ticket": "OPS-42"
-  "revision": 8
-  "changes":
-    "enabled": true
-    "arguments":
-    - "--reload"
-"file_valid": {"$call": ["expect", {"$ref": "file_proposal"}, {"$ref": "file_change"}]}
-"service_valid": {"$call": ["expect", {"$ref": "service_proposal"}, {"$ref": "service_change"}]}
-"empty_patch": {"$call": ["expect", {"ticket": "OPS-43", "revision": 0, "changes": {}}, {"$ref": "file_change"}]}
-"source_unchanged": {"$call": ["assert", {"$call": ["not", {"$call": ["is", {}, {"$ref": "file_resource"}]}]}]}
-"service_source_unchanged": {"$call": ["assert", {"$call": ["not", {"$call": ["is", {}, {"$ref": "service_resource"}]}]}]}
-"missing_audit": {"$call": ["violations", {"revision": 3, "changes": {}}, {"$ref": "file_change"}]}
-"wrong_nested":
-  "$call":
-  - "violations"
-  - "ticket": "OPS-44"
-    "revision": 4
-    "changes":
-      "mode": "0644"
-      "content": false
-  - {"$ref": "file_change"}
-"foreign_field":
-  "$call":
-  - "violations"
-  - "ticket": "OPS-45"
-    "revision": 9
-    "changes":
-      "mode": 420
-  - {"$ref": "service_change"}
-"null_patch": {"$call": ["violations", {"ticket": "OPS-46", "revision": 10, "changes": null}, {"$ref": "service_change"}]}
-"wrong_audit": {"$call": ["violations", {"ticket": 42, "revision": "next", "changes": {}}, {"$ref": "file_change"}]}
-"invalid_type":
-  "$call":
-  - "try"
-  - {"$call": ["type_time", {"$call": ["audited_change", {"$ref": "integer"}]}]}
-  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+audited_change: !call
+  - fn
+  - [resource_type]
+  - !call
+      - record
+      - ticket
+      - !ref string
+      - revision
+      - !ref integer
+      - changes
+      - !call [types.optional_fields, !ref resource_type]
+empty_patch: !call [expect, {changes: {}, revision: 0, ticket: OPS-43}, !ref file_change]
+file_change: !call [type_time, !call [audited_change, !ref file_resource]]
+file_proposal: {changes: {content: "listen: 8080\n", mode: 420}, revision: 3, ticket: OPS-42}
+file_resource: !call [record, path, !ref string, content, !ref string, mode, !ref integer]
+file_valid: !call [expect, !ref file_proposal, !ref file_change]
+foreign_field: !call
+  - violations
+  - {changes: {mode: 420}, revision: 9, ticket: OPS-45}
+  - !ref service_change
+invalid_type: !call
+  - try
+  - !call [type_time, !call [audited_change, !ref integer]]
+  - !call
+      - fn
+      - [e]
+      - !ref e
+missing_audit: !call [violations, {changes: {}, revision: 3}, !ref file_change]
+null_patch: !call [violations, {changes: ~, revision: 10, ticket: OPS-46}, !ref service_change]
+service_change: !call [type_time, !call [audited_change, !ref service_resource]]
+service_proposal: {changes: {arguments: ["--reload"], enabled: true}, revision: 8, ticket: OPS-42}
+service_resource: !call
+  - record
+  - name
+  - !ref string
+  - enabled
+  - !ref boolean
+  - arguments
+  - !call [list_of, !ref string]
+service_source_unchanged: !call [assert, !call [not, !call [is, {}, !ref service_resource]]]
+service_valid: !call [expect, !ref service_proposal, !ref service_change]
+source_unchanged: !call [assert, !call [not, !call [is, {}, !ref file_resource]]]
+types: !call [import, "std:types"]
+wrong_audit: !call [violations, {changes: {}, revision: next, ticket: 42}, !ref file_change]
+wrong_nested: !call
+  - violations
+  - {changes: {content: false, mode: "0644"}, revision: 4, ticket: OPS-44}
+  - !ref file_change

@@ -49,7 +49,7 @@ impl Evaluator {
                 self.eval(args[1]);
             }
             Form::Import => {
-                let root=self.program.modules.root_of(id).ok_or_else(||self.err(id,"import","an import must be a literal `{$call: [import, SPEC]}` in the program or a module it imports"))?;
+                let root=self.program.modules.root_of(id).ok_or_else(||self.err(id,"import","an import must be a literal `!call [import, SPEC]` in the program or a module it imports"))?;
                 self.eval(root);
             }
             Form::If | Form::Cond | Form::And | Form::Or => {

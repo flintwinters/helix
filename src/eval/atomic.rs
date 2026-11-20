@@ -84,7 +84,7 @@ impl Evaluator {
             return Err(self.err(
                 args[1],
                 "type",
-                "expected a function (`{$call: [fn, [value], body]}` or its name)",
+                "expected a function (`!call [fn, [value], body]` or its name)",
             ));
         };
         if self.parameters(function)?.len() != 1 {
@@ -335,7 +335,7 @@ impl Evaluator {
                 _ => self.fail(self.err(
                     site,
                     "type",
-                    "a refinement check must be `{$call: [fn, [value], body]}`",
+                    "a refinement check must be `!call [fn, [value], body]`",
                 )),
             }
         } else if let Some((module, call)) = policy {

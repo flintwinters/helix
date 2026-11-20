@@ -1,186 +1,167 @@
 # Helix explicit syntax; migrated from legacy source.
 # One declared type owns field requirements and nested value validation.
-"project":
-  "$call":
-  - "record"
-  - "name"
-  - {"$ref": "string"}
-  - "owner"
-  - {"$ref": "string"}
-  - "dependencies"
-  - {"$call": ["list_of", {"$ref": "string"}]}
-"projects":
-- "name": "core"
-  "owner": "runtime"
-  "dependencies": []
-- "name": "cli"
-  "owner": "tools"
-  "dependencies":
-  - "core"
-- "name": "cli"
-  "dependencies":
-  - "ghost"
-- "owner": "docs"
-  "dependencies": []
-"name_of":
-  "$call":
-  - "fn"
-  - - "row"
-  - "$call":
-    - "if"
-    - {"$call": ["is", {"$ref": "row"}, {"$ref": "map"}]}
-    - "$call":
-      - "let"
-      - "name": {"$call": ["get", {"$ref": "row"}, "name", null]}
-      - {"$call": ["if", {"$call": ["is", {"$ref": "name"}, {"$ref": "string"}]}, {"$ref": "name"}, null]}
-    - null
-"validate":
-  "$call":
-  - "fn"
-  - - - "records"
-      - {"$ref": "list"}
-  - "$call":
-    - "let"
-    - "names": {"$call": ["map", {"$ref": "name_of"}, {"$ref": "records"}]}
-      "counts":
-        "$call":
-        - "fold"
-        - "$call":
-          - "fn"
-          - - "acc"
-            - "name"
-          - "$call":
-            - "if"
-            - {"$call": ["eq", {"$ref": "name"}, null]}
-            - {"$ref": "acc"}
-            - "$call":
-              - "set"
-              - {"$ref": "acc"}
-              - {"$ref": "name"}
-              - {"$call": ["add", {"$call": ["get", {"$ref": "acc"}, {"$ref": "name"}, 0]}, 1]}
-        - {}
-        - {"$ref": "names"}
-    - "$call":
-      - "map"
-      - "$call":
-        - "fn"
-        - - "row"
-        - "$call":
-          - "let"
-          - "value": {"$call": ["if", {"$call": ["is", {"$ref": "row"}, {"$ref": "map"}]}, {"$ref": "row"}, {}]}
-            "missing":
-              "$call":
-              - "filter"
-              - {"$call": ["fn", ["field"], {"$call": ["not", {"$call": ["has", {"$ref": "value"}, {"$ref": "field"}]}]}]}
-              - {"$call": ["keys", {"$call": ["fields", {"$ref": "project"}]}]}
-            "name": {"$call": ["name_of", {"$ref": "row"}]}
-            "deps": {"$call": ["get", {"$ref": "value"}, "dependencies", []]}
-            "broken":
-              "$call":
-              - "if"
-              - {"$call": ["is", {"$ref": "deps"}, {"$ref": "list"}]}
-              - "$call":
-                - "filter"
-                - "$call":
-                  - "fn"
-                  - - "dep"
-                  - "$call":
-                    - "and"
-                    - {"$call": ["is", {"$ref": "dep"}, {"$ref": "string"}]}
-                    - {"$call": ["not", {"$call": ["has", {"$ref": "names"}, {"$ref": "dep"}]}]}
-                - {"$ref": "deps"}
-              - []
-            "duplicate":
-              "$call":
-              - "and"
-              - {"$call": ["ne", {"$ref": "name"}, null]}
-              - {"$call": ["gt", {"$call": ["get", {"$ref": "counts"}, {"$ref": "name"}, 0]}, 1]}
-          - "$call":
-            - "set"
-            - "$call":
-              - "set"
-              - "$call":
-                - "set"
-                - {"$call": ["set", {"$call": ["set", {}, "name", {"$ref": "name"}]}, "missing", {"$ref": "missing"}]}
-                - "duplicate"
-                - {"$ref": "duplicate"}
-              - "broken"
-              - {"$ref": "broken"}
-            - "violations"
-            - {"$call": ["violations", {"$ref": "row"}, {"$ref": "project"}]}
-      - {"$ref": "records"}
-"report": {"$call": ["validate", {"$ref": "projects"}]}
-"valid":
-  "$call":
-  - "validate"
-  - - "name": "core"
-      "owner": "runtime"
-      "dependencies": []
-    - "name": "cli"
-      "owner": "tools"
-      "dependencies":
-      - "core"
-"empty": {"$call": ["validate", []]}
-"malformed":
-  "$call":
-  - "validate"
-  - - "name": 9
-      "owner": false
-      "dependencies":
-      - "ghost"
-      - 7
-      - null
-    - "name": "ok"
-      "owner": "tools"
-      "dependencies": null
-    - null
-"nested_errors":
-  "$call":
-  - "assert"
-  - "$call":
-    - "eq"
-    - {"$call": ["get", {"$call": ["get", {"$ref": "malformed"}, 0]}, "violations"]}
-    - - "at": "/dependencies/1"
-        "message": "expected string, got integer"
-        "expected": "string"
-        "actual": 7
-        "actual_present": true
-        "rule": "type"
-      - "at": "/dependencies/2"
-        "message": "expected string, got null"
-        "expected": "string"
-        "actual": null
-        "actual_present": true
-        "rule": "type"
-      - "at": "/name"
-        "message": "expected string, got integer"
-        "expected": "string"
-        "actual": 9
-        "actual_present": true
-        "rule": "type"
-      - "at": "/owner"
-        "message": "expected string, got boolean"
-        "expected": "string"
-        "actual": false
-        "actual_present": true
-        "rule": "type"
-"broken_survives":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["get", {"$call": ["get", {"$ref": "malformed"}, 0]}, "broken"]}, ["ghost"]]}
-"duplicate_survives": {"$call": ["assert", {"$call": ["get", {"$call": ["get", {"$ref": "report"}, 2]}, "duplicate"]}]}
-"required_survives":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["get", {"$call": ["get", {"$ref": "report"}, 2]}, "missing"]}, ["owner"]]}
-"valid_clean":
-  "$call":
-  - "assert"
-  - "$call":
-    - "eq"
-    - "$call":
-      - "map"
-      - {"$call": ["fn", ["row"], {"$call": ["get", {"$ref": "row"}, "violations"]}]}
-      - {"$ref": "valid"}
-    - - []
-      - []
+broken_survives: !call
+  - assert
+  - !call [eq, !call [get, !call [get, !ref malformed, 0], broken], [ghost]]
+duplicate_survives: !call [assert, !call [get, !call [get, !ref report, 2], duplicate]]
+empty: !call [validate, []]
+malformed: !call
+  - validate
+  -
+    - {dependencies: [ghost, 7, ~], name: 9, owner: false}
+    - {dependencies: ~, name: ok, owner: tools}
+    - ~
+name_of: !call
+  - fn
+  - [row]
+  - !call
+      - if
+      - !call [is, !ref row, !ref map]
+      - !call
+          - let
+          - {name: !call [get, !ref row, name, ~]}
+          - !call
+              - if
+              - !call [is, !ref name, !ref string]
+              - !ref name
+              - ~
+      - ~
+nested_errors: !call
+  - assert
+  - !call
+      - eq
+      - !call [get, !call [get, !ref malformed, 0], violations]
+      -
+        - actual: 7
+          actual_present: true
+          at: /dependencies/1
+          expected: string
+          message: "expected string, got integer"
+          rule: type
+        - actual: ~
+          actual_present: true
+          at: /dependencies/2
+          expected: string
+          message: "expected string, got null"
+          rule: type
+        - actual: 9
+          actual_present: true
+          at: /name
+          expected: string
+          message: "expected string, got integer"
+          rule: type
+        - actual: false
+          actual_present: true
+          at: /owner
+          expected: string
+          message: "expected string, got boolean"
+          rule: type
+project: !call
+  - record
+  - name
+  - !ref string
+  - owner
+  - !ref string
+  - dependencies
+  - !call [list_of, !ref string]
+projects:
+  - {dependencies: [], name: core, owner: runtime}
+  - {dependencies: [core], name: cli, owner: tools}
+  - {dependencies: [ghost], name: cli}
+  - {dependencies: [], owner: docs}
+report: !call [validate, !ref projects]
+required_survives: !call
+  - assert
+  - !call [eq, !call [get, !call [get, !ref report, 2], missing], [owner]]
+valid: !call
+  - validate
+  -
+    - {dependencies: [], name: core, owner: runtime}
+    - {dependencies: [core], name: cli, owner: tools}
+valid_clean: !call
+  - assert
+  - !call
+      - eq
+      - !call
+          - map
+          - !call
+              - fn
+              - [row]
+              - !call [get, !ref row, violations]
+          - !ref valid
+      - [[], []]
+validate: !call
+  - fn
+  - [[records, !ref list]]
+  - !call
+      - let
+      - counts: !call
+          - fold
+          - !call
+              - fn
+              - [acc, name]
+              - !call
+                  - if
+                  - !call [eq, !ref name, ~]
+                  - !ref acc
+                  - !call
+                      - set
+                      - !ref acc
+                      - !ref name
+                      - !call [add, !call [get, !ref acc, !ref name, 0], 1]
+          - {}
+          - !ref names
+        names: !call [map, !ref name_of, !ref records]
+      - !call
+          - map
+          - !call
+              - fn
+              - [row]
+              - !call
+                  - let
+                  - broken: !call
+                      - if
+                      - !call [is, !ref deps, !ref list]
+                      - !call
+                          - filter
+                          - !call
+                              - fn
+                              - [dep]
+                              - !call
+                                  - and
+                                  - !call [is, !ref dep, !ref string]
+                                  - !call [not, !call [has, !ref names, !ref dep]]
+                          - !ref deps
+                      - []
+                    deps: !call [get, !ref value, dependencies, []]
+                    duplicate: !call
+                      - and
+                      - !call [ne, !ref name, ~]
+                      - !call [gt, !call [get, !ref counts, !ref name, 0], 1]
+                    missing: !call
+                      - filter
+                      - !call
+                          - fn
+                          - [field]
+                          - !call [not, !call [has, !ref value, !ref field]]
+                      - !call [keys, !call [fields, !ref project]]
+                    name: !call [name_of, !ref row]
+                    value: !call
+                      - if
+                      - !call [is, !ref row, !ref map]
+                      - !ref row
+                      - {}
+                  - !call
+                      - set
+                      - !call
+                          - set
+                          - !call
+                              - set
+                              - !call [set, !call [set, {}, name, !ref name], missing, !ref missing]
+                              - duplicate
+                              - !ref duplicate
+                          - broken
+                          - !ref broken
+                      - violations
+                      - !call [violations, !ref row, !ref project]
+          - !ref records

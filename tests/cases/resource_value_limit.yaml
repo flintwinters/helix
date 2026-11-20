@@ -1,6 +1,12 @@
 # Helix explicit syntax; migrated from legacy source.
-"$call":
-- "until"
-- {"$call": ["fn", ["s"], false]}
-- {"$call": ["fn", ["s"], {"$call": ["concat", {"$ref": "s"}, {"$ref": "s"}]}]}
-- "x"
+!call
+  - until
+  - !call
+      - fn
+      - [s]
+      - false
+  - !call
+      - fn
+      - [s]
+      - !call [concat, !ref s, !ref s]
+  - x

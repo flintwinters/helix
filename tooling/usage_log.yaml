@@ -2,89 +2,102 @@
 # and runs this program under `perform`, granting write access only to the database's directory.
 # Argument: DATABASE_PATH; the observed record arrives as JSON on stdin (argv already JSON text).
 # This file owns the table definition and its additive migrations.
-$call:
-- let
--
-    sqlite: {$call: [import, 'std:sqlite']}
-    json: {$call: [import, 'std:json']}
-    text: {$call: [import, 'std:text']}
-    schema: |
-      CREATE TABLE IF NOT EXISTS calls (
-          id INTEGER PRIMARY KEY,
-          started_at TEXT NOT NULL,       -- UTC ISO-8601
-          duration_ms INTEGER,            -- NULL when interrupted before the child returned
-          command TEXT NOT NULL,          -- manage.py command, e.g. eval, run, exec, cli, perform
-          argv TEXT NOT NULL,             -- JSON array: manage.py arguments as typed
-          cwd TEXT NOT NULL,
-          exit_code INTEGER,              -- NULL when interrupted
-          program_path TEXT,              -- source file argument, if any (repository-relative)
-          program TEXT,                   -- complete inline, stdin or file source at invocation
-          program_sha256 TEXT,
-          stdin_program INTEGER NOT NULL, -- 1 when the program was read from stdin (captured in program)
-          caller_role TEXT,               -- implementer or benchmark-model (NULL for legacy rows)
-          model TEXT,                     -- exact model ID for benchmark-originated calls
-          benchmark_run TEXT,
-          benchmark_task TEXT,
-          benchmark_trial TEXT,
-          agent TEXT,                     -- HELIX_AGENT, else claude-code when CLAUDECODE is set
-          stdout TEXT,                    -- complete; NULL when a terminal or an interactive command
-          stderr TEXT                     -- complete; NULL when a terminal or an interactive command
-      )
-    # Databases created before output capture lack these columns.
-    added: [stdout, stderr, caller_role, model, benchmark_run, benchmark_task, benchmark_trial]
-    columns: [started_at, duration_ms, command, argv, cwd, exit_code, program_path, program, program_sha256, stdin_program, agent, stdout, stderr, caller_role, model, benchmark_run, benchmark_task, benchmark_trial]
-    insert:
-      $call:
+!call
+  - let
+  # Databases created before output capture lack these columns.
+  - added: [stdout, stderr, caller_role, model, benchmark_run, benchmark_task, benchmark_trial]
+    columns:
+      - started_at
+      - duration_ms
+      - command
+      - argv
+      - cwd
+      - exit_code
+      - program_path
+      - program
+      - program_sha256
+      - stdin_program
+      - agent
+      - stdout
+      - stderr
+      - caller_role
+      - model
+      - benchmark_run
+      - benchmark_task
+      - benchmark_trial
+    insert: !call
       - concat
-      - 'INSERT INTO calls ('
-      - {$call: [text.join, {$ref: columns}, ', ']}
-      - ') VALUES ('
-      - {$call: [text.join, {$call: [map, {$call: [fn, [c], '?']}, {$ref: columns}]}, ', ']}
-      - ')'
-    log:
-      $call:
+      - INSERT INTO calls (
+      - !call [text.join, !ref columns, ", "]
+      - ") VALUES ("
+      - !call
+          - text.join
+          - !call
+              - map
+              - !call
+                  - fn
+                  - [c]
+                  - "?"
+              - !ref columns
+          - ", "
+      - ")"
+    json: !call [import, "std:json"]
+    log: !call
       - fn
       - [database, record]
-      - $call:
-        - get
-        - $call:
-          - list
-          - {$call: [sqlite.execute, {$ref: database}, {$ref: schema}, []]}
-          - $call:
-            - map
-            - $call:
-              - fn
-              - [column]
-              - $call:
-                - if
-                - $call:
-                  - eq
-                  - 0
-                  - $call:
-                    - get
-                    - $call:
-                      - get
-                      - $call:
-                        - sqlite.query
-                        - {$ref: database}
-                        - SELECT COUNT(*) AS n FROM pragma_table_info('calls') WHERE name = ?
-                        - [{$ref: column}]
-                      - 0
-                    - n
-                - {$call: [sqlite.execute, {$ref: database}, {$call: [concat, 'ALTER TABLE calls ADD COLUMN ', {$ref: column}, ' TEXT']}, []]}
-                - 0
-            - {$ref: added}
-          - $call:
-            - sqlite.execute
-            - {$ref: database}
-            - {$ref: insert}
-            - $call:
-              - map
-              - {$call: [fn, [c], {$call: [get, {$ref: record}, {$ref: c}]}]}
-              - {$ref: columns}
-        - 1
-- $call:
-  - let
-  - arguments: {$call: [effect, args, null]}
-    record: {$call: [json.parse, {$call: [effect, stdin, null]}]}
-  - {$call: [log, {$call: [get, {$ref: arguments}, 0]}, {$ref: record}]}
+      - !call
+          - get
+          - !call
+              - list
+              - !call [sqlite.execute, !ref database, !ref schema, []]
+              - !call
+                  - map
+                  - !call
+                      - fn
+                      - [column]
+                      - !call
+                          - if
+                          - !call
+                              - eq
+                              - 0
+                              - !call
+                                  - get
+                                  - !call
+                                      - get
+                                      - !call
+                                          - sqlite.query
+                                          - !ref database
+                                          - "SELECT COUNT(*) AS n FROM pragma_table_info('calls') WHERE name = ?"
+                                          - [!ref column]
+                                      - 0
+                                  - "n"
+                          - !call
+                              - sqlite.execute
+                              - !ref database
+                              - !call
+                                  - concat
+                                  - "ALTER TABLE calls ADD COLUMN "
+                                  - !ref column
+                                  - " TEXT"
+                              - []
+                          - 0
+                  - !ref added
+              - !call
+                  - sqlite.execute
+                  - !ref database
+                  - !ref insert
+                  - !call
+                      - map
+                      - !call
+                          - fn
+                          - [c]
+                          - !call [get, !ref record, !ref c]
+                      - !ref columns
+          - 1
+    schema: "CREATE TABLE IF NOT EXISTS calls (\n    id INTEGER PRIMARY KEY,\n    started_at TEXT NOT NULL,       -- UTC ISO-8601\n    duration_ms INTEGER,            -- NULL when interrupted before the child returned\n    command TEXT NOT NULL,          -- manage.py command, e.g. eval, run, exec, cli, perform\n    argv TEXT NOT NULL,             -- JSON array: manage.py arguments as typed\n    cwd TEXT NOT NULL,\n    exit_code INTEGER,              -- NULL when interrupted\n    program_path TEXT,              -- source file argument, if any (repository-relative)\n    program TEXT,                   -- complete inline, stdin or file source at invocation\n    program_sha256 TEXT,\n    stdin_program INTEGER NOT NULL, -- 1 when the program was read from stdin (captured in program)\n    caller_role TEXT,               -- implementer or benchmark-model (NULL for legacy rows)\n    model TEXT,                     -- exact model ID for benchmark-originated calls\n    benchmark_run TEXT,\n    benchmark_task TEXT,\n    benchmark_trial TEXT,\n    agent TEXT,                     -- HELIX_AGENT, else claude-code when CLAUDECODE is set\n    stdout TEXT,                    -- complete; NULL when a terminal or an interactive command\n    stderr TEXT                     -- complete; NULL when a terminal or an interactive command\n)\n"
+    sqlite: !call [import, "std:sqlite"]
+    text: !call [import, "std:text"]
+  - !call
+      - let
+      - {arguments: !call [effect, args, ~], record: !call [json.parse, !call [effect, stdin, ~]]}
+      - !call [log, !call [get, !ref arguments, 0], !ref record]

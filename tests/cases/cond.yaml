@@ -1,10 +1,9 @@
 # Helix explicit syntax; migrated from legacy source.
-"grade":
-  "$call":
-  - "fn"
-  - - "n"
-  - {"$call": ["cond", {"$call": ["ge", {"$ref": "n"}, 90]}, "A", {"$call": ["ge", {"$ref": "n"}, 80]}, "B", "C"]}
-"a": {"$call": ["grade", 95]}
-"b": {"$call": ["grade", 85]}
-"c": {"$call": ["grade", 10]}
-"lazy": {"$call": ["cond", true, "ok", {"$call": ["div", 1, 0]}, "never", "fallback"]}
+a: !call [grade, 95]
+b: !call [grade, 85]
+c: !call [grade, 10]
+grade: !call
+  - fn
+  - ["n"]
+  - !call [cond, !call [ge, !ref "n", 90], A, !call [ge, !ref "n", 80], B, C]
+lazy: !call [cond, true, ok, !call [div, 1, 0], never, fallback]

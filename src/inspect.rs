@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn exhausted_policy_keeps_its_error_source_without_a_live_continuation() {
-        let mut vm = Vm::load(r#"{$call: [list_of, {$ref: integer}]}"#);
+        let mut vm = Vm::load(r#"!call [list_of, !ref integer]"#);
         let evaluator = Arc::make_mut(vm.evaluator.as_mut().unwrap());
         evaluator.remaining_work = 2;
         evaluator.limits.max_work = 2;

@@ -1,179 +1,117 @@
 # Deterministic charter contract; host acceptance lives in the corresponding suite.
-$call:
-- let
-- command:
-    $call:
-    - import
-    - std:command
-  config:
-    id: golden.command
-    revision: '1'
-    platforms:
-    - test-linux
-    capabilities:
-    - command
-    observation:
-      $ref: string
-    observe:
-      $call:
-      - fn
-      - - args
-      - done
-    guard:
-      $call:
-      - fn
-      - - args
-        - before
-      - $call:
-        - ne
-        - $ref: before
+!call
+  - let
+  - command: !call [import, "std:command"]
+    config:
+      capabilities: [command]
+      changed: !call
+        - fn
+        - [args, reply]
+        - !call [eq, !call [get, !ref reply, stdout], "changed\n"]
+      failed: !call
+        - fn
+        - [args, reply]
+        - !call [ne, !call [get, !ref reply, code], 0]
+      guard: !call
+        - fn
+        - [args, before]
+        - !call [ne, !ref before, done]
+      id: golden.command
+      observation: !ref string
+      observe: !call
+        - fn
+        - [args]
         - done
-    failed:
-      $call:
-      - fn
-      - - args
-        - reply
-      - $call:
-        - ne
-        - $call:
-          - get
-          - $ref: reply
-          - code
-        - 0
-    changed:
-      $call:
-      - fn
-      - - args
-        - reply
-      - $call:
-        - eq
-        - $call:
-          - get
-          - $ref: reply
-          - stdout
-        - 'changed
-
-          '
-  spec:
-    $call:
-    - command.make
-    - $ref: config
-- preview:
-    $call:
-    - command.plan
-    - &id001
-      $ref: spec
-    - $literal: &id002
-        program: /bin/echo
-        args:
-        - spaces ; $literal
-        - "Unicode: \u03BB"
-    - pending
-    - $literal: &id003
-        platform: test-linux
-        capabilities:
-        - command
-        managed: true
-        allow_remove: false
-  guard_satisfied:
-    $call:
-    - command.plan
-    - *id001
-    - $literal: *id002
-    - done
-    - $literal: *id003
-  noop_apply:
-    $call:
-    - command.apply
-    - $ref: spec
-    - $literal: *id002
-    - $literal: *id003
-    - $call:
+      platforms: [test-linux]
+      revision: "1"
+    spec: !call [command.make, !ref config]
+  - changed: !call
+      - try
+      - !call
+          - command.classify
+          - !ref config
+          - !literal {args: ["spaces ; $literal", "Unicode: λ"], program: /bin/echo}
+          - {code: 0, stderr: "", stdout: "changed\n"}
+      - !call
+          - fn
+          - [e]
+          - !ref e
+    effectful_guard: !call
       - command.plan
-      - *id001
-      - $literal: *id002
+      - !call
+          - command.make
+          - !call
+              - set
+              - !ref config
+              - guard
+              - !call
+                  - fn
+                  - [args, before]
+                  - !call [effect, time, ~]
+      - !literal {args: ["spaces ; $literal", "Unicode: λ"], program: /bin/echo}
+      - pending
+      - !literal {allow_remove: false, capabilities: [command], managed: true, platform: test-linux}
+    failed: !call
+      - try
+      - !call
+          - command.classify
+          - !ref config
+          - !literal {args: ["spaces ; $literal", "Unicode: λ"], program: /bin/echo}
+          - {code: 7, stderr: "", stdout: "changed\n"}
+      - !call
+          - fn
+          - [e]
+          - !ref e
+    guard_satisfied: !call
+      - command.plan
+      - !ref spec
+      - !literal {args: ["spaces ; $literal", "Unicode: λ"], program: /bin/echo}
       - done
-      - $literal: *id003
-  changed:
-    $call:
-    - try
-    - $call:
-      - command.classify
-      - $ref: config
-      - $literal: *id002
-      - code: 0
-        stdout: 'changed
-
-          '
-        stderr: ''
-    - $call:
-      - fn
-      - - e
-      - $ref: e
-  unchanged:
-    $call:
-    - try
-    - $call:
-      - command.classify
-      - $ref: config
-      - $literal: *id002
-      - code: 0
-        stdout: ''
-        stderr: ''
-    - $call:
-      - fn
-      - - e
-      - $ref: e
-  failed:
-    $call:
-    - try
-    - $call:
-      - command.classify
-      - $ref: config
-      - $literal: *id002
-      - code: 7
-        stdout: 'changed
-
-          '
-        stderr: ''
-    - $call:
-      - fn
-      - - e
-      - $ref: e
-  invalid_guard:
-    $call:
-    - command.plan
-    - $call:
-      - command.make
-      - $call:
-        - set
-        - $ref: config
-        - guard
-        - $call:
+      - !literal {allow_remove: false, capabilities: [command], managed: true, platform: test-linux}
+    invalid_guard: !call
+      - command.plan
+      - !call
+          - command.make
+          - !call
+              - set
+              - !ref config
+              - guard
+              - !call
+                  - fn
+                  - [args, before]
+                  - not boolean
+      - !literal {args: ["spaces ; $literal", "Unicode: λ"], program: /bin/echo}
+      - pending
+      - !literal {allow_remove: false, capabilities: [command], managed: true, platform: test-linux}
+    noop_apply: !call
+      - command.apply
+      - !ref spec
+      - !literal {args: ["spaces ; $literal", "Unicode: λ"], program: /bin/echo}
+      - !literal {allow_remove: false, capabilities: [command], managed: true, platform: test-linux}
+      - !call
+          - command.plan
+          - !ref spec
+          - !literal {args: ["spaces ; $literal", "Unicode: λ"], program: /bin/echo}
+          - done
+          - !literal
+              allow_remove: false
+              capabilities: [command]
+              managed: true
+              platform: test-linux
+    preview: !call
+      - command.plan
+      - !ref spec
+      - !literal {args: ["spaces ; $literal", "Unicode: λ"], program: /bin/echo}
+      - pending
+      - !literal {allow_remove: false, capabilities: [command], managed: true, platform: test-linux}
+    unchanged: !call
+      - try
+      - !call
+          - command.classify
+          - !ref config
+          - !literal {args: ["spaces ; $literal", "Unicode: λ"], program: /bin/echo}
+          - {code: 0, stderr: "", stdout: ""}
+      - !call
           - fn
-          - - args
-            - before
-          - not boolean
-    - $literal: *id002
-    - pending
-    - $literal: *id003
-  effectful_guard:
-    $call:
-    - command.plan
-    - $call:
-      - command.make
-      - $call:
-        - set
-        - $ref: config
-        - guard
-        - $call:
-          - fn
-          - - args
-            - before
-          - $call:
-            - effect
-            - time
-            - null
-    - $literal: *id002
-    - pending
-    - $literal: *id003
+          - [e]
+          - !ref e

@@ -1,21 +1,20 @@
 # Helix explicit syntax; migrated from legacy source.
-"arguments": {"$call": ["effect", "args", null]}
-"file": {"$call": ["get", {"$ref": "arguments"}, 0]}
-"url": {"$call": ["get", {"$ref": "arguments"}, 1]}
-"text":
-  "$call":
-  - "get"
-  - "$call":
-    - "list"
-    - {"$call": ["effect", "file_write", {"$call": ["dict", "path", {"$ref": "file"}, "text", "hello, world"]}]}
-    - {"$call": ["effect", "file_read", {"$ref": "file"}]}
+arguments: !call [effect, args, ~]
+command: !call [effect, command, {args: !call [list, captured], program: /bin/echo}]
+environment: !call [effect, env, HELIX_EFFECT_TEST]
+exit: !call [effect, exit, 7]
+file: !call [get, !ref arguments, 0]
+input: !call [effect, stdin, ~]
+output: !call [effect, stdout, hello from Helix]
+random: !call [effect, random, ~]
+random_next: !call [effect, random, ~]
+response: !call [effect, http, !ref url]
+text: !call
+  - get
+  - !call
+      - list
+      - !call [effect, file_write, !call [dict, path, !ref file, text, "hello, world"]]
+      - !call [effect, file_read, !ref file]
   - 1
-"environment": {"$call": ["effect", "env", "HELIX_EFFECT_TEST"]}
-"input": {"$call": ["effect", "stdin", null]}
-"output": {"$call": ["effect", "stdout", "hello from Helix"]}
-"command": {"$call": ["effect", "command", {"program": "/bin/echo", "args": {"$call": ["list", "captured"]}}]}
-"response": {"$call": ["effect", "http", {"$ref": "url"}]}
-"time": {"$call": ["effect", "time", null]}
-"random": {"$call": ["effect", "random", null]}
-"random_next": {"$call": ["effect", "random", null]}
-"exit": {"$call": ["effect", "exit", 7]}
+time: !call [effect, time, ~]
+url: !call [get, !ref arguments, 1]

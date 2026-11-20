@@ -1,144 +1,231 @@
 # Helix explicit syntax; migrated from legacy source.
-"l": {"$call": ["import", "std:list"]}
-"first": {"$call": ["l.first", [null, 2], "absent"]}
-"last": {"$call": ["l.last", [1, false], "absent"]}
-"empty_first": {"$call": ["l.first", [], "absent"]}
-"empty_last": {"$call": ["l.last", [], "absent"]}
-"take": {"$call": ["l.take", [1, 2, 3], 2]}
-"drop": {"$call": ["l.drop", [1, 2, 3], 2]}
-"bounds":
-  "$call":
-  - "list"
-  - {"$call": ["l.take", [1], 0]}
-  - {"$call": ["l.drop", [1], 0]}
-  - {"$call": ["l.take", [1], 10]}
-  - {"$call": ["l.drop", [1], 10]}
-  - {"$call": ["l.take", [], 1]}
-  - {"$call": ["l.drop", [], 1]}
-"enumerated": {"$call": ["l.enumerate", ["a", null, false]]}
-"zipped": {"$call": ["l.zip", [1, 2, 3], ["a", "b"]]}
-"empty_pairs":
-  "$call":
-  - "list"
-  - {"$call": ["l.enumerate", []]}
-  - {"$call": ["l.zip", [], [1]]}
-  - {"$call": ["l.zip", [1], []]}
-"flattened": {"$call": ["l.flatten", [[1, [2]], [], [3]]]}
-"flat_mapped":
-  "$call":
-  - "l.flat_map"
+absent_index: !call
+  - l.find_index
+  - []
+  - !call
+      - fn
+      - [x]
+      - true
+bad_boolean: !call
+  - try
+  - !call
+      - l.any
+      - [1]
+      - !call
+          - fn
+          - [x]
+          - 1
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+bad_callback: !call
+  - try
+  - !call [l.any, [], 0]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+bad_frequency: !call
+  - try
+  - !call [l.frequencies, [1]]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+bad_group_key: !call
+  - try
+  - !call
+      - l.group_by
+      - [1]
+      - !call
+          - fn
+          - [x]
+          - !ref x
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+bad_inner: !call
+  - try
+  - !call [l.flatten, [[1], 2]]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+bad_list: !call
+  - try
+  - !call [l.first, oops, ~]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+bounds: !call
+  - list
+  - !call [l.take, [1], 0]
+  - !call [l.drop, [1], 0]
+  - !call [l.take, [1], 10]
+  - !call [l.drop, [1], 10]
+  - !call [l.take, [], 1]
+  - !call [l.drop, [], 1]
+count: !call
+  - l.count
+  - [1, 2, 3, 4]
+  - !call
+      - fn
+      - [x]
+      - !call [eq, !call [mod, !ref x, 2], 0]
+drop: !call [l.drop, [1, 2, 3], 2]
+empty_first: !call [l.first, [], absent]
+empty_flat: !call
+  - list
+  - !call [l.flatten, []]
+  - !call
+      - l.flat_map
+      - []
+      - !call
+          - fn
+          - [x]
+          - !call [list, !ref x]
+empty_last: !call [l.last, [], absent]
+empty_logic: !call
+  - list
+  - !call
+      - l.any
+      - []
+      - !call
+          - fn
+          - [x]
+          - true
+  - !call
+      - l.all
+      - []
+      - !call
+          - fn
+          - [x]
+          - false
+empty_maps: !call
+  - list
+  - !call
+      - l.group_by
+      - []
+      - !call
+          - fn
+          - [x]
+          - k
+  - !call [l.frequencies, []]
+empty_pairs: !call [list, !call [l.enumerate, []], !call [l.zip, [], [1]], !call [l.zip, [1], []]]
+empty_partition: !call
+  - l.partition
+  - []
+  - !call
+      - fn
+      - [x]
+      - true
+empty_sort: !call [l.sort, []]
+enumerated: !call [l.enumerate, [a, ~, false]]
+first: !call [l.first, [~, 2], absent]
+flat_mapped: !call
+  - l.flat_map
   - [1, 2, 3]
-  - {"$call": ["fn", ["x"], {"$call": ["list", {"$ref": "x"}, {"$call": ["neg", {"$ref": "x"}]}]}]}
-"empty_flat":
-  "$call":
-  - "list"
-  - {"$call": ["l.flatten", []]}
-  - {"$call": ["l.flat_map", [], {"$call": ["fn", ["x"], {"$call": ["list", {"$ref": "x"}]}]}]}
-"index": {"$call": ["l.find_index", [0, 1, 2, 1], {"$call": ["fn", ["x"], {"$call": ["eq", {"$ref": "x"}, 1]}]}]}
-"absent_index": {"$call": ["l.find_index", [], {"$call": ["fn", ["x"], true]}]}
-"found_null":
-  "$call":
-  - "l.find"
-  - [0, null, 2]
-  - {"$call": ["fn", ["x"], {"$call": ["eq", {"$ref": "x"}, null]}]}
-  - "absent"
-"not_found": {"$call": ["l.find", [1, 2], {"$call": ["fn", ["x"], false]}, "absent"]}
-"short_any":
-  "$call":
-  - "l.any"
-  - - 1
-    - "bad"
-  - {"$call": ["fn", ["x"], {"$call": ["eq", {"$call": ["add", {"$ref": "x"}, 0]}, 1]}]}
-"short_all":
-  "$call":
-  - "l.all"
-  - - 0
-    - "bad"
-  - {"$call": ["fn", ["x"], {"$call": ["gt", {"$call": ["add", {"$ref": "x"}, 0]}, 0]}]}
-"short_find":
-  "$call":
-  - "l.find"
-  - - 1
-    - "bad"
-  - {"$call": ["fn", ["x"], {"$call": ["eq", {"$call": ["add", {"$ref": "x"}, 0]}, 1]}]}
-  - null
-"empty_logic":
-  "$call":
-  - "list"
-  - {"$call": ["l.any", [], {"$call": ["fn", ["x"], true]}]}
-  - {"$call": ["l.all", [], {"$call": ["fn", ["x"], false]}]}
-"logic":
-  "$call":
-  - "list"
-  - {"$call": ["l.any", [0, 0], {"$call": ["fn", ["x"], {"$call": ["gt", {"$ref": "x"}, 0]}]}]}
-  - {"$call": ["l.all", [1, 2], {"$call": ["fn", ["x"], {"$call": ["gt", {"$ref": "x"}, 0]}]}]}
-"count":
-  "$call":
-  - "l.count"
+  - !call
+      - fn
+      - [x]
+      - !call [list, !ref x, !call [neg, !ref x]]
+flattened: !call [l.flatten, [[1, [2]], [], [3]]]
+found_null: !call
+  - l.find
+  - [0, ~, 2]
+  - !call
+      - fn
+      - [x]
+      - !call [eq, !ref x, ~]
+  - absent
+frequencies: !call [l.frequencies, ["é", x, "é", "", x]]
+grouped: !call
+  - l.group_by
+  - [{"n": 1, team: b}, {"n": 2, team: a}, {"n": 3, team: b}]
+  - !call
+      - fn
+      - [x]
+      - !call [get, !ref x, team]
+index: !call
+  - l.find_index
+  - [0, 1, 2, 1]
+  - !call
+      - fn
+      - [x]
+      - !call [eq, !ref x, 1]
+l: !call [import, "std:list"]
+last: !call [l.last, [1, false], absent]
+logic: !call
+  - list
+  - !call
+      - l.any
+      - [0, 0]
+      - !call
+          - fn
+          - [x]
+          - !call [gt, !ref x, 0]
+  - !call
+      - l.all
+      - [1, 2]
+      - !call
+          - fn
+          - [x]
+          - !call [gt, !ref x, 0]
+negative: !call
+  - try
+  - !call [l.take, [], -1]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+negative_drop: !call
+  - try
+  - !call [l.drop, [1], -1]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+not_found: !call
+  - l.find
+  - [1, 2]
+  - !call
+      - fn
+      - [x]
+      - false
+  - absent
+partition: !call
+  - l.partition
   - [1, 2, 3, 4]
-  - {"$call": ["fn", ["x"], {"$call": ["eq", {"$call": ["mod", {"$ref": "x"}, 2]}, 0]}]}
-"partition":
-  "$call":
-  - "l.partition"
-  - [1, 2, 3, 4]
-  - {"$call": ["fn", ["x"], {"$call": ["eq", {"$call": ["mod", {"$ref": "x"}, 2]}, 0]}]}
-"empty_partition": {"$call": ["l.partition", [], {"$call": ["fn", ["x"], true]}]}
-"grouped":
-  "$call":
-  - "l.group_by"
-  - - "team": "b"
-      "n": 1
-    - "team": "a"
-      "n": 2
-    - "team": "b"
-      "n": 3
-  - {"$call": ["fn", ["x"], {"$call": ["get", {"$ref": "x"}, "team"]}]}
-"frequencies": {"$call": ["l.frequencies", ["\xE9", "x", "\xE9", "", "x"]]}
-"empty_maps":
-  "$call":
-  - "list"
-  - {"$call": ["l.group_by", [], {"$call": ["fn", ["x"], "k"]}]}
-  - {"$call": ["l.frequencies", []]}
-"sorted": {"$call": ["l.sort", [3, -1, 2, 2]]}
-"words": {"$call": ["l.sort", ["z", "a", "b"]]}
-"empty_sort": {"$call": ["l.sort", []]}
-"negative":
-  "$call":
-  - "try"
-  - {"$call": ["l.take", [], -1]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"negative_drop":
-  "$call":
-  - "try"
-  - {"$call": ["l.drop", [1], -1]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"bad_list":
-  "$call":
-  - "try"
-  - {"$call": ["l.first", "oops", null]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"bad_callback":
-  "$call":
-  - "try"
-  - {"$call": ["l.any", [], 0]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"bad_boolean":
-  "$call":
-  - "try"
-  - {"$call": ["l.any", [1], {"$call": ["fn", ["x"], 1]}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"bad_inner":
-  "$call":
-  - "try"
-  - {"$call": ["l.flatten", [[1], 2]]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"bad_group_key":
-  "$call":
-  - "try"
-  - {"$call": ["l.group_by", [1], {"$call": ["fn", ["x"], {"$ref": "x"}]}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"bad_frequency":
-  "$call":
-  - "try"
-  - {"$call": ["l.frequencies", [1]]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+  - !call
+      - fn
+      - [x]
+      - !call [eq, !call [mod, !ref x, 2], 0]
+short_all: !call
+  - l.all
+  - [0, bad]
+  - !call
+      - fn
+      - [x]
+      - !call [gt, !call [add, !ref x, 0], 0]
+short_any: !call
+  - l.any
+  - [1, bad]
+  - !call
+      - fn
+      - [x]
+      - !call [eq, !call [add, !ref x, 0], 1]
+short_find: !call
+  - l.find
+  - [1, bad]
+  - !call
+      - fn
+      - [x]
+      - !call [eq, !call [add, !ref x, 0], 1]
+  - ~
+sorted: !call [l.sort, [3, -1, 2, 2]]
+take: !call [l.take, [1, 2, 3], 2]
+words: !call [l.sort, [z, a, b]]
+zipped: !call [l.zip, [1, 2, 3], [a, b]]

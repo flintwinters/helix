@@ -1,19 +1,19 @@
 # Helix explicit syntax; migrated from legacy source.
-"web_server":
-  "$call":
-  - "fn"
-  - - - "p"
-      - {"$ref": "integer"}
-  - "$call":
-    - "class"
-    - {"$call": ["concat", "web_", {"$call": ["str", {"$ref": "p"}]}]}
-    - {"$call": ["record", "listen", {"$ref": "integer"}]}
-    - {"$call": ["dict", "listen", {"$ref": "p"}]}
-"w80": {"$call": ["web_server", 80]}
-"w8080": {"$call": ["web_server", 8080]}
-"front": {"$call": ["inherit", "front", {"$call": ["list", {"$ref": "w80"}]}, {}]}
-"both":
-  "$call":
-  - "try"
-  - {"$call": ["inherit", "both", {"$call": ["list", {"$ref": "w80"}, {"$ref": "w8080"}]}, {}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
+both: !call
+  - try
+  - !call [inherit, both, !call [list, !ref w80, !ref w8080], {}]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, data]
+front: !call [inherit, front, !call [list, !ref w80], {}]
+w80: !call [web_server, 80]
+w8080: !call [web_server, 8080]
+web_server: !call
+  - fn
+  - [[p, !ref integer]]
+  - !call
+      - class
+      - !call [concat, web_, !call [str, !ref p]]
+      - !call [record, listen, !ref integer]
+      - !call [dict, listen, !ref p]

@@ -25,7 +25,9 @@ without duplicating the same decisions in another language.
 
 ## Architecture and authoritative entrypoints
 
-- [LANGUAGE.md](LANGUAGE.md) owns syntax and execution semantics;
+- [LANGUAGE.md](LANGUAGE.md) owns syntax and execution semantics. Write source only with
+  `!call`/`!ref`/`!literal` tags; `{$call: ...}` maps are their normalized representation
+  (JSON, error paths, inspection), and the static suite rejects them as written YAML.
   [src/model.rs](src/model.rs), [src/graph.rs](src/graph.rs) and
   [src/eval.rs](src/eval.rs) lead into the immutable model and iterative engine.
 - [src/vm.rs](src/vm.rs) owns public machine execution;

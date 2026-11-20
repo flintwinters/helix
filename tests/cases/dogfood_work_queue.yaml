@@ -5,82 +5,52 @@
 # the function-call depth budget. This is intentionally a small-queue algorithm.
 # Insertion scans and copies each prefix: quadratic work, unsuitable for large queues.
 # The lazy or guard prevents an out-of-range read when appending at the end.
-"queue":
-- "id": "docs"
-  "priority": 3
-  "owner": "writer"
-- "id": "parser-fix"
-  "priority": 1
-  "owner": "runtime"
-- "id": "release"
-  "priority": 2
-  "owner": "tools"
-- "id": "evaluator-fix"
-  "priority": 1
-  "owner": "runtime"
-- "id": "security"
-  "priority": -1
-  "owner": "runtime"
-- "id": "cleanup"
-  "priority": 3
-  "owner": "tools"
-"lists": {"$call": ["import", "std:list"]}
-"sort_queue":
-  "$call":
-  - "fn"
-  - - "items"
-  - "$call":
-    - "lists.sort_by"
-    - {"$ref": "items"}
-    - "$call":
-      - "fn"
-      - - "a"
-        - "b"
-      - "$call":
-        - "lt"
-        - {"$call": ["get", {"$ref": "a"}, "priority"]}
-        - {"$call": ["get", {"$ref": "b"}, "priority"]}
-"sorted": {"$call": ["sort_queue", {"$ref": "queue"}]}
-"dispatch":
-  "$call":
-  - "map"
-  - {"$call": ["fn", ["item"], {"$call": ["get", {"$ref": "item"}, "id"]}]}
-  - {"$ref": "sorted"}
-"idempotent": {"$call": ["eq", {"$call": ["sort_queue", {"$ref": "sorted"}]}, {"$ref": "sorted"}]}
-"empty": {"$call": ["sort_queue", []]}
-"singleton": {"$call": ["sort_queue", [{"id": "only", "priority": 0, "owner": "tools"}]]}
-"already_sorted":
-  "$call":
-  - "sort_queue"
-  - - "id": "first"
-      "priority": -2
-    - "id": "second"
-      "priority": 0
-    - "id": "third"
-      "priority": 4
-"reverse_sorted":
-  "$call":
-  - "sort_queue"
-  - - "id": "third"
-      "priority": 4
-    - "id": "second"
-      "priority": 0
-    - "id": "first"
-      "priority": -2
-"equal_priority":
-  "$call":
-  - "sort_queue"
-  - - "id": "arrived-first"
-      "priority": 2
-      "payload":
-        "attempts": 0
-    - "id": "arrived-second"
-      "priority": 2
-      "payload":
-        "attempts": 1
-    - "id": "arrived-third"
-      "priority": 2
-      "payload":
-        "attempts": 2
-"second_queue": {"$call": ["sort_queue", [{"id": "later", "priority": 10}, {"id": "earlier", "priority": -10}]]}
-"original_order": {"$call": ["map", {"$call": ["fn", ["item"], {"$call": ["get", {"$ref": "item"}, "id"]}]}, {"$ref": "queue"}]}
+already_sorted: !call
+  - sort_queue
+  - [{id: first, priority: -2}, {id: second, priority: 0}, {id: third, priority: 4}]
+dispatch: !call
+  - map
+  - !call
+      - fn
+      - [item]
+      - !call [get, !ref item, id]
+  - !ref sorted
+empty: !call [sort_queue, []]
+equal_priority: !call
+  - sort_queue
+  -
+    - {id: arrived-first, payload: {attempts: 0}, priority: 2}
+    - {id: arrived-second, payload: {attempts: 1}, priority: 2}
+    - {id: arrived-third, payload: {attempts: 2}, priority: 2}
+idempotent: !call [eq, !call [sort_queue, !ref sorted], !ref sorted]
+lists: !call [import, "std:list"]
+original_order: !call
+  - map
+  - !call
+      - fn
+      - [item]
+      - !call [get, !ref item, id]
+  - !ref queue
+queue:
+  - {id: docs, owner: writer, priority: 3}
+  - {id: parser-fix, owner: runtime, priority: 1}
+  - {id: release, owner: tools, priority: 2}
+  - {id: evaluator-fix, owner: runtime, priority: 1}
+  - {id: security, owner: runtime, priority: -1}
+  - {id: cleanup, owner: tools, priority: 3}
+reverse_sorted: !call
+  - sort_queue
+  - [{id: third, priority: 4}, {id: second, priority: 0}, {id: first, priority: -2}]
+second_queue: !call [sort_queue, [{id: later, priority: 10}, {id: earlier, priority: -10}]]
+singleton: !call [sort_queue, [{id: only, owner: tools, priority: 0}]]
+sort_queue: !call
+  - fn
+  - [items]
+  - !call
+      - lists.sort_by
+      - !ref items
+      - !call
+          - fn
+          - [a, b]
+          - !call [lt, !call [get, !ref a, priority], !call [get, !ref b, priority]]
+sorted: !call [sort_queue, !ref queue]

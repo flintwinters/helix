@@ -3,6 +3,7 @@ import json
 
 import yaml
 from tests.suites.contracts import checked
+from tooling.source_format import SourceLoader
 
 
 def verify(h):
@@ -14,7 +15,7 @@ def verify(h):
 
     explicit = {'package_version': 'pinned-test-version', 'server_name': 'helix.local', 'content': 'Hello\n'}
     complete = {**explicit, 'port': 8080, 'state': 'present'}
-    fixture = yaml.safe_load((h.root / 'tests/cases/nginx_planning.yaml').read_text())
+    fixture = yaml.load((h.root / 'tests/cases/nginx_planning.yaml').read_text(), SourceLoader)
     empty = fixture['$call'][1]['empty']
     bindings = {'nginx': call('import', 'std:nginx'),
                 'site': call('inherit', 'site', [ref('nginx.configuration')], explicit)}

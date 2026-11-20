@@ -1,2 +1,8 @@
 # Helix explicit syntax; migrated from legacy source.
-"r": {"$call": ["each", {"$call": ["fn", ["n"], {"$call": ["div", 1, {"$ref": "n"}]}]}, [1, 0]]}
+r: !call
+  - each
+  - !call
+      - fn
+      - ["n"]
+      - !call [div, 1, !ref "n"]
+  - [1, 0]

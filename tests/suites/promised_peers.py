@@ -14,7 +14,7 @@ def verify(h):
     machine = damaged_source['machines']['broken']
     assert machine['objects'][machine['machine']]['value']['status'] == 'error', machine
     failed = h.helix('system-snapshot', '-', '--steps', '100',
-        stdin=json.dumps({'participants': {'broken': '{$call: [div, 1, 0]}'}}))
+        stdin=json.dumps({'participants': {'broken': '!call [div, 1, 0]'}}))
     assert failed.returncode == 1 and not failed.stderr, failed
     checkpoint = json.loads(failed.stdout)
     retained = h.helix('system-restore', '-', '--steps', '0', stdin=failed.stdout)

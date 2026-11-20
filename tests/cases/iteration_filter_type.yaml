@@ -1,2 +1,8 @@
 # Helix explicit syntax; migrated from legacy source.
-"r": {"$call": ["filter", {"$call": ["fn", ["n"], {"$ref": "n"}]}, [1, 2]]}
+r: !call
+  - filter
+  - !call
+      - fn
+      - ["n"]
+      - !ref "n"
+  - [1, 2]

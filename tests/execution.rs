@@ -99,15 +99,15 @@ fn type_time_file_modules_retain_loaded_source_across_steps_and_branches() {
     std::fs::create_dir_all(&directory).unwrap();
     let module = directory.join("policy.yaml");
     let main = directory.join("main.yaml");
-    let source = r#"{$call: [let, {policy: {$call: [import, policy.yaml]}}, {$call: [try, {$call: [type_time, {$call: [policy.answer]}]}, {$call: [fn, [error], {$ref: error}]}]}]}"#;
-    std::fs::write(&module, "answer: {$call: [fn, [], {$call: [add, 40, 2]}]}\n").unwrap();
+    let source = r#"!call [let, {policy: !call [import, policy.yaml]}, !call [try, !call [type_time, !call [policy.answer]], !call [fn, [error], !ref error]]]"#;
+    std::fs::write(&module, "answer: !call [fn, [], !call [add, 40, 2]]\n").unwrap();
     let ready = Vm::load_file(source, &main);
     assert_eq!(ready.status(), Status::Ready);
     let original = ready.inspect();
     let paused = ready.step();
     let retained = paused.inspect();
     // `try` defers this region until execution: only source loading has read the file.
-    std::fs::write(&module, "answer: {$call: [fn, [], 99]}\n").unwrap();
+    std::fs::write(&module, "answer: !call [fn, [], 99]\n").unwrap();
     let mut uninterrupted = ready.clone();
     uninterrupted.run();
     assert_eq!(uninterrupted.status(), Status::Finished);
@@ -124,8 +124,8 @@ fn type_time_file_modules_retain_loaded_source_across_steps_and_branches() {
     assert_eq!(root(&fresh).as_i64(), Some(99));
 
     // Reached named module functions retain the existing closed-region preflight rule.
-    std::fs::write(&module, "answer: {$call: [fn, [], {$call: [type_time, {$call: [div, 1, 0]}]}]}\n").unwrap();
-    let source = r#"{a_effect: {$call: [effect, time, null]}, policy: {$call: [import, policy.yaml]}, result: {$call: [policy.answer]}}"#;
+    std::fs::write(&module, "answer: !call [fn, [], !call [type_time, !call [div, 1, 0]]]\n").unwrap();
+    let source = r#"{a_effect: !call [effect, time, null], policy: !call [import, policy.yaml], result: !call [policy.answer]}"#;
     let mut preflight = Vm::load_file(source, &main);
     preflight.run();
     assert_eq!(preflight.status(), Status::Error);
@@ -134,7 +134,7 @@ fn type_time_file_modules_retain_loaded_source_across_steps_and_branches() {
     assert!(preflight.pending_effect().is_none(), "preflight must fail before the earlier effect");
 
     // Importing the same module alone does not reach its function body for preflight.
-    let source = r#"{a_effect: {$call: [effect, time, null]}, policy: {$call: [import, policy.yaml]}}"#;
+    let source = r#"{a_effect: !call [effect, time, null], policy: !call [import, policy.yaml]}"#;
     let mut uncalled = Vm::load_file(source, &main);
     uncalled.run();
     assert_eq!(uncalled.status(), Status::Signaled);
@@ -342,13 +342,13 @@ fn check_mode_keeps_independent_runtime_and_type_time_failures() {
 
 #[test]
 fn check_collection_does_not_preflight_unchosen_regions_on_success() {
-    let branch = r#"{$call: [if, true, 42, {$call: [type_time, {$call: [div, 1, 0]}]}]}"#;
+    let branch = r#"!call [if, true, 42, !call [type_time, !call [div, 1, 0]]]"#;
     let mut run = Vm::load(branch);
     run.run();
     assert_eq!(run.status(), Status::Error);
     assert_eq!(run.state()["error"]["phase"].as_str(), Some("type"));
     for failing_sibling in [false, true] {
-        let source = format!("answer: {branch}\nother: {}", if failing_sibling { "{$call: [div, 1, 0]}" } else { "7" });
+        let source = format!("answer: {branch}\nother: {}", if failing_sibling { "!call [div, 1, 0]" } else { "7" });
         let mut checked = Vm::load(&source);
         checked.check();
         let state = checked.state();
@@ -368,17 +368,17 @@ fn check_collection_does_not_preflight_unchosen_regions_on_success() {
 #[test]
 fn check_collection_retains_captured_inputs_across_independent_entries() {
     let common = r#"
-factory: {$call: [fn, [value],
-  {$call: [{$call: [fn, [captured],
-    {$call: [fn, [], {$call: [type_time, {$call: [add, {$ref: captured}, 1]}]}]}]}, {$ref: value}]}]}
-a_first: {$call: [factory, 41]}
-b_second: {$call: [factory, 42]}
-x_first: {$call: [a_first]}
-y_repeat: {$call: [a_first]}
-z_second: {$call: [b_second]}
+factory: !call [fn, [value],
+  !call [!call [fn, [captured],
+    !call [fn, [], !call [type_time, !call [add, !ref captured, 1]]]], !ref value]]
+a_first: !call [factory, 41]
+b_second: !call [factory, 42]
+x_first: !call [a_first]
+y_repeat: !call [a_first]
+z_second: !call [b_second]
 "#;
     for failing_sibling in [false, true] {
-        let source = format!("{common}\nother: {}", if failing_sibling { "{$call: [div, 1, 0]}" } else { "7" });
+        let source = format!("{common}\nother: {}", if failing_sibling { "!call [div, 1, 0]" } else { "7" });
         let mut checked = Vm::load(&source);
         checked.check();
         assert_eq!(checked.status(), if failing_sibling { Status::Error } else { Status::Finished });
@@ -403,10 +403,10 @@ fn phase_input_ledger_preserves_numeric_representations_in_retained_runs_and_che
         ("0.0", "-0.0", "str", vec![Yaml::Real("0.0".into()), Yaml::Real("-0.0".into())]),
     ] {
         let source = format!(r#"
-sample: {{$call: [fn, [value], {{$call: [type_time, {{$call: [{operation}, {{$ref: value}}]}}]}}]}}
-a_first: {{$call: [sample, {first}]}}
-b_second: {{$call: [sample, {second}]}}
-c_repeat: {{$call: [sample, {first}]}}
+sample: !call [fn, [value], !call [type_time, !call [{operation}, !ref value]]]
+a_first: !call [sample, {first}]
+b_second: !call [sample, {second}]
+c_repeat: !call [sample, {first}]
 "#);
         for checking in [false, true] {
             let ready = Vm::load(&source);
@@ -432,12 +432,12 @@ c_repeat: {{$call: [sample, {first}]}}
 #[test]
 fn one_phase_records_distinct_preexisting_captures_without_duplicate_reads() {
     let source = r#"
-factory: {$call: [fn, [tag], {$call: [fn, [], {$call: [type, {$ref: tag}]}]}]}
-apply: {$call: [fn, [callbacks], {$call: [type_time, {$call: [list,
-  {$call: [{$call: [get, {$ref: callbacks}, 0]}]},
-  {$call: [{$call: [get, {$ref: callbacks}, 1]}]},
-  {$call: [{$call: [get, {$ref: callbacks}, 0]}]}]}]}]}
-answer: {$call: [apply, [{$call: [factory, 1]}, {$call: [factory, 1.0]}]]}
+factory: !call [fn, [tag], !call [fn, [], !call [type, !ref tag]]]
+apply: !call [fn, [callbacks], !call [type_time, !call [list,
+  !call [!call [get, !ref callbacks, 0]],
+  !call [!call [get, !ref callbacks, 1]],
+  !call [!call [get, !ref callbacks, 0]]]]]
+answer: !call [apply, [!call [factory, 1], !call [factory, 1.0]]]
 "#;
     for checking in [false, true] {
         let ready = Vm::load(source);
@@ -467,7 +467,7 @@ answer: {$call: [apply, [{$call: [factory, 1]}, {$call: [factory, 1.0]}]]}
 fn retained_capture_graphs_drop_on_small_stacks_and_thread_teardown() {
     for body in [r##"{"$call": ["fn", [], {"$call": ["get", {"$ref": "row"}, 1]}]}"##, r##"{"$call": ["vm", {"$call": ["fn", [], {"$call": ["get", {"$ref": "row"}, 1]}]}]}"##] {
         let source = format!(
-            "{{$call: [until, {{$call: [fn, [row], {{$call: [eq, {{$call: [get, {{$ref: row}}, 0]}}, 3000]}}]}}, {{$call: [fn, [row], {{$call: [list, {{$call: [add, {{$call: [get, {{$ref: row}}, 0]}}, 1]}}, {body}]}}]}}, [0, null]]}}"
+            "!call [until, !call [fn, [row], !call [eq, !call [get, !ref row, 0], 3000]], !call [fn, [row], !call [list, !call [add, !call [get, !ref row, 0], 1], {body}]], [0, null]]"
         );
         std::thread::Builder::new()
             .stack_size(512 * 1024)
@@ -562,12 +562,12 @@ fn computed_head_preflight_preserves_stepping_and_catch_boundaries() {
 
 #[test]
 fn computed_head_parameters_follow_retained_effect_branches() {
-    let source = r#"{$call: [let,
-      {choose: {$call: [fn, [forward], {$call: [type_time,
-        {$call: [{$call: [if, {$ref: forward},
-          {$call: [fn, [n], {$call: [add, {$ref: n}, 1]}]},
-          {$call: [fn, [n], {$call: [sub, {$ref: n}, 1]}]}]}, 41]}]}]}},
-      {$call: [choose, {$call: [effect, input, null]}]}]}"#;
+    let source = r#"!call [let,
+      {choose: !call [fn, [forward], !call [type_time,
+        !call [!call [if, !ref forward,
+          !call [fn, [n], !call [add, !ref n, 1]],
+          !call [fn, [n], !call [sub, !ref n, 1]]], 41]]]},
+      !call [choose, !call [effect, input, null]]]"#;
     let mut pending = Vm::load(source);
     pending.run();
     assert_eq!(pending.status(), Status::Signaled);
@@ -641,15 +641,15 @@ fn effects_are_rejected_during_type_time_and_checking() {
 
 #[test]
 fn type_time_catch_and_child_boundaries_run_after_prior_effects() {
-    let caught = r#"{$call: [try, {$call: [type_time, {$call: [div, 1, 0]}]}, {$call: [fn, [error], {$ref: error}]}]}"#;
-    let child = r#"{$call: [let,
-      {original: {$call: [vm, {$call: [fn, [], {$call: [type_time, {$call: [div, 1, 0]}]}]}]},
-       stopped: {$call: [fn, [m], {$call: [eq, {$call: [get, {$call: [inspect, {$ref: m}]}, status]}, error]}]},
-       advance: {$call: [fn, [m], {$call: [step, {$ref: m}]}]}},
-      {$call: [get, {$call: [inspect, {$call: [until, {$ref: stopped}, {$ref: advance}, {$ref: original}]}]}, outcome]}]}"#;
-    let unused_handler = r#"{$call: [try, 42, {$call: [fn, [error], {$call: [type_time, {$call: [div, 1, 0]}]}]}]}"#;
+    let caught = r#"!call [try, !call [type_time, !call [div, 1, 0]], !call [fn, [error], !ref error]]"#;
+    let child = r#"!call [let,
+      {original: !call [vm, !call [fn, [], !call [type_time, !call [div, 1, 0]]]],
+       stopped: !call [fn, [m], !call [eq, !call [get, !call [inspect, !ref m], status], error]],
+       advance: !call [fn, [m], !call [step, !ref m]]},
+      !call [get, !call [inspect, !call [until, !ref stopped, !ref advance, !ref original]], outcome]]"#;
+    let unused_handler = r#"!call [try, 42, !call [fn, [error], !call [type_time, !call [div, 1, 0]]]]"#;
     for (body, fails_inside) in [(caught, true), (child, true), (unused_handler, false)] {
-        let source = format!("{{$call: [list, {{$call: [effect, time, null]}}, {body}]}}");
+        let source = format!("!call [list, !call [effect, time, null], {body}]");
         let mut pending = Vm::load(&source);
         pending.run();
         assert_eq!(pending.status(), Status::Signaled);
@@ -752,13 +752,13 @@ fn host_respects_interruptions_and_never_repeats_completed_effects() {
 fn builtin_policies_retain_ordinary_continuations() {
     let vm = equivalent(include_str!("cases/std_convergence.yaml"));
     assert_eq!(vm.status(), Status::Finished);
-    let vm = equivalent(r#"{$call: [type_time, {$call: [record, x, {$call: [default, {$ref: integer}, 3]}, y, {$call: [optional, {$call: [list_of, {$ref: string}]}]}]}]}"#);
+    let vm = equivalent(r#"!call [type_time, !call [record, x, !call [default, !ref integer, 3], y, !call [optional, !call [list_of, !ref string]]]]"#);
     assert_eq!(vm.status(), Status::Finished);
 }
 
 #[test]
 fn builtin_policy_sources_are_visible_when_execution_enters_them() {
-    let mut vm = Vm::load(r#"{$call: [converge, {$call: [realize, {$call: [class, c, {$call: [record, x, {$ref: integer}]}, {x: 1}]}]}, {}]}"#);
+    let mut vm = Vm::load(r#"!call [converge, !call [realize, !call [class, c, !call [record, x, !ref integer], {x: 1}]], {}]"#);
     let mut found = false;
     for _ in 0..20_000 {
         if !active(&vm) { break; }
@@ -776,7 +776,7 @@ fn builtin_policy_sources_are_visible_when_execution_enters_them() {
         vm = vm.step();
     }
     assert!(found, "builtin execution never exposed its Helix continuation");
-    let mut explicit = Vm::load(r#"{$call: [import, 'std:convergence']}"#);
+    let mut explicit = Vm::load(r#"!call [import, 'std:convergence']"#);
     explicit.run();
     assert_eq!(explicit.status(), Status::Finished);
     let state = explicit.state();
@@ -790,7 +790,7 @@ fn builtin_policy_sources_are_visible_when_execution_enters_them() {
 
 #[test]
 fn computed_member_projection_preserves_suspended_branches_and_blame() {
-    let mut pending = Vm::load(r#"{$call: [let, {box: {$call: [effect, input, null]}}, {$ref: box.answer}]}"#);
+    let mut pending = Vm::load(r#"!call [let, {box: !call [effect, input, null]}, !ref box.answer]"#);
     pending.run();
     assert_eq!(pending.status(), Status::Signaled);
     let inspection = pending.inspect();
@@ -815,13 +815,13 @@ fn computed_member_projection_preserves_suspended_branches_and_blame() {
 
 #[test]
 fn dotted_static_members_remain_lazy_and_computed_inputs_remain_tracked() {
-    let mut lazy = Vm::load(r#"{$call: [let, {data: {safe: 42, unused: {$call: [effect, forbidden, null]}}}, {$call: [try, {$ref: data.absent}, {$call: [fn, [error], {$ref: error.kind}]}]}]}"#);
+    let mut lazy = Vm::load(r#"!call [let, {data: {safe: 42, unused: !call [effect, forbidden, null]}}, !call [try, !ref data.absent, !call [fn, [error], !ref error.kind]]]"#);
     lazy.run();
     assert_eq!(root(&lazy), Yaml::String("unbound".into()));
     assert!(lazy.pending_effect().is_none());
     assert!(lazy.state()["effects"].is_badvalue());
 
-    let vm = equivalent(r#"{$call: [{$call: [fn, [n], {$call: [type_time, {$call: [let, {box: {$call: [dict, answer, {$ref: n}]}}, {$ref: box.answer}]}]}]}, 42]}"#);
+    let vm = equivalent(r#"!call [!call [fn, [n], !call [type_time, !call [let, {box: !call [dict, answer, !ref n]}, !ref box.answer]]], 42]"#);
     assert_eq!(root(&vm), Yaml::Integer(42));
     assert_eq!(vm.state()["type_time_inputs"][0]["reads"][0]["name"].as_str(), Some("n"));
     assert_eq!(vm.inspect()["type_time_inputs"][0]["inputs"][0]["value"].as_i64(), Some(42));
@@ -831,7 +831,7 @@ fn dotted_static_members_remain_lazy_and_computed_inputs_remain_tracked() {
 
 #[test]
 fn nginx_host_failure_preserves_structured_progress_and_raw_command_evidence() {
-    let mut pending = Vm::load(r#"{$call: [let, {nginx: {$call: [import, 'std:nginx']}}, {$call: [nginx.observe, {package_version: test, port: 8080, server_name: test.local, content: hello, state: present}]}]}"#);
+    let mut pending = Vm::load(r#"!call [let, {nginx: !call [import, 'std:nginx']}, !call [nginx.observe, {package_version: test, port: 8080, server_name: test.local, content: hello, state: present}]]"#);
     pending.run();
     assert_eq!(pending.status(), Status::Signaled);
     assert_eq!(pending.pending_effect().unwrap().operation, "command");

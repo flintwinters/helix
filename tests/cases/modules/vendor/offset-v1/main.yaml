@@ -1,3 +1,6 @@
 # Helix explicit syntax; migrated from legacy source.
-"constants": {"$call": ["import", "constants.yaml"]}
-"apply": {"$call": ["fn", ["x"], {"$call": ["add", {"$ref": "x"}, {"$ref": "constants.offset"}]}]}
+apply: !call
+  - fn
+  - [x]
+  - !call [add, !ref x, !ref constants.offset]
+constants: !call [import, constants.yaml]

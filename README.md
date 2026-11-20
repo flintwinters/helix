@@ -19,11 +19,11 @@ This builds the runtime and runs:
 
 ```yaml
 x: 2
-y: {$call: [add, {$ref: x}, 1]}
-z: {$call: [mul, {$call: [sub, {$ref: y}, 1]}, 5]}
+y: !call [add, !ref x, 1]
+z: !call [mul, !call [sub, !ref y, 1], 5]
 ```
 
-An explicit call `{$call: [add, {$ref: x}, 1]}` adds one to `x`. The result is:
+An explicit call `!call [add, !ref x, 1]` adds one to `x`. The result is:
 
 ```yaml
 status: finished
@@ -34,12 +34,12 @@ root:
 ```
 
 The emitter quotes strings where YAML could otherwise change their meaning.
-Wrap an ordinary-data `root` in `{$literal: ...}` to run it again without interpreting reserved maps as code. Functions and machines use named object inspection graphs; these are not executable snapshots.
+Wrap an ordinary-data `root` in `!literal` to run it again without interpreting reserved maps as code. Functions and machines use named object inspection graphs; these are not executable snapshots.
 
 For a result without the state envelope:
 
 ```sh
-./manage.py runtime exec '{$call: [add, 20, 22]}'
+./manage.py runtime exec '!call [add, 20, 22]'
 # 42
 ```
 
@@ -52,8 +52,8 @@ For [jq](https://jqlang.org/manual/) and [yq](https://mikefarah.gitbook.io/yq/co
 pipelines, select an explicit output format so string results remain quoted data:
 
 ```sh
-helix exec --json '{answer: {$call: [add, 20, 22]}}' | jq '.answer'
-helix exec --yaml '{answer: {$call: [add, 20, 22]}}' | yq '.answer'
+helix exec --json '{answer: !call [add, 20, 22]}' | jq '.answer'
+helix exec --yaml '{answer: !call [add, 20, 22]}' | yq '.answer'
 ```
 
 Both flags work with `./manage.py runtime exec` and stdin. JSON input is accepted
@@ -66,17 +66,17 @@ CI requires `jq` and `yq` via `HELIX_REQUIRE_PIPELINE_TOOLS=1`.
 
 Helix has immutable values, lexical scope, functions, recursion, collections,
 imports, first-class types, and structured errors with source locations.
-Strings are always literal; `{$ref: name}` looks up a name. `{$call: [actor, args...]}` calls an actor. Ordinary sequences are data, and `{$literal: data}` suppresses evaluation of its entire payload. Quoting style and map field order do not select behavior.
+Strings are always literal; `!ref name` looks up a name. `!call [actor, args...]` calls an actor. Ordinary sequences are data, and `!literal` suppresses evaluation of its entire payload. Quoting style and map field order do not select behavior.
 
 This example is in [tests/cases/tutorial.yaml](tests/cases/tutorial.yaml):
 
 ```yaml
-math: {$call: [import, 'std:math']}
-prices: {$call: [list, 3, 5, 8]}
-square_price: {$call: [fn, [price], {$call: [math.square, {$ref: price}]}]}
-squared: {$call: [map, {$ref: square_price}, {$ref: prices}]}
-valid: {$call: [assert, {$call: [eq, {$ref: squared}, {$call: [list, 9, 25, 64]}]}, unexpected squared prices]}
-recovered: {$call: [try, {$call: [div, 1, 0]}, {$call: [fn, [error], {$call: [get, {$ref: error}, kind]}]}]}
+math: !call [import, 'std:math']
+prices: !call [list, 3, 5, 8]
+square_price: !call [fn, [price], !call [math.square, !ref price]]
+squared: !call [map, !ref square_price, !ref prices]
+valid: !call [assert, !call [eq, !ref squared, !call [list, 9, 25, 64]], unexpected squared prices]
+recovered: !call [try, !call [div, 1, 0], !call [fn, [error], !call [get, !ref error, kind]]]
 ```
 
 Run it with `./manage.py run tests/cases/tutorial.yaml`. `squared` becomes
@@ -103,8 +103,8 @@ Choose the reference for the contract you need:
 ## Immutable execution
 
 Rust callers use `Vm::step(&self) -> Vm`, `run(&mut self)` and `inspect()`.
-Helix programs create ready children with `{$call: [vm, {$ref: function}]}`, advance versions
-with `{$call: [step, {$ref: child}]}`, and read state with `{$call: [inspect, {$ref: child}]}`. Earlier versions
+Helix programs create ready children with `!call [vm, !ref function]`, advance versions
+with `!call [step, !ref child]`, and read state with `!call [inspect, !ref child]`. Earlier versions
 keep their meaning when another branch advances. See
 [`vm_parent_child.yaml`](tests/cases/vm_parent_child.yaml) for a complete example.
 Functions retain direct code and lexical environments. Calls, iterations,

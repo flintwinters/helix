@@ -1,5 +1,5 @@
 error:
-  column: 26
+  column: 44
   data:
     violations:
       - actual: http
@@ -9,7 +9,7 @@ error:
         message: "expected integer, got string"
         rule: type
   kind: type
-  line: 7
+  line: 4
   message: "1 type violation: expected integer, got string"
   path: "/z_config/$call/1/$call/1"
   phase: type

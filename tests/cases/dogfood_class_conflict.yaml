@@ -1,15 +1,9 @@
 # Helix explicit syntax; migrated from legacy source.
 # A deployment inherits contradictory restart policies. The type-time diagnostic
 # must identify the conflicting field and both parents before any application.
-"base": {"$call": ["record", "restart", {"$ref": "string"}, "enabled", {"$ref": "boolean"}]}
-"interactive": {"$call": ["class", "interactive", {"$ref": "base"}, {"restart": "on-failure", "enabled": true}]}
-"unattended": {"$call": ["class", "unattended", {"$ref": "base"}, {"restart": "always", "enabled": true}]}
-"resolved":
-  "$call":
-  - "type_time"
-  - "$call":
-    - "extend"
-    - "worker"
-    - {"$call": ["list", {"$ref": "interactive"}, {"$ref": "unattended"}]}
-    - {"$call": ["record"]}
-    - {}
+base: !call [record, restart, !ref string, enabled, !ref boolean]
+interactive: !call [class, interactive, !ref base, {enabled: true, restart: on-failure}]
+resolved: !call
+  - type_time
+  - !call [extend, worker, !call [list, !ref interactive, !ref unattended], !call [record], {}]
+unattended: !call [class, unattended, !ref base, {enabled: true, restart: always}]

@@ -1,5 +1,5 @@
 error:
-  column: 27
+  column: 19
   file: tests/cases/modules/cycle_b.yaml
   kind: import
   line: 2

@@ -1,5 +1,5 @@
 error:
-  column: 32
+  column: 24
   kind: type
   line: 2
   message: "unknown type `port`"

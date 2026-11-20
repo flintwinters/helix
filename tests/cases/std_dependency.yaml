@@ -1,77 +1,58 @@
 # Helix explicit syntax; migrated from legacy source.
-"d": {"$call": ["import", "std:dependency"]}
-"empty": {"$call": ["d.plan", {}]}
-"empty_ok":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$ref": "empty"}, {"order": [], "pending": {}, "missing": [], "status": "finished"}]}
-"independent": {"$call": ["d.plan", {"z": [], "a": [], ? "" : [], "\U0001F642": []}]}
-"stable":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["get", {"$ref": "independent"}, "order"]}, ["", "a", "z", "\U0001F642"]]}
-"batches": {"$call": ["d.plan", {"last": ["first"], "first": [], "other": []}]}
-"batches_ok":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["get", {"$ref": "batches"}, "order"]}, ["first", "other", "last"]]}
-"duplicates": {"$call": ["d.plan", {"end": ["start", "start"], "start": []}]}
-"duplicates_ok":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["get", {"$ref": "duplicates"}, "order"]}, ["start", "end"]]}
-"missing": {"$call": ["d.plan", {"b": ["no", "no"], "a": ["absent"], "independent": []}]}
-"missing_ok":
-  "$call":
-  - "assert"
-  - "$call":
-    - "eq"
-    - {"$call": ["get", {"$ref": "missing"}, "missing"]}
-    - - "task": "a"
-        "dependency": "absent"
-      - "task": "b"
-        "dependency": "no"
-      - "task": "b"
-        "dependency": "no"
-"pending_order":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["keys", {"$call": ["get", {"$ref": "missing"}, "pending"]}]}, ["a", "b"]]}
-"cycle": {"$call": ["d.plan", {"a": ["b"], "b": ["a"], "downstream": ["a"], "free": []}]}
-"cycle_ok":
-  "$call":
-  - "assert"
-  - "$call":
-    - "eq"
-    - {"$ref": "cycle"}
-    - "order":
-      - "free"
-      "pending":
-        "a":
-        - "b"
-        "b":
-        - "a"
-        "downstream":
-        - "a"
-      "missing": []
-      "status": "blocked"
-"self_cycle": {"$call": ["d.plan", {"self": ["self"]}]}
-"unicode": {"$call": ["d.plan", {"\U0001F642": [""], ? "" : []}]}
-"unicode_ok": {"$call": ["assert", {"$call": ["eq", {"$call": ["get", {"$ref": "unicode"}, "order"]}, ["", "\U0001F642"]]}]}
-"wrong_map":
-  "$call":
-  - "try"
-  - {"$call": ["d.plan", []]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_list":
-  "$call":
-  - "try"
-  - {"$call": ["d.plan", {"a": "b"}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_dependency":
-  "$call":
-  - "try"
-  - {"$call": ["d.plan", {"a": [null]}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_arity": {"$call": ["try", {"$call": ["d.plan"]}, {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"},
-            "kind"]}]}]}
+batches: !call [d.plan, {first: [], last: [first], other: []}]
+batches_ok: !call [assert, !call [eq, !call [get, !ref batches, order], [first, other, last]]]
+cycle: !call [d.plan, {a: [b], b: [a], downstream: [a], free: []}]
+cycle_ok: !call
+  - assert
+  - !call
+      - eq
+      - !ref cycle
+      - {missing: [], order: [free], pending: {a: [b], b: [a], downstream: [a]}, status: blocked}
+d: !call [import, "std:dependency"]
+duplicates: !call [d.plan, {end: [start, start], start: []}]
+duplicates_ok: !call [assert, !call [eq, !call [get, !ref duplicates, order], [start, end]]]
+empty: !call [d.plan, {}]
+empty_ok: !call
+  - assert
+  - !call [eq, !ref empty, {missing: [], order: [], pending: {}, status: finished}]
+independent: !call [d.plan, {"": [], a: [], z: [], "🙂": []}]
+missing: !call [d.plan, {a: [absent], b: ["no", "no"], independent: []}]
+missing_ok: !call
+  - assert
+  - !call
+      - eq
+      - !call [get, !ref missing, missing]
+      - [{dependency: absent, task: a}, {dependency: "no", task: b}, {dependency: "no", task: b}]
+pending_order: !call [assert, !call [eq, !call [keys, !call [get, !ref missing, pending]], [a, b]]]
+self_cycle: !call [d.plan, {self: [self]}]
+stable: !call [assert, !call [eq, !call [get, !ref independent, order], ["", a, z, "🙂"]]]
+unicode: !call [d.plan, {"": [], "🙂": [""]}]
+unicode_ok: !call [assert, !call [eq, !call [get, !ref unicode, order], ["", "🙂"]]]
+wrong_arity: !call
+  - try
+  - !call [d.plan]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_dependency: !call
+  - try
+  - !call [d.plan, {a: [~]}]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_list: !call
+  - try
+  - !call [d.plan, {a: b}]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_map: !call
+  - try
+  - !call [d.plan, []]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]

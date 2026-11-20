@@ -39,8 +39,8 @@ def verify(h):
         ('!!float "42"', 42.0), ('!!bool true', True), ('!!null null', None),
         ('!!seq [add, 1, 2]', ['add', 1, 2]), ('!!map {value: 42}', {'value': 42}),
         ('a: &value [1, 2]\nb: *value', {'a': [1, 2], 'b': [1, 2]}),
-        ('x: 40\na: &expr {$call: [add, {$ref: x}, 2]}\nb: *expr', {'x': 40, 'a': 42, 'b': 42}),
-        ('a: {x: 1, value: &expr {$ref: x}}\nb: {x: 2, value: *expr}',
+        ('x: 40\na: &expr !call [add, !ref x, 2]\nb: *expr', {'x': 40, 'a': 42, 'b': 42}),
+        ('a: {x: 1, value: &expr !ref x}\nb: {x: 2, value: *expr}',
          {'a': {'x': 1, 'value': 1}, 'b': {'x': 2, 'value': 2}}),
     ]:
         result = h.helix('run', '-', stdin=source)
@@ -53,7 +53,7 @@ def verify(h):
         result = h.helix('run', '-', stdin=source)
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, (source, result)
     # Both spellings produce identical function code and lexical environments.
-    mixed = '!call [eq, !call [fn, [x], !ref x], {$call: [fn, [x], {$ref: x}]}]'
+    mixed = '!call [eq, !call [fn, [x], !ref x], !call [fn, [x], !ref x]]'
     result = h.helix('run', '-', stdin=mixed)
     assert result.returncode == 0 and yaml.safe_load(result.stdout)['root'] is True, result
     # Tags never leak into ordinary data emission, including codec input.
@@ -121,6 +121,7 @@ def verify(h):
 
 def verify_migration():
     """Offline conversion is explicit, repeatable, and respects old lexical contexts."""
+    from tooling.source_format import SourceLoader
     from tooling.syntax_migration import migrate_source
     cases = [
         ('[add, x, "x"]', {"$call": ["add", {"$ref": "x"}, "x"]}),
@@ -148,9 +149,9 @@ def verify_migration():
     ]
     for source, expected in cases:
         converted = migrate_source(source)
-        assert yaml.safe_load(converted) == expected, converted
+        assert yaml.load(converted, SourceLoader) == expected, converted
         assert migrate_source(converted) == converted
-    assert yaml.safe_load(migrate_source('[closure, 42]', names=['closure'])) == {"$call": ["closure", 42]}
+    assert yaml.load(migrate_source("[closure, 42]", names=["closure"]), SourceLoader) == {"$call": ["closure", 42]}
     for source in ('a: 1\na: 2', 'a: &value 1\nb: *value', '&cycle [*cycle]'):
         try:
             migrate_source(source)

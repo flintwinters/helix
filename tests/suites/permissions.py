@@ -37,11 +37,11 @@ def verify(h):
         package.mkdir()
         entrypoint = package / "main.yaml"
         entrypoint.write_text("value: 42\n")
-        assert run('m: {$call: [import, package]}', allowed, 0)["root"]["m"]["value"] == 42
-        run('m: {$call: [import, package]}', "-", 1)
+        assert run('m: !call [import, package]', allowed, 0)["root"]["m"]["value"] == 42
+        run('m: !call [import, package]', "-", 1)
         entrypoint.unlink()
         entrypoint.symlink_to(sibling / "secret.yaml")
-        run('m: {$call: [import, package]}', allowed, 1)
+        run('m: !call [import, package]', allowed, 1)
         (allowed / "local.yaml").write_text('{"m": {"$call": ["import", "../allowed-sibling/secret.yaml"]}}')
         error = run('{"m": {"$call": ["import", "local.yaml"]}}', allowed, 1)["error"]
         assert error["file"].endswith("local.yaml"), error

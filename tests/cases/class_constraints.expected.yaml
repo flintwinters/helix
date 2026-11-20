@@ -177,8 +177,8 @@ root:
         expected: class
         message: "constraint 0 of `bad` does not hold"
         predicate:
-          column: 10
-          line: 4
+          column: 3
+          line: 17
           path: /ordered
           reference:
             - ordered

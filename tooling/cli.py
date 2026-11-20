@@ -172,7 +172,7 @@ def parser():
     sandbox.add_argument("root", metavar="ROOT", help="allowed import directory, or - for embedded modules only")
     sandbox.add_argument("file", metavar="FILE", help="YAML file, or - for stdin")
     pipeline = command(runtime, "exec", "Evaluate inline YAML or stdin; emit raw strings or YAML values",
-                       ["runtime", "exec"], "runtime exec '\"{$call: [add, 20, 22]}\"' | ./manage.py runtime exec")
+                       ["runtime", "exec"], "runtime exec '\"!call [add, 20, 22]\"' | ./manage.py runtime exec")
     formats = pipeline.add_mutually_exclusive_group()
     formats.add_argument("--json", dest="output_format", action="store_const", const="--json", help="emit JSON, including quoted string results, for jq/yq")
     formats.add_argument("--yaml", dest="output_format", action="store_const", const="--yaml", help="emit YAML, including quoted string results, for yq")
@@ -184,7 +184,7 @@ def parser():
                      ["runtime", "search"], "runtime search index std --no-std")
     search.add_argument("extra", nargs=argparse.REMAINDER, help="index [PATH ...] | parse FILE | probe --cases FILE [--root PATH]")
     inline = command(runtime, "eval", "Evaluate inline YAML and emit VM state",
-                     ["runtime", "eval"], "runtime eval '{$call: [add, 20, 22]}'")
+                     ["runtime", "eval"], "runtime eval '!call [add, 20, 22]'")
     inline.add_argument("source", metavar="SOURCE", help="YAML program quoted as one shell argument; use -- before a leading dash")
     inline.add_argument("--check", action="store_true", help="collect independent evaluation errors")
     perform = command(runtime, "perform", "Execute authorized host effects; state on stderr, program output on stdout",

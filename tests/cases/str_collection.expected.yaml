@@ -1,5 +1,5 @@
 error:
-  column: 24
+  column: 16
   kind: type
   line: 2
   message: "expected a scalar, got list"

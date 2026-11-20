@@ -1,7 +1,7 @@
 error:
-  column: 6
+  column: 3
   kind: limit
-  line: 2
+  line: 3
   message: "`until` did not finish within 100000 steps"
   path: /r
   reference:

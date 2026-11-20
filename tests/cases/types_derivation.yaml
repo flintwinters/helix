@@ -1,58 +1,56 @@
 # Helix explicit syntax; migrated from legacy source.
-"t": {"$call": ["import", "std:types"]}
-"original":
-  "$call":
-  - "record"
-  - "name"
-  - {"$ref": "string"}
-  - "count"
-  - {"$ref": "integer"}
-  - "note"
-  - {"$call": ["optional", {"$ref": "string"}]}
-  - "enabled"
-  - {"$call": ["default", {"$ref": "boolean"}, true]}
-"rebuilt": {"$call": ["t.from_fields", {"$call": ["fields", {"$ref": "original"}]}]}
-"round_trip": {"$call": ["eq", {"$ref": "original"}, {"$ref": "rebuilt"}]}
-"dropped": {"$call": ["t.without_field", {"$ref": "original"}, "count"]}
-"drop_missing": {"$call": ["eq", {"$ref": "original"}, {"$call": ["t.without_field", {"$ref": "original"}, "absent"]}]}
-"retyped": {"$call": ["with_field", {"$ref": "original"}, "count", {"$ref": "string"}]}
-"added": {"$call": ["with_field", {"$ref": "original"}, "extra", {"$ref": "boolean"}]}
-"all_optional": {"$call": ["t.optional_fields", {"$ref": "original"}]}
-"idempotent": {"$call": ["eq", {"$ref": "all_optional"}, {"$call": ["t.optional_fields", {"$ref": "all_optional"}]}]}
-"default_preserved":
-  "$call":
-  - "eq"
-  - {"$call": ["get", {"$call": ["fields", {"$ref": "original"}]}, "enabled"]}
-  - {"$call": ["get", {"$call": ["fields", {"$ref": "all_optional"}]}, "enabled"]}
-"checks":
-  "$call":
-  - "list"
-  - {"$call": ["is", {}, {"$ref": "all_optional"}]}
-  - {"$call": ["is", {"count": 4}, {"$ref": "all_optional"}]}
-  - {"$call": ["is", {"count": "bad"}, {"$ref": "all_optional"}]}
-  - {"$call": ["is", {"name": "x"}, {"$ref": "dropped"}]}
-  - {"$call": ["is", {"name": "x", "count": "four"}, {"$ref": "retyped"}]}
-"empty": {"$call": ["t.from_fields", {}]}
-"empty_optional": {"$call": ["eq", {"$ref": "empty"}, {"$call": ["t.optional_fields", {"$ref": "empty"}]}]}
-"constructed":
-  "$call":
-  - "fold"
-  - "$call":
-    - "fn"
-    - - "record_type"
-      - "field"
-    - {"$call": ["with_field", {"$ref": "record_type"}, {"$ref": "field"}, {"$ref": "integer"}]}
-  - {"$call": ["record"]}
-  - - "x"
-    - "y"
-"via_function": {"$call": ["call", {"$ref": "t.optional_fields"}, {"$ref": "constructed"}]}
-"invalid_spec":
-  "$call":
-  - "try"
-  - {"$call": ["t.from_fields", {"broken": 42}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"invalid_type":
-  "$call":
-  - "try"
-  - {"$call": ["t.optional_fields", {"$ref": "integer"}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+added: !call [with_field, !ref original, extra, !ref boolean]
+all_optional: !call [t.optional_fields, !ref original]
+checks: !call
+  - list
+  - !call [is, {}, !ref all_optional]
+  - !call [is, {count: 4}, !ref all_optional]
+  - !call [is, {count: bad}, !ref all_optional]
+  - !call [is, {name: x}, !ref dropped]
+  - !call [is, {count: four, name: x}, !ref retyped]
+constructed: !call
+  - fold
+  - !call
+      - fn
+      - [record_type, field]
+      - !call [with_field, !ref record_type, !ref field, !ref integer]
+  - !call [record]
+  - [x, "y"]
+default_preserved: !call
+  - eq
+  - !call [get, !call [fields, !ref original], enabled]
+  - !call [get, !call [fields, !ref all_optional], enabled]
+drop_missing: !call [eq, !ref original, !call [t.without_field, !ref original, absent]]
+dropped: !call [t.without_field, !ref original, count]
+empty: !call [t.from_fields, {}]
+empty_optional: !call [eq, !ref empty, !call [t.optional_fields, !ref empty]]
+idempotent: !call [eq, !ref all_optional, !call [t.optional_fields, !ref all_optional]]
+invalid_spec: !call
+  - try
+  - !call [t.from_fields, {broken: 42}]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+invalid_type: !call
+  - try
+  - !call [t.optional_fields, !ref integer]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+original: !call
+  - record
+  - name
+  - !ref string
+  - count
+  - !ref integer
+  - note
+  - !call [optional, !ref string]
+  - enabled
+  - !call [default, !ref boolean, true]
+rebuilt: !call [t.from_fields, !call [fields, !ref original]]
+retyped: !call [with_field, !ref original, count, !ref string]
+round_trip: !call [eq, !ref original, !ref rebuilt]
+t: !call [import, "std:types"]
+via_function: !call [call, !ref t.optional_fields, !ref constructed]

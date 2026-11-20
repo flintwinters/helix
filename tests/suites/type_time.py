@@ -56,7 +56,7 @@ def verify(h):
             errors = result.get("errors", [result.get("error")])
             assert any(e["kind"] == kind and e.get("phase") == "type" for e in errors), result
     # Loading source is separate from executing effects in a pure region.
-    source = (h.root / "tests" / "cases" / "types_type_time_effect.yaml").read_text().replace('"modules/', '"tests/cases/modules/')
+    source = (h.root / "tests" / "cases" / "types_type_time_effect.yaml").read_text().replace(' modules/', ' tests/cases/modules/')
     for command in ("run", "check"):
         result = state(h, command, source)
         error = result["root"]["blocked"]

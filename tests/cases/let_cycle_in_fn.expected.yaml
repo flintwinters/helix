@@ -1,14 +1,14 @@
 error:
   calls:
-    - column: 6
+    - column: 10
       function: /f
-      function_column: 10
+      function_column: 3
       function_line: 3
-      line: 7
+      line: 9
       path: /r
-  column: 29
+  column: 19
   kind: cycle
-  line: 6
+  line: 7
   message: value depends on itself
   path: "/f/$call/2/$call/1/a"
   reference:

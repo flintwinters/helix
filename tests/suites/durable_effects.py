@@ -111,7 +111,7 @@ def verify(h):
 
         # Host bookkeeping that affects the observable result survives too.
         exit_source, exit_checkpoint = base / 'exit.yaml', base / 'exit.json'
-        exit_source.write_text('{$call: [effect, exit, 7]}\n')
+        exit_source.write_text('!call [effect, exit, 7]\n')
         exited = h.helix('perform', '--checkpoint', str(exit_checkpoint), str(exit_source))
         assert exited.returncode == 7, exited
         restored = h.helix('perform', '--resume-checkpoint', str(exit_checkpoint))
@@ -120,7 +120,7 @@ def verify(h):
         assert existing.returncode != 0 and 'already exists' in existing.stderr, existing
 
         # Reconciliation preserves deterministic host progress as well as VM data.
-        random_program = '[{$call: [effect, random, null]}, {$call: [effect, random, null]}]'
+        random_program = '[!call [effect, random, null], !call [effect, random, null]]'
         saved = h.helix('snapshot', '-', '--steps', '100', stdin=random_program)
         assert saved.returncode == 0, saved
         random_checkpoint = base / 'random.json'

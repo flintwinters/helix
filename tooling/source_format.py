@@ -1,9 +1,28 @@
-"""Batch source formatting through the authoritative, graph-checking runtime formatter."""
+"""Source YAML reading and batch formatting through the authoritative runtime formatter."""
+import copy
 from pathlib import Path
 
 import yaml
 
 from tooling.output import emit
+
+
+class SourceLoader(yaml.SafeLoader):
+    """Normalize source tags into the `{$call: ...}` representation the runtime reads."""
+
+
+SourceLoader.add_constructor("!call", lambda loader, node: {"$call": loader.construct_sequence(node, deep=True)})
+SourceLoader.add_constructor("!ref", lambda loader, node: {"$ref": loader.construct_scalar(node)})
+
+
+def _literal(loader, node):
+    """Construct the payload under the tag its untagged spelling would resolve to."""
+    payload = copy.copy(node)
+    payload.tag = loader.resolve(type(node), node.value, (getattr(node, "style", None) is None, True))
+    return {"$literal": loader.construct_object(payload, deep=True)}
+
+
+SourceLoader.add_constructor("!literal", _literal)
 
 
 def positions(source):

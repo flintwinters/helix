@@ -1,2 +1,2 @@
 # Helix explicit syntax; migrated from legacy source.
-"r": {"$call": ["cond", 1, {"$ref": "a"}, {"$ref": "b"}]}
+r: !call [cond, 1, !ref a, !ref b]

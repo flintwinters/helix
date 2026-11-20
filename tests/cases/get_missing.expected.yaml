@@ -1,7 +1,7 @@
 error:
-  column: 39
+  column: 24
   kind: missing
-  line: 4
+  line: 3
   message: "no key `b`"
   path: "/x/$call/2"
   reference:

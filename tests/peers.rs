@@ -5,7 +5,7 @@ use yaml_rust2::{Yaml, YamlLoader};
 
 const CLIENT: &str = include_str!("programs/peer_client.yaml");
 const SERVER: &str = include_str!("programs/peer_server.yaml");
-const ENDLESS: &str = "{$call: [until, {$call: [fn, [n], false]}, {$call: [fn, [n], {$call: [add, {$ref: n}, 1]}]}, 0]}";
+const ENDLESS: &str = "!call [until, !call [fn, [n], false], !call [fn, [n], !call [add, !ref n, 1]], 0]";
 fn promised(source: &str) -> Vm {
     let promise = YamlLoader::load_from_str("{type: promise, name: reversible, requires: [reversible]}").unwrap().remove(0);
     Vm::load(source).with_promise(promise).unwrap()
@@ -71,7 +71,7 @@ fn joint_history_cannot_be_omitted_or_spliced() {
 #[test]
 fn unpromised_participants_and_external_operations_have_no_peer_authority() {
     assert!(PromisedSystem::new([("plain".into(), Vm::load("42"))].into()).is_err());
-    let mut state = PromisedSystem::new([("client".into(), promised("{$call: [effect, exit, 17]}"))].into()).unwrap();
+    let mut state = PromisedSystem::new([("client".into(), promised("!call [effect, exit, 17]"))].into()).unwrap();
     for _ in 0..30 {
         match state.advance().unwrap() { Some(next) => state = next, None => break }
     }
@@ -149,17 +149,17 @@ fn waiting_system() -> PromisedSystem {
 
 #[test]
 fn server_retains_accumulated_state_across_two_exchanges() {
-    let client = r#"{$call: [get, [
-        {$call: [effect, peer_send, {to: server, value: 7}]},
-        {$call: [effect, peer_receive, {from: server}]},
-        {$call: [effect, peer_send, {to: server, value: 5}]},
-        {$call: [effect, peer_receive, {from: server}]}
-    ], 3]}"#;
-    let server = r#"{$call: [fold, {$call: [fn, [total, item],
-        {$call: [{$call: [fn, [next],
-            {$call: [get, [{$call: [effect, peer_send, {to: client, value: {$ref: next}}]}, {$ref: next}], 1]}]},
-            {$call: [add, {$ref: total}, {$call: [effect, peer_receive, {from: client}]}]}]}
-    ]}, 0, [null, null]]}"#;
+    let client = r#"!call [get, [
+        !call [effect, peer_send, {to: server, value: 7}],
+        !call [effect, peer_receive, {from: server}],
+        !call [effect, peer_send, {to: server, value: 5}],
+        !call [effect, peer_receive, {from: server}]
+    ], 3]"#;
+    let server = r#"!call [fold, !call [fn, [total, item],
+        !call [!call [fn, [next],
+            !call [get, [!call [effect, peer_send, {to: client, value: !ref next}], !ref next], 1]],
+            !call [add, !ref total, !call [effect, peer_receive, {from: client}]]]
+    ], 0, [null, null]]"#;
     let mut state = PromisedSystem::new([
         ("client".into(), promised(client)), ("server".into(), promised(server)),
     ].into()).unwrap();

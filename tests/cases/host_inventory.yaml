@@ -1,106 +1,93 @@
 # Deterministic charter contract; host acceptance lives in the corresponding suite.
-$call:
-- let
-- inventory:
-    $call:
-    - import
-    - std:inventory
-- $call:
-  - type_time
-  - all:
-      $call:
-      - inventory.resolve
-      - $literal: &id001
-          version: 1
-          hosts:
-          - &id004
-            id: local
-            connection:
-              transport: local
-          - id: web
-            connection:
-              transport: ssh
-              address: web.example
-              user: deploy
-          groups:
-            production:
-            - web
-            - db
-          overrides:
-          - source: group-port
-            hosts: []
-            groups:
-            - production
-            connection:
-              port: 2222
-          - source: web-port
-            hosts:
-            - web
-            groups: []
-            connection:
-              port: 2200
-      - $literal: &id002
-        - source: supplied-discovery
-          hosts:
-          - id: db
-            connection:
-              transport: ssh
-              address: db.example
-      - $literal: &id003
-          all: true
-    selected:
-      $call:
-      - inventory.resolve
-      - $literal: *id001
-      - $literal: *id002
-      - $literal:
-          groups:
-          - production
-          exclude_hosts:
-          - db
-    no_implicit_all:
-      $call:
-      - inventory.resolve
-      - $literal: *id001
-      - $literal: *id002
-      - $literal: {}
-    empty:
-      $call:
-      - inventory.resolve
-      - $literal:
-          version: 1
-          hosts: []
-          groups: {}
-          overrides: []
-      - $literal: []
-      - $literal: *id003
-    missing:
-      $call:
-      - inventory.resolve
-      - $literal: *id001
-      - $literal: *id002
-      - $literal:
-          hosts:
-          - missing
-    duplicate:
-      $call:
-      - inventory.resolve
-      - $literal: *id001
-      - $literal:
-        - source: duplicate
-          hosts:
-          - *id004
-      - $literal: *id003
-    invalid_connection:
-      $call:
-      - inventory.resolve
-      - $literal:
-          version: 1
-          hosts:
-          - id: bad
-            connection:
-              transport: ssh
-          groups: {}
-          overrides: []
-      - $literal: []
-      - $literal: {}
+!call
+  - let
+  - {inventory: !call [import, "std:inventory"]}
+  - !call
+      - type_time
+      - all: !call
+          - inventory.resolve
+          - !literal
+              groups: {production: [web, db]}
+              hosts:
+                - {connection: {transport: local}, id: local}
+                - {connection: {address: web.example, transport: ssh, user: deploy}, id: web}
+              overrides:
+                - {connection: {port: 2222}, groups: [production], hosts: [], source: group-port}
+                - {connection: {port: 2200}, groups: [], hosts: [web], source: web-port}
+              version: 1
+          - !literal
+              - hosts: [{connection: {address: db.example, transport: ssh}, id: db}]
+                source: supplied-discovery
+          - !literal {all: true}
+        duplicate: !call
+          - inventory.resolve
+          - !literal
+              groups: {production: [web, db]}
+              hosts:
+                - {connection: {transport: local}, id: local}
+                - {connection: {address: web.example, transport: ssh, user: deploy}, id: web}
+              overrides:
+                - {connection: {port: 2222}, groups: [production], hosts: [], source: group-port}
+                - {connection: {port: 2200}, groups: [], hosts: [web], source: web-port}
+              version: 1
+          - !literal [{hosts: [{connection: {transport: local}, id: local}], source: duplicate}]
+          - !literal {all: true}
+        empty: !call
+          - inventory.resolve
+          - !literal {groups: {}, hosts: [], overrides: [], version: 1}
+          - !literal []
+          - !literal {all: true}
+        invalid_connection: !call
+          - inventory.resolve
+          - !literal
+              groups: {}
+              hosts: [{connection: {transport: ssh}, id: bad}]
+              overrides: []
+              version: 1
+          - !literal []
+          - !literal {}
+        missing: !call
+          - inventory.resolve
+          - !literal
+              groups: {production: [web, db]}
+              hosts:
+                - {connection: {transport: local}, id: local}
+                - {connection: {address: web.example, transport: ssh, user: deploy}, id: web}
+              overrides:
+                - {connection: {port: 2222}, groups: [production], hosts: [], source: group-port}
+                - {connection: {port: 2200}, groups: [], hosts: [web], source: web-port}
+              version: 1
+          - !literal
+              - hosts: [{connection: {address: db.example, transport: ssh}, id: db}]
+                source: supplied-discovery
+          - !literal {hosts: [missing]}
+        no_implicit_all: !call
+          - inventory.resolve
+          - !literal
+              groups: {production: [web, db]}
+              hosts:
+                - {connection: {transport: local}, id: local}
+                - {connection: {address: web.example, transport: ssh, user: deploy}, id: web}
+              overrides:
+                - {connection: {port: 2222}, groups: [production], hosts: [], source: group-port}
+                - {connection: {port: 2200}, groups: [], hosts: [web], source: web-port}
+              version: 1
+          - !literal
+              - hosts: [{connection: {address: db.example, transport: ssh}, id: db}]
+                source: supplied-discovery
+          - !literal {}
+        selected: !call
+          - inventory.resolve
+          - !literal
+              groups: {production: [web, db]}
+              hosts:
+                - {connection: {transport: local}, id: local}
+                - {connection: {address: web.example, transport: ssh, user: deploy}, id: web}
+              overrides:
+                - {connection: {port: 2222}, groups: [production], hosts: [], source: group-port}
+                - {connection: {port: 2200}, groups: [], hosts: [web], source: web-port}
+              version: 1
+          - !literal
+              - hosts: [{connection: {address: db.example, transport: ssh}, id: db}]
+                source: supplied-discovery
+          - !literal {exclude_hosts: [db], groups: [production]}

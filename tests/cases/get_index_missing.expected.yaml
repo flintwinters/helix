@@ -1,5 +1,5 @@
 error:
-  column: 32
+  column: 24
   kind: missing
   line: 2
   message: no index 5

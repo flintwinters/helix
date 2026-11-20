@@ -1,5 +1,5 @@
 error:
-  column: 37
+  column: 29
   kind: range
   line: 2
   message: slice 2..1 is out of range for length 3

@@ -1,20 +1,30 @@
 # Helix explicit syntax; migrated from legacy source.
 # Handle only the kinds you expect; re-raise anything else so it is not swallowed.
-"handle":
-  "$call":
-  - "fn"
-  - - "e"
-  - "$call":
-    - "cond"
-    - {"$call": ["eq", {"$call": ["get", {"$ref": "e"}, "kind"]}, "transient"]}
-    - "retry"
-    - {"$call": ["eq", {"$call": ["get", {"$ref": "e"}, "kind"]}, "divide_by_zero"]}
-    - "zero"
-    - {"$call": ["raise", {"$ref": "e"}]}
-"transient": {"$call": ["try", {"$call": ["raise", "transient", "try again"]}, {"$ref": "handle"}]}
-"builtin": {"$call": ["try", {"$call": ["div", 1, 0]}, {"$ref": "handle"}]}
-"reraised":
-  "$call":
-  - "try"
-  - {"$call": ["try", {"$call": ["raise", "fatal", "disk gone"]}, {"$ref": "handle"}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+builtin: !call
+  - try
+  - !call [div, 1, 0]
+  - !ref handle
+handle: !call
+  - fn
+  - [e]
+  - !call
+      - cond
+      - !call [eq, !call [get, !ref e, kind], transient]
+      - retry
+      - !call [eq, !call [get, !ref e, kind], divide_by_zero]
+      - zero
+      - !call [raise, !ref e]
+reraised: !call
+  - try
+  - !call
+      - try
+      - !call [raise, fatal, disk gone]
+      - !ref handle
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+transient: !call
+  - try
+  - !call [raise, transient, try again]
+  - !ref handle

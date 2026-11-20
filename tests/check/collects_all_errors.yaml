@@ -1,20 +1,15 @@
 # Helix explicit syntax; migrated from legacy source.
-"in_port":
-  "$call":
-  - "fn"
-  - - "n"
-  - {"$call": ["and", {"$call": ["ge", {"$ref": "n"}, 1]}, {"$call": ["le", {"$ref": "n"}, 65535]}]}
-"port": {"$call": ["refine", {"$ref": "integer"}, {"$ref": "in_port"}]}
-"endpoint": {"$call": ["record", "host", {"$ref": "string"}, "port", {"$ref": "port"}]}
-"good": {"$call": ["expect", {"host": "a", "port": 22}, {"$ref": "endpoint"}]}
-"bad_port": {"$call": ["expect", {"host": "a", "port": 0}, {"$ref": "endpoint"}]}
-"unbound_use": {"$call": ["add", 1, {"$ref": "nothing_here"}]}
-"fleet":
-  "one": {"$call": ["div", 1, 0]}
-  "two": 5
-  "three": {"$call": ["expect", 7, {"$ref": "string"}]}
-"fleet_unique":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["duplicates", {"$call": ["list", 1, 1]}]}, []]}
-  - "values must be unique"
+bad_port: !call [expect, {host: a, port: 0}, !ref endpoint]
+endpoint: !call [record, host, !ref string, port, !ref port]
+fleet: {one: !call [div, 1, 0], three: !call [expect, 7, !ref string], two: 5}
+fleet_unique: !call
+  - assert
+  - !call [eq, !call [duplicates, !call [list, 1, 1]], []]
+  - values must be unique
+good: !call [expect, {host: a, port: 22}, !ref endpoint]
+in_port: !call
+  - fn
+  - ["n"]
+  - !call [and, !call [ge, !ref "n", 1], !call [le, !ref "n", 65535]]
+port: !call [refine, !ref integer, !ref in_port]
+unbound_use: !call [add, 1, !ref nothing_here]

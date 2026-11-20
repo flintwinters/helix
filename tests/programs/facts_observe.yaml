@@ -1,4 +1,3 @@
 # Read-only Ubuntu facts; grant only these existing command observers.
-facts: {$call: [import, 'std:facts']}
-snapshot:
-  $call: [facts.gather, null, {select: [cpu, memory, packages, network, mounts], custom: []}]
+facts: !call [import, "std:facts"]
+snapshot: !call [facts.gather, ~, {custom: [], select: [cpu, memory, packages, network, mounts]}]

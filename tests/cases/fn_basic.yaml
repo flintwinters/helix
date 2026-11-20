@@ -1,6 +1,12 @@
 # Helix explicit syntax; migrated from legacy source.
-"double": {"$call": ["fn", ["n"], {"$call": ["mul", {"$ref": "n"}, 2]}]}
-"sum3": {"$call": ["fn", ["a", "b", "c"], {"$call": ["add", {"$ref": "a"}, {"$ref": "b"}, {"$ref": "c"}]}]}
-"answer": {"$call": ["double", 21]}
-"total": {"$call": ["sum3", 1, 2, 3]}
-"nested": {"$call": ["double", {"$call": ["double", 4]}]}
+answer: !call [double, 21]
+double: !call
+  - fn
+  - ["n"]
+  - !call [mul, !ref "n", 2]
+nested: !call [double, !call [double, 4]]
+sum3: !call
+  - fn
+  - [a, b, c]
+  - !call [add, !ref a, !ref b, !ref c]
+total: !call [sum3, 1, 2, 3]

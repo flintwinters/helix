@@ -1,41 +1,54 @@
 # Helix explicit syntax; migrated from legacy source.
 # A parent retains a ready child while two independent versions finish.
 # Observe status and outcome, never an implementation-specific transition count.
-"$call":
-- "let"
-- "make":
-    "$call":
-    - "fn"
-    - - "captured"
-    - {"$call": ["vm", {"$call": ["fn", [], {"$call": ["add", {"$ref": "captured"}, 2]}]}]}
-  "done":
-    "$call":
-    - "fn"
-    - - "child"
-    - {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "child"}]}, "status"]}, "finished"]}
-  "advance": {"$call": ["fn", ["child"], {"$call": ["step", {"$ref": "child"}]}]}
-  "finish": {"$call": ["fn", ["child"], {"$call": ["until", {"$ref": "done"}, {"$ref": "advance"}, {"$ref": "child"}]}]}
-  "original": {"$call": ["make", 40]}
-  "advanced": {"$call": ["step", {"$ref": "original"}]}
-  "left": {"$call": ["finish", {"$ref": "original"}]}
-  "right": {"$call": ["finish", {"$ref": "advanced"}]}
-- "$call":
-  - "dict"
-  - "original_status"
-  - {"$call": ["get", {"$call": ["inspect", {"$ref": "original"}]}, "status"]}
-  - "advanced_status"
-  - {"$call": ["get", {"$call": ["inspect", {"$ref": "advanced"}]}, "status"]}
-  - "versions_differ"
-  - {"$call": ["ne", {"$ref": "original"}, {"$ref": "advanced"}]}
-  - "left_status"
-  - {"$call": ["get", {"$call": ["inspect", {"$ref": "left"}]}, "status"]}
-  - "left_result"
-  - {"$call": ["get", {"$call": ["inspect", {"$ref": "left"}]}, "outcome"]}
-  - "right_status"
-  - {"$call": ["get", {"$call": ["inspect", {"$ref": "right"}]}, "status"]}
-  - "right_result"
-  - {"$call": ["get", {"$call": ["inspect", {"$ref": "right"}]}, "outcome"]}
-  - "branches_equal"
-  - {"$call": ["eq", {"$ref": "left"}, {"$ref": "right"}]}
-  - "original_still_ready"
-  - {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "original"}]}, "status"]}, "ready"]}
+!call
+  - let
+  - advance: !call
+      - fn
+      - [child]
+      - !call [step, !ref child]
+    advanced: !call [step, !ref original]
+    done: !call
+      - fn
+      - [child]
+      - !call [eq, !call [get, !call [inspect, !ref child], status], finished]
+    finish: !call
+      - fn
+      - [child]
+      - !call
+          - until
+          - !ref done
+          - !ref advance
+          - !ref child
+    left: !call [finish, !ref original]
+    make: !call
+      - fn
+      - [captured]
+      - !call
+          - vm
+          - !call
+              - fn
+              - []
+              - !call [add, !ref captured, 2]
+    original: !call [make, 40]
+    right: !call [finish, !ref advanced]
+  - !call
+      - dict
+      - original_status
+      - !call [get, !call [inspect, !ref original], status]
+      - advanced_status
+      - !call [get, !call [inspect, !ref advanced], status]
+      - versions_differ
+      - !call [ne, !ref original, !ref advanced]
+      - left_status
+      - !call [get, !call [inspect, !ref left], status]
+      - left_result
+      - !call [get, !call [inspect, !ref left], outcome]
+      - right_status
+      - !call [get, !call [inspect, !ref right], status]
+      - right_result
+      - !call [get, !call [inspect, !ref right], outcome]
+      - branches_equal
+      - !call [eq, !ref left, !ref right]
+      - original_still_ready
+      - !call [eq, !call [get, !call [inspect, !ref original], status], ready]

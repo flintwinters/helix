@@ -1,28 +1,32 @@
 # Public constructors delegate assembly to Helix after runtime validation.
 collections:
-  list: {$call: [list_of, {$ref: integer}]}
-  map: {$call: [map_of, {$ref: string}]}
-  union: {$call: [union, {$ref: integer}, {$ref: "null"}]}
-  enum: {$call: [enum, red, blue, red]}
-  literal: {$call: [literal, {nested: [1, null]}]}
-  secret: {$call: [secret, credentials/test]}
+  enum: !call [enum, red, blue, red]
+  list: !call [list_of, !ref integer]
+  literal: !call [literal, {nested: [1, ~]}]
+  map: !call [map_of, !ref string]
+  secret: !call [secret, credentials/test]
+  union: !call [union, !ref integer, !ref "null"]
 fields:
-  optional: {$call: [optional, {$ref: boolean}]}
-  default: {$call: [default, {$ref: integer}, 3]}
-  empty: {$call: [record]}
-  record: {$call: [record, z, {$ref: string}, a, {$call: [default, {$ref: integer}, 2]}]}
-  replace: {$call: [with_field, {$ref: fields.record}, z, {$call: [optional, {$ref: string}]}]}
-  add: {$call: [with_field, {$ref: fields.record}, b, {$ref: boolean}]}
-refined_default:
-  $call:
+  add: !call [with_field, !ref fields.record, b, !ref boolean]
+  default: !call [default, !ref integer, 3]
+  empty: !call [record]
+  optional: !call [optional, !ref boolean]
+  record: !call [record, z, !ref string, a, !call [default, !ref integer, 2]]
+  replace: !call [with_field, !ref fields.record, z, !call [optional, !ref string]]
+pure: !call [type_time, !call [record, value, !call [list_of, !ref integer]]]
+refined_default: !call
   - is
   - {value: 7}
-  - $call:
-    - record
-    - value
-    - $call:
-      - default
-      - {$call: [refine, {$ref: integer}, {$call: [fn, [value], {$call: [ge, {$ref: value}, 0]}]}]}
-      - 7
-pure:
-  $call: [type_time, {$call: [record, value, {$call: [list_of, {$ref: integer}]}]}]
+  - !call
+      - record
+      - value
+      - !call
+          - default
+          - !call
+              - refine
+              - !ref integer
+              - !call
+                  - fn
+                  - [value]
+                  - !call [ge, !ref value, 0]
+          - 7

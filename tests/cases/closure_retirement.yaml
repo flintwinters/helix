@@ -1,13 +1,16 @@
 # let plus fn owns captures; closure is available as an ordinary lexical name.
-$call:
-- let
-- value: 7
-  closure: {$call: [fn, [bindings, body], {$ref: body}]}
-  captured:
-    $call:
-    - let
-    - value: 10
-      unused: {$call: [raise, unused_binding, unused bindings stay lazy]}
-    - {$call: [fn, [increment], {$call: [add, {$ref: value}, {$ref: increment}]}]}
-- capture: {$call: [captured, 2]}
-  ordinary_scope: {$call: [closure, {value: 99}, {$ref: value}]}
+!call
+  - let
+  - captured: !call
+      - let
+      - {unused: !call [raise, unused_binding, unused bindings stay lazy], value: 10}
+      - !call
+          - fn
+          - [increment]
+          - !call [add, !ref value, !ref increment]
+    closure: !call
+      - fn
+      - [bindings, body]
+      - !ref body
+    value: 7
+  - {capture: !call [captured, 2], ordinary_scope: !call [closure, {value: 99}, !ref value]}

@@ -1,5 +1,5 @@
 error:
-  column: 10
+  column: 14
   data:
     quantity: -2
   kind: invalid_order

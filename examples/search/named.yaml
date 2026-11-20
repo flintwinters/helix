@@ -1,4 +1,13 @@
-$call:
-- let
-- search: {$call: [import, 'std:search']}
-- $call: [fn, [record], {$call: [search.keep, {$ref: record}, {$call: [fn, [candidate], {$call: [search.name_matches, {$ref: candidate}, 'map|filter']}]}]}]
+!call
+  - let
+  - {search: !call [import, "std:search"]}
+  - !call
+      - fn
+      - [record]
+      - !call
+          - search.keep
+          - !ref record
+          - !call
+              - fn
+              - [candidate]
+              - !call [search.name_matches, !ref candidate, "map|filter"]

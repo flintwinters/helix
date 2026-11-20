@@ -1,5 +1,5 @@
 error:
-  column: 6
+  column: 10
   kind: divide_by_zero
   line: 2
   message: "`div` by zero"

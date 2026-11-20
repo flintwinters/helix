@@ -1,5 +1,5 @@
 error:
-  column: 24
+  column: 21
   kind: type
   line: 3
   message: "expected number, got string"

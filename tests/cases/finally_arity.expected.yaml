@@ -1,5 +1,5 @@
 error:
-  column: 1
+  column: 7
   kind: arity
   line: 2
   message: "`finally` takes 2 arguments, got 1"

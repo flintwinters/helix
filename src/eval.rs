@@ -307,7 +307,7 @@ impl Evaluator {
                     return Err(self.err(
                         site,
                         "type",
-                        "expected a function (`{$call: [fn, [params], body]}` or its name)",
+                        "expected a function (`!call [fn, [params], body]` or its name)",
                     ));
                 };
                 self.push(Request::Call(site, function, args, nodes));

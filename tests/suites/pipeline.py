@@ -24,7 +24,7 @@ def verify(h):
     for source, expected in [("null", None), ("false", False),
                              ('{"$call": ["list", "add", 1, 2]}', ["add", 1, 2]),
                              ('{"answer": {"$call": ["add", 20, 22]}}', {"answer": 42}),
-                             ('{$literal: {$call: [add, 1, 2]}}', {"$call": ["add", 1, 2]})]:
+                             ('!literal {$call: [add, 1, 2]}', {"$call": ["add", 1, 2]})]:
         result = h.helix("exec", source)
         assert result.returncode == 0 and not result.stderr, result
         assert yaml.safe_load(result.stdout) == expected, result
@@ -113,7 +113,7 @@ def verify_consumers(h):
             # Round trip through a real downstream filter and back into Helix stdin.
             result = subprocess.run(
                 ["bash", "-o", "pipefail", "-c",
-                 "\"$1\" exec \"$2\" '{answer: {$call: [add, 20, 22]}}' | \"$3\" '.answer' | \"$1\" exec --json",
+                 "\"$1\" exec \"$2\" '{answer: !call [add, 20, 22]}' | \"$3\" '.answer' | \"$1\" exec --json",
                  "helix-consumer", str(h.binary), flag, executable],
                 capture_output=True, text=True, cwd=h.root, timeout=10,
             )
@@ -121,12 +121,12 @@ def verify_consumers(h):
 
 
 def verify_stream(h):
-    identity = '{$call: [fn, [x], {$ref: x}]}'
+    identity = '!call [fn, [x], !ref x]'
     result = h.helix("exec", "--input", "-", "--json", identity,
                      stdin='{"$call": ["raise", "test", "data stays data"]}')
     assert result.returncode == 0, result
     assert json.loads(result.stdout) == {"$call": ["raise", "test", "data stays data"]}, result
-    query = '{$call: [fn, [x], {$call: [list, {$ref: x}, {$ref: x}]}]}'
+    query = '!call [fn, [x], !call [list, !ref x, !ref x]]'
     result = h.helix("exec", "--stream", query, stdin='1\n{"雪": 2}\n')
     assert result.returncode == 0, result
     assert [json.loads(line) for line in result.stdout.splitlines()] == [1, 1, {"雪": 2}, {"雪": 2}], result

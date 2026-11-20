@@ -228,8 +228,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 10
-        line: 3
+        column: 3
+        line: 33
         path: /in_port
         reference:
           - in_port

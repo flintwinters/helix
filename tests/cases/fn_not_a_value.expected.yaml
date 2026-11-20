@@ -1,7 +1,7 @@
 error:
-  column: 24
+  column: 21
   kind: type
-  line: 3
+  line: 6
   message: "expected string, list or map, got function"
   path: "/r/$call/1"
   reference:

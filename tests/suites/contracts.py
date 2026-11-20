@@ -172,7 +172,7 @@ def generated(h):
     rng = random.Random(seed)
     # Independent integer-tree oracle; deliberately bounded far below i64 overflow.
     programs = [expression(rng, 4) for _ in range(100)]
-    source = 'm: {$call: [import, "std:math"]}\n' + "".join(f"v{i}: {p}\n" for i, (p, _) in enumerate(programs))
+    source = 'm: !call [import, "std:math"]\n' + "".join(f"v{i}: {p}\n" for i, (p, _) in enumerate(programs))
     root = checked(h, source)
     for i, (_, expected) in enumerate(programs):
         assert root[f"v{i}"] == expected, f"seed={seed} expression={programs[i]}"
@@ -237,11 +237,11 @@ def imports(h):
         package = base / "package"
         package.mkdir()
         (package / "value.yaml").write_text("value: 21\n")
-        (package / "main.yaml").write_text('s: {$call: [import, value.yaml]}\nvalue: {$ref: s.value}\n')
-        main.write_text('a: {$call: [import, package]}\nb: {$call: [import, package/main.yaml]}\nanswer: {$call: [add, {$ref: a.value}, {$ref: b.value}]}\n')
+        (package / "main.yaml").write_text('s: !call [import, value.yaml]\nvalue: !ref s.value\n')
+        main.write_text('a: !call [import, package]\nb: !call [import, package/main.yaml]\nanswer: !call [add, !ref a.value, !ref b.value]\n')
         result = h.helix("run", str(main))
         assert result.returncode == 0 and yaml.safe_load(result.stdout)["root"]["answer"] == 42
-        (package / "main.yaml").write_text('again: {$call: [import, ../package]}\n')
+        (package / "main.yaml").write_text('again: !call [import, ../package]\n')
         result = h.helix("run", str(main))
         assert result.returncode == 1 and "circular import" in result.stdout
         (package / "main.yaml").unlink()

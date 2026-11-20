@@ -245,11 +245,11 @@ mod tests {
     #[test]
     fn reversible_request_invocation_preserves_synthesized_arguments() {
         let mut source = Vm::load(r#"
-http: {$call: [import, 'std:http']}
-actor: {$call: [import, 'std:actor']}
-json: {$call: [import, 'std:json']}
-sqlite: {$call: [import, 'std:sqlite']}
-handler: {$call: [fn, [request], {status: 200, headers: [], body: pure}]}
+http: !call [import, 'std:http']
+actor: !call [import, 'std:actor']
+json: !call [import, 'std:json']
+sqlite: !call [import, 'std:sqlite']
+handler: !call [fn, [request], {status: 200, headers: [], body: pure}]
 "#);
         source.run();
         let Value::Hash(fields) = source.result.as_ref().unwrap() else { panic!("missing source result") };

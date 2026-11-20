@@ -53,17 +53,17 @@ fn every_boundary(source: &str) {
 #[test]
 fn nested_calls_captures_annotations_and_iteration() {
     every_boundary(
-        r#"{$call: [let, {base: 3, f: {$call: [fn, [[x, integer]], {$call: [add, {$ref: x}, {$ref: base}]}, integer]}}, {$call: [map, {$ref: f}, [1, 2, 3]]}]}"#,
+        r#"!call [let, {base: 3, f: !call [fn, [[x, integer]], !call [add, !ref x, !ref base], integer]}, !call [map, !ref f, [1, 2, 3]]]"#,
     );
 }
 #[test]
 fn handlers_refinements_and_child_machines() {
     for source in [
-        r#"{$call: [div, 1, 0]}"#,
-        r#"{$call: [try, {$call: [div, 1, 0]}, {$call: [fn, [e], 42]}]}"#,
-        r#"{$call: [expect, 4, {$call: [refine, integer, {$call: [fn, [n], {$call: [gt, {$ref: n}, 0]}]}]}]}"#,
-        r#"{$call: [step, {$call: [vm, {$call: [fn, [], {$call: [add, 1, 2]}]}]}]}"#,
-        r#"{$call: [type_time, {$call: [add, 1, 2]}]}"#,
+        r#"!call [div, 1, 0]"#,
+        r#"!call [try, !call [div, 1, 0], !call [fn, [e], 42]]"#,
+        r#"!call [expect, 4, !call [refine, integer, !call [fn, [n], !call [gt, !ref n, 0]]]]"#,
+        r#"!call [step, !call [vm, !call [fn, [], !call [add, 1, 2]]]]"#,
+        r#"!call [type_time, !call [add, 1, 2]]"#,
     ] {
         every_boundary(source);
     }
@@ -71,7 +71,7 @@ fn handlers_refinements_and_child_machines() {
 #[test]
 fn effects_and_interruptions_retain_completed_outcomes() {
     let vm = run(Vm::load(
-        r#"[{$call: [effect, clock, null]}, {$call: [effect, random, null]} ]"#,
+        r#"[!call [effect, clock, null], !call [effect, random, null] ]"#,
     ));
     let saved = vm.snapshot().unwrap();
     let restored = Vm::restore(&saved).unwrap();
@@ -114,7 +114,7 @@ fn expanded_source_references_obey_the_snapshot_budget() {
 
 #[test]
 fn evaluated_values_preserve_local_sources_without_live_captures() {
-    let mut vm = Vm::load(r#"{$call: [let, {f: {$call: [fn, [x], {$call: [add, {$ref: x}, 3]}]}}, {$call: [map, {$ref: f}, [7, 11]]}]}"#);
+    let mut vm = Vm::load(r#"!call [let, {f: !call [fn, [x], !call [add, !ref x, 3]]}, !call [map, !ref f, [7, 11]]]"#);
     vm.run();
     assert_eq!(vm.status(), Status::Finished);
     let evidence = vm.evaluated_values();
@@ -153,7 +153,7 @@ fn reversible_promise() -> yaml_rust2::Yaml {
 
 #[test]
 fn promised_execution_keeps_obligations_across_process_boundaries() {
-    let mut machine = Vm::load("{$call: [add, 20, 22]}").with_promise(reversible_promise()).unwrap();
+    let mut machine = Vm::load("!call [add, 20, 22]").with_promise(reversible_promise()).unwrap();
     assert!(helix::yaml_document(&machine.inspect()).contains("durable"));
     for _ in 0..100 {
         let saved = machine.snapshot().unwrap();
@@ -169,26 +169,26 @@ fn promised_execution_keeps_obligations_across_process_boundaries() {
 #[test]
 fn promise_types_compose_and_reject_unregistered_behavior() {
     let mut machine = Vm::load(r#"
-base: {$call: [promise, durable, [reversible]]}
-child: {$call: [promise, child, [{$ref: base}]]}
-machine: {$call: [mixin, {$call: [vm, {$call: [fn, [], 42]}]}, {$ref: child}]}
-member: {$call: [is, {$ref: machine}, {$ref: base}]}
-subtype: {$call: [subtype, {$ref: child}, {$ref: base}]}
-plain: {$call: [is, {$call: [vm, {$call: [fn, [], 42]}]}, {$ref: base}]}
+base: !call [promise, durable, [reversible]]
+child: !call [promise, child, [!ref base]]
+machine: !call [mixin, !call [vm, !call [fn, [], 42]], !ref child]
+member: !call [is, !ref machine, !ref base]
+subtype: !call [subtype, !ref child, !ref base]
+plain: !call [is, !call [vm, !call [fn, [], 42]], !ref base]
 "#);
     machine.run();
     assert_eq!(machine.status(), Status::Finished, "{}", machine.state_string());
     assert_eq!(machine.state()["root"]["member"].as_bool(), Some(true));
     assert_eq!(machine.state()["root"]["subtype"].as_bool(), Some(true));
     assert_eq!(machine.state()["root"]["plain"].as_bool(), Some(false));
-    let mut bad = Vm::load("{$call: [promise, dishonest, [unregistered]]}");
+    let mut bad = Vm::load("!call [promise, dishonest, [unregistered]]");
     bad.run();
     assert_eq!(bad.status(), Status::Error);
 }
 
 #[test]
 fn promised_effects_are_refused_before_host_dispatch() {
-    let mut machine = Vm::load("{$call: [effect, exit, 17]}").with_promise(reversible_promise()).unwrap();
+    let mut machine = Vm::load("!call [effect, exit, 17]").with_promise(reversible_promise()).unwrap();
     let mut host = helix::EffectHost::default();
     host.run(&mut machine);
     assert_eq!(machine.status(), Status::Error);
@@ -265,7 +265,7 @@ fn effects_promise(operations: &[&str]) -> yaml_rust2::Yaml {
 
 #[test]
 fn effect_promises_intersect_without_granting_authority() {
-    let source = "{$call: [effect, time, null]}";
+    let source = "!call [effect, time, null]";
     let mut allowed = Vm::load(source).with_promise(effects_promise(&["time"])).unwrap();
     let mut host = helix::EffectHost::default();
     host.run(&mut allowed);
@@ -287,7 +287,7 @@ fn effect_promises_intersect_without_granting_authority() {
     *promises = serde_json::from_str(&promises.to_string().replace("\"time\"", "\"exit\"")).unwrap();
     assert!(Vm::restore(&damaged.to_string()).is_err());
 
-    let mut denied = Vm::load("{$call: [effect, exit, 17]}")
+    let mut denied = Vm::load("!call [effect, exit, 17]")
         .with_promise(effects_promise(&["time", "exit"])).unwrap()
         .with_promise(effects_promise(&["time"])).unwrap();
     host.run(&mut denied);
@@ -298,7 +298,7 @@ fn effect_promises_intersect_without_granting_authority() {
 
 #[test]
 fn effect_promises_validate_pending_work_and_preserve_reversible_dispatch_refusal() {
-    let mut pending = Vm::load("{$call: [effect, exit, 17]}");
+    let mut pending = Vm::load("!call [effect, exit, 17]");
     pending.run();
     assert!(pending.with_promise(effects_promise(&[])).is_err());
     assert!(pending.with_promise(effects_promise(&["exit"])).is_ok());
@@ -318,7 +318,7 @@ fn effect_promises_validate_pending_work_and_preserve_reversible_dispatch_refusa
 
 #[test]
 fn pending_server_startup_roundtrips_without_host_authority() {
-    let mut machine = Vm::load("{$call: [http_serve, {bind: '127.0.0.1:0', requests: 1}, {$call: [fn, [request], null]}]}");
+    let mut machine = Vm::load("!call [http_serve, {bind: '127.0.0.1:0', requests: 1}, !call [fn, [request], null]]");
     machine.run();
     assert_eq!(machine.status(), Status::Signaled);
     let saved = machine.snapshot().unwrap();

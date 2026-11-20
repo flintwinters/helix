@@ -1,14 +1,13 @@
 # Compose a typed site and realize defaults without contacting a host.
 # The same class can be passed to nginx.plan/check/apply; nginx.explain reports provenance.
-$call:
-- let
-- nginx: {$call: [import, 'std:nginx']}
-  site:
-    $call:
-    - inherit
-    - helix.local
-    - [{$ref: nginx.configuration}]
-    - package_version: 1.22.1-9+deb12u3
-      server_name: helix.local
-      content: "Hello from Helix\n"
-- {$call: [nginx.resolve, {$ref: site}]}
+!call
+  - let
+  - nginx: !call [import, "std:nginx"]
+    site: !call
+      - inherit
+      - helix.local
+      - [!ref nginx.configuration]
+      - content: "Hello from Helix\n"
+        package_version: "1.22.1-9+deb12u3"
+        server_name: helix.local
+  - !call [nginx.resolve, !ref site]

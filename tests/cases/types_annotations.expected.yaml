@@ -520,21 +520,21 @@ objects:
 root:
   bad_args:
     calls:
-      - column: 31
+      - column: 11
         function: /url
-        function_column: 10
-        function_line: 10
-        line: 19
+        function_column: 3
+        function_line: 62
+        line: 4
         path: "/bad_args/$call/1"
-    column: 49
+    column: 17
     data:
       violations:
         - actual: 1
           actual_present: true
           argument: host
           argument_location:
-            column: 49
-            line: 19
+            column: 17
+            line: 4
             path: "/bad_args/$call/1/$call/1"
             reference:
               path:
@@ -552,8 +552,8 @@ root:
           actual_present: true
           argument: p
           argument_location:
-            column: 52
-            line: 19
+            column: 20
+            line: 4
             path: "/bad_args/$call/1/$call/2"
             reference:
               path:
@@ -567,15 +567,15 @@ root:
           expected: refined integer
           message: failed its refinement check
           predicate:
-            column: 10
-            line: 3
+            column: 3
+            line: 30
             path: /in_port
             reference:
               - in_port
             source: "<root>"
           rule: refinement
     kind: type
-    line: 19
+    line: 4
     message: "2 type violations in the arguments of `/url`: expected string, got integer"
     path: "/bad_args/$call/1/$call/1"
     reference:
@@ -590,8 +590,8 @@ root:
         actual_present: true
         argument: e
         argument_location:
-          column: 28
-          line: 31
+          column: 22
+          line: 11
           path: "/bad_record/$call/1/$call/1"
           reference:
             path:
@@ -609,8 +609,8 @@ root:
         actual_present: false
         argument: e
         argument_location:
-          column: 28
-          line: 31
+          column: 22
+          line: 11
           path: "/bad_record/$call/1/$call/1"
           reference:
             path:
@@ -662,8 +662,8 @@ root:
         expected: refined integer
         message: failed its refinement check
         predicate:
-          column: 10
-          line: 3
+          column: 3
+          line: 30
           path: /in_port
           reference:
             - in_port

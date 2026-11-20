@@ -1,10 +1,5 @@
 # Helix explicit syntax; migrated from legacy source.
-"x": 10
-"list":
-- "a"
-- "b"
-- 3
-"text": "add"
-"data":
-- {"$call": ["add", 1, 2]}
-- "b"
+data: [!call [add, 1, 2], b]
+list: [a, b, 3]
+text: add
+x: 10

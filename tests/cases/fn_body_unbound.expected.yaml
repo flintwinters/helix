@@ -1,14 +1,14 @@
 error:
   calls:
-    - column: 6
+    - column: 10
       function: /f
-      function_column: 6
-      function_line: 2
-      line: 3
+      function_column: 3
+      function_line: 3
+      line: 6
       path: /r
-  column: 63
+  column: 32
   kind: unbound
-  line: 2
+  line: 5
   message: "unbound symbol `missing`"
   path: "/f/$call/2/$call/2"
   reference:

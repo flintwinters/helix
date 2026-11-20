@@ -1,5 +1,5 @@
 error:
-  column: 27
+  column: 19
   kind: type
   line: 2
   message: "an import names its module with a literal string such as `lib/x.yaml` or `std:math`"

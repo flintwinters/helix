@@ -1,14 +1,14 @@
 error:
   calls:
-    - column: 8
+    - column: 12
       function: /double
-      function_column: 11
-      function_line: 2
-      line: 3
+      function_column: 3
+      function_line: 4
+      line: 2
       path: /bad
-  column: 8
+  column: 12
   kind: arity
-  line: 3
+  line: 2
   message: "function `/double` takes 1 argument, got 2"
   path: /bad
   reference:

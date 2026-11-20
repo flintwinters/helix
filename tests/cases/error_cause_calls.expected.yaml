@@ -114,21 +114,21 @@ objects:
 root:
   caught:
     calls:
-      - column: 32
+      - column: 11
         function: /leaf
-        function_column: 9
-        function_line: 2
-        line: 3
+        function_column: 3
+        function_line: 10
+        line: 16
         path: "/middle/$call/2"
-      - column: 29
+      - column: 11
         function: /middle
-        function_column: 11
-        function_line: 3
+        function_column: 3
+        function_line: 14
         line: 4
         path: "/caught/$call/1"
-    column: 30
+    column: 11
     kind: divide_by_zero
-    line: 2
+    line: 12
     message: "`div` by zero"
     path: "/leaf/$call/2"
     reference:
@@ -141,26 +141,26 @@ root:
     ref: object1
   nested:
     calls:
-      - column: 7
+      - column: 11
         function: "/nested/$call/1/$call/2"
-        function_column: 7
-        function_line: 19
-        line: 19
+        function_column: 11
+        function_line: 29
+        line: 29
         path: "/nested/$call/1/$call/2"
     cause:
       calls:
-        - column: 9
+        - column: 15
           function: "/nested/$call/1/$call/1/$call/2"
-          function_column: 9
-          function_line: 18
-          line: 18
+          function_column: 15
+          function_line: 25
+          line: 25
           path: "/nested/$call/1/$call/1/$call/2"
       cause:
-        column: 9
+        column: 19
         data:
           step: 3
         kind: original
-        line: 17
+        line: 23
         message: failure
         path: "/nested/$call/1/$call/1/$call/1"
         reference:
@@ -171,11 +171,11 @@ root:
           - 1
           - "$call"
           - 1
-      column: 33
+      column: 23
       data:
         step: 3
       kind: original
-      line: 18
+      line: 27
       message: failure
       path: "/nested/$call/1/$call/1/$call/2/$call/2"
       reference:
@@ -188,11 +188,11 @@ root:
         - 2
         - "$call"
         - 2
-    column: 31
+    column: 19
     data:
       step: 3
     kind: original
-    line: 19
+    line: 31
     message: failure
     path: "/nested/$call/1/$call/2/$call/2"
     reference:
@@ -205,38 +205,38 @@ root:
       - 2
   reraised:
     calls:
-      - column: 46
+      - column: 11
         function: "/reraised/$call/1/$call/2"
-        function_column: 46
-        function_line: 8
-        line: 8
+        function_column: 11
+        function_line: 42
+        line: 42
         path: "/reraised/$call/1/$call/2"
     cause:
       calls:
-        - column: 32
+        - column: 11
           function: /leaf
-          function_column: 9
-          function_line: 2
-          line: 3
+          function_column: 3
+          function_line: 10
+          line: 16
           path: "/middle/$call/2"
-        - column: 23
+        - column: 15
           function: /middle
-          function_column: 11
-          function_line: 3
-          line: 8
+          function_column: 3
+          function_line: 14
+          line: 40
           path: "/reraised/$call/1/$call/1"
-      column: 30
+      column: 11
       kind: divide_by_zero
-      line: 2
+      line: 12
       message: "`div` by zero"
       path: "/leaf/$call/2"
       reference:
         - leaf
         - "$call"
         - 2
-    column: 70
+    column: 19
     kind: divide_by_zero
-    line: 8
+    line: 44
     message: "`div` by zero"
     path: "/reraised/$call/1/$call/2/$call/2"
     reference:

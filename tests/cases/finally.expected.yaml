@@ -161,9 +161,9 @@ root:
     - assertion
     - 4
   cleanup_after_failure:
-    column: 7
+    column: 65
     kind: cleanup
-    line: 20
+    line: 18
     message: cleanup ran
     path: "/cleanup_after_failure/$call/1/$call/2"
     reference:
@@ -175,7 +175,7 @@ root:
   cleanup_after_success:
     column: 31
     kind: cleanup
-    line: 12
+    line: 25
     message: cleanup ran
     path: "/cleanup_after_success/$call/1/$call/2"
     reference:
@@ -193,7 +193,7 @@ root:
     data:
       step: 2
     kind: original
-    line: 7
+    line: 50
     message: body failed
     path: "/original_error/$call/1/$call/1"
     reference:

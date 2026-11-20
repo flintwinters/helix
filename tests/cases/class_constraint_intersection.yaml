@@ -1,13 +1,25 @@
 # A child's value set is the intersection of its parents' constraints: it is below each parent,
 # no parent is below it, and parent order does not change the result.
-"base": {"$call": ["class", "base", {"$call": ["record", "min", {"$ref": "integer"}, "max", {"$ref": "integer"}]}]}
-"ordered": {"$call": ["fn", ["v"], {"$call": ["le", {"$call": ["get", {"$ref": "v"}, "min"]}, {"$call": ["get", {"$ref": "v"}, "max"]}]}]}
-"positive": {"$call": ["fn", ["v"], {"$call": ["gt", {"$call": ["get", {"$ref": "v"}, "min"]}, 0]}]}
-"left": {"$call": ["constrain", {"$ref": "base"}, {"$ref": "ordered"}]}
-"right": {"$call": ["constrain", {"$ref": "base"}, {"$ref": "positive"}]}
-"both": {"$call": ["inherit", "both", {"$call": ["list", {"$ref": "left"}, {"$ref": "right"}]}, {"min": 1, "max": 5}]}
-"flipped": {"$call": ["inherit", "flipped", {"$call": ["list", {"$ref": "right"}, {"$ref": "left"}]}, {"min": 1, "max": 5}]}
-"child_below_parents": {"$call": ["list", {"$call": ["subtype", {"$ref": "both"}, {"$ref": "left"}]}, {"$call": ["subtype", {"$ref": "both"}, {"$ref": "right"}]}]}
-"parents_not_below_child": {"$call": ["list", {"$call": ["subtype", {"$ref": "left"}, {"$ref": "both"}]}, {"$call": ["subtype", {"$ref": "right"}, {"$ref": "both"}]}]}
-"parent_order_equivalent": {"$call": ["equivalent", {"$ref": "both"}, {"$ref": "flipped"}]}
-"constraint_count": {"$call": ["len", {"$call": ["get", {"$ref": "both"}, "constraints"]}]}
+base: !call [class, base, !call [record, min, !ref integer, max, !ref integer]]
+both: !call [inherit, both, !call [list, !ref left, !ref right], {max: 5, min: 1}]
+child_below_parents: !call
+  - list
+  - !call [subtype, !ref both, !ref left]
+  - !call [subtype, !ref both, !ref right]
+constraint_count: !call [len, !call [get, !ref both, constraints]]
+flipped: !call [inherit, flipped, !call [list, !ref right, !ref left], {max: 5, min: 1}]
+left: !call [constrain, !ref base, !ref ordered]
+ordered: !call
+  - fn
+  - [v]
+  - !call [le, !call [get, !ref v, min], !call [get, !ref v, max]]
+parent_order_equivalent: !call [equivalent, !ref both, !ref flipped]
+parents_not_below_child: !call
+  - list
+  - !call [subtype, !ref left, !ref both]
+  - !call [subtype, !ref right, !ref both]
+positive: !call
+  - fn
+  - [v]
+  - !call [gt, !call [get, !ref v, min], 0]
+right: !call [constrain, !ref base, !ref positive]

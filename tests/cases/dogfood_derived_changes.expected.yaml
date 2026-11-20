@@ -1046,18 +1046,18 @@ root:
       rule: closed_record
   invalid_type:
     calls:
-      - column: 7
+      - column: 15
         function: /optional_fields
         function_column: 3
         function_file: "std:types"
         function_line: 27
-        line: 27
+        line: 15
         path: "/audited_change/$call/2/$call/6"
       - column: 29
         function: /audited_change
-        function_column: 10
-        function_line: 17
-        line: 71
+        function_column: 3
+        function_line: 6
+        line: 27
         path: "/invalid_type/$call/1/$call/1"
     column: 37
     file: "std:types"

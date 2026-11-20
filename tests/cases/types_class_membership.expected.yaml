@@ -284,8 +284,8 @@ root:
       expected: class
       message: constraint 0 does not hold
       predicate:
-        column: 10
-        line: 5
+        column: 3
+        line: 15
         path: /ordered
         reference:
           - ordered

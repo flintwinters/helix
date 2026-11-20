@@ -1,19 +1,23 @@
 # Helix explicit syntax; migrated from legacy source.
-"$call":
-- "let"
-- "y": {"$call": ["import", "std:yaml"]}
-- "parsed": {"$call": ["y.parse", "a: [add, missing, 1]"]}
-  "updated": {"$call": ["y.set_in", {"a": [1, 2]}, {"$call": ["list", "a", 1]}, false]}
-  "selected": {"$call": ["y.get_in", {"a": [null, false]}, {"$call": ["list", "a", 0]}]}
-  "dumped": {"$call": ["y.dump", {"a": [1, false]}]}
-  "invalid": {"$call": ["y.valid", "1\n---\n2"]}
-  "wrong_type":
-    "$call":
-    - "try"
-    - {"$call": ["y.parse", 1]}
-    - {"$call": ["fn", ["error"], {"$call": ["get", {"$ref": "error"}, "kind"]}]}
-  "malformed":
-    "$call":
-    - "try"
-    - {"$call": ["y.parse", "["]}
-    - {"$call": ["fn", ["error"], {"$call": ["get", {"$ref": "error"}, "kind"]}]}
+!call
+  - let
+  - {"y": !call [import, "std:yaml"]}
+  - dumped: !call [y.dump, {a: [1, false]}]
+    invalid: !call [y.valid, "1\n---\n2"]
+    malformed: !call
+      - try
+      - !call [y.parse, "["]
+      - !call
+          - fn
+          - [error]
+          - !call [get, !ref error, kind]
+    parsed: !call [y.parse, "a: [add, missing, 1]"]
+    selected: !call [y.get_in, {a: [~, false]}, !call [list, a, 0]]
+    updated: !call [y.set_in, {a: [1, 2]}, !call [list, a, 1], false]
+    wrong_type: !call
+      - try
+      - !call [y.parse, 1]
+      - !call
+          - fn
+          - [error]
+          - !call [get, !ref error, kind]

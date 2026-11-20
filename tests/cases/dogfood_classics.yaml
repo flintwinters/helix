@@ -1,104 +1,115 @@
 # Helix explicit syntax; migrated from legacy source.
 # Classic pure-core examples, including empty inputs and boundary values.
-"l": {"$call": ["import", "std:list"]}
-"fizzbuzz":
-  "$call":
-  - "fn"
-  - - "n"
-  - "$call":
-    - "cond"
-    - {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, 15]}, 0]}
-    - "FizzBuzz"
-    - {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, 3]}, 0]}
-    - "Fizz"
-    - {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, 5]}, 0]}
-    - "Buzz"
-    - {"$call": ["str", {"$ref": "n"}]}
-"fizzbuzz_1_to_20":
-  "$call":
-  - "map"
-  - {"$ref": "fizzbuzz"}
-  - {"$call": ["map", {"$call": ["fn", ["n"], {"$call": ["add", {"$ref": "n"}, 1]}]}, {"$call": ["l.range", 20]}]}
-"fizzbuzz_empty": {"$call": ["map", {"$ref": "fizzbuzz"}, []]}
-"prime":
-  "$call":
-  - "fn"
-  - - "n"
-  - "$call":
-    - "and"
-    - {"$call": ["ge", {"$ref": "n"}, 2]}
-    - "$call":
-      - "eq"
-      - "$call":
-        - "len"
-        - "$call":
-          - "filter"
-          - {"$call": ["fn", ["d"], {"$call": ["eq", {"$call": ["mod", {"$ref": "n"}, {"$ref": "d"}]}, 0]}]}
-          - "$call":
-            - "filter"
-            - {"$call": ["fn", ["d"], {"$call": ["ge", {"$ref": "d"}, 2]}]}
-            - {"$call": ["l.range", {"$call": ["if", {"$call": ["ge", {"$ref": "n"}, 0]}, {"$ref": "n"}, 0]}]}
-      - 0
-"primes_under_30": {"$call": ["filter", {"$ref": "prime"}, {"$call": ["l.range", 30]}]}
-"prime_boundaries": {"$call": ["map", {"$ref": "prime"}, [-3, 0, 1, 2, 3, 4]]}
-"primes_empty": {"$call": ["filter", {"$ref": "prime"}, []]}
-"words":
-  "$call":
-  - "fn"
-  - - "text"
-  - "$call":
-    - "get"
-    - "$call":
-      - "fold"
-      - "$call":
-        - "fn"
-        - - "state"
-          - "i"
-        - "$call":
-          - "let"
-          - "token": {"$call": ["get", {"$ref": "state"}, "token"]}
-            "found": {"$call": ["get", {"$ref": "state"}, "words"]}
-            "char": {"$call": ["slice", {"$ref": "text"}, {"$ref": "i"}, {"$call": ["add", {"$ref": "i"}, 1]}]}
-          - "$call":
-            - "if"
-            - {"$call": ["eq", {"$ref": "char"}, " "]}
-            - "$call":
-              - "dict"
-              - "token"
-              - ""
-              - "words"
-              - "$call":
-                - "if"
-                - {"$call": ["eq", {"$ref": "token"}, ""]}
-                - {"$ref": "found"}
-                - {"$call": ["append", {"$ref": "found"}, {"$ref": "token"}]}
-            - "$call":
-              - "dict"
-              - "token"
-              - {"$call": ["concat", {"$ref": "token"}, {"$ref": "char"}]}
-              - "words"
-              - {"$ref": "found"}
-      - {"$call": ["dict", "token", "", "words", {"$call": ["list"]}]}
-      - {"$call": ["l.range", {"$call": ["len", {"$ref": "text"}]}]}
-    - "words"
-"frequency":
-  "$call":
-  - "fn"
-  - - "text"
-  - "$call":
-    - "fold"
-    - "$call":
-      - "fn"
-      - - "counts"
-        - "word"
-      - "$call":
-        - "set"
-        - {"$ref": "counts"}
-        - {"$ref": "word"}
-        - {"$call": ["add", {"$call": ["get", {"$ref": "counts"}, {"$ref": "word"}, 0]}, 1]}
-    - {"$call": ["dict"]}
-    - {"$call": ["words", {"$call": ["concat", {"$ref": "text"}, " "]}]}
-"word_frequency": {"$call": ["frequency", "  red blue red  green blue red "]}
-"word_frequency_empty": {"$call": ["frequency", ""]}
-"word_frequency_spaces": {"$call": ["frequency", "   "]}
-"word_frequency_unicode": {"$call": ["frequency", "\u732B caf\xE9 \u732B"]}
+fizzbuzz: !call
+  - fn
+  - ["n"]
+  - !call
+      - cond
+      - !call [eq, !call [mod, !ref "n", 15], 0]
+      - FizzBuzz
+      - !call [eq, !call [mod, !ref "n", 3], 0]
+      - Fizz
+      - !call [eq, !call [mod, !ref "n", 5], 0]
+      - Buzz
+      - !call [str, !ref "n"]
+fizzbuzz_1_to_20: !call
+  - map
+  - !ref fizzbuzz
+  - !call
+      - map
+      - !call
+          - fn
+          - ["n"]
+          - !call [add, !ref "n", 1]
+      - !call [l.range, 20]
+fizzbuzz_empty: !call [map, !ref fizzbuzz, []]
+frequency: !call
+  - fn
+  - [text]
+  - !call
+      - fold
+      - !call
+          - fn
+          - [counts, word]
+          - !call
+              - set
+              - !ref counts
+              - !ref word
+              - !call [add, !call [get, !ref counts, !ref word, 0], 1]
+      - !call [dict]
+      - !call [words, !call [concat, !ref text, " "]]
+l: !call [import, "std:list"]
+prime: !call
+  - fn
+  - ["n"]
+  - !call
+      - and
+      - !call [ge, !ref "n", 2]
+      - !call
+          - eq
+          - !call
+              - len
+              - !call
+                  - filter
+                  - !call
+                      - fn
+                      - [d]
+                      - !call [eq, !call [mod, !ref "n", !ref d], 0]
+                  - !call
+                      - filter
+                      - !call
+                          - fn
+                          - [d]
+                          - !call [ge, !ref d, 2]
+                      - !call
+                          - l.range
+                          - !call
+                              - if
+                              - !call [ge, !ref "n", 0]
+                              - !ref "n"
+                              - 0
+          - 0
+prime_boundaries: !call [map, !ref prime, [-3, 0, 1, 2, 3, 4]]
+primes_empty: !call [filter, !ref prime, []]
+primes_under_30: !call [filter, !ref prime, !call [l.range, 30]]
+word_frequency: !call [frequency, "  red blue red  green blue red "]
+word_frequency_empty: !call [frequency, ""]
+word_frequency_spaces: !call [frequency, "   "]
+word_frequency_unicode: !call [frequency, "猫 café 猫"]
+words: !call
+  - fn
+  - [text]
+  - !call
+      - get
+      - !call
+          - fold
+          - !call
+              - fn
+              - [state, i]
+              - !call
+                  - let
+                  - char: !call [slice, !ref text, !ref i, !call [add, !ref i, 1]]
+                    found: !call [get, !ref state, words]
+                    token: !call [get, !ref state, token]
+                  - !call
+                      - if
+                      - !call [eq, !ref char, " "]
+                      - !call
+                          - dict
+                          - token
+                          - ""
+                          - words
+                          - !call
+                              - if
+                              - !call [eq, !ref token, ""]
+                              - !ref found
+                              - !call [append, !ref found, !ref token]
+                      - !call
+                          - dict
+                          - token
+                          - !call [concat, !ref token, !ref char]
+                          - words
+                          - !ref found
+          - !call [dict, token, "", words, !call [list]]
+          - !call [l.range, !call [len, !ref text]]
+      - words

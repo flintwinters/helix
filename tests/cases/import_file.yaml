@@ -1,7 +1,10 @@
 # Helix explicit syntax; migrated from legacy source.
-"geo": {"$call": ["import", "modules/geometry.yaml"]}
-"again": {"$call": ["import", "modules/geometry.yaml"]}
-"disc": {"$call": ["geo.area", 2]}
-"constant": "geo.pi"
-"nested": {"$call": ["geo.m.max", 1, 2]}
-"scoped": {"$call": ["let", {"g": {"$call": ["import", "modules/geometry.yaml"]}}, {"$call": ["g.area", 3]}]}
+again: !call [import, modules/geometry.yaml]
+constant: geo.pi
+disc: !call [geo.area, 2]
+geo: !call [import, modules/geometry.yaml]
+nested: !call [geo.m.max, 1, 2]
+scoped: !call
+  - let
+  - {g: !call [import, modules/geometry.yaml]}
+  - !call [g.area, 3]

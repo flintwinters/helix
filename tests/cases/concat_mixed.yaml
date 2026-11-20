@@ -1,2 +1,2 @@
 # Helix explicit syntax; migrated from legacy source.
-"x": {"$call": ["concat", "a", 1]}
+x: !call [concat, a, 1]

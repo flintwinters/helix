@@ -1,18 +1,27 @@
 # std contracts now type map keys and header pairs: empty group/resource names and malformed headers are rejected.
-"$call":
-- "let"
-- "inventory": {"$call": ["import", "std:inventory"]}
-  "orchestration": {"$call": ["import", "std:orchestration"]}
-  "http": {"$call": ["import", "std:http"]}
-- "group_keys":
-    "$call": ["list",
-      {"$call": ["is", {"version": 1, "hosts": [], "groups": {"web": []}, "overrides": []}, {"$ref": "inventory.document"}]},
-      {"$call": ["is", {"version": 1, "hosts": [], "groups": {"": []}, "overrides": []}, {"$ref": "inventory.document"}]}]
-  "resource_keys":
-    "$call": ["list",
-      {"$call": ["is", {"version": 1, "resources": {}, "handlers": {"": {"requires": []}}}, {"$ref": "orchestration.document"}]}]
-  "header_pairs":
-    "$call": ["list",
-      {"$call": ["is", {"status": 200, "headers": [["a", "b"]], "body": ""}, {"$ref": "http.response"}]},
-      {"$call": ["is", {"status": 200, "headers": [["a"]], "body": ""}, {"$ref": "http.response"}]},
-      {"$call": ["is", {"status": 200, "headers": [["a", "b", "c"]], "body": ""}, {"$ref": "http.response"}]}]
+!call
+  - let
+  - http: !call [import, "std:http"]
+    inventory: !call [import, "std:inventory"]
+    orchestration: !call [import, "std:orchestration"]
+  - group_keys: !call
+      - list
+      - !call
+          - is
+          - {groups: {web: []}, hosts: [], overrides: [], version: 1}
+          - !ref inventory.document
+      - !call
+          - is
+          - {groups: {"": []}, hosts: [], overrides: [], version: 1}
+          - !ref inventory.document
+    header_pairs: !call
+      - list
+      - !call [is, {body: "", headers: [[a, b]], status: 200}, !ref http.response]
+      - !call [is, {body: "", headers: [[a]], status: 200}, !ref http.response]
+      - !call [is, {body: "", headers: [[a, b, c]], status: 200}, !ref http.response]
+    resource_keys: !call
+      - list
+      - !call
+          - is
+          - {handlers: {"": {requires: []}}, resources: {}, version: 1}
+          - !ref orchestration.document

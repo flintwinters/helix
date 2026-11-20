@@ -1,7 +1,9 @@
 # Helix explicit syntax; migrated from legacy source.
-"f":
-  "$call":
-  - "fn"
-  - - "n"
-  - {"$call": ["let", {"a": {"$call": ["add", {"$ref": "a"}, {"$ref": "n"}]}}, {"$ref": "a"}]}
-"r": {"$call": ["f", 1]}
+f: !call
+  - fn
+  - ["n"]
+  - !call
+      - let
+      - {a: !call [add, !ref a, !ref "n"]}
+      - !ref a
+r: !call [f, 1]

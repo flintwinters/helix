@@ -1,5 +1,5 @@
 # Helix explicit syntax; migrated from legacy source.
-"old": {"$call": ["import", "modules/vendor/offset-v1/main.yaml"]}
-"new": {"$call": ["import", "modules/vendor/offset-v2/main.yaml"]}
-"old_result": {"$call": ["old.apply", 40]}
-"new_result": {"$call": ["new.apply", 40]}
+new: !call [import, modules/vendor/offset-v2/main.yaml]
+new_result: !call [new.apply, 40]
+old: !call [import, modules/vendor/offset-v1/main.yaml]
+old_result: !call [old.apply, 40]

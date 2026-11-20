@@ -3163,22 +3163,22 @@ root:
     - 3.0
   bad_abs:
     calls:
-      - column: 30
+      - column: 11
         function: /abs
         function_column: 3
         function_file: "std:math"
         function_line: 4
-        line: 28
+        line: 11
         path: "/bad_abs/$call/1"
-    column: 50
+    column: 19
     data:
       violations:
         - actual: x
           actual_present: true
           argument: "n"
           argument_location:
-            column: 50
-            line: 28
+            column: 19
+            line: 11
             path: "/bad_abs/$call/1/$call/1"
             reference:
               path:
@@ -3193,7 +3193,7 @@ root:
           message: "expected integer | float, got string"
           rule: type
     kind: type
-    line: 28
+    line: 11
     message: "1 type violation in the arguments of `/abs`: expected integer | float, got string"
     path: "/bad_abs/$call/1/$call/1"
     reference:
@@ -3208,8 +3208,8 @@ root:
         actual_present: true
         argument: a
         argument_location:
-          column: 25
-          line: 32
+          column: 19
+          line: 18
           path: "/bad_min/$call/1/$call/1"
           reference:
             path:
@@ -3227,8 +3227,8 @@ root:
         actual_present: true
         argument: b
         argument_location:
-          column: 30
-          line: 32
+          column: 22
+          line: 18
           path: "/bad_min/$call/1/$call/2"
           reference:
             path:
@@ -3248,8 +3248,8 @@ root:
         actual_present: true
         argument: xs
         argument_location:
-          column: 29
-          line: 42
+          column: 23
+          line: 25
           path: "/bad_product/$call/1/$call/1"
           reference:
             path:
@@ -3269,8 +3269,8 @@ root:
         actual_present: true
         argument: "n"
         argument_location:
-          column: 27
-          line: 52
+          column: 21
+          line: 32
           path: "/bad_range/$call/1/$call/1"
           reference:
             path:
@@ -3290,8 +3290,8 @@ root:
         actual_present: true
         argument: xs
         argument_location:
-          column: 29
-          line: 47
+          column: 23
+          line: 39
           path: "/bad_reverse/$call/1/$call/1"
           reference:
             path:
@@ -3311,8 +3311,8 @@ root:
         actual_present: true
         argument: before
         argument_location:
-          column: 33
-          line: 62
+          column: 27
+          line: 46
           path: "/bad_sort/$call/1/$call/2"
           reference:
             path:
@@ -3332,8 +3332,8 @@ root:
         actual_present: true
         argument: xs
         argument_location:
-          column: 25
-          line: 37
+          column: 19
+          line: 53
           path: "/bad_sum/$call/1/$call/1"
           reference:
             path:
@@ -3351,8 +3351,8 @@ root:
         actual_present: true
         argument: xs
         argument_location:
-          column: 25
-          line: 37
+          column: 19
+          line: 53
           path: "/bad_sum/$call/1/$call/1"
           reference:
             path:
@@ -3372,8 +3372,8 @@ root:
         actual_present: true
         argument: xs
         argument_location:
-          column: 28
-          line: 57
+          column: 22
+          line: 60
           path: "/bad_unique/$call/1/$call/1"
           reference:
             path:

@@ -1,8 +1,8 @@
 # Helix explicit syntax; migrated from legacy source.
-"sum": {"$call": ["add", 1, 2, 3, 4]}
-"product": {"$call": ["mul", 2, 3, 4]}
-"quotient": {"$call": ["div", 17, 5]}
-"neg_quotient": {"$call": ["div", -17, 5]}
-"remainder": {"$call": ["mod", 17, 5]}
-"neg_remainder": {"$call": ["mod", -17, 5]}
-"difference": {"$call": ["sub", 10, 4]}
+difference: !call [sub, 10, 4]
+neg_quotient: !call [div, -17, 5]
+neg_remainder: !call [mod, -17, 5]
+product: !call [mul, 2, 3, 4]
+quotient: !call [div, 17, 5]
+remainder: !call [mod, 17, 5]
+sum: !call [add, 1, 2, 3, 4]

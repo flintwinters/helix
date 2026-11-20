@@ -1,44 +1,72 @@
 # Helix explicit syntax; migrated from legacy source.
-"in_port":
-  "$call":
-  - "fn"
-  - - "n"
-  - {"$call": ["and", {"$call": ["ge", {"$ref": "n"}, 1]}, {"$call": ["le", {"$ref": "n"}, 65535]}]}
-"port": {"$call": ["refine", {"$ref": "integer"}, {"$ref": "in_port"}]}
-"endpoint": {"$call": ["record", "host", {"$ref": "string"}, "port", {"$ref": "port"}]}
-"url":
-  "$call":
-  - "fn"
-  - - - "host"
-      - {"$ref": "string"}
-    - - "p"
-      - {"$ref": "port"}
-  - {"$call": ["concat", {"$ref": "host"}, ":", {"$call": ["str", {"$ref": "p"}]}]}
-  - {"$ref": "string"}
-"good": {"$call": ["url", "a", 80]}
-"bad_args": {"$call": ["try", {"$call": ["url", 1, 0]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
-"ident": {"$call": ["fn", ["x"], {"$ref": "x"}, {"$ref": "string"}]}
-"wrong_result":
-  "$call":
-  - "try"
-  - {"$call": ["ident", 5]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}
-"describe": {"$call": ["fn", [["e", {"$ref": "endpoint"}]], {"$call": ["get", {"$ref": "e"}, "host"]}]}
-"good_record": {"$call": ["describe", {"host": "h", "port": 1}]}
-"bad_record":
-  "$call":
-  - "try"
-  - {"$call": ["describe", {"host": 1}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
-"checked_value": {"$call": ["expect", {"host": "h", "port": 22}, {"$ref": "endpoint"}]}
-"unchecked_value":
-  "$call":
-  - "try"
-  - {"$call": ["expect", {"host": "h", "port": 0}, {"$ref": "endpoint"}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "data"]}]}
-"typed_map": {"$call": ["map", {"$call": ["fn", [["n", {"$ref": "port"}]], {"$ref": "n"}]}, [1, 2, 3]]}
-"typed_map_bad":
-  "$call":
-  - "try"
-  - {"$call": ["map", {"$call": ["fn", [["n", {"$ref": "port"}]], {"$ref": "n"}]}, [1, 0, 70000]]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "message"]}]}
+bad_args: !call
+  - try
+  - !call [url, 1, 0]
+  - !call
+      - fn
+      - [e]
+      - !ref e
+bad_record: !call
+  - try
+  - !call [describe, {host: 1}]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, data]
+checked_value: !call [expect, {host: h, port: 22}, !ref endpoint]
+describe: !call
+  - fn
+  - [[e, !ref endpoint]]
+  - !call [get, !ref e, host]
+endpoint: !call [record, host, !ref string, port, !ref port]
+good: !call [url, a, 80]
+good_record: !call [describe, {host: h, port: 1}]
+ident: !call
+  - fn
+  - [x]
+  - !ref x
+  - !ref string
+in_port: !call
+  - fn
+  - ["n"]
+  - !call [and, !call [ge, !ref "n", 1], !call [le, !ref "n", 65535]]
+port: !call [refine, !ref integer, !ref in_port]
+typed_map: !call
+  - map
+  - !call
+      - fn
+      - [["n", !ref port]]
+      - !ref "n"
+  - [1, 2, 3]
+typed_map_bad: !call
+  - try
+  - !call
+      - map
+      - !call
+          - fn
+          - [["n", !ref port]]
+          - !ref "n"
+      - [1, 0, 70000]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, message]
+unchecked_value: !call
+  - try
+  - !call [expect, {host: h, port: 0}, !ref endpoint]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, data]
+url: !call
+  - fn
+  - [[host, !ref string], [p, !ref port]]
+  - !call [concat, !ref host, ":", !call [str, !ref p]]
+  - !ref string
+wrong_result: !call
+  - try
+  - !call [ident, 5]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, message]

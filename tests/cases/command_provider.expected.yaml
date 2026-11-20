@@ -1962,8 +1962,8 @@ root:
         - column: 48
           file: "std:command"
           function: "/$call/2/effectful_guard/$call/1/$call/1/$call/3"
-          function_column: 16
-          function_line: 169
+          function_column: 19
+          function_line: 48
           line: 103
           path: "/configured/$call/2/$call/4/$call/26/$call/2/$call/1/$call/1/$call/1/$call/1"
         - column: 40
@@ -1990,9 +1990,9 @@ root:
           function_line: 267
           line: 256
           path: "/plan/$call/2/$call/1/$call/1"
-      column: 18
+      column: 27
       kind: purity
-      line: 173
+      line: 50
       message: effects are forbidden during type time
       path: "/$call/2/effectful_guard/$call/1/$call/1/$call/3/$call/2"
       phase: type
@@ -2022,12 +2022,12 @@ root:
         function_line: 11
         line: 38
         path: "/classify/$call/2/$call/1"
-      - column: 12
+      - column: 11
         function: /classify
         function_column: 3
         function_file: "std:command"
         function_line: 34
-        line: 130
+        line: 57
         path: "/$call/2/failed/$call/1"
     column: 11
     data:

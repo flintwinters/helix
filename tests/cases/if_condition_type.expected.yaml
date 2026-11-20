@@ -1,7 +1,7 @@
 error:
-  column: 23
+  column: 5
   kind: type
-  line: 2
+  line: 4
   message: "expected boolean, got integer"
   path: "/x/$call/1"
   reference:

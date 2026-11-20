@@ -1,10 +1,12 @@
 """Non-executing checks, canonical source preservation and framed editor protocol."""
 import json
+import re
 import subprocess
 
 import yaml
 
 from tooling import checks_docs
+from tooling.source_format import SourceLoader
 
 
 def check(ctx):
@@ -27,6 +29,7 @@ def check(ctx):
         verify_retired_closure(ctx)
         verify_repository_modules(ctx)
         verify_format(ctx)
+        verify_source_spelling(ctx)
         verify_lsp(ctx)
         return []
     except (AssertionError, KeyError, ValueError, subprocess.TimeoutExpired) as error:
@@ -156,7 +159,7 @@ def verify_policy_result_fields(ctx):
     process = ctx.helix('check', str(original.relative_to(ctx.root)))
     report = yaml.safe_load(process.stdout)
     assert process.returncode == 0 and report['mode'] == 'static' and report['diagnostics'] == [], report
-    policy = yaml.safe_load(original.read_text())
+    policy = yaml.load(original.read_text(), SourceLoader)
     destination = ctx.root / 'runtime' / 'static' / 'policy-mutations'
     destination.mkdir(parents=True, exist_ok=True)
     for operation, field, value in [('result', 'status', 17), ('report', 'exit_code', 'zero'),
@@ -327,7 +330,7 @@ def verify_iteration_callbacks(ctx):
     import copy
     from tests.suites.source_contracts import location
 
-    original = yaml.safe_load((ctx.root / 'tooling' / 'test_policy.yaml').read_text())
+    original = yaml.load((ctx.root / 'tooling' / 'test_policy.yaml').read_text(), SourceLoader)
     destination = ctx.root / 'runtime' / 'static' / 'policy-mutations'
     destination.mkdir(parents=True, exist_ok=True)
     callback_path = '/report/$call/2/$call/1/processed_results/$call/1'
@@ -477,7 +480,7 @@ def verify_name_resolution(ctx):
     import copy
     from tests.suites.source_contracts import location
 
-    original = yaml.safe_load((ctx.root / 'tooling' / 'test_policy.yaml').read_text())
+    original = yaml.load((ctx.root / 'tooling' / 'test_policy.yaml').read_text(), SourceLoader)
     destination = ctx.root / 'runtime' / 'static' / 'policy-mutations'
     destination.mkdir(parents=True, exist_ok=True)
     for name, typo, path in (
@@ -779,7 +782,7 @@ def verify_format(ctx):
 
     compact = ctx.helix('fmt', '-', stdin='sum: {"$call": [fold, {"$ref": combine}, 0, {"$ref": xs}]}')
     assert compact.returncode == 0 and compact.stdout == 'sum: !call [fold, !ref combine, 0, !ref xs]\n', compact
-    structured = 'double: {$call: [fn, [x], {$call: [mul, {$ref: x}, 2]}]}'
+    structured = 'double: !call [fn, [x], !call [mul, !ref x, 2]]'
     expected = ('double: !call\n  - fn\n  - [x]\n'
                 '  - !call [mul, !ref x, 2]\n')
     result = ctx.helix('fmt', '-', stdin=structured)
@@ -797,7 +800,7 @@ def verify_format(ctx):
     result = ctx.helix('fmt', '-', stdin=source)
     assert result.returncode == 0 and 'items:\n  - item_00\n' in result.stdout, result
     assert yaml.safe_load(result.stdout) == json.loads(source), result
-    annotated = '# header\nsum: {$call: [add, 1, 2]} # arithmetic\ntext: |\n  # literal content\n'
+    annotated = '# header\nsum: !call [add, 1, 2] # arithmetic\ntext: |\n  # literal content\n'
     result = ctx.helix('fmt', '-', stdin=annotated)
     retained = retain_comments(annotated, result.stdout)
     assert '# header' in retained and '# arithmetic' in retained, retained
@@ -829,6 +832,57 @@ def verify_format(ctx):
     original = yaml.safe_load(ctx.helix('run', '-', stdin=source).stdout)
     after = yaml.safe_load(ctx.helix('run', '-', stdin=formatted.stdout).stdout)
     assert original['status'] == after['status'] == 'finished' and original['root'] == after['root'], (original, after)
+
+
+# Files whose purpose is the map representation itself, or recorded external evidence.
+MAP_SPELLING = {'tests/cases/yaml_model.yaml', 'CHANGELOG.md'}
+MAP_SPELLING_DIRS = ('benchmarks/agent/evidence/', 'runtime/', 'target/')
+
+
+def map_spellings(source):
+    """Lines where YAML source writes a `{$call: ...}`-style singleton map outside `!literal`.
+
+    Tags are the only written source syntax; the map is their normalized representation.
+    """
+    found = []
+
+    def visit(node, literal):
+        literal = literal or node.tag == '!literal'
+        if isinstance(node, yaml.MappingNode):
+            keys = [key.value for key, _ in node.value if isinstance(key, yaml.ScalarNode)]
+            if not literal and len(keys) == 1 and keys[0] in ('$call', '$ref', '$literal'):
+                found.append(node.start_mark.line + 1)
+            for key, value in node.value:
+                visit(value, literal)
+        elif isinstance(node, yaml.SequenceNode):
+            for value in node.value:
+                visit(value, literal)
+
+    for document in yaml.compose_all(source):
+        if document is not None:
+            visit(document, False)
+    return found
+
+
+def verify_source_spelling(ctx):
+    """Written YAML sources and manual examples use tags, never the map representation."""
+    tracked = subprocess.run(['git', 'ls-files', '*.yaml', '*.md'], cwd=ctx.root,
+                             capture_output=True, text=True, check=True).stdout.split()
+    errors = []
+    for name in tracked:
+        if name in MAP_SPELLING or name.startswith(MAP_SPELLING_DIRS) or name.endswith('.expected.yaml'):
+            continue
+        text = (ctx.root / name).read_text()
+        blocks = ([(0, text)] if name.endswith('.yaml') else
+                  [(text.count('\n', 0, m.start(1)), m[1])
+                   for m in re.finditer(r'^```ya?ml\n(.*?)^```', text, re.M | re.S)])
+        for offset, block in blocks:
+            try:
+                errors.extend(f'{name}:{offset + line}' for line in map_spellings(block))
+            except yaml.YAMLError:
+                continue  # Malformed fixtures and illustrative fragments are not source.
+    assert not errors, 'write !call/!ref/!literal tags, not map spelling: ' + ', '.join(errors)
+    assert map_spellings('a: {$call: [add, 1, 2]}\nb: !literal {$ref: x}\nc: !call [f, {"$ref": y}]') == [1, 3]
 
 
 def frame(message):

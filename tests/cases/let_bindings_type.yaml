@@ -1,2 +1,5 @@
 # Helix explicit syntax; migrated from legacy source.
-"r": {"$call": ["let", 5, 1]}
+r: !call
+  - let
+  - 5
+  - 1

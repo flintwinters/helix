@@ -1,2 +1,2 @@
 # Helix explicit syntax; migrated from legacy source.
-"a": {"$call": ["import", 5]}
+a: !call [import, 5]

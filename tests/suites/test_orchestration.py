@@ -11,6 +11,7 @@ import yaml
 from tooling import test_policy, test_runner
 from tests.suites import contracts
 from tests.suites.test_reports import report_fixture, suite_fixture
+from tooling.source_format import SourceLoader
 
 
 def verify(h):
@@ -289,7 +290,7 @@ def verify_policy_annotations(h):
         ("report", [[]], {"command": "test", "status": "passed", "exit_code": "0",
                           "failure_count": 0, "results": []}),
     ]
-    policy = yaml.safe_load(original.read_text())
+    policy = yaml.load(original.read_text(), SourceLoader)
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="policy-annotations-") as temporary:
         for operation, arguments, bad_return in mutations:
             damaged = copy.deepcopy(policy)

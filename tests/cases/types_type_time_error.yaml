@@ -1,2 +1,2 @@
 # Helix explicit syntax; migrated from legacy source.
-"answer": {"$call": ["type_time", {"$call": ["list_of", 42]}]}
+answer: !call [type_time, !call [list_of, 42]]

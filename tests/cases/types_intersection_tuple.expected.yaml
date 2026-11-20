@@ -498,8 +498,8 @@ root:
       expected: refined integer
       message: failed its refinement check
       predicate:
-        column: 42
-        line: 4
+        column: 7
+        line: 77
         path: "/small/$call/2"
         reference:
           - small

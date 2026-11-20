@@ -17,7 +17,7 @@ def check(ctx):
 
 
 def verify_repl(ctx):
-    source = '{$call: [add, 20, 22]}\n{$call: [div, 1, 0]}\n:begin\nanswer: {$call: [mul, 6, 7]}\n:end\n:quit\n'
+    source = '!call [add, 20, 22]\n!call [div, 1, 0]\n:begin\nanswer: !call [mul, 6, 7]\n:end\n:quit\n'
     result = ctx.helix('repl', stdin=source)
     states = list(yaml.safe_load_all(result.stdout))
     assert result.returncode == 1 and not result.stderr, result

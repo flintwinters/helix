@@ -1,5 +1,5 @@
 error:
-  column: 6
+  column: 3
   kind: arity
   line: 3
   message: "`fn` takes 2 to 3 arguments, got 1"

@@ -1,38 +1,41 @@
 # Helix explicit syntax; migrated from legacy source.
-"bottom": "never"
-"top": "any"
-"nothing": null
-"rejects_values":
-  "$call":
-  - "map"
-  - {"$call": ["fn", ["v"], {"$call": ["is", {"$ref": "v"}, {"$ref": "never"}]}]}
-  - {"$call": ["list", null, false, 0, 1.5, "", [], {}]}
-"null_inhabited": {"$call": ["is", {"$ref": "nothing"}, "null"]}
-"null_not_bottom": {"$call": ["subtype", "null", {"$ref": "never"}]}
-"bottom_below_types":
-  "$call":
-  - "map"
-  - {"$call": ["fn", ["t"], {"$call": ["subtype", {"$ref": "never"}, {"$ref": "t"}]}]}
-  - "$call":
-    - "list"
-    - {"$ref": "any"}
-    - {"$ref": "never"}
-    - {"$ref": "integer"}
-    - "null"
-    - {"$call": ["list_of", {"$ref": "string"}]}
-    - {"$call": ["record", "x", {"$ref": "boolean"}]}
-"top_not_bottom": {"$call": ["subtype", {"$ref": "any"}, {"$ref": "never"}]}
-"empty_list": {"$call": ["is", [], {"$call": ["list_of", {"$ref": "never"}]}]}
-"nonempty_list": {"$call": ["is", {"$call": ["list", null]}, {"$call": ["list_of", {"$ref": "never"}]}]}
-"empty_map": {"$call": ["is", {}, {"$call": ["map_of", {"$ref": "never"}]}]}
-"nonempty_map": {"$call": ["is", {"x": null}, {"$call": ["map_of", {"$ref": "never"}]}]}
-"union_with_bottom": {"$call": ["union", {"$ref": "never"}, {"$ref": "integer"}]}
-"union_membership":
-  "$call":
-  - "list"
-  - {"$call": ["is", 4, {"$ref": "union_with_bottom"}]}
-  - {"$call": ["is", "4", {"$ref": "union_with_bottom"}]}
-"union_below_integer": {"$call": ["subtype", {"$ref": "union_with_bottom"}, {"$ref": "integer"}]}
-"integer_below_union": {"$call": ["subtype", {"$ref": "integer"}, {"$ref": "union_with_bottom"}]}
-"only_bottom": {"$call": ["subtype", {"$call": ["union", {"$ref": "never"}, {"$ref": "never"}]}, {"$ref": "never"}]}
-"rejection": {"$call": ["violations", {"$ref": "nothing"}, {"$ref": "never"}]}
+bottom: never
+bottom_below_types: !call
+  - map
+  - !call
+      - fn
+      - [t]
+      - !call [subtype, !ref never, !ref t]
+  - !call
+      - list
+      - !ref any
+      - !ref never
+      - !ref integer
+      - "null"
+      - !call [list_of, !ref string]
+      - !call [record, x, !ref boolean]
+empty_list: !call [is, [], !call [list_of, !ref never]]
+empty_map: !call [is, {}, !call [map_of, !ref never]]
+integer_below_union: !call [subtype, !ref integer, !ref union_with_bottom]
+nonempty_list: !call [is, !call [list, ~], !call [list_of, !ref never]]
+nonempty_map: !call [is, {x: ~}, !call [map_of, !ref never]]
+nothing: ~
+null_inhabited: !call [is, !ref nothing, "null"]
+null_not_bottom: !call [subtype, "null", !ref never]
+only_bottom: !call [subtype, !call [union, !ref never, !ref never], !ref never]
+rejection: !call [violations, !ref nothing, !ref never]
+rejects_values: !call
+  - map
+  - !call
+      - fn
+      - [v]
+      - !call [is, !ref v, !ref never]
+  - !call [list, ~, false, 0, 1.5, "", [], {}]
+top: any
+top_not_bottom: !call [subtype, !ref any, !ref never]
+union_below_integer: !call [subtype, !ref union_with_bottom, !ref integer]
+union_membership: !call
+  - list
+  - !call [is, 4, !ref union_with_bottom]
+  - !call [is, "4", !ref union_with_bottom]
+union_with_bottom: !call [union, !ref never, !ref integer]

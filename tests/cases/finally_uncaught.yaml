@@ -1,2 +1,2 @@
 # Helix explicit syntax; migrated from legacy source.
-{"$call": ["finally", {"$call": ["div", 1, 0]}, {"$call": ["assert", true]}]}
+!call [finally, !call [div, 1, 0], !call [assert, true]]

@@ -234,7 +234,7 @@ fn caller_server_policy_is_validated_before_transport_or_progress() {
         server_progress: Some(progress),
         ..Default::default()
     };
-    let mut vm = Vm::load("{$call: [http_serve, {bind: '127.0.0.1:0'}, {$call: [fn, [request], null]}]}");
+    let mut vm = Vm::load("!call [http_serve, {bind: '127.0.0.1:0'}, !call [fn, [request], null]]");
     host.run(&mut vm);
     assert_eq!(vm.status(), Status::Error);
     assert_eq!(vm.state()["error"]["kind"].as_str(), Some("resource"));

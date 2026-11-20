@@ -1,32 +1,37 @@
 # Pure std:linux contracts: resolution, derived dependency graph, plans and explicit removal. No effects run.
-$call:
-- let
-- linux: {$call: [import, 'std:linux']}
-  baseline:
-    groups: {app: {gid: 2001}}
-    users: {app: {uid: 2001, group: app, home: /srv/app}}
-    packages: {apt: {jq: {version: 1.6-2.1}}}
-    directories: {/srv: {}, /srv/app: {owner: app, group: app, mode: 488}}
-    files: {/srv/app/README: {content: "hi\n", owner: app, group: app}}
-    symlinks: {/srv/current: {target: /srv/app}}
-  empty:
-    target: fixture-one
-    resources:
-      group:app: null
-      user:app: null
-      package:apt:jq: null
-      directory:/srv: null
-      directory:/srv/app: null
-      file:/srv/app/README: null
-      symlink:/srv/current: null
-  removal:
-    files: {/srv/app/README: {content: "hi\n", state: absent}}
-    symlinks: {/srv/current: {target: /srv/app, state: absent}}
-  bad_input:
-    files: {relative/path: {content: x}}
-- id: pure
-  resolved: {$call: [linux.resolve, {$ref: baseline}]}
-  graph: {$call: [linux.graph, {$ref: baseline}]}
-  plan: {$call: [linux.plan, {$ref: baseline}, {$ref: empty}]}
-  removal_graph: {$call: [linux.graph, {$ref: removal}]}
-  invalid: {$call: [try, {$call: [linux.resolve, {$ref: bad_input}]}, {$call: [fn, [error], {$ref: error.kind}]}]}
+!call
+  - let
+  - bad_input: {files: {relative/path: {content: x}}}
+    baseline:
+      directories: {/srv: {}, /srv/app: {group: app, mode: 488, owner: app}}
+      files: {/srv/app/README: {content: "hi\n", group: app, owner: app}}
+      groups: {app: {gid: 2001}}
+      packages: {apt: {jq: {version: "1.6-2.1"}}}
+      symlinks: {/srv/current: {target: /srv/app}}
+      users: {app: {group: app, home: /srv/app, uid: 2001}}
+    empty:
+      resources:
+        "directory:/srv": ~
+        "directory:/srv/app": ~
+        "file:/srv/app/README": ~
+        "group:app": ~
+        "package:apt:jq": ~
+        "symlink:/srv/current": ~
+        "user:app": ~
+      target: fixture-one
+    linux: !call [import, "std:linux"]
+    removal:
+      files: {/srv/app/README: {content: "hi\n", state: absent}}
+      symlinks: {/srv/current: {state: absent, target: /srv/app}}
+  - graph: !call [linux.graph, !ref baseline]
+    id: pure
+    invalid: !call
+      - try
+      - !call [linux.resolve, !ref bad_input]
+      - !call
+          - fn
+          - [error]
+          - !ref error.kind
+    plan: !call [linux.plan, !ref baseline, !ref empty]
+    removal_graph: !call [linux.graph, !ref removal]
+    resolved: !call [linux.resolve, !ref baseline]

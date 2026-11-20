@@ -1,188 +1,209 @@
 # Helix explicit syntax; migrated from legacy source.
 # Exhaust every list of length 0..3 over {-1, 0, 1}: 40 reproducible inputs.
-"t": {"$call": ["import", "std:test"]}
-"l": {"$call": ["import", "std:list"]}
-"report":
-  "$call":
-  - "let"
-  - "alphabet": [-1, 0, 1]
-    "samples": {"$call": ["t.lists", {"$ref": "alphabet"}, 3]}
-    "positive": {"$call": ["fn", ["x"], {"$call": ["gt", {"$ref": "x"}, 0]}]}
-    "sort_oracle":
-      "$call":
-      - "fn"
-      - - "xs"
-      - "$call":
-        - "l.flat_map"
-        - {"$ref": "alphabet"}
-        - "$call":
-          - "fn"
-          - - "x"
-          - "$call":
-            - "map"
-            - {"$call": ["fn", ["i"], {"$ref": "x"}]}
-            - "$call":
-              - "l.range"
-              - "$call":
-                - "l.count"
-                - {"$ref": "xs"}
-                - {"$call": ["fn", ["y"], {"$call": ["eq", {"$ref": "x"}, {"$ref": "y"}]}]}
-    "sorting":
-      "$call":
-      - "t.compare"
-      - "sort equals counting oracle"
-      - {"$ref": "samples"}
-      - {"$ref": "l.sort"}
-      - {"$ref": "sort_oracle"}
-    "reversal":
-      "$call":
-      - "t.property"
-      - "reversal"
-      - {"$ref": "samples"}
-      - "$call":
-        - "fn"
-        - - "xs"
-        - "$call":
-          - "let"
-          - "actual": {"$call": ["l.reverse", {"$ref": "xs"}]}
-          - "$call":
-            - "and"
-            - {"$call": ["eq", {"$call": ["len", {"$ref": "actual"}]}, {"$call": ["len", {"$ref": "xs"}]}]}
-            - "$call":
-              - "l.all"
-              - {"$call": ["l.range", {"$call": ["len", {"$ref": "xs"}]}]}
-              - "$call":
-                - "fn"
-                - - "i"
-                - "$call":
-                  - "eq"
-                  - {"$call": ["get", {"$ref": "actual"}, {"$ref": "i"}]}
-                  - "$call":
-                    - "get"
-                    - {"$ref": "xs"}
-                    - {"$call": ["sub", {"$call": ["sub", {"$call": ["len", {"$ref": "xs"}]}, 1]}, {"$ref": "i"}]}
-    "uniqueness":
-      "$call":
-      - "t.property"
-      - "uniqueness"
-      - {"$ref": "samples"}
-      - "$call":
-        - "fn"
-        - - "xs"
-        - "$call":
-          - "eq"
-          - {"$call": ["l.unique", {"$ref": "xs"}]}
-          - "$call":
-            - "map"
-            - {"$call": ["fn", ["i"], {"$call": ["get", {"$ref": "xs"}, {"$ref": "i"}]}]}
-            - "$call":
-              - "filter"
-              - "$call":
-                - "fn"
-                - - "i"
-                - "$call":
-                  - "not"
-                  - "$call":
-                    - "has"
-                    - {"$call": ["slice", {"$ref": "xs"}, 0, {"$ref": "i"}]}
-                    - {"$call": ["get", {"$ref": "xs"}, {"$ref": "i"}]}
-              - {"$call": ["l.range", {"$call": ["len", {"$ref": "xs"}]}]}
-    "partitioning":
-      "$call":
-      - "t.property"
-      - "partitioning"
-      - {"$ref": "samples"}
-      - "$call":
-        - "fn"
-        - - "xs"
-        - "$call":
-          - "eq"
-          - {"$call": ["l.partition", {"$ref": "xs"}, {"$ref": "positive"}]}
-          - "$call":
-            - "list"
-            - {"$call": ["filter", {"$ref": "positive"}, {"$ref": "xs"}]}
-            - "$call":
-              - "filter"
-              - {"$call": ["fn", ["x"], {"$call": ["not", {"$call": ["positive", {"$ref": "x"}]}]}]}
-              - {"$ref": "xs"}
-    "searching":
-      "$call":
-      - "t.property"
-      - "searching"
-      - {"$ref": "samples"}
-      - "$call":
-        - "fn"
-        - - "xs"
-        - "$call":
-          - "eq"
-          - {"$call": ["l.find", {"$ref": "xs"}, {"$ref": "positive"}, "absent"]}
-          - {"$call": ["get", {"$call": ["filter", {"$ref": "positive"}, {"$ref": "xs"}]}, 0, "absent"]}
-    "slicing":
-      "$call":
-      - "t.property"
-      - "slicing"
-      - {"$ref": "samples"}
-      - "$call":
-        - "fn"
-        - - "xs"
-        - "$call":
-          - "l.all"
-          - {"$call": ["l.range", {"$call": ["add", {"$call": ["len", {"$ref": "xs"}]}, 2]}]}
-          - "$call":
-            - "fn"
-            - - "n"
-            - "$call":
-              - "and"
-              - "$call":
-                - "eq"
-                - "$call":
-                  - "concat"
-                  - {"$call": ["l.take", {"$ref": "xs"}, {"$ref": "n"}]}
-                  - {"$call": ["l.drop", {"$ref": "xs"}, {"$ref": "n"}]}
-                - {"$ref": "xs"}
-              - "$call":
-                - "eq"
-                - {"$call": ["len", {"$call": ["l.take", {"$ref": "xs"}, {"$ref": "n"}]}]}
-                - "$call":
-                  - "if"
-                  - {"$call": ["lt", {"$ref": "n"}, {"$call": ["len", {"$ref": "xs"}]}]}
-                  - {"$ref": "n"}
-                  - {"$call": ["len", {"$ref": "xs"}]}
-    "positions":
-      "$call":
-      - "t.property"
-      - "positions"
-      - {"$ref": "samples"}
-      - "$call":
-        - "fn"
-        - - "xs"
-        - "$call":
-          - "let"
-          - "pairs": {"$call": ["l.enumerate", {"$ref": "xs"}]}
-          - "$call":
-            - "and"
-            - "$call":
-              - "eq"
-              - {"$call": ["map", {"$call": ["fn", ["pair"], {"$call": ["get", {"$ref": "pair"}, 1]}]}, {"$ref": "pairs"}]}
-              - {"$ref": "xs"}
-            - "$call":
-              - "eq"
-              - {"$call": ["map", {"$call": ["fn", ["pair"], {"$call": ["get", {"$ref": "pair"}, 0]}]}, {"$ref": "pairs"}]}
-              - {"$call": ["l.range", {"$call": ["len", {"$ref": "xs"}]}]}
-    "coverage":
-      "$call":
-      - "t.suite"
-      - - "name": "exhaustive_sample_count"
-          "run": {"$call": ["fn", [], {"$call": ["t.equal", {"$call": ["len", {"$ref": "samples"}]}, 40]}]}
-  - "$call":
-    - "t.combine"
-    - "$call":
-      - "list"
-      - {"$ref": "coverage"}
-      - {"$ref": "sorting"}
-      - {"$ref": "reversal"}
-      - {"$ref": "uniqueness"}
-      - {"$ref": "partitioning"}
-      - {"$ref": "searching"}
-      - {"$ref": "slicing"}
-      - {"$ref": "positions"}
+l: !call [import, "std:list"]
+report: !call
+  - let
+  - alphabet: [-1, 0, 1]
+    coverage: !call
+      - t.suite
+      -
+        - name: exhaustive_sample_count
+          run: !call
+            - fn
+            - []
+            - !call [t.equal, !call [len, !ref samples], 40]
+    partitioning: !call
+      - t.property
+      - partitioning
+      - !ref samples
+      - !call
+          - fn
+          - [xs]
+          - !call
+              - eq
+              - !call [l.partition, !ref xs, !ref positive]
+              - !call
+                  - list
+                  - !call [filter, !ref positive, !ref xs]
+                  - !call
+                      - filter
+                      - !call
+                          - fn
+                          - [x]
+                          - !call [not, !call [positive, !ref x]]
+                      - !ref xs
+    positions: !call
+      - t.property
+      - positions
+      - !ref samples
+      - !call
+          - fn
+          - [xs]
+          - !call
+              - let
+              - {pairs: !call [l.enumerate, !ref xs]}
+              - !call
+                  - and
+                  - !call
+                      - eq
+                      - !call
+                          - map
+                          - !call
+                              - fn
+                              - [pair]
+                              - !call [get, !ref pair, 1]
+                          - !ref pairs
+                      - !ref xs
+                  - !call
+                      - eq
+                      - !call
+                          - map
+                          - !call
+                              - fn
+                              - [pair]
+                              - !call [get, !ref pair, 0]
+                          - !ref pairs
+                      - !call [l.range, !call [len, !ref xs]]
+    positive: !call
+      - fn
+      - [x]
+      - !call [gt, !ref x, 0]
+    reversal: !call
+      - t.property
+      - reversal
+      - !ref samples
+      - !call
+          - fn
+          - [xs]
+          - !call
+              - let
+              - {actual: !call [l.reverse, !ref xs]}
+              - !call
+                  - and
+                  - !call [eq, !call [len, !ref actual], !call [len, !ref xs]]
+                  - !call
+                      - l.all
+                      - !call [l.range, !call [len, !ref xs]]
+                      - !call
+                          - fn
+                          - [i]
+                          - !call
+                              - eq
+                              - !call [get, !ref actual, !ref i]
+                              - !call
+                                  - get
+                                  - !ref xs
+                                  - !call [sub, !call [sub, !call [len, !ref xs], 1], !ref i]
+    samples: !call [t.lists, !ref alphabet, 3]
+    searching: !call
+      - t.property
+      - searching
+      - !ref samples
+      - !call
+          - fn
+          - [xs]
+          - !call
+              - eq
+              - !call [l.find, !ref xs, !ref positive, absent]
+              - !call [get, !call [filter, !ref positive, !ref xs], 0, absent]
+    slicing: !call
+      - t.property
+      - slicing
+      - !ref samples
+      - !call
+          - fn
+          - [xs]
+          - !call
+              - l.all
+              - !call [l.range, !call [add, !call [len, !ref xs], 2]]
+              - !call
+                  - fn
+                  - ["n"]
+                  - !call
+                      - and
+                      - !call
+                          - eq
+                          - !call
+                              - concat
+                              - !call [l.take, !ref xs, !ref "n"]
+                              - !call [l.drop, !ref xs, !ref "n"]
+                          - !ref xs
+                      - !call
+                          - eq
+                          - !call [len, !call [l.take, !ref xs, !ref "n"]]
+                          - !call
+                              - if
+                              - !call [lt, !ref "n", !call [len, !ref xs]]
+                              - !ref "n"
+                              - !call [len, !ref xs]
+    sort_oracle: !call
+      - fn
+      - [xs]
+      - !call
+          - l.flat_map
+          - !ref alphabet
+          - !call
+              - fn
+              - [x]
+              - !call
+                  - map
+                  - !call
+                      - fn
+                      - [i]
+                      - !ref x
+                  - !call
+                      - l.range
+                      - !call
+                          - l.count
+                          - !ref xs
+                          - !call
+                              - fn
+                              - ["y"]
+                              - !call [eq, !ref x, !ref "y"]
+    sorting: !call
+      - t.compare
+      - sort equals counting oracle
+      - !ref samples
+      - !ref l.sort
+      - !ref sort_oracle
+    uniqueness: !call
+      - t.property
+      - uniqueness
+      - !ref samples
+      - !call
+          - fn
+          - [xs]
+          - !call
+              - eq
+              - !call [l.unique, !ref xs]
+              - !call
+                  - map
+                  - !call
+                      - fn
+                      - [i]
+                      - !call [get, !ref xs, !ref i]
+                  - !call
+                      - filter
+                      - !call
+                          - fn
+                          - [i]
+                          - !call
+                              - not
+                              - !call
+                                  - has
+                                  - !call [slice, !ref xs, 0, !ref i]
+                                  - !call [get, !ref xs, !ref i]
+                      - !call [l.range, !call [len, !ref xs]]
+  - !call
+      - t.combine
+      - !call
+          - list
+          - !ref coverage
+          - !ref sorting
+          - !ref reversal
+          - !ref uniqueness
+          - !ref partitioning
+          - !ref searching
+          - !ref slicing
+          - !ref positions
+t: !call [import, "std:test"]

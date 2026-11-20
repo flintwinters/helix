@@ -101,7 +101,7 @@ def verify(h):
         module = base / 'helper.yaml'
         module.write_text('value: 42\n')
         source = base / 'main.yaml'
-        source.write_text('helper: {$call: [import, "helper.yaml"]}\nanswer: {$ref: helper.value}\n')
+        source.write_text('helper: !call [import, "helper.yaml"]\nanswer: !ref helper.value\n')
         saved = h.helix('snapshot', str(source), '--steps', '3')
         assert saved.returncode == 0, saved
         module.unlink()

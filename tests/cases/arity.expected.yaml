@@ -1,5 +1,5 @@
 error:
-  column: 6
+  column: 10
   kind: arity
   line: 3
   message: "`add` takes at least 2 arguments, got 1"

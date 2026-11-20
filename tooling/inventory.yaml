@@ -1,37 +1,40 @@
 # Helix explicit syntax; migrated from legacy source.
 # Pure repository-report policy; Python supplies file-system observations.
 # Keep grouping authoritative in std:group rather than duplicating it in Python.
-"group": {"$call": ["import", "std:group"]}
-"report":
-  "$call":
-  - "fn"
-  - - - "files"
-      - {"$ref": "list"}
-  - "$call":
-    - "let"
-    - "groups":
-        "$call":
-        - "group.by"
-        - {"$ref": "files"}
-        - {"$call": ["fn", ["file"], {"$call": ["get", {"$ref": "file"}, "directory"]}]}
-    - "$call":
-      - "map"
-      - "$call":
-        - "fn"
-        - - "directory"
-        - "$call":
-          - "let"
-          - "members": {"$call": ["get", {"$ref": "groups"}, {"$ref": "directory"}]}
-          - "$call":
-            - "dict"
-            - "directory"
-            - {"$ref": "directory"}
-            - "count"
-            - {"$call": ["len", {"$ref": "members"}]}
-            - "files"
-            - "$call":
-              - "map"
-              - {"$call": ["fn", ["file"], {"$call": ["get", {"$ref": "file"}, "path"]}]}
-              - {"$ref": "members"}
-      - {"$call": ["keys", {"$ref": "groups"}]}
-  - {"$ref": "list"}
+group: !call [import, "std:group"]
+report: !call
+  - fn
+  - [[files, !ref list]]
+  - !call
+      - let
+      - groups: !call
+          - group.by
+          - !ref files
+          - !call
+              - fn
+              - [file]
+              - !call [get, !ref file, directory]
+      - !call
+          - map
+          - !call
+              - fn
+              - [directory]
+              - !call
+                  - let
+                  - {members: !call [get, !ref groups, !ref directory]}
+                  - !call
+                      - dict
+                      - directory
+                      - !ref directory
+                      - count
+                      - !call [len, !ref members]
+                      - files
+                      - !call
+                          - map
+                          - !call
+                              - fn
+                              - [file]
+                              - !call [get, !ref file, path]
+                          - !ref members
+          - !call [keys, !ref groups]
+  - !ref list

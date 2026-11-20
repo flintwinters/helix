@@ -1,22 +1,32 @@
 # Keep shared source code once, carrying only selected function evidence between stages.
-$call:
-- let
-- search: {$call: [import, 'std:search']}
-- $call:
-  - fn
-  - [record]
-  - $call:
-    - if
-    - {$call: [eq, {$ref: record.kind}, source]}
-    - $call:
-      - let
-      - selected:
-          $call:
-          - search.select_functions
-          - {$ref: record}
-          - $call:
-            - fn
-            - [candidate]
-            - $call: [and, {$call: [search.signature_matches, {$ref: candidate}, 'integer|float']}, {$call: [eq, {$ref: candidate.effects.state}, none_found]}]
-      - $call: [if, {$call: [gt, {$call: [len, {$ref: selected.selection}]}, 0]}, [{$ref: selected}], []]
-    - $call: [if, {$call: [has, [diagnostic, summary], {$ref: record.kind}]}, [{$ref: record}], []]
+!call
+  - let
+  - {search: !call [import, "std:search"]}
+  - !call
+      - fn
+      - [record]
+      - !call
+          - if
+          - !call [eq, !ref record.kind, source]
+          - !call
+              - let
+              - selected: !call
+                  - search.select_functions
+                  - !ref record
+                  - !call
+                      - fn
+                      - [candidate]
+                      - !call
+                          - and
+                          - !call [search.signature_matches, !ref candidate, "integer|float"]
+                          - !call [eq, !ref candidate.effects.state, none_found]
+              - !call
+                  - if
+                  - !call [gt, !call [len, !ref selected.selection], 0]
+                  - [!ref selected]
+                  - []
+          - !call
+              - if
+              - !call [has, [diagnostic, summary], !ref record.kind]
+              - [!ref record]
+              - []

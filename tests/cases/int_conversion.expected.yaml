@@ -1,5 +1,5 @@
 error:
-  column: 24
+  column: 16
   kind: conversion
   line: 2
   message: "cannot parse `12abc` as an integer"

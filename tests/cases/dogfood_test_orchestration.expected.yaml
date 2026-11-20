@@ -1541,8 +1541,8 @@ root:
         actual_present: true
         argument: catalog
         argument_location:
-          column: 52
-          line: 21
+          column: 29
+          line: 10
           path: "/$call/2/bad_catalog/$call/1/$call/1"
           reference:
             path:
@@ -1565,8 +1565,8 @@ root:
         actual_present: true
         argument: observation
         argument_location:
-          column: 5
-          line: 25
+          column: 31
+          line: 14
           path: "/$call/2/bad_observation/$call/1/$call/1"
           reference:
             path:
@@ -1589,8 +1589,8 @@ root:
         actual_present: true
         argument: observations
         argument_location:
-          column: 5
-          line: 27
+          column: 31
+          line: 18
           path: "/$call/2/bad_report/$call/1/$call/1"
           reference:
             path:
@@ -1613,8 +1613,8 @@ root:
         actual_present: true
         argument: previous
         argument_location:
-          column: 5
-          line: 23
+          column: 39
+          line: 22
           path: "/$call/2/bad_selection/$call/1/$call/2"
           reference:
             path:

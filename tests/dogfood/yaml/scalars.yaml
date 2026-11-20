@@ -1,199 +1,68 @@
 # Helix explicit syntax; migrated from legacy source.
 # Value AND type assertions prevent numeric equality from hiding inference regressions.
-"t": {"$call": ["import", "std:test"]}
-"y": {"$call": ["import", "std:yaml"]}
-"rows":
-- "name": "null_lower"
-  "input":
-    "source": "null"
-    "value": null
-    "type": "null"
-- "name": "null_title"
-  "input":
-    "source": "Null"
-    "value": null
-    "type": "null"
-- "name": "null_upper"
-  "input":
-    "source": "NULL"
-    "value": null
-    "type": "null"
-- "name": "null_tilde"
-  "input":
-    "source": "~"
-    "value": null
-    "type": "null"
-- "name": "true_title"
-  "input":
-    "source": "True"
-    "value": true
-    "type": "boolean"
-- "name": "false_upper"
-  "input":
-    "source": "FALSE"
-    "value": false
-    "type": "boolean"
-- "name": "yaml11_yes_is_string"
-  "input":
-    "source": "yes"
-    "value": "yes"
-    "type": "string"
-- "name": "yaml11_on_is_string"
-  "input":
-    "source": "ON"
-    "value": "ON"
-    "type": "string"
-- "name": "zero"
-  "input":
-    "source": "0"
-    "value": 0
-    "type": "integer"
-- "name": "signed_integer"
-  "input":
-    "source": "+42"
-    "value": 42
-    "type": "integer"
-- "name": "leading_zero_decimal"
-  "input":
-    "source": "012"
-    "value": 12
-    "type": "integer"
-- "name": "integer_min"
-  "input":
-    "source": "-9223372036854775808"
-    "value": -9223372036854775808
-    "type": "integer"
-- "name": "integer_max"
-  "input":
-    "source": "9223372036854775807"
-    "value": 9223372036854775807
-    "type": "integer"
-- "name": "decimal_float"
-  "input":
-    "source": "1.0"
-    "value": 1.0
-    "type": "float"
-- "name": "leading_dot"
-  "input":
-    "source": ".5"
-    "value": 0.5
-    "type": "float"
-- "name": "trailing_dot"
-  "input":
-    "source": "2."
-    "value": 2.0
-    "type": "float"
-- "name": "exponent"
-  "input":
-    "source": "1e3"
-    "value": 1000.0
-    "type": "float"
-- "name": "negative_zero_float"
-  "input":
-    "source": "-0.0"
-    "value": -0.0
-    "type": "float"
-- "name": "hex_integer"
-  "input":
-    "source": "0xFF"
-    "value": 255
-    "type": "integer"
-- "name": "octal_integer"
-  "input":
-    "source": "0o12"
-    "value": 10
-    "type": "integer"
-- "name": "date_is_text"
-  "input":
-    "source": "2026-11-11"
-    "value": "2026-11-11"
-    "type": "string"
-- "name": "quoted_null"
-  "input":
-    "source": "\"null\""
-    "value": "null"
-    "type": "string"
-- "name": "quoted_boolean"
-  "input":
-    "source": "'true'"
-    "value": "true"
-    "type": "string"
-- "name": "quoted_integer"
-  "input":
-    "source": "\"42\""
-    "value": "42"
-    "type": "string"
-- "name": "empty_double_quote"
-  "input":
-    "source": "\"\""
-    "value": ""
-    "type": "string"
-- "name": "empty_single_quote"
-  "input":
-    "source": "''"
-    "value": ""
-    "type": "string"
-- "name": "apostrophe_escape"
-  "input":
-    "source": "'it''s YAML'"
-    "value": "it's YAML"
-    "type": "string"
-- "name": "single_quote_keeps_backslash"
-  "input":
-    "source": "'a\\nb'"
-    "value": "a\\nb"
-    "type": "string"
-- "name": "escaped_whitespace"
-  "input":
-    "source": "\"a\\nb\\tc\\rd\""
-    "value": "a\nb\tc\rd"
-    "type": "string"
-- "name": "escaped_quotes"
-  "input":
-    "source": "\"\\\"quote\\\" \\\\ slash\""
-    "value": "\"quote\" \\ slash"
-    "type": "string"
-- "name": "unicode_escapes"
-  "input":
-    "source": "\"\\x41\\u96EA\\U0001F642\""
-    "value": "A\u96EA\U0001F642"
-    "type": "string"
-- "name": "yaml_named_unicode_escapes"
-  "input":
-    "source": "\"\\N\\_\\L\\P\\/\""
-    "value": "\N\_\L\P/"
-    "type": "string"
-- "name": "control_escapes"
-  "input":
-    "source": "\"\\0\\a\\b\\v\\f\\e\""
-    "value": "\0\a\b\v\f\e"
-    "type": "string"
-- "name": "comment_after_scalar"
-  "input":
-    "source": "hello # ignored"
-    "value": "hello"
-    "type": "string"
-- "name": "hash_without_space"
-  "input":
-    "source": "hello#world"
-    "value": "hello#world"
-    "type": "string"
-- "name": "quoted_indicators"
-  "input":
-    "source": "\"# : [] {} & * ! | > % @ `\""
-    "value": "# : [] {} & * ! | > % @ `"
-    "type": "string"
-"report":
-  "$call":
-  - "t.table"
-  - {"$ref": "rows"}
-  - "$call":
-    - "fn"
-    - - "row"
-    - "$call":
-      - "let"
-      - "actual": {"$call": ["y.parse", {"$call": ["get", {"$ref": "row"}, "source"]}]}
-      - "$call":
-        - "t.equal"
-        - {"$call": ["list", {"$call": ["type", {"$ref": "actual"}]}, {"$ref": "actual"}]}
-        - {"$call": ["list", {"$call": ["get", {"$ref": "row"}, "type"]}, {"$call": ["get", {"$ref": "row"}, "value"]}]}
+report: !call
+  - t.table
+  - !ref rows
+  - !call
+      - fn
+      - [row]
+      - !call
+          - let
+          - {actual: !call [y.parse, !call [get, !ref row, source]]}
+          - !call
+              - t.equal
+              - !call [list, !call [type, !ref actual], !ref actual]
+              - !call [list, !call [get, !ref row, type], !call [get, !ref row, value]]
+rows:
+  - {input: {source: "null", type: "null", value: ~}, name: null_lower}
+  - {input: {source: "Null", type: "null", value: ~}, name: null_title}
+  - {input: {source: "NULL", type: "null", value: ~}, name: null_upper}
+  - {input: {source: "~", type: "null", value: ~}, name: null_tilde}
+  - {input: {source: "True", type: boolean, value: true}, name: true_title}
+  - {input: {source: "FALSE", type: boolean, value: false}, name: false_upper}
+  - {input: {source: "yes", type: string, value: "yes"}, name: yaml11_yes_is_string}
+  - {input: {source: "ON", type: string, value: "ON"}, name: yaml11_on_is_string}
+  - {input: {source: "0", type: integer, value: 0}, name: zero}
+  - {input: {source: "+42", type: integer, value: 42}, name: signed_integer}
+  - {input: {source: "012", type: integer, value: 12}, name: leading_zero_decimal}
+  - input: {source: "-9223372036854775808", type: integer, value: -9223372036854775808}
+    name: integer_min
+  - input: {source: "9223372036854775807", type: integer, value: 9223372036854775807}
+    name: integer_max
+  - {input: {source: "1.0", type: float, value: 1.0}, name: decimal_float}
+  - {input: {source: ".5", type: float, value: 0.5}, name: leading_dot}
+  - {input: {source: "2.", type: float, value: 2.0}, name: trailing_dot}
+  - {input: {source: "1e3", type: float, value: 1000.0}, name: exponent}
+  - {input: {source: "-0.0", type: float, value: -0.0}, name: negative_zero_float}
+  - {input: {source: "0xFF", type: integer, value: 255}, name: hex_integer}
+  - {input: {source: "0o12", type: integer, value: 10}, name: octal_integer}
+  - {input: {source: "2026-11-11", type: string, value: "2026-11-11"}, name: date_is_text}
+  - {input: {source: "\"null\"", type: string, value: "null"}, name: quoted_null}
+  - {input: {source: "'true'", type: string, value: "true"}, name: quoted_boolean}
+  - {input: {source: "\"42\"", type: string, value: "42"}, name: quoted_integer}
+  - {input: {source: "\"\"", type: string, value: ""}, name: empty_double_quote}
+  - {input: {source: "''", type: string, value: ""}, name: empty_single_quote}
+  - {input: {source: "'it''s YAML'", type: string, value: "it's YAML"}, name: apostrophe_escape}
+  - {input: {source: "'a\\nb'", type: string, value: "a\\nb"}, name: single_quote_keeps_backslash}
+  - input: {source: "\"a\\nb\\tc\\rd\"", type: string, value: "a\nb\tc\rd"}
+    name: escaped_whitespace
+  - input: {source: "\"\\\"quote\\\" \\\\ slash\"", type: string, value: "\"quote\" \\ slash"}
+    name: escaped_quotes
+  - input: {source: "\"\\x41\\u96EA\\U0001F642\"", type: string, value: "A雪🙂"}
+    name: unicode_escapes
+  - input: {source: "\"\\N\\_\\L\\P\\/\"", type: string, value: "\u0085 \u2028\u2029/"}
+    name: yaml_named_unicode_escapes
+  - input:
+      source: "\"\\0\\a\\b\\v\\f\\e\""
+      type: string
+      value: "\u0000\u0007\u0008\u000b\u000c\u001b"
+    name: control_escapes
+  - {input: {source: "hello # ignored", type: string, value: hello}, name: comment_after_scalar}
+  - {input: {source: "hello#world", type: string, value: "hello#world"}, name: hash_without_space}
+  - input:
+      source: "\"# : [] {} & * ! | > % @ `\""
+      type: string
+      value: "# : [] {} & * ! | > % @ `"
+    name: quoted_indicators
+t: !call [import, "std:test"]
+"y": !call [import, "std:yaml"]

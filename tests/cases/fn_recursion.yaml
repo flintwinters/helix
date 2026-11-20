@@ -1,24 +1,19 @@
 # Helix explicit syntax; migrated from legacy source.
-"fact":
-  "$call":
-  - "fn"
-  - - "n"
-  - "$call":
-    - "if"
-    - {"$call": ["le", {"$ref": "n"}, 1]}
-    - 1
-    - {"$call": ["mul", {"$ref": "n"}, {"$call": ["fact", {"$call": ["sub", {"$ref": "n"}, 1]}]}]}
-"fib":
-  "$call":
-  - "fn"
-  - - "n"
-  - "$call":
-    - "if"
-    - {"$call": ["lt", {"$ref": "n"}, 2]}
-    - {"$ref": "n"}
-    - "$call":
-      - "add"
-      - {"$call": ["fib", {"$call": ["sub", {"$ref": "n"}, 1]}]}
-      - {"$call": ["fib", {"$call": ["sub", {"$ref": "n"}, 2]}]}
-"f10": {"$call": ["fact", 10]}
-"fib15": {"$call": ["fib", 15]}
+f10: !call [fact, 10]
+fact: !call
+  - fn
+  - ["n"]
+  - !call
+      - if
+      - !call [le, !ref "n", 1]
+      - 1
+      - !call [mul, !ref "n", !call [fact, !call [sub, !ref "n", 1]]]
+fib: !call
+  - fn
+  - ["n"]
+  - !call
+      - if
+      - !call [lt, !ref "n", 2]
+      - !ref "n"
+      - !call [add, !call [fib, !call [sub, !ref "n", 1]], !call [fib, !call [sub, !ref "n", 2]]]
+fib15: !call [fib, 15]

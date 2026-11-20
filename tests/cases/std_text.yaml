@@ -1,50 +1,64 @@
 # Helix explicit syntax; migrated from legacy source.
-"t": {"$call": ["import", "std:text"]}
-"basic": {"$call": ["t.split", "one::two::three", "::"]}
-"empty_fields": {"$call": ["t.split", "::a::::", "::"]}
-"empty_source": {"$call": ["t.split", "", ","]}
-"no_match": {"$call": ["t.split", "abc", "abcd"]}
-"overlap": {"$call": ["t.split", "aaaaa", "aa"]}
-"unicode": {"$call": ["t.split", "\U0001F642\xE9\U0001F642\u4E16\u754C\U0001F642", "\U0001F642"]}
-"combining": {"$call": ["t.split", "e\u0301/e\u0301", "/"]}
-"joined": {"$call": ["t.join", {"$ref": "basic"}, "::"]}
-"empty_join": {"$call": ["t.join", [], "|"]}
-"single": {"$call": ["t.join", ["hello"], "|"]}
-"empty_separator": {"$call": ["t.join", ["\U0001F642", "\u4E16\u754C"], ""]}
-"leading_empty": {"$call": ["t.join", ["", "a", ""], ":"]}
-"roundtrip": {"$call": ["assert", {"$call": ["eq", {"$call": ["t.join", {"$ref": "empty_fields"}, "::"]}, "::a::::"]}]}
-"empty_split_separator":
-  "$call":
-  - "try"
-  - {"$call": ["t.split", "abc", ""]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_source":
-  "$call":
-  - "try"
-  - {"$call": ["t.split", [], ","]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_separator":
-  "$call":
-  - "try"
-  - {"$call": ["t.split", "abc", 1]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_parts":
-  "$call":
-  - "try"
-  - {"$call": ["t.join", "abc", ","]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_element":
-  "$call":
-  - "try"
-  - {"$call": ["t.join", ["a", 1], ","]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_empty_join_separator":
-  "$call":
-  - "try"
-  - {"$call": ["t.join", [], null]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_arity":
-  "$call":
-  - "try"
-  - {"$call": ["t.split", "abc"]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+basic: !call [t.split, "one::two::three", "::"]
+combining: !call [t.split, "é/é", /]
+empty_fields: !call [t.split, "::a::::", "::"]
+empty_join: !call [t.join, [], "|"]
+empty_separator: !call [t.join, ["🙂", "世界"], ""]
+empty_source: !call [t.split, "", ","]
+empty_split_separator: !call
+  - try
+  - !call [t.split, abc, ""]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+joined: !call [t.join, !ref basic, "::"]
+leading_empty: !call [t.join, ["", a, ""], ":"]
+no_match: !call [t.split, abc, abcd]
+overlap: !call [t.split, aaaaa, aa]
+roundtrip: !call [assert, !call [eq, !call [t.join, !ref empty_fields, "::"], "::a::::"]]
+single: !call [t.join, [hello], "|"]
+t: !call [import, "std:text"]
+unicode: !call [t.split, "🙂é🙂世界🙂", "🙂"]
+wrong_arity: !call
+  - try
+  - !call [t.split, abc]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_element: !call
+  - try
+  - !call [t.join, [a, 1], ","]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_empty_join_separator: !call
+  - try
+  - !call [t.join, [], ~]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_parts: !call
+  - try
+  - !call [t.join, abc, ","]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_separator: !call
+  - try
+  - !call [t.split, abc, 1]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_source: !call
+  - try
+  - !call [t.split, [], ","]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]

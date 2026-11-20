@@ -1,5 +1,5 @@
 error:
-  column: 6
+  column: 10
   kind: overflow
   line: 3
   message: "`add` overflowed i64"

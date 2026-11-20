@@ -1,55 +1,84 @@
 # Helix explicit syntax; migrated from legacy source.
-"l": {"$call": ["import", "std:list"]}
-"empty_unique": {"$call": ["l.unique", []]}
-"unique": {"$call": ["l.unique", [3, 1, 3, 2, 1]]}
-"numeric": {"$call": ["l.unique", [1, 1.0, 2.0, 2]]}
-"nested": {"$call": ["l.unique", [[1, 2], [1, 2], {"a": 1}, {"a": 1}, null, null, false, false]]}
-"text": {"$call": ["l.unique", ["\xE9", "\xE9", "x"]]}
-"empty_sort": {"$call": ["l.sort_by", [], {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}]}
-"singleton": {"$call": ["l.sort_by", [7], {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}]}
-"ascending":
-  "$call":
-  - "l.sort_by"
+again: !call
+  - l.sort_by
+  - !ref ascending
+  - !call
+      - fn
+      - [a, b]
+      - !call [lt, !ref a, !ref b]
+ascending: !call
+  - l.sort_by
   - [3, -1, 2, 2, 0]
-  - {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}
-"descending":
-  "$call":
-  - "l.sort_by"
+  - !call
+      - fn
+      - [a, b]
+      - !call [lt, !ref a, !ref b]
+bad_list: !call
+  - try
+  - !call [l.unique, 1]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+bad_predicate: !call
+  - try
+  - !call
+      - l.sort_by
+      - [2, 1]
+      - !call
+          - fn
+          - [a, b]
+          - 0
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+descending: !call
+  - l.sort_by
   - [1, 3, 2]
-  - {"$call": ["fn", ["a", "b"], {"$call": ["gt", {"$ref": "a"}, {"$ref": "b"}]}]}
-"words":
-  "$call":
-  - "l.sort_by"
-  - - "z"
-    - "a"
-    - "b"
-  - {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}
-"again":
-  "$call":
-  - "l.sort_by"
-  - {"$ref": "ascending"}
-  - {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}
-"bad_list":
-  "$call":
-  - "try"
-  - {"$call": ["l.unique", 1]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"bad_predicate":
-  "$call":
-  - "try"
-  - {"$call": ["l.sort_by", [2, 1], {"$call": ["fn", ["a", "b"], 0]}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"small_range": {"$call": ["l.range", 32]}
-"reverse_sorted":
-  "$call":
-  - "l.sort_by"
-  - {"$call": ["l.reverse", {"$ref": "small_range"}]}
-  - {"$call": ["fn", ["a", "b"], {"$call": ["lt", {"$ref": "a"}, {"$ref": "b"}]}]}
-"size_sort_ok": {"$call": ["assert", {"$call": ["eq", {"$ref": "reverse_sorted"}, {"$ref": "small_range"}]}]}
-"size_unique_ok":
-  "$call":
-  - "assert"
-  - "$call":
-    - "eq"
-    - {"$call": ["l.unique", {"$call": ["concat", {"$ref": "small_range"}, {"$ref": "small_range"}]}]}
-    - {"$ref": "small_range"}
+  - !call
+      - fn
+      - [a, b]
+      - !call [gt, !ref a, !ref b]
+empty_sort: !call
+  - l.sort_by
+  - []
+  - !call
+      - fn
+      - [a, b]
+      - !call [lt, !ref a, !ref b]
+empty_unique: !call [l.unique, []]
+l: !call [import, "std:list"]
+nested: !call [l.unique, [[1, 2], [1, 2], {a: 1}, {a: 1}, ~, ~, false, false]]
+numeric: !call [l.unique, [1, 1.0, 2.0, 2]]
+reverse_sorted: !call
+  - l.sort_by
+  - !call [l.reverse, !ref small_range]
+  - !call
+      - fn
+      - [a, b]
+      - !call [lt, !ref a, !ref b]
+singleton: !call
+  - l.sort_by
+  - [7]
+  - !call
+      - fn
+      - [a, b]
+      - !call [lt, !ref a, !ref b]
+size_sort_ok: !call [assert, !call [eq, !ref reverse_sorted, !ref small_range]]
+size_unique_ok: !call
+  - assert
+  - !call
+      - eq
+      - !call [l.unique, !call [concat, !ref small_range, !ref small_range]]
+      - !ref small_range
+small_range: !call [l.range, 32]
+text: !call [l.unique, ["é", "é", x]]
+unique: !call [l.unique, [3, 1, 3, 2, 1]]
+words: !call
+  - l.sort_by
+  - [z, a, b]
+  - !call
+      - fn
+      - [a, b]
+      - !call [lt, !ref a, !ref b]

@@ -2225,13 +2225,13 @@ root:
             - column: 42
               file: "std:orchestration"
               function: "/$call/2/failed_prerequisite/$call/2"
-              function_column: 12
-              function_line: 53
+              function_column: 11
+              function_line: 34
               line: 32
               path: "/invoke/$call/2/$call/1/$call/1/$call/1"
-          column: 16
+          column: 23
           kind: package_failed
-          line: 63
+          line: 39
           message: Package failed
           path: "/$call/2/failed_prerequisite/$call/2/$call/2/$call/2"
           reference:

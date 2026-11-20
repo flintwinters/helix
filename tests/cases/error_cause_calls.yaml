@@ -1,20 +1,48 @@
 # Helix explicit syntax; migrated from legacy source.
-"leaf": {"$call": ["fn", [], {"$call": ["div", 1, 0]}]}
-"middle": {"$call": ["fn", [], {"$call": ["leaf"]}]}
-"caught": {"$call": ["try", {"$call": ["middle"]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}
-"reraised":
-  "$call":
-  - "try"
-  - {"$call": ["try", {"$call": ["middle"]}, {"$call": ["fn", ["e"], {"$call": ["raise", {"$ref": "e"}]}]}]}
-  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
-"nested":
-  "$call":
-  - "try"
-  - "$call":
-    - "try"
-    - "$call":
-      - "try"
-      - {"$call": ["raise", "original", "failure", {"step": 3}]}
-      - {"$call": ["fn", ["e"], {"$call": ["raise", {"$ref": "e"}]}]}
-    - {"$call": ["fn", ["e"], {"$call": ["raise", {"$ref": "e"}]}]}
-  - {"$call": ["fn", ["e"], {"$ref": "e"}]}
+caught: !call
+  - try
+  - !call [middle]
+  - !call
+      - fn
+      - [e]
+      - !ref e
+leaf: !call
+  - fn
+  - []
+  - !call [div, 1, 0]
+middle: !call
+  - fn
+  - []
+  - !call [leaf]
+nested: !call
+  - try
+  - !call
+      - try
+      - !call
+          - try
+          - !call [raise, original, failure, {step: 3}]
+          - !call
+              - fn
+              - [e]
+              - !call [raise, !ref e]
+      - !call
+          - fn
+          - [e]
+          - !call [raise, !ref e]
+  - !call
+      - fn
+      - [e]
+      - !ref e
+reraised: !call
+  - try
+  - !call
+      - try
+      - !call [middle]
+      - !call
+          - fn
+          - [e]
+          - !call [raise, !ref e]
+  - !call
+      - fn
+      - [e]
+      - !ref e

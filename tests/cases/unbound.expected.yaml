@@ -1,5 +1,5 @@
 error:
-  column: 39
+  column: 29
   kind: unbound
   line: 3
   message: "unbound symbol `nope`"

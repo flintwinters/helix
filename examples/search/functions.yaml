@@ -1,4 +1,7 @@
-$call:
-- let
-- search: {$call: [import, 'std:search']}
-- $call: [fn, [record], {$call: [search.keep, {$ref: record}, {$ref: search.functions}]}]
+!call
+  - let
+  - {search: !call [import, "std:search"]}
+  - !call
+      - fn
+      - [record]
+      - !call [search.keep, !ref record, !ref search.functions]

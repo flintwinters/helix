@@ -1,7 +1,7 @@
 error:
-  column: 65
+  column: 5
   kind: type
-  line: 2
+  line: 8
   message: "expected list, got integer"
   path: "/r/$call/2"
   reference:

@@ -1,2 +1,6 @@
 # Helix explicit syntax; migrated from legacy source.
-"x": {"$call": ["if", 1, 2, 3]}
+x: !call
+  - if
+  - 1
+  - 2
+  - 3

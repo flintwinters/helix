@@ -10,7 +10,7 @@ use crate::model::string as s;
 
 /// Work only the engine can do for a pure check; its answer is retained and replayed.
 pub enum Ask<'a> {
-    /// Run a predicate's `{$call: [fn, [value], body]}` source on a value: answers a boolean.
+    /// Run a predicate's `!call [fn, [value], body]` source on a value: answers a boolean.
     Predicate(&'a Value, &'a Value),
     /// Evaluate a function's declared parameter and result annotations: answers its signature type.
     /// The flag also asks whether the function is provably free of effects.

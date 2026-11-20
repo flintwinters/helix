@@ -1,58 +1,98 @@
 # Helix explicit syntax; migrated from legacy source.
-"g": {"$call": ["import", "std:group"]}
-"items":
-- "team": "b"
-  "n": 1
-- "team": "a"
-  "n": 2
-- "team": "b"
-  "n": 3
-"groups":
-  "$call":
-  - "g.by"
-  - {"$ref": "items"}
-  - {"$call": ["fn", ["item"], {"$call": ["get", {"$ref": "item"}, "team"]}]}
-"order_ok": {"$call": ["assert", {"$call": ["eq", {"$call": ["keys", {"$ref": "groups"}]}, ["a", "b"]]}]}
-"items_ok":
-  "$call":
-  - "assert"
-  - {"$call": ["eq", {"$call": ["get", {"$ref": "groups"}, "b"]}, [{"team": "b", "n": 1}, {"team": "b", "n": 3}]]}
-"empty": {"$call": ["g.by", [], {"$call": ["fn", ["item"], {"$call": ["raise", "unused", "must not run"]}]}]}
-"keys": {"$call": ["g.by", ["", "\xE9", "", "\U0001F642", "\xE9"], {"$call": ["fn", ["item"], {"$ref": "item"}]}]}
-"constant": {"$call": ["g.by", [null, false, [1, 2], {"x": 1}], {"$call": ["fn", ["item"], "all"]}]}
-"closure":
-  "$call":
-  - "let"
-  - "prefix": "team:"
-  - "$call":
-    - "g.by"
-    - {"$ref": "items"}
-    - "$call":
-      - "fn"
-      - - "item"
-      - {"$call": ["concat", {"$ref": "prefix"}, {"$call": ["get", {"$ref": "item"}, "team"]}]}
-"wrong_list":
-  "$call":
-  - "try"
-  - {"$call": ["g.by", 1, {"$call": ["fn", ["x"], "x"]}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_callback":
-  "$call":
-  - "try"
-  - {"$call": ["g.by", [], 1]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_key":
-  "$call":
-  - "try"
-  - {"$call": ["g.by", [1], {"$call": ["fn", ["x"], {"$ref": "x"}]}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"callback_error":
-  "$call":
-  - "try"
-  - {"$call": ["g.by", [1], {"$call": ["fn", ["x"], {"$call": ["raise", "group_key", "failed"]}]}]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
-"wrong_arity":
-  "$call":
-  - "try"
-  - {"$call": ["g.by", []]}
-  - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+callback_error: !call
+  - try
+  - !call
+      - g.by
+      - [1]
+      - !call
+          - fn
+          - [x]
+          - !call [raise, group_key, failed]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+closure: !call
+  - let
+  - {prefix: "team:"}
+  - !call
+      - g.by
+      - !ref items
+      - !call
+          - fn
+          - [item]
+          - !call [concat, !ref prefix, !call [get, !ref item, team]]
+constant: !call
+  - g.by
+  - [~, false, [1, 2], {x: 1}]
+  - !call
+      - fn
+      - [item]
+      - all
+empty: !call
+  - g.by
+  - []
+  - !call
+      - fn
+      - [item]
+      - !call [raise, unused, must not run]
+g: !call [import, "std:group"]
+groups: !call
+  - g.by
+  - !ref items
+  - !call
+      - fn
+      - [item]
+      - !call [get, !ref item, team]
+items: [{"n": 1, team: b}, {"n": 2, team: a}, {"n": 3, team: b}]
+items_ok: !call
+  - assert
+  - !call [eq, !call [get, !ref groups, b], [{"n": 1, team: b}, {"n": 3, team: b}]]
+keys: !call
+  - g.by
+  - ["", "é", "", "🙂", "é"]
+  - !call
+      - fn
+      - [item]
+      - !ref item
+order_ok: !call [assert, !call [eq, !call [keys, !ref groups], [a, b]]]
+wrong_arity: !call
+  - try
+  - !call [g.by, []]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_callback: !call
+  - try
+  - !call [g.by, [], 1]
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_key: !call
+  - try
+  - !call
+      - g.by
+      - [1]
+      - !call
+          - fn
+          - [x]
+          - !ref x
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]
+wrong_list: !call
+  - try
+  - !call
+      - g.by
+      - 1
+      - !call
+          - fn
+          - [x]
+          - x
+  - !call
+      - fn
+      - [e]
+      - !call [get, !ref e, kind]

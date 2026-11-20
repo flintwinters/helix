@@ -1,33 +1,50 @@
 # Helix explicit syntax; migrated from legacy source.
 # Stepping exposes an effect without executing a host adapter.
-"$call":
-- "let"
-- "original": {"$call": ["vm", {"$call": ["fn", [], {"$call": ["effect", "time", null]}]}]}
-  "ready_to_stop":
-    "$call":
-    - "fn"
-    - - "machine"
-    - {"$call": ["eq", {"$call": ["get", {"$call": ["inspect", {"$ref": "machine"}]}, "status"]}, "signaled"]}
-  "advance": {"$call": ["fn", ["machine"], {"$call": ["step", {"$ref": "machine"}]}]}
-  "pending": {"$call": ["until", {"$ref": "ready_to_stop"}, {"$ref": "advance"}, {"$ref": "original"}]}
-  "view": {"$call": ["inspect", {"$ref": "pending"}]}
-- "$call":
-  - "dict"
-  - "status"
-  - {"$call": ["get", {"$ref": "view"}, "status"]}
-  - "request"
-  - {"$call": ["get", {"$ref": "view"}, "pending_effect"]}
-  - "step_preserves_pending"
-  - {"$call": ["eq", {"$ref": "pending"}, {"$call": ["step", {"$ref": "pending"}]}]}
-  - "original_status"
-  - {"$call": ["get", {"$call": ["inspect", {"$ref": "original"}]}, "status"]}
-  - "type_time"
-  - "$call":
-    - "try"
-    - {"$call": ["type_time", {"$call": ["effect", "time", null]}]}
-    - {"$call": ["fn", ["e"], {"$ref": "e"}]}
-  - "invalid_operation"
-  - "$call":
-    - "try"
-    - {"$call": ["effect", 1, null]}
-    - {"$call": ["fn", ["e"], {"$call": ["get", {"$ref": "e"}, "kind"]}]}
+!call
+  - let
+  - advance: !call
+      - fn
+      - [machine]
+      - !call [step, !ref machine]
+    original: !call
+      - vm
+      - !call
+          - fn
+          - []
+          - !call [effect, time, ~]
+    pending: !call
+      - until
+      - !ref ready_to_stop
+      - !ref advance
+      - !ref original
+    ready_to_stop: !call
+      - fn
+      - [machine]
+      - !call [eq, !call [get, !call [inspect, !ref machine], status], signaled]
+    view: !call [inspect, !ref pending]
+  - !call
+      - dict
+      - status
+      - !call [get, !ref view, status]
+      - request
+      - !call [get, !ref view, pending_effect]
+      - step_preserves_pending
+      - !call [eq, !ref pending, !call [step, !ref pending]]
+      - original_status
+      - !call [get, !call [inspect, !ref original], status]
+      - type_time
+      - !call
+          - try
+          - !call [type_time, !call [effect, time, ~]]
+          - !call
+              - fn
+              - [e]
+              - !ref e
+      - invalid_operation
+      - !call
+          - try
+          - !call [effect, 1, ~]
+          - !call
+              - fn
+              - [e]
+              - !call [get, !ref e, kind]

@@ -1,115 +1,99 @@
 # Helix explicit syntax; migrated from legacy source.
 # Integer cents avoid floating-point money. Repeated accounts and refunds aggregate.
-"ledger":
-- "account": "hosting"
-  "cents": 1200
-- "account": "hosting"
-  "cents": 800
-- "account": "travel"
-  "cents": 5000
-- "account": "travel"
-  "cents": -1000
-- "account": "domain"
-  "cents": 1500
-- "account": "placeholder"
-  "cents": 0
-"statement":
-- "account": "hosting"
-  "cents": 2000
-- "account": "travel"
-  "cents": 4500
-- "account": "equipment"
-  "cents": 3000
-- "account": "new_zero"
-  "cents": 0
-"total_by_account":
-  "$call":
-  - "fn"
-  - - "rows"
-  - "$call":
-    - "fold"
-    - "$call":
-      - "fn"
-      - - "acc"
-        - "row"
-      - "$call":
-        - "let"
-        - "account": {"$call": ["get", {"$ref": "row"}, "account"]}
-        - "$call":
-          - "set"
-          - {"$ref": "acc"}
-          - {"$ref": "account"}
-          - "$call":
-            - "add"
-            - {"$call": ["get", {"$ref": "acc"}, {"$ref": "account"}, 0]}
-            - {"$call": ["get", {"$ref": "row"}, "cents"]}
-    - {}
-    - {"$ref": "rows"}
-"reconcile":
-  "$call":
-  - "fn"
-  - - "expected_rows"
-    - "actual_rows"
-  - "$call":
-    - "let"
-    - "expected": {"$call": ["total_by_account", {"$ref": "expected_rows"}]}
-      "actual": {"$call": ["total_by_account", {"$ref": "actual_rows"}]}
-      "accounts":
-        "$call":
-        - "concat"
-        - {"$call": ["keys", {"$ref": "expected"}]}
-        - "$call":
-          - "filter"
-          - "$call":
-            - "fn"
-            - - "account"
-            - {"$call": ["not", {"$call": ["has", {"$ref": "expected"}, {"$ref": "account"}]}]}
-          - {"$call": ["keys", {"$ref": "actual"}]}
-      "differences":
-        "$call":
-        - "filter"
-        - "$call":
-          - "fn"
-          - - "account"
-          - "$call":
-            - "or"
-            - {"$call": ["not", {"$call": ["has", {"$ref": "expected"}, {"$ref": "account"}]}]}
-            - {"$call": ["not", {"$call": ["has", {"$ref": "actual"}, {"$ref": "account"}]}]}
-            - "$call":
-              - "ne"
-              - {"$call": ["get", {"$ref": "expected"}, {"$ref": "account"}, 0]}
-              - {"$call": ["get", {"$ref": "actual"}, {"$ref": "account"}, 0]}
-        - {"$ref": "accounts"}
-    - "$call":
-      - "map"
-      - "$call":
-        - "fn"
-        - - "account"
-        - "$call":
-          - "set"
-          - "$call":
-            - "set"
-            - "$call":
-              - "set"
-              - "$call":
-                - "set"
-                - "$call":
-                  - "set"
-                  - {"$call": ["set", {}, "account", {"$ref": "account"}]}
-                  - "in_ledger"
-                  - {"$call": ["has", {"$ref": "expected"}, {"$ref": "account"}]}
-                - "in_statement"
-                - {"$call": ["has", {"$ref": "actual"}, {"$ref": "account"}]}
-              - "expected_cents"
-              - {"$call": ["get", {"$ref": "expected"}, {"$ref": "account"}, 0]}
-            - "actual_cents"
-            - {"$call": ["get", {"$ref": "actual"}, {"$ref": "account"}, 0]}
-          - "delta_cents"
-          - "$call":
-            - "sub"
-            - {"$call": ["get", {"$ref": "actual"}, {"$ref": "account"}, 0]}
-            - {"$call": ["get", {"$ref": "expected"}, {"$ref": "account"}, 0]}
-      - {"$ref": "differences"}
-"discrepancies": {"$call": ["reconcile", {"$ref": "ledger"}, {"$ref": "statement"}]}
-"balanced": {"$call": ["reconcile", {"$ref": "ledger"}, {"$ref": "ledger"}]}
-"empty": {"$call": ["reconcile", [], []]}
+balanced: !call [reconcile, !ref ledger, !ref ledger]
+discrepancies: !call [reconcile, !ref ledger, !ref statement]
+empty: !call [reconcile, [], []]
+ledger:
+  - {account: hosting, cents: 1200}
+  - {account: hosting, cents: 800}
+  - {account: travel, cents: 5000}
+  - {account: travel, cents: -1000}
+  - {account: domain, cents: 1500}
+  - {account: placeholder, cents: 0}
+reconcile: !call
+  - fn
+  - [expected_rows, actual_rows]
+  - !call
+      - let
+      - accounts: !call
+          - concat
+          - !call [keys, !ref expected]
+          - !call
+              - filter
+              - !call
+                  - fn
+                  - [account]
+                  - !call [not, !call [has, !ref expected, !ref account]]
+              - !call [keys, !ref actual]
+        actual: !call [total_by_account, !ref actual_rows]
+        differences: !call
+          - filter
+          - !call
+              - fn
+              - [account]
+              - !call
+                  - or
+                  - !call [not, !call [has, !ref expected, !ref account]]
+                  - !call [not, !call [has, !ref actual, !ref account]]
+                  - !call
+                      - ne
+                      - !call [get, !ref expected, !ref account, 0]
+                      - !call [get, !ref actual, !ref account, 0]
+          - !ref accounts
+        expected: !call [total_by_account, !ref expected_rows]
+      - !call
+          - map
+          - !call
+              - fn
+              - [account]
+              - !call
+                  - set
+                  - !call
+                      - set
+                      - !call
+                          - set
+                          - !call
+                              - set
+                              - !call
+                                  - set
+                                  - !call [set, {}, account, !ref account]
+                                  - in_ledger
+                                  - !call [has, !ref expected, !ref account]
+                              - in_statement
+                              - !call [has, !ref actual, !ref account]
+                          - expected_cents
+                          - !call [get, !ref expected, !ref account, 0]
+                      - actual_cents
+                      - !call [get, !ref actual, !ref account, 0]
+                  - delta_cents
+                  - !call
+                      - sub
+                      - !call [get, !ref actual, !ref account, 0]
+                      - !call [get, !ref expected, !ref account, 0]
+          - !ref differences
+statement:
+  - {account: hosting, cents: 2000}
+  - {account: travel, cents: 4500}
+  - {account: equipment, cents: 3000}
+  - {account: new_zero, cents: 0}
+total_by_account: !call
+  - fn
+  - [rows]
+  - !call
+      - fold
+      - !call
+          - fn
+          - [acc, row]
+          - !call
+              - let
+              - {account: !call [get, !ref row, account]}
+              - !call
+                  - set
+                  - !ref acc
+                  - !ref account
+                  - !call
+                      - add
+                      - !call [get, !ref acc, !ref account, 0]
+                      - !call [get, !ref row, cents]
+      - {}
+      - !ref rows

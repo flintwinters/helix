@@ -1,5 +1,6 @@
-$call:
+!call
   - get
-  - - $call: [effect, peer_send, {to: server, value: 7}]
-    - $call: [effect, peer_receive, {from: server}]
+  -
+    - !call [effect, peer_send, {to: server, value: 7}]
+    - !call [effect, peer_receive, {from: server}]
   - 1

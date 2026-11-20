@@ -1,3 +1,6 @@
 # Helix explicit syntax; migrated from legacy source.
-"geometry": {"$call": ["import", "geometry.yaml"]}
-"area": {"$call": ["fn", ["r"], {"$call": ["geometry.area", {"$ref": "r"}]}]}
+area: !call
+  - fn
+  - [r]
+  - !call [geometry.area, !ref r]
+geometry: !call [import, geometry.yaml]

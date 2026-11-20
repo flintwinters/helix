@@ -1,27 +1,63 @@
-$call:
-- let
-- policy: {$call: [import, '../../tooling/test_policy.yaml']}
-  rejected: {$call: [fn, [error], {kind: {$ref: error.kind}, violations: {$ref: error.data.violations}}]}
-- ordinary: {$call: [policy.plan, [first, golden, second, robustness], [second, first, first], false]}
-  default: {$call: [policy.plan, [first, golden, second, robustness], [], false]}
-  blessing: {$call: [policy.plan, [golden, robustness], [robustness, golden], true]}
-  empty: {$call: [policy.plan, [], [], false]}
-  passed: {$call: [policy.report, [{suite: first, failures: []}]]}
-  failed: {$call: [policy.report, [{suite: first, failures: [one, two]}, {suite: second, failures: []}]]}
-  skipped: {$call: [policy.report, [{suite: robustness, failures: [], reason: disabled while blessing expectations}]]}
-  rerun_mixed: {$call: [policy.rerun, [first, golden, second, robustness],
-    {results: [{suite: second, status: failed}, {suite: first, status: failed},
-               {suite: golden, status: passed}, {suite: robustness, status: skipped}]}]}
-  rerun_prerequisite: {$call: [policy.rerun, [first, golden, second, robustness],
-    {results: [{suite: standard_library, status: failed}, {suite: golden, status: passed},
-               {suite: robustness, status: skipped}]}]}
-  rerun_empty: {$call: [policy.rerun, [first, golden], {results: []}]}
-  metadata: {$call: [policy.result, {suite: golden, failures: [], stdout: "saved output\n",
-    stderr: "warning\n", cases: 3, jobs: 2, blessed: true}]}
-  bad_catalog: {$call: [try, {$call: [policy.plan, [first, 7], [], false]}, {$ref: rejected}]}
-  bad_selection: {$call: [try, {$call: [policy.rerun, [first],
-    {results: [{suite: first, status: unknown}]}]}, {$ref: rejected}]}
-  bad_observation: {$call: [try, {$call: [policy.result,
-    {suite: first, failures: [], stdout: 7}]}, {$ref: rejected}]}
-  bad_report: {$call: [try, {$call: [policy.report,
-    [{suite: first, failures: [null]}]]}, {$ref: rejected}]}
+!call
+  - let
+  - policy: !call [import, "../../tooling/test_policy.yaml"]
+    rejected: !call
+      - fn
+      - [error]
+      - {kind: !ref error.kind, violations: !ref error.data.violations}
+  - bad_catalog: !call
+      - try
+      - !call [policy.plan, [first, 7], [], false]
+      - !ref rejected
+    bad_observation: !call
+      - try
+      - !call [policy.result, {failures: [], stdout: 7, suite: first}]
+      - !ref rejected
+    bad_report: !call
+      - try
+      - !call [policy.report, [{failures: [~], suite: first}]]
+      - !ref rejected
+    bad_selection: !call
+      - try
+      - !call [policy.rerun, [first], {results: [{status: unknown, suite: first}]}]
+      - !ref rejected
+    blessing: !call [policy.plan, [golden, robustness], [robustness, golden], true]
+    default: !call [policy.plan, [first, golden, second, robustness], [], false]
+    empty: !call [policy.plan, [], [], false]
+    failed: !call
+      - policy.report
+      - [{failures: [one, two], suite: first}, {failures: [], suite: second}]
+    metadata: !call
+      - policy.result
+      - blessed: true
+        cases: 3
+        failures: []
+        jobs: 2
+        stderr: "warning\n"
+        stdout: "saved output\n"
+        suite: golden
+    ordinary: !call
+      - policy.plan
+      - [first, golden, second, robustness]
+      - [second, first, first]
+      - false
+    passed: !call [policy.report, [{failures: [], suite: first}]]
+    rerun_empty: !call [policy.rerun, [first, golden], {results: []}]
+    rerun_mixed: !call
+      - policy.rerun
+      - [first, golden, second, robustness]
+      - results:
+          - {status: failed, suite: second}
+          - {status: failed, suite: first}
+          - {status: passed, suite: golden}
+          - {status: skipped, suite: robustness}
+    rerun_prerequisite: !call
+      - policy.rerun
+      - [first, golden, second, robustness]
+      - results:
+          - {status: failed, suite: standard_library}
+          - {status: passed, suite: golden}
+          - {status: skipped, suite: robustness}
+    skipped: !call
+      - policy.report
+      - [{failures: [], reason: disabled while blessing expectations, suite: robustness}]

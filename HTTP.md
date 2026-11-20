@@ -5,12 +5,11 @@ Transport is Rust; handlers are captured Helix functions. TLS, streaming,
 WebSockets and restoration of a live listener or client connection are unsupported.
 
 ```yaml
-http: {$call: [import, 'std:http']}
-main:
-  $call:
+http: !call [import, 'std:http']
+main: !call
   - http.serve
   - {bind: '127.0.0.1:8080'}
-  - {$call: [fn, [request], {$call: [http.text, 200, Hello]}]}
+  - !call [fn, [request], !call [http.text, 200, Hello]]
 ```
 
 Run with `python manage.py perform --allow-listen 127.0.0.1:8080 program.yaml`.

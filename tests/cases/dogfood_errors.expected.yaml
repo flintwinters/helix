@@ -661,17 +661,17 @@ annotations:
     value:
       error:
         calls:
-          - column: 59
+          - column: 36
             function: /parse
             function_column: 3
             function_file: "std:yaml"
             function_line: 19
-            line: 35
+            line: 37
             path: "/$call/1/batch/$call/2/$call/2/$call/1"
           - column: 31
             file: "std:validation"
             function: "/$call/1/batch/$call/2"
-            function_column: 7
+            function_column: 11
             function_line: 35
             line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
@@ -724,17 +724,17 @@ annotations:
     value:
       error:
         calls:
-          - column: 59
+          - column: 36
             function: /parse
             function_column: 3
             function_file: "std:yaml"
             function_line: 19
-            line: 35
+            line: 37
             path: "/$call/1/batch/$call/2/$call/2/$call/1"
           - column: 31
             file: "std:validation"
             function: "/$call/1/batch/$call/2"
-            function_column: 7
+            function_column: 11
             function_line: 35
             line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
@@ -907,16 +907,16 @@ annotations:
     value:
       error:
         calls:
-          - column: 36
+          - column: 19
             function: "/$call/1/validate"
-            function_column: 12
-            function_line: 16
-            line: 35
+            function_column: 7
+            function_line: 165
+            line: 37
             path: "/$call/1/batch/$call/2/$call/2"
           - column: 31
             file: "std:validation"
             function: "/$call/1/batch/$call/2"
-            function_column: 7
+            function_column: 11
             function_line: 35
             line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
@@ -936,9 +936,9 @@ annotations:
             function_line: 249
             line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
-        column: 13
+        column: 34
         kind: assertion
-        line: 27
+        line: 172
         message: stock must be nonnegative
         path: "/$call/1/validate/$call/2/$call/2/$call/1/$call/1"
         reference:
@@ -974,16 +974,16 @@ annotations:
     value:
       error:
         calls:
-          - column: 36
+          - column: 19
             function: "/$call/1/validate"
-            function_column: 12
-            function_line: 16
-            line: 35
+            function_column: 7
+            function_line: 165
+            line: 37
             path: "/$call/1/batch/$call/2/$call/2"
           - column: 31
             file: "std:validation"
             function: "/$call/1/batch/$call/2"
-            function_column: 7
+            function_column: 11
             function_line: 35
             line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
@@ -1003,9 +1003,9 @@ annotations:
             function_line: 249
             line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
-        column: 13
+        column: 34
         kind: assertion
-        line: 27
+        line: 172
         message: stock must be nonnegative
         path: "/$call/1/validate/$call/2/$call/2/$call/1/$call/1"
         reference:
@@ -1161,16 +1161,16 @@ annotations:
     value:
       error:
         calls:
-          - column: 36
+          - column: 19
             function: "/$call/1/validate"
-            function_column: 12
-            function_line: 16
-            line: 35
+            function_column: 7
+            function_line: 165
+            line: 37
             path: "/$call/1/batch/$call/2/$call/2"
           - column: 31
             file: "std:validation"
             function: "/$call/1/batch/$call/2"
-            function_column: 7
+            function_column: 11
             function_line: 35
             line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
@@ -1190,9 +1190,9 @@ annotations:
             function_line: 249
             line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
-        column: 52
+        column: 42
         kind: missing
-        line: 21
+        line: 169
         message: "no key `name`"
         path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
         reference:
@@ -1227,16 +1227,16 @@ annotations:
     value:
       error:
         calls:
-          - column: 36
+          - column: 19
             function: "/$call/1/validate"
-            function_column: 12
-            function_line: 16
-            line: 35
+            function_column: 7
+            function_line: 165
+            line: 37
             path: "/$call/1/batch/$call/2/$call/2"
           - column: 31
             file: "std:validation"
             function: "/$call/1/batch/$call/2"
-            function_column: 7
+            function_column: 11
             function_line: 35
             line: 29
             path: "/batch/$call/2/$call/2/$call/2/$call/1"
@@ -1256,9 +1256,9 @@ annotations:
             function_line: 249
             line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
-        column: 52
+        column: 42
         kind: missing
-        line: 21
+        line: 169
         message: "no key `name`"
         path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
         reference:
@@ -1727,17 +1727,17 @@ root:
         value: core
       - error:
           calls:
-            - column: 59
+            - column: 36
               function: /parse
               function_column: 3
               function_file: "std:yaml"
               function_line: 19
-              line: 35
+              line: 37
               path: "/$call/1/batch/$call/2/$call/2/$call/1"
             - column: 31
               file: "std:validation"
               function: "/$call/1/batch/$call/2"
-              function_column: 7
+              function_column: 11
               function_line: 35
               line: 29
               path: "/batch/$call/2/$call/2/$call/2/$call/1"
@@ -1776,16 +1776,16 @@ root:
         outcome: failed
       - error:
           calls:
-            - column: 36
+            - column: 19
               function: "/$call/1/validate"
-              function_column: 12
-              function_line: 16
-              line: 35
+              function_column: 7
+              function_line: 165
+              line: 37
               path: "/$call/1/batch/$call/2/$call/2"
             - column: 31
               file: "std:validation"
               function: "/$call/1/batch/$call/2"
-              function_column: 7
+              function_column: 11
               function_line: 35
               line: 29
               path: "/batch/$call/2/$call/2/$call/2/$call/1"
@@ -1805,9 +1805,9 @@ root:
               function_line: 249
               line: 9
               path: "/capture/$call/2/$call/1/$call/4/$call/1"
-          column: 13
+          column: 34
           kind: assertion
-          line: 27
+          line: 172
           message: stock must be nonnegative
           path: "/$call/1/validate/$call/2/$call/2/$call/1/$call/1"
           reference:
@@ -1829,16 +1829,16 @@ root:
         outcome: failed
       - error:
           calls:
-            - column: 36
+            - column: 19
               function: "/$call/1/validate"
-              function_column: 12
-              function_line: 16
-              line: 35
+              function_column: 7
+              function_line: 165
+              line: 37
               path: "/$call/1/batch/$call/2/$call/2"
             - column: 31
               file: "std:validation"
               function: "/$call/1/batch/$call/2"
-              function_column: 7
+              function_column: 11
               function_line: 35
               line: 29
               path: "/batch/$call/2/$call/2/$call/2/$call/1"
@@ -1858,9 +1858,9 @@ root:
               function_line: 249
               line: 9
               path: "/capture/$call/2/$call/1/$call/4/$call/1"
-          column: 52
+          column: 42
           kind: missing
-          line: 21
+          line: 169
           message: "no key `name`"
           path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
           reference:
@@ -1889,18 +1889,18 @@ root:
   calculations:
     - 8
     - calls:
-        - column: 11
+        - column: 23
           function: "/$call/1/calculate"
-          function_column: 12
-          function_line: 37
+          function_column: 7
+          function_line: 39
           line: 71
           path: "/$call/1/calculations/$call/1/$call/2/$call/1"
-      column: 13
+      column: 27
       data:
         - "+"
         - 1
       kind: arity
-      line: 50
+      line: 51
       message: calculator needs exactly two operands
       path: "/$call/1/calculate/$call/2/$call/2/$call/3/$call/2"
       reference:
@@ -1916,16 +1916,16 @@ root:
         - "$call"
         - 2
     - calls:
-        - column: 11
+        - column: 23
           function: "/$call/1/calculate"
-          function_column: 12
-          function_line: 37
+          function_column: 7
+          function_line: 39
           line: 71
           path: "/$call/1/calculations/$call/1/$call/2/$call/1"
-      column: 17
+      column: 35
       data: wat
       kind: syntax
-      line: 62
+      line: 63
       message: unknown calculator operator
       path: "/$call/1/calculate/$call/2/$call/2/$call/3/$call/3/$call/2/$call/5"
       reference:
@@ -1945,16 +1945,16 @@ root:
         - "$call"
         - 5
     - calls:
-        - column: 11
+        - column: 23
           function: "/$call/1/calculate"
-          function_column: 12
-          function_line: 37
+          function_column: 7
+          function_line: 39
           line: 71
           path: "/$call/1/calculations/$call/1/$call/2/$call/1"
-      column: 11
+      column: 23
       data: 42
       kind: syntax
-      line: 46
+      line: 47
       message: "expected [operator, left, right]"
       path: "/$call/1/calculate/$call/2/$call/2/$call/2"
       reference:
@@ -1968,15 +1968,15 @@ root:
         - "$call"
         - 2
     - calls:
-        - column: 11
+        - column: 23
           function: "/$call/1/calculate"
-          function_column: 12
-          function_line: 37
+          function_column: 7
+          function_line: 39
           line: 71
           path: "/$call/1/calculations/$call/1/$call/2/$call/1"
-      column: 17
+      column: 35
       kind: divide_by_zero
-      line: 61
+      line: 62
       message: "`div` by zero"
       path: "/$call/1/calculate/$call/2/$call/2/$call/3/$call/3/$call/2/$call/4"
       reference:
@@ -1998,15 +1998,15 @@ root:
     - 9
   cleanup_after_middle_failure:
     calls:
-      - column: 53
+      - column: 15
         function: "/$call/1/job"
-        function_column: 12
-        function_line: 159
-        line: 172
+        function_column: 7
+        function_line: 95
+        line: 79
         path: "/$call/1/cleanup_after_middle_failure/$call/1"
-    column: 11
+    column: 23
     kind: cleanup
-    line: 171
+    line: 106
     message: release job lease
     path: "/$call/1/job/$call/2/$call/2/$call/2"
     reference:
@@ -2021,15 +2021,15 @@ root:
       - 2
   cleanup_after_success:
     calls:
-      - column: 46
+      - column: 15
         function: "/$call/1/job"
-        function_column: 12
-        function_line: 159
-        line: 173
+        function_column: 7
+        function_line: 95
+        line: 86
         path: "/$call/1/cleanup_after_success/$call/1"
-    column: 11
+    column: 23
     kind: cleanup
-    line: 171
+    line: 106
     message: release job lease
     path: "/$call/1/job/$call/2/$call/2/$call/2"
     reference:
@@ -2046,16 +2046,16 @@ root:
     history:
       - error:
           calls:
-            - column: 44
+            - column: 46
               function: "/$call/1/attempt"
-              function_column: 12
-              function_line: 80
-              line: 103
+              function_column: 7
+              function_line: 21
+              line: 141
               path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
-          column: 11
+          column: 23
           data: 0
           kind: transient
-          line: 91
+          line: 30
           message: step failed
           path: "/$call/1/attempt/$call/2/$call/2/$call/3"
           reference:
@@ -2070,16 +2070,16 @@ root:
             - 3
       - error:
           calls:
-            - column: 44
+            - column: 46
               function: "/$call/1/attempt"
-              function_column: 12
-              function_line: 80
-              line: 103
+              function_column: 7
+              function_line: 21
+              line: 141
               path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
-          column: 11
+          column: 23
           data: 1
           kind: transient
-          line: 91
+          line: 30
           message: step failed
           path: "/$call/1/attempt/$call/2/$call/2/$call/3"
           reference:
@@ -2095,16 +2095,16 @@ root:
     outcome:
       error:
         calls:
-          - column: 44
+          - column: 46
             function: "/$call/1/attempt"
-            function_column: 12
-            function_line: 80
-            line: 103
+            function_column: 7
+            function_line: 21
+            line: 141
             path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
-        column: 11
+        column: 23
         data: 1
         kind: transient
-        line: 91
+        line: 30
         message: step failed
         path: "/$call/1/attempt/$call/2/$call/2/$call/3"
         reference:
@@ -2121,16 +2121,16 @@ root:
     history:
       - error:
           calls:
-            - column: 44
+            - column: 46
               function: "/$call/1/attempt"
-              function_column: 12
-              function_line: 80
-              line: 103
+              function_column: 7
+              function_line: 21
+              line: 141
               path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
-          column: 11
+          column: 23
           data: 0
           kind: fatal
-          line: 91
+          line: 30
           message: step failed
           path: "/$call/1/attempt/$call/2/$call/2/$call/3"
           reference:
@@ -2146,16 +2146,16 @@ root:
     outcome:
       error:
         calls:
-          - column: 44
+          - column: 46
             function: "/$call/1/attempt"
-            function_column: 12
-            function_line: 80
-            line: 103
+            function_column: 7
+            function_line: 21
+            line: 141
             path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
-        column: 11
+        column: 23
         data: 0
         kind: fatal
-        line: 91
+        line: 30
         message: step failed
         path: "/$call/1/attempt/$call/2/$call/2/$call/3"
         reference:
@@ -2170,9 +2170,9 @@ root:
           - 3
   fixed_call: 2
   preserved:
-    column: 29
+    column: 31
     kind: divide_by_zero
-    line: 177
+    line: 128
     message: "`div` by zero"
     path: "/$call/1/preserved/$call/1/$call/1"
     reference:
@@ -2187,16 +2187,16 @@ root:
     history:
       - error:
           calls:
-            - column: 44
+            - column: 46
               function: "/$call/1/attempt"
-              function_column: 12
-              function_line: 80
-              line: 103
+              function_column: 7
+              function_line: 21
+              line: 141
               path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
-          column: 11
+          column: 23
           data: 0
           kind: transient
-          line: 91
+          line: 30
           message: step failed
           path: "/$call/1/attempt/$call/2/$call/2/$call/3"
           reference:
@@ -2211,16 +2211,16 @@ root:
             - 3
       - error:
           calls:
-            - column: 44
+            - column: 46
               function: "/$call/1/attempt"
-              function_column: 12
-              function_line: 80
-              line: 103
+              function_column: 7
+              function_line: 21
+              line: 141
               path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
-          column: 11
+          column: 23
           data: 1
           kind: transient
-          line: 91
+          line: 30
           message: step failed
           path: "/$call/1/attempt/$call/2/$call/2/$call/3"
           reference:
@@ -2238,27 +2238,27 @@ root:
       value: 42
   wrapped:
     calls:
-      - column: 16
+      - column: 15
         function: "/$call/1/load_config/$call/2/$call/2"
-        function_column: 16
-        function_line: 127
-        line: 127
+        function_column: 15
+        function_line: 114
+        line: 114
         path: "/$call/1/load_config/$call/2/$call/2"
-      - column: 32
+      - column: 15
         function: "/$call/1/load_config"
-        function_column: 12
-        function_line: 121
-        line: 140
+        function_column: 7
+        function_line: 108
+        line: 178
         path: "/$call/1/wrapped/$call/1"
     cause:
       cause:
         calls:
-          - column: 9
+          - column: 19
             function: /parse
             function_column: 3
             function_file: "std:yaml"
             function_line: 19
-            line: 126
+            line: 112
             path: "/$call/1/load_config/$call/2/$call/1"
         column: 29
         file: "std:yaml"
@@ -2274,9 +2274,9 @@ root:
           - 1
       kind: configuration
       message: cannot load deployment configuration
-    column: 18
+    column: 19
     kind: configuration
-    line: 130
+    line: 117
     message: cannot load deployment configuration
     path: "/$call/1/load_config/$call/2/$call/2/$call/2"
     reference:
@@ -2291,15 +2291,15 @@ root:
       - 2
   wrong_call:
     calls:
-      - column: 35
+      - column: 15
         function: "/$call/1/allocate"
-        function_column: 12
-        function_line: 142
-        line: 156
+        function_column: 7
+        function_line: 7
+        line: 185
         path: "/$call/1/wrong_call/$call/1"
-    column: 18
+    column: 19
     kind: assertion
-    line: 149
+    line: 14
     message: "allocate count must be positive; pass at least 1"
     path: "/$call/1/allocate/$call/2/$call/1/$call/1"
     reference:
