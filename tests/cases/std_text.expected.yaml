@@ -1096,117 +1096,121 @@ objects:
                 - range
                 - split separator must not be empty
             - "$call":
-                - let
-                - result:
-                    "$call":
-                      - until
-                      - "$call":
-                          - fn
-                          - - state
-                          - "$call":
-                              - gt
-                              - "$call":
-                                  - get
-                                  - "$ref": state
-                                  - index
-                              - "$call":
-                                  - sub
-                                  - "$ref": size
-                                  - "$ref": width
-                      - "$call":
-                          - fn
-                          - - state
-                          - "$call":
-                              - if
-                              - "$call":
-                                  - eq
-                                  - "$call":
-                                      - slice
-                                      - "$ref": source
-                                      - "$call":
-                                          - get
-                                          - "$ref": state
-                                          - index
-                                      - "$call":
-                                          - add
-                                          - "$call":
-                                              - get
-                                              - "$ref": state
-                                              - index
-                                          - "$ref": width
-                                  - "$ref": separator
-                              - "$call":
-                                  - dict
-                                  - index
-                                  - "$call":
-                                      - add
-                                      - "$call":
-                                          - get
-                                          - "$ref": state
-                                          - index
-                                      - "$ref": width
-                                  - start
-                                  - "$call":
-                                      - add
-                                      - "$call":
-                                          - get
-                                          - "$ref": state
-                                          - index
-                                      - "$ref": width
-                                  - parts
-                                  - "$call":
-                                      - append
-                                      - "$call":
-                                          - get
-                                          - "$ref": state
-                                          - parts
-                                      - "$call":
-                                          - slice
-                                          - "$ref": source
-                                          - "$call":
-                                              - get
-                                              - "$ref": state
-                                              - start
-                                          - "$call":
-                                              - get
-                                              - "$ref": state
-                                              - index
-                              - "$call":
-                                  - set
-                                  - "$ref": state
-                                  - index
-                                  - "$call":
-                                      - add
-                                      - "$call":
-                                          - get
-                                          - "$ref": state
-                                          - index
-                                      - 1
-                      - index: 0
-                        parts: []
-                        start: 0
-                  size:
-                    "$call":
-                      - len
-                      - "$ref": source
-                  width:
-                    "$call":
-                      - len
-                      - "$ref": separator
                 - "$call":
-                    - append
+                    - fn
+                    - - size
+                      - width
                     - "$call":
-                        - get
-                        - "$ref": result
-                        - parts
-                    - "$call":
-                        - slice
-                        - "$ref": source
                         - "$call":
-                            - get
-                            - "$ref": result
-                            - start
-                        - "$ref": size
+                            - fn
+                            - - result
+                            - "$call":
+                                - append
+                                - "$call":
+                                    - get
+                                    - "$ref": result
+                                    - parts
+                                - "$call":
+                                    - slice
+                                    - "$ref": source
+                                    - "$call":
+                                        - get
+                                        - "$ref": result
+                                        - start
+                                    - "$ref": size
+                        - "$call":
+                            - until
+                            - "$call":
+                                - fn
+                                - - state
+                                - "$call":
+                                    - gt
+                                    - "$call":
+                                        - get
+                                        - "$ref": state
+                                        - index
+                                    - "$call":
+                                        - sub
+                                        - "$ref": size
+                                        - "$ref": width
+                            - "$call":
+                                - fn
+                                - - state
+                                - "$call":
+                                    - if
+                                    - "$call":
+                                        - eq
+                                        - "$call":
+                                            - slice
+                                            - "$ref": source
+                                            - "$call":
+                                                - get
+                                                - "$ref": state
+                                                - index
+                                            - "$call":
+                                                - add
+                                                - "$call":
+                                                    - get
+                                                    - "$ref": state
+                                                    - index
+                                                - "$ref": width
+                                        - "$ref": separator
+                                    - "$call":
+                                        - dict
+                                        - index
+                                        - "$call":
+                                            - add
+                                            - "$call":
+                                                - get
+                                                - "$ref": state
+                                                - index
+                                            - "$ref": width
+                                        - start
+                                        - "$call":
+                                            - add
+                                            - "$call":
+                                                - get
+                                                - "$ref": state
+                                                - index
+                                            - "$ref": width
+                                        - parts
+                                        - "$call":
+                                            - append
+                                            - "$call":
+                                                - get
+                                                - "$ref": state
+                                                - parts
+                                            - "$call":
+                                                - slice
+                                                - "$ref": source
+                                                - "$call":
+                                                    - get
+                                                    - "$ref": state
+                                                    - start
+                                                - "$call":
+                                                    - get
+                                                    - "$ref": state
+                                                    - index
+                                    - "$call":
+                                        - set
+                                        - "$ref": state
+                                        - index
+                                        - "$call":
+                                            - add
+                                            - "$call":
+                                                - get
+                                                - "$ref": state
+                                                - index
+                                            - 1
+                            - index: 0
+                              parts: []
+                              start: 0
+                - "$call":
+                    - len
+                    - "$ref": source
+                - "$call":
+                    - len
+                    - "$ref": separator
         - "$call":
             - list_of
             - "$ref": string
@@ -1470,117 +1474,121 @@ objects:
                       - range
                       - split separator must not be empty
                   - "$call":
-                      - let
-                      - result:
-                          "$call":
-                            - until
-                            - "$call":
-                                - fn
-                                - - state
-                                - "$call":
-                                    - gt
-                                    - "$call":
-                                        - get
-                                        - "$ref": state
-                                        - index
-                                    - "$call":
-                                        - sub
-                                        - "$ref": size
-                                        - "$ref": width
-                            - "$call":
-                                - fn
-                                - - state
-                                - "$call":
-                                    - if
-                                    - "$call":
-                                        - eq
-                                        - "$call":
-                                            - slice
-                                            - "$ref": source
-                                            - "$call":
-                                                - get
-                                                - "$ref": state
-                                                - index
-                                            - "$call":
-                                                - add
-                                                - "$call":
-                                                    - get
-                                                    - "$ref": state
-                                                    - index
-                                                - "$ref": width
-                                        - "$ref": separator
-                                    - "$call":
-                                        - dict
-                                        - index
-                                        - "$call":
-                                            - add
-                                            - "$call":
-                                                - get
-                                                - "$ref": state
-                                                - index
-                                            - "$ref": width
-                                        - start
-                                        - "$call":
-                                            - add
-                                            - "$call":
-                                                - get
-                                                - "$ref": state
-                                                - index
-                                            - "$ref": width
-                                        - parts
-                                        - "$call":
-                                            - append
-                                            - "$call":
-                                                - get
-                                                - "$ref": state
-                                                - parts
-                                            - "$call":
-                                                - slice
-                                                - "$ref": source
-                                                - "$call":
-                                                    - get
-                                                    - "$ref": state
-                                                    - start
-                                                - "$call":
-                                                    - get
-                                                    - "$ref": state
-                                                    - index
-                                    - "$call":
-                                        - set
-                                        - "$ref": state
-                                        - index
-                                        - "$call":
-                                            - add
-                                            - "$call":
-                                                - get
-                                                - "$ref": state
-                                                - index
-                                            - 1
-                            - index: 0
-                              parts: []
-                              start: 0
-                        size:
-                          "$call":
-                            - len
-                            - "$ref": source
-                        width:
-                          "$call":
-                            - len
-                            - "$ref": separator
                       - "$call":
-                          - append
+                          - fn
+                          - - size
+                            - width
                           - "$call":
-                              - get
-                              - "$ref": result
-                              - parts
-                          - "$call":
-                              - slice
-                              - "$ref": source
                               - "$call":
-                                  - get
-                                  - "$ref": result
-                                  - start
-                              - "$ref": size
+                                  - fn
+                                  - - result
+                                  - "$call":
+                                      - append
+                                      - "$call":
+                                          - get
+                                          - "$ref": result
+                                          - parts
+                                      - "$call":
+                                          - slice
+                                          - "$ref": source
+                                          - "$call":
+                                              - get
+                                              - "$ref": result
+                                              - start
+                                          - "$ref": size
+                              - "$call":
+                                  - until
+                                  - "$call":
+                                      - fn
+                                      - - state
+                                      - "$call":
+                                          - gt
+                                          - "$call":
+                                              - get
+                                              - "$ref": state
+                                              - index
+                                          - "$call":
+                                              - sub
+                                              - "$ref": size
+                                              - "$ref": width
+                                  - "$call":
+                                      - fn
+                                      - - state
+                                      - "$call":
+                                          - if
+                                          - "$call":
+                                              - eq
+                                              - "$call":
+                                                  - slice
+                                                  - "$ref": source
+                                                  - "$call":
+                                                      - get
+                                                      - "$ref": state
+                                                      - index
+                                                  - "$call":
+                                                      - add
+                                                      - "$call":
+                                                          - get
+                                                          - "$ref": state
+                                                          - index
+                                                      - "$ref": width
+                                              - "$ref": separator
+                                          - "$call":
+                                              - dict
+                                              - index
+                                              - "$call":
+                                                  - add
+                                                  - "$call":
+                                                      - get
+                                                      - "$ref": state
+                                                      - index
+                                                  - "$ref": width
+                                              - start
+                                              - "$call":
+                                                  - add
+                                                  - "$call":
+                                                      - get
+                                                      - "$ref": state
+                                                      - index
+                                                  - "$ref": width
+                                              - parts
+                                              - "$call":
+                                                  - append
+                                                  - "$call":
+                                                      - get
+                                                      - "$ref": state
+                                                      - parts
+                                                  - "$call":
+                                                      - slice
+                                                      - "$ref": source
+                                                      - "$call":
+                                                          - get
+                                                          - "$ref": state
+                                                          - start
+                                                      - "$call":
+                                                          - get
+                                                          - "$ref": state
+                                                          - index
+                                          - "$call":
+                                              - set
+                                              - "$ref": state
+                                              - index
+                                              - "$call":
+                                                  - add
+                                                  - "$call":
+                                                      - get
+                                                      - "$ref": state
+                                                      - index
+                                                  - 1
+                                  - index: 0
+                                    parts: []
+                                    start: 0
+                      - "$call":
+                          - len
+                          - "$ref": source
+                      - "$call":
+                          - len
+                          - "$ref": separator
               - "$call":
                   - list_of
                   - "$ref": string

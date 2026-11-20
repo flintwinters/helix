@@ -217,27 +217,42 @@ sort_by: !call
       - !call
           - fn
           - [ordered, item]
+          # Binary search for the first element that `item` sorts before, so equal
+          # elements keep input order with O(log n) comparisons per insertion.
           - !call
-              - let
-              - position: !call
-                  - until
-                  - !call
-                      - fn
-                      - [index]
-                      - !call
-                          - or
-                          - !call [ge, !ref index, !call [len, !ref ordered]]
-                          - !call [before, !ref item, !call [get, !ref ordered, !ref index]]
-                  - !call
-                      - fn
-                      - [index]
-                      - !call [add, !ref index, 1]
-                  - 0
               - !call
-                  - concat
-                  - !call [slice, !ref ordered, 0, !ref position]
-                  - !call [list, !ref item]
-                  - !call [slice, !ref ordered, !ref position, !call [len, !ref ordered]]
+                  - fn
+                  - [position]
+                  - !call
+                      - concat
+                      - !call [slice, !ref ordered, 0, !ref position]
+                      - !call [list, !ref item]
+                      - !call [slice, !ref ordered, !ref position, !call [len, !ref ordered]]
+              - !call
+                  - get
+                  - !call
+                      - until
+                      - !call
+                          - fn
+                          - [bounds]
+                          - !call [ge, !call [get, !ref bounds, 0], !call [get, !ref bounds, 1]]
+                      - !call
+                          - fn
+                          - [bounds]
+                          - !call
+                              - !call
+                                  - fn
+                                  - [low, high, middle]
+                                  - !call
+                                      - if
+                                      - !call [before, !ref item, !call [get, !ref ordered, !ref middle]]
+                                      - !call [list, !ref low, !ref middle]
+                                      - !call [list, !call [add, !ref middle, 1], !ref high]
+                              - !call [get, !ref bounds, 0]
+                              - !call [get, !ref bounds, 1]
+                              - !call [div, !call [add, !call [get, !ref bounds, 0], !call [get, !ref bounds, 1]], 2]
+                      - !call [list, 0, !call [len, !ref ordered]]
+                  - 0
       - []
       - !ref xs
   - !ref list
