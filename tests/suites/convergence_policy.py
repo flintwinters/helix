@@ -84,7 +84,7 @@ def verify_constraint_realization(h):
     ref = lambda name: {"$ref": name}
     # Attaching a predicate does not run it. Explicit realization invokes the
     # existing predicate engine, preserving its non-boolean/failure diagnostics.
-    for predicate, detail in ((7, "returned integer, expected boolean"),
+    for predicate, detail in ((7, "returned integer 7, expected boolean"),
                               (call("raise", "constraint_probe", "predicate invoked"), "predicate invoked")):
         source = call("let", {
             "base": call("realize", call("class", "probe", call("record"), {})),

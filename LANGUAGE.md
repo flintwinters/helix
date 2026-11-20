@@ -431,9 +431,18 @@ only from authoritative sources: the builtin registry, lexical scope, standard-m
 the members of the value actually reached and the tag syntax. Examples are a builtin used as a
 value (`!ref add`), a name exported by a standard module that is not imported, a misspelled
 visible name or map member, a module map used as a call actor and an unsupported tag such as
-`!if`. Static `check` and evaluation share these hints. A hint never changes `kind`, `message`
-or blame; match on `kind` and treat `hint` text as unstable guidance, not a contract. Messages
-name the offending text, such as the tag, name or call actor.
+`!if`, a missing `get` key or index, swapped iteration operands, malformed `fn` parameters
+and the likely structural cause of a YAML parse failure (an unclosed flow bracket, tab
+indentation, an unquoted `: `, misaligned keys). `run`, `exec`, `check`, the LSP and
+`try`-caught error values all carry the same hint. A hint never changes `kind`, `message`
+or blame; match on `kind` and treat `hint` text as unstable guidance, not a contract.
+
+Messages name the offending text, such as the tag, name, call actor or key. Type failures
+state expected versus actual with a bounded excerpt of the value (`expected number, got
+string "x"`); a builtin type failure names its argument (`` `add` argument 2: ``) and a form
+names its operand (`` `if` condition: ``, `` `filter` predicate result: ``). Arity failures
+name the declared parameters. Parse messages leave the position to the error's `line` and
+`column`.
 
 ## Testing in Helix
 

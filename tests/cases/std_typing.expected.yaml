@@ -3190,11 +3190,11 @@ root:
               source: "<root>"
           at: /
           expected: "integer | float"
-          message: "expected integer | float, got string"
+          message: "expected integer | float, got string \"x\""
           rule: type
     kind: type
     line: 11
-    message: "1 type violation in the arguments of `/abs`: expected integer | float, got string"
+    message: "1 type violation in the arguments of `/abs`: expected integer | float, got string \"x\""
     path: "/bad_abs/$call/1/$call/1"
     reference:
       - bad_abs
@@ -3221,7 +3221,7 @@ root:
             source: "<root>"
         at: /
         expected: "integer | float"
-        message: "expected integer | float, got string"
+        message: "expected integer | float, got string \"a\""
         rule: type
       - actual: b
         actual_present: true
@@ -3240,7 +3240,7 @@ root:
             source: "<root>"
         at: /
         expected: "integer | float"
-        message: "expected integer | float, got string"
+        message: "expected integer | float, got string \"b\""
         rule: type
   bad_product:
     violations:
@@ -3261,7 +3261,7 @@ root:
             source: "<root>"
         at: /
         expected: "list of integer | float"
-        message: "expected list of integer | float, got map"
+        message: "expected list of integer | float, got map {}"
         rule: type
   bad_range:
     violations:
@@ -3282,7 +3282,7 @@ root:
             source: "<root>"
         at: /
         expected: integer
-        message: "expected integer, got float"
+        message: "expected integer, got float 2.5"
         rule: type
   bad_reverse:
     violations:
@@ -3303,7 +3303,7 @@ root:
             source: "<root>"
         at: /
         expected: list
-        message: "expected list, got string"
+        message: "expected list, got string \"abc\""
         rule: type
   bad_sort:
     violations:
@@ -3324,7 +3324,7 @@ root:
             source: "<root>"
         at: /
         expected: function
-        message: "expected function, got integer"
+        message: "expected function, got integer 0"
         rule: type
   bad_sum:
     violations:
@@ -3345,7 +3345,7 @@ root:
             source: "<root>"
         at: /1
         expected: "integer | float"
-        message: "expected integer | float, got string"
+        message: "expected integer | float, got string \"x\""
         rule: type
       - actual: false
         actual_present: true
@@ -3364,7 +3364,7 @@ root:
             source: "<root>"
         at: /2
         expected: "integer | float"
-        message: "expected integer | float, got boolean"
+        message: "expected integer | float, got boolean false"
         rule: type
   bad_unique:
     violations:
@@ -3385,7 +3385,7 @@ root:
             source: "<root>"
         at: /
         expected: list
-        message: "expected list, got map"
+        message: "expected list, got map {}"
         rule: type
   bounds:
     - 2.5

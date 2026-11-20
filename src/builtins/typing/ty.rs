@@ -5,7 +5,7 @@
 use crate::value::Hash;
 use crate::value::Value;
 
-use crate::builtins::value::{equal, is_function, type_name};
+use crate::builtins::value::{equal, described, is_function, type_name};
 use crate::model::string as s;
 
 /// Work only the engine can do for a pure check; its answer is retained and replayed.
@@ -25,7 +25,7 @@ pub type Pred<'a> = dyn FnMut(Ask) -> Result<Value, String> + 'a;
 pub(super) fn predicate(pred: &mut Pred, predicate: &Value, value: &Value) -> Result<bool, String> {
     match pred(Ask::Predicate(predicate, value))? {
         Value::Boolean(verdict) => Ok(verdict),
-        other => Err(format!("returned {}, expected boolean", type_name(&other))),
+        other => Err(format!("returned {}, expected boolean", described(&other))),
     }
 }
 
@@ -302,7 +302,7 @@ impl Ty {
                     other => Err(format!("`{other}` is not a type constructor")),
                 }
             }
-            other => Err(format!("expected a type, got {}", type_name(other))),
+            other => Err(format!("expected a type, got {}", described(other))),
         }
     }
 
@@ -548,7 +548,7 @@ fn inside(at: &str, key: &str) -> String {
 }
 
 fn check(value: &Value, ty: &Ty, at: &str, pred: &mut Pred, out: &mut Vec<Violation>) {
-    let mismatch = |out: &mut Vec<Violation>| out.push(Violation::new(at, ty, Some(value), "type", format!("expected {}, got {}", ty.name(), type_name(value))));
+    let mismatch = |out: &mut Vec<Violation>| out.push(Violation::new(at, ty, Some(value), "type", format!("expected {}, got {}", ty.name(), described(value))));
     match (ty, value) {
         (Ty::Any, _) | (Ty::Int, Value::Integer(_)) | (Ty::Float, Value::Float(_)) | (Ty::Str, Value::String(_)) | (Ty::Bool, Value::Boolean(_)) | (Ty::Null, Value::Null) => {}
         (Ty::Function, _) if is_function(value) => {}

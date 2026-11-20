@@ -91,9 +91,15 @@ fn publish(output: &mut impl Write, uri: &str, version: i64, source: &str) -> io
             let line = diagnostic["line"].as_i64().unwrap_or(1).saturating_sub(1) as usize;
             let column = diagnostic["column"].as_i64().unwrap_or(1).saturating_sub(1) as usize;
             let start = position(source, line, column);
+            // LSP has no hint field; the correction follows the message on its own line.
+            let message = diagnostic["message"].as_str().unwrap_or("invalid source");
+            let message = match diagnostic["hint"].as_str() {
+                Some(hint) => format!("{message}\nhint: {hint}"),
+                None => message.to_owned(),
+            };
             json!({"range":{"start":start,"end":position(source,line,column+1)},
             "severity":1,"source":"helix","code":diagnostic["kind"].as_str().unwrap_or("parse"),
-            "message":diagnostic["message"].as_str().unwrap_or("invalid source")})
+            "message":message})
         })
         .collect();
     send(

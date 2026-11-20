@@ -2,7 +2,7 @@ error:
   column: 21
   kind: type
   line: 6
-  message: "expected string, list or map, got function"
+  message: "`len` argument 1: expected string, list or map, got function"
   path: "/r/$call/1"
   reference:
     - r

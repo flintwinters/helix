@@ -24,24 +24,24 @@ impl Graph {
                 format!("`fn` takes 2 to 3 arguments, got {}", items.len().saturating_sub(1)),
             ));
         }
-        let malformed = || {
-            self.error(
-                items[1],
-                "type",
-                "parameters must be a list of names or `[name, type]` pairs".into(),
-            )
-        };
         let Kind::Seq(params) = self.kind(items[1]) else {
-            return Err(malformed());
+            return Err(self
+                .error(items[1], "type", "`fn` parameters must be a list of names or `[name, type]` pairs".into())
+                .with_hint(Some("write the parameters as a list, even for one: `!call [fn, [x], body]`".into())));
+        };
+        let malformed = |i: usize, p: NodeId| {
+            self.error(p, "type", format!("`fn` parameter {} must be a name or a `[name, type]` pair", i + 1))
+                .with_hint(Some("write `x` or `[x, integer]`; a default or extra entry belongs in the body".into()))
         };
         params
             .iter()
-            .map(|&p| match self.kind(p) {
+            .enumerate()
+            .map(|(i, &p)| match self.kind(p) {
                 Kind::Seq(pair) if pair.len() == 2 => Ok((
-                    self.identifier(pair[0]).ok_or_else(malformed)?.into(),
+                    self.identifier(pair[0]).ok_or_else(|| malformed(i, p))?.into(),
                     Some(pair[1]),
                 )),
-                _ => Ok((self.identifier(p).ok_or_else(malformed)?.into(), None)),
+                _ => Ok((self.identifier(p).ok_or_else(|| malformed(i, p))?.into(), None)),
             })
             .collect()
     }

@@ -7,7 +7,7 @@ pub(crate) mod http;
 mod scope;
 mod syntax;
 pub(crate) use effects::Effects;
-pub(crate) use hint::{members_of, missing_member, not_callable};
+pub(crate) use hint::{members_of, missing_key, missing_member, not_callable};
 pub(crate) use scope::Site;
 pub(crate) use syntax::Syntax;
 
@@ -47,7 +47,10 @@ impl Graph {
         };
         let parsed = Parser::new_from_str(src)
             .load(&mut builder, true)
-            .map_err(|e| HelixError::unlocated("parse", e.to_string(), span(e.marker())));
+            .map_err(|e| {
+                HelixError::unlocated("parse", e.info().to_owned(), span(e.marker()))
+                    .with_hint(hint::yaml(src, e.info(), e.marker().index()))
+            });
         if let Some(err) = builder.error {
             return Err(err);
         }

@@ -424,3 +424,49 @@ fn canonical_real(text: &str) -> Option<String> {
         Some(rendered)
     }
 }
+
+/// A one-line flow excerpt of a runtime value for error messages, cut near `limit` characters.
+/// Strings are always quoted so an excerpt never reads as another type; work stays bounded.
+pub(crate) fn excerpt(value: &crate::value::Value, limit: usize) -> String {
+    let mut out = String::new();
+    excerpt_into(value, limit, &mut out);
+    if out.chars().count() > limit {
+        out = out.chars().take(limit.saturating_sub(1)).collect();
+        out.push('…');
+    }
+    out
+}
+
+fn excerpt_into(value: &crate::value::Value, limit: usize, out: &mut String) {
+    use crate::value::Value;
+    let full = |out: &String| out.len() > limit;
+    match value {
+        Value::String(text) => out.push_str(&quoted(&text.chars().take(limit + 1).collect::<String>())),
+        Value::Array(items) => {
+            out.push('[');
+            for (i, item) in items.iter().enumerate() {
+                if full(out) { break }
+                if i > 0 { out.push_str(", ") }
+                excerpt_into(item, limit, out);
+            }
+            out.push(']');
+        }
+        Value::Hash(map) => {
+            out.push('{');
+            for (i, (key, item)) in map.iter().enumerate() {
+                if full(out) { break }
+                if i > 0 { out.push_str(", ") }
+                match key {
+                    Value::String(key) => out.push_str(&string(key, false)),
+                    other => excerpt_into(other, limit, out),
+                }
+                out.push_str(": ");
+                excerpt_into(item, limit, out);
+            }
+            out.push('}');
+        }
+        Value::Function(_) => out.push_str("<function>"),
+        Value::Machine(_) => out.push_str("<vm>"),
+        leaf => out.push_str(&leaf.plain_yaml().map_or_else(String::new, |yaml| scalar(&yaml, false))),
+    }
+}

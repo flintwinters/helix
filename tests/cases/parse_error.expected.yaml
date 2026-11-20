@@ -1,6 +1,7 @@
 error:
   column: 1
+  hint: "the `[` at line 1 column 4 is never closed; add `]` where the collection ends, or write it in block style"
   kind: parse
   line: 2
-  message: "while parsing a flow sequence, expected ',' or ']' at byte 11 line 2 column 1"
+  message: "while parsing a flow sequence, expected ',' or ']'"
 status: error

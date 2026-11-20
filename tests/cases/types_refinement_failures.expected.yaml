@@ -185,7 +185,7 @@ root:
       actual_present: true
       at: /
       expected: integer
-      message: "expected integer, got string"
+      message: "expected integer, got string \"x\""
       rule: type
   caught_non_boolean:
     violations:
@@ -193,7 +193,7 @@ root:
         actual_present: true
         at: /
         expected: refined integer
-        message: "refinement check failed to run: returned integer, expected boolean"
+        message: "refinement check failed to run: returned integer 1, expected boolean"
         predicate:
           column: 3
           line: 53
@@ -237,7 +237,7 @@ root:
       actual_present: true
       at: /2
       expected: integer
-      message: "expected integer, got string"
+      message: "expected integer, got string \"x\""
       rule: type
     - actual: 0
       actual_present: true
@@ -279,7 +279,7 @@ root:
           actual_present: true
           at: /
           expected: refined integer
-          message: "refinement check failed to run: returned integer, expected boolean"
+          message: "refinement check failed to run: returned integer 1, expected boolean"
           predicate:
             column: 3
             line: 53
@@ -290,7 +290,7 @@ root:
           rule: predicate_error
     kind: predicate
     line: 53
-    message: "refinement check failed to run: returned integer, expected boolean"
+    message: "refinement check failed to run: returned integer 1, expected boolean"
     path: /returns_integer
     reference:
       - returns_integer

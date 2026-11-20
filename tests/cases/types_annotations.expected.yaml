@@ -546,7 +546,7 @@ root:
               source: "<root>"
           at: /
           expected: string
-          message: "expected string, got integer"
+          message: "expected string, got integer 1"
           rule: type
         - actual: 0
           actual_present: true
@@ -576,7 +576,7 @@ root:
           rule: refinement
     kind: type
     line: 4
-    message: "2 type violations in the arguments of `/url`: expected string, got integer"
+    message: "2 type violations in the arguments of `/url`: expected string, got integer 1"
     path: "/bad_args/$call/1/$call/1"
     reference:
       - bad_args
@@ -603,7 +603,7 @@ root:
             source: "<root>"
         at: /host
         expected: string
-        message: "expected string, got integer"
+        message: "expected string, got integer 1"
         rule: type
       - actual: ~
         actual_present: false
@@ -671,5 +671,5 @@ root:
         rule: refinement
   url:
     ref: object3
-  wrong_result: "1 type violation in the result: expected string, got integer"
+  wrong_result: "1 type violation in the result: expected string, got integer 5"
 status: finished

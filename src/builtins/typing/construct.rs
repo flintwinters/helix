@@ -33,7 +33,7 @@ pub(super) fn validate_field(field: &Field, arg: usize, pred: &mut Pred) -> Resu
     let found = validate_defaults(&Ty::Record(vec![("field".into(), field.clone())]), pred);
     predicate_fault(&found, arg)?;
     if found.is_empty() { return Ok(()); }
-    Err(Fault { cause: None, kind: "type".into(), message: format!("invalid declared default: {}", found[0].message()),
+    Err(Fault { hint: None, cause: None, kind: "type".into(), message: format!("invalid declared default: {}", found[0].message()),
         arg: Some(arg), data: Some(mapping([("violations", Value::Array(found.iter().map(Violation::to_value).collect()))])) })
 }
 
@@ -50,7 +50,7 @@ pub(super) fn apply(actor: &str, args: &[Value], pred: &mut Pred) -> Result<Valu
             let plural = if found.len() == 1 { "" } else { "s" };
             let message = format!("{} type violation{plural}: {}", found.len(), found[0].message());
             let data = mapping([("violations", Value::Array(found.iter().map(Violation::to_value).collect()))]);
-            Err(Fault { cause: None, kind: "type".into(), message, arg: Some(0), data: Some(data) })
+            Err(Fault { hint: None, cause: None, kind: "type".into(), message, arg: Some(0), data: Some(data) })
         }
         "subtype" => Ok(Value::Boolean(subtype(&type_arg(args, 0)?, &type_arg(args, 1)?, pred))),
         // Mutual subtyping: exactly as strong as `subtype`, so `false` also means unproved.
@@ -66,7 +66,7 @@ fn violations_arg(args: &[Value], pred: &mut Pred) -> Result<Vec<Violation>, Fau
     let found = violations(&args[0], &args[1], pred).map_err(|why| Fault::at(1, "type", why))?;
     predicate_fault(&found, 1)?;
     if found.iter().any(Violation::is_declaration) {
-        return Err(Fault { cause: None, kind: "type".into(), message: "invalid declared default".into(), arg: Some(1),
+        return Err(Fault { hint: None, cause: None, kind: "type".into(), message: "invalid declared default".into(), arg: Some(1),
             data: Some(mapping([("violations", Value::Array(found.iter().map(Violation::to_value).collect()))])) });
     }
     Ok(found)
@@ -74,7 +74,7 @@ fn violations_arg(args: &[Value], pred: &mut Pred) -> Result<Vec<Violation>, Fau
 
 fn predicate_fault(found: &[Violation], arg: usize) -> Result<(), Fault> {
     if let Some(broken) = found.iter().find(|v| v.rule() == "predicate_error") {
-        return Err(Fault { kind: "predicate".into(), message: broken.message().into(), arg: Some(arg),
+        return Err(Fault { hint: None, kind: "predicate".into(), message: broken.message().into(), arg: Some(arg),
             data: Some(mapping([("violations", Value::Array(found.iter().map(Violation::to_value).collect()))])), cause: None });
     }
     Ok(())

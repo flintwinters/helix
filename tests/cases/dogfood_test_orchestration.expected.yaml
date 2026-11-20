@@ -1556,7 +1556,7 @@ root:
             source: "<root>"
         at: /1
         expected: string
-        message: "expected string, got integer"
+        message: "expected string, got integer 7"
         rule: type
   bad_observation:
     kind: type
@@ -1580,7 +1580,7 @@ root:
             source: "<root>"
         at: /stdout
         expected: string
-        message: "expected string, got integer"
+        message: "expected string, got integer 7"
         rule: type
   bad_report:
     kind: type
@@ -1628,7 +1628,7 @@ root:
             source: "<root>"
         at: /results/0/status
         expected: "one of [passed, failed, skipped]"
-        message: "expected one of [passed, failed, skipped], got string"
+        message: "expected one of [passed, failed, skipped], got string \"unknown\""
         rule: type
   blessing:
     - action: run

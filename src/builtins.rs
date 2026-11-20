@@ -259,7 +259,7 @@ fn raise(args: &[Value]) -> Fault {
     };
     match built {
         Ok((kind, _, _)) if kind.is_empty() => Fault::at(0, "type", "an error `kind` must not be empty".into()),
-        Ok((kind, message, data)) => Fault { kind, message, arg: None, data, cause: if args.len() == 1 { args.first().cloned() } else { None } },
+        Ok((kind, message, data)) => Fault { hint: None, kind, message, arg: None, data, cause: if args.len() == 1 { args.first().cloned() } else { None } },
         Err(fault) => fault,
     }
 }

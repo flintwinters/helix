@@ -2,7 +2,7 @@ error:
   column: 21
   kind: type
   line: 3
-  message: "expected number, got string"
+  message: "`add` argument 1: expected number, got string \"yes_string\""
   path: "/b/$call/1"
   reference:
     - b

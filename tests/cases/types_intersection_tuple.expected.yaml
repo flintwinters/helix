@@ -597,7 +597,7 @@ root:
       actual_present: true
       at: /1
       expected: string
-      message: "expected string, got integer"
+      message: "expected string, got integer 2"
       rule: type
   tuple_subtyping:
     - true

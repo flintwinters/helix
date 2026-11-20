@@ -29,6 +29,14 @@ pub(crate) fn type_name(v: &Value) -> &'static str {
     }
 }
 
+/// The type of `v` with a bounded excerpt of it, for expected-versus-actual messages.
+pub(crate) fn described(v: &Value) -> String {
+    match v {
+        Value::Null | Value::Function(_) | Value::Machine(_) => type_name(v).into(),
+        other => format!("{} {}", type_name(other), crate::emit::excerpt(other, 60)),
+    }
+}
+
 /// Runtime functions are a distinct variant; data can never forge one by its list shape.
 pub fn is_function(value: &Value) -> bool {
     matches!(value, Value::Function(_))

@@ -65,6 +65,51 @@ impl Graph {
     }
 }
 
+/// A correction for the YAML syntax error `info` reported at byte `offset` of `src`.
+pub(crate) fn yaml(src: &str, info: &str, offset: usize) -> Option<String> {
+    if let Some((open, line, column)) = unclosed(src.get(..offset).unwrap_or(src)) {
+        let close = if open == '[' { ']' } else { '}' };
+        return Some(format!(
+            "the `{open}` at line {line} column {column} is never closed; add `{close}` where the collection ends, or write it in block style"
+        ));
+    }
+    if info.contains("tab") {
+        return Some("indent with spaces; YAML forbids tab characters in indentation".into());
+    }
+    if info.contains("mapping values are not allowed") {
+        return Some("a plain value cannot contain `: `; quote it (`key: \"a: b\"`) or move the nested mapping to its own indented line".into());
+    }
+    if info.contains("did not find expected key") || info.contains("could not find expected ':'") {
+        return Some("align sibling keys at the same column using spaces, and indent a nested value deeper than its key".into());
+    }
+    None
+}
+
+/// The innermost flow bracket opened in `text` and never closed, with its line and column.
+fn unclosed(text: &str) -> Option<(char, usize, usize)> {
+    let (mut open, mut quote, mut comment) = (Vec::new(), None, false);
+    let (mut line, mut column, mut previous, mut escaped) = (1, 0, '\n', false);
+    for c in text.chars() {
+        column += 1;
+        match (quote, c) {
+            // Quoted scalars may span lines; comments end with theirs.
+            (_, '\n') => (line, column, comment) = (line + 1, 0, false),
+            _ if comment => {}
+            (Some('"'), '\\') if !escaped => { escaped = true; previous = c; continue }
+            (Some(q), _) if c == q && !escaped => quote = None,
+            (Some(_), _) => {}
+            (None, '\'' | '"') if previous.is_whitespace() || "[{,:".contains(previous) => quote = Some(c),
+            (None, '#') if previous.is_whitespace() => comment = true,
+            (None, '[' | '{') => open.push((c, line, column)),
+            (None, ']' | '}') => { open.pop(); }
+            _ => {}
+        }
+        escaped = false;
+        previous = c;
+    }
+    open.pop()
+}
+
 /// The member names of a map value, or the type name of anything else.
 pub(crate) fn members_of(value: &Value) -> Result<Vec<String>, &'static str> {
     match value {
@@ -82,6 +127,16 @@ pub(crate) fn missing_member(written: &str, found: Result<Vec<String>, &str>, me
     match nearest(member, keys.iter().map(String::as_str)) {
         Some(nearest) => format!("`{written}` has no member `{member}`; did you mean `{written}.{nearest}`?"),
         None => format!("`{written}` has no member `{member}`; {}", members(written, &keys)),
+    }
+}
+
+/// A correction for reading the absent `key` from `map` with `get`.
+pub(crate) fn missing_key(map: &Hash, key: &str) -> String {
+    let keys = keys(map);
+    let tolerate = "pass a default as the third argument to tolerate absence";
+    match nearest(key, keys.iter().map(String::as_str)) {
+        Some(nearest) => format!("did you mean `{nearest}`? Otherwise {tolerate}"),
+        None => format!("{}; {tolerate}", members("the map", &keys)),
     }
 }
 

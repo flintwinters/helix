@@ -695,7 +695,7 @@ annotations:
         file: "std:yaml"
         kind: parse
         line: 21
-        message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
+        message: "while parsing a flow mapping, did not find expected ',' or '}' (YAML line 2, column 1)"
         path: "/parse/$call/2/$call/1"
         reference:
           - parse
@@ -758,7 +758,7 @@ annotations:
         file: "std:yaml"
         kind: parse
         line: 21
-        message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
+        message: "while parsing a flow mapping, did not find expected ',' or '}' (YAML line 2, column 1)"
         path: "/parse/$call/2/$call/1"
         reference:
           - parse
@@ -1191,9 +1191,10 @@ annotations:
             line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
         column: 42
+        hint: "members: stock; pass a default as the third argument to tolerate absence"
         kind: missing
         line: 169
-        message: "no key `name`"
+        message: "map has no key `name`"
         path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
         reference:
           - "$call"
@@ -1257,9 +1258,10 @@ annotations:
             line: 9
             path: "/capture/$call/2/$call/1/$call/4/$call/1"
         column: 42
+        hint: "members: stock; pass a default as the third argument to tolerate absence"
         kind: missing
         line: 169
-        message: "no key `name`"
+        message: "map has no key `name`"
         path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
         reference:
           - "$call"
@@ -1761,7 +1763,7 @@ root:
           file: "std:yaml"
           kind: parse
           line: 21
-          message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 13 line 2 column 1 (YAML line 2, column 1)"
+          message: "while parsing a flow mapping, did not find expected ',' or '}' (YAML line 2, column 1)"
           path: "/parse/$call/2/$call/1"
           reference:
             - parse
@@ -1859,9 +1861,10 @@ root:
               line: 9
               path: "/capture/$call/2/$call/1/$call/4/$call/1"
           column: 42
+          hint: "members: stock; pass a default as the third argument to tolerate absence"
           kind: missing
           line: 169
-          message: "no key `name`"
+          message: "map has no key `name`"
           path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
           reference:
             - "$call"
@@ -2264,7 +2267,7 @@ root:
         file: "std:yaml"
         kind: parse
         line: 21
-        message: "while parsing a flow mapping, did not find expected ',' or '}' at byte 7 line 2 column 1 (YAML line 2, column 1)"
+        message: "while parsing a flow mapping, did not find expected ',' or '}' (YAML line 2, column 1)"
         path: "/parse/$call/2/$call/1"
         reference:
           - parse

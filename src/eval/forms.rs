@@ -4,8 +4,24 @@ use crate::model::{Evaluator, Region, Function, HelixError, Iteration, Kind, Nod
 use std::sync::Arc;
 
 impl Evaluator {
-    pub(super) fn truth(&self, value: &Value, blame: NodeId) -> Result<bool, HelixError> {
-        builtins::boolean(value, 0).map_err(|f| self.err(blame, &f.kind, f.message))
+    /// `subject` names the rejected operand, such as "`if` condition".
+    pub(super) fn truth(&self, value: &Value, blame: NodeId, subject: &str) -> Result<bool, HelixError> {
+        builtins::boolean(value, 0).map_err(|f| self.operand(blame, subject, f))
+    }
+
+    /// The list an iteration form walks; a function there usually means swapped operands.
+    fn iterated_list(&self, name: &str, value: &Value, blame: NodeId) -> Result<Vec<Value>, HelixError> {
+        builtins::list(value.clone(), 0).map_err(|f| {
+            let swapped = matches!(value, Value::Function(_)).then(|| {
+                let operands = if name == "fold" { "f, init, list" } else { "f, list" };
+                format!("iteration takes the function first: `!call [{name}, {operands}]`")
+            });
+            self.operand(blame, &format!("`{name}` list"), f).with_hint(swapped)
+        })
+    }
+
+    fn operand(&self, blame: NodeId, subject: &str, f: builtins::Fault) -> HelixError {
+        self.err(blame, &f.kind, format!("{subject}: {}", f.message))
     }
 
     pub(super) fn form(
@@ -95,7 +111,7 @@ impl Evaluator {
         index: usize,
     ) -> Result<(), HelixError> {
         let value = self.value();
-        let condition = self.truth(&value, args[index])?;
+        let condition = self.truth(&value, args[index], &format!("`{name}` condition"))?;
         match name.as_str() {
             "if" => self.eval(args[if condition { 1 } else { 2 }]),
             "cond" => {
@@ -183,17 +199,9 @@ impl Evaluator {
             }
             _ => {
                 let (items, state) = match name.as_str() {
-                    "fold" => (
-                        builtins::list(values[1].clone(), 0)
-                            .map_err(|f| self.err(args[2], &f.kind, f.message))?,
-                        values[0].clone(),
-                    ),
+                    "fold" => (self.iterated_list(&name, &values[1], args[2])?, values[0].clone()),
                     "until" => (Vec::new(), values[0].clone()),
-                    _ => (
-                        builtins::list(values[0].clone(), 0)
-                            .map_err(|f| self.err(args[1], &f.kind, f.message))?,
-                        Value::Null,
-                    ),
+                    _ => (self.iterated_list(&name, &values[0], args[1])?, Value::Null),
                 };
                 self.push(Request::Iterate(Iteration {
                     site,

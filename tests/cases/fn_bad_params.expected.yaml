@@ -1,11 +1,13 @@
 error:
-  column: 5
+  column: 6
+  hint: "write `x` or `[x, integer]`; a default or extra entry belongs in the body"
   kind: type
   line: 4
-  message: "parameters must be a list of names or `[name, type]` pairs"
-  path: "/broken/$call/1"
+  message: "`fn` parameter 1 must be a name or a `[name, type]` pair"
+  path: "/broken/$call/1/0"
   reference:
     - broken
     - "$call"
     - 1
+    - 0
 status: error

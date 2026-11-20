@@ -15,7 +15,7 @@ root:
     column: 11
     kind: type
     line: 25
-    message: "expected a type, got integer"
+    message: "`list_of` argument 1: expected a type, got integer 42"
     path: "/bad_constructor/$call/1/$call/1"
     reference:
       - bad_constructor
@@ -75,11 +75,11 @@ root:
               source: "<root>"
           at: /
           expected: function
-          message: "expected function, got string"
+          message: "expected function, got string \"integer\""
           rule: type
     kind: type
     line: 62
-    message: "1 type violation in the arguments of `/wrong_type/$call/1/$call/1`: expected function, got string"
+    message: "1 type violation in the arguments of `/wrong_type/$call/1/$call/1`: expected function, got string \"integer\""
     path: "/wrong_type/$call/1/$call/2"
     reference:
       - wrong_type

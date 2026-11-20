@@ -11,6 +11,10 @@ milestones, not stable releases; compatibility boundaries live in
   values, unimported std exports, misspelled names and members, module maps used as
   call actors and unsupported tags such as `!if`. Messages name the rejected tag or
   actor. Executable snapshots move to version 3; versions 1–2 migrate with no hint.
+  Type failures now show a bounded excerpt of the rejected value and name the builtin
+  argument or form operand; arity failures name the parameters; `get` names the
+  missing key or list length; YAML parse failures hint at their structural cause;
+  LSP diagnostics and `try`-caught values carry the hint.
 
 - `std:linux` packages form an installer layer keyed by manager: configuration nests
   `packages: {apt: {...}}` and ids are `package:MANAGER:NAME`. `apt` is the only

@@ -276,9 +276,12 @@ impl Evaluator {
                         site,
                         "arity",
                         format!(
-                            "function `{}` takes {}, got {}",
+                            "function `{}` takes {}{}, got {}",
                             function.program.graph.path(function.node),
                             arguments(params.len()),
+                            if params.is_empty() { String::new() } else {
+                                format!(" ({})", params.iter().map(|(name, _)| name.as_str()).collect::<Vec<_>>().join(", "))
+                            },
                             args.len()
                         ),
                     ));
