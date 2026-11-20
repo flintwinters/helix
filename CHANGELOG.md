@@ -62,5 +62,5 @@ milestones, not stable releases; compatibility boundaries live in
 - Caller-authorized effects provide file/stream access, local commands, HTTP,
   environment, time and randomness. Pending effects and interruption preserve
   in-memory continuations; saved inspection graphs are not executable snapshots.
-- Imports, pure error recovery, stepping, inspection, REPL, formatting, watch,
-  completion and LSP support daily development through `manage.py`.
+- Imports, pure error recovery, stepping, inspection, REPL, formatting, watch
+  and LSP support daily development through `manage.py`.

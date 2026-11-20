@@ -277,7 +277,7 @@ first failures (`benchmarks/agent/`) name the failure classes to fix first.
 ## 6. Daily tooling — complete within current CLI/editor scope
 
 `run`, REPL, canonical formatter, non-executing `check`, step/trace, saved-state
-inspection, content-based watch, JSON Schema/LSP, shell completion and
+inspection, content-based watch, JSON Schema/LSP and
 `cargo install`; `std:test` supplies composable in-language assertions, comparisons
 and reports used by golden checks. Evidence: `interactive`, `inspection`, `static`, `cli`.
 

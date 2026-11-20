@@ -241,8 +241,6 @@ exit 1, and invalid arguments or unreadable input exit 2.
   `--interval-ms` controls polling and `--iterations` bounds run attempts (including unreadable-input attempts).
 - `helix schema` emits the structural program schema; [editor setup](editor/README.md)
   explains its limits and the `helix lsp` stdio server.
-- `helix completion bash` (or `zsh`, `fish`) prints a script to source in that
-  shell; checked-in scripts live in `completions/`.
 
 The corresponding project commands live under `./manage.py runtime`; saved
 state inspection is `./manage.py inspect state FILE`. Verify these contracts

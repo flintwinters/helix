@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use crate::model::{Status, Vm};
 
-/// Shared CLI command inventory, also used by command validation and shell completions.
+/// Shared CLI command inventory, also used by command validation.
 pub const COMMANDS: &[&str] = &[
     "search",
     "exec",
@@ -33,7 +33,6 @@ pub const COMMANDS: &[&str] = &[
     "inspect",
     "schema",
     "lsp",
-    "completion",
 ];
 
 const REPL_HELP: &str = "Enter one YAML program per line. Each program has its own lexical scope.\n:begin starts a multiline program; :end evaluates it; :cancel discards it.\n:help shows this help; :quit exits. Results are YAML state documents.";
@@ -184,19 +183,4 @@ pub fn watch(path: &str, interval_ms: u64, iterations: Option<usize>) -> ExitCod
         }
         std::thread::sleep(Duration::from_millis(interval_ms));
     }
-}
-
-/// Emit shell-native completion scripts; shells remain responsible for filesystem completion.
-pub fn completion(shell: &str) -> ExitCode {
-    let script = match shell {
-        "bash" => include_str!("../../completions/helix.bash"),
-        "zsh" => include_str!("../../completions/_helix"),
-        "fish" => include_str!("../../completions/helix.fish"),
-        _ => {
-            eprintln!("completion requires bash, zsh, or fish");
-            return ExitCode::from(2);
-        }
-    };
-    print!("{}", script.replace("@COMMANDS@", &COMMANDS.join(" ")));
-    ExitCode::SUCCESS
 }

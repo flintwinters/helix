@@ -124,7 +124,7 @@ def verify(h):
     for name, path in catalog["shortcuts"].items():
         extra = {"run": ["-"], "check": ["-"], "recover": ["-"], "resume": ["-"],
                  "fmt": ["-"], "format": ["std"], "step": ["-"], "snapshot": ["-"], "restore": ["-"], "system-snapshot": ["-"], "system-restore": ["-"], "checkpoint": ["checkpoint.json"], "target-release": ["target.lock"], "reconcile": ["checkpoint.json", "observed.yaml"], "trace": ["-"], "watch": ["example.yaml"],
-                 "state": ["-"], "completion": ["bash"], "sandbox": ["-", "-"], "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
+                 "state": ["-"], "sandbox": ["-", "-"], "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
                  "lint": ["--format=text"], "test": ["--suite", "cli"], "migrate-syntax": ["tests/cases"],
                  "docker-nginx": ["describe"], "agent-bench": ["list"]}.get(name, [])
         short, full = parse([name, *extra]), parse([*path, *extra])

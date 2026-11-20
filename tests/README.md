@@ -216,8 +216,8 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | Guarded command resources, explicit change/failure predicates, fresh reviews and verified postconditions | `command_provider`; `tests/suites/command_provider.py` | Real local subprocesses and independent file assertions; no SSH transport, inferred idempotence or rollback |
 | Truncations and deletions produce structured states, no crashes | `robustness`; every golden source | Finite mutations are not a proof of panic freedom |
 | Discovery pairs, invalid states, timeout/crash detection, wrong golden results, broken reload comparison | `harness`; synthetic fixtures and subprocess faults | Compiled faults are checked by `mutants` |
-| Usage errors, inaccessible files, run/check files versus stdin, discovery, and recovery | `cli` | Language and project CLIs support successful help; no shell completion |
-| Inline/stdin programs, raw string output, YAML round trips, structured stderr and shell pipes | `pipeline`; `tests/suites/pipeline.py` | No shell completion or platform-wide shell matrix |
+| Usage errors, inaccessible files, run/check files versus stdin, discovery, and recovery | `cli` | Language and project CLIs support successful help |
+| Inline/stdin programs, raw string output, YAML round trips, structured stderr and shell pipes | `pipeline`; `tests/suites/pipeline.py` | No platform-wide shell matrix |
 | Function declaration locations, imported call chains, caught errors and re-raised causes | `errors`; `tests/suites/errors.py` | Pure recovery; no effect or suspended-call diagnostics |
 | Integer expression trees versus Python, list sums/reversal laws, Unicode/nested literal save cycles | `generated`; seed 714209 | Bounded integers and exact binary fractions; general float/callable generation remains open |
 | YAML toolkit scalar types, block/flow syntax, Unicode/controls, rejection cases, deterministic mutations, nested paths and parser bounds | `dogfood`; `tests/dogfood/yaml/` | Helix data subset supports bounded acyclic aliases and standard tags; cyclic aliases, custom tags and non-string keys are rejected |
@@ -373,7 +373,7 @@ Immutable execution profiles record run/step/checkpoint allocation counts and ti
 
 Daily tooling contracts are grouped into `static` (non-executing diagnostics,
 source-format equivalence/idempotence, schema, LSP framing and local manual navigation), `interactive`
-(REPL, transitive/missing import watch changes, completions, local Cargo install),
+(REPL, transitive/missing import watch changes, local Cargo install),
 and `inspection` (bounded stepping, trace parity and observational saved-state
 validation). Their source witnesses live in `tests/cases/`; subprocess artifacts
 stay in `runtime/`. Evaluation golden fixtures under `tests/check/` explicitly

@@ -32,7 +32,7 @@ SUITES = {
     "agent_bench": "Offline agent benchmark contracts, independent oracles and usage accounting",
     "yaml_model": "Representation-independent explicit syntax, data roundtrip and deterministic effects",
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
-    "interactive": "REPL, dependency watch, completion and local installation",
+    "interactive": "REPL, dependency watch and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
     "nginx_types": "Pure class realization, defaults and provenance feeding the existing nginx lifecycle",
     "target_coordination": "Cross-journal target exclusion and persistent crash uncertainty for cooperating controllers",
@@ -164,9 +164,6 @@ def parser():
                               "lsp": "Serve the Language Server Protocol over stdio",
                               "schema": "Print the program JSON Schema"}.items():
         command(runtime, name, description, ["runtime", name], f"runtime {name}")
-    completion = command(runtime, "completion", "Print shell completion definitions",
-                         ["runtime", "completion"], "runtime completion bash")
-    completion.add_argument("shell", choices=("bash", "zsh", "fish"))
     sandbox = command(runtime, "sandbox", "Evaluate with file imports confined to ROOT (- denies file imports)",
                       ["runtime", "sandbox"], "runtime sandbox - program.yaml")
     sandbox.add_argument("root", metavar="ROOT", help="allowed import directory, or - for embedded modules only")
