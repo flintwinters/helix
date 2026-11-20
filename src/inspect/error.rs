@@ -1,11 +1,36 @@
 //! Structured errors: the YAML shape of an error is part of the public contract.
 
-use crate::model::{Hash, HelixError, Segment, Value, string as s};
+use crate::model::{Hash, HelixError, Segment, Span, Value, string as s};
 impl HelixError {
+    /// An error with no graph node to blame: parse failures and their file-level relatives.
+    pub(crate) fn unlocated(kind: impl Into<String>, message: String, span: Span) -> Self {
+        HelixError {
+            kind: kind.into(),
+            phase: None,
+            message,
+            hint: None,
+            file: None,
+            path: None,
+            reference: None,
+            span,
+            data: None,
+            calls: Vec::new(),
+            cause: None,
+        }
+    }
+
+    /// Attach an advisory correction.
+    pub(crate) fn with_hint(self, hint: Option<String>) -> Self {
+        HelixError { hint, ..self }
+    }
+
     pub fn to_value(&self) -> Value {
         let mut h = Hash::new();
         h.insert(s("kind"), s(&self.kind));
         h.insert(s("message"), s(&self.message));
+        if let Some(hint) = &self.hint {
+            h.insert(s("hint"), s(hint));
+        }
         if let Some(phase) = self.phase {
             h.insert(s("phase"), s(phase));
         }

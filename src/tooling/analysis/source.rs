@@ -36,7 +36,7 @@ fn analyze(source: &str) -> (Vec<Yaml>, Vec<Yaml>) {
                 let actor = graph.form(id);
                 if let Some(name) = actor {
                     if crate::builtins::arity(name).is_none() && graph.lexical_base(id, name).is_none() {
-                        errors.push(graph.error(items[0], "unbound", format!("unbound actor `{name}`"))
+                        errors.push(graph.unbound(items[0], name, true)
                             .to_value().plain_yaml().unwrap());
                     }
                 }
@@ -89,7 +89,7 @@ fn analyze(source: &str) -> (Vec<Yaml>, Vec<Yaml>) {
             crate::graph::Syntax::Reference(name)
                 if !crate::builtins::is_primitive(name) && graph.lexical_base(id, name).is_none() =>
             {
-                errors.push(graph.error(id, "unbound", format!("unbound symbol `{name}`"))
+                errors.push(graph.unbound(id, name, false)
                     .to_value().plain_yaml().unwrap());
             }
             crate::graph::Syntax::Invalid(message) => errors.push(

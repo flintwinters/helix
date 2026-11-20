@@ -11,7 +11,7 @@ mod yaml;
 pub(crate) mod validate;
 use codec::Wire;
 type R<T> = Result<T, String>;
-const VERSION: u64 = 2;
+const VERSION: u64 = 3;
 const MAX_BYTES: usize = 32 * 1024 * 1024;
 const MAX_OBJECTS: usize = 100_000;
 const MAX_DEPTH: usize = 128;
@@ -290,14 +290,15 @@ impl Vm {
             &["format", "version", "runtime", "machine", "objects"],
         )?;
         if field(&doc, "format")?.as_str() != Some("helix-execution")
-            || !matches!(field(&doc, "version")?.as_u64(), Some(1 | VERSION))
+            || !matches!(field(&doc, "version")?.as_u64(), Some(1..=VERSION))
         {
             return Err("unsupported execution snapshot format/version".into());
         }
         if field(&doc, "runtime")?.as_str() != Some(env!("CARGO_PKG_VERSION")) {
             return Err("unsupported snapshot runtime version".into());
         }
-        if doc["version"] == 1 {
+        let version = doc["version"].as_u64().unwrap_or(VERSION);
+        if version == 1 {
             let objects = doc["objects"].as_object_mut().ok_or("expected objects map")?;
             for row in objects.values_mut() {
                 let kind = row["kind"].as_str().unwrap_or("").to_owned();
@@ -313,6 +314,9 @@ impl Vm {
                     }
                 }
             }
+        }
+        if version < 3 {
+            add_error_hints(&mut doc["objects"])?;
         }
         let objects = field(&doc, "objects")?
             .as_object()
@@ -340,6 +344,32 @@ impl Vm {
 }
 
 /// The snapshot tree is built as JSON values; YAML is its canonical text spelling.
+/// Version 3 added `hint` to error records. Earlier errors are exactly the ten-field records
+/// below; they gain an absent hint, and a pre-3 record that already has one is rejected.
+fn add_error_hints(j: &mut J) -> R<()> {
+    const FIELDS: [&str; 10] =
+        ["kind", "phase", "message", "file", "path", "reference", "span", "data", "calls", "cause"];
+    match j {
+        J::Object(map) => {
+            if map.contains_key("hint") && FIELDS.iter().all(|f| map.contains_key(*f)) {
+                return Err("version 1-2 snapshot contains version 3 error hint".into());
+            }
+            for value in map.values_mut() {
+                add_error_hints(value)?;
+            }
+            if map.len() == FIELDS.len() && FIELDS.iter().all(|f| map.contains_key(*f)) {
+                map.insert("hint".into(), J::Null);
+            }
+        }
+        J::Array(items) => {
+            for item in items {
+                add_error_hints(item)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
 fn to_yaml(j: &J) -> R<yaml_rust2::Yaml> {
     use yaml_rust2::Yaml;
     Ok(match j {

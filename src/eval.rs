@@ -87,7 +87,10 @@ impl Evaluator {
         &self.program.graph
     }
     fn err(&self, id: NodeId, kind: &str, message: impl Into<String>) -> HelixError {
-        let mut error = self.graph().error(id, kind, message.into());
+        self.phased(self.graph().error(id, kind, message.into()))
+    }
+    /// Mark an error raised while this evaluator runs in type time.
+    fn phased(&self, mut error: HelixError) -> HelixError {
         if self.type_time || self.inherited_type_time {
             error.phase = Some("type");
         }
@@ -190,22 +193,28 @@ impl Evaluator {
                 if let Value::Function(function) = value {
                     self.apply(id, Actor::Function(function), items[1..].to_vec())?;
                 } else {
+                    let written = self.graph().identifier(items[0]);
+                    let subject = written.map_or_else(|| "a computed call actor".to_string(), |name| format!("call actor `{name}`"));
                     return Err(self.err(
                         items[0],
                         "type",
-                        "$call actor must resolve to a function",
-                    ));
+                        format!("{subject} must resolve to a function, got {}", crate::builtins::type_name(&value)),
+                    ).with_hint(crate::graph::not_callable(written, &value)));
                 }
             }
             Request::Project { site, name, members, actor } => {
                 let mut value = self.value();
-                for member in members {
-                    value = match value {
-                        Value::Hash(map) => map.get(&s(&member)).cloned(),
+                for (index, member) in members.iter().enumerate() {
+                    let found = match &value {
+                        Value::Hash(map) => map.get(&s(member)).cloned(),
                         _ => None,
-                    }.ok_or_else(|| self.err(site, "unbound", format!(
-                        "unbound {} `{name}`", if actor { "actor" } else { "symbol" }
-                    )))?;
+                    };
+                    value = found.ok_or_else(|| {
+                        // Members are the trailing parts of `name`; the written prefix precedes them.
+                        let written = &name[..name.len() - members[index..].iter().map(|m| m.len() + 1).sum::<usize>()];
+                        self.err(site, "unbound", format!("unbound {} `{name}`", if actor { "actor" } else { "symbol" }))
+                            .with_hint(Some(crate::graph::missing_member(written, crate::graph::members_of(&value), member)))
+                    })?;
                 }
                 self.charge_value(site, &value)?;
                 self.finish(value);

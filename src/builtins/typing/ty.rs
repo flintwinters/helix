@@ -71,6 +71,11 @@ pub fn is_primitive(name: &str) -> bool {
     PRIMITIVES.contains(&name)
 }
 
+/// Every primitive type name.
+pub fn primitives() -> &'static [&'static str] {
+    &PRIMITIVES
+}
+
 #[derive(Clone, Debug)]
 pub(crate) enum Ty {
     Any,

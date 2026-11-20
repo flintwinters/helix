@@ -62,7 +62,7 @@ SUITES = {
     "pipeline": "helix exec inline/stdin execution, raw strings, YAML/JSON results, errors and jq/yq shell pipes",
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
     "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",
-    "errors": "Navigable function definitions, imported call chains, caught errors and causes",
+    "errors": "Navigable function definitions, imported call chains, caught errors, causes and correction hints",
     "imports": "Module resolution, isolation, cycles, and source blame",
     "execution": "Immutable stepping, retained branches, nested machines and explicit continuations",
     "library": "Rust public VM API contracts via cargo test",

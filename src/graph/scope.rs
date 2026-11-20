@@ -48,20 +48,31 @@ impl Graph {
 
     /// The innermost lexical declaration of `name` visible from `from`, independent of any frame.
     pub(crate) fn lexical_site(&self, from: NodeId, name: &str) -> Option<Site> {
-        let entry = |entries: &[(String, NodeId)]| {
-            entries.iter().find(|(k, _)| k == name).map(|(_, id)| Site::Entry(*id))
-        };
+        self.declarations(from, |declared, site| (declared == name).then_some(site))
+    }
+
+    /// Every lexical name visible from `from`, innermost scope first.
+    pub(crate) fn visible_names(&self, from: NodeId) -> Vec<String> {
+        let mut names = Vec::new();
+        self.declarations(from, |declared, _| {
+            names.push(declared.to_string());
+            None::<()>
+        });
+        names
+    }
+
+    /// Visit the declarations enclosing `from` innermost scope first, stopping at the first
+    /// `Some` from `visit`.
+    fn declarations<T>(&self, from: NodeId, mut visit: impl FnMut(&str, Site) -> Option<T>) -> Option<T> {
         let mut child = from;
         while let Some(id) = self.lexical_parent(child) {
             let found = match self.syntax(id) {
-                Syntax::Mapping(entries) => entry(entries),
+                Syntax::Mapping(entries) => entries.iter().find_map(|(k, v)| visit(k, Site::Entry(*v))),
                 Syntax::Call(items) if items.get(2) == Some(&child) => match (self.form(id), self.kind(items[1])) {
-                    (Some("fn"), _) => self
-                        .parameters(id)
-                        .ok()
-                        .and_then(|p| p.iter().position(|(n, _)| n == name))
-                        .map(|index| Site::Parameter(id, index)),
-                    (Some("let"), Kind::Map(entries)) => entry(entries),
+                    (Some("fn"), _) => self.parameters(id).ok().and_then(|params| {
+                        params.iter().enumerate().find_map(|(index, (n, _))| visit(n, Site::Parameter(id, index)))
+                    }),
+                    (Some("let"), Kind::Map(entries)) => entries.iter().find_map(|(k, v)| visit(k, Site::Entry(*v))),
                     _ => None,
                 },
                 _ => None,

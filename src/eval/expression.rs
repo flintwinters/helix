@@ -28,7 +28,7 @@ impl Evaluator {
             match self.resolve_input(id, name) {
                 Some(found) => self.read_resolution(id, name, false, found)?,
                 None if builtins::is_primitive(name) => self.finish(s(name)),
-                None => return Err(self.err(id, "unbound", format!("unbound symbol `{name}`"))),
+                None => return Err(self.unbound(id, name, false)),
             }
             return Ok(());
         }
@@ -67,7 +67,7 @@ impl Evaluator {
                         self.push(Request::Actor(id, items));
                         self.read_resolution(head, &name, true, found)?;
                     } else {
-                        return Err(self.err(head, "unbound", format!("unbound actor `{name}`")));
+                        return Err(self.unbound(head, &name, true));
                     }
                 } else {
                     self.push(Request::Actor(id, items));

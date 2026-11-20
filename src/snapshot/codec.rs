@@ -240,6 +240,7 @@ record!(HelixError {
     kind: v,
     phase: phase,
     message: v,
+    hint: v,
     file: v,
     path: v,
     reference: v,

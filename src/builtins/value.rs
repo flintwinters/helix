@@ -15,7 +15,7 @@ pub(super) fn as_f64(value: &Value) -> Option<f64> {
     }
 }
 
-pub(super) fn type_name(v: &Value) -> &'static str {
+pub(crate) fn type_name(v: &Value) -> &'static str {
     match v {
         Value::Integer(_) => "integer",
         Value::Float(_) => "float",

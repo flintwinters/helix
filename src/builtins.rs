@@ -18,10 +18,11 @@ pub(crate) mod typing;
 mod value;
 
 pub use fault::Fault;
-pub use typing::{is_primitive, refine, violations, Ask, Violation};
+pub use typing::{is_primitive, primitives, refine, violations, Ask, Violation};
 pub(crate) use typing::{describe, function_type, Field, Ty};
 use typing::Pred;
-use value::{equal, type_name};
+use value::equal;
+pub(crate) use value::type_name;
 
 /// Authoritative dependency mapping shared by linking and execution.
 pub(crate) fn policy_module(actor: &str) -> Option<&'static str> {
@@ -164,6 +165,11 @@ const ACTORS: &[Descriptor] = &[
 
 pub(crate) fn descriptor(name: &str) -> Option<&'static Descriptor> {
     ACTORS.iter().find(|actor| actor.name == name)
+}
+
+/// Every builtin actor name, in registration order.
+pub(crate) fn names() -> impl Iterator<Item = &'static str> {
+    ACTORS.iter().map(|actor| actor.name)
 }
 
 /// `(minimum, maximum)` argument counts; `None` overall means not a builtin.
