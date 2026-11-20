@@ -201,6 +201,9 @@ resource semantics and host prerequisites are authoritative in the
 `apply`, `verify`, `graph`, the `configuration` class and input/observation schemas. Resources
 are identified `kind:key`; prerequisites (a user's group, owners, declared ancestors, explicit
 `after`) derive a dependency graph that is validated before effects and is part of the review.
+`packages` is an installer layer keyed by manager (`packages: {apt: {jq: {version: ...}}}`,
+id `package:apt:jq`); `package_managers` owns each manager's name and version grammar and
+the helper dispatches by manager. Only `apt` is defined and qualified.
 Removal requires explicit `state: absent` and runs in reverse order; omission never deletes. It
 reuses `std:provider` and `std:orchestration`, with a helper executable (`std:helper`, shared
 framing for local and SSH command effects) supplying mechanisms only. Fixture-qualified; see the

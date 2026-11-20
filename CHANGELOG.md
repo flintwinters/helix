@@ -6,6 +6,10 @@ milestones, not stable releases; compatibility boundaries live in
 
 ## Current development
 
+- `std:linux` packages form an installer layer keyed by manager: configuration nests
+  `packages: {apt: {...}}` and ids are `package:MANAGER:NAME`. `apt` is the only
+  defined and Docker-qualified manager; others need their own workload and fixture.
+
 - Caller-owned durable effect journals preserve completed outcomes, refuse blind
   replay after controller death, and support explicit reconciliation of the exact
   uncertain request. Restoration requires fresh grants; target locking, rollback

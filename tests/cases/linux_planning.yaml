@@ -5,7 +5,7 @@ $call:
   baseline:
     groups: {app: {gid: 2001}}
     users: {app: {uid: 2001, group: app, home: /srv/app}}
-    packages: {jq: {version: 1.6-2.1}}
+    packages: {apt: {jq: {version: 1.6-2.1}}}
     directories: {/srv: {}, /srv/app: {owner: app, group: app, mode: 488}}
     files: {/srv/app/README: {content: "hi\n", owner: app, group: app}}
     symlinks: {/srv/current: {target: /srv/app}}
@@ -14,7 +14,7 @@ $call:
     resources:
       group:app: null
       user:app: null
-      package:jq: null
+      package:apt:jq: null
       directory:/srv: null
       directory:/srv/app: null
       file:/srv/app/README: null

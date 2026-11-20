@@ -12,8 +12,9 @@ $call:
     users:
       helix-app: {uid: 2001, group: helix-app, home: /srv/helix/app}
     packages:
-      jq: {version: 1.6-2.1+deb12u1}
-      tree: {version: 2.1.0-1}
+      apt:
+        jq: {version: 1.6-2.1+deb12u1}
+        tree: {version: 2.1.0-1}
     directories:
       /etc/helix-demo: {}
       /srv/helix: {}

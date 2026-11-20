@@ -18,7 +18,7 @@ The harness reuses the nginx suite's Docker driver, pinned base images and clean
 |---|---|---|---|
 | `group` | name | `gid` | none |
 | `user` | name | `uid`, `group`, `home`, `shell` (`/usr/sbin/nologin`) | its group |
-| `package` | name | exact `version` | none |
+| `package` | `MANAGER:NAME` under `packages: {MANAGER: {NAME: ...}}`; only `apt` | exact `version` | none |
 | `directory` | path | `owner`/`group` (root), `mode` (0755) | owner, group, declared ancestors |
 | `file` | path | `content`, `owner`/`group` (root), `mode` (0644) | owner, group, declared ancestors |
 | `symlink` | path | `target` | declared ancestors |

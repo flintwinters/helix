@@ -91,6 +91,14 @@ WATCHED = dict(
 SECTION = dict(group="groups", user="users", package="packages", directory="directories", file="files", symlink="symlinks")
 
 
+def declaration(kind, key, spec):
+    """Config declaring one resource; packages nest by installer as `package:MANAGER:NAME` ids do."""
+    if kind == "package":
+        manager, _, name = key.partition(":")
+        return {"packages": {manager: {name: spec}}}
+    return {SECTION[kind]: {key: spec}}
+
+
 def replay(name):
     return f"HELIX_DOCKER_LINUX_SCENARIO={name} ./manage.py test --suite docker_linux"
 
@@ -113,7 +121,7 @@ def desired(**changes):
     return {
         "groups": {"helix-app": {"gid": 2001}},
         "users": {"helix-app": {"uid": 2001, "group": "helix-app", "home": "/srv/helix/app"}},
-        "packages": {"jq": {"version": PACKAGES["jq"]}, "tree": {"version": PACKAGES["tree"]}},
+        "packages": {"apt": {"jq": {"version": PACKAGES["jq"]}, "tree": {"version": PACKAGES["tree"]}}},
         "directories": {"/etc/helix-demo": {}, "/srv/helix": {},
                         "/srv/helix/app": {"owner": "helix-app", "group": "helix-app", "mode": 0o750}},
         "files": {"/etc/helix-demo/app.conf": {"content": "listen = 8080\n", "group": "helix-app", "mode": 0o640},
@@ -136,7 +144,7 @@ def expected(inputs):
     for path, spec in inputs.get("symlinks", {}).items():
         if spec.get("state") != "absent":
             paths[path] = dict(type="symlink", target=spec["target"])
-    packages = {name: "installed " + spec["version"] for name, spec in inputs.get("packages", {}).items() if spec.get("state") != "absent"}
+    packages = {name: "installed " + spec["version"] for name, spec in inputs.get("packages", {}).get("apt", {}).items() if spec.get("state") != "absent"}
     return groups, users, paths, packages
 
 
@@ -278,7 +286,7 @@ def baseline(d):
     assert explained["format"] == "helix.linux.configuration.v1" and explained["values"] == inputs, explained
     observation = d.controller("observe", inputs)
     assert "resources" in observation, observation
-    assert set(observation["resources"]) == {"group:helix-app", "user:helix-app", "package:jq", "package:tree", "directory:/etc/helix-demo",
+    assert set(observation["resources"]) == {"group:helix-app", "user:helix-app", "package:apt:jq", "package:apt:tree", "directory:/etc/helix-demo",
                                              "directory:/srv/helix", "directory:/srv/helix/app", "file:/etc/helix-demo/app.conf",
                                              "file:/srv/helix/app/README", "symlink:/etc/helix-demo/current"}, observation
     assert all(value is None for value in observation["resources"].values()), observation
@@ -290,7 +298,7 @@ def baseline(d):
     assert requires["user:helix-app"]["requires"] == ["group:helix-app"], requires
     assert "directory:/srv/helix" in requires["directory:/srv/helix/app"]["requires"], requires
     assert {"user:helix-app", "group:helix-app", "directory:/srv/helix/app"} <= set(requires["file:/srv/helix/app/README"]["requires"]), requires
-    assert requires["package:jq"]["requires"] == [], requires
+    assert requires["package:apt:jq"]["requires"] == [], requires
     assert d.probe() == before and d.actions() == actions, "preview mutated the host"
     d.apply(inputs, review=first)
     created = {resource for resource, action in d.performed(len(actions)) if action == "set"}
@@ -335,7 +343,7 @@ def drift(d):
         ("link target", ["ln", "-sfn", "/tmp", "/etc/helix-demo/current"], [("symlink:/etc/helix-demo/current", "set")]),
         ("missing file", ["rm", "-f", "/etc/helix-demo/app.conf"], [("file:/etc/helix-demo/app.conf", "set")]),
         ("account shell", ["usermod", "-s", "/bin/sh", "helix-app"], [("user:helix-app", "set")]),
-        ("package", ["apt-get", "-y", "remove", "jq"], [("package:jq", "set")]),
+        ("package", ["apt-get", "-y", "remove", "jq"], [("package:apt:jq", "set")]),
     ]
     for name, command, repairs in changes:
         d.exec(*command)
@@ -364,12 +372,12 @@ def removal(d):
     # Explicit removal of a file, its link and the package runs dependents-first.
     pruned = {**inputs, "files": {**inputs["files"], "/srv/helix/app/README": {**inputs["files"]["/srv/helix/app/README"], "state": "absent"}},
               "symlinks": {"/etc/helix-demo/current": {"target": "/srv/helix/app", "state": "absent"}},
-              "packages": {**inputs["packages"], "tree": {**inputs["packages"]["tree"], "state": "absent"}}}
+              "packages": {"apt": {**inputs["packages"]["apt"], "tree": {**inputs["packages"]["apt"]["tree"], "state": "absent"}}}}
     since = len(d.actions())
     review = d.controller("check", pruned)
     assert {step["op"] for step in review["steps"]} == {"remove"} and len(review["steps"]) == 3, review
     d.apply(pruned)
-    assert d.performed(since) == sorted([("file:/srv/helix/app/README", "remove"), ("symlink:/etc/helix-demo/current", "remove"), ("package:tree", "remove")])
+    assert d.performed(since) == sorted([("file:/srv/helix/app/README", "remove"), ("symlink:/etc/helix-demo/current", "remove"), ("package:apt:tree", "remove")])
     d.apply(pruned, expected="unchanged")
     # Removing the directory fails safely while an unmanaged file remains inside it, and skips nothing else.
     blocked = {**pruned, "directories": {**pruned["directories"], "/srv/helix/app": {**pruned["directories"]["/srv/helix/app"], "state": "absent"}},
@@ -404,9 +412,10 @@ def invalid_input(d):
         "unknown section": {**base, "services": {"nginx": {}}},
         "missing content": {**base, "files": {"/etc/helix-demo/x": {}}},
         "missing gid": {**base, "groups": {"helix-app": {}}},
-        "missing version": {**base, "packages": {"jq": {}}},
-        "bad version": {**base, "packages": {"jq": {"version": "1 2"}}},
-        "unknown after": {**base, "files": {"/etc/helix-demo/x": {"content": "x", "after": ["package:missing"]}}},
+        "missing version": {**base, "packages": {"apt": {"jq": {}}}},
+        "bad version": {**base, "packages": {"apt": {"jq": {"version": "1 2"}}}},
+        "unknown manager": {**base, "packages": {"brew": {"jq": {"version": "1"}}}},
+        "unknown after": {**base, "files": {"/etc/helix-demo/x": {"content": "x", "after": ["package:apt:missing"]}}},
         "cycle": {**base, "files": {"/etc/helix-demo/a": {"content": "x", "after": ["file:/etc/helix-demo/b"]}, "/etc/helix-demo/b": {"content": "x", "after": ["file:/etc/helix-demo/a"]}}},
         "absent prerequisite": {**base, "groups": {"helix-app": {"gid": 2001, "state": "absent"}}},
     }
@@ -432,7 +441,7 @@ def stale_review(d):
     state, trace = d.probe(), d.actions()
     assert_failure(d.controller("apply", changed, review), "provider_stale_plan", "preflight")
     assert_failure(d.controller("apply", changed, {**review, "revision": "older"}), "provider_stale_plan", "preflight")
-    tampered = {**review, "dependencies": {**review["dependencies"], "resources": {**review["dependencies"]["resources"], "package:jq": {"requires": ["package:tree"], "notify": []}}}}
+    tampered = {**review, "dependencies": {**review["dependencies"], "resources": {**review["dependencies"]["resources"], "package:apt:jq": {"requires": ["package:apt:tree"], "notify": []}}}}
     assert_failure(d.controller("apply", {**changed, "files": {**changed["files"], "/etc/helix-demo/app.conf": {"content": "again\n", "group": "helix-app", "mode": 0o640}}}, tampered), "linux_review_dependencies", "preflight")
     assert d.probe() == state and d.actions() == trace
     d.fresh()
@@ -458,11 +467,11 @@ def failure(d):
     d.apply(inputs)
     d.exec("apt-get", "-y", "remove", "tree")
     review = d.controller("check", inputs)
-    d.fault({"package:tree": "repository"})
+    d.fault({"package:apt:tree": "repository"})
     report = d.controller("apply", inputs, review)
     d.fault()
-    resources = resource_failure(report, review, "package:tree", kind="linux_host")
-    assert "127.0.0.1:1" in json.dumps(resources["package:tree"]), resources
+    resources = resource_failure(report, review, "package:apt:tree", kind="linux_host")
+    assert "127.0.0.1:1" in json.dumps(resources["package:apt:tree"]), resources
     d.apply(inputs)
 
 
@@ -547,7 +556,7 @@ def adversarial_configurations():
         "file and directory": {"files": {"/etc/helix-demo": {"content": "x"}}, "directories": {"/etc/helix-demo": {}}},
         "file ancestor": {"files": {"/etc/helix-demo": {"content": "x"}, "/etc/helix-demo/app.conf": {"content": "y"}}},
         "symlink ancestor": {"symlinks": {"/etc/helix-demo": {"target": "/srv/helix"}}, "files": {"/etc/helix-demo/app.conf": {"content": "y"}}},
-        "package option": {"packages": {"--help": {"version": "1"}}},
+        "package option": {"packages": {"apt": {"--help": {"version": "1"}}}},
     }
 
 
@@ -686,7 +695,7 @@ def user_removal(d):
 
 def host_failures(d):
     inputs = desired()
-    for resource in ("group:helix-app", "user:helix-app", "package:jq", "directory:/srv/helix/app",
+    for resource in ("group:helix-app", "user:helix-app", "package:apt:jq", "directory:/srv/helix/app",
                      "file:/etc/helix-demo/app.conf", "symlink:/etc/helix-demo/current"):
         for mode in ("fail", "false-success"):
             d.fresh()
@@ -704,7 +713,7 @@ def host_failures(d):
     removals = [
         ("group", "helix-extra", {"groups": {"helix-extra": {"gid": 2009}}}),
         ("user", "helix-app", {"groups": inputs["groups"], "users": inputs["users"]}),
-        ("package", "jq", {"packages": {"jq": inputs["packages"]["jq"]}}),
+        ("package", "apt:jq", declaration("package", "apt:jq", inputs["packages"]["apt"]["jq"])),
         ("directory", "/etc/helix-demo", {"directories": {"/etc/helix-demo": {}}}),
         ("file", "/etc/helix-demo/app.conf", {"directories": {"/etc/helix-demo": {}},
                                               "files": {"/etc/helix-demo/app.conf": {"content": "remove me\n"}}}),
@@ -715,7 +724,7 @@ def host_failures(d):
         for mode in ("fail", "false-success"):
             d.fresh()
             d.apply(seed)
-            absent = {SECTION[kind]: {key: {"state": "absent"}}}
+            absent = declaration(kind, key, {"state": "absent"})
             review = d.controller("check", absent)
             d.fault({f"{kind}:{key}": mode})
             report = d.controller("apply", absent, review)
@@ -726,7 +735,7 @@ def host_failures(d):
             report = d.controller("apply", absent, checked)
             assert report["status"] == "changed", report
             state = d.probe()
-            assert state[SECTION[kind] if kind in {"group", "user", "package"} else "paths"][key] is None, (kind, state)
+            assert state[SECTION[kind] if kind in {"group", "user", "package"} else "paths"][key.removeprefix("apt:")] is None, (kind, state)
             d.preserved()
             d.apply(seed)
 
@@ -795,8 +804,8 @@ def contention(d):
         d.wait_path("/run/helix-linux/dpkg-locked")
         review = d.controller("check", inputs)
         report = d.controller("apply", inputs, review)
-        failures = resource_failure(report, review, "package:jq", kind="linux_host")
-        assert "lock" in json.dumps(failures["package:jq"]).lower(), failures
+        failures = resource_failure(report, review, "package:apt:jq", kind="linux_host")
+        assert "lock" in json.dumps(failures["package:apt:jq"]).lower(), failures
         assert d.probe()["packages"]["jq"] is None
     finally:
         d.signal_process(pid, signal.SIGKILL)

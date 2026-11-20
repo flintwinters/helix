@@ -1,6 +1,7 @@
 # Typed Debian host resources over one caller-granted helper, local or SSH: groups, users,
-# packages, directories, files and symlinks. Helix owns desired state, ordering and review;
-# the helper executable supplies one mechanism per operation and never plans.
+# packages (per installer, see `package_managers`), directories, files and symlinks. Helix
+# owns desired state, ordering and review; the helper executable supplies one mechanism per
+# operation and never plans.
 # Every public operation shares pure resolution (types, required fields, dependency graph)
 # before any effect. Removal requires an explicit `state: absent`; omission never deletes.
 !call
@@ -57,6 +58,26 @@
                   - with_dependencies
                   - !ref config
                   - !call [provider.failure_report, preflight, !ref error]
+    # A resource needs a step when its observation differs from its desired value or an identity it references changed.
+    changed: !call
+      - fn
+      - [declared, before, id]
+      - !call
+          - or
+          - !call
+              - ne
+              - !call [get, !ref before.resources, !ref id]
+              - !call [desired_value, !call [get, !ref declared, !ref id]]
+          - !call
+              - and
+              - !call [not, !call [absent_entry, !ref declared, !ref id]]
+              - !call
+                  - lists.any
+                  - !call [identity_references, !call [get, !ref declared, !ref id]]
+                  - !call
+                      - fn
+                      - [other]
+                      - !call [identity_changed, !ref declared, !ref before, !ref other]
     # Closed character sets keep identities literal; values never reach a shell.
     charset: !call
       - fn
@@ -91,7 +112,7 @@
               - !call [descriptor_for, !ref config]
               - !ref config
               - !call [context, !ref config]
-    # Resolve, validate every key and prerequisite, and reject cycles before any effect.
+    # Types validate keys at resolution; then check paths and prerequisites, rejecting cycles before any effect.
     checked: !call
       - fn
       - [values]
@@ -99,11 +120,10 @@
           - get
           - !call
               - list
-              - !call [validated_keys, !ref values]
               - !call [validated_paths, !ref values]
               - !call [validated_graph, !ref values]
               - !ref values
-          - 3
+          - 2
     common_defaults: {after: [], state: present}
     # Each section defaults to empty, so a configuration declares only the kinds it manages.
     configuration: !call
@@ -118,7 +138,7 @@
                   - with_field
                   - !ref type
                   - !call [get, !ref sections, !ref kind]
-                  - !call [default, !call [map_of, !call [spec_type, !ref kind]], {}]
+                  - !call [default, !call [section_type, !ref kind], {}]
           - !ref input
           - !ref kinds
     context: !call
@@ -188,24 +208,24 @@
               - fn
               - [all, kind]
               - !call
-                  - fold
+                  - let
+                  - {declared: !call [section, !ref config, !ref kind]}
                   - !call
-                      - fn
-                      - [acc, key]
+                      - fold
                       - !call
-                          - set
-                          - !ref acc
-                          - !call [concat, !ref kind, ":", !ref key]
+                          - fn
+                          - [acc, key]
                           - !call
-                              - entry
-                              - !ref kind
-                              - !ref key
+                              - set
+                              - !ref acc
+                              - !call [concat, !ref kind, ":", !ref key]
                               - !call
-                                  - get
-                                  - !call [get, !ref config, !call [get, !ref sections, !ref kind]]
+                                  - entry
+                                  - !ref kind
                                   - !ref key
-                  - !ref all
-                  - !call [keys, !call [get, !ref config, !call [get, !ref sections, !ref kind]]]
+                                  - !call [get, !ref declared, !ref key]
+                      - !ref all
+                      - !call [keys, !ref declared]
           - {}
           - !ref kinds
     # Resources keyed `kind:key`, each with normalized defaults. Present entries must supply required fields.
@@ -246,14 +266,17 @@
       - fn
       - [config, changes]
       - !call
-          - executed
+          - let
+          - {declared: !call [entries, !ref config]}
           - !call
-              - orchestration.run
-              - !call [graph, !ref config]
+              - executed
               - !call
-                  - fn
-                  - [kind, id]
-                  - !call [resource, !ref config, !ref changes, !ref id]
+                  - orchestration.run
+                  - !call [graph, !ref config]
+                  - !call
+                      - fn
+                      - [kind, id]
+                      - !call [resource, !ref config, !ref declared, !ref changes, !ref id]
     executed: !call
       - fn
       - [report]
@@ -280,7 +303,8 @@
         mode: !ref mode_type
         owner: !ref account_name
       group: {gid: !ref numeric_id}
-      package: {version: !ref package_version}
+      # Every manager pins an exact version; `package_managers` refines its grammar.
+      package: {version: !ref string}
       symlink: {target: !ref link_target}
       user: {group: !ref account_name, home: !ref path, shell: !ref path, uid: !ref numeric_id}
     graph: !call
@@ -384,7 +408,7 @@
                   - with_field
                   - !ref type
                   - !call [get, !ref sections, !ref kind]
-                  - !call [map_of, !call [spec_type, !ref kind]]
+                  - !call [section_type, !ref kind]
           - !call [record]
           - !ref kinds
       - ssh_target
@@ -403,7 +427,6 @@
       directory: !ref path
       file: !ref path
       group: !ref account_name
-      package: !ref package_name
       symlink: !ref path
       user: !ref account_name
     kind_defaults:
@@ -455,15 +478,12 @@
           - !call [and, !call [ge, !ref mode, 0], !call [le, !ref mode, 511]]
     mutate: !call
       - fn
-      - [config, id, step]
+      - [config, entry, step]
       - !call
-          - let
-          - {entry: !call [get, !call [entries, !ref config], !ref id]}
-          - !call
-              - helper_call
-              - !ref config
-              - apply
-              - {key: !ref entry.key, kind: !ref entry.kind, value: !ref step.to}
+          - helper_call
+          - !ref config
+          - apply
+          - {key: !ref entry.key, kind: !ref entry.kind, value: !ref step.to}
     # Creation follows prerequisites; explicit removal runs in reverse. A present resource cannot need an absent one.
     node_requires: !call
       - fn
@@ -517,12 +537,12 @@
       - !ref id_type
       - resources
       - !call [map_of, !call [union, !ref map, !ref null_type], !ref id_type]
-    observe_state: !call
+    observe_declared: !call
       - fn
-      - [config]
+      - [config, declared]
       - !call
           - observed
-          - !ref config
+          - !ref declared
           - !call
               - expect
               - !call
@@ -531,35 +551,63 @@
                   - observe
                   - {subjects: !call [subject_list, !ref config]}
               - !ref observation_type
+    observe_state: !call
+      - fn
+      - [config]
+      - !call [observe_declared, !ref config, !call [entries, !ref config]]
     # A host that omits or invents a resource has not observed the declared set.
     observed: !call
       - fn
-      - [config, observation]
+      - [declared, observation]
       - !call
           - if
-          - !call
-              - eq
-              - !call [keys, !ref observation.resources]
-              - !call [keys, !call [entries, !ref config]]
+          - !call [eq, !call [keys, !ref observation.resources], !call [keys, !ref declared]]
           - !ref observation
           - !call
               - raise
               - linux_observation
               - The host did not observe exactly the declared resources
-              - expected: !call [keys, !call [entries, !ref config]]
+              - expected: !call [keys, !ref declared]
                 observed: !call [keys, !ref observation.resources]
     orchestration: !call [import, "std:orchestration"]
-    package_name: !call
-      - refine
-      - !call [charset, abcdefghijklmnopqrstuvwxyz0123456789+.-, 100]
+    # The package installer layer: a package is an exact version of a name within one
+    # manager, declared `packages: {MANAGER: {NAME: spec}}` and identified
+    # `package:MANAGER:NAME`, so identities never cross managers. Each manager types its
+    # own names and versions; the helper supplies that manager's native mechanism.
+    package_managers:
+      apt:
+        name: !call
+          - refine
+          - !call [charset, abcdefghijklmnopqrstuvwxyz0123456789+.-, 100]
+          - !call
+              - fn
+              - [name]
+              - !call [has, abcdefghijklmnopqrstuvwxyz0123456789, !call [slice, !ref name, 0, 1]]
+        version: !call
+          - charset
+          - "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.+~:_-"
+          - 100
+    # Unlisted managers are closed-record type errors; each listed one may be omitted.
+    packages_type: !call
+      - fold
       - !call
           - fn
-          - [name]
-          - !call [has, abcdefghijklmnopqrstuvwxyz0123456789, !call [slice, !ref name, 0, 1]]
-    package_version: !call
-      - charset
-      - "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.+~:_-"
-      - 100
+          - [type, manager]
+          - !call
+              - let
+              - {declared: !call [get, !ref package_managers, !ref manager]}
+              - !call
+                  - with_field
+                  - !ref type
+                  - !ref manager
+                  - !call
+                      - optional
+                      - !call
+                          - map_of
+                          - !call [spec_of, {version: !ref declared.version}]
+                          - !ref declared.name
+      - !call [record]
+      - !call [keys, !ref package_managers]
     # Absolute, normalized and never the root: no empty, `.` or `..` segments.
     path: !call
       - refine
@@ -606,7 +654,7 @@
               - raise
               - linux_review_dependencies
               - The reviewed dependency graph does not match this configuration
-    provider_revision: "2"
+    provider_revision: "3"
     realize_config: !call
       - fn
       - [config]
@@ -664,7 +712,7 @@
       - !call [get, !call [explain, !ref config], values]
     resource: !call
       - fn
-      - [config, changes, id]
+      - [config, declared, changes, id]
       - !call
           - let
           - selected: !call
@@ -678,10 +726,15 @@
               - if
               - !call [eq, !ref selected, []]
               - {status: unchanged}
-              - !call [resource_selected, !ref config, !ref id, !call [get, !ref selected, 0]]
+              - !call
+                  - resource_selected
+                  - !ref config
+                  - !ref declared
+                  - !ref id
+                  - !call [get, !ref selected, 0]
     resource_selected: !call
       - fn
-      - [config, id, step]
+      - [config, declared, id, step]
       - !call
           - if
           # Equal projections represent a reviewed numeric-identity rebinding. A
@@ -692,28 +745,25 @@
               - !call [eq, !ref step.from, !ref step.to]
               - !call
                   - eq
-                  - !call [get, !call [get, !call [observe_state, !ref config], resources], !ref id]
+                  - !call
+                      - get
+                      - !call [get, !call [observe_declared, !ref config, !ref declared], resources]
+                      - !ref id
                   - !ref step.to
           - {status: unchanged}
           - !call
               - resource_verified
-              - !ref config
+              - !ref declared
               - !ref id
-              - !call [mutate, !ref config, !ref id, !ref step]
-              - !call [observe_state, !ref config]
+              - !call [mutate, !ref config, !call [get, !ref declared, !ref id], !ref step]
+              - !call [observe_declared, !ref config, !ref declared]
     # A command that claims success does not satisfy the resource; a fresh observation does.
     resource_verified: !call
       - fn
-      - [config, id, reply, after]
+      - [declared, id, reply, after]
       - !call
           - if
-          - !call
-              - lists.any
-              - !call [steps, !ref config, !ref after]
-              - !call
-                  - fn
-                  - [step]
-                  - !call [eq, !ref step.field, !ref id]
+          - !call [changed, !ref declared, !ref after, !ref id]
           - !call
               - raise
               - linux_resource_postcondition
@@ -725,6 +775,47 @@
               - json_dump
               - {observation: !call [get, !ref after.resources, !ref id], result: !ref reply}
             status: changed
+    # A kind's declared resources keyed as in their ids; packages flatten to `MANAGER:NAME`.
+    section: !call
+      - fn
+      - [config, kind]
+      - !call
+          - let
+          - {declared: !call [get, !ref config, !call [get, !ref sections, !ref kind]]}
+          - !call
+              - if
+              - !call [eq, !ref kind, package]
+              - !call
+                  - fold
+                  - !call
+                      - fn
+                      - [all, manager]
+                      - !call
+                          - fold
+                          - !call
+                              - fn
+                              - [acc, name]
+                              - !call
+                                  - set
+                                  - !ref acc
+                                  - !call [concat, !ref manager, ":", !ref name]
+                                  - !call [get, !call [get, !ref declared, !ref manager], !ref name]
+                          - !ref all
+                          - !call [keys, !call [get, !ref declared, !ref manager]]
+                  - {}
+                  - !call [keys, !ref declared]
+              - !ref declared
+    section_type: !call
+      - fn
+      - [kind]
+      - !call
+          - if
+          - !call [eq, !ref kind, package]
+          - !ref packages_type
+          - !call
+              - map_of
+              - !call [spec_of, !call [get, !ref field_types, !ref kind]]
+              - !call [get, !ref key_types, !ref kind]
     sections:
       directory: directories
       file: files
@@ -732,9 +823,10 @@
       package: packages
       symlink: symlinks
       user: users
-    spec_type: !call
+    # Optional observable fields plus the shared `state` and `after` controls.
+    spec_of: !call
       - fn
-      - [kind]
+      - [fields]
       - !call
           - with_field
           - !call
@@ -748,11 +840,9 @@
                           - with_field
                           - !ref type
                           - !ref field
-                          - !call
-                              - optional
-                              - !call [get, !call [get, !ref field_types, !ref kind], !ref field]
+                          - !call [optional, !call [get, !ref fields, !ref field]]
                   - !call [record]
-                  - !call [keys, !call [get, !ref field_types, !ref kind]]
+                  - !call [keys, !ref fields]
               - state
               - !call [optional, !ref state_type]
           - after
@@ -763,26 +853,7 @@
       - [config, before]
       - !call
           - let
-          - changed: !call
-              - fn
-              - [id]
-              - !call
-                  - or
-                  - !call
-                      - ne
-                      - !call [get, !ref before.resources, !ref id]
-                      - !call [desired_value, !call [get, !ref declared, !ref id]]
-                  - !call
-                      - and
-                      - !call [not, !call [absent_entry, !ref declared, !ref id]]
-                      - !call
-                          - lists.any
-                          - !call [identity_references, !call [get, !ref declared, !ref id]]
-                          - !call
-                              - fn
-                              - [other]
-                              - !call [identity_changed, !ref declared, !ref before, !ref other]
-            declared: !call [entries, !ref config]
+          - {declared: !call [entries, !ref config]}
           - !call
               - map
               - !call
@@ -799,7 +870,13 @@
                           - remove
                           - set
                         to: !ref wanted
-              - !call [filter, !ref changed, !call [keys, !ref declared]]
+              - !call
+                  - filter
+                  - !call
+                      - fn
+                      - [id]
+                      - !call [changed, !ref declared, !ref before, !ref id]
+                  - !call [keys, !ref declared]
     # Observation names every declared resource, including those declared absent.
     subject_list: !call
       - fn
@@ -813,7 +890,7 @@
                   - set
                   - !ref acc
                   - !ref kind
-                  - !call [keys, !call [get, !ref config, !call [get, !ref sections, !ref kind]]]
+                  - !call [keys, !call [section, !ref config, !ref kind]]
           - {}
           - !ref kinds
     text: !call [import, "std:text"]
@@ -835,19 +912,6 @@
                   - linux_dependency
                   - Resource prerequisites cannot be scheduled
                   - {diagnostics: !ref scheduled.diagnostics}
-    validated_keys: !call
-      - fn
-      - [config]
-      - !call
-          - map
-          - !call
-              - fn
-              - [kind]
-              - !call
-                  - expect
-                  - !call [keys, !call [get, !ref config, !call [get, !ref sections, !ref kind]]]
-                  - !call [list_of, !call [get, !ref key_types, !ref kind]]
-          - !ref kinds
     # Each filesystem identity has one kind; non-directories cannot contain managed children.
     validated_paths: !call
       - fn

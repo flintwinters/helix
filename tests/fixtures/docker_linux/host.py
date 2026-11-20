@@ -152,7 +152,7 @@ def observe_user(name):
     return {'uid': entry.pw_uid, 'group': group_name(entry.pw_gid), 'home': entry.pw_dir, 'shell': entry.pw_shell}
 
 
-def observe_package(name):
+def observe_apt(name):
     query = subprocess.run(['dpkg-query', '-W', '-f=${db:Status-Status} ${Version}', name],
                            capture_output=True, text=True, timeout=10)
     if query.returncode not in (0, 1):
@@ -163,6 +163,16 @@ def observe_package(name):
     if query.returncode == 0 and status not in ('installed', 'not-installed', 'config-files'):
         raise RuntimeError('incomplete or unknown package state: ' + query.stdout)
     return {'version': version} if query.returncode == 0 and status == 'installed' else None
+
+
+def package_operation(operation):
+    """Dispatch a `MANAGER:NAME` key to that manager's mechanism; Helix types each manager's names and versions."""
+    def run(key, *value):
+        manager, _, name = key.partition(':')
+        if manager not in PACKAGE_MANAGERS:
+            raise ValueError('unsupported package manager: ' + manager)
+        return PACKAGE_MANAGERS[manager][operation](name, *value)
+    return run
 
 
 def metadata(info):
@@ -202,7 +212,7 @@ def observe_symlink(name):
     return {'target': os.readlink(path)}
 
 
-OBSERVERS = {'group': observe_group, 'user': observe_user, 'package': observe_package,
+OBSERVERS = {'group': observe_group, 'user': observe_user, 'package': package_operation('observe'),
              'directory': observe_directory, 'file': observe_file, 'symlink': observe_symlink}
 
 
@@ -251,14 +261,17 @@ def apply_user(name, value):
     command(['usermod' if observe_user(name) else 'useradd', *([] if observe_user(name) else ['-M']), *flags, name])
 
 
-def apply_package(name, value):
+def apply_apt(name, value):
     arguments = ['apt-get', '-y', '--no-install-recommends', '-o', 'DPkg::Lock::Timeout=3']
-    if fault(f'package:{name}') == 'repository':
+    if fault(f'package:apt:{name}') == 'repository':
         arguments += ['-o', 'Acquire::http::Proxy=http://127.0.0.1:1', '-o', 'Acquire::Retries=0']
     if value is None:
         command([*arguments, 'remove', name], timeout=120)
     else:
         command([*arguments, 'install', '--allow-downgrades', f"{name}={value['version']}"], timeout=300)
+
+
+PACKAGE_MANAGERS = {'apt': {'observe': observe_apt, 'apply': apply_apt}}
 
 
 def apply_directory(name, value):
@@ -326,7 +339,7 @@ def apply_symlink(name, value):
             staging.unlink()
 
 
-APPLIERS = {'group': apply_group, 'user': apply_user, 'package': apply_package,
+APPLIERS = {'group': apply_group, 'user': apply_user, 'package': package_operation('apply'),
             'directory': apply_directory, 'file': apply_file, 'symlink': apply_symlink}
 
 

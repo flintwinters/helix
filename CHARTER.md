@@ -638,7 +638,8 @@ Each claim is bounded by its operator contract; none is general machine manageme
   rollback, arbitrary-host bootstrap.
 - **Typed Debian resources** (`std:linux`, `docker_linux`;
   [contract](tests/fixtures/docker_linux/README.md)). Groups, users,
-  exact-version packages, directories, files and symlinks. Prerequisites derive
+  exact-version packages (an installer layer keyed by manager; only `apt` is
+  defined), directories, files and symlinks. Prerequisites derive
   into a validated, reviewed dependency graph; explicit `state: absent` removes
   in reverse order and omission never deletes; a failed resource skips exactly
   its transitive dependents. Two container-resident controllers configure each
@@ -685,7 +686,8 @@ Each claim is bounded by its operator contract; none is general machine manageme
 - [ ] SSH connection, authentication, privilege and transport failures stay
   distinguishable without parsing OpenSSH diagnostics (needs a typed protocol boundary)
 - [ ] An initial resource library behind the provider contract, beyond the pinned
-  Debian scope above: packages and repositories (metadata refresh, locking);
+  Debian scope above: package managers beyond `apt` under the installer layer
+  (snap and flatpak need a systemd fixture), repositories (metadata refresh, locking);
   configuration rendering (deterministic templates, validation, reviewable
   diffs); services (enabled/running, reload/restart policy, readiness);
   authorized keys; artifacts (authenticated retrieval, pins, integrity)
