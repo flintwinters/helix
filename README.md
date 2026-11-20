@@ -46,7 +46,9 @@ For a result without the state envelope:
 After building, use `target/debug/helix` directly, or install it with
 `cargo install --path .`. `helix exec` accepts inline source or reads stdin;
 string results are written verbatim, other values as YAML, and errors go to stderr.
-Run `helix --help` for the other commands.
+Run `helix --help` for the other commands. Learning is hierarchical and every level
+accepts `--json`: `helix docs` navigates the embedded references section by section,
+`helix builtins` lists builtin actors with arity, and `helix std` browses the library.
 
 For [jq](https://jqlang.org/manual/) and [yq](https://mikefarah.gitbook.io/yq/commands/evaluate)
 pipelines, select an explicit output format so string results remain quoted data:
@@ -195,7 +197,8 @@ and needs Git, Node.js, and npm; the command sets it up when needed.
 Use `./manage.py --help` or `--help-json` for command discovery,
 `./manage.py test --describe` for suite contracts, and `./manage.py std` to browse
 embedded libraries level by level: modules, then `std MODULE` signatures, then
-`std MODULE.EXPORT` source.
+`std MODULE.EXPORT` source. `./manage.py docs [DOC [SECTION]]` and
+`./manage.py builtins [NAME]` forward the binary's reference navigation.
 
 ## Usage log
 

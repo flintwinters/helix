@@ -137,6 +137,9 @@ def cli(h):
     misspelled = h.helix("rn", "program.yaml")
     assert misspelled.returncode == 2 and "did you mean `run`?" in misspelled.stderr, misspelled
     std_catalog(h)
+    help_catalog(h)
+    docs_catalog(h)
+    builtin_catalog(h)
     missing = h.helix("run", "runtime/definitely-missing-helix-input.yaml")
     assert missing.returncode == 2 and not missing.stdout and "cannot read" in missing.stderr
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="cli-") as directory:
@@ -178,6 +181,75 @@ def std_catalog(h):
     one = h.helix("std", "list.find")
     assert one.returncode == 0 and one.stdout.endswith("\n") and "import: `list: !call [import, 'std:list']`" in one.stdout
     for args, hint in [(("std", "lst"), "did you mean `list`?"), (("std", "list.fnd"), "did you mean `find`?")]:
+        result = h.helix(*args)
+        assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
+
+
+def help_catalog(h):
+    """One command table answers `--help --json`, `help CMD --json` and `CMD --help --json`."""
+    catalog = h.helix("--help", "--json")
+    assert catalog.returncode == 0 and not catalog.stderr, catalog
+    commands = json.loads(catalog.stdout)["commands"]
+    assert {"run", "check", "docs", "builtins", "std", "help"} <= {c["command"] for c in commands}, commands
+    for entry in commands:
+        for args in (("help", entry["command"], "--json"), (entry["command"], "--help", "--json")):
+            shown = h.helix(*args)
+            assert shown.returncode == 0 and json.loads(shown.stdout) == entry, (args, shown)
+        assert all(form["usage"].split()[1] == entry["command"] for form in entry["forms"]), entry
+    for args, hint in [(("help", "rn"), "did you mean `run`?"), (("help", "run", "extra"), "usage: helix help")]:
+        result = h.helix(*args)
+        assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
+
+
+def docs_catalog(h):
+    """`helix docs` navigates the embedded references: documents, a section tree, one section
+    whose text is the written source slice."""
+    listing = h.helix("docs", "--json")
+    assert listing.returncode == 0 and not listing.stderr, listing
+    documents = json.loads(listing.stdout)
+    assert {d["file"] for d in documents} == {"LANGUAGE.md", "LIBRARY.md", "HOST.md"}, documents
+    for document in documents:
+        written = (h.root / document["file"]).read_text()
+        assert document["lines"] == len(written.splitlines()), document
+        tree = json.loads(h.helix("docs", document["document"], "--json").stdout)
+        sections = tree["sections"]
+        assert len(sections) == document["sections"] and len({s["section"] for s in sections}) == len(sections), tree
+        assert all(s["parent"] in {None, *(p["section"] for p in sections)} for s in sections), sections
+        for section in sections:
+            shown = h.helix("docs", document["document"], section["section"], "--json")
+            assert shown.returncode == 0 and not shown.stderr, (section, shown)
+            text = json.loads(shown.stdout)["text"].rstrip("\n")
+            lines = written.splitlines()[section["line"] - 1:]
+            assert lines[0] == "#" * section["level"] + " " + section["title"], (section, lines[0])
+            assert "\n".join(lines).startswith(text), (section, text[:200])
+    text = h.helix("docs", "host", "host-effects-and-explicit-grants")
+    assert text.returncode == 0 and text.stdout.startswith("## Host effects"), text
+    assert "  ssh-remote-commands (" in text.stdout and "next: `helix docs host SUBSECTION`" in text.stdout, text
+    for args, hint in [(("docs", "langauge"), "did you mean `language`?"),
+                       (("docs", "language", "buitlins"), "did you mean `builtins`?"),
+                       (("docs", "language", "types"), "names containing it: first-class-types")]:
+        result = h.helix(*args)
+        assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
+
+
+def builtin_catalog(h):
+    """`helix builtins` lists actors the static checker independently binds, with their arity."""
+    listing = h.helix("builtins", "--json")
+    assert listing.returncode == 0 and not listing.stderr, listing
+    builtins = json.loads(listing.stdout)
+    assert {"add", "get", "fn", "let", "raise"} <= {b["name"] for b in builtins}, builtins
+    program = "\n".join(f"b{i}: !call [{b['name']}]" for i, b in enumerate(builtins))
+    diagnostics = h.helix("check", "-", stdin=program).stdout
+    assert "unbound" not in diagnostics, diagnostics
+    for b in builtins:
+        if b["min"]:
+            assert f"`{b['name']}` takes" in diagnostics, (b, diagnostics)
+    one = h.helix("builtins", "get", "--json")
+    shown = json.loads(one.stdout)
+    assert one.returncode == 0 and shown["call"].startswith("!call [get, ") and shown["mentions"], shown
+    assert all(m["document"] in {"language", "library", "host"} for m in shown["mentions"]), shown
+    for args, hint in [(("builtins", "gett"), "did you mean `get`?"),
+                       (("builtins", "find"), "exported by std:list: see `helix std list.find`")]:
         result = h.helix(*args)
         assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
 

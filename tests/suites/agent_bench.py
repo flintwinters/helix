@@ -133,6 +133,14 @@ def verify_cli(h, directory):
     with patch.object(usage_log, 'append', side_effect=lambda root, binary, record: records.append(record)):
         rejected = execute(h, target, {'args': ['perform', '--allow-read', '/']}, identity, 2)
         assert rejected['exit_code'] == 2 and records[-1]['caller_role'] == 'benchmark-model'
+        for index, args in enumerate((['help', 'run', '--json'], ['docs', 'language', 'builtins'],
+                                      ['builtins', 'get'], ['std', 'list', '--source']), 10):
+            looked = execute(h, target, {'args': args}, identity, index)
+            assert looked['exit_code'] == 0 and looked['executed_argv'] == args and looked['stdout'], looked
+        for index, args in enumerate((['docs', '../secret.md'], ['builtins', 'get', 'map'],
+                                      ['help', '--source'], ['docs', 'language', '--evaluate']), 20):
+            refused = execute(h, target, {'args': args}, identity, index)
+            assert refused['exit_code'] == 2 and refused['executed_argv'] == [], refused
         denied = execute(h, target, {'args': ['run', '-'], 'stdin': '!call [import, ../.env]'}, identity, 3)
         assert denied['exit_code'] == 1 and records[-1]['model'] == 'fake/luna'
         target = directory / 'agent-workspace'

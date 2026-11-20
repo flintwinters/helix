@@ -51,6 +51,9 @@ without duplicating the same decisions in another language.
   Helix comparisons. Goldens cover observable serialization contracts; semantic
   tests assert focused values. Harness fault injection independently checks rejection.
 - [src/tooling/](src/tooling/) leads into analysis, reflection, search and editor tooling.
+  [src/tooling/help.rs](src/tooling/help.rs) is the one CLI command table; `helix docs`,
+  `builtins` and `std` browse embedded references hierarchically with `--json` at every
+  level. Benchmark models reach only the binary, so agent discovery belongs there.
   Reuse authoritative syntax and lexical selection. Static analysis never executes;
   unknown evidence stays explicit, and evaluated-value provenance stays bounded.
 

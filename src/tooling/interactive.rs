@@ -7,34 +7,6 @@ use std::time::Duration;
 
 use crate::model::{Status, Vm};
 
-/// Shared CLI command inventory, also used by command validation.
-pub const COMMANDS: &[&str] = &[
-    "search",
-    "exec",
-    "run",
-    "sandbox",
-    "perform",
-    "recover",
-    "resume",
-    "system-snapshot",
-    "system-restore",
-    "snapshot",
-    "restore",
-    "reconcile",
-    "checkpoint",
-    "target-release",
-    "check",
-    "std",
-    "fmt",
-    "repl",
-    "watch",
-    "step",
-    "trace",
-    "inspect",
-    "schema",
-    "lsp",
-];
-
 const REPL_HELP: &str = "Enter one YAML program per line. Each program has its own lexical scope.\n:begin starts a multiline program; :end evaluates it; :cancel discards it.\n:help shows this help; :quit exits. Results are YAML state documents.";
 
 fn emit_state(vm: &Vm) -> io::Result<()> {

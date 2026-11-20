@@ -3,10 +3,11 @@
 `./manage.py quality agent-bench` owns model coding experiments.
 `./manage.py test --suite agent_bench` verifies the harness offline; paid model
 calls are explicit experiments, never part of the default regression suite.
-The current [50-attempt workspace baseline](baseline-workspace-5x10-v3.json) uses
-protocol v3; earlier final-chat measurements are retained below as historical data.
+The latest [50-attempt workspace baseline](baseline-workspace-5x10-v3.json) used
+protocol v3; no protocol-v4 run is recorded yet. Earlier final-chat measurements are
+retained below as historical data.
 
-## Protocol v3: edit, execute, submit saved files
+## Protocol v4: edit, execute, submit saved files
 
 Task corpus version 3 has 55 tasks under [tooling/agent_tasks/](../../tooling/agent_tasks/):
 the five version-2 tasks plus text processing, record reshaping, CSV/JSON/YAML
@@ -25,8 +26,11 @@ and asserts the disclosed expected output. It shares the evaluator's invocation
 builder, so the public and hidden calling conventions cannot drift.
 
 The model can read documentation progressively, create and edit candidate/helper
-files, and run `helix` with argv for `--help`, `std [MODULE]`, `schema`,
-`check FILE`, `fmt FILE` or `run FILE`. A `-` file argument accepts source on stdin.
+files, and run `helix` with argv for `--help`, `help [COMMAND]`,
+`docs [DOC [SECTION]]`, `builtins [NAME]`, `std [MODULE[.EXPORT]]`, `schema`,
+`check FILE`, `fmt FILE` or `run FILE`; lookups accept `--json`. Protocol v4 added
+the help/docs/builtins lookups to v3's surface, so the two are not comparable.
+A `-` file argument accepts source on stdin.
 Runtime calls use the existing sandbox with workspace-local and embedded imports
 and no host effect grants. Workspace reads and writes cannot escape the attempt
 or modify the supplied documentation/public test. Tool feedback is capped at

@@ -132,10 +132,14 @@ fn show(module: &Module, export: &Export, json: bool) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn unknown<'a>(what: &str, name: &str, candidates: impl Iterator<Item = &'a str>, next: &str) -> ExitCode {
+/// Reject `name`, naming the closest candidate, else the candidates containing it, and where to
+/// list them all.
+pub(crate) fn unknown<'a>(what: &str, name: &str, candidates: impl Iterator<Item = &'a str>, next: &str) -> ExitCode {
     let candidates: Vec<_> = candidates.collect();
+    let containing: Vec<_> = candidates.iter().filter(|candidate| candidate.contains(name)).copied().collect();
     match nearest(name, candidates.iter().copied()) {
         Some(close) => eprintln!("unknown {what} `{name}`; did you mean `{close}`? {next}"),
+        None if !containing.is_empty() => eprintln!("unknown {what} `{name}`; names containing it: {}; {next}", containing.join(", ")),
         None => eprintln!("unknown {what} `{name}`; {next}"),
     }
     ExitCode::from(2)

@@ -378,14 +378,15 @@ def runtime(args, binary) -> int:
         return subprocess.call([str(binary), "inspect" if command == "state" else command, *extra], cwd=ROOT)
     if command == "sandbox":
         return subprocess.call([str(binary), "sandbox", args.root, args.file], cwd=ROOT)
-    if command == "std":
-        selected = [*([args.module] if args.module else []), *(["--source"] if args.whole else [])]
-        if args.format == "json" and not args.whole:
-            result = subprocess.run([str(binary), "std", *selected, "--json"], cwd=ROOT, capture_output=True, text=True)
-            emit({"command": "std", "status": "failed" if result.returncode else "ok", "exit_code": result.returncode,
+    if command in ("std", "docs", "builtins"):
+        names = [getattr(args, name, None) for name in ("module", "document", "section", "name")]
+        selected = [*filter(None, names), *(["--source"] if getattr(args, "whole", False) else [])]
+        if args.format == "json" and "--source" not in selected:
+            result = subprocess.run([str(binary), command, *selected, "--json"], cwd=ROOT, capture_output=True, text=True)
+            emit({"command": command, "status": "failed" if result.returncode else "ok", "exit_code": result.returncode,
                   "result": json.loads(result.stdout) if result.returncode == 0 else None, "stderr": result.stderr})
             return result.returncode
-        return subprocess.call([str(binary), "std", *selected], cwd=ROOT)
+        return subprocess.call([str(binary), command, *selected], cwd=ROOT)
     raise AssertionError(f"unhandled runtime command: {command}")
 
 

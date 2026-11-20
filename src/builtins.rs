@@ -163,6 +163,32 @@ const ACTORS: &[Descriptor] = &[
     actor("finally", 2, Some(2), Evaluation::Form(Form::Finally)),
 ];
 
+/// Builtin families in the order `helix builtins` lists them.
+pub(crate) const FAMILIES: &[&str] =
+    &["forms", "arithmetic and comparison", "collections", "text and data", "types", "errors", "machines and effects"];
+
+impl Descriptor {
+    /// The reader-facing family of this builtin, derived from its evaluation policy.
+    pub(crate) fn family(&self) -> &'static str {
+        match self.evaluation {
+            Evaluation::Form(Form::Try | Form::Finally) | Evaluation::Assert | Evaluation::Raise => "errors",
+            Evaluation::Form(Form::Refine | Form::TypeTime) => "types",
+            Evaluation::Form(Form::Vm) => "machines and effects",
+            Evaluation::Form(_) => "forms",
+            Evaluation::Number | Evaluation::Equal | Evaluation::NotEqual | Evaluation::Not => "arithmetic and comparison",
+            Evaluation::Collection => "collections",
+            Evaluation::Text | Evaluation::Data | Evaluation::Search => "text and data",
+            Evaluation::Type | Evaluation::Typing | Evaluation::Policy("type_descriptor") => "types",
+            Evaluation::Engine | Evaluation::Policy(_) => "machines and effects",
+        }
+    }
+}
+
+/// The builtins of one family, in registration order.
+pub(crate) fn members(family: &str) -> impl Iterator<Item = &'static Descriptor> + '_ {
+    ACTORS.iter().filter(move |actor| actor.family() == family)
+}
+
 pub(crate) fn descriptor(name: &str) -> Option<&'static Descriptor> {
     ACTORS.iter().find(|actor| actor.name == name)
 }

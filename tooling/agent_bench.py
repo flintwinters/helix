@@ -22,7 +22,7 @@ from tooling.agent_tasks import TASKS, VERSION, inputs, oracle, source_digest
 from tooling.output import emit
 
 API = 'https://openrouter.ai/api/v1'
-PROTOCOL_VERSION = 3
+PROTOCOL_VERSION = 4
 
 
 def save(path, value):

@@ -199,6 +199,13 @@ def parser():
                       ["inspect", "std"], "inspect std list.find")
     modules.add_argument("module", nargs="?", metavar="MODULE[.EXPORT]", help="module, optionally prefixed with std:, or one export")
     modules.add_argument("--source", dest="whole", action="store_true", help="print the module's complete source")
+    docs = command(inspect, "docs", "Navigate the embedded reference documents: list, a document's section tree, then one section",
+                   ["inspect", "docs"], "inspect docs language builtins")
+    docs.add_argument("document", nargs="?", metavar="DOC", help="language, library, host, or a Markdown path")
+    docs.add_argument("section", nargs="?", metavar="SECTION", help="section slug or title; near misses are suggested")
+    builtins = command(inspect, "builtins", "List builtin actors by family with arity, then one builtin's documentation",
+                       ["inspect", "builtins"], "inspect builtins get")
+    builtins.add_argument("name", nargs="?", metavar="NAME", help="one builtin; std exports are redirected to `inspect std`")
     command(inspect, "inventory", "Report source files grouped through Helix; save replay artifacts in runtime/",
             ["inspect", "inventory"], "inspect inventory")
     usage = command(inspect, "usage", "Summarize or query the log of runtime invocations made through manage.py",
