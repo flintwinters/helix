@@ -240,6 +240,7 @@ def parser():
     bench.add_argument("--model", default="openai/gpt-6.1-luna", help="exact OpenRouter model ID")
     bench.add_argument("--trials", type=int, default=10, help="independent completions per task")
     bench.add_argument("--task", action="append", help="task ID; repeat to select several")
+    bench.add_argument("--retry", metavar="DIRECTORY", help="run: regenerate only the attempts of a recorded run that failed before submitting a program (keeps trial numbers; --task narrows)")
     bench.add_argument("--samples", type=int, default=3, help="timing samples after one warmup")
     bench.add_argument("--max-tokens", type=int, default=4096, help="completion token ceiling per model request")
     bench.add_argument("--temperature", type=float, default=0.7)

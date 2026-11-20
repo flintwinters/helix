@@ -228,3 +228,18 @@ def verify_concurrent_generation(h, directory):
     assert report['summary']['sum-squares']['successes'] == 2, report
     saved = json.loads((Path(args.directory) / 'report.json').read_text())
     assert saved['phase'] == 'complete'
+    # A retry regenerates exactly the recorded attempts that never submitted, under their trial numbers.
+    failed = Path(args.directory) / 'sum-squares/trial-002/result.json'
+    failed.write_text(json.dumps({**json.loads(failed.read_text()), 'error': 'Model turn budget exhausted before a final program'}))
+    assert bench.retry_plan(args.directory) == [('sum-squares', 2)]
+    assert bench.retry_plan(args.directory, ['sum-squares']) == [('sum-squares', 2)]
+    retry = SimpleNamespace(**{**vars(args), 'retry': args.directory, 'directory': str(directory / 'retry'), 'jobs': 1})
+    barrier = threading.Barrier(1)  # one retried attempt: generation needs no partner
+    with patch.object(bench, 'generate', generated), \
+         patch.object(bench, 'request', return_value={'data': [{'id': 'fake/model'}]}), \
+         patch.object(bench, 'api_key', return_value='fake'), contextlib.redirect_stderr(io.StringIO()):
+        report = bench.run(h.root, retry, h)
+    assert [(row['task'], row['trial']) for row in json.loads((Path(retry.directory) / 'report.json').read_text())['rows']] == [('sum-squares', 2)]
+    manifest = json.loads((Path(retry.directory) / 'manifest.json').read_text())
+    assert manifest['retry_of'] == str(Path(args.directory).resolve()) and manifest['test_timeout_seconds'] == h.timeout
+    assert report['summary']['sum-squares']['successes'] == 1, report
