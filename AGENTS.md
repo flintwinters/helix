@@ -60,6 +60,9 @@ agent-consumable output with progressive discovery and explicit complete JSON re
 
 ## Current big tasks
 
+0. Errors are first-class and a founding paradigm: make every failure name what was
+   rejected and the concrete correction, measured against recorded failures
+   (charter "Errors that teach").
 1. Measure production-policy feedback and harden the concrete Linux/Docker workloads,
    including independent failure detection, exact reviews, convergence and recovery.
    A real playbook migration must declare its supported scope before provider expansion.

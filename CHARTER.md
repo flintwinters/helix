@@ -30,7 +30,8 @@ Resolve and validate desired configuration purely, then observe, review and appl
 through caller-authorized effects. Daily scripting and readable saved execution
 must make that foundation useful in practice.
 
-**Audited status (2026-11-16):** sections 0–7 are complete within stated bounds:
+**Audited status (2026-11-16):** sections 0–7 are complete within stated bounds
+(section 4–5's errors-that-teach list reopened 2026-11-20):
 core language, bounded reversible machines, host adapters, CLI/editor tooling
 and runtime trust contracts. Versioned snapshots restore execution;
 caller-owned journals refuse uncertain effect replay. Qualified workloads: Docker
@@ -45,6 +46,8 @@ formal type-system proofs or daily-driver adoption.
 
 **Current focus** (AGENTS.md owns the live task list):
 
+0. First-class errors are a founding paradigm and take priority: every failure
+   should say what was rejected, where, and the concrete correction (section 4–5).
 1. Measured development feedback on production policy workloads; harden the
    qualified Linux/Docker workloads. A real playbook migration must declare its
    supported scope before any provider expansion (section 11).
@@ -224,7 +227,15 @@ explicit reconciliation of uncertain requests; this is not exactly-once external
 execution. Distributed recovery and effectful reversibility beyond section 2's
 bounded promise remain open.
 
-## 4–5. Errors and reuse — complete
+## 4–5. Errors and reuse
+
+Powerful errors and debugging are a founding paradigm, not polish. An error is
+first-class data and the primary teaching channel: users and agents, including
+small models with no documentation in context, learn the language from what a
+failure tells them. Diagnostic repairs are always admissible (section 12); a new
+diagnostic field or command still justifies itself with an observed failure.
+
+### Structured errors and recovery — complete
 
 Structured errors are readable data with paths, spans, call chains and retained
 causes. `try`, kind-matched recovery, `raise`, assertions and `finally` support
@@ -235,6 +246,33 @@ calls after correction; executable restoration is section 2's separate format.
 File imports provide isolated namespaces, documented visibility and
 circular-import diagnostics. Dependencies are repository-pinned vendored paths
 (`imports`, `import_vendored`).
+
+### Errors that teach — open
+
+Evidence comes from recorded failures: the usage log and agent benchmark
+first failures (`benchmarks/agent/`) name the failure classes to fix first.
+
+- [ ] Every rejection names the offending text (tag, name, key, field, value
+  excerpt), not only its category
+- [ ] Errors carry an optional structured `hint` with the concrete correction.
+  Hints derive from authoritative sources (builtin registry, lexical scope,
+  standard-module exports, syntax rules), never hand-maintained lists; they are
+  advisory and never change `kind`, `message` or blame
+- [ ] Unbound names suggest the nearest visible names and builtins, and the
+  standard module exporting a missing member with its exact import binding; a
+  builtin used as a value explains calling it or wrapping it in `fn`
+- [ ] Unsupported syntax names the supported spelling (`!if` → `!call [if, ...]`);
+  YAML parse failures point at the likely structural cause and `fmt`
+- [ ] Type, arity and contract failures state expected versus actual (bounded
+  value excerpt) and blame the declaration that demanded it
+- [ ] One implementation: `run`, `exec`, `check`, LSP and `try`-caught values
+  report the same diagnostic for the same fault
+- [ ] Text presentation shows a bounded source excerpt with a caret; JSON stays
+  complete; oversized output summarizes and names the drill-down
+- [ ] A failed run names the next debugging step (`recover`, `step`, `trace`,
+  `check --evaluate`) applicable to that failure
+- [ ] Each recurring benchmark first-failure class has a focused regression, and
+  small-model repair rates are measured before and after (task 5 protocol)
 
 ## 6. Daily tooling — complete within current CLI/editor scope
 
