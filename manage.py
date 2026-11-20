@@ -74,25 +74,92 @@ def test_context():
     return TestContext(ROOT, BIN, timeout=float(os.environ.get("HELIX_TEST_TIMEOUT", "10")))
 
 
+def _identity(binary) -> str:
+    status = os.stat(binary)
+    return f"{status.st_dev}-{status.st_ino}-{status.st_mtime_ns}"
+
+
+def _fresh(binary, stamp) -> bool:
+    """Whether every input Cargo recorded for the stamped build predates that build's start.
+
+    The stamp's mtime is set by the project filesystem before Cargo reads any source, so an
+    edit racing the build stays newer; a binary replaced by another builder fails the identity.
+    """
+    import re
+
+    try:
+        started = stamp.stat().st_mtime_ns
+        if stamp.read_text() != _identity(binary):
+            return False
+        recorded = Path(binary).with_suffix(".d").read_text().partition(": ")[2].strip()
+        inputs = [ROOT / "Cargo.toml", ROOT / "Cargo.lock",
+                  *(Path(path.replace("\\ ", " ")) for path in re.split(r"(?<!\\)\s+", recorded) if path)]
+        return all(os.stat(path).st_mtime_ns < started for path in inputs)
+    except OSError:
+        return False
+
+
+def _build_if_stale(binary, output_format=DEFAULT_FORMAT) -> int:
+    """Skip the Cargo no-op (most of a wrapper's fixed latency) when the last build is current."""
+    stamp = ROOT / "runtime" / "build.stamp"
+    if _fresh(binary, stamp):
+        return 0
+    stamp.write_text("")
+    started = stamp.stat().st_mtime_ns
+    code = _build_unlocked(output_format=output_format)
+    if code == 0:
+        stamp.write_text(_identity(binary))
+        os.utime(stamp, ns=(started, started))
+    return code
+
+
 @contextmanager
 def frozen_binary(binary, output_format=DEFAULT_FORMAT):
-    """Build and snapshot atomically; keep execution independent of later builds."""
-    import shutil
-    import tempfile
+    """Build and snapshot atomically; keep execution independent of later builds.
 
-    (ROOT / "runtime").mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=ROOT / "runtime", prefix="execution-binary-") as directory:
-        snapshot = Path(directory) / "helix"
-        with build_lock():
-            code = _build_unlocked(output_format=output_format)
-            if code == 0:
+    Snapshots are keyed by the build output's identity and reused across invocations.
+    Every link or unlink changes the inode's ctime, which makes NFS clients discard the
+    cached executable, so a per-invocation snapshot re-reads the whole binary. A shared
+    lock marks a snapshot in use; only unused snapshots of other builds are pruned.
+    """
+    import fcntl
+    import shutil
+
+    snapshots = ROOT / "runtime" / "execution-binary"
+    with build_lock():
+        code = _build_if_stale(binary, output_format)
+        if code:
+            snapshot = use = None
+        else:
+            directory = snapshots / _identity(binary)
+            snapshot = directory / "helix"
+            directory.mkdir(parents=True, exist_ok=True)
+            if not snapshot.exists():
                 # Cargo and linkers replace outputs instead of rewriting them, so a
-                # hard link freezes the executable without copying it per run.
+                # hard link freezes the executable without copying it.
                 try:
                     os.link(binary, snapshot)
                 except OSError:
-                    shutil.copy2(binary, snapshot)
-        yield (snapshot if code == 0 else None), code
+                    shutil.copy2(binary, directory / "helix.partial")
+                    os.replace(directory / "helix.partial", snapshot)
+            use = (directory / "use.lock").open("a+")
+            fcntl.flock(use, fcntl.LOCK_SH)
+            for stale in snapshots.iterdir():
+                if stale == directory:
+                    continue
+                # New users lock only under the build lock, so an idle snapshot stays idle;
+                # close before removal so NFS does not keep the lock file as a silly rename.
+                with (stale / "use.lock").open("a+") as lock:
+                    try:
+                        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except BlockingIOError:
+                        continue
+                shutil.rmtree(stale)
+    try:
+        yield snapshot, code
+    finally:
+        if use is not None:
+            use.close()
 
 
 @contextmanager
