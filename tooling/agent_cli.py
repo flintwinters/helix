@@ -13,7 +13,8 @@ TOOL = {
     'type': 'function',
     'function': {
         'name': 'helix',
-        'description': 'Call the Helix CLI. Allowed argv: ["--help"], ["std"] or ["std", MODULE], '
+        'description': 'Call the Helix CLI. Allowed argv: ["--help"], ["std"], ["std", MODULE] (its signatures), '
+        '["std", "MODULE.EXPORT"] (one export\'s source), ["std", MODULE, "--source"], '
         '["schema"], ["check", FILE], ["fmt", FILE], ["run", FILE]. FILE may be - with stdin YAML. '
         'Run is confined to this attempt directory with embedded std: imports and no host effect grants. '
         'Run public_test.yaml to invoke candidate.solve on the provided example. Running candidate.yaml alone only defines the function. No shell commands.',
@@ -140,7 +141,8 @@ def execute(ctx, directory, payload, identity, index, state=None):
         args = []
     elif args in (['--help'], ['std'], ['schema']):
         command = args
-    elif len(args) == 2 and args[0] == 'std' and args[1].replace('_', '').isalnum():
+    elif (len(args) in (2, 3) and args[0] == 'std' and args[1].replace('_', '').replace('.', '').isalnum()
+          and args[2:] in ([], ['--source'])):
         command = args
     elif len(args) == 2 and args[0] in ('fmt', 'run', 'check'):
         try:
@@ -160,7 +162,7 @@ def execute(ctx, directory, payload, identity, index, state=None):
         except (ValueError, OSError) as failure:
             error = str(failure)
     else:
-        error = 'Unsupported CLI arguments. Use --help, std [MODULE], schema, check FILE, fmt FILE, or run FILE.'
+        error = 'Unsupported CLI arguments. Use --help, std [MODULE[.EXPORT]] [--source], schema, check FILE, fmt FILE, or run FILE.'
     if error:
         code, stdout, stderr = 2, '', error
     else:

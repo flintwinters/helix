@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Single entrypoint for Helix; use --help or --help-json to discover commands."""
+import json
 import sys
 import os
 from pathlib import Path
@@ -373,12 +374,13 @@ def runtime(args, binary) -> int:
     if command == "sandbox":
         return subprocess.call([str(binary), "sandbox", args.root, args.file], cwd=ROOT)
     if command == "std":
-        if args.module is None and args.format == "json":
-            result = subprocess.run([str(binary), "std"], cwd=ROOT, capture_output=True, text=True)
-            emit({"command": "std", "status": "failed" if result.returncode else "ok",
-                  "exit_code": result.returncode, "modules": result.stdout.splitlines(), "stderr": result.stderr})
+        selected = [*([args.module] if args.module else []), *(["--source"] if args.whole else [])]
+        if args.format == "json" and not args.whole:
+            result = subprocess.run([str(binary), "std", *selected, "--json"], cwd=ROOT, capture_output=True, text=True)
+            emit({"command": "std", "status": "failed" if result.returncode else "ok", "exit_code": result.returncode,
+                  "result": json.loads(result.stdout) if result.returncode == 0 else None, "stderr": result.stderr})
             return result.returncode
-        return subprocess.call([str(binary), "std", *([args.module] if args.module else [])], cwd=ROOT)
+        return subprocess.call([str(binary), "std", *selected], cwd=ROOT)
     raise AssertionError(f"unhandled runtime command: {command}")
 
 

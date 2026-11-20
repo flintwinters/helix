@@ -4,7 +4,7 @@ use std::process::ExitCode;
 use helix::{Status, Vm, json_document, yaml_document};
 use yaml_rust2::Yaml;
 
-const USAGE: &str = "usage: helix search index [PATH ...] [--library PATH_OR_STD_MODULE] [--no-std] [--no-default-excludes]\n       helix search parse FILE_OR_STDIN\n       helix search probe --cases FILE [--harness FILE] [--root PATH] [--max-steps N]\n       helix exec [--stream] [--input DATA] [--file QUERY] [--json | --yaml] [PROGRAM | -]    inline source or stdin; default raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check [--evaluate] <file.yaml | ->    static checks; --evaluate collects runtime errors\n       helix fmt <file.yaml | ->    canonical source on stdout\n       helix repl    evaluate one YAML document per line\n       helix watch FILE [--interval-ms N] [--iterations N]    re-run on dependency changes\n       helix step FILE [--steps N]    inspect after N transitions\n       helix system-snapshot FILE [--steps N]    form and save coordinated promised participants\n       helix system-restore FILE [--steps N]    restore all participants and communication\n       helix snapshot FILE [--steps N]    save executable state after N transitions\n       helix restore FILE [--steps N]    restore and run; --steps emits another checkpoint\n       helix target-release FILE    acknowledge independently established target quiescence\n       helix checkpoint FILE    inspect durable effects and recovery action without execution\n       helix reconcile CHECKPOINT OUTCOME    record an observed uncertain-effect outcome\n       helix trace FILE [--limit N]    stream transition inspections\n       helix inspect <state.yaml | ->    summarize saved state without execution\n       helix schema    print program JSON Schema\n       helix lsp    serve Language Server Protocol on stdin/stdout\n       helix std [module]    list the standard modules, or print one's source\n       helix perform [grants] <file> [-- args...]    explicit host effects; state to stderr\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
+const USAGE: &str = "usage: helix search index [PATH ...] [--library PATH_OR_STD_MODULE] [--no-std] [--no-default-excludes]\n       helix search parse FILE_OR_STDIN\n       helix search probe --cases FILE [--harness FILE] [--root PATH] [--max-steps N]\n       helix exec [--stream] [--input DATA] [--file QUERY] [--json | --yaml] [PROGRAM | -]    inline source or stdin; default raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check [--evaluate] <file.yaml | ->    static checks; --evaluate collects runtime errors\n       helix fmt <file.yaml | ->    canonical source on stdout\n       helix repl    evaluate one YAML document per line\n       helix watch FILE [--interval-ms N] [--iterations N]    re-run on dependency changes\n       helix step FILE [--steps N]    inspect after N transitions\n       helix system-snapshot FILE [--steps N]    form and save coordinated promised participants\n       helix system-restore FILE [--steps N]    restore all participants and communication\n       helix snapshot FILE [--steps N]    save executable state after N transitions\n       helix restore FILE [--steps N]    restore and run; --steps emits another checkpoint\n       helix target-release FILE    acknowledge independently established target quiescence\n       helix checkpoint FILE    inspect durable effects and recovery action without execution\n       helix reconcile CHECKPOINT OUTCOME    record an observed uncertain-effect outcome\n       helix trace FILE [--limit N]    stream transition inspections\n       helix inspect <state.yaml | ->    summarize saved state without execution\n       helix schema    print program JSON Schema\n       helix lsp    serve Language Server Protocol on stdin/stdout\n       helix std [MODULE[.EXPORT]] [--json]    browse the standard library: modules, a module's signatures, one export\n       helix std MODULE --source    print a module's complete source\n       helix perform [grants] <file> [-- args...]    explicit host effects; state to stderr\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -25,7 +25,7 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         [cmd, "--help" | "-h"] if helix::tooling::interactive::COMMANDS.contains(cmd) => {
-            println!("{USAGE}");
+            println!("{}", command_usage(cmd));
             ExitCode::SUCCESS
         }
         ["exec", format] if matches!(*format, "--json" | "--yaml") => {
@@ -47,33 +47,29 @@ fn main() -> ExitCode {
         ["resume", path] => run(path, "resume"),
         ["check", "--evaluate", path] | ["check", path, "--evaluate"] => run(path, "check"),
         ["sandbox", root, path] => execute(path, "run", Some(root), "raw"),
-        ["std"] => {
-            helix::std_modules().for_each(|name| println!("std:{name}"));
-            ExitCode::SUCCESS
+        ["std", rest @ ..] => helix::tooling::catalog::command(rest),
+        [cmd, ..] if !helix::tooling::interactive::COMMANDS.contains(cmd) => {
+            helix::tooling::cli::unknown_command(cmd)
         }
-        ["std", name] => match helix::std_source(name.trim_start_matches("std:")) {
-            Some(source) => {
-                print!("{source}");
-                ExitCode::SUCCESS
-            }
-            None => {
-                eprintln!(
-                    "unknown standard module `{name}`; available: {}",
-                    helix::std_modules().collect::<Vec<_>>().join(", ")
-                );
-                ExitCode::from(2)
-            }
-        },
-        [cmd, ..] if !helix::tooling::interactive::COMMANDS.contains(cmd) =>
-        {
-            eprintln!("unknown command `{cmd}`; {USAGE}");
+        [cmd, ..] => {
+            eprintln!("{}\n`helix --help` lists every command", command_usage(cmd));
             ExitCode::from(2)
         }
-        _ => {
+        [] => {
             eprintln!("{USAGE}");
             ExitCode::from(2)
         }
     }
+}
+
+/// The `USAGE` lines of one command: the full listing stays the single source of each form.
+fn command_usage(cmd: &str) -> String {
+    let forms: Vec<_> = USAGE
+        .lines()
+        .map(|line| line.trim_start_matches("usage:").trim_start())
+        .filter(|line| line.strip_prefix("helix ").and_then(|rest| rest.strip_prefix(cmd)).is_some_and(|rest| rest.is_empty() || rest.starts_with(' ')))
+        .collect();
+    format!("usage: {}", forms.join("\n       "))
 }
 
 fn run(path: &str, mode: &str) -> ExitCode {

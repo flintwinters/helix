@@ -195,9 +195,10 @@ def parser():
     state = command(inspect, "state", "Summarize a saved state without executing it",
                     ["inspect", "state"], "inspect state state.yaml")
     state.add_argument("file", metavar="FILE", help="state file, or - for stdin")
-    modules = command(inspect, "std", "List standard modules or print one module's source",
-                      ["inspect", "std"], "inspect std math")
-    modules.add_argument("module", nargs="?", help="module name, optionally prefixed with std:")
+    modules = command(inspect, "std", "Browse the standard library: modules, then one module's signatures, then one export",
+                      ["inspect", "std"], "inspect std list.find")
+    modules.add_argument("module", nargs="?", metavar="MODULE[.EXPORT]", help="module, optionally prefixed with std:, or one export")
+    modules.add_argument("--source", dest="whole", action="store_true", help="print the module's complete source")
     command(inspect, "inventory", "Report source files grouped through Helix; save replay artifacts in runtime/",
             ["inspect", "inventory"], "inspect inventory")
     usage = command(inspect, "usage", "Summarize or query the log of runtime invocations made through manage.py",

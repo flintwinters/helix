@@ -178,7 +178,7 @@ fn parameters((min, _): (usize, Option<usize>)) -> Vec<String> {
 }
 
 /// The closest candidate within a third of the name's length, first one on ties.
-fn nearest<'a>(name: &str, candidates: impl IntoIterator<Item = &'a str>) -> Option<&'a str> {
+pub(crate) fn nearest<'a>(name: &str, candidates: impl IntoIterator<Item = &'a str>) -> Option<&'a str> {
     let limit = (name.chars().count() / 3).max(1);
     candidates
         .into_iter()

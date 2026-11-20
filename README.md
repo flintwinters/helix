@@ -193,8 +193,9 @@ and needs Git, Node.js, and npm; the command sets it up when needed.
   verified logical checkpoint with a detailed message.
 
 Use `./manage.py --help` or `--help-json` for command discovery,
-`./manage.py test --describe` for suite contracts, and `./manage.py std [module]`
-to discover embedded libraries and read their source.
+`./manage.py test --describe` for suite contracts, and `./manage.py std` to browse
+embedded libraries level by level: modules, then `std MODULE` signatures, then
+`std MODULE.EXPORT` source.
 
 ## Usage log
 

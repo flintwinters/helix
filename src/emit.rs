@@ -258,6 +258,18 @@ impl Encoded {
     }
 }
 
+/// One line of tagged source for a node, as canonical layout writes a short expression.
+pub(crate) fn flow(graph: &crate::model::Graph, id: crate::model::NodeId) -> String {
+    Encoded::source(graph, id).tagged().flow()
+}
+
+/// Canonical source of one map entry, as `source` lays out a root key.
+pub(crate) fn entry(graph: &crate::model::Graph, key: &str, id: crate::model::NodeId) -> String {
+    let mut out = String::new();
+    Encoded::source(graph, id).tagged().pretty(0, &format!("{key}: "), &mut out);
+    out
+}
+
 /// Canonical source layout preserves YAML representation values.
 pub(crate) fn source(graph: &crate::model::Graph) -> String {
     let mut out = String::new();

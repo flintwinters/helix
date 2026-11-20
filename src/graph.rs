@@ -7,7 +7,7 @@ pub(crate) mod http;
 mod scope;
 mod syntax;
 pub(crate) use effects::Effects;
-pub(crate) use hint::{members_of, missing_key, missing_member, not_callable};
+pub(crate) use hint::{members_of, missing_key, missing_member, nearest, not_callable};
 pub(crate) use scope::Site;
 pub(crate) use syntax::Syntax;
 

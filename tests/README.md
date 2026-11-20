@@ -292,9 +292,9 @@ and malformed modules on every dogfood run.
 ## Failure artifacts
 
 The standard-library prerequisite independently compares embedded module discovery
-and source against a nonempty repository corpus. Successful responses must have
+(`std --json`) and `std MODULE --source` against a nonempty repository corpus. Successful responses must have
 empty stderr; unknown modules must produce a usage error on stderr without stdout.
-Failures retain both streams and expected output, with exact `inspect std`
+Failures retain both streams and expected output, with exact `runtime cli std`
 replay commands in the shared artifact directories.
 
 The inventory command keeps grouping policy in Helix while independently checking

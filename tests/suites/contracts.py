@@ -131,6 +131,12 @@ def cli(h):
     for command in ("run", "check", "fmt", "step", "trace", "inspect", "watch", "repl", "lsp", "schema"):
         help_result = h.helix(command, "--help")
         assert help_result.returncode == 0 and "usage:" in help_result.stdout and not help_result.stderr
+        # Per-command help names only that command's forms.
+        assert all(line.split()[1] == command for line in help_result.stdout.replace("usage:", "").splitlines()
+                   if line.strip().startswith("helix ")), help_result.stdout
+    misspelled = h.helix("rn", "program.yaml")
+    assert misspelled.returncode == 2 and "did you mean `run`?" in misspelled.stderr, misspelled
+    std_catalog(h)
     missing = h.helix("run", "runtime/definitely-missing-helix-input.yaml")
     assert missing.returncode == 2 and not missing.stdout and "cannot read" in missing.stderr
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="cli-") as directory:
@@ -143,6 +149,37 @@ def cli(h):
                 assert file.returncode == stdin.returncode == code
                 assert file.stdout == stdin.stdout and not file.stderr and not stdin.stderr
                 assert h.malformed_state(file.stdout, code) is None
+
+
+def std_catalog(h):
+    """`helix std` is browsed in levels: modules, one module's signatures, one export's source."""
+    listing = h.helix("std", "--json")
+    assert listing.returncode == 0 and not listing.stderr, listing
+    modules = [row["module"].removeprefix("std:") for row in json.loads(listing.stdout)]
+    assert sorted(modules) == sorted(path.stem for path in (h.root / "std").glob("*.yaml")), modules
+    for module in modules:
+        index = h.helix("std", module, "--json")
+        assert index.returncode == 0 and not index.stderr, (module, index)
+        exports = json.loads(index.stdout)["exports"]
+        assert exports and all(e["signature"].startswith(e["name"]) for e in exports), (module, exports)
+        whole = (h.root / "std" / f"{module}.yaml").read_text()
+        for export in dict.fromkeys((exports[0]["name"], exports[-1]["name"])):
+            shown = h.helix("std", f"std:{module}.{export}", "--json")
+            assert shown.returncode == 0 and not shown.stderr, (module, export, shown)
+            source = json.loads(shown.stdout)["source"]
+            assert any(line.startswith(f"{export}: ") or line == f"{export}:" for line in source.splitlines()), source
+            # A map module's export is its written slice; a let-built module's is emitted canonically.
+            written = not next(line for line in whole.splitlines() if not line.startswith("#")).startswith("!call")
+            assert not written or source in whole, (module, export, source)
+        if written:
+            assert whole.rstrip("\n").endswith(source), (module, "the last export runs to the end of the module")
+    text = h.helix("std", "list")
+    assert text.returncode == 0 and "find(" in text.stdout and "`helix std list.EXPORT`" in text.stdout, text
+    one = h.helix("std", "list.find")
+    assert one.returncode == 0 and one.stdout.endswith("\n") and "import: `list: !call [import, 'std:list']`" in one.stdout
+    for args, hint in [(("std", "lst"), "did you mean `list`?"), (("std", "list.fnd"), "did you mean `find`?")]:
+        result = h.helix(*args)
+        assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
 
 
 def expression(rng, depth):

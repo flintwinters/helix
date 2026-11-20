@@ -61,6 +61,15 @@ pub fn dispatch(args: &[String]) -> Option<ExitCode> {
     })
 }
 
+/// Reject a command name that no form accepts, naming the closest known command.
+pub fn unknown_command(cmd: &str) -> ExitCode {
+    match crate::graph::nearest(cmd, interactive::COMMANDS.iter().copied()) {
+        Some(close) => eprintln!("unknown command `{cmd}`; did you mean `{close}`? `helix --help` lists every command"),
+        None => eprintln!("unknown command `{cmd}`; `helix --help` lists every command"),
+    }
+    ExitCode::from(2)
+}
+
 fn usage(message: &str) -> ExitCode {
     eprintln!("{message}; see helix --help");
     ExitCode::from(2)

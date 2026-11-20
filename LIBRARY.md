@@ -77,7 +77,10 @@ Import `{l: !call [import, 'std:list']}`. Helpers take the list first; predicate
 
 Callbacks are checked as functions even for empty lists. Predicates must return booleans when called. Searches stop after the first decisive element; fallback arguments are evaluated eagerly like other function arguments. Immutable list/map copies and repeated scans can be quadratic, including sorting, grouping and deduplication. These helpers target small inputs and obey the runtime iteration limits; none recurses in proportion to input length.
 
-`./manage.py std` lists modules; `./manage.py std math` prints a module's source. The binary also accepts `helix std [module]`.
+Browse level by level instead of reading whole modules: `./manage.py std` lists modules with a
+summary, `./manage.py std math` lists one module's signatures and comment summaries,
+`./manage.py std math.abs` shows one export's source and import line, and `--source` prints a whole
+module. `--format json` (or the binary's `helix std ... --json`) returns the same levels as data.
 
 ## Testing in Helix
 
