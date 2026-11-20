@@ -40,8 +40,13 @@ def build_lock():
     """Serialize project wrappers through build and executable snapshot creation."""
     import fcntl
 
-    (ROOT / "runtime").mkdir(exist_ok=True)
-    with (ROOT / "runtime" / "build.lock").open("a") as lock:
+    lock_path = ROOT / "runtime" / "build.lock"
+    try:  # mkdir of an existing directory is still a network round trip on NFS
+        lock = lock_path.open("a")
+    except FileNotFoundError:
+        lock_path.parent.mkdir(exist_ok=True)
+        lock = lock_path.open("a")
+    with lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         try:
             yield
@@ -134,8 +139,8 @@ def frozen_binary(binary, output_format=DEFAULT_FORMAT):
         else:
             directory = snapshots / _identity(binary)
             snapshot = directory / "helix"
-            directory.mkdir(parents=True, exist_ok=True)
             if not snapshot.exists():
+                directory.mkdir(parents=True, exist_ok=True)
                 # Cargo and linkers replace outputs instead of rewriting them, so a
                 # hard link freezes the executable without copying it.
                 try:

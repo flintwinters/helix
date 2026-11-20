@@ -23,10 +23,6 @@ from contextlib import ExitStack, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
-
-from tooling.source_format import SourceLoader
-
 DISABLE = "HELIX_USAGE_LOG"
 LOCATION = "HELIX_USAGE_DB"
 # Commands that talk to a peer or terminal interactively; their streams are never interposed.
@@ -50,6 +46,9 @@ def connect(root):
 
 def table_definition():
     """The table definition, as authored in the logging program."""
+    import yaml
+    from tooling.source_format import SourceLoader
+
     return yaml.load(PROGRAM.read_text(), SourceLoader)["$call"][1]["schema"].strip()
 
 
@@ -79,6 +78,8 @@ def append(root, binary, record):
         [str(binary), "perform", "--allow-stdin", "--allow-read", str(path.parent), "--allow-write", str(path.parent), str(PROGRAM), "--", str(path)],
         input=json.dumps(record, ensure_ascii=False), capture_output=True, text=True, cwd=root, timeout=30)
     if result.returncode:
+        import yaml  # imported only on failure: parsing it costs more than a successful append
+
         try:
             state = yaml.safe_load(result.stderr)
         except yaml.YAMLError:
@@ -184,7 +185,7 @@ def logged(root, binary, args, argv):
                     "caller_role": os.environ.get("HELIX_CALLER_ROLE", "implementer"),
                     "model": os.environ.get("HELIX_MODEL"),
                     "benchmark_run": None, "benchmark_task": None, "benchmark_trial": None})
-            except (OSError, subprocess.SubprocessError, yaml.YAMLError) as error:
+            except (OSError, subprocess.SubprocessError) as error:
                 print(f"warning: usage log not written: {error}", file=sys.stderr)
 
 
