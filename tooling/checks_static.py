@@ -678,7 +678,7 @@ def verify_annotation_bounds(ctx):
     large_strings, string_annotation = shared_records(4, call('literal', 'x' * 4096))
     unproved = [
         ('alias_cycle', annotated({'a': ref('b'), 'b': ref('a')}, ref('a'))),
-        ('constructor_cycle', annotated({'a': call('list_of', ref('a'))}, ref('a'))),
+        ('constructor_cycle', annotated({'a': call('list_of', ref('b')), 'b': ref('a')}, ref('a'))),
         ('expanded_shape_budget', annotated(large_shape, annotation)),
         ('expanded_string_budget', annotated(large_strings, string_annotation)),
     ]
