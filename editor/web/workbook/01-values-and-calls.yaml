@@ -33,7 +33,7 @@ steps:
       tags: [maths, engines]
       ```
 
-      The sidebar on the right is the result you would get in any language: a map holding a string and a list.
+      The output panel on the right shows what you would expect from any language: a map holding a string and a list.
     task: Write a map with `name` set to `Ada` and `born` set to the integer `1815`.
     start: |
       # name: ...

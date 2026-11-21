@@ -29,3 +29,12 @@ through Node with `editor/web/tokens.js`.
 The browser editor's sidebar lists every `examples/**/*.yaml` and `std/**/*.yaml` file
 (`serve.py` serves only those listed paths) and loads the chosen one into the buffer;
 editing it never writes back to the repository.
+
+The browser editor opens in **Workbook** mode: a step-by-step course for experienced programmers,
+with lessons as YAML under `editor/web/workbook/` (id, prose with ` ```helix ` fences, task, starter,
+solution, hint, expected value and an optional `probe` the checker appends). `Check answer` posts the
+buffer to `serve.py`, which runs it and lets Helix itself compare the value with the expectation
+(`editor/web/workbook.py`; needs PyYAML). Solutions stay server-side until requested. Progress and
+drafts live in browser storage only. **Sandbox** mode is the free buffer with the library sidebar.
+`./manage.py test --suite workbook` proves every solution passes, every starter fails its task and
+every prose example runs (or fails, for ` ```helix-error `) as labelled.

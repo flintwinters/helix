@@ -1,6 +1,8 @@
 """Serves index.html and runs the helix CLI on posted source. Usage: python3 editor/web/serve.py [port]"""
 import http.server, json, re, pathlib, subprocess, sys, urllib.parse
 HERE = pathlib.Path(__file__).parent
+sys.path.insert(0, str(HERE))
+import workbook
 BIN = HERE.parents[1] / 'target' / 'debug' / 'helix'
 ROOT = HERE.parents[1]
 LIBRARIES = ('examples', 'std')  # the only trees the browser may list and read
@@ -18,6 +20,16 @@ def library_files():
     return [{'group': top, 'path': f.relative_to(ROOT).as_posix(), 'depth': depth(f)}
             for top in LIBRARIES for f in sorted((ROOT / top).rglob('*.yaml'), key=key)]
 
+STATIC = {'/helix-mode.js': 'helix-mode.js', '/workbook.js': 'workbook.js'}  # the only scripts the page may load
+
+def run(args, stdin):
+    """The workbook grader's runner: (returncode, stdout, stderr) of one helix invocation."""
+    done = subprocess.run([BIN, *args], input=stdin.encode(), capture_output=True, timeout=30)
+    return done.returncode, done.stdout.decode(), done.stderr.decode()
+
+def query(url, name):
+    return urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get(name, [''])[0]
+
 COMMANDS = {'run': ['run'], 'check': ['check', '--evaluate'], 'fmt': ['fmt'], 'step': ['run', '--annotations']}
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -34,10 +46,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
             wanted = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('path', [''])[0]
             if wanted not in {f['path'] for f in library_files()}: return self.reply(b'not a library file', 404)
             return self.reply((ROOT / wanted).read_bytes())
-        if path == '/helix-mode.js':
-            return self.reply((HERE / 'helix-mode.js').read_bytes(), kind='text/javascript')
+        if path in STATIC:
+            return self.reply((HERE / STATIC[path]).read_bytes(), kind='text/javascript')
+        if path == '/workbook.json':  # solutions stay server-side until asked for
+            try: book = [{**c, 'steps': [{k: v for k, v in step.items() if k != 'solution'} | {'has_solution': 'solution' in step}
+                                          for step in c['steps']]} for c in workbook.chapters()]
+            except ImportError: return self.reply(b'the workbook needs PyYAML (pip install pyyaml)', 503)
+            return self.reply(json.dumps(book).encode(), kind='application/json')
+        if path == '/solution':
+            try: return self.reply(workbook.step_named(query(self.path, 'id')).get('solution', '').encode())
+            except KeyError: return self.reply(b'unknown step', 404)
         self.reply((HERE / 'index.html').read_bytes(), kind='text/html')
     def do_POST(self):
+        if urllib.parse.urlparse(self.path).path == '/grade':
+            source = self.rfile.read(int(self.headers['Content-Length'])).decode()
+            try: step = workbook.step_named(query(self.path, 'id'))
+            except KeyError: return self.reply(b'unknown step', 404)
+            try: return self.reply(json.dumps(workbook.grade(step, source, run)).encode(), kind='application/json')
+            except subprocess.TimeoutExpired: return self.reply(b'timed out after 30s', 504)
         command = COMMANDS.get(urllib.parse.urlparse(self.path).path.strip('/'))
         if not command: return self.reply(b'unknown command', 404)
         source = self.rfile.read(int(self.headers['Content-Length']))

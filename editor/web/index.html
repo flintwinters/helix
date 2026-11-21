@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Helix editor</title>
+<title>Helix workbook</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
 <style>
@@ -33,33 +33,60 @@
   .cm-s-material-darker .cm-meta{color:#89ddff}
   .cm-s-material-darker .cm-comment{color:#616161;font-style:italic}
   .cm-s-material-darker .cm-error{color:#ff5370;background:none;text-decoration:underline wavy #ff5370}
+  #lesson{width:430px;flex:none;overflow:auto;background:#1a1a1a;padding:10px 16px;line-height:1.5}
+  #lesson h2{margin:.4em 0;color:#ffcb6b} #lesson p{margin:.6em 0} #lesson code{background:#2a2a2a;padding:1px 4px;border-radius:3px;color:#c3e88d}
+  #lesson .crumb{color:#888;font-size:12px} #lesson ul{padding-left:20px}
+  #lesson .toc summary{cursor:pointer;color:#89ddff} #lesson .toc a{display:block;padding:1px 10px;cursor:pointer;color:#ccc} #lesson .toc a.on{color:#fff;background:#37474f}
+  #lesson .toc-chapter{margin-top:6px;color:#ffcb6b;font-weight:600}
+  #lesson .fence{position:relative;margin:.6em 0} #lesson .fence .CodeMirror{height:auto;font-size:13px;border-radius:4px;background:#212121}
+  #lesson .fence.helix-error .CodeMirror{box-shadow:inset 3px 0 #ff5370}
+  #lesson .fence button.tiny{position:absolute;right:4px;top:4px;z-index:5;padding:2px 8px;font-size:11px;opacity:.7}
+  #lesson .task{margin:12px 0;padding:8px 12px;background:#263238;border-left:3px solid #82aaff;border-radius:3px}
+  #lesson .probe-note{margin-top:6px;color:#888;font-size:12px}
+  #lesson .row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0} #lesson button:disabled{opacity:.4;cursor:default}
+  .verdict{min-height:1.4em;margin:6px 0} .verdict.pass{color:#c3e88d} .verdict.fail{color:#ff5370} .verdict.hint{color:#ffcb6b}
+  #modes button.on{background:#82aaff;color:#111}
   #out{flex:1;min-width:0;display:flex}#out .CodeMirror{background:#1a1a1a;font-size:13px}
   @media(max-width:700px){main{flex-direction:column}#browser{width:auto;max-height:30vh}}
 </style></head><body>
 <header>
+  <span id="modes"><button data-mode="workbook">Workbook</button> <button data-mode="sandbox">Sandbox</button></span>
   <button class="primary" data-cmd="run">Run (Ctrl+Enter)</button>
   <button data-cmd="check">Check</button><button data-cmd="step">Run + annotations</button><button data-cmd="fmt">Format</button>
   <span id="status"></span>
 </header>
-<main><nav id="browser"><input id="filter" placeholder="filter (depth · file = import depth)"></nav><textarea id="src"></textarea><div id="out"></div></main>
+<main><aside id="lesson" hidden></aside><nav id="browser" hidden><input id="filter" placeholder="filter (depth · file = import depth)"></nav><textarea id="src"></textarea><div id="out"></div></main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="/helix-mode.js"></script>
+<script src="/workbook.js"></script>
 <script>
-const saved = localStorage.getItem('helix-src');
+const stored = (k, fallback) => { try { return localStorage.getItem(k) ?? fallback; } catch (e) { return fallback; } };
+const keep = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+let builtins = {};
+const helixMode = () => ({name:'helix', builtins});
 const editor = CodeMirror.fromTextArea(document.getElementById('src'), {mode:'helix', theme:'material-darker', lineNumbers:true, indentWithTabs:false, tabSize:2, extraKeys:{'Ctrl-Enter':()=>go('run'), 'Tab':cm=>cm.replaceSelection('  ')}});
-editor.setValue(saved ?? '!call [add, 1, 2]\n');
+
 // Output is YAML too, so it gets the same mode, theme and builtins as the source buffer.
 const output = CodeMirror(document.getElementById('out'), {mode:'helix', theme:'material-darker', readOnly:true, lineNumbers:false, lineWrapping:true});
-fetch('/builtins').then(r => r.json()).then(list => {
-  const mode = {name:'helix', builtins:Object.fromEntries(list.map(b => [b.name, b.family]))};
-  editor.setOption('mode', mode); output.setOption('mode', mode);
+const ready = fetch('/builtins').then(r => r.json()).then(list => {
+  builtins = Object.fromEntries(list.map(b => [b.name, b.family]));
+  editor.setOption('mode', helixMode()); output.setOption('mode', helixMode());
 }).catch(() => {});
-editor.on('change', () => localStorage.setItem('helix-src', editor.getValue()));
+editor.on('change', () => Workbook.active ? Workbook.onEdit() : keep('helix-src', editor.getValue()));
+// Two modes share one editor: the sandbox is a free buffer, the workbook a guided sequence of exercises.
+async function setMode(mode) {
+  keep('helix-mode', mode);
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  document.getElementById('browser').hidden = mode !== 'sandbox';
+  if (mode === 'workbook') await Workbook.enter();
+  else { Workbook.leave(); editor.setValue(stored('helix-src', '!call [add, 1, 2]\n')); output.setValue(''); }
+}
+document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
 async function go(cmd) {
   const status = document.getElementById('status');
   status.textContent = 'running…';
   try {
-    const reply = await fetch('/' + cmd, {method:'POST', body:editor.getValue()}), text = await reply.text();
+    const reply = await fetch('/' + cmd, {method:'POST', body:cmd === 'fmt' || !Workbook.active ? editor.getValue() : Workbook.program(editor.getValue())}), text = await reply.text();
     if (cmd === 'fmt' && reply.ok) { if (text !== editor.getValue()) editor.setValue(text); } else output.setValue(text);
     status.textContent = '';
   } catch (e) { output.setValue(String(e)); status.textContent = 'failed'; }
@@ -82,4 +109,5 @@ fetch('/files').then(r => r.json()).then(files => {
   filter.oninput = () => links.forEach(a => a.hidden = !a.title.includes(filter.value));
 }).catch(() => {});
 document.querySelectorAll('button[data-cmd]').forEach(b => b.onclick = () => go(b.dataset.cmd));
+ready.then(() => setMode(stored('helix-mode', 'workbook')));
 </script></body></html>
