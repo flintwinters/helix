@@ -92,11 +92,11 @@ impl EffectHost {
                     Yaml::Boolean(flag) => *flag,
                     _ => return Err(fault("type", "sqlite write must be a boolean")),
                 };
-                let statement = sqlite::Statement::parse(payload)?;
+                let request = sqlite::Request::parse(payload)?;
                 // Database files follow the file grants: reading needs a read root, any write needs a write root.
                 let path = text(&payload["path"])?;
                 let path = if write { authorized(path, &self.write_roots, true)? } else { authorized(path, &self.read_roots, false)? };
-                sqlite::run(&path, write, &statement)
+                sqlite::run(&path, write, &request)
             }
             "env" => {
                 let name = text(payload)?;

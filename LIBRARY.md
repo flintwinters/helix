@@ -23,7 +23,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:validation` | `batch(values, validate)` (indexed validation and transformation reports) |
 | `std:dependency` | `plan(tasks)` (stable dependency batches and blocked-task report) |
 | `std:provider` | `plan(provider, args, before, context)`, `check(provider, args, context)`, `apply(provider, args, context, reviewed)` ([typed resource lifecycle](HOST.md#resource-provider-contract)) |
-| `std:sqlite` | `query(path, sql, params)` (rows as maps), `execute(path, sql, params)` (changed rows), `request(path, sql, params, write)` ([`sqlite` effect](HOST.md#host-effects-and-explicit-grants)) |
+| `std:sqlite` | `query(path, sql, params)` (rows as maps), `execute(path, sql, params)` (changed rows), `transaction(path, statements)` (atomic batch of `{sql, params}`, one result per statement), `request(path, sql, params, write)` ([`sqlite` effect](HOST.md#host-effects-and-explicit-grants)) |
 | `std:ssh` | `check(host, become, extra)` (observed missing remote tools), `bootstrap(host, become, extra, install)` (declared installer, then re-check), `run(host, become, program, args)` ([SSH effects](HOST.md#ssh-remote-commands)) |
 | `std:command` | `make(config)`, `plan`, `check`, `apply` ([guarded command resources](HOST.md#guarded-command-resources)) |
 | `std:orchestration` | `plan(document)`, `run(document, execute)` (validated resource dependencies and coalesced, deferred change handlers) |

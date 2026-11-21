@@ -1,4 +1,5 @@
 """Controlled host-effect contracts. All temporary files stay under runtime/."""
+import contextlib
 import http.server
 import json
 import os
@@ -125,6 +126,37 @@ def verify(h):
             {"$call": ["list", {"$call": ["s.execute", %s, "INSERT INTO t (name) VALUES (?)", ["y"]]}, {"$call": ["s.query", %s, "SELECT name FROM t WHERE id > 1 ORDER BY id", []]}]}]}""" % (db, db),
             '--allow-read', str(base), '--allow-write', str(base))
         assert result.returncode == 0 and state['root'] == [1, [{'name': None}, {'name': 'y'}]], state
+        def batch(statements, write=True):
+            return f'{{"$call": ["effect", "sqlite", {{"path": {db}, "statements": {json.dumps(statements)}, "write": {json.dumps(write)}}}]}}'
+        rw = ['--allow-read', str(base), '--allow-write', str(base)]
+        def count():
+            with contextlib.closing(sqlite3.connect(database)) as connection:
+                return connection.execute('SELECT count(*) FROM t').fetchone()[0]
+        assert count() == 3
+        result, state = run(batch([{'sql': 'INSERT INTO t (name) VALUES (?)', 'params': ['a']}, {'sql': 'INSERT INTO t (name) VALUES (?), (?)', 'params': ['b', 'c']},
+                                   {'sql': 'SELECT count(*) FROM t'}]), *rw)
+        assert result.returncode == 0 and [r['changes'] for r in state['root']['results']] == [1, 2, 0], state
+        assert state['root']['results'][2]['rows'] == [[6]] and count() == 6, state
+        # Any failure rolls back statements that already succeeded.
+        for statements, kind in [([{'sql': "INSERT INTO t (name) VALUES ('lost')"}, {'sql': 'INSERT INTO t (id) VALUES (1)'}], 'sqlite'),
+                                 ([{'sql': "INSERT INTO t (name) VALUES ('lost')"}, {'sql': 'COMMIT'}], 'sqlite'),
+                                 ([{'sql': "INSERT INTO t (name) VALUES ('lost')"}, {'sql': 'ROLLBACK'}], 'sqlite'),
+                                 ([{'sql': "INSERT INTO t (name) VALUES ('lost')"}, {'sql': 'SAVEPOINT s'}], 'sqlite'),
+                                 ([{'sql': "INSERT INTO t (name) VALUES ('lost')"}, {'sql': 'SELECT x\'ff\''}], 'conversion'),
+                                 ([{'sql': "INSERT INTO t (name) VALUES ('lost')"}, {'sql': 'SELECT ?', 'params': [[1]]}], 'type'),
+                                 ([], 'range'), ([{'sql': 'SELECT 1'}] * 257, 'range'), ('SELECT 1', 'type')]:
+            result, state = run(batch(statements), *rw)
+            assert result.returncode == 1 and state['error']['kind'] == kind, (statements, state)
+            assert count() == 6, statements
+        result, state = run(f'{{"$call": ["effect", "sqlite", {{"path": {db}, "sql": "SELECT 1", "statements": [{{"sql": "SELECT 1"}}]}}]}}', *rw)
+        assert result.returncode == 1 and state['error']['kind'] == 'type', state
+        result, state = run(batch([{'sql': 'SELECT count(*) FROM t'}, {'sql': 'SELECT max(id) FROM t'}], write=False), '--allow-read', str(base))
+        assert result.returncode == 0 and [r['rows'] for r in state['root']['results']] == [[[6]], [[6]]], state
+        result, state = run(batch([{'sql': 'SELECT 1'}, {'sql': 'DELETE FROM t'}], write=False), '--allow-read', str(base))
+        assert result.returncode == 1 and state['error']['kind'] == 'sqlite' and count() == 6, state
+        result, state = run("""{"$call": ["let", {"s": {"$call": ["import", "std:sqlite"]}},
+            {"$call": ["s.transaction", %s, [{"sql": "UPDATE t SET name = ? WHERE id = ?", "params": ["z", 3]}, {"sql": "SELECT name FROM t WHERE id = 3", "params": []}]]}]}""" % db, *rw)
+        assert result.returncode == 0 and state['root'] == [{'rows': [], 'changes': 1}, {'rows': [{'name': 'z'}], 'changes': 0}], state
         huge = base / 'huge'
         huge.write_bytes(b'x' * (1024 * 1024 + 1))
         result, state = run(f'{{"$call": ["effect", "file_read", {json.dumps(str(huge))}]}}', '--allow-read', str(base))
