@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix editor</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+<style>
+  body{margin:0;display:flex;flex-direction:column;height:100vh;font:14px system-ui;background:#212121;color:#eee}
+  header{display:flex;gap:8px;align-items:center;padding:8px}
+  button{padding:6px 14px;border:0;border-radius:4px;background:#37474f;color:#eee;cursor:pointer}
+  button.primary{background:#2e7d32}
+  main{flex:1;display:flex;min-height:0}
+  .CodeMirror{flex:1;height:auto;font-size:14px}
+  #out{flex:1;margin:0;padding:10px;overflow:auto;white-space:pre-wrap;background:#1a1a1a;font:13px monospace}
+  @media(max-width:700px){main{flex-direction:column}}
+</style></head><body>
+<header>
+  <button class="primary" data-cmd="run">Run (Ctrl+Enter)</button>
+  <button data-cmd="check">Check</button><button data-cmd="step">Run + annotations</button><button data-cmd="fmt">Format</button>
+  <span id="status"></span>
+</header>
+<main><textarea id="src"></textarea><pre id="out"></pre></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+<script>
+const saved = localStorage.getItem('helix-src');
+const editor = CodeMirror.fromTextArea(document.getElementById('src'), {mode:'yaml', theme:'material-darker', lineNumbers:true, indentWithTabs:false, tabSize:2, extraKeys:{'Ctrl-Enter':()=>go('run'), 'Tab':cm=>cm.replaceSelection('  ')}});
+editor.setValue(saved ?? '!call [add, 1, 2]\n');
+editor.on('change', () => localStorage.setItem('helix-src', editor.getValue()));
+async function go(cmd) {
+  const status = document.getElementById('status'), out = document.getElementById('out');
+  status.textContent = 'running…';
+  try {
+    const text = await (await fetch('/' + cmd, {method:'POST', body:editor.getValue()})).text();
+    if (cmd === 'fmt' && text.trim()) editor.setValue(text); else out.textContent = text;
+    status.textContent = '';
+  } catch (e) { out.textContent = String(e); status.textContent = 'failed'; }
+}
+document.querySelectorAll('button[data-cmd]').forEach(b => b.onclick = () => go(b.dataset.cmd));
+</script></body></html>
