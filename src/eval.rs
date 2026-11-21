@@ -461,60 +461,35 @@ impl Evaluator {
         Ok(())
     }
     fn charge_value(&mut self, id: NodeId, value: &Value) -> Result<(), HelixError> {
-        let mut pending = vec![(value, 0, true)];
-        let mut nodes = 0;
-        let mut produced = 0;
-        while let Some((value, depth, graph_node)) = pending.pop() {
-            if depth > crate::graph::MAX_NESTING {
-                return Err(self.err(
-                    id,
-                    "depth",
-                    format!(
-                        "value nested deeper than {} containers",
-                        crate::graph::MAX_NESTING
-                    ),
-                ));
-            }
-            nodes += usize::from(graph_node);
-            if nodes > crate::graph::MAX_NODES {
-                return Err(self.err(
-                    id,
-                    "limit",
-                    format!("value exceeds {} nodes", crate::graph::MAX_NODES),
-                ));
-            }
-            let size = match value {
-                Value::String(text) => 1 + text.len(),
-                _ => 1,
-            };
-            produced += size;
-            if produced > self.limits.max_value_size {
-                return Err(self.err(
-                    id,
-                    "limit",
-                    format!("value exceeds {} units", self.limits.max_value_size),
-                ));
-            }
-            self.remaining_values = self.remaining_values.checked_sub(size).ok_or_else(|| {
-                self.err(
-                    id,
-                    "limit",
-                    format!(
-                        "evaluation exceeds {} produced value units",
-                        self.limits.max_values
-                    ),
-                )
-            })?;
-            match value {
-                Value::Array(items) => pending.extend(items.iter().map(|v| (v, depth + 1, true))),
-                Value::Hash(entries) => pending.extend(
-                    entries
-                        .iter()
-                        .flat_map(|(k, v)| [(k, depth + 1, false), (v, depth + 1, true)]),
-                ),
-                _ => {}
-            }
+        let crate::model::Measure { units, nodes, height } = value.measure();
+        if height > crate::graph::MAX_NESTING {
+            return Err(self.err(
+                id,
+                "depth",
+                format!("value nested deeper than {} containers", crate::graph::MAX_NESTING),
+            ));
         }
+        if nodes > crate::graph::MAX_NODES {
+            return Err(self.err(
+                id,
+                "limit",
+                format!("value exceeds {} nodes", crate::graph::MAX_NODES),
+            ));
+        }
+        if units > self.limits.max_value_size {
+            return Err(self.err(
+                id,
+                "limit",
+                format!("value exceeds {} units", self.limits.max_value_size),
+            ));
+        }
+        self.remaining_values = self.remaining_values.checked_sub(units).ok_or_else(|| {
+            self.err(
+                id,
+                "limit",
+                format!("evaluation exceeds {} produced value units", self.limits.max_values),
+            )
+        })?;
         Ok(())
     }
 

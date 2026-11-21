@@ -92,6 +92,54 @@ impl Drop for Vm {
         }
     }
 }
+impl PartialEq for Hash {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl PartialEq for List {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl Value {
+    /// Memoized resource measure; see [`Measure`]. Beyond the nesting bound the result is
+    /// uncached and reports an over-limit height, so malformed deep data cannot recurse.
+    pub(crate) fn measure(&self) -> crate::model::Measure {
+        self.measured(0)
+    }
+    fn measured(&self, depth: usize) -> crate::model::Measure {
+        use crate::model::Measure;
+        let one = Measure { units: 1, nodes: 1, height: 0 };
+        if depth > crate::graph::MAX_NESTING {
+            return Measure { height: usize::MAX / 2, ..one };
+        }
+        match self {
+            Self::String(text) => Measure { units: 1 + text.len(), ..one },
+            Self::Array(list) => *list.1.0.get_or_init(|| {
+                let mut total = one;
+                for item in list.0.iter() {
+                    let m = item.measured(depth + 1);
+                    total.units += m.units;
+                    total.nodes += m.nodes;
+                    total.height = total.height.max(m.height + 1);
+                }
+                total
+            }),
+            Self::Hash(hash) => *hash.1.0.get_or_init(|| {
+                let mut total = one;
+                for (key, item) in hash.0.iter() {
+                    let m = item.measured(depth + 1);
+                    total.units += key.0.measured(depth + 1).units + m.units;
+                    total.nodes += m.nodes;
+                    total.height = total.height.max(m.height + 1);
+                }
+                total
+            }),
+            _ => one,
+        }
+    }
+}
 impl Hash {
     pub fn new() -> Self {
         Self::default()
@@ -112,6 +160,7 @@ impl Hash {
         self.0.get(key.as_str()?)
     }
     pub fn get_mut(&mut self, key: &Value) -> Option<&mut Value> {
+        self.1 = Default::default();
         Arc::make_mut(&mut self.0).get_mut(key.as_str()?)
     }
     pub fn contains_key(&self, key: &Value) -> bool {
@@ -119,6 +168,7 @@ impl Hash {
     }
     pub fn insert(&mut self, key: Value, value: Value) -> Option<Value> {
         assert!(key.as_str().is_some(), "runtime map keys are strings");
+        self.1 = Default::default();
         Arc::make_mut(&mut self.0).insert(MapKey(key), value)
     }
 }
@@ -421,7 +471,7 @@ impl Value {
 
 impl From<Vec<Value>> for List {
     fn from(items: Vec<Value>) -> Self {
-        Self(Arc::new(items))
+        Self(Arc::new(items), Default::default())
     }
 }
 impl FromIterator<Value> for List {
@@ -437,6 +487,7 @@ impl std::ops::Deref for List {
 }
 impl std::ops::DerefMut for List {
     fn deref_mut(&mut self) -> &mut Self::Target {
+        self.1 = Default::default();
         Arc::make_mut(&mut self.0)
     }
 }
