@@ -168,17 +168,44 @@ def history_comparison(base, environment, name, source_hash, samples):
             "baseline_seconds": baseline, "change_percent": (current / baseline - 1) * 100}
 
 
-def pinned_comparison(baseline, environment, name, source_hash, median):
+def pinned_limit(baseline, environment, name, source_hash):
+    """The pinned median instruction count for a matching workload and environment, if any.
+    A pin whose workload source changed would otherwise silently stop enforcing anything."""
     if baseline["comparison_environment"] != environment:
         return None
     for row in baseline["measurements"]:
-        if row["workload"] == name and row["source_sha256"] == source_hash:
-            limit = row["median_seconds"]
-            return {"status": "SLOWDOWN" if median > limit else "ok",
-                    "baseline_runs": 1, "baseline_seconds": limit,
-                    "change_percent": (median / limit - 1) * 100,
-                    "enforced": True}
+        if row["workload"] == name:
+            assert row["source_sha256"] == source_hash, (
+                f"pinned workload `{name}` changed source (pinned {row['source_sha256']}, now {source_hash}); "
+                "re-measure it and update tests/fixtures/speed-baseline.json")
+            return row["median_instructions"]
     return None
+
+
+def pinned_comparison(limit, median):
+    # Retired user-space instructions, unlike wall or CPU time, do not inflate on a busy host.
+    return {"status": "SLOWDOWN" if median > limit else "ok", "baseline_runs": 1,
+            "baseline_instructions": limit, "change_percent": (median / limit - 1) * 100,
+            "unit": "instructions", "enforced": True}
+
+
+def instructions(h, program, record):
+    """Retired user-space instructions of one run, counted by `perf stat` into `record`."""
+    try:
+        result = subprocess.run(["perf", "stat", "-x,", "-e", "instructions:u", "-o", str(record), "--",
+                                 str(h.binary), "run", str(program)],
+                                cwd=h.root, capture_output=True, text=True, timeout=h.timeout)
+    except FileNotFoundError:
+        raise AssertionError("pinned speed workloads count instructions with `perf`, which is not installed; "
+                             "install linux-tools for this kernel") from None
+    assert result.returncode == 0, (program.name, result.returncode, result.stdout, result.stderr)
+    for line in record.read_text().splitlines():
+        count, _, event = (line.split(",") + ["", ""])[:3]
+        if event.startswith("instructions") and count.isdigit():
+            return int(count)
+    raise AssertionError(
+        f"`perf stat` could not count instructions:u ({record}); allow user-space counting with "
+        "`sudo sysctl kernel.perf_event_paranoid=2` (persist it in /etc/sysctl.d/)")
 
 
 def verify(h):
@@ -199,7 +226,8 @@ def verify(h):
             "sha256": hashlib.sha256(policy_source).hexdigest(), "artifact": "test_policy.source.yaml"}},
         "method": {"clock": "perf_counter_ns", "samples": SAMPLES, "warmups": WARMUPS,
                    "scope": "CLI process startup, file loading, evaluation and state emission; excludes build and Python YAML decoding",
-                   "policy": "correctness, subprocess timeout, and compatible pinned medians are enforced"},
+                   "policy": "correctness, subprocess timeout, and compatible pinned median instruction counts are enforced",
+                   "pinned_counter": "perf stat instructions:u, in separate untimed runs"},
         "run_directory": str(artifact), "measurements": [],
     }
     report["comparison_environment"] = {
@@ -241,15 +269,22 @@ def verify(h):
             source_hash = hashlib.sha256(source.encode()).hexdigest()
             median = statistics.median(samples)
             environment = report["comparison_environment"]
-            comparison = pinned_comparison(baseline, environment, name, source_hash, median)
-            if comparison is None:
+            limit = pinned_limit(baseline, environment, name, source_hash)
+            if limit is None:
                 comparison = history_comparison(base, environment, name, source_hash, samples)
-            elif comparison["status"] == "SLOWDOWN":
-                slowdowns.append(f"{name}: {median:.6f}s > {comparison['baseline_seconds']:.6f}s")
+            else:
+                # Counted separately so `perf` overhead never enters the timed samples.
+                counts = [instructions(h, program, artifact / f"{name}.perf.{index}.csv") for index in range(SAMPLES)]
+                counted = statistics.median(counts)
+                measurement.update(instructions=counts, median_instructions=counted)
+                comparison = pinned_comparison(limit, counted)
+                if comparison["status"] == "SLOWDOWN":
+                    slowdowns.append(f"{name}: {counted:.0f} instructions > {limit}")
             measurement.update(source_sha256=source_hash, comparison=comparison)
             detail = comparison["status"]
             if "change_percent" in comparison:
-                detail += f": {comparison['change_percent']:+.1f}% time vs baseline ({comparison['baseline_runs']} runs)"
+                detail += (f": {comparison['change_percent']:+.1f}% {comparison.get('unit', 'time')} vs baseline"
+                           f" ({comparison['baseline_runs']} runs)")
             print(f"speed: {name}: {detail}", flush=True)
             measurement.update(median_seconds=median, min_seconds=min(samples), max_seconds=max(samples),
                                operations_per_second=operations / median)
@@ -266,11 +301,18 @@ def verify(h):
 def verify_comparison(base):
     """Deterministic policy contracts, using isolated project-local history."""
     pinned = {"comparison_environment": {}, "measurements": [
-        {"workload": "w", "source_sha256": "hash", "median_seconds": 1.0}]}
-    for median, status in ((0.999, "ok"), (1.0, "ok"), (1.001, "SLOWDOWN")):
-        assert pinned_comparison(pinned, {}, "w", "hash", median)["status"] == status
-    assert pinned_comparison(pinned, {"host": "other"}, "w", "hash", 2) is None
-    assert pinned_comparison(pinned, {}, "w", "changed", 2) is None
+        {"workload": "w", "source_sha256": "hash", "median_instructions": 1000}]}
+    assert pinned_limit(pinned, {}, "w", "hash") == 1000
+    for median, status in ((999, "ok"), (1000, "ok"), (1001, "SLOWDOWN")):
+        assert pinned_comparison(1000, median)["status"] == status
+    assert pinned_limit(pinned, {"host": "other"}, "w", "hash") is None
+    assert pinned_limit(pinned, {}, "other", "hash") is None
+    try:
+        pinned_limit(pinned, {}, "w", "changed")
+    except AssertionError as error:
+        assert "re-measure" in str(error)
+    else:
+        raise AssertionError("a stale pinned source hash must fail")
     with tempfile.TemporaryDirectory(dir=base, prefix="policy-") as directory:
         root = Path(directory)
         assert history_comparison(root, {}, "w", "hash", [1] * 5)["status"] == "no baseline"

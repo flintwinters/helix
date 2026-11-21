@@ -12,12 +12,12 @@
     {
       "workload": "fuzz-plan-unicode-crlf",
       "source_sha256": "94981e3b69c36e8985fcf0fd85acc061c7a0886b143c9c3d60b60c93443ad2e3",
-      "median_seconds": 0.0816
+      "median_instructions": 369500000
     },
     {
       "workload": "fuzz-plan-dogfood-testing",
-      "source_sha256": "861b9a5c87c46787208714806c7adbefd4dfd73347fe573f0be09381b2d8b791",
-      "median_seconds": 0.1666
+      "source_sha256": "c936bf167ce7d3eaff3d2d900d29641395093f24ae386c246be2135dbfe180c9",
+      "median_instructions": 825500000
     }
   ]
 }

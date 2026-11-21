@@ -387,10 +387,14 @@ Reports flag `SLOWDOWN` when median time exceeds the earliest five compatible ru
 by more than 20% and three median absolute deviations of observed noise. Matching
 host/environment, sampling settings and workload source keep comparisons relevant;
 the fixed early baseline reveals cumulative drift. Changing the Cargo dev profile changes `PROFILE` in `tests/suites/speed.py` and requires re-pinning. First runs establish history.
-The two mutation-planning workloads use pinned medians in
-`tests/fixtures/speed-baseline.json`. For matching inputs and benchmark environment,
-a median above the pinned value fails the suite with zero tolerance. Historical
-flags for other comparisons are observational. Normal interpreter timeouts still apply. The weekly/manual full CI sweep includes this suite.
+The two mutation-planning workloads pin median retired user-space instructions
+(`perf stat -e instructions:u`, separate untimed runs) in
+`tests/fixtures/speed-baseline.json`. Wall and CPU time both inflate on a busy host,
+so they cannot carry a zero-tolerance gate. Counts vary by about 0.1%, so a pin is
+the worst observed median plus 0.5% headroom. In a matching benchmark environment,
+a median above it fails the suite, and so does a missing counter (install `perf`;
+`kernel.perf_event_paranoid` at most 2). A pinned workload whose source changed
+fails until re-pinned. Historical flags for other comparisons are observational. Normal interpreter timeouts still apply. The weekly/manual full CI sweep includes this suite.
 
 Workload epochs in `tests/suites/speed.py` separate fixed historical baselines.
 Advance only the affected epochs after measured improvements, and retain the
