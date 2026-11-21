@@ -1,16 +1,17 @@
 error:
   calls:
     - column: 7
-      function: "/r/$call/1"
       function_column: 7
       function_line: 5
       line: 5
-      path: "/r/$call/1"
+      reference:
+        - r
+        - "$call"
+        - 1
   column: 7
   kind: arity
   line: 5
-  message: "function `/r/$call/1` takes 2 arguments (a, b), got 1"
-  path: "/r/$call/1"
+  message: "the function defined at 5:7 takes 2 arguments (a, b), got 1"
   reference:
     - r
     - "$call"

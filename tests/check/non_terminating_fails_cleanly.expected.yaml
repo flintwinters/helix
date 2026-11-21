@@ -3,7 +3,6 @@ errors:
     kind: limit
     line: 4
     message: "`until` did not finish within 100000 steps"
-    path: /spin
     reference:
       - spin
 mode: check

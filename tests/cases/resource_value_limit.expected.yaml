@@ -1,16 +1,16 @@
 error:
   calls:
     - column: 7
-      function: "/$call/2"
       function_column: 7
       function_line: 9
       line: 9
-      path: "/$call/2"
+      reference:
+        - "$call"
+        - 2
   column: 15
   kind: limit
   line: 11
   message: value exceeds 1000000 units
-  path: "/$call/2/$call/2"
   reference:
     - "$call"
     - 2

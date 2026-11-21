@@ -3,7 +3,6 @@ error:
   kind: type
   line: 4
   message: "`let` bindings must be a map"
-  path: "/r/$call/1"
   reference:
     - r
     - "$call"

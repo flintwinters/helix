@@ -1,8 +1,8 @@
 error:
   column: 7
+  hint: "write `!call [finally, expr, cleanup]`: expr, then cleanup whether or not expr failed"
   kind: arity
   line: 2
   message: "`finally` takes 2 arguments, got 1"
-  path: /
   reference: []
 status: error

@@ -179,7 +179,8 @@ root:
         predicate:
           column: 3
           line: 17
-          path: /ordered
+          path:
+            - ordered
           reference:
             - ordered
           source: "<root>"

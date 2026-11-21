@@ -4,7 +4,6 @@ error:
   kind: divide_by_zero
   line: 2
   message: "`div` by zero"
-  path: /boom
   reference:
     - boom
 status: error

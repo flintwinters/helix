@@ -1,9 +1,9 @@
 error:
   column: 3
+  hint: "write `!call [fn, [params], body[, result_type]]`: a function; params are names or `[name, type]` pairs"
   kind: arity
   line: 3
   message: "`fn` takes 2 to 3 arguments, got 1"
-  path: /f
   reference:
     - f
 status: error

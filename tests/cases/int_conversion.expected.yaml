@@ -3,7 +3,6 @@ error:
   kind: conversion
   line: 2
   message: "cannot parse `12abc` as an integer"
-  path: "/x/$call/1"
   reference:
     - x
     - "$call"

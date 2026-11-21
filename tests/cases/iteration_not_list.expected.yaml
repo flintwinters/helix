@@ -3,7 +3,6 @@ error:
   kind: type
   line: 8
   message: "`map` list: expected list, got integer 5"
-  path: "/r/$call/2"
   reference:
     - r
     - "$call"

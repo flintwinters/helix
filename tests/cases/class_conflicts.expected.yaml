@@ -300,7 +300,6 @@ root:
     kind: conflict
     line: 49
     message: "field `mode` has different values from both `a` and `b`; resolve it in `ab`"
-    path: "/type_clash/$call/1/$call/2"
     reference:
       - type_clash
       - "$call"

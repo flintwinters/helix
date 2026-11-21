@@ -3,7 +3,6 @@ error:
   kind: type
   line: 2
   message: "`assert` argument 2: expected string message, got integer 7"
-  path: "/check/$call/2"
   reference:
     - check
     - "$call"

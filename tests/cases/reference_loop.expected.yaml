@@ -1,0 +1,9 @@
+error:
+  column: 9
+  hint: give one of these names a value instead of another reference
+  kind: cycle
+  line: 2
+  message: "references only name each other: `y` -> `x` -> `y`"
+  reference:
+    - x
+status: error

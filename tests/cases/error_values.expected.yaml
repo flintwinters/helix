@@ -5,7 +5,6 @@ root:
     kind: missing
     line: 5
     message: index 9 is out of range for a list of length 2
-    path: "/caught/$call/1/$call/2"
     reference:
       - caught
       - "$call"

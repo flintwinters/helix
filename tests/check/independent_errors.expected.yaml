@@ -3,14 +3,12 @@ errors:
     kind: divide_by_zero
     line: 2
     message: "`div` by zero"
-    path: /first
     reference:
       - first
   - column: 26
     kind: unbound
     line: 3
     message: "unbound symbol `missing`"
-    path: "/second/$call/1"
     reference:
       - second
       - "$call"

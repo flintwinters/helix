@@ -1,9 +1,9 @@
 error:
   column: 10
+  hint: "evaluating this value reads it again through the references it contains; compute one value in the loop from inputs that do not depend on it, or recurse through a function"
   kind: cycle
   line: 2
   message: value depends on itself
-  path: /a
   reference:
     - a
 status: error

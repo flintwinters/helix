@@ -3,14 +3,12 @@ errors:
     kind: divide_by_zero
     line: 2
     message: "`div` by zero"
-    path: /failure
     reference:
       - failure
   - column: 16
     kind: divide_by_zero
     line: 2
     message: "`div` by zero"
-    path: /failure
     phase: type
     reference:
       - failure

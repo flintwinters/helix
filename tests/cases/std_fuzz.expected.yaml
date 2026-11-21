@@ -52,6 +52,84 @@ annotations:
     value: 1
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -99,6 +177,84 @@ annotations:
         - 1
       source: "std:fuzz"
     type: integer
+    value: 16
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 16
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 16
   - declaration:
       code:
@@ -164,6 +320,84 @@ annotations:
         - 1
       source: "std:fuzz"
     type: integer
+    value: 4
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 4
   - declaration:
       code:
@@ -392,6 +626,84 @@ annotations:
     value: 1
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -439,6 +751,84 @@ annotations:
         - 1
       source: "std:fuzz"
     type: integer
+    value: 6
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 6
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 6
   - declaration:
       code:
@@ -494,6 +884,84 @@ annotations:
         - 1
       source: "std:fuzz"
     type: integer
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 2
   - declaration:
       code:
@@ -652,6 +1120,84 @@ annotations:
     value: 0
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -701,6 +1247,84 @@ annotations:
     value: 0
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -747,6 +1371,84 @@ annotations:
         - 1
       source: "std:fuzz"
     type: integer
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 0
   - declaration:
       code:
@@ -859,6 +1561,84 @@ annotations:
     value: 1
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -906,6 +1686,84 @@ annotations:
         - 1
       source: "std:fuzz"
     type: integer
+    value: 4
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 4
   - declaration:
       code:
@@ -959,6 +1817,84 @@ annotations:
         - 1
       source: "std:fuzz"
     type: integer
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 2
   - declaration:
       code:
@@ -1105,235 +2041,81 @@ annotations:
     value: 1
   - declaration:
       code:
-        "$call":
-          - list_of
-          - "$ref": integer
+        "$ref": number
       location:
         path:
-          - range
+          - max
           - "$call"
-          - 3
-        source: "std:list"
-    kind: result
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
     target:
       path:
         - range
         - "$call"
         - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
       source: "std:list"
     type:
-      of: integer
-      type: list
-    value:
-      - 0
+      of:
+        - integer
+        - float
+      type: union
+    value: 1
   - declaration:
       code:
-        "$ref": integer
+        "$ref": number
       location:
         path:
-          - range
+          - max
           - "$call"
           - 1
-          - 0
           - 1
-        source: "std:list"
+          - 1
+        source: "std:math"
     kind: parameter
-    target:
-      path:
-        - render
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - lines
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:fuzz"
-    type: integer
-    value: 2
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
     target:
       path:
         - range
         - "$call"
         - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - render
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - prefixes
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:fuzz"
-    type: integer
-    value: 2
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - generate
-          - "$call"
-          - 3
-        source: "std:fuzz"
-    kind: result
-    target:
-      path:
-        - generate
-        - "$call"
-        - 2
-      source: "std:fuzz"
-    type: list
-    value:
-      - - - 0
-          - 0
-      - - - 0
-          - 0
-        - - 6
-          - 6
-      - - - 0
-          - 0
-      - - - 0
-          - 5
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - plan
-          - "$call"
-          - 3
-        source: "std:fuzz"
-    kind: result
-    target:
-      path:
-        - plan
-        - "$call"
-        - 2
-      source: "std:fuzz"
-    type: list
-    value:
-      - - - 0
-          - 0
-      - - - 0
-          - 0
-        - - 6
-          - 6
-      - - - 0
-          - 0
-      - - - 0
-          - 5
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - plan
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:fuzz"
-    kind: parameter
-    target:
-      path:
-        - "$call"
-        - 2
-        - unicode
-        - "$call"
-        - 1
-      source: "<root>"
-    type: string
-    value: "🙂é世界éx"
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - generate
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - scan
         - "$call"
         - 3
         - "$call"
         - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
         - "$call"
-        - 1
-      source: "std:fuzz"
-    type: integer
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 1
   - declaration:
       code:
@@ -1387,236 +2169,82 @@ annotations:
     value: 2
   - declaration:
       code:
-        "$call":
-          - list_of
-          - "$ref": integer
+        "$ref": number
       location:
         path:
-          - range
+          - max
           - "$call"
-          - 3
-        source: "std:list"
-    kind: result
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
     target:
       path:
         - range
         - "$call"
         - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
       source: "std:list"
     type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - render
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - prefixes
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:fuzz"
-    type: integer
+      of:
+        - integer
+        - float
+      type: union
     value: 2
   - declaration:
       code:
-        "$call":
-          - list_of
-          - "$ref": integer
+        "$ref": number
       location:
         path:
-          - range
+          - max
           - "$call"
-          - 3
-        source: "std:list"
-    kind: result
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
     target:
       path:
         - range
         - "$call"
         - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - generate
-          - "$call"
-          - 3
-        source: "std:fuzz"
-    kind: result
-    target:
-      path:
-        - generate
-        - "$call"
-        - 2
-      source: "std:fuzz"
-    type: list
-    value:
-      - - - 0
-          - 0
-      - - - 0
-          - 0
-        - - 7
-          - 7
-      - - - 0
-          - 0
-      - - - 0
-          - 5
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - plan
-          - "$call"
-          - 3
-        source: "std:fuzz"
-    kind: result
-    target:
-      path:
-        - plan
-        - "$call"
-        - 2
-      source: "std:fuzz"
-    type: list
-    value:
-      - - - 0
-          - 0
-      - - - 0
-          - 0
-        - - 7
-          - 7
-      - - - 0
-          - 0
-      - - - 0
-          - 5
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - plan
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:fuzz"
-    kind: parameter
-    target:
-      path:
-        - "$call"
-        - 2
-        - unterminated
-        - "$call"
-        - 1
-      source: "<root>"
-    type: string
-    value: "a\nb"
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - generate
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - scan
         - "$call"
         - 3
         - "$call"
         - 2
-        - "$call"
-        - 1
-      source: "std:fuzz"
-    type: integer
-    value: 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
   - declaration:
       code:
-        "$call":
-          - list_of
-          - "$ref": integer
+        "$ref": number
       location:
         path:
-          - range
+          - max
           - "$call"
           - 3
-        source: "std:list"
+        source: "std:math"
     kind: result
     target:
       path:
-        - range
+        - max
         - "$call"
         - 2
-      source: "std:list"
+      source: "std:math"
     type:
-      of: integer
-      type: list
-    value:
-      - 0
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - render
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - lines
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:fuzz"
-    type: integer
-    value: 4
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
   - declaration:
       code:
         "$call":
@@ -1641,8 +2269,6 @@ annotations:
     value:
       - 0
       - 1
-      - 2
-      - 3
   - declaration:
       code:
         "$ref": integer
@@ -1669,7 +2295,85 @@ annotations:
         - 1
       source: "std:fuzz"
     type: integer
-    value: 1
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
   - declaration:
       code:
         "$call":
@@ -1693,70 +2397,8 @@ annotations:
       type: list
     value:
       - 0
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - generate
-          - "$call"
-          - 3
-        source: "std:fuzz"
-    kind: result
-    target:
-      path:
-        - generate
-        - "$call"
-        - 2
-      source: "std:fuzz"
-    type: list
-    value:
-      - - - 0
-          - 0
-      - - - 0
-          - 0
-        - - 2
-          - 3
-      - - - 0
-          - 2
-      - - - 0
-          - 2
-        - - 3
-          - 3
-      - - - 0
-          - 0
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - plan
-          - "$call"
-          - 3
-        source: "std:fuzz"
-    kind: result
-    target:
-      path:
-        - plan
-        - "$call"
-        - 2
-      source: "std:fuzz"
-    type: list
-    value:
-      - - - 0
-          - 0
-      - - - 0
-          - 0
-        - - 2
-          - 3
-      - - - 0
-          - 2
-      - - - 0
-          - 2
-        - - 3
-          - 3
-      - - - 0
-          - 0
+      - 1
+annotations_truncated: true
 root:
   boundaries:
     - - - 0

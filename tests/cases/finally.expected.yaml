@@ -165,7 +165,6 @@ root:
     kind: cleanup
     line: 18
     message: cleanup ran
-    path: "/cleanup_after_failure/$call/1/$call/2"
     reference:
       - cleanup_after_failure
       - "$call"
@@ -177,7 +176,6 @@ root:
     kind: cleanup
     line: 25
     message: cleanup ran
-    path: "/cleanup_after_success/$call/1/$call/2"
     reference:
       - cleanup_after_success
       - "$call"
@@ -195,7 +193,6 @@ root:
     kind: original
     line: 50
     message: body failed
-    path: "/original_error/$call/1/$call/1"
     reference:
       - original_error
       - "$call"

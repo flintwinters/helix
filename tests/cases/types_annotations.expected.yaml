@@ -521,11 +521,13 @@ root:
   bad_args:
     calls:
       - column: 11
-        function: /url
         function_column: 3
         function_line: 62
         line: 4
-        path: "/bad_args/$call/1"
+        reference:
+          - bad_args
+          - "$call"
+          - 1
     column: 17
     data:
       violations:
@@ -535,7 +537,6 @@ root:
           argument_location:
             column: 17
             line: 4
-            path: "/bad_args/$call/1/$call/1"
             reference:
               path:
                 - bad_args
@@ -554,7 +555,6 @@ root:
           argument_location:
             column: 20
             line: 4
-            path: "/bad_args/$call/1/$call/2"
             reference:
               path:
                 - bad_args
@@ -569,15 +569,15 @@ root:
           predicate:
             column: 3
             line: 30
-            path: /in_port
+            path:
+              - in_port
             reference:
               - in_port
             source: "<root>"
           rule: refinement
     kind: type
     line: 4
-    message: "2 type violations in the arguments of `/url`: expected string, got integer 1"
-    path: "/bad_args/$call/1/$call/1"
+    message: "2 type violations in the arguments of `62:3`: expected string, got integer 1"
     reference:
       - bad_args
       - "$call"
@@ -592,7 +592,6 @@ root:
         argument_location:
           column: 22
           line: 11
-          path: "/bad_record/$call/1/$call/1"
           reference:
             path:
               - bad_record
@@ -611,7 +610,6 @@ root:
         argument_location:
           column: 22
           line: 11
-          path: "/bad_record/$call/1/$call/1"
           reference:
             path:
               - bad_record
@@ -653,7 +651,7 @@ root:
     - 1
     - 2
     - 3
-  typed_map_bad: "1 type violation in the arguments of `/typed_map_bad/$call/1/$call/1`: failed its refinement check"
+  typed_map_bad: "1 type violation in the arguments of `46:11`: failed its refinement check"
   unchecked_value:
     violations:
       - actual: 0
@@ -664,7 +662,8 @@ root:
         predicate:
           column: 3
           line: 30
-          path: /in_port
+          path:
+            - in_port
           reference:
             - in_port
           source: "<root>"

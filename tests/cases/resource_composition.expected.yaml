@@ -2158,28 +2158,40 @@ root:
       - calls:
           - column: 11
             file: "std:orchestration"
-            function: /require
             function_column: 3
             function_file: "std:orchestration"
             function_line: 158
             line: 98
-            path: "/planned/$call/2/$call/2"
+            reference:
+              - planned
+              - "$call"
+              - 2
+              - "$call"
+              - 2
           - column: 11
             file: "std:orchestration"
-            function: /planned
             function_column: 3
             function_file: "std:orchestration"
             function_line: 92
             line: 87
-            path: "/plan_checked/$call/2/$call/2"
+            reference:
+              - plan_checked
+              - "$call"
+              - 2
+              - "$call"
+              - 2
           - column: 15
             file: "std:orchestration"
-            function: /plan_checked
             function_column: 3
             function_file: "std:orchestration"
             function_line: 78
             line: 61
-            path: "/plan/$call/2/$call/1"
+            reference:
+              - plan
+              - "$call"
+              - 2
+              - "$call"
+              - 1
         column: 15
         data:
           missing: []
@@ -2194,7 +2206,6 @@ root:
         kind: orchestration_dependency_cycle
         line: 164
         message: Resource prerequisites contain a cycle
-        path: "/require/$call/2/$call/3"
         reference:
           - require
           - "$call"
@@ -2224,16 +2235,23 @@ root:
           calls:
             - column: 42
               file: "std:orchestration"
-              function: "/$call/2/failed_prerequisite/$call/2"
               function_column: 11
               function_line: 34
               line: 32
-              path: "/invoke/$call/2/$call/1/$call/1/$call/1"
+              reference:
+                - invoke
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 1
           column: 23
           kind: package_failed
           line: 39
           message: Package failed
-          path: "/$call/2/failed_prerequisite/$call/2/$call/2/$call/2"
           reference:
             - "$call"
             - 2
@@ -2253,52 +2271,84 @@ root:
       - calls:
           - column: 15
             file: "std:orchestration"
-            function: /require
             function_column: 3
             function_file: "std:orchestration"
             function_line: 158
             line: 335
-            path: "/validate_references/$call/2/$call/1/$call/2"
+            reference:
+              - validate_references
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 2
           - column: 11
             file: "std:orchestration"
-            function: "/validate_references/$call/2/$call/1"
             function_column: 11
             function_file: "std:orchestration"
             function_line: 332
             line: 332
-            path: "/validate_references/$call/2/$call/1"
+            reference:
+              - validate_references
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 19
             file: "std:orchestration"
-            function: /validate_references
             function_column: 3
             function_file: "std:orchestration"
             function_line: 327
             line: 179
-            path: "/resource_graph/$call/2/$call/1/$call/2/$call/3"
+            reference:
+              - resource_graph
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 3
           - column: 11
             file: "std:orchestration"
-            function: "/resource_graph/$call/2/$call/1"
             function_column: 11
             function_file: "std:orchestration"
             function_line: 172
             line: 172
-            path: "/resource_graph/$call/2/$call/1"
+            reference:
+              - resource_graph
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 19
             file: "std:orchestration"
-            function: /resource_graph
             function_column: 3
             function_file: "std:orchestration"
             function_line: 167
             line: 88
-            path: "/plan_checked/$call/2/$call/2/$call/1"
+            reference:
+              - plan_checked
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 15
             file: "std:orchestration"
-            function: /plan_checked
             function_column: 3
             function_file: "std:orchestration"
             function_line: 78
             line: 61
-            path: "/plan/$call/2/$call/1"
+            reference:
+              - plan
+              - "$call"
+              - 2
+              - "$call"
+              - 1
         column: 15
         data:
           field: requires
@@ -2308,7 +2358,6 @@ root:
         kind: orchestration_missing_reference
         line: 164
         message: Resource composition references an unknown prerequisite or handler
-        path: "/require/$call/2/$call/3"
         reference:
           - require
           - "$call"

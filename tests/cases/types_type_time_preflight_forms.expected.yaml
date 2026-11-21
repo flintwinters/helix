@@ -11,7 +11,6 @@ error:
   kind: type
   line: 4
   message: "1 type violation: expected integer, got string \"http\""
-  path: "/bad/$call/1"
   phase: type
   reference:
     - bad

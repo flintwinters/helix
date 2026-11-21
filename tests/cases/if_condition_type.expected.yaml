@@ -3,7 +3,6 @@ error:
   kind: type
   line: 4
   message: "`if` condition: expected boolean, got integer 1"
-  path: "/x/$call/1"
   reference:
     - x
     - "$call"

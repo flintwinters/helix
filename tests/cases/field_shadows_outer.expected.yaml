@@ -1,0 +1,8 @@
+root:
+  fields:
+    base: 2
+    derived: 3
+  point:
+    x: 3
+    "y": 5
+status: finished

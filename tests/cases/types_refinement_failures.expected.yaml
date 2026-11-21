@@ -197,7 +197,8 @@ root:
         predicate:
           column: 3
           line: 53
-          path: /returns_integer
+          path:
+            - returns_integer
           reference:
             - returns_integer
           source: "<root>"
@@ -212,7 +213,8 @@ root:
         predicate:
           column: 3
           line: 39
-          path: /positive
+          path:
+            - positive
           reference:
             - positive
           source: "<root>"
@@ -228,7 +230,8 @@ root:
       predicate:
         column: 3
         line: 39
-        path: /positive
+        path:
+          - positive
         reference:
           - positive
         source: "<root>"
@@ -247,7 +250,8 @@ root:
       predicate:
         column: 3
         line: 39
-        path: /positive
+        path:
+          - positive
         reference:
           - positive
         source: "<root>"
@@ -261,7 +265,8 @@ root:
       predicate:
         column: 3
         line: 39
-        path: /positive
+        path:
+          - positive
         reference:
           - positive
         source: "<root>"
@@ -283,7 +288,8 @@ root:
           predicate:
             column: 3
             line: 53
-            path: /returns_integer
+            path:
+              - returns_integer
             reference:
               - returns_integer
             source: "<root>"
@@ -291,7 +297,6 @@ root:
     kind: predicate
     line: 53
     message: "refinement check failed to run: returned integer 1, expected boolean"
-    path: /returns_integer
     reference:
       - returns_integer
   positive:
@@ -300,16 +305,17 @@ root:
     cause:
       calls:
         - column: 11
-          function: /divides_by_zero
           function_column: 3
           function_line: 22
           line: 44
-          path: "/raised_error/$call/1"
+          reference:
+            - raised_error
+            - "$call"
+            - 1
       column: 11
       kind: divide_by_zero
       line: 24
       message: "`div` by zero"
-      path: "/divides_by_zero/$call/2"
       reference:
         - divides_by_zero
         - "$call"
@@ -325,7 +331,8 @@ root:
           predicate:
             column: 3
             line: 22
-            path: /divides_by_zero
+            path:
+              - divides_by_zero
             reference:
               - divides_by_zero
             source: "<root>"
@@ -333,7 +340,6 @@ root:
     kind: predicate
     line: 22
     message: "refinement check failed to run: divide_by_zero: `div` by zero"
-    path: /divides_by_zero
     reference:
       - divides_by_zero
   raising:
@@ -350,7 +356,8 @@ root:
       predicate:
         column: 3
         line: 39
-        path: /positive
+        path:
+          - positive
         reference:
           - positive
         source: "<root>"

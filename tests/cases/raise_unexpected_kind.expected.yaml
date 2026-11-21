@@ -1,17 +1,18 @@
 error:
   calls:
     - column: 10
-      function: /guard
       function_column: 3
       function_line: 4
       line: 10
-      path: "/unexpected/$call/2"
+      reference:
+        - unexpected
+        - "$call"
+        - 2
   cause:
     column: 11
     kind: fatal
     line: 9
     message: disk gone
-    path: "/unexpected/$call/1"
     reference:
       - unexpected
       - "$call"
@@ -20,7 +21,6 @@ error:
   kind: fatal
   line: 6
   message: disk gone
-  path: "/guard/$call/2/$call/3"
   reference:
     - guard
     - "$call"

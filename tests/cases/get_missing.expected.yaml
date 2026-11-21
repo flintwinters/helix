@@ -4,7 +4,6 @@ error:
   kind: missing
   line: 3
   message: "map has no key `b`"
-  path: "/x/$call/2"
   reference:
     - x
     - "$call"

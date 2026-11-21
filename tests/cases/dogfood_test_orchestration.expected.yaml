@@ -1543,7 +1543,6 @@ root:
         argument_location:
           column: 29
           line: 10
-          path: "/$call/2/bad_catalog/$call/1/$call/1"
           reference:
             path:
               - "$call"
@@ -1567,7 +1566,6 @@ root:
         argument_location:
           column: 31
           line: 14
-          path: "/$call/2/bad_observation/$call/1/$call/1"
           reference:
             path:
               - "$call"
@@ -1591,7 +1589,6 @@ root:
         argument_location:
           column: 31
           line: 18
-          path: "/$call/2/bad_report/$call/1/$call/1"
           reference:
             path:
               - "$call"
@@ -1615,7 +1612,6 @@ root:
         argument_location:
           column: 39
           line: 22
-          path: "/$call/2/bad_selection/$call/1/$call/2"
           reference:
             path:
               - "$call"

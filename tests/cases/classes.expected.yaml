@@ -209,7 +209,6 @@ root:
     kind: abstract
     line: 11
     message: "class `bare` is abstract: missing `packages` (required by server)"
-    path: "/not_yet/$call/1"
     reference:
       - not_yet
       - "$call"
@@ -334,7 +333,6 @@ root:
     kind: type
     line: 45
     message: "1 misfit in the values of `bad`: /hostname: expected string, got integer 5"
-    path: "/wrong_value/$call/1"
     reference:
       - wrong_value
       - "$call"

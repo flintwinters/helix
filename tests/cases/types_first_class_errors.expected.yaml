@@ -4,7 +4,6 @@ root:
     kind: type
     line: 8
     message: "expected a function (`!call [fn, [params], body]` or its name)"
-    path: "/bad_callback/$call/1/$call/1"
     reference:
       - bad_callback
       - "$call"
@@ -16,7 +15,6 @@ root:
     kind: type
     line: 25
     message: "`list_of` argument 1: expected a type, got integer 42"
-    path: "/bad_constructor/$call/1/$call/1"
     reference:
       - bad_constructor
       - "$call"
@@ -28,7 +26,6 @@ root:
     kind: type
     line: 38
     message: "`let` bindings must be a map"
-    path: "/bad_let/$call/1/$call/1"
     reference:
       - bad_let
       - "$call"
@@ -40,7 +37,6 @@ root:
     kind: type
     line: 49
     message: "expected a function (`!call [fn, [params], body]` or its name)"
-    path: "/not_callable/$call/1/$call/1"
     reference:
       - not_callable
       - "$call"
@@ -50,11 +46,15 @@ root:
   wrong_type:
     calls:
       - column: 11
-        function: "/wrong_type/$call/1/$call/1"
         function_column: 11
         function_line: 59
         line: 59
-        path: "/wrong_type/$call/1/$call/1"
+        reference:
+          - wrong_type
+          - "$call"
+          - 1
+          - "$call"
+          - 1
     column: 14
     data:
       violations:
@@ -64,7 +64,6 @@ root:
           argument_location:
             column: 14
             line: 62
-            path: "/wrong_type/$call/1/$call/2"
             reference:
               path:
                 - wrong_type
@@ -79,8 +78,7 @@ root:
           rule: type
     kind: type
     line: 62
-    message: "1 type violation in the arguments of `/wrong_type/$call/1/$call/1`: expected function, got string \"integer\""
-    path: "/wrong_type/$call/1/$call/2"
+    message: "1 type violation in the arguments of `59:11`: expected function, got string \"integer\""
     reference:
       - wrong_type
       - "$call"

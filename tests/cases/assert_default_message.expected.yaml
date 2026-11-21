@@ -3,7 +3,6 @@ error:
   kind: assertion
   line: 2
   message: assertion failed
-  path: /check
   reference:
     - check
 status: error

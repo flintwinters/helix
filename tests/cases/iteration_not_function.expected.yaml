@@ -3,7 +3,6 @@ error:
   kind: type
   line: 2
   message: "expected a function (`!call [fn, [params], body]` or its name)"
-  path: "/r/$call/1"
   reference:
     - r
     - "$call"

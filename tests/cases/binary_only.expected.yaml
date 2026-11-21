@@ -1,9 +1,9 @@
 error:
   column: 10
+  hint: "write `!call [div, a, b]`: a divided by b; integer division truncates toward zero"
   kind: arity
   line: 2
   message: "`div` takes 2 arguments, got 3"
-  path: /x
   reference:
     - x
 status: error

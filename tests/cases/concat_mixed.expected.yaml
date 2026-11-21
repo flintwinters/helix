@@ -3,7 +3,6 @@ error:
   kind: type
   line: 2
   message: "`concat` argument 2: expected string, got integer 1"
-  path: "/x/$call/2"
   reference:
     - x
     - "$call"

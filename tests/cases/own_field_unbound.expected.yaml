@@ -1,0 +1,11 @@
+error:
+  column: 25
+  hint: "this reference is inside the value of the field `count` at line 2, which cannot read itself, and no enclosing scope declares `count`; rename the field or bind the outer value under another name"
+  kind: unbound
+  line: 2
+  message: "unbound symbol `count`"
+  reference:
+    - count
+    - "$call"
+    - 1
+status: error

@@ -3,7 +3,6 @@ error:
   kind: divide_by_zero
   line: 2
   message: "`mod` by zero"
-  path: /a
   reference:
     - a
 status: error

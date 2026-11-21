@@ -771,7 +771,6 @@ root:
     kind: divide_by_zero
     line: 5
     message: "`div` by zero"
-    path: "/captured_error/$call/1"
     reference:
       - captured_error
       - "$call"
@@ -781,7 +780,6 @@ root:
     kind: type
     line: 14
     message: "`list_of` argument 1: expected a type, got integer 42"
-    path: "/caught_inside/$call/1/$call/1/$call/1"
     phase: type
     reference:
       - caught_inside
@@ -796,7 +794,6 @@ root:
     kind: divide_by_zero
     line: 21
     message: "`div` by zero"
-    path: "/caught_outside/$call/1/$call/1"
     phase: type
     reference:
       - caught_outside
@@ -827,7 +824,6 @@ root:
     kind: divide_by_zero
     line: 5
     message: "`div` by zero"
-    path: "/captured_error/$call/1"
     phase: type
     reference:
       - captured_error
@@ -838,7 +834,6 @@ root:
     kind: divide_by_zero
     line: 41
     message: "`div` by zero"
-    path: "/runtime_after/$call/1"
     reference:
       - runtime_after
       - "$call"

@@ -1890,12 +1890,20 @@ root:
       calls:
         - column: 23
           file: "std:provider"
-          function: /checked
           function_column: 3
           function_file: "std:provider"
           function_line: 81
           line: 261
-          path: "/plan/$call/2/$call/1/$call/1/$call/5"
+          reference:
+            - plan
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 5
       column: 42
       data:
         violations:
@@ -1909,7 +1917,6 @@ root:
       kind: type
       line: 86
       message: "1 type violation: expected string, got integer 42"
-      path: "/checked/$call/2/$call/2/$call/1/$call/1"
       phase: type
       reference:
         - checked
@@ -1975,42 +1982,59 @@ root:
       calls:
         - column: 11
           file: "std:provider"
-          function: /require
           function_column: 3
           function_file: "std:provider"
           function_line: 298
           line: 382
-          path: "/valid_steps/$call/2/$call/4"
+          reference:
+            - valid_steps
+            - "$call"
+            - 2
+            - "$call"
+            - 4
         - column: 11
           file: "std:provider"
-          function: /valid_steps
           function_column: 3
           function_file: "std:provider"
           function_line: 363
           line: 289
-          path: "/planned/$call/2/$call/5"
+          reference:
+            - planned
+            - "$call"
+            - 2
+            - "$call"
+            - 5
         - column: 11
           file: "std:provider"
-          function: /planned
           function_column: 3
           function_file: "std:provider"
           function_line: 280
           line: 273
-          path: "/plan_checked/$call/2/$call/2"
+          reference:
+            - plan_checked
+            - "$call"
+            - 2
+            - "$call"
+            - 2
         - column: 15
           file: "std:provider"
-          function: /plan_checked
           function_column: 3
           function_file: "std:provider"
           function_line: 267
           line: 256
-          path: "/plan/$call/2/$call/1/$call/1"
+          reference:
+            - plan
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 1
       column: 15
       file: "std:provider"
       kind: provider_removal_denied
       line: 304
       message: Removal requires explicit caller consent in addition to managed ownership
-      path: "/require/$call/2/$call/3"
       phase: type
       reference:
         - require
@@ -2028,18 +2052,21 @@ root:
       calls:
         - column: 11
           file: "std:provider"
-          function: /apply_checked
           function_column: 3
           function_file: "std:provider"
           function_line: 21
           line: 10
-          path: "/apply/$call/2/$call/1"
+          reference:
+            - apply
+            - "$call"
+            - 2
+            - "$call"
+            - 1
       column: 15
       file: "std:provider"
       kind: provider_stale_plan
       line: 42
       message: The reviewed plan does not match fresh provider state and caller inputs
-      path: "/apply_checked/$call/2/$call/2/$call/3"
       reference:
         - apply_checked
         - "$call"

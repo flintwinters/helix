@@ -3,7 +3,6 @@ error:
   kind: type
   line: 6
   message: "`len` argument 1: expected string, list or map, got function"
-  path: "/r/$call/1"
   reference:
     - r
     - "$call"

@@ -4,7 +4,6 @@ error:
   kind: type
   line: 4
   message: "`fn` parameter 1 must be a name or a `[name, type]` pair"
-  path: "/broken/$call/1/0"
   reference:
     - broken
     - "$call"

@@ -8,7 +8,6 @@ error:
   kind: conflict
   line: 8
   message: "field `restart` has different values from both `interactive` and `unattended`; resolve it in `worker`"
-  path: "/resolved/$call/1/$call/2"
   phase: type
   reference:
     - resolved

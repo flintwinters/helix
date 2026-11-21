@@ -115,22 +115,25 @@ root:
   caught:
     calls:
       - column: 11
-        function: /leaf
         function_column: 3
         function_line: 10
         line: 16
-        path: "/middle/$call/2"
+        reference:
+          - middle
+          - "$call"
+          - 2
       - column: 11
-        function: /middle
         function_column: 3
         function_line: 14
         line: 4
-        path: "/caught/$call/1"
+        reference:
+          - caught
+          - "$call"
+          - 1
     column: 11
     kind: divide_by_zero
     line: 12
     message: "`div` by zero"
-    path: "/leaf/$call/2"
     reference:
       - leaf
       - "$call"
@@ -142,19 +145,29 @@ root:
   nested:
     calls:
       - column: 11
-        function: "/nested/$call/1/$call/2"
         function_column: 11
         function_line: 29
         line: 29
-        path: "/nested/$call/1/$call/2"
+        reference:
+          - nested
+          - "$call"
+          - 1
+          - "$call"
+          - 2
     cause:
       calls:
         - column: 15
-          function: "/nested/$call/1/$call/1/$call/2"
           function_column: 15
           function_line: 25
           line: 25
-          path: "/nested/$call/1/$call/1/$call/2"
+          reference:
+            - nested
+            - "$call"
+            - 1
+            - "$call"
+            - 1
+            - "$call"
+            - 2
       cause:
         column: 19
         data:
@@ -162,7 +175,6 @@ root:
         kind: original
         line: 23
         message: failure
-        path: "/nested/$call/1/$call/1/$call/1"
         reference:
           - nested
           - "$call"
@@ -177,7 +189,6 @@ root:
       kind: original
       line: 27
       message: failure
-      path: "/nested/$call/1/$call/1/$call/2/$call/2"
       reference:
         - nested
         - "$call"
@@ -194,7 +205,6 @@ root:
     kind: original
     line: 31
     message: failure
-    path: "/nested/$call/1/$call/2/$call/2"
     reference:
       - nested
       - "$call"
@@ -206,30 +216,39 @@ root:
   reraised:
     calls:
       - column: 11
-        function: "/reraised/$call/1/$call/2"
         function_column: 11
         function_line: 42
         line: 42
-        path: "/reraised/$call/1/$call/2"
+        reference:
+          - reraised
+          - "$call"
+          - 1
+          - "$call"
+          - 2
     cause:
       calls:
         - column: 11
-          function: /leaf
           function_column: 3
           function_line: 10
           line: 16
-          path: "/middle/$call/2"
+          reference:
+            - middle
+            - "$call"
+            - 2
         - column: 15
-          function: /middle
           function_column: 3
           function_line: 14
           line: 40
-          path: "/reraised/$call/1/$call/1"
+          reference:
+            - reraised
+            - "$call"
+            - 1
+            - "$call"
+            - 1
       column: 11
       kind: divide_by_zero
       line: 12
       message: "`div` by zero"
-      path: "/leaf/$call/2"
       reference:
         - leaf
         - "$call"
@@ -238,7 +257,6 @@ root:
     kind: divide_by_zero
     line: 44
     message: "`div` by zero"
-    path: "/reraised/$call/1/$call/2/$call/2"
     reference:
       - reraised
       - "$call"

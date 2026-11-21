@@ -1,16 +1,15 @@
 error:
   calls:
     - column: 12
-      function: /double
       function_column: 3
       function_line: 4
       line: 2
-      path: /bad
+      reference:
+        - bad
   column: 12
   kind: arity
   line: 2
-  message: "function `/double` takes 1 argument (n), got 2"
-  path: /bad
+  message: "the function defined at 4:3 takes 1 argument (n), got 2"
   reference:
     - bad
 status: error

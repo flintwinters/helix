@@ -1,16 +1,17 @@
 error:
   calls:
     - column: 7
-      function: "/r/$call/1"
       function_column: 7
       function_line: 5
       line: 5
-      path: "/r/$call/1"
+      reference:
+        - r
+        - "$call"
+        - 1
   column: 15
   kind: divide_by_zero
   line: 7
   message: "`div` by zero"
-  path: "/r/$call/1/$call/2"
   reference:
     - r
     - "$call"

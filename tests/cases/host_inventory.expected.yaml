@@ -564,6 +564,84 @@ annotations:
     value: 2
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -1770,44 +1848,76 @@ root:
       - calls:
           - column: 19
             file: "std:inventory"
-            function: /require
             function_column: 3
             function_file: "std:inventory"
             function_line: 187
             line: 19
-            path: "/add_hosts/$call/2/$call/1/$call/2/$call/2"
+            reference:
+              - add_hosts
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 2
           - column: 11
             file: "std:inventory"
-            function: "/add_hosts/$call/2/$call/1"
             function_column: 11
             function_file: "std:inventory"
             function_line: 13
             line: 13
-            path: "/add_hosts/$call/2/$call/1"
+            reference:
+              - add_hosts
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 19
             file: "std:inventory"
-            function: /add_hosts
             function_column: 3
             function_file: "std:inventory"
             function_line: 8
             line: 228
-            path: "/resolve_checked/$call/2/$call/1/catalog/$call/1/$call/2"
+            reference:
+              - resolve_checked
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - catalog
+              - "$call"
+              - 1
+              - "$call"
+              - 2
           - column: 15
             file: "std:inventory"
-            function: "/resolve_checked/$call/2/$call/1/catalog/$call/1"
             function_column: 15
             function_file: "std:inventory"
             function_line: 225
             line: 225
-            path: "/resolve_checked/$call/2/$call/1/catalog/$call/1"
+            reference:
+              - resolve_checked
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - catalog
+              - "$call"
+              - 1
           - column: 11
             file: "std:inventory"
-            function: /resolve_checked
             function_column: 3
             function_file: "std:inventory"
             function_line: 218
             line: 200
-            path: "/resolve/$call/2/$call/1"
+            reference:
+              - resolve
+              - "$call"
+              - 2
+              - "$call"
+              - 1
         column: 15
         data:
           host: local
@@ -1816,7 +1926,6 @@ root:
         kind: inventory_duplicate_host
         line: 193
         message: Host identities must be unique across all inventory inputs
-        path: "/require/$call/2/$call/3"
         phase: type
         reference:
           - require
@@ -1848,7 +1957,6 @@ root:
         kind: type
         line: 201
         message: "1 type violation: expected record | record, got map {transport: \"ssh\"}"
-        path: "/resolve/$call/2/$call/1/$call/1/$call/1"
         phase: type
         reference:
           - resolve
@@ -1868,52 +1976,81 @@ root:
       - calls:
           - column: 15
             file: "std:inventory"
-            function: /require
             function_column: 3
             function_file: "std:inventory"
             function_line: 187
             line: 355
-            path: "/validate_hosts/$call/2/$call/1/$call/2"
+            reference:
+              - validate_hosts
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 2
           - column: 11
             file: "std:inventory"
-            function: "/validate_hosts/$call/2/$call/1"
             function_column: 11
             function_file: "std:inventory"
             function_line: 352
             line: 352
-            path: "/validate_hosts/$call/2/$call/1"
+            reference:
+              - validate_hosts
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 15
             file: "std:inventory"
-            function: /validate_hosts
             function_column: 3
             function_file: "std:inventory"
             function_line: 347
             line: 184
-            path: "/requested/$call/2/$call/1"
+            reference:
+              - requested
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 11
             file: "std:inventory"
-            function: /requested
             function_column: 3
             function_file: "std:inventory"
             function_line: 180
             line: 300
-            path: "/select_targets/$call/2/$call/1/included"
+            reference:
+              - select_targets
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - included
           - column: 19
             file: "std:inventory"
-            function: /select_targets
             function_column: 3
             function_file: "std:inventory"
             function_line: 289
             line: 256
-            path: "/resolve_checked/$call/2/$call/2/$call/6"
+            reference:
+              - resolve_checked
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 6
           - column: 11
             file: "std:inventory"
-            function: /resolve_checked
             function_column: 3
             function_file: "std:inventory"
             function_line: 218
             line: 200
-            path: "/resolve/$call/2/$call/1"
+            reference:
+              - resolve
+              - "$call"
+              - 2
+              - "$call"
+              - 1
         column: 15
         data:
           host: missing
@@ -1921,7 +2058,6 @@ root:
         kind: inventory_missing_host
         line: 193
         message: Inventory references an unknown host
-        path: "/require/$call/2/$call/3"
         phase: type
         reference:
           - require

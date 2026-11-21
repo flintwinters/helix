@@ -1,16 +1,15 @@
 error:
   calls:
     - column: 15
-      function: /allocate
       function_column: 3
       function_line: 4
       line: 18
-      path: /result
+      reference:
+        - result
   column: 15
   kind: assertion
   line: 11
   message: "allocate count must be positive; pass at least 1"
-  path: "/allocate/$call/2/$call/1/$call/1"
   reference:
     - allocate
     - "$call"

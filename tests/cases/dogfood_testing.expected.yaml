@@ -447,16 +447,23 @@ annotations:
         calls:
           - column: 64
             file: "std:test"
-            function: "/$call/1/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1"
             function_column: 29
             function_line: 27
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 37
         kind: divide_by_zero
         line: 29
         message: "`div` by zero"
-        path: "/$call/1/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1/$call/2"
         reference:
           - "$call"
           - 1
@@ -543,16 +550,23 @@ annotations:
         calls:
           - column: 64
             file: "std:test"
-            function: "/$call/1/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1"
             function_column: 29
             function_line: 27
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 37
         kind: divide_by_zero
         line: 29
         message: "`div` by zero"
-        path: "/$call/1/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1/$call/2"
         reference:
           - "$call"
           - 1
@@ -639,16 +653,23 @@ annotations:
         calls:
           - column: 64
             file: "std:test"
-            function: "/$call/1/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1"
             function_column: 29
             function_line: 27
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 37
         kind: divide_by_zero
         line: 29
         message: "`div` by zero"
-        path: "/$call/1/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1/$call/2"
         reference:
           - "$call"
           - 1
@@ -689,16 +710,23 @@ annotations:
       calls:
         - column: 64
           file: "std:test"
-          function: "/$call/1/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1"
           function_column: 29
           function_line: 27
           line: 9
-          path: "/capture/$call/2/$call/1/$call/4/$call/1"
+          reference:
+            - capture
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 4
+            - "$call"
+            - 1
       column: 37
       kind: divide_by_zero
       line: 29
       message: "`div` by zero"
-      path: "/$call/1/basics/$call/1/1/run/$call/2/$call/1/$call/1/$call/1/$call/2"
       reference:
         - "$call"
         - 1
@@ -1209,16 +1237,23 @@ annotations:
         calls:
           - column: 64
             file: "std:test"
-            function: "/$call/1/basics/$call/1/4/run/$call/2/$call/1"
             function_column: 21
             function_line: 60
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 49
         kind: cleanup
         line: 62
         message: ran
-        path: "/$call/1/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
         reference:
           - "$call"
           - 1
@@ -1299,16 +1334,23 @@ annotations:
         calls:
           - column: 64
             file: "std:test"
-            function: "/$call/1/basics/$call/1/4/run/$call/2/$call/1"
             function_column: 21
             function_line: 60
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 49
         kind: cleanup
         line: 62
         message: ran
-        path: "/$call/1/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
         reference:
           - "$call"
           - 1
@@ -1389,16 +1431,23 @@ annotations:
         calls:
           - column: 64
             file: "std:test"
-            function: "/$call/1/basics/$call/1/4/run/$call/2/$call/1"
             function_column: 21
             function_line: 60
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 49
         kind: cleanup
         line: 62
         message: ran
-        path: "/$call/1/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
         reference:
           - "$call"
           - 1
@@ -1437,16 +1486,23 @@ annotations:
       calls:
         - column: 64
           file: "std:test"
-          function: "/$call/1/basics/$call/1/4/run/$call/2/$call/1"
           function_column: 21
           function_line: 60
           line: 9
-          path: "/capture/$call/2/$call/1/$call/4/$call/1"
+          reference:
+            - capture
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 4
+            - "$call"
+            - 1
       column: 49
       kind: cleanup
       line: 62
       message: ran
-      path: "/$call/1/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
       reference:
         - "$call"
         - 1
@@ -1486,16 +1542,23 @@ annotations:
         calls:
           - column: 64
             file: "std:test"
-            function: "/$call/1/basics/$call/1/4/run/$call/2/$call/1"
             function_column: 21
             function_line: 60
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 49
         kind: cleanup
         line: 62
         message: ran
-        path: "/$call/1/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
         reference:
           - "$call"
           - 1
@@ -1537,16 +1600,23 @@ annotations:
         calls:
           - column: 64
             file: "std:test"
-            function: "/$call/1/basics/$call/1/4/run/$call/2/$call/1"
             function_column: 21
             function_line: 60
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 49
         kind: cleanup
         line: 62
         message: ran
-        path: "/$call/1/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
         reference:
           - "$call"
           - 1
@@ -1775,16 +1845,23 @@ annotations:
         calls:
           - column: 64
             file: "std:test"
-            function: "/$call/1/basics/$call/1/5/run/$call/2/$call/1"
             function_column: 21
             function_line: 71
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 74
         kind: cleanup
         line: 73
         message: ran
-        path: "/$call/1/basics/$call/1/5/run/$call/2/$call/1/$call/2/$call/2"
         reference:
           - "$call"
           - 1
@@ -1865,16 +1942,23 @@ annotations:
         calls:
           - column: 64
             file: "std:test"
-            function: "/$call/1/basics/$call/1/5/run/$call/2/$call/1"
             function_column: 21
             function_line: 71
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 74
         kind: cleanup
         line: 73
         message: ran
-        path: "/$call/1/basics/$call/1/5/run/$call/2/$call/1/$call/2/$call/2"
         reference:
           - "$call"
           - 1
@@ -1933,6 +2017,269 @@ annotations:
           - "$call"
           - 1
         source: "<root>"
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      error:
+        calls:
+          - column: 64
+            file: "std:test"
+            function_column: 21
+            function_line: 71
+            line: 9
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
+        column: 74
+        kind: cleanup
+        line: 73
+        message: ran
+        reference:
+          - "$call"
+          - 1
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+      outcome: failed
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - throws
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - throws
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      calls:
+        - column: 64
+          file: "std:test"
+          function_column: 21
+          function_line: 71
+          line: 9
+          reference:
+            - capture
+            - "$call"
+            - 2
+            - "$call"
+            - 1
+            - "$call"
+            - 4
+            - "$call"
+            - 1
+      column: 74
+      kind: cleanup
+      line: 73
+      message: ran
+      reference:
+        - "$call"
+        - 1
+        - basics
+        - "$call"
+        - 1
+        - 5
+        - run
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+        - "$call"
+        - 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - capture
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - capture
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      outcome: passed
+      value:
+        calls:
+          - column: 64
+            file: "std:test"
+            function_column: 21
+            function_line: 71
+            line: 9
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
+        column: 74
+        kind: cleanup
+        line: 73
+        message: ran
+        reference:
+          - "$call"
+          - 1
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 3
+        source: "std:test"
+    kind: result
+    target:
+      path:
+        - case
+        - "$call"
+        - 2
+      source: "std:test"
+    type: map
+    value:
+      input: ~
+      name: cleanup_on_failure
+      outcome: passed
+      value:
+        calls:
+          - column: 64
+            file: "std:test"
+            function_column: 21
+            function_line: 71
+            line: 9
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
+        column: 74
+        kind: cleanup
+        line: 73
+        message: ran
+        reference:
+          - "$call"
+          - 1
+          - basics
+          - "$call"
+          - 1
+          - 5
+          - run
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 2
+          - "$call"
+          - 2
+  - declaration:
+      code:
+        "$ref": map
+      location:
+        path:
+          - case
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:test"
+    kind: parameter
+    runtime_values_omitted: true
+    target:
+      path:
+        - suite
+        - "$call"
+        - 2
+        - "$call"
+        - 1
+        - results
+        - "$call"
+        - 1
+      source: "std:test"
+    type: map
+    value:
+      name: equality
+      run:
+        kind: function
+        location:
+          path:
+            - "$call"
+            - 1
+            - basics
+            - "$call"
+            - 1
+            - 0
+            - run
+          source: "<root>"
 annotations_truncated: true
 root:
   basics:
@@ -1962,16 +2309,23 @@ root:
           calls:
             - column: 64
               file: "std:test"
-              function: "/$call/1/basics/$call/1/4/run/$call/2/$call/1"
               function_column: 21
               function_line: 60
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 49
           kind: cleanup
           line: 62
           message: ran
-          path: "/$call/1/basics/$call/1/4/run/$call/2/$call/1/$call/2/$call/2"
           reference:
             - "$call"
             - 1
@@ -1995,16 +2349,23 @@ root:
           calls:
             - column: 64
               file: "std:test"
-              function: "/$call/1/basics/$call/1/5/run/$call/2/$call/1"
               function_column: 21
               function_line: 71
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 74
           kind: cleanup
           line: 73
           message: ran
-          path: "/$call/1/basics/$call/1/5/run/$call/2/$call/1/$call/2/$call/2"
           reference:
             - "$call"
             - 1
@@ -2039,19 +2400,35 @@ root:
       - error:
           calls:
             - column: 21
-              function: /equal
               function_column: 3
               function_file: "std:test"
               function_line: 70
               line: 272
-              path: "/$call/1/self_test/$call/1/0/run/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - self_test
+                - "$call"
+                - 1
+                - 0
+                - run
+                - "$call"
+                - 2
             - column: 64
               file: "std:test"
-              function: "/$call/1/self_test/$call/1/0/run"
               function_column: 13
               function_line: 270
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 11
           data:
             actual: 4
@@ -2060,7 +2437,6 @@ root:
           kind: assertion
           line: 77
           message: values differ
-          path: "/equal/$call/2/$call/3"
           reference:
             - equal
             - "$call"
@@ -2073,35 +2449,58 @@ root:
       - error:
           calls:
             - column: 17
-              function: /throws
               function_column: 3
               function_file: "std:test"
               function_line: 266
               line: 278
-              path: "/$call/1/self_test/$call/1/1/run/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - self_test
+                - "$call"
+                - 1
+                - 1
+                - run
+                - "$call"
+                - 2
             - column: 64
               file: "std:test"
-              function: "/$call/1/self_test/$call/1/1/run"
               function_column: 13
               function_line: 275
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 23
           data:
             error:
               calls:
                 - column: 64
                   file: "std:test"
-                  function: "/$call/1/self_test/$call/1/1/run/$call/2/$call/1"
                   function_column: 21
                   function_line: 280
                   line: 9
-                  path: "/capture/$call/2/$call/1/$call/4/$call/1"
+                  reference:
+                    - capture
+                    - "$call"
+                    - 2
+                    - "$call"
+                    - 1
+                    - "$call"
+                    - 4
+                    - "$call"
+                    - 1
               column: 29
               kind: divide_by_zero
               line: 282
               message: "`div` by zero"
-              path: "/$call/1/self_test/$call/1/1/run/$call/2/$call/1/$call/2"
               reference:
                 - "$call"
                 - 1
@@ -2121,7 +2520,6 @@ root:
           kind: assertion
           line: 287
           message: unexpected error kind
-          path: "/throws/$call/2/$call/2/$call/3/$call/2/$call/3"
           reference:
             - throws
             - "$call"
@@ -2140,19 +2538,35 @@ root:
       - error:
           calls:
             - column: 17
-              function: /throws
               function_column: 3
               function_file: "std:test"
               function_line: 266
               line: 289
-              path: "/$call/1/self_test/$call/1/2/run/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - self_test
+                - "$call"
+                - 1
+                - 2
+                - run
+                - "$call"
+                - 2
             - column: 64
               file: "std:test"
-              function: "/$call/1/self_test/$call/1/2/run"
               function_column: 13
               function_line: 286
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 15
           data:
             actual: ~
@@ -2161,7 +2575,6 @@ root:
           kind: assertion
           line: 275
           message: expected an error
-          path: "/throws/$call/2/$call/2/$call/2"
           reference:
             - throws
             - "$call"
@@ -2177,16 +2590,23 @@ root:
           calls:
             - column: 64
               file: "std:test"
-              function: "/$call/1/self_test/$call/1/3/run"
               function_column: 13
               function_line: 297
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 30
           kind: type
           line: 299
           message: "`assert` argument 1: expected boolean, got integer 1"
-          path: "/$call/1/self_test/$call/1/3/run/$call/2/$call/1"
           reference:
             - "$call"
             - 1
@@ -2946,26 +3366,47 @@ root:
           calls:
             - column: 43
               file: "std:test"
-              function: "/property/$call/2/$call/2"
               function_column: 11
               function_file: "std:test"
               function_line: 177
               line: 251
-              path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+              reference:
+                - table
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+                - "$call"
+                - 6
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 64
               file: "std:test"
-              function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
               function_column: 23
               function_file: "std:test"
               function_line: 249
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 19
           file: "std:test"
           kind: assertion
           line: 179
           message: property rejected sample
-          path: "/property/$call/2/$call/2/$call/2"
           reference:
             - property
             - "$call"
@@ -2981,26 +3422,47 @@ root:
           calls:
             - column: 43
               file: "std:test"
-              function: "/property/$call/2/$call/2"
               function_column: 11
               function_file: "std:test"
               function_line: 177
               line: 251
-              path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+              reference:
+                - table
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+                - "$call"
+                - 6
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 64
               file: "std:test"
-              function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
               function_column: 23
               function_file: "std:test"
               function_line: 249
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 19
           file: "std:test"
           kind: assertion
           line: 179
           message: property rejected sample
-          path: "/property/$call/2/$call/2/$call/2"
           reference:
             - property
             - "$call"
@@ -3016,26 +3478,47 @@ root:
           calls:
             - column: 43
               file: "std:test"
-              function: "/property/$call/2/$call/2"
               function_column: 11
               function_file: "std:test"
               function_line: 177
               line: 251
-              path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+              reference:
+                - table
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+                - "$call"
+                - 6
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 64
               file: "std:test"
-              function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
               function_column: 23
               function_file: "std:test"
               function_line: 249
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 19
           file: "std:test"
           kind: assertion
           line: 179
           message: property rejected sample
-          path: "/property/$call/2/$call/2/$call/2"
           reference:
             - property
             - "$call"
@@ -3051,26 +3534,47 @@ root:
           calls:
             - column: 43
               file: "std:test"
-              function: "/property/$call/2/$call/2"
               function_column: 11
               function_file: "std:test"
               function_line: 177
               line: 251
-              path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+              reference:
+                - table
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+                - "$call"
+                - 6
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 64
               file: "std:test"
-              function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
               function_column: 23
               function_file: "std:test"
               function_line: 249
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 19
           file: "std:test"
           kind: assertion
           line: 179
           message: property rejected sample
-          path: "/property/$call/2/$call/2/$call/2"
           reference:
             - property
             - "$call"
@@ -3086,26 +3590,47 @@ root:
           calls:
             - column: 43
               file: "std:test"
-              function: "/property/$call/2/$call/2"
               function_column: 11
               function_file: "std:test"
               function_line: 177
               line: 251
-              path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+              reference:
+                - table
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+                - "$call"
+                - 6
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 64
               file: "std:test"
-              function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
               function_column: 23
               function_file: "std:test"
               function_line: 249
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 19
           file: "std:test"
           kind: assertion
           line: 179
           message: property rejected sample
-          path: "/property/$call/2/$call/2/$call/2"
           reference:
             - property
             - "$call"
@@ -3121,26 +3646,47 @@ root:
           calls:
             - column: 43
               file: "std:test"
-              function: "/property/$call/2/$call/2"
               function_column: 11
               function_file: "std:test"
               function_line: 177
               line: 251
-              path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+              reference:
+                - table
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+                - "$call"
+                - 6
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 64
               file: "std:test"
-              function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
               function_column: 23
               function_file: "std:test"
               function_line: 249
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 19
           file: "std:test"
           kind: assertion
           line: 179
           message: property rejected sample
-          path: "/property/$call/2/$call/2/$call/2"
           reference:
             - property
             - "$call"
@@ -3191,19 +3737,33 @@ root:
       - error:
           calls:
             - column: 19
-              function: /equal
               function_column: 3
               function_file: "std:test"
               function_line: 70
               line: 248
-              path: "/$call/1/selectable/1/run/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - selectable
+                - 1
+                - run
+                - "$call"
+                - 2
             - column: 64
               file: "std:test"
-              function: "/$call/1/selectable/1/run"
               function_column: 11
               function_line: 246
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 11
           data:
             actual: 1
@@ -3212,7 +3772,6 @@ root:
           kind: assertion
           line: 77
           message: values differ
-          path: "/equal/$call/2/$call/3"
           reference:
             - equal
             - "$call"
@@ -3231,33 +3790,53 @@ root:
     calls:
       - column: 35
         file: "std:test"
-        function: /case
         function_column: 3
         function_file: "std:test"
         function_line: 16
         line: 219
-        path: "/suite/$call/2/$call/1/results/$call/1"
+        reference:
+          - suite
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - results
+          - "$call"
+          - 1
       - column: 19
-        function: /suite
         function_column: 3
         function_file: "std:test"
         function_line: 214
         line: 140
-        path: "/$call/1/invalid_spec/$call/1/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - invalid_spec
+          - "$call"
+          - 1
+          - "$call"
+          - 2
       - column: 64
         file: "std:test"
-        function: "/$call/1/invalid_spec/$call/1"
         function_column: 11
         function_line: 138
         line: 9
-        path: "/capture/$call/2/$call/1/$call/4/$call/1"
+        reference:
+          - capture
+          - "$call"
+          - 2
+          - "$call"
+          - 1
+          - "$call"
+          - 4
+          - "$call"
+          - 1
     column: 52
     file: "std:test"
     hint: "members: name; pass a default as the third argument to tolerate absence"
     kind: missing
     line: 22
     message: "map has no key `run`"
-    path: "/case/$call/2/$call/1/$call/1/$call/1/$call/2"
     reference:
       - case
       - "$call"
@@ -3284,19 +3863,37 @@ root:
       - error:
           calls:
             - column: 27
-              function: /require_pass
               function_column: 3
               function_file: "std:test"
               function_line: 182
               line: 168
-              path: "/$call/1/nested/$call/1/$call/1/$call/4/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - nested
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 2
             - column: 64
               file: "std:test"
-              function: "/$call/1/nested/$call/1/$call/1/$call/4"
               function_column: 19
               function_line: 166
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 15
           data:
             failed: 4
@@ -3305,19 +3902,35 @@ root:
               - error:
                   calls:
                     - column: 21
-                      function: /equal
                       function_column: 3
                       function_file: "std:test"
                       function_line: 70
                       line: 272
-                      path: "/$call/1/self_test/$call/1/0/run/$call/2"
+                      reference:
+                        - "$call"
+                        - 1
+                        - self_test
+                        - "$call"
+                        - 1
+                        - 0
+                        - run
+                        - "$call"
+                        - 2
                     - column: 64
                       file: "std:test"
-                      function: "/$call/1/self_test/$call/1/0/run"
                       function_column: 13
                       function_line: 270
                       line: 9
-                      path: "/capture/$call/2/$call/1/$call/4/$call/1"
+                      reference:
+                        - capture
+                        - "$call"
+                        - 2
+                        - "$call"
+                        - 1
+                        - "$call"
+                        - 4
+                        - "$call"
+                        - 1
                   column: 11
                   data:
                     actual: 4
@@ -3326,7 +3939,6 @@ root:
                   kind: assertion
                   line: 77
                   message: values differ
-                  path: "/equal/$call/2/$call/3"
                   reference:
                     - equal
                     - "$call"
@@ -3339,35 +3951,58 @@ root:
               - error:
                   calls:
                     - column: 17
-                      function: /throws
                       function_column: 3
                       function_file: "std:test"
                       function_line: 266
                       line: 278
-                      path: "/$call/1/self_test/$call/1/1/run/$call/2"
+                      reference:
+                        - "$call"
+                        - 1
+                        - self_test
+                        - "$call"
+                        - 1
+                        - 1
+                        - run
+                        - "$call"
+                        - 2
                     - column: 64
                       file: "std:test"
-                      function: "/$call/1/self_test/$call/1/1/run"
                       function_column: 13
                       function_line: 275
                       line: 9
-                      path: "/capture/$call/2/$call/1/$call/4/$call/1"
+                      reference:
+                        - capture
+                        - "$call"
+                        - 2
+                        - "$call"
+                        - 1
+                        - "$call"
+                        - 4
+                        - "$call"
+                        - 1
                   column: 23
                   data:
                     error:
                       calls:
                         - column: 64
                           file: "std:test"
-                          function: "/$call/1/self_test/$call/1/1/run/$call/2/$call/1"
                           function_column: 21
                           function_line: 280
                           line: 9
-                          path: "/capture/$call/2/$call/1/$call/4/$call/1"
+                          reference:
+                            - capture
+                            - "$call"
+                            - 2
+                            - "$call"
+                            - 1
+                            - "$call"
+                            - 4
+                            - "$call"
+                            - 1
                       column: 29
                       kind: divide_by_zero
                       line: 282
                       message: "`div` by zero"
-                      path: "/$call/1/self_test/$call/1/1/run/$call/2/$call/1/$call/2"
                       reference:
                         - "$call"
                         - 1
@@ -3387,7 +4022,6 @@ root:
                   kind: assertion
                   line: 287
                   message: unexpected error kind
-                  path: "/throws/$call/2/$call/2/$call/3/$call/2/$call/3"
                   reference:
                     - throws
                     - "$call"
@@ -3406,19 +4040,35 @@ root:
               - error:
                   calls:
                     - column: 17
-                      function: /throws
                       function_column: 3
                       function_file: "std:test"
                       function_line: 266
                       line: 289
-                      path: "/$call/1/self_test/$call/1/2/run/$call/2"
+                      reference:
+                        - "$call"
+                        - 1
+                        - self_test
+                        - "$call"
+                        - 1
+                        - 2
+                        - run
+                        - "$call"
+                        - 2
                     - column: 64
                       file: "std:test"
-                      function: "/$call/1/self_test/$call/1/2/run"
                       function_column: 13
                       function_line: 286
                       line: 9
-                      path: "/capture/$call/2/$call/1/$call/4/$call/1"
+                      reference:
+                        - capture
+                        - "$call"
+                        - 2
+                        - "$call"
+                        - 1
+                        - "$call"
+                        - 4
+                        - "$call"
+                        - 1
                   column: 15
                   data:
                     actual: ~
@@ -3427,7 +4077,6 @@ root:
                   kind: assertion
                   line: 275
                   message: expected an error
-                  path: "/throws/$call/2/$call/2/$call/2"
                   reference:
                     - throws
                     - "$call"
@@ -3443,16 +4092,23 @@ root:
                   calls:
                     - column: 64
                       file: "std:test"
-                      function: "/$call/1/self_test/$call/1/3/run"
                       function_column: 13
                       function_line: 297
                       line: 9
-                      path: "/capture/$call/2/$call/1/$call/4/$call/1"
+                      reference:
+                        - capture
+                        - "$call"
+                        - 2
+                        - "$call"
+                        - 1
+                        - "$call"
+                        - 4
+                        - "$call"
+                        - 1
                   column: 30
                   kind: type
                   line: 299
                   message: "`assert` argument 1: expected boolean, got integer 1"
-                  path: "/$call/1/self_test/$call/1/3/run/$call/2/$call/1"
                   reference:
                     - "$call"
                     - 1
@@ -3477,7 +4133,6 @@ root:
           kind: test_failure
           line: 188
           message: suite contains failures
-          path: "/require_pass/$call/2/$call/3"
           reference:
             - require_pass
             - "$call"
@@ -3523,26 +4178,47 @@ root:
             calls:
               - column: 43
                 file: "std:test"
-                function: "/property/$call/2/$call/2"
                 function_column: 11
                 function_file: "std:test"
                 function_line: 177
                 line: 251
-                path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+                reference:
+                  - table
+                  - "$call"
+                  - 2
+                  - "$call"
+                  - 1
+                  - "$call"
+                  - 1
+                  - "$call"
+                  - 2
+                  - "$call"
+                  - 6
+                  - "$call"
+                  - 2
+                  - "$call"
+                  - 1
               - column: 64
                 file: "std:test"
-                function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
                 function_column: 23
                 function_file: "std:test"
                 function_line: 249
                 line: 9
-                path: "/capture/$call/2/$call/1/$call/4/$call/1"
+                reference:
+                  - capture
+                  - "$call"
+                  - 2
+                  - "$call"
+                  - 1
+                  - "$call"
+                  - 4
+                  - "$call"
+                  - 1
             column: 19
             file: "std:test"
             kind: assertion
             line: 179
             message: property rejected sample
-            path: "/property/$call/2/$call/2/$call/2"
             reference:
               - property
               - "$call"
@@ -3565,19 +4241,33 @@ root:
       - error:
           calls:
             - column: 19
-              function: /equal
               function_column: 3
               function_file: "std:test"
               function_line: 70
               line: 248
-              path: "/$call/1/selectable/1/run/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - selectable
+                - 1
+                - run
+                - "$call"
+                - 2
             - column: 64
               file: "std:test"
-              function: "/$call/1/selectable/1/run"
               function_column: 11
               function_line: 246
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 11
           data:
             actual: 1
@@ -3586,7 +4276,6 @@ root:
           kind: assertion
           line: 77
           message: values differ
-          path: "/equal/$call/2/$call/3"
           reference:
             - equal
             - "$call"
@@ -3652,19 +4341,35 @@ root:
       - error:
           calls:
             - column: 21
-              function: /equal
               function_column: 3
               function_file: "std:test"
               function_line: 70
               line: 272
-              path: "/$call/1/self_test/$call/1/0/run/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - self_test
+                - "$call"
+                - 1
+                - 0
+                - run
+                - "$call"
+                - 2
             - column: 64
               file: "std:test"
-              function: "/$call/1/self_test/$call/1/0/run"
               function_column: 13
               function_line: 270
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 11
           data:
             actual: 4
@@ -3673,7 +4378,6 @@ root:
           kind: assertion
           line: 77
           message: values differ
-          path: "/equal/$call/2/$call/3"
           reference:
             - equal
             - "$call"
@@ -3686,35 +4390,58 @@ root:
       - error:
           calls:
             - column: 17
-              function: /throws
               function_column: 3
               function_file: "std:test"
               function_line: 266
               line: 278
-              path: "/$call/1/self_test/$call/1/1/run/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - self_test
+                - "$call"
+                - 1
+                - 1
+                - run
+                - "$call"
+                - 2
             - column: 64
               file: "std:test"
-              function: "/$call/1/self_test/$call/1/1/run"
               function_column: 13
               function_line: 275
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 23
           data:
             error:
               calls:
                 - column: 64
                   file: "std:test"
-                  function: "/$call/1/self_test/$call/1/1/run/$call/2/$call/1"
                   function_column: 21
                   function_line: 280
                   line: 9
-                  path: "/capture/$call/2/$call/1/$call/4/$call/1"
+                  reference:
+                    - capture
+                    - "$call"
+                    - 2
+                    - "$call"
+                    - 1
+                    - "$call"
+                    - 4
+                    - "$call"
+                    - 1
               column: 29
               kind: divide_by_zero
               line: 282
               message: "`div` by zero"
-              path: "/$call/1/self_test/$call/1/1/run/$call/2/$call/1/$call/2"
               reference:
                 - "$call"
                 - 1
@@ -3734,7 +4461,6 @@ root:
           kind: assertion
           line: 287
           message: unexpected error kind
-          path: "/throws/$call/2/$call/2/$call/3/$call/2/$call/3"
           reference:
             - throws
             - "$call"
@@ -3753,19 +4479,35 @@ root:
       - error:
           calls:
             - column: 17
-              function: /throws
               function_column: 3
               function_file: "std:test"
               function_line: 266
               line: 289
-              path: "/$call/1/self_test/$call/1/2/run/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - self_test
+                - "$call"
+                - 1
+                - 2
+                - run
+                - "$call"
+                - 2
             - column: 64
               file: "std:test"
-              function: "/$call/1/self_test/$call/1/2/run"
               function_column: 13
               function_line: 286
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 15
           data:
             actual: ~
@@ -3774,7 +4516,6 @@ root:
           kind: assertion
           line: 275
           message: expected an error
-          path: "/throws/$call/2/$call/2/$call/2"
           reference:
             - throws
             - "$call"
@@ -3790,16 +4531,23 @@ root:
           calls:
             - column: 64
               file: "std:test"
-              function: "/$call/1/self_test/$call/1/3/run"
               function_column: 13
               function_line: 297
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 30
           kind: type
           line: 299
           message: "`assert` argument 1: expected boolean, got integer 1"
-          path: "/$call/1/self_test/$call/1/3/run/$call/2/$call/1"
           reference:
             - "$call"
             - 1

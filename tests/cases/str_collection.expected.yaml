@@ -3,7 +3,6 @@ error:
   kind: type
   line: 2
   message: "`str` argument 1: expected a scalar, got list [1, 2]"
-  path: "/x/$call/1"
   reference:
     - x
     - "$call"

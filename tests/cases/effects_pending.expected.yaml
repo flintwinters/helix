@@ -22,7 +22,6 @@ root:
     kind: purity
     line: 38
     message: effects are forbidden during type time
-    path: "/$call/2/$call/10/$call/1/$call/1"
     phase: type
     reference:
       - "$call"

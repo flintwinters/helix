@@ -3,7 +3,6 @@ error:
   kind: type
   line: 2
   message: "`is` argument 2: unknown type `port`"
-  path: "/unknown/$call/2"
   reference:
     - unknown
     - "$call"

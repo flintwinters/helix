@@ -103,7 +103,6 @@ root:
     kind: type
     line: 21
     message: "`open_fields` argument 1: expected a class"
-    path: "/invalid/$call/1/$call/1"
     reference:
       - invalid
       - "$call"

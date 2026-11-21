@@ -500,7 +500,10 @@ root:
       predicate:
         column: 7
         line: 77
-        path: "/small/$call/2"
+        path:
+          - small
+          - "$call"
+          - 2
         reference:
           - small
           - "$call"

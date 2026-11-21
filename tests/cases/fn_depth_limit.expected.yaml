@@ -1,1216 +1,1615 @@
 error:
   calls:
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 11
-      function: /spin
       function_column: 3
       function_line: 4
       line: 6
-      path: "/spin/$call/2"
+      reference:
+        - spin
+        - "$call"
+        - 2
     - column: 14
-      function: /spin
       function_column: 3
       function_line: 4
       line: 2
-      path: /never
+      reference:
+        - never
   column: 11
   kind: depth
   line: 6
   message: calls nested deeper than 200
-  path: "/spin/$call/2"
   reference:
     - spin
     - "$call"

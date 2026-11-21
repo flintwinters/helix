@@ -4,7 +4,6 @@ error:
   kind: type
   line: 3
   message: "`add` argument 1: expected number, got string \"secret\""
-  path: "/leak/$call/1"
   reference:
     - leak
     - "$call"

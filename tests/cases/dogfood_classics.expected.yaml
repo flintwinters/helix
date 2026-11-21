@@ -25,6 +25,84 @@ annotations:
     value: 20
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 20
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 20
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -99,6 +177,84 @@ annotations:
     value: 2
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -152,6 +308,84 @@ annotations:
         - 1
       source: "<root>"
     type: integer
+    value: 3
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 3
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 3
   - declaration:
       code:
@@ -212,6 +446,84 @@ annotations:
     value: 4
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -257,6 +569,84 @@ annotations:
         - 1
       source: "<root>"
     type: integer
+    value: 30
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 30
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 30
   - declaration:
       code:
@@ -344,6 +734,84 @@ annotations:
     value: 2
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 2
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -397,6 +865,84 @@ annotations:
         - 1
       source: "<root>"
     type: integer
+    value: 3
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 3
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 3
   - declaration:
       code:
@@ -457,6 +1003,84 @@ annotations:
     value: 4
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 4
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -512,6 +1136,84 @@ annotations:
         - 1
       source: "<root>"
     type: integer
+    value: 5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 5
   - declaration:
       code:
@@ -574,6 +1276,84 @@ annotations:
     value: 6
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 6
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 6
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -631,6 +1411,84 @@ annotations:
         - 1
       source: "<root>"
     type: integer
+    value: 7
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 7
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 7
   - declaration:
       code:
@@ -695,6 +1553,84 @@ annotations:
     value: 8
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 8
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 8
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -754,6 +1690,84 @@ annotations:
         - 1
       source: "<root>"
     type: integer
+    value: 9
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 9
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 9
   - declaration:
       code:
@@ -820,6 +1834,84 @@ annotations:
     value: 10
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 10
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 10
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -881,6 +1973,84 @@ annotations:
         - 1
       source: "<root>"
     type: integer
+    value: 11
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 11
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 11
   - declaration:
       code:
@@ -949,6 +2119,84 @@ annotations:
     value: 12
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 12
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 12
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -1012,6 +2260,84 @@ annotations:
         - 1
       source: "<root>"
     type: integer
+    value: 13
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 13
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
     value: 13
   - declaration:
       code:
@@ -1082,1418 +2408,33 @@ annotations:
     value: 14
   - declaration:
       code:
-        "$call":
-          - list_of
-          - "$ref": integer
+        "$ref": number
       location:
         path:
-          - range
+          - max
           - "$call"
-          - 3
-        source: "std:list"
-    kind: result
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
     target:
       path:
         - range
         - "$call"
         - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 15
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 16
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 17
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 18
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 19
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 20
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 21
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-      - 20
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 22
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-      - 20
-      - 21
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 23
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-      - 20
-      - 21
-      - 22
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 24
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-      - 20
-      - 21
-      - 22
-      - 23
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 25
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-      - 20
-      - 21
-      - 22
-      - 23
-      - 24
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 26
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-      - 20
-      - 21
-      - 22
-      - 23
-      - 24
-      - 25
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 27
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-      - 20
-      - 21
-      - 22
-      - 23
-      - 24
-      - 25
-      - 26
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 28
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-      - 20
-      - 21
-      - 22
-      - 23
-      - 24
-      - 25
-      - 26
-      - 27
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - prime
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 29
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-      - 20
-      - 21
-      - 22
-      - 23
-      - 24
-      - 25
-      - 26
-      - 27
-      - 28
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - words
-        - "$call"
-        - 2
-        - "$call"
-        - 1
         - "$call"
         - 3
         - "$call"
         - 1
-      source: "<root>"
-    type: integer
-    value: 32
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
       source: "std:list"
     type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
-      - 10
-      - 11
-      - 12
-      - 13
-      - 14
-      - 15
-      - 16
-      - 17
-      - 18
-      - 19
-      - 20
-      - 21
-      - 22
-      - 23
-      - 24
-      - 25
-      - 26
-      - 27
-      - 28
-      - 29
-      - 30
-      - 31
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - words
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 1
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - words
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 4
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-  - declaration:
-      code:
-        "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - words
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "<root>"
-    type: integer
-    value: 9
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": integer
-      location:
-        path:
-          - range
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - range
-        - "$call"
-        - 2
-      source: "std:list"
-    type:
-      of: integer
-      type: list
-    value:
-      - 0
-      - 1
-      - 2
-      - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
+      of:
+        - integer
+        - float
+      type: union
+    value: 14
+annotations_truncated: true
 objects:
   object0:
     bindings: {}
@@ -2613,7 +2554,12 @@ objects:
     program:
       ref: object34
   object11:
-    bindings: {}
+    bindings:
+      flatten:
+        code:
+          path:
+            - flatten
+          source: "std:list"
     code:
       "$call":
         - fn
@@ -2622,17 +2568,45 @@ objects:
                 - list_of
                 - "$ref": list
         - "$call":
-            - fold
+            - if
             - "$call":
-                - fn
-                - - acc
-                  - xs
+                - lt
+                - "$call":
+                    - len
+                    - "$ref": xss
+                - 2
+            - "$call":
+                - get
+                - "$ref": xss
+                - 0
+                - []
+            - "$call":
+                - let
+                - middle:
+                    "$call":
+                      - div
+                      - "$call":
+                          - len
+                          - "$ref": xss
+                      - 2
                 - "$call":
                     - concat
-                    - "$ref": acc
-                    - "$ref": xs
-            - []
-            - "$ref": xss
+                    - "$call":
+                        - flatten
+                        - "$call":
+                            - slice
+                            - "$ref": xss
+                            - 0
+                            - "$ref": middle
+                    - "$call":
+                        - flatten
+                        - "$call":
+                            - slice
+                            - "$ref": xss
+                            - "$ref": middle
+                            - "$call":
+                                - len
+                                - "$ref": xss
         - "$ref": list
     environment: []
     kind: function
@@ -3103,40 +3077,60 @@ objects:
     program:
       ref: object34
   object24:
-    bindings: {}
+    bindings:
+      math.max:
+        code:
+          path:
+            - max
+          source: "std:math"
     code:
       "$call":
         - fn
         - - - "n"
             - "$ref": integer
         - "$call":
-            - let
-            - done:
-                "$call":
-                  - fn
-                  - - xs
-                  - "$call":
-                      - ge
-                      - "$call":
-                          - len
-                          - "$ref": xs
-                      - "$ref": "n"
-              step:
-                "$call":
-                  - fn
-                  - - xs
-                  - "$call":
-                      - append
-                      - "$ref": xs
-                      - "$call":
-                          - len
-                          - "$ref": xs
+            - slice
             - "$call":
                 - until
-                - "$ref": done
-                - "$ref": step
                 - "$call":
-                    - list
+                    - fn
+                    - - xs
+                    - "$call":
+                        - ge
+                        - "$call":
+                            - len
+                            - "$ref": xs
+                        - "$ref": "n"
+                - "$call":
+                    - fn
+                    - - xs
+                    - "$call":
+                        - call
+                        - "$call":
+                            - fn
+                            - - size
+                            - "$call":
+                                - concat
+                                - "$ref": xs
+                                - "$call":
+                                    - map
+                                    - "$call":
+                                        - fn
+                                        - - x
+                                        - "$call":
+                                            - add
+                                            - "$ref": x
+                                            - "$ref": size
+                                    - "$ref": xs
+                        - "$call":
+                            - len
+                            - "$ref": xs
+                - - 0
+            - 0
+            - "$call":
+                - math.max
+                - "$ref": "n"
+                - 0
         - "$call":
             - list_of
             - "$ref": integer
@@ -3149,27 +3143,53 @@ objects:
     program:
       ref: object34
   object25:
-    bindings: {}
+    bindings:
+      reverse:
+        code:
+          path:
+            - reverse
+          source: "std:list"
     code:
       "$call":
         - fn
         - - - xs
             - "$ref": list
         - "$call":
-            - fold
+            - if
             - "$call":
-                - fn
-                - - acc
-                  - x
+                - lt
+                - "$call":
+                    - len
+                    - "$ref": xs
+                - 2
+            - "$ref": xs
+            - "$call":
+                - let
+                - middle:
+                    "$call":
+                      - div
+                      - "$call":
+                          - len
+                          - "$ref": xs
+                      - 2
                 - "$call":
                     - concat
                     - "$call":
-                        - list
-                        - "$ref": x
-                    - "$ref": acc
-            - "$call":
-                - list
-            - "$ref": xs
+                        - reverse
+                        - "$call":
+                            - slice
+                            - "$ref": xs
+                            - "$ref": middle
+                            - "$call":
+                                - len
+                                - "$ref": xs
+                    - "$call":
+                        - reverse
+                        - "$call":
+                            - slice
+                            - "$ref": xs
+                            - 0
+                            - "$ref": middle
         - "$ref": list
     environment: []
     kind: function
@@ -3212,7 +3232,12 @@ objects:
     program:
       ref: object34
   object27:
-    bindings: {}
+    bindings:
+      sort_by:
+        code:
+          path:
+            - sort_by
+          source: "std:list"
     code:
       "$call":
         - fn
@@ -3221,108 +3246,76 @@ objects:
           - - before
             - "$ref": function
         - "$call":
-            - fold
+            - if
             - "$call":
-                - fn
-                - - ordered
-                  - item
+                - lt
                 - "$call":
-                    - "$call":
-                        - fn
-                        - - position
-                        - "$call":
-                            - concat
-                            - "$call":
-                                - slice
-                                - "$ref": ordered
-                                - 0
-                                - "$ref": position
-                            - "$call":
-                                - list
-                                - "$ref": item
-                            - "$call":
-                                - slice
-                                - "$ref": ordered
-                                - "$ref": position
-                                - "$call":
-                                    - len
-                                    - "$ref": ordered
-                    - "$call":
-                        - get
-                        - "$call":
-                            - until
-                            - "$call":
-                                - fn
-                                - - bounds
-                                - "$call":
-                                    - ge
-                                    - "$call":
-                                        - get
-                                        - "$ref": bounds
-                                        - 0
-                                    - "$call":
-                                        - get
-                                        - "$ref": bounds
-                                        - 1
-                            - "$call":
-                                - fn
-                                - - bounds
-                                - "$call":
-                                    - "$call":
-                                        - fn
-                                        - - low
-                                          - high
-                                          - middle
-                                        - "$call":
-                                            - if
-                                            - "$call":
-                                                - before
-                                                - "$ref": item
-                                                - "$call":
-                                                    - get
-                                                    - "$ref": ordered
-                                                    - "$ref": middle
-                                            - "$call":
-                                                - list
-                                                - "$ref": low
-                                                - "$ref": middle
-                                            - "$call":
-                                                - list
-                                                - "$call":
-                                                    - add
-                                                    - "$ref": middle
-                                                    - 1
-                                                - "$ref": high
-                                    - "$call":
-                                        - get
-                                        - "$ref": bounds
-                                        - 0
-                                    - "$call":
-                                        - get
-                                        - "$ref": bounds
-                                        - 1
-                                    - "$call":
-                                        - div
-                                        - "$call":
-                                            - add
-                                            - "$call":
-                                                - get
-                                                - "$ref": bounds
-                                                - 0
-                                            - "$call":
-                                                - get
-                                                - "$ref": bounds
-                                                - 1
-                                        - 2
-                            - "$call":
-                                - list
-                                - 0
-                                - "$call":
-                                    - len
-                                    - "$ref": ordered
-                        - 0
-            - []
+                    - len
+                    - "$ref": xs
+                - 2
             - "$ref": xs
+            - "$call":
+                - call
+                - "$call":
+                    - fn
+                    - - pivot
+                    - "$call":
+                        - concat
+                        - "$call":
+                            - sort_by
+                            - "$call":
+                                - filter
+                                - "$call":
+                                    - fn
+                                    - - x
+                                    - "$call":
+                                        - before
+                                        - "$ref": x
+                                        - "$ref": pivot
+                                - "$ref": xs
+                            - "$ref": before
+                        - "$call":
+                            - filter
+                            - "$call":
+                                - fn
+                                - - x
+                                - "$call":
+                                    - and
+                                    - "$call":
+                                        - not
+                                        - "$call":
+                                            - before
+                                            - "$ref": x
+                                            - "$ref": pivot
+                                    - "$call":
+                                        - not
+                                        - "$call":
+                                            - before
+                                            - "$ref": pivot
+                                            - "$ref": x
+                            - "$ref": xs
+                        - "$call":
+                            - sort_by
+                            - "$call":
+                                - filter
+                                - "$call":
+                                    - fn
+                                    - - x
+                                    - "$call":
+                                        - before
+                                        - "$ref": pivot
+                                        - "$ref": x
+                                - "$ref": xs
+                            - "$ref": before
+                - "$call":
+                    - get
+                    - "$ref": xs
+                    - "$call":
+                        - div
+                        - "$call":
+                            - len
+                            - "$ref": xs
+                        - 2
         - "$ref": list
     environment: []
     kind: function
@@ -4150,17 +4143,45 @@ objects:
                       - list_of
                       - "$ref": list
               - "$call":
-                  - fold
+                  - if
                   - "$call":
-                      - fn
-                      - - acc
-                        - xs
+                      - lt
+                      - "$call":
+                          - len
+                          - "$ref": xss
+                      - 2
+                  - "$call":
+                      - get
+                      - "$ref": xss
+                      - 0
+                      - []
+                  - "$call":
+                      - let
+                      - middle:
+                          "$call":
+                            - div
+                            - "$call":
+                                - len
+                                - "$ref": xss
+                            - 2
                       - "$call":
                           - concat
-                          - "$ref": acc
-                          - "$ref": xs
-                  - []
-                  - "$ref": xss
+                          - "$call":
+                              - flatten
+                              - "$call":
+                                  - slice
+                                  - "$ref": xss
+                                  - 0
+                                  - "$ref": middle
+                          - "$call":
+                              - flatten
+                              - "$call":
+                                  - slice
+                                  - "$ref": xss
+                                  - "$ref": middle
+                                  - "$call":
+                                      - len
+                                      - "$ref": xss
               - "$ref": list
           frequencies:
             "$call":
@@ -4300,33 +4321,48 @@ objects:
               - - - "n"
                   - "$ref": integer
               - "$call":
-                  - let
-                  - done:
-                      "$call":
-                        - fn
-                        - - xs
-                        - "$call":
-                            - ge
-                            - "$call":
-                                - len
-                                - "$ref": xs
-                            - "$ref": "n"
-                    step:
-                      "$call":
-                        - fn
-                        - - xs
-                        - "$call":
-                            - append
-                            - "$ref": xs
-                            - "$call":
-                                - len
-                                - "$ref": xs
+                  - slice
                   - "$call":
                       - until
-                      - "$ref": done
-                      - "$ref": step
                       - "$call":
-                          - list
+                          - fn
+                          - - xs
+                          - "$call":
+                              - ge
+                              - "$call":
+                                  - len
+                                  - "$ref": xs
+                              - "$ref": "n"
+                      - "$call":
+                          - fn
+                          - - xs
+                          - "$call":
+                              - call
+                              - "$call":
+                                  - fn
+                                  - - size
+                                  - "$call":
+                                      - concat
+                                      - "$ref": xs
+                                      - "$call":
+                                          - map
+                                          - "$call":
+                                              - fn
+                                              - - x
+                                              - "$call":
+                                                  - add
+                                                  - "$ref": x
+                                                  - "$ref": size
+                                          - "$ref": xs
+                              - "$call":
+                                  - len
+                                  - "$ref": xs
+                      - - 0
+                  - 0
+                  - "$call":
+                      - math.max
+                      - "$ref": "n"
+                      - 0
               - "$call":
                   - list_of
                   - "$ref": integer
@@ -4336,20 +4372,41 @@ objects:
               - - - xs
                   - "$ref": list
               - "$call":
-                  - fold
+                  - if
                   - "$call":
-                      - fn
-                      - - acc
-                        - x
+                      - lt
+                      - "$call":
+                          - len
+                          - "$ref": xs
+                      - 2
+                  - "$ref": xs
+                  - "$call":
+                      - let
+                      - middle:
+                          "$call":
+                            - div
+                            - "$call":
+                                - len
+                                - "$ref": xs
+                            - 2
                       - "$call":
                           - concat
                           - "$call":
-                              - list
-                              - "$ref": x
-                          - "$ref": acc
-                  - "$call":
-                      - list
-                  - "$ref": xs
+                              - reverse
+                              - "$call":
+                                  - slice
+                                  - "$ref": xs
+                                  - "$ref": middle
+                                  - "$call":
+                                      - len
+                                      - "$ref": xs
+                          - "$call":
+                              - reverse
+                              - "$call":
+                                  - slice
+                                  - "$ref": xs
+                                  - 0
+                                  - "$ref": middle
               - "$ref": list
           sort:
             "$call":
@@ -4376,108 +4433,76 @@ objects:
                 - - before
                   - "$ref": function
               - "$call":
-                  - fold
+                  - if
                   - "$call":
-                      - fn
-                      - - ordered
-                        - item
+                      - lt
                       - "$call":
-                          - "$call":
-                              - fn
-                              - - position
-                              - "$call":
-                                  - concat
-                                  - "$call":
-                                      - slice
-                                      - "$ref": ordered
-                                      - 0
-                                      - "$ref": position
-                                  - "$call":
-                                      - list
-                                      - "$ref": item
-                                  - "$call":
-                                      - slice
-                                      - "$ref": ordered
-                                      - "$ref": position
-                                      - "$call":
-                                          - len
-                                          - "$ref": ordered
-                          - "$call":
-                              - get
-                              - "$call":
-                                  - until
-                                  - "$call":
-                                      - fn
-                                      - - bounds
-                                      - "$call":
-                                          - ge
-                                          - "$call":
-                                              - get
-                                              - "$ref": bounds
-                                              - 0
-                                          - "$call":
-                                              - get
-                                              - "$ref": bounds
-                                              - 1
-                                  - "$call":
-                                      - fn
-                                      - - bounds
-                                      - "$call":
-                                          - "$call":
-                                              - fn
-                                              - - low
-                                                - high
-                                                - middle
-                                              - "$call":
-                                                  - if
-                                                  - "$call":
-                                                      - before
-                                                      - "$ref": item
-                                                      - "$call":
-                                                          - get
-                                                          - "$ref": ordered
-                                                          - "$ref": middle
-                                                  - "$call":
-                                                      - list
-                                                      - "$ref": low
-                                                      - "$ref": middle
-                                                  - "$call":
-                                                      - list
-                                                      - "$call":
-                                                          - add
-                                                          - "$ref": middle
-                                                          - 1
-                                                      - "$ref": high
-                                          - "$call":
-                                              - get
-                                              - "$ref": bounds
-                                              - 0
-                                          - "$call":
-                                              - get
-                                              - "$ref": bounds
-                                              - 1
-                                          - "$call":
-                                              - div
-                                              - "$call":
-                                                  - add
-                                                  - "$call":
-                                                      - get
-                                                      - "$ref": bounds
-                                                      - 0
-                                                  - "$call":
-                                                      - get
-                                                      - "$ref": bounds
-                                                      - 1
-                                              - 2
-                                  - "$call":
-                                      - list
-                                      - 0
-                                      - "$call":
-                                          - len
-                                          - "$ref": ordered
-                              - 0
-                  - []
+                          - len
+                          - "$ref": xs
+                      - 2
                   - "$ref": xs
+                  - "$call":
+                      - call
+                      - "$call":
+                          - fn
+                          - - pivot
+                          - "$call":
+                              - concat
+                              - "$call":
+                                  - sort_by
+                                  - "$call":
+                                      - filter
+                                      - "$call":
+                                          - fn
+                                          - - x
+                                          - "$call":
+                                              - before
+                                              - "$ref": x
+                                              - "$ref": pivot
+                                      - "$ref": xs
+                                  - "$ref": before
+                              - "$call":
+                                  - filter
+                                  - "$call":
+                                      - fn
+                                      - - x
+                                      - "$call":
+                                          - and
+                                          - "$call":
+                                              - not
+                                              - "$call":
+                                                  - before
+                                                  - "$ref": x
+                                                  - "$ref": pivot
+                                          - "$call":
+                                              - not
+                                              - "$call":
+                                                  - before
+                                                  - "$ref": pivot
+                                                  - "$ref": x
+                                  - "$ref": xs
+                              - "$call":
+                                  - sort_by
+                                  - "$call":
+                                      - filter
+                                      - "$call":
+                                          - fn
+                                          - - x
+                                          - "$call":
+                                              - before
+                                              - "$ref": pivot
+                                              - "$ref": x
+                                      - "$ref": xs
+                                  - "$ref": before
+                      - "$call":
+                          - get
+                          - "$ref": xs
+                          - "$call":
+                              - div
+                              - "$call":
+                                  - len
+                                  - "$ref": xs
+                              - 2
               - "$ref": list
           sum:
             "$call":

@@ -230,7 +230,8 @@ root:
       predicate:
         column: 3
         line: 33
-        path: /in_port
+        path:
+          - in_port
         reference:
           - in_port
         source: "<root>"

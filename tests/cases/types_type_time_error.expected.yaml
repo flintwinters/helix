@@ -3,7 +3,6 @@ error:
   kind: type
   line: 2
   message: "`list_of` argument 1: expected a type, got integer 42"
-  path: "/answer/$call/1/$call/1"
   phase: type
   reference:
     - answer

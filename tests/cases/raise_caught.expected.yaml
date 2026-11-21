@@ -7,7 +7,6 @@ root:
     kind: out_of_stock
     line: 5
     message: no widgets left
-    path: "/custom/$call/1"
     reference:
       - custom
       - "$call"

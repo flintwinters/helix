@@ -3,7 +3,6 @@ error:
   kind: overflow
   line: 3
   message: "`add` overflowed i64"
-  path: /b
   reference:
     - b
 status: error

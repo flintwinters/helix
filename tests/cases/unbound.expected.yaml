@@ -3,7 +3,6 @@ error:
   kind: unbound
   line: 3
   message: "unbound symbol `nope`"
-  path: "/b/$call/2"
   reference:
     - b
     - "$call"

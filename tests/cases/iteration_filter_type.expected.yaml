@@ -3,7 +3,6 @@ error:
   kind: type
   line: 5
   message: "`filter` predicate result: expected boolean, got integer 1"
-  path: "/r/$call/1"
   reference:
     - r
     - "$call"

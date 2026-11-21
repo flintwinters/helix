@@ -3,7 +3,6 @@ error:
   kind: import
   line: 2
   message: "unknown standard module `nope`; available: source, search, actor, http, facts, nginx, linux, helper, ssh, sqlite, convergence, type_descriptor, command, provider, orchestration, inventory, fuzz, validation, dependency, text, diff, json, csv, set, stack, queue, yaml, math, list, group, map, types, test, machine"
-  path: "/a/$call/1"
   reference:
     - a
     - "$call"

@@ -1,16 +1,16 @@
 error:
   calls:
     - column: 10
-      function: /f
       function_column: 3
       function_line: 3
       line: 9
-      path: /r
-  column: 19
-  kind: cycle
+      reference:
+        - r
+  column: 30
+  hint: "this reference is inside the value of the field `a` at line 7, which cannot read itself, and no enclosing scope declares `a`; rename the field or bind the outer value under another name"
+  kind: unbound
   line: 7
-  message: value depends on itself
-  path: "/f/$call/2/$call/1/a"
+  message: "unbound symbol `a`"
   reference:
     - f
     - "$call"
@@ -18,4 +18,6 @@ error:
     - "$call"
     - 1
     - a
+    - "$call"
+    - 1
 status: error

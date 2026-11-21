@@ -3,7 +3,6 @@ error:
   kind: type
   line: 2
   message: "an import names its module with a literal string such as `lib/x.yaml` or `std:math`"
-  path: "/a/$call/1"
   reference:
     - a
     - "$call"

@@ -465,18 +465,21 @@ root:
   blocked:
     calls:
       - column: 29
-        function: /emit
         function_column: 3
         function_file: tests/cases/modules/phase_effect.yaml
         function_line: 2
         line: 5
-        path: "/blocked/$call/1/$call/1"
+        reference:
+          - blocked
+          - "$call"
+          - 1
+          - "$call"
+          - 1
     column: 11
     file: tests/cases/modules/phase_effect.yaml
     kind: purity
     line: 4
     message: effects are forbidden during type time
-    path: "/emit/$call/2"
     phase: type
     reference:
       - emit

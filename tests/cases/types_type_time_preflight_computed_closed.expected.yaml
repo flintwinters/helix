@@ -3,7 +3,6 @@ error:
   kind: divide_by_zero
   line: 9
   message: "`div` by zero"
-  path: "/$call/2/$call/0/$call/2/$call/1"
   phase: type
   reference:
     - "$call"

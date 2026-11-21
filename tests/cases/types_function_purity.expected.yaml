@@ -527,17 +527,45 @@ objects:
                       - list_of
                       - "$ref": list
               - "$call":
-                  - fold
+                  - if
                   - "$call":
-                      - fn
-                      - - acc
-                        - xs
+                      - lt
+                      - "$call":
+                          - len
+                          - "$ref": xss
+                      - 2
+                  - "$call":
+                      - get
+                      - "$ref": xss
+                      - 0
+                      - []
+                  - "$call":
+                      - let
+                      - middle:
+                          "$call":
+                            - div
+                            - "$call":
+                                - len
+                                - "$ref": xss
+                            - 2
                       - "$call":
                           - concat
-                          - "$ref": acc
-                          - "$ref": xs
-                  - []
-                  - "$ref": xss
+                          - "$call":
+                              - flatten
+                              - "$call":
+                                  - slice
+                                  - "$ref": xss
+                                  - 0
+                                  - "$ref": middle
+                          - "$call":
+                              - flatten
+                              - "$call":
+                                  - slice
+                                  - "$ref": xss
+                                  - "$ref": middle
+                                  - "$call":
+                                      - len
+                                      - "$ref": xss
               - "$ref": list
           frequencies:
             "$call":
@@ -677,33 +705,48 @@ objects:
               - - - "n"
                   - "$ref": integer
               - "$call":
-                  - let
-                  - done:
-                      "$call":
-                        - fn
-                        - - xs
-                        - "$call":
-                            - ge
-                            - "$call":
-                                - len
-                                - "$ref": xs
-                            - "$ref": "n"
-                    step:
-                      "$call":
-                        - fn
-                        - - xs
-                        - "$call":
-                            - append
-                            - "$ref": xs
-                            - "$call":
-                                - len
-                                - "$ref": xs
+                  - slice
                   - "$call":
                       - until
-                      - "$ref": done
-                      - "$ref": step
                       - "$call":
-                          - list
+                          - fn
+                          - - xs
+                          - "$call":
+                              - ge
+                              - "$call":
+                                  - len
+                                  - "$ref": xs
+                              - "$ref": "n"
+                      - "$call":
+                          - fn
+                          - - xs
+                          - "$call":
+                              - call
+                              - "$call":
+                                  - fn
+                                  - - size
+                                  - "$call":
+                                      - concat
+                                      - "$ref": xs
+                                      - "$call":
+                                          - map
+                                          - "$call":
+                                              - fn
+                                              - - x
+                                              - "$call":
+                                                  - add
+                                                  - "$ref": x
+                                                  - "$ref": size
+                                          - "$ref": xs
+                              - "$call":
+                                  - len
+                                  - "$ref": xs
+                      - - 0
+                  - 0
+                  - "$call":
+                      - math.max
+                      - "$ref": "n"
+                      - 0
               - "$call":
                   - list_of
                   - "$ref": integer
@@ -713,20 +756,41 @@ objects:
               - - - xs
                   - "$ref": list
               - "$call":
-                  - fold
+                  - if
                   - "$call":
-                      - fn
-                      - - acc
-                        - x
+                      - lt
+                      - "$call":
+                          - len
+                          - "$ref": xs
+                      - 2
+                  - "$ref": xs
+                  - "$call":
+                      - let
+                      - middle:
+                          "$call":
+                            - div
+                            - "$call":
+                                - len
+                                - "$ref": xs
+                            - 2
                       - "$call":
                           - concat
                           - "$call":
-                              - list
-                              - "$ref": x
-                          - "$ref": acc
-                  - "$call":
-                      - list
-                  - "$ref": xs
+                              - reverse
+                              - "$call":
+                                  - slice
+                                  - "$ref": xs
+                                  - "$ref": middle
+                                  - "$call":
+                                      - len
+                                      - "$ref": xs
+                          - "$call":
+                              - reverse
+                              - "$call":
+                                  - slice
+                                  - "$ref": xs
+                                  - 0
+                                  - "$ref": middle
               - "$ref": list
           sort:
             "$call":
@@ -753,108 +817,76 @@ objects:
                 - - before
                   - "$ref": function
               - "$call":
-                  - fold
+                  - if
                   - "$call":
-                      - fn
-                      - - ordered
-                        - item
+                      - lt
                       - "$call":
-                          - "$call":
-                              - fn
-                              - - position
-                              - "$call":
-                                  - concat
-                                  - "$call":
-                                      - slice
-                                      - "$ref": ordered
-                                      - 0
-                                      - "$ref": position
-                                  - "$call":
-                                      - list
-                                      - "$ref": item
-                                  - "$call":
-                                      - slice
-                                      - "$ref": ordered
-                                      - "$ref": position
-                                      - "$call":
-                                          - len
-                                          - "$ref": ordered
-                          - "$call":
-                              - get
-                              - "$call":
-                                  - until
-                                  - "$call":
-                                      - fn
-                                      - - bounds
-                                      - "$call":
-                                          - ge
-                                          - "$call":
-                                              - get
-                                              - "$ref": bounds
-                                              - 0
-                                          - "$call":
-                                              - get
-                                              - "$ref": bounds
-                                              - 1
-                                  - "$call":
-                                      - fn
-                                      - - bounds
-                                      - "$call":
-                                          - "$call":
-                                              - fn
-                                              - - low
-                                                - high
-                                                - middle
-                                              - "$call":
-                                                  - if
-                                                  - "$call":
-                                                      - before
-                                                      - "$ref": item
-                                                      - "$call":
-                                                          - get
-                                                          - "$ref": ordered
-                                                          - "$ref": middle
-                                                  - "$call":
-                                                      - list
-                                                      - "$ref": low
-                                                      - "$ref": middle
-                                                  - "$call":
-                                                      - list
-                                                      - "$call":
-                                                          - add
-                                                          - "$ref": middle
-                                                          - 1
-                                                      - "$ref": high
-                                          - "$call":
-                                              - get
-                                              - "$ref": bounds
-                                              - 0
-                                          - "$call":
-                                              - get
-                                              - "$ref": bounds
-                                              - 1
-                                          - "$call":
-                                              - div
-                                              - "$call":
-                                                  - add
-                                                  - "$call":
-                                                      - get
-                                                      - "$ref": bounds
-                                                      - 0
-                                                  - "$call":
-                                                      - get
-                                                      - "$ref": bounds
-                                                      - 1
-                                              - 2
-                                  - "$call":
-                                      - list
-                                      - 0
-                                      - "$call":
-                                          - len
-                                          - "$ref": ordered
-                              - 0
-                  - []
+                          - len
+                          - "$ref": xs
+                      - 2
                   - "$ref": xs
+                  - "$call":
+                      - call
+                      - "$call":
+                          - fn
+                          - - pivot
+                          - "$call":
+                              - concat
+                              - "$call":
+                                  - sort_by
+                                  - "$call":
+                                      - filter
+                                      - "$call":
+                                          - fn
+                                          - - x
+                                          - "$call":
+                                              - before
+                                              - "$ref": x
+                                              - "$ref": pivot
+                                      - "$ref": xs
+                                  - "$ref": before
+                              - "$call":
+                                  - filter
+                                  - "$call":
+                                      - fn
+                                      - - x
+                                      - "$call":
+                                          - and
+                                          - "$call":
+                                              - not
+                                              - "$call":
+                                                  - before
+                                                  - "$ref": x
+                                                  - "$ref": pivot
+                                          - "$call":
+                                              - not
+                                              - "$call":
+                                                  - before
+                                                  - "$ref": pivot
+                                                  - "$ref": x
+                                  - "$ref": xs
+                              - "$call":
+                                  - sort_by
+                                  - "$call":
+                                      - filter
+                                      - "$call":
+                                          - fn
+                                          - - x
+                                          - "$call":
+                                              - before
+                                              - "$ref": pivot
+                                              - "$ref": x
+                                      - "$ref": xs
+                                  - "$ref": before
+                      - "$call":
+                          - get
+                          - "$ref": xs
+                          - "$call":
+                              - div
+                              - "$call":
+                                  - len
+                                  - "$ref": xs
+                              - 2
               - "$ref": list
           sum:
             "$call":

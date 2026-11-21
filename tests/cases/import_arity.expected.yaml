@@ -1,8 +1,8 @@
 error:
   column: 7
+  hint: "write `!call [import, path]`: load a Helix document or `std:` library"
   kind: arity
   line: 2
   message: "`import` takes 1 argument, got 0"
-  path: /
   reference: []
 status: error

@@ -3,7 +3,6 @@ error:
   kind: type
   line: 3
   message: "`add` argument 1: expected number, got string \"yes_string\""
-  path: "/b/$call/1"
   reference:
     - b
     - "$call"

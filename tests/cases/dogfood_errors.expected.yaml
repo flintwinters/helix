@@ -115,6 +115,84 @@ annotations:
     value: 5
   - declaration:
       code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 1
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 5
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:math"
+    kind: parameter
+    target:
+      path:
+        - range
+        - "$call"
+        - 2
+        - "$call"
+        - 3
+        - "$call"
+        - 2
+      source: "std:list"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 0
+  - declaration:
+      code:
+        "$ref": number
+      location:
+        path:
+          - max
+          - "$call"
+          - 3
+        source: "std:math"
+    kind: result
+    target:
+      path:
+        - max
+        - "$call"
+        - 2
+      source: "std:math"
+    type:
+      of:
+        - integer
+        - float
+      type: union
+    value: 5
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": integer
@@ -662,41 +740,78 @@ annotations:
       error:
         calls:
           - column: 36
-            function: /parse
             function_column: 3
             function_file: "std:yaml"
             function_line: 19
             line: 37
-            path: "/$call/1/batch/$call/2/$call/2/$call/1"
+            reference:
+              - "$call"
+              - 1
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 31
             file: "std:validation"
-            function: "/$call/1/batch/$call/2"
             function_column: 11
             function_line: 35
             line: 29
-            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+            reference:
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 43
             file: "std:test"
-            function: "/batch/$call/2/$call/2"
             function_column: 11
             function_file: "std:validation"
             function_line: 27
             line: 251
-            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+            reference:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 64
             file: "std:test"
-            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
             function_column: 23
             function_file: "std:test"
             function_line: 249
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 29
         file: "std:yaml"
         kind: parse
         line: 21
         message: "while parsing a flow mapping, did not find expected ',' or '}' (YAML line 2, column 1)"
-        path: "/parse/$call/2/$call/1"
         reference:
           - parse
           - "$call"
@@ -725,41 +840,78 @@ annotations:
       error:
         calls:
           - column: 36
-            function: /parse
             function_column: 3
             function_file: "std:yaml"
             function_line: 19
             line: 37
-            path: "/$call/1/batch/$call/2/$call/2/$call/1"
+            reference:
+              - "$call"
+              - 1
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 31
             file: "std:validation"
-            function: "/$call/1/batch/$call/2"
             function_column: 11
             function_line: 35
             line: 29
-            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+            reference:
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 43
             file: "std:test"
-            function: "/batch/$call/2/$call/2"
             function_column: 11
             function_file: "std:validation"
             function_line: 27
             line: 251
-            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+            reference:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 64
             file: "std:test"
-            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
             function_column: 23
             function_file: "std:test"
             function_line: 249
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 29
         file: "std:yaml"
         kind: parse
         line: 21
         message: "while parsing a flow mapping, did not find expected ',' or '}' (YAML line 2, column 1)"
-        path: "/parse/$call/2/$call/1"
         reference:
           - parse
           - "$call"
@@ -908,39 +1060,74 @@ annotations:
       error:
         calls:
           - column: 19
-            function: "/$call/1/validate"
             function_column: 7
             function_line: 165
             line: 37
-            path: "/$call/1/batch/$call/2/$call/2"
+            reference:
+              - "$call"
+              - 1
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
           - column: 31
             file: "std:validation"
-            function: "/$call/1/batch/$call/2"
             function_column: 11
             function_line: 35
             line: 29
-            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+            reference:
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 43
             file: "std:test"
-            function: "/batch/$call/2/$call/2"
             function_column: 11
             function_file: "std:validation"
             function_line: 27
             line: 251
-            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+            reference:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 64
             file: "std:test"
-            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
             function_column: 23
             function_file: "std:test"
             function_line: 249
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 34
         kind: assertion
         line: 172
         message: stock must be nonnegative
-        path: "/$call/1/validate/$call/2/$call/2/$call/1/$call/1"
         reference:
           - "$call"
           - 1
@@ -975,39 +1162,74 @@ annotations:
       error:
         calls:
           - column: 19
-            function: "/$call/1/validate"
             function_column: 7
             function_line: 165
             line: 37
-            path: "/$call/1/batch/$call/2/$call/2"
+            reference:
+              - "$call"
+              - 1
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
           - column: 31
             file: "std:validation"
-            function: "/$call/1/batch/$call/2"
             function_column: 11
             function_line: 35
             line: 29
-            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+            reference:
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 43
             file: "std:test"
-            function: "/batch/$call/2/$call/2"
             function_column: 11
             function_file: "std:validation"
             function_line: 27
             line: 251
-            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+            reference:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 64
             file: "std:test"
-            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
             function_column: 23
             function_file: "std:test"
             function_line: 249
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 34
         kind: assertion
         line: 172
         message: stock must be nonnegative
-        path: "/$call/1/validate/$call/2/$call/2/$call/1/$call/1"
         reference:
           - "$call"
           - 1
@@ -1162,40 +1384,75 @@ annotations:
       error:
         calls:
           - column: 19
-            function: "/$call/1/validate"
             function_column: 7
             function_line: 165
             line: 37
-            path: "/$call/1/batch/$call/2/$call/2"
+            reference:
+              - "$call"
+              - 1
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
           - column: 31
             file: "std:validation"
-            function: "/$call/1/batch/$call/2"
             function_column: 11
             function_line: 35
             line: 29
-            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+            reference:
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 43
             file: "std:test"
-            function: "/batch/$call/2/$call/2"
             function_column: 11
             function_file: "std:validation"
             function_line: 27
             line: 251
-            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+            reference:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 64
             file: "std:test"
-            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
             function_column: 23
             function_file: "std:test"
             function_line: 249
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 42
         hint: "members: stock; pass a default as the third argument to tolerate absence"
         kind: missing
         line: 169
         message: "map has no key `name`"
-        path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
         reference:
           - "$call"
           - 1
@@ -1229,40 +1486,75 @@ annotations:
       error:
         calls:
           - column: 19
-            function: "/$call/1/validate"
             function_column: 7
             function_line: 165
             line: 37
-            path: "/$call/1/batch/$call/2/$call/2"
+            reference:
+              - "$call"
+              - 1
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
           - column: 31
             file: "std:validation"
-            function: "/$call/1/batch/$call/2"
             function_column: 11
             function_line: 35
             line: 29
-            path: "/batch/$call/2/$call/2/$call/2/$call/1"
+            reference:
+              - batch
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 43
             file: "std:test"
-            function: "/batch/$call/2/$call/2"
             function_column: 11
             function_file: "std:validation"
             function_line: 27
             line: 251
-            path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+            reference:
+              - table
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 1
+              - "$call"
+              - 2
+              - "$call"
+              - 6
+              - "$call"
+              - 2
+              - "$call"
+              - 1
           - column: 64
             file: "std:test"
-            function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
             function_column: 23
             function_file: "std:test"
             function_line: 249
             line: 9
-            path: "/capture/$call/2/$call/1/$call/4/$call/1"
+            reference:
+              - capture
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - "$call"
+              - 4
+              - "$call"
+              - 1
         column: 42
         hint: "members: stock; pass a default as the third argument to tolerate absence"
         kind: missing
         line: 169
         message: "map has no key `name`"
-        path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
         reference:
           - "$call"
           - 1
@@ -1730,41 +2022,78 @@ root:
       - error:
           calls:
             - column: 36
-              function: /parse
               function_column: 3
               function_file: "std:yaml"
               function_line: 19
               line: 37
-              path: "/$call/1/batch/$call/2/$call/2/$call/1"
+              reference:
+                - "$call"
+                - 1
+                - batch
+                - "$call"
+                - 2
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 31
               file: "std:validation"
-              function: "/$call/1/batch/$call/2"
               function_column: 11
               function_line: 35
               line: 29
-              path: "/batch/$call/2/$call/2/$call/2/$call/1"
+              reference:
+                - batch
+                - "$call"
+                - 2
+                - "$call"
+                - 2
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 43
               file: "std:test"
-              function: "/batch/$call/2/$call/2"
               function_column: 11
               function_file: "std:validation"
               function_line: 27
               line: 251
-              path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+              reference:
+                - table
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+                - "$call"
+                - 6
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 64
               file: "std:test"
-              function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
               function_column: 23
               function_file: "std:test"
               function_line: 249
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 29
           file: "std:yaml"
           kind: parse
           line: 21
           message: "while parsing a flow mapping, did not find expected ',' or '}' (YAML line 2, column 1)"
-          path: "/parse/$call/2/$call/1"
           reference:
             - parse
             - "$call"
@@ -1779,39 +2108,74 @@ root:
       - error:
           calls:
             - column: 19
-              function: "/$call/1/validate"
               function_column: 7
               function_line: 165
               line: 37
-              path: "/$call/1/batch/$call/2/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - batch
+                - "$call"
+                - 2
+                - "$call"
+                - 2
             - column: 31
               file: "std:validation"
-              function: "/$call/1/batch/$call/2"
               function_column: 11
               function_line: 35
               line: 29
-              path: "/batch/$call/2/$call/2/$call/2/$call/1"
+              reference:
+                - batch
+                - "$call"
+                - 2
+                - "$call"
+                - 2
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 43
               file: "std:test"
-              function: "/batch/$call/2/$call/2"
               function_column: 11
               function_file: "std:validation"
               function_line: 27
               line: 251
-              path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+              reference:
+                - table
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+                - "$call"
+                - 6
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 64
               file: "std:test"
-              function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
               function_column: 23
               function_file: "std:test"
               function_line: 249
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 34
           kind: assertion
           line: 172
           message: stock must be nonnegative
-          path: "/$call/1/validate/$call/2/$call/2/$call/1/$call/1"
           reference:
             - "$call"
             - 1
@@ -1832,40 +2196,75 @@ root:
       - error:
           calls:
             - column: 19
-              function: "/$call/1/validate"
               function_column: 7
               function_line: 165
               line: 37
-              path: "/$call/1/batch/$call/2/$call/2"
+              reference:
+                - "$call"
+                - 1
+                - batch
+                - "$call"
+                - 2
+                - "$call"
+                - 2
             - column: 31
               file: "std:validation"
-              function: "/$call/1/batch/$call/2"
               function_column: 11
               function_line: 35
               line: 29
-              path: "/batch/$call/2/$call/2/$call/2/$call/1"
+              reference:
+                - batch
+                - "$call"
+                - 2
+                - "$call"
+                - 2
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 43
               file: "std:test"
-              function: "/batch/$call/2/$call/2"
               function_column: 11
               function_file: "std:validation"
               function_line: 27
               line: 251
-              path: "/table/$call/2/$call/1/$call/1/$call/2/$call/6/$call/2/$call/1"
+              reference:
+                - table
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 1
+                - "$call"
+                - 2
+                - "$call"
+                - 6
+                - "$call"
+                - 2
+                - "$call"
+                - 1
             - column: 64
               file: "std:test"
-              function: "/table/$call/2/$call/1/$call/1/$call/2/$call/6"
               function_column: 23
               function_file: "std:test"
               function_line: 249
               line: 9
-              path: "/capture/$call/2/$call/1/$call/4/$call/1"
+              reference:
+                - capture
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - "$call"
+                - 4
+                - "$call"
+                - 1
           column: 42
           hint: "members: stock; pass a default as the third argument to tolerate absence"
           kind: missing
           line: 169
           message: "map has no key `name`"
-          path: "/$call/1/validate/$call/2/$call/1/name/$call/2"
           reference:
             - "$call"
             - 1
@@ -1893,11 +2292,19 @@ root:
     - 8
     - calls:
         - column: 23
-          function: "/$call/1/calculate"
           function_column: 7
           function_line: 39
           line: 71
-          path: "/$call/1/calculations/$call/1/$call/2/$call/1"
+          reference:
+            - "$call"
+            - 1
+            - calculations
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 1
       column: 27
       data:
         - "+"
@@ -1905,7 +2312,6 @@ root:
       kind: arity
       line: 51
       message: calculator needs exactly two operands
-      path: "/$call/1/calculate/$call/2/$call/2/$call/3/$call/2"
       reference:
         - "$call"
         - 1
@@ -1920,17 +2326,24 @@ root:
         - 2
     - calls:
         - column: 23
-          function: "/$call/1/calculate"
           function_column: 7
           function_line: 39
           line: 71
-          path: "/$call/1/calculations/$call/1/$call/2/$call/1"
+          reference:
+            - "$call"
+            - 1
+            - calculations
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 1
       column: 35
       data: wat
       kind: syntax
       line: 63
       message: unknown calculator operator
-      path: "/$call/1/calculate/$call/2/$call/2/$call/3/$call/3/$call/2/$call/5"
       reference:
         - "$call"
         - 1
@@ -1949,17 +2362,24 @@ root:
         - 5
     - calls:
         - column: 23
-          function: "/$call/1/calculate"
           function_column: 7
           function_line: 39
           line: 71
-          path: "/$call/1/calculations/$call/1/$call/2/$call/1"
+          reference:
+            - "$call"
+            - 1
+            - calculations
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 1
       column: 23
       data: 42
       kind: syntax
       line: 47
       message: "expected [operator, left, right]"
-      path: "/$call/1/calculate/$call/2/$call/2/$call/2"
       reference:
         - "$call"
         - 1
@@ -1972,16 +2392,23 @@ root:
         - 2
     - calls:
         - column: 23
-          function: "/$call/1/calculate"
           function_column: 7
           function_line: 39
           line: 71
-          path: "/$call/1/calculations/$call/1/$call/2/$call/1"
+          reference:
+            - "$call"
+            - 1
+            - calculations
+            - "$call"
+            - 1
+            - "$call"
+            - 2
+            - "$call"
+            - 1
       column: 35
       kind: divide_by_zero
       line: 62
       message: "`div` by zero"
-      path: "/$call/1/calculate/$call/2/$call/2/$call/3/$call/3/$call/2/$call/4"
       reference:
         - "$call"
         - 1
@@ -2002,16 +2429,19 @@ root:
   cleanup_after_middle_failure:
     calls:
       - column: 15
-        function: "/$call/1/job"
         function_column: 7
         function_line: 95
         line: 79
-        path: "/$call/1/cleanup_after_middle_failure/$call/1"
+        reference:
+          - "$call"
+          - 1
+          - cleanup_after_middle_failure
+          - "$call"
+          - 1
     column: 23
     kind: cleanup
     line: 106
     message: release job lease
-    path: "/$call/1/job/$call/2/$call/2/$call/2"
     reference:
       - "$call"
       - 1
@@ -2025,16 +2455,19 @@ root:
   cleanup_after_success:
     calls:
       - column: 15
-        function: "/$call/1/job"
         function_column: 7
         function_line: 95
         line: 86
-        path: "/$call/1/cleanup_after_success/$call/1"
+        reference:
+          - "$call"
+          - 1
+          - cleanup_after_success
+          - "$call"
+          - 1
     column: 23
     kind: cleanup
     line: 106
     message: release job lease
-    path: "/$call/1/job/$call/2/$call/2/$call/2"
     reference:
       - "$call"
       - 1
@@ -2050,17 +2483,27 @@ root:
       - error:
           calls:
             - column: 46
-              function: "/$call/1/attempt"
               function_column: 7
               function_line: 21
               line: 141
-              path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
+              reference:
+                - "$call"
+                - 1
+                - retry
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - outcome
+                - "$call"
+                - 1
+                - "$call"
+                - 3
           column: 23
           data: 0
           kind: transient
           line: 30
           message: step failed
-          path: "/$call/1/attempt/$call/2/$call/2/$call/3"
           reference:
             - "$call"
             - 1
@@ -2074,17 +2517,27 @@ root:
       - error:
           calls:
             - column: 46
-              function: "/$call/1/attempt"
               function_column: 7
               function_line: 21
               line: 141
-              path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
+              reference:
+                - "$call"
+                - 1
+                - retry
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - outcome
+                - "$call"
+                - 1
+                - "$call"
+                - 3
           column: 23
           data: 1
           kind: transient
           line: 30
           message: step failed
-          path: "/$call/1/attempt/$call/2/$call/2/$call/3"
           reference:
             - "$call"
             - 1
@@ -2099,17 +2552,27 @@ root:
       error:
         calls:
           - column: 46
-            function: "/$call/1/attempt"
             function_column: 7
             function_line: 21
             line: 141
-            path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
+            reference:
+              - "$call"
+              - 1
+              - retry
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - outcome
+              - "$call"
+              - 1
+              - "$call"
+              - 3
         column: 23
         data: 1
         kind: transient
         line: 30
         message: step failed
-        path: "/$call/1/attempt/$call/2/$call/2/$call/3"
         reference:
           - "$call"
           - 1
@@ -2125,17 +2588,27 @@ root:
       - error:
           calls:
             - column: 46
-              function: "/$call/1/attempt"
               function_column: 7
               function_line: 21
               line: 141
-              path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
+              reference:
+                - "$call"
+                - 1
+                - retry
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - outcome
+                - "$call"
+                - 1
+                - "$call"
+                - 3
           column: 23
           data: 0
           kind: fatal
           line: 30
           message: step failed
-          path: "/$call/1/attempt/$call/2/$call/2/$call/3"
           reference:
             - "$call"
             - 1
@@ -2150,17 +2623,27 @@ root:
       error:
         calls:
           - column: 46
-            function: "/$call/1/attempt"
             function_column: 7
             function_line: 21
             line: 141
-            path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
+            reference:
+              - "$call"
+              - 1
+              - retry
+              - "$call"
+              - 2
+              - "$call"
+              - 1
+              - outcome
+              - "$call"
+              - 1
+              - "$call"
+              - 3
         column: 23
         data: 0
         kind: fatal
         line: 30
         message: step failed
-        path: "/$call/1/attempt/$call/2/$call/2/$call/3"
         reference:
           - "$call"
           - 1
@@ -2177,7 +2660,6 @@ root:
     kind: divide_by_zero
     line: 128
     message: "`div` by zero"
-    path: "/$call/1/preserved/$call/1/$call/1"
     reference:
       - "$call"
       - 1
@@ -2191,17 +2673,27 @@ root:
       - error:
           calls:
             - column: 46
-              function: "/$call/1/attempt"
               function_column: 7
               function_line: 21
               line: 141
-              path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
+              reference:
+                - "$call"
+                - 1
+                - retry
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - outcome
+                - "$call"
+                - 1
+                - "$call"
+                - 3
           column: 23
           data: 0
           kind: transient
           line: 30
           message: step failed
-          path: "/$call/1/attempt/$call/2/$call/2/$call/3"
           reference:
             - "$call"
             - 1
@@ -2215,17 +2707,27 @@ root:
       - error:
           calls:
             - column: 46
-              function: "/$call/1/attempt"
               function_column: 7
               function_line: 21
               line: 141
-              path: "/$call/1/retry/$call/2/$call/1/outcome/$call/1/$call/3"
+              reference:
+                - "$call"
+                - 1
+                - retry
+                - "$call"
+                - 2
+                - "$call"
+                - 1
+                - outcome
+                - "$call"
+                - 1
+                - "$call"
+                - 3
           column: 23
           data: 1
           kind: transient
           line: 30
           message: step failed
-          path: "/$call/1/attempt/$call/2/$call/2/$call/3"
           reference:
             - "$call"
             - 1
@@ -2242,33 +2744,48 @@ root:
   wrapped:
     calls:
       - column: 15
-        function: "/$call/1/load_config/$call/2/$call/2"
         function_column: 15
         function_line: 114
         line: 114
-        path: "/$call/1/load_config/$call/2/$call/2"
+        reference:
+          - "$call"
+          - 1
+          - load_config
+          - "$call"
+          - 2
+          - "$call"
+          - 2
       - column: 15
-        function: "/$call/1/load_config"
         function_column: 7
         function_line: 108
         line: 178
-        path: "/$call/1/wrapped/$call/1"
+        reference:
+          - "$call"
+          - 1
+          - wrapped
+          - "$call"
+          - 1
     cause:
       cause:
         calls:
           - column: 19
-            function: /parse
             function_column: 3
             function_file: "std:yaml"
             function_line: 19
             line: 112
-            path: "/$call/1/load_config/$call/2/$call/1"
+            reference:
+              - "$call"
+              - 1
+              - load_config
+              - "$call"
+              - 2
+              - "$call"
+              - 1
         column: 29
         file: "std:yaml"
         kind: parse
         line: 21
         message: "while parsing a flow mapping, did not find expected ',' or '}' (YAML line 2, column 1)"
-        path: "/parse/$call/2/$call/1"
         reference:
           - parse
           - "$call"
@@ -2281,7 +2798,6 @@ root:
     kind: configuration
     line: 117
     message: cannot load deployment configuration
-    path: "/$call/1/load_config/$call/2/$call/2/$call/2"
     reference:
       - "$call"
       - 1
@@ -2295,16 +2811,19 @@ root:
   wrong_call:
     calls:
       - column: 15
-        function: "/$call/1/allocate"
         function_column: 7
         function_line: 7
         line: 185
-        path: "/$call/1/wrong_call/$call/1"
+        reference:
+          - "$call"
+          - 1
+          - wrong_call
+          - "$call"
+          - 1
     column: 19
     kind: assertion
     line: 14
     message: "allocate count must be positive; pass at least 1"
-    path: "/$call/1/allocate/$call/2/$call/1/$call/1"
     reference:
       - "$call"
       - 1

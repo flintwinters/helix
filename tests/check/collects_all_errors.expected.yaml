@@ -44,7 +44,8 @@ errors:
           predicate:
             column: 3
             line: 11
-            path: /in_port
+            path:
+              - in_port
             reference:
               - in_port
             source: "<root>"
@@ -52,7 +53,6 @@ errors:
     kind: type
     line: 2
     message: "1 type violation: failed its refinement check"
-    path: "/bad_port/$call/1"
     reference:
       - bad_port
       - "$call"
@@ -61,7 +61,6 @@ errors:
     kind: divide_by_zero
     line: 4
     message: "`div` by zero"
-    path: /fleet/one
     reference:
       - fleet
       - one
@@ -77,7 +76,6 @@ errors:
     kind: type
     line: 4
     message: "1 type violation: expected string, got integer 7"
-    path: "/fleet/three/$call/1"
     reference:
       - fleet
       - three
@@ -87,14 +85,12 @@ errors:
     kind: assertion
     line: 6
     message: values must be unique
-    path: /fleet_unique
     reference:
       - fleet_unique
   - column: 34
     kind: unbound
     line: 15
     message: "unbound symbol `nothing_here`"
-    path: "/unbound_use/$call/2"
     reference:
       - unbound_use
       - "$call"

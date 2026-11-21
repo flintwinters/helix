@@ -1,9 +1,9 @@
 error:
   column: 10
+  hint: "write `!call [add, a, b, more...]`: sum, folded left; int + int stays int, any float makes a float"
   kind: arity
   line: 3
   message: "`add` takes at least 2 arguments, got 1"
-  path: /b
   reference:
     - b
 status: error

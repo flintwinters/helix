@@ -8,7 +8,12 @@ root:
       predicate:
         column: 11
         line: 19
-        path: "/$call/1/positive/$call/2"
+        path:
+          - "$call"
+          - 1
+          - positive
+          - "$call"
+          - 2
         reference:
           - "$call"
           - 1
@@ -30,7 +35,12 @@ root:
         predicate:
           column: 11
           line: 58
-          path: "/$call/1/small/$call/2"
+          path:
+            - "$call"
+            - 1
+            - small
+            - "$call"
+            - 2
           reference:
             - "$call"
             - 1
@@ -49,7 +59,12 @@ root:
       predicate:
         column: 11
         line: 19
-        path: "/$call/1/positive/$call/2"
+        path:
+          - "$call"
+          - 1
+          - positive
+          - "$call"
+          - 2
         reference:
           - "$call"
           - 1
@@ -66,7 +81,12 @@ root:
       predicate:
         column: 11
         line: 58
-        path: "/$call/1/small/$call/2"
+        path:
+          - "$call"
+          - 1
+          - small
+          - "$call"
+          - 2
         reference:
           - "$call"
           - 1
@@ -83,7 +103,12 @@ root:
       predicate:
         column: 11
         line: 19
-        path: "/$call/1/positive/$call/2"
+        path:
+          - "$call"
+          - 1
+          - positive
+          - "$call"
+          - 2
         reference:
           - "$call"
           - 1
@@ -102,7 +127,12 @@ root:
       predicate:
         column: 11
         line: 19
-        path: "/$call/1/positive/$call/2"
+        path:
+          - "$call"
+          - 1
+          - positive
+          - "$call"
+          - 2
         reference:
           - "$call"
           - 1
@@ -119,7 +149,12 @@ root:
       predicate:
         column: 11
         line: 58
-        path: "/$call/1/small/$call/2"
+        path:
+          - "$call"
+          - 1
+          - small
+          - "$call"
+          - 2
         reference:
           - "$call"
           - 1
@@ -137,7 +172,12 @@ root:
       predicate:
         column: 11
         line: 19
-        path: "/$call/1/positive/$call/2"
+        path:
+          - "$call"
+          - 1
+          - positive
+          - "$call"
+          - 2
         reference:
           - "$call"
           - 1
@@ -154,7 +194,12 @@ root:
       predicate:
         column: 11
         line: 58
-        path: "/$call/1/small/$call/2"
+        path:
+          - "$call"
+          - 1
+          - small
+          - "$call"
+          - 2
         reference:
           - "$call"
           - 1

@@ -3,7 +3,6 @@ error:
   kind: type
   line: 2
   message: "`neg` argument 1: expected number, got string \"a\""
-  path: "/x/$call/1"
   reference:
     - x
     - "$call"
