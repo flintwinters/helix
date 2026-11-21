@@ -30,6 +30,8 @@ fn spec_arg(args: &[Value], at: usize, pred: &mut Pred) -> Result<Field, Fault> 
 }
 
 pub(super) fn validate_field(field: &Field, arg: usize, pred: &mut Pred) -> Result<(), Fault> {
+    // Without a default anywhere there is nothing to validate; skip cloning into a wrapper.
+    if field.default.is_none() && !field.ty.declares_default() { return Ok(()); }
     let found = validate_defaults(&Ty::Record(vec![("field".into(), field.clone())]), pred);
     predicate_fault(&found, arg)?;
     if found.is_empty() { return Ok(()); }

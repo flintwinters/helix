@@ -351,6 +351,13 @@ impl Ty {
         }
     }
 
+    /// Whether any record or class field inside declares a default: the only source of
+    /// `validate_defaults` violations.
+    pub(super) fn declares_default(&self) -> bool {
+        matches!(self, Ty::Record(fields) | Ty::Class(fields, ..) if fields.iter().any(|(_, f)| f.default.is_some()))
+            || self.children().into_iter().any(Ty::declares_default)
+    }
+
     fn map_children(&self, f: &mut dyn FnMut(&Ty) -> Ty) -> Ty {
         let field = |f: &mut dyn FnMut(&Ty) -> Ty, (n, x): &(String, Field)| (n.clone(), Field { ty: f(&x.ty), ..x.clone() });
         match self {
@@ -652,6 +659,7 @@ pub(super) fn holds(value: &Value, ty: &Ty, pred: &mut Pred) -> bool {
 pub(super) fn validate_defaults(ty: &Ty, pred: &mut Pred) -> Vec<Violation> {
     enum Work<'a> { Type(String, &'a Ty), Default(String, &'a Ty, &'a Value) }
     let mut out = Vec::new();
+    if !ty.declares_default() { return out; }
     let mut pending = vec![Work::Type("/".to_string(), ty)];
     while let Some(work) = pending.pop() {
         let (at, ty) = match work {
