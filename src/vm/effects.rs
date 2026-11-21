@@ -12,6 +12,8 @@ mod host;
 use host::{require, object, authorized};
 #[path = "effects/sqlite.rs"]
 mod sqlite;
+#[path = "effects/fetch.rs"]
+mod fetch;
 #[path = "effects/directory.rs"]
 mod directory;
 #[path = "effects/command.rs"]
@@ -145,13 +147,17 @@ impl EffectHost {
                 })
             }
             "http" => {
-                let url = text(payload)?;
-                let origin = origin(url)?;
+                let request = fetch::parse(payload)?;
+                let origin = origin(request.url)?;
                 require(self.http_origins.contains(origin), "HTTP origin")?;
-                // No redirects, proxies, curl config, cookies or URL globbing. Grant is exact origin.
-                let (code, mut output, error) = command::capture("curl", &["-q", "--silent", "--show-error", "--globoff", "--noproxy", "*", "--proto", "=http,https", "--max-time", "8", "--max-filesize", "1048576", "--write-out", "\n%{http_code}", "--url", url], command::Control { policy: &CommandPolicy::default(),
+                // No redirects, proxies, curl config files, cookies or URL globbing. Grant is exact origin.
+                // Method, headers and body travel as a config on stdin, never argv.
+                let mut args = vec!["-q", "--silent", "--show-error", "--globoff", "--noproxy", "*", "--proto", "=http,https", "--max-time", "8", "--max-filesize", "1048576", "--write-out", "\n%{http_code}"];
+                if !request.config.is_empty() { args.extend(["--config", "-"]); }
+                args.extend(["--url", request.url]);
+                let (code, mut output, error) = command::capture("curl", &args, command::Control { policy: &CommandPolicy::default(),
                     cancellation: &self.cancellation, cancellation_signal: self.cancellation_signal,
-                    progress: &mut None, effect_id, cwd: None, stdin: None })?;
+                    progress: &mut None, effect_id, cwd: None, stdin: (!request.config.is_empty()).then_some(request.config.as_bytes()) })?;
                 if code != 0 { return Err(fault("http", &error)); }
                 let (body, status) = output.rsplit_once('\n').ok_or_else(|| fault("http", "missing HTTP status"))?;
                 let status = status.parse::<i64>().map_err(io_fault)?;

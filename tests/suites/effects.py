@@ -15,7 +15,15 @@ def verify(h):
     from tests.suites.http_server import verify as verify_http
     verify_http(h)
     class Handler(http.server.BaseHTTPRequestHandler):
-        def do_GET(self):
+        def respond(self):
+            if self.path == '/echo':
+                body = self.rfile.read(int(self.headers.get('Content-Length', 0))).decode()
+                reply = json.dumps({'method': self.command, 'body': body, 'headers': {k.lower(): v for k, v in self.headers.items()}}).encode()
+                self.send_response(200)
+                self.send_header('Content-Length', str(len(reply)))
+                self.end_headers()
+                self.wfile.write(reply)
+                return
             if self.path == '/redirect':
                 self.send_response(302)
                 self.send_header('Location', 'http://127.0.0.1:1/private')
@@ -24,6 +32,7 @@ def verify(h):
             self.send_response(200)
             self.end_headers()
             self.wfile.write(b'local response')
+        do_GET = do_POST = do_PUT = do_PATCH = do_DELETE = respond
         def log_message(self, *_):
             pass
 
@@ -199,6 +208,34 @@ def verify(h):
             result, state = run(f'{{"$call": ["effect", "http", "{origin}/redirect"]}}', '--allow-http', origin)
             assert result.returncode == 0 and state['root']['status'] == 302, state
             denied('{"$call": ["effect", "http", "http://127.0.0.1:1/private"]}', '--allow-http', origin)
+            def fetch(request, *flags):
+                result, state = run(f'{{"$call": ["effect", "http", {json.dumps(request)}]}}', '--allow-http', origin, *flags)
+                return result, state
+            def echo(request):
+                result, state = fetch({'url': origin + '/echo', **request})
+                assert result.returncode == 0 and state['root']['status'] == 200, state
+                return json.loads(state['root']['body'])
+            seen = echo({})
+            assert seen['method'] == 'GET' and seen['body'] == '', seen
+            seen = echo({'method': 'POST', 'body': 'a "quoted"\\ line\nnext\t@/etc/passwd', 'headers': {'Authorization': 'Bearer t0ken', 'X-Mixed-Case': 'a "b" \\'}})
+            assert seen['method'] == 'POST' and seen['body'] == 'a "quoted"\\ line\nnext\t@/etc/passwd', seen
+            assert seen['headers']['authorization'] == 'Bearer t0ken' and seen['headers']['x-mixed-case'] == 'a "b" \\', seen
+            for method in ['PUT', 'PATCH', 'DELETE']:
+                assert echo({'method': method, 'body': method.lower()})['method'] == method
+            seen = echo({'method': 'POST', 'headers': {'Content-Type': 'application/json'}, 'body': '{}'})
+            assert seen['headers']['content-type'] == 'application/json' and seen['body'] == '{}', seen
+            big = 'x' * 400_000
+            assert echo({'method': 'POST', 'body': big})['body'] == big
+            for request, kind in [({'url': origin, 'method': 'TRACE'}, 'type'), ({'url': origin, 'method': 'get'}, 'type'),
+                                  ({'url': origin, 'body': 'x'}, 'type'), ({'url': origin, 'bogus': 1}, 'type'),
+                                  ({'url': origin, 'method': 'POST', 'body': 5}, 'type'), ({'url': origin, 'headers': ['a']}, 'type'),
+                                  ({'url': origin, 'headers': {'A': 1}}, 'type'), ({'url': origin, 'headers': {'A B': 'x'}}, 'type'),
+                                  ({'url': origin, 'headers': {'A': 'x\r\nHost: evil'}}, 'type'), ({'url': origin, 'headers': {'A': ''}}, 'type'),
+                                  ({'url': origin, 'headers': {'Host': 'evil'}}, 'capability'), ({'url': origin, 'headers': {'content-length': '0'}}, 'capability'),
+                                  ({'url': origin, 'headers': {'Proxy-Authorization': 'x'}}, 'capability'),
+                                  ({'url': 'http://127.0.0.1:1/private', 'method': 'POST', 'body': 'x'}, 'capability'), (7, 'type')]:
+                result, state = fetch(request)
+                assert result.returncode == 1 and state['error']['kind'] == kind, (str(request)[:200], str(state)[:400])
             flags = ['--allow-read', str(base), '--allow-write', str(base), '--allow-env', 'HELIX_EFFECT_TEST',
                      '--allow-stdin', '--allow-stdout', '--allow-command', '/bin/echo', '--allow-http', origin,
                      '--allow-time', '--allow-random', '--fixed-time', '123456', '--seed', '42']
