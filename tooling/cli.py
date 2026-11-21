@@ -131,6 +131,8 @@ def parser():
     }.items():
         leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} - < program.yaml")
         leaf.add_argument("file", metavar="FILE", help="YAML file, or - for stdin; relative to repository root")
+    leaves["run"].add_argument("--annotations", action="store_true",
+                               help="include evaluation annotations (omitted by default; the count is reported as annotations_omitted)")
     leaves["check"].add_argument("--evaluate", action="store_true", help="execute and collect independent runtime errors")
     for name, description in {
         "fmt": "Emit canonical YAML source without executing",

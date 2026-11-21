@@ -118,7 +118,26 @@ def harness(h):
             assert fixture.test(False, ["golden"]) == 0, "derived context changed the original runner"
 
 
+def run_annotations(h):
+    """`run` omits evaluation annotations by default and reports their count; --annotations restores them."""
+    number = {"$ref": "number"}
+    source = json.dumps({"$call": ["let", {"number": "integer", "identity": {"$call": ["fn", [["n", number]], {"$ref": "n"}, number]}},
+                         {"$call": ["identity", 7]}]})
+    full = h.helix("run", "--annotations", "-", stdin=source)
+    plain = h.helix("run", "-", stdin=source)
+    assert full.returncode == plain.returncode == 0, (full, plain)
+    full_state, plain_state = yaml.safe_load(full.stdout), yaml.safe_load(plain.stdout)
+    count = len(full_state["annotations"])
+    assert count and "annotations" not in plain_state and "annotations_truncated" not in plain_state, plain_state
+    assert plain_state.pop("annotations_omitted") == count, plain_state
+    full_state.pop("annotations")
+    assert plain_state == full_state and len(plain.stdout) < len(full.stdout)
+    quiet = yaml.safe_load(h.helix("run", "-", stdin="value: 1").stdout)
+    assert "annotations_omitted" not in quiet, quiet
+
+
 def cli(h):
+    run_annotations(h)
     from tests.suites.tooling_cli import verify as verify_tooling_cli
     verify_tooling_cli(h)
     from tests.suites.recovery import verify as verify_recovery

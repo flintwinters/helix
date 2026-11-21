@@ -209,7 +209,7 @@ class TestContext:
 
     def __post_init__(self):
         commands = self.commands if self.commands is not None else {
-            self.root / "tests" / "cases": "run", self.root / "tests" / "check": "check --evaluate",
+            self.root / "tests" / "cases": "run --annotations", self.root / "tests" / "check": "check --evaluate",
         }
         object.__setattr__(self, "commands", MappingProxyType(dict(commands)))
 
