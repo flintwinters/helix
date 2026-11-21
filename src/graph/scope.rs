@@ -46,15 +46,32 @@ impl Graph {
             .collect()
     }
 
-    /// The innermost lexical declaration of `name` visible from `from`, independent of any frame.
+    /// The innermost lexical declaration of the exact name `name` visible from `from`,
+    /// independent of any frame.
     pub(crate) fn lexical_site(&self, from: NodeId, name: &str) -> Option<Site> {
-        self.declarations(from, |declared, site| (declared == name).then_some(site))
+        self.declarations(from, false, |declared, site| (declared == name).then_some(site))
+    }
+
+    /// The declaration of `head` as the root of a dotted name `head.member`. A member of the
+    /// entry being defined is a sibling, not the entry itself, so `{fields: {a: !ref fields.b}}`
+    /// sees its own entry.
+    pub(crate) fn root_site(&self, from: NodeId, head: &str) -> Option<Site> {
+        self.declarations(from, true, |declared, site| (declared == head).then_some(site))
+    }
+
+    /// The entry named `name` whose own value contains `from` outside any function body: the
+    /// declaration a self-reference would have named had entries been visible to themselves.
+    pub(crate) fn own_entry(&self, from: NodeId, name: &str) -> Option<NodeId> {
+        match self.root_site(from, name)? {
+            Site::Entry(node) if self.lexical_site(from, name).is_none_or(|site| !matches!(site, Site::Entry(n) if n == node)) => Some(node),
+            _ => None,
+        }
     }
 
     /// Every lexical name visible from `from`, innermost scope first.
     pub(crate) fn visible_names(&self, from: NodeId) -> Vec<String> {
         let mut names = Vec::new();
-        self.declarations(from, |declared, _| {
+        self.declarations(from, false, |declared, _| {
             names.push(declared.to_string());
             None::<()>
         });
@@ -62,12 +79,19 @@ impl Graph {
     }
 
     /// Visit the declarations enclosing `from` innermost scope first, stopping at the first
-    /// `Some` from `visit`.
-    fn declarations<T>(&self, from: NodeId, mut visit: impl FnMut(&str, Site) -> Option<T>) -> Option<T> {
+    /// `Some` from `visit`. An entry whose own value contains `from` outside any function body
+    /// is not visible unless `own` asks for it: reading it whole could only be a cycle, so
+    /// `{name: !ref name}` names the enclosing `name`. Inside a function body the entry stays
+    /// visible, which is recursion.
+    fn declarations<T>(&self, from: NodeId, own: bool, mut visit: impl FnMut(&str, Site) -> Option<T>) -> Option<T> {
         let mut child = from;
+        let mut deferred = false;
         while let Some(id) = self.lexical_parent(child) {
             let found = match self.syntax(id) {
-                Syntax::Mapping(entries) => entries.iter().find_map(|(k, v)| visit(k, Site::Entry(*v))),
+                Syntax::Mapping(entries) => entries
+                    .iter()
+                    .filter(|(_, v)| own || deferred || *v != child)
+                    .find_map(|(k, v)| visit(k, Site::Entry(*v))),
                 Syntax::Call(items) if items.get(2) == Some(&child) => match (self.form(id), self.kind(items[1])) {
                     (Some("fn"), _) => self.parameters(id).ok().and_then(|params| {
                         params.iter().enumerate().find_map(|(index, (n, _))| visit(n, Site::Parameter(id, index)))
@@ -80,6 +104,7 @@ impl Graph {
             if found.is_some() {
                 return found;
             }
+            deferred |= self.form(id) == Some("fn") && self.call(id).and_then(|items| items.get(2)) == Some(&child);
             child = id;
         }
         None
@@ -93,7 +118,7 @@ impl Graph {
             return Some((site, None));
         }
         let (head, rest) = name.split_once('.')?;
-        self.lexical_site(from, head).map(|site| (site, Some(rest)))
+        self.root_site(from, head).map(|site| (site, Some(rest)))
     }
 
     /// The declaration node a possibly dotted lexical name denotes, following keys through maps;

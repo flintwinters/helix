@@ -280,42 +280,39 @@ fn families(json: bool) -> ExitCode {
         let rows: Vec<_> = builtins::FAMILIES
             .iter()
             .flat_map(|family| builtins::members(family))
-            .map(|d| json!({"name": d.name, "family": d.family(), "min": d.arity.0, "max": d.arity.1}))
+            .map(|d| json!({"name": d.name, "family": d.family(), "signature": d.signature, "summary": d.summary, "min": d.arity.0, "max": d.arity.1}))
             .collect();
         println!("{}", J::Array(rows));
         return ExitCode::SUCCESS;
     }
-    println!("builtin actors by family (name/arguments); call one as `!call [NAME, ...]`\n");
+    println!("builtin actors by family, as `!call [NAME, parameters]`; `[, x]` is optional and `x...` repeats");
     for family in builtins::FAMILIES {
-        let members: Vec<_> = builtins::members(family).map(|d| format!("{}/{}", d.name, arity(d.arity))).collect();
-        println!("{family}: {}", members.join(" "));
+        println!("\n{family}:");
+        for d in builtins::members(family) {
+            println!("  [{}, {}] — {}", d.name, d.signature, d.summary);
+        }
     }
     println!("\nnext: `helix builtins NAME` shows one builtin's documentation; library functions are under `helix std`");
     ExitCode::SUCCESS
 }
 
+/// The call a builtin's signature describes, as source: `!call [get, x, key[, default]]`.
+pub(crate) fn call_form(found: &builtins::Descriptor) -> String {
+    format!("!call [{}, {}]", found.name, found.signature)
+}
+
 fn builtin(found: &builtins::Descriptor, json: bool) -> ExitCode {
     let name = found.name;
-    let (min, max) = found.arity;
-    let letter = |i: usize| char::from(b'a' + i as u8 % 26).to_string();
-    let mut call = format!("!call [{name}");
-    for i in 0..min {
-        call += &format!(", {}", letter(i));
-    }
-    match max {
-        Some(max) => (min..max).for_each(|i| call += &format!("[, {}]", letter(i))),
-        None => call += ", ...",
-    }
-    call += "]";
+    let call = call_form(found);
     let mentions = mentions(name);
     if json {
         let rows: Vec<_> = mentions.iter().map(|(doc, section, text)| json!({"document": doc, "section": section, "text": text})).collect();
-        println!("{}", json!({"name": name, "family": found.family(), "min": found.arity.0, "max": found.arity.1, "call": call, "mentions": rows}));
+        println!("{}", json!({"name": name, "family": found.family(), "signature": found.signature, "summary": found.summary, "min": found.arity.0, "max": found.arity.1, "call": call, "mentions": rows}));
         return ExitCode::SUCCESS;
     }
-    println!("{name}: {} builtin, {} arguments\ncall: `{call}`", found.family(), arity(found.arity));
+    println!("{name}: {}\n{} builtin, {} arguments\ncall: `{call}`", found.summary, found.family(), arity(found.arity));
     if mentions.is_empty() {
-        println!("\nnot described in the embedded references; search them with `helix docs`");
+        println!("\nnot described further in the embedded references; search them with `helix docs`");
         return ExitCode::SUCCESS;
     }
     println!();

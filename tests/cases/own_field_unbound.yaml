@@ -1,0 +1,2 @@
+# A field cannot read itself whole; with no enclosing `count` the reference is unbound.
+count: !call [add, !ref count, 1]

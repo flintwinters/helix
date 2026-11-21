@@ -19,12 +19,26 @@ impl Graph {
             Some((head, member)) => (head, Some(member)),
             None => (name, None),
         };
+        if let Some(entry) = member.is_none().then(|| self.own_entry(id, head)).flatten() {
+            return Some(format!(
+                "this reference is inside the value of the field `{head}` at line {line}, which cannot read itself, and no enclosing scope declares `{head}`; rename the field or bind the outer value under another name",
+                line = self.span(entry).line,
+            ));
+        }
+        if let Some(function) = self.foreign_parameter(id, head) {
+            return Some(format!(
+                "`{head}` is a parameter of the function at line {line}, visible only inside that function's body; pass the value as an argument here or move this expression into that body",
+                line = self.span(function).line,
+            ));
+        }
         let mut hints = Vec::new();
-        if let (false, None, Some(arity)) = (actor, member, builtins::arity(name)) {
+        if let (false, None, Some(found)) = (actor, member, builtins::descriptor(name)) {
+            let params = parameters(found);
             hints.push(format!(
-                "`{name}` is a builtin actor, not a value: call it as `!call [{name}, ...]`, or wrap it to pass it as a function: `!call [fn, [{params}], !call [{name}, {args}]]`",
-                params = parameters(arity).join(", "),
-                args = parameters(arity).iter().map(|p| format!("!ref {p}")).collect::<Vec<_>>().join(", "),
+                "`{name}` is a builtin actor, not a value: call it as `!call [{name}, {signature}]`, or wrap it to pass it as a function: `!call [fn, [{list}], !call [{name}, {args}]]`",
+                signature = found.signature,
+                list = params.join(", "),
+                args = params.iter().map(|p| format!("!ref {p}")).collect::<Vec<_>>().join(", "),
             ));
         }
         if member.is_some() && library::source(head).is_some() && self.lexical_site(id, head).is_none() {
@@ -62,6 +76,24 @@ impl Graph {
             return Some(format!("did you mean `{spelled}`?"));
         }
         None
+    }
+}
+
+impl Graph {
+    /// The first `fn` in `id`'s file declaring the parameter `name`, which `id` cannot see.
+    fn foreign_parameter(&self, id: NodeId, name: &str) -> Option<NodeId> {
+        let top = |mut node: NodeId| {
+            while let Some(parent) = self.parent(node) {
+                node = parent;
+            }
+            node
+        };
+        let file = top(id);
+        (0..self.nodes.len()).find(|&node| {
+            self.form(node) == Some("fn")
+                && self.parameters(node).is_ok_and(|params| params.iter().any(|(param, _)| param == name))
+                && top(node) == file
+        })
     }
 }
 
@@ -172,9 +204,15 @@ fn article(noun: &str) -> String {
     format!("{} {noun}", if an { "an" } else { "a" })
 }
 
-/// Placeholder parameter names for a builtin's minimum arity, at least one.
-fn parameters((min, _): (usize, Option<usize>)) -> Vec<String> {
-    (0..min.max(1)).map(|i| char::from(b'a' + (i as u8 % 26)).to_string()).collect()
+/// Parameter names for a builtin's required arguments, at least one: its signature's names when
+/// they are plain identifiers, otherwise letters.
+fn parameters(found: &builtins::Descriptor) -> Vec<String> {
+    let count = found.arity.0.max(1);
+    let named: Vec<_> = found.signature.split(", ").take(count).map(|p| p.trim_end_matches('[')).collect();
+    if named.len() == count && named.iter().all(|p| p.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')) {
+        return named.into_iter().map(String::from).collect();
+    }
+    (0..count).map(|i| char::from(b'a' + (i as u8 % 26)).to_string()).collect()
 }
 
 /// The closest candidate within a third of the name's length, first one on ties.

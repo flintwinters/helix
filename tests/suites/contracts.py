@@ -233,7 +233,8 @@ def docs_catalog(h):
 
 
 def builtin_catalog(h):
-    """`helix builtins` lists actors the static checker independently binds, with their arity."""
+    """`helix builtins` lists actors the static checker independently binds, with the signature
+    whose arity the checker enforces and whose call form its arity hint teaches."""
     listing = h.helix("builtins", "--json")
     assert listing.returncode == 0 and not listing.stderr, listing
     builtins = json.loads(listing.stdout)
@@ -242,8 +243,10 @@ def builtin_catalog(h):
     diagnostics = h.helix("check", "-", stdin=program).stdout
     assert "unbound" not in diagnostics, diagnostics
     for b in builtins:
+        assert b["signature"] is not None and b["summary"], b
         if b["min"]:
             assert f"`{b['name']}` takes" in diagnostics, (b, diagnostics)
+            assert f"write `!call [{b['name']}, {b['signature']}]`" in diagnostics, (b, diagnostics)
     one = h.helix("builtins", "get", "--json")
     shown = json.loads(one.stdout)
     assert one.returncode == 0 and shown["call"].startswith("!call [get, ") and shown["mentions"], shown

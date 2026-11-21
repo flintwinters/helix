@@ -191,7 +191,7 @@ impl Evaluator {
             return Ok((Resolution { binding, members: Vec::new() }, frame));
         }
         let (head, rest) = name.split_once('.').ok_or(None)?;
-        let (mut binding, frame) = self.resolve_name(from, head).ok_or(None)?;
+        let (mut binding, frame) = self.resolve_site(self.graph().root_site(from, head)).ok_or(None)?;
         let parts = rest.split('.').collect::<Vec<_>>();
         // `name[..end]` is the written prefix whose binding is `binding`.
         let mut end = head.len();
@@ -226,7 +226,10 @@ impl Evaluator {
         Ok((Resolution { binding, members: Vec::new() }, frame))
     }
     fn resolve_name(&self, from: NodeId, name: &str) -> Option<(Binding, Option<(NodeId, usize)>)> {
-        Some(match self.graph().lexical_site(from, name)? {
+        self.resolve_site(self.graph().lexical_site(from, name))
+    }
+    fn resolve_site(&self, site: Option<Site>) -> Option<(Binding, Option<(NodeId, usize)>)> {
+        Some(match site? {
             Site::Entry(node) => (Binding::Node(node), None),
             Site::Parameter(function, index) => {
                 let frame = self.environment.iter().rev().find(|f| f.function == function)?;
