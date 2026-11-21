@@ -332,6 +332,7 @@ repeat those actions.
 | `args` | `null` | List of arguments after the source filename | None |
 | `exit` | Integer 0–255 | `null`; sets successful process exit code after evaluation finishes | None |
 | `file_read` | Path string | UTF-8 text | `--allow-read ROOT` |
+| `dir_list` | Path string, or `{path: string, recursive?: boolean}` | List of `{path, kind}` (`file`, `dir`, `symlink`, `other`), sorted by path relative to the listed directory | `--allow-read ROOT` |
 | `file_write` | `{path: string, text: string}` | `null` | `--allow-write ROOT` |
 | `env` | Variable name | String, or `null` if absent | `--allow-env NAME` |
 | `stdin` | `null` | UTF-8 text read until EOF | `--allow-stdin` |
@@ -344,6 +345,8 @@ repeat those actions.
 | `random` | `null` | Nonnegative 63-bit integer | `--allow-random` |
 
 File imports under `perform` require the same `--allow-read` roots (embedded standard modules remain available). Relative file-effect paths resolve against the host working directory; imports retain source-relative resolution. File roots are canonicalized; existing symlinks and parents of new files must remain within a granted root. These checks are import-style confinement, not protection against concurrent filesystem changes or an OS sandbox. Commands use argument vectors without an implicit shell, inherit the host environment and working directory, and receive closed stdin. An executable grant authorizes that executable's ambient access, including subprocesses; granting a shell authorizes shell commands. Nonzero command exits are result data; spawn, encoding and host failures are catchable errors. The `exit` effect selects the eventual successful exit code and does not skip cleanup or later evaluation.
+
+`dir_list` never follows symlinks (they are reported with kind `symlink`, so a listing cannot leave the granted root), requires UTF-8 names (`conversion`) and fails with `resource` beyond 10,000 entries; filter results with `std:text` or regexes for glob-like selection.
 
 `sqlite` runs one statement (bound `params` of null, boolean, number or string) against a database inside the granted roots, with the bundled SQLite. A read request opens the file read-only; `write: true` may create it and reports `changes`. `ATTACH`/`DETACH` are denied so a statement cannot leave the authorized path, multiple statements and blob results are errors (kind `sqlite`, `conversion`), results are limited to 1 MiB and failures are catchable. The database must exist for a read request. `statements` runs a batch in one transaction on one connection (immediate when `write: true`): any failure rolls the whole batch back, and statements cannot issue `BEGIN`/`COMMIT`/`ROLLBACK`/`SAVEPOINT` themselves; a read-only batch cannot modify. Each request opens its own connection, so transactions across requests and concurrent-writer coordination beyond a ten-second busy timeout are the caller's concern. `std:sqlite` wraps this effect.
 

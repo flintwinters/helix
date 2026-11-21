@@ -12,6 +12,8 @@ mod host;
 use host::{require, object, authorized};
 #[path = "effects/sqlite.rs"]
 mod sqlite;
+#[path = "effects/directory.rs"]
+mod directory;
 #[path = "effects/command.rs"]
 mod command;
 #[path = "effects/ssh.rs"]
@@ -78,6 +80,10 @@ impl EffectHost {
             "file_read" => {
                 let path = authorized(text(payload)?, &self.read_roots, false)?;
                 read_text(std::fs::File::open(path).map_err(io_fault)?).map(Yaml::String)
+            }
+            "dir_list" => {
+                let (path, recursive) = directory::parse(payload)?;
+                directory::list(&authorized(path, &self.read_roots, false)?, recursive)
             }
             "file_write" => {
                 let path = authorized(text(&payload["path"])?, &self.write_roots, true)?;

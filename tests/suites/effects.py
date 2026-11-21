@@ -99,6 +99,35 @@ def verify(h):
         (allowed / 'dangling').symlink_to(missing)
         result, state = run(f"""{{"$call": ["effect", "file_write", {{"path": {json.dumps(str(allowed / 'dangling'))}, "text": "changed"}}]}}""", '--allow-write', str(allowed))
         assert result.returncode == 1 and not missing.exists(), state
+        tree = allowed / 'tree'
+        (tree / 'b' / 'd').mkdir(parents=True)
+        (tree / 'a.txt').write_text('a')
+        (tree / 'b' / 'c.txt').write_text('c')
+        (tree / 'b' / 'd' / 'e.txt').write_text('e')
+        (tree / 'out').symlink_to(target)
+        (tree / 'loop').symlink_to(tree / 'b')
+        def listing(payload, *flags):
+            return run(f'{{"$call": ["effect", "dir_list", {json.dumps(payload)}]}}', *flags)
+        denied(f'{{"$call": ["effect", "dir_list", {json.dumps(str(tree))}]}}')
+        result, state = listing(str(tree), '--allow-read', str(allowed))
+        assert result.returncode == 0 and state['root'] == [
+            {'path': 'a.txt', 'kind': 'file'}, {'path': 'b', 'kind': 'dir'},
+            {'path': 'loop', 'kind': 'symlink'}, {'path': 'out', 'kind': 'symlink'}], state
+        result, state = listing({'path': str(tree), 'recursive': True}, '--allow-read', str(allowed))
+        assert result.returncode == 0 and [(e['path'], e['kind']) for e in state['root']] == [
+            ('a.txt', 'file'), ('b', 'dir'), ('b/c.txt', 'file'), ('b/d', 'dir'), ('b/d/e.txt', 'file'),
+            ('loop', 'symlink'), ('out', 'symlink')], state
+        for payload, kind in [({'path': str(tree), 'recursive': 'yes'}, 'type'), (7, 'type'),
+                              (str(tree / 'a.txt'), 'io'), (str(tree / 'absent'), 'io'),
+                              (str(tree / 'out'), 'capability'), (str(base), 'capability')]:
+            result, state = listing(payload, '--allow-read', str(allowed))
+            assert result.returncode == 1 and state['error']['kind'] == kind, (payload, state)
+        crowded = allowed / 'crowded'
+        crowded.mkdir()
+        for index in range(10_001):
+            (crowded / f'f{index}').touch()
+        result, state = listing(str(crowded), '--allow-read', str(allowed))
+        assert result.returncode == 1 and state['error']['kind'] == 'resource', state
         result, state = run('{"$call": ["try", {"$call": ["effect", "time", null]}, {"$call": ["fn", ["error"], {"$call": ["get", {"$ref": "error"}, "kind"]}]}]}')
         assert result.returncode == 0 and state['root'] == 'capability', state
         result, state = run('{"$call": ["type_time", {"$call": ["effect", "stdout", "must not print"]}]}', '--allow-stdout')
