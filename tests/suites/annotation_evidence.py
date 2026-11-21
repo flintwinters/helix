@@ -24,7 +24,7 @@ def verify(h):
     identity = call('fn', [['n', number]], {'$ref': 'n'}, number)
     source = call('let', {'number': 'integer', 'identity': identity},
                   call('expect', call('identity', 7), number))
-    result = h.helix('run', '-', stdin=json.dumps(source))
+    result = h.helix('run', '--annotations', '-', stdin=json.dumps(source))
     state = yaml.safe_load(result.stdout)
     assert result.returncode == 0 and state['root'] == 7, result
     rows = state['annotations']
@@ -37,9 +37,9 @@ def verify(h):
     assert all('target' in row for row in rows) and 'annotations_truncated' not in state
 
     untyped = call('let', {'identity': call('fn', ['n'], {'$ref': 'n'})}, call('identity', 7))
-    result = h.helix('run', '-', stdin=json.dumps(untyped))
+    result = h.helix('run', '--annotations', '-', stdin=json.dumps(untyped))
     assert result.returncode == 0 and yaml.safe_load(result.stdout) == {'status': 'finished', 'root': 7}, result
-    rejected = h.helix('run', '-', stdin=json.dumps(call('expect', 'wrong', 'integer')))
+    rejected = h.helix('run', '--annotations', '-', stdin=json.dumps(call('expect', 'wrong', 'integer')))
     assert rejected.returncode == 1 and 'annotations' not in yaml.safe_load(rejected.stdout), rejected
 
     # Evidence never retains or inspects live objects' captured graphs. These
@@ -49,7 +49,7 @@ def verify(h):
         value = {'$ref': 'callback'} if kind == 'function' else call('vm', {'$ref': 'callback'})
         source = call('let', {'capture': 'large-capture-' * 20000, 'callback': function},
                       call('type', call('expect', value, kind)))
-        result = h.helix('run', '-', stdin=json.dumps(source))
+        result = h.helix('run', '--annotations', '-', stdin=json.dumps(source))
         state = yaml.safe_load(result.stdout)
         evidence_assert(result.returncode == 0 and state.get('root') == kind and 'objects' not in state,
                         f'{kind}-projection', source, result, state)
@@ -62,13 +62,13 @@ def verify(h):
                         and len(json.dumps(row)) < 1000 and 'large-capture-' not in json.dumps(row),
                         f'{kind}-bounded-row', source, result, state)
     ordinary = {'kind': 'vm', 'status': 'ready'}
-    result = h.helix('run', '-', stdin=json.dumps(call('expect', ordinary, 'map')))
+    result = h.helix('run', '--annotations', '-', stdin=json.dumps(call('expect', ordinary, 'map')))
     row = yaml.safe_load(result.stdout)['annotations'][0]
     assert result.returncode == 0 and row['value'] == ordinary and 'runtime_values_omitted' not in row, result
 
     descriptor = {'type': 'record', 'fields': {'n': {'type': 'default', 'of': 'integer', 'default': 7}}}
     for _ in range(2):
-        result = h.helix('run', '-', stdin=json.dumps({'$literal': descriptor}))
+        result = h.helix('run', '--annotations', '-', stdin=json.dumps({'$literal': descriptor}))
         state = yaml.safe_load(result.stdout)
         assert result.returncode == 0 and state == {'status': 'finished', 'root': descriptor}, result
         descriptor = state['root']
@@ -77,7 +77,7 @@ def verify(h):
     # while source/result data remain below the ordinary per-value size bound.
     values = [f'{index}:' + 'x' * 3000 for index in range(220)]
     source = call('map', call('fn', [['text', 'string']], {'$ref': 'text'}, 'string'), values)
-    result = h.helix('run', '-', stdin=json.dumps(source))
+    result = h.helix('run', '--annotations', '-', stdin=json.dumps(source))
     state = yaml.safe_load(result.stdout)
     evidence_assert(result.returncode == 0 and state.get('root') == values,
                     'bounded-history-result', source, result, state)

@@ -1,0 +1,24 @@
+t: !call [import, std:text]
+put: !call
+  - fn
+  - [target, segments, value]
+  - !call
+    - let
+    - head: !call [get, !ref segments, 0]
+    - !call
+      - if
+      - !call [eq, !call [len, !ref segments], 1]
+      - !call [set, !ref target, !ref head, !ref value]
+      - !call
+        - set
+        - !ref target
+        - !ref head
+        - !call [put, !call [get, !ref target, !ref head, {}], !call [slice, !ref segments, 1, !call [len, !ref segments]], !ref value]
+solve: !call
+  - fn
+  - [mapping]
+  - !call
+    - fold
+    - !call [fn, [result, path], !call [put, !ref result, !call [t.split, !ref path, .], !call [get, !ref mapping, !ref path]]]
+    - {}
+    - !call [keys, !ref mapping]

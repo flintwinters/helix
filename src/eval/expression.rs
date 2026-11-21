@@ -1,5 +1,4 @@
 //! Source expressions initiate requests; the parent engine resumes their continuations.
-use super::arguments;
 use crate::builtins;
 use crate::model::{Actor, Binding, Evaluator, HelixError, NodeId, Request, Value, string as s};
 use crate::graph::Syntax;
@@ -24,13 +23,8 @@ impl Evaluator {
             ));
         }
         let program = self.program.clone();
-        if let Syntax::Reference(name) = program.graph.syntax(id) {
-            match self.resolve_input(id, name) {
-                Some(found) => self.read_resolution(id, name, false, found)?,
-                None if builtins::is_primitive(name) => self.finish(s(name)),
-                None => return Err(self.err(id, "unbound", format!("unbound symbol `{name}`"))),
-            }
-            return Ok(());
+        if let Syntax::Reference(_) = program.graph.syntax(id) {
+            return self.reference(id);
         }
         if let Some(value) = self.memo.get(&id).cloned() {
             self.charge_value(id, &value)?;
@@ -40,7 +34,9 @@ impl Evaluator {
         let local = self.in_function(id);
         let depth = if local { self.depth } else { 0 };
         if !self.active.insert((id, depth)) {
-            return Err(self.err(id, "cycle", "value depends on itself"));
+            return Err(self.err(id, "cycle", "value depends on itself").with_hint(Some(
+                "evaluating this value reads it again through the references it contains; compute one value in the loop from inputs that do not depend on it, or recurse through a function".into(),
+            )));
         }
         self.push(Request::Finish(id, depth, local));
         match self.graph().syntax(id) {
@@ -67,7 +63,7 @@ impl Evaluator {
                         self.push(Request::Actor(id, items));
                         self.read_resolution(head, &name, true, found)?;
                     } else {
-                        return Err(self.err(head, "unbound", format!("unbound actor `{name}`")));
+                        return Err(self.unbound(head, &name, true));
                     }
                 } else {
                     self.push(Request::Actor(id, items));
@@ -76,6 +72,47 @@ impl Evaluator {
             }
         }
         Ok(())
+    }
+    /// Follow a chain of references that alias other references without entering the cycle
+    /// guard per hop; revisiting a reference in the chain is a cycle.
+    fn reference(&mut self, id: NodeId) -> Result<(), HelixError> {
+        let program = self.program.clone();
+        let mut chain = vec![id];
+        let mut site = id;
+        loop {
+            let Syntax::Reference(name) = program.graph.syntax(site) else { unreachable!() };
+            let found = match self.resolve_input(site, name) {
+                Some(found) => found,
+                None if builtins::is_primitive(name) => {
+                    self.finish(s(name));
+                    return Ok(());
+                }
+                None => return Err(self.unbound(site, name, false)),
+            };
+            match found.binding {
+                Binding::Node(next) if found.members.is_empty() && matches!(program.graph.syntax(next), Syntax::Reference(_)) => {
+                    if chain.contains(&next) {
+                        return Err(self.reference_cycle(id, &chain));
+                    }
+                    chain.push(next);
+                    site = next;
+                }
+                _ => return self.read_resolution(site, name, false, found),
+            }
+        }
+    }
+    fn reference_cycle(&self, id: NodeId, chain: &[NodeId]) -> HelixError {
+        // The names read around the loop, closed by repeating the first.
+        let names = chain
+            .iter()
+            .chain(chain.first())
+            .filter_map(|node| match self.graph().syntax(*node) {
+                Syntax::Reference(name) => Some(format!("`{name}`")),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        self.err(id, "cycle", format!("references only name each other: {}", names.join(" -> ")))
+            .with_hint(Some("give one of these names a value instead of another reference".into()))
     }
     fn read_resolution(
         &mut self,
@@ -143,18 +180,8 @@ impl Evaluator {
     ) -> Result<(), HelixError> {
         if let Actor::Builtin(name) = &actor {
             let descriptor = builtins::descriptor(name).unwrap();
-            let (min, max) = descriptor.arity;
-            if args.len() < min || max.is_some_and(|max| args.len() > max) {
-                let expected = match max {
-                    Some(m) if m == min => arguments(m),
-                    Some(m) => format!("{min} to {}", arguments(m)),
-                    None => format!("at least {}", arguments(min)),
-                };
-                return Err(self.err(
-                    id,
-                    "arity",
-                    format!("`{name}` takes {expected}, got {}", args.len()),
-                ));
+            if let Some((message, hint)) = descriptor.misfit(args.len()) {
+                return Err(self.err(id, "arity", message).with_hint(Some(hint)));
             }
             if matches!(descriptor.evaluation, builtins::Evaluation::Form(_)) {
                 return self.form(id, descriptor, args);

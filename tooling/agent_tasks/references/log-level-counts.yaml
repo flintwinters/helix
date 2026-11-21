@@ -1,0 +1,16 @@
+solve: !call
+  - fn
+  - [lines]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [counts, line]
+      - !call
+        - let
+        - found: !call [regex_find, '^[^ ]* ([^ ]*)', !ref line]
+          level: !call [if, !call [eq, !call [len, !ref found], 0], other, !call [get, !call [get, !call [get, !call [get, !ref found, 0], captures], 1], text]]
+          key: !call [if, !call [has, !ref counts, !ref level], !ref level, other]
+        - !call [set, !ref counts, !ref key, !call [add, !call [get, !ref counts, !ref key], 1]]
+    - {DEBUG: 0, INFO: 0, WARN: 0, ERROR: 0, other: 0}
+    - !ref lines

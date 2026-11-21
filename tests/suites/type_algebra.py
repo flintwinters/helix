@@ -230,9 +230,9 @@ def verify(h):
     broken = error['data']['violations']
     assert rejected[0]['message'] == 'failed its refinement check'
     assert len(broken) == 1 and broken[0]['rule'] == 'predicate_error'
-    assert broken[0]['message'] == 'refinement check failed to run: returned integer, expected boolean'
+    assert broken[0]['message'] == 'refinement check failed to run: returned integer 1, expected boolean'
     constraint = checked(h, '{"$call": ["try", {"$call": ["realize", {"$call": ["constrain", {"$call": ["class", "checked", {"$call": ["record"]}, {}]}, {"$call": ["fn", ["x"], 1]}]}]}, {"$call": ["fn", ["e"], {"$ref": "e"}]}]}')
-    message = 'constraint 0 of `checked` failed to run: returned integer, expected boolean'
+    message = 'constraint 0 of `checked` failed to run: returned integer 1, expected boolean'
     assert constraint['kind'] == 'predicate' and constraint['message'] == message, constraint
     violation, = constraint['data']['violations']
     assert violation['at'] == '/' and violation['message'] == message and violation['rule'] == 'predicate_error', constraint

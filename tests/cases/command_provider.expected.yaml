@@ -2101,12 +2101,12 @@ root:
             actual_present: true
             at: /
             expected: boolean
-            message: "expected boolean, got string"
+            message: "expected boolean, got string \"not boolean\""
             rule: type
       file: "std:command"
       kind: type
       line: 103
-      message: "1 type violation: expected boolean, got string"
+      message: "1 type violation: expected boolean, got string \"not boolean\""
       path: "/configured/$call/2/$call/4/$call/26/$call/2/$call/1/$call/1/$call/1"
       phase: type
       reference:

@@ -4,6 +4,17 @@ Core syntax, evaluation, types and execution semantics live here. See the
 [standard library reference](LIBRARY.md) for reusable helpers and testing, and
 the [host operations reference](HOST.md) for resource lifecycles and caller grants.
 
+```yaml
+# program.yaml: `helix fmt program.yaml` prints this canonical block layout
+# and `helix run program.yaml` evaluates it (answer: 42)
+base: 20
+double: !call
+  - fn
+  - [x]
+  - !call [mul, !ref x, 2]
+answer: !call [add, !call [double, !ref base], 2]
+```
+
 A Helix program is a YAML document. Run it with `./manage.py run FILE` (or `helix run FILE`); the result is a state document:
 
 ```yaml
@@ -53,18 +64,14 @@ is no separate function syntax.
 using local tags and block layouts for functions, bindings, branches and iteration bodies. Short
 expressions and data collections stay inline when they fit within 100 columns;
 larger collections use one entry per line.
-`./manage.py runtime format --write std` recursively formats library files while
-retaining comments near their structural locations; omit `--write` to check.
 Formatting verifies the parsed program is unchanged. Single-document `fmt` and
 editor formatting normalize away comments; batch formatting retains them.
-
-Legacy actor-first sequences require explicit offline conversion with `./manage.py runtime migrate-syntax --write FILE`; the runtime has no legacy fallback.
 
 The supported YAML subset has string mapping keys, finite scalars, sequences and mappings. Duplicate keys, cyclic aliases, unknown custom tags and non-string keys are rejected. Acyclic aliases expand under resource bounds at the occurrence’s lexical scope; standard scalar tags (`!!str`, `!!int`, `!!float`, `!!bool`, `!!null`) and collection tags (`!!seq`, `!!map`) are supported. Integers include hexadecimal and octal notation within signed 64-bit bounds; floats remain finite. This is a semantic model over YAML representation nodes, not support for every YAML construct. JSON source has identical language meaning to equivalent YAML. Reformatting scalar styles or permuting mapping entries cannot change a program's meaning.
 
 Ordinary result data is emitted without executable wrappers. To reexecute arbitrary result data, wrap the whole value in `!literal` so reserved singleton maps stay data. Function and machine inspection graphs are not executable serialization.
 
-References resolve to the nearest enclosing map defining the name; inner definitions shadow outer ones. Function parameters and `let` bindings are in scope inside their bodies. A value that depends on itself is a `cycle` error.
+References resolve to the nearest enclosing map defining the name; inner definitions shadow outer ones. Function parameters and `let` bindings are in scope inside their bodies. A field's own value outside a `fn` body resolves its name in the enclosing scopes (so `port: !ref port` reads an outer `port`), while dotted roots such as `!ref port.x` still see the entry itself. Pure reference loops and real self-dependencies are `cycle` errors.
 
 Values are immutable: `set` and `append` return new values.
 
@@ -79,15 +86,6 @@ Functions retain their original immutable code and lexical environment, includin
 `!call [try, !ref expr, !ref handler]` evaluates `expr`; if that fails, `handler` (a function name or inline `fn`) is called with the error as a map (`kind`, `message`, `path`, `line`, `column`, as in saved error state) and its result replaces the failure. Without a failure the handler never runs. `!call [assert, !ref cond]` / `!call [assert, !ref cond, message]` returns `null` when `cond` is `true`, otherwise fails with an `assertion` error carrying the message. `!call [raise, !ref kind, !ref message]` / `!call [raise, !ref kind, !ref message, !ref data]` fails with a user-chosen `kind` string (a non-empty string), message and optional plain-value `data` payload, blamed on the `raise` expression; it has the same shape as a builtin error and `data` appears in the error map. `!call [raise, !ref error]` re-raises a caught error map (so a handler can match the kinds it expects with `cond` and re-raise the rest rather than swallow them).
 
 `!call [let, {name: value}, !ref body]` evaluates `body` with the bindings in scope. Bindings see each other (mutually, as in a map) and are evaluated only when used; a self-dependent binding is a `cycle`.
-
-The former `closure(bindings, fn)` builtin has been removed: use
-`!call [let, {offset: 2}, !call [fn, [x], !call [add, !ref x, !ref offset]]]`.
-This retains the same lazy bindings and captured function environment through the
-ordinary `let` and `fn` forms. An unbound `closure` call now raises `unbound`; a
-user-defined function with that name is an ordinary eager call with no special
-binding scope. Update explicit source by replacing the old builtin head with
-`let`. The offline legacy syntax migrator converts recognized actor-first
-`closure` forms to `let`; it does not rewrite already-explicit source.
 
 **Iteration** takes a function (a name or inline `fn`) first, like every actor: `!call [map, !ref f, !ref list]`, `!call [filter, !ref f, !ref list]` (`f` must return a boolean), `!call [fold, !ref f, !ref init, !ref list]` (`f` takes accumulator then element), `!call [each, !ref f, !ref list]` (calls `f` for each element, returns `null`; useful for ordered effects). `!call [until, !ref done, !ref step, !ref init]` repeats `state = step(state)` until `done(state)` is `true` and returns the state; more than 100000 steps is a `limit` error.
 
@@ -114,24 +112,18 @@ objects:
 
 Ordinary data retains its compact representation. An inspection graph keeps the normal `root` or `error` projection and places its named `objects` table beside it in the state envelope, so recursive lexical references stay finite and ordinary user keys cannot collide with metadata. It is **not a resumable file format**; loading this output yields ordinary data, not reconstructed functions or machines. Machines compare by logical execution state rather than allocation identity. Transition counts and continuation details are implementation details: wait for a status or observable condition rather than counting steps.
 
-Successful `expect`, function parameter and result checks add an optional
-`annotations` history beside the ordinary state projection and in machine
-inspection. Each entry records its kind, target source reference, governing
-declaration's source reference and original code, evaluated type, and checked
-value. Thus a named or computed declaration remains distinguishable from the
-descriptor it produced; ordinary values are not wrapped or changed. Retained
-machine versions preserve their own histories. Ordinary data is exact; runtime
-functions are summarized by kind and source location, and machines by kind and
-status. Such rows carry `runtime_values_omitted: true`: captured environments and
-continuations are neither traversed nor retained by the evidence. Ordinary maps
-are not object summaries merely because their fields resemble these markers.
-The retained prefix uses at most 16,384 value/string-byte units (or the smaller
-configured per-value budget), with the existing nesting limit;
-`annotations_truncated: true` explicitly marks omitted later evidence, without
-turning a successful computation into failure. Programs that perform no annotation
-checks have no such metadata. This is inspection evidence, not executable snapshot
-restoration: data-only types still round-trip through a `!literal` root, while
-predicate functions and machine graphs require their original sources to execute.
+Successful `expect`, function parameter and result checks add optional `annotations` evidence
+beside the ordinary state projection and in machine inspection. `helix run` omits it by default
+(reporting `annotations_omitted: N`); pass `--annotations` to include it. Each entry records its
+kind, target source reference, governing declaration's source reference and original code,
+evaluated type, and checked value; ordinary values are not wrapped or changed, and retained
+machine versions keep their own histories. Ordinary data is exact; runtime functions and machines
+are summarized by kind, location or status with `runtime_values_omitted: true`, without traversing
+captured environments or continuations. The retained prefix uses at most 16,384 value/string-byte
+units (or the smaller configured per-value budget) and the existing nesting limit;
+`annotations_truncated: true` marks omitted later evidence without failing the computation.
+This is inspection evidence, not executable restoration: data-only types round-trip through a
+`!literal` root, while predicate functions and machine graphs require their original sources.
 
 The Rust API has the same semantics: `Vm::step(&self) -> Vm`, `Vm::inspect()`, and `run(&mut self)` over the same transitions. The dispatcher represents calls, iteration progress, annotations, pending refinement predicates and cleanup explicitly. Nested child advancement uses the same iterative scheduler. See `tests/cases/vm_parent_child.yaml` for a parent that retains an earlier child, inspects both versions and independently finishes two branches. Executable disk snapshots and restoration validation use the separate versioned format described below. Machine promises enforce bounded reversibility as described below. Explicit host effects are described below.
 
@@ -426,6 +418,24 @@ budgets; this migration does not add observation, application or disk recovery.
 
 `permission` (a denied file import), `effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `predicate` (a type predicate raised or returned a non-boolean), `conflict` (incompatible class parents), `abstract` (unfilled required fields on realization), `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (syntax/value, call, dependency or import nesting), `limit` (work/data/graph or iteration budgets), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
 
+An error may carry an advisory `hint` string naming the likely correction. Hints are derived
+only from authoritative sources: the builtin registry, lexical scope, standard-module exports,
+the members of the value actually reached and the tag syntax. Examples are a builtin used as a
+value (`!ref add`), a name exported by a standard module that is not imported, a misspelled
+visible name or map member, a module map used as a call actor and an unsupported tag such as
+`!if`, a missing `get` key or index, swapped iteration operands, malformed `fn` parameters
+and the likely structural cause of a YAML parse failure (an unclosed flow bracket, tab
+indentation, an unquoted `: `, misaligned keys). `run`, `exec`, `check`, the LSP and
+`try`-caught error values all carry the same hint. A hint never changes `kind`, `message`
+or blame; match on `kind` and treat `hint` text as unstable guidance, not a contract.
+
+Messages name the offending text, such as the tag, name, call actor or key. Type failures
+state expected versus actual with a bounded excerpt of the value (`expected number, got
+string "x"`); a builtin type failure names its argument (`` `add` argument 2: ``) and a form
+names its operand (`` `if` condition: ``, `` `filter` predicate result: ``). Arity failures
+name the declared parameters. Parse messages leave the position to the error's `line` and
+`column`.
+
 ## Testing in Helix
 
 See [Testing in Helix](LIBRARY.md#testing-in-helix).
@@ -587,7 +597,7 @@ an unpromised external system still requires the existing host effect contracts.
 `./manage.py runtime snapshot program.yaml --steps 20` emits a versioned
 executable checkpoint. `./manage.py runtime restore checkpoint.json` runs it in a
 fresh process; adding `--steps N` saves another checkpoint after at most N
-transitions. block YAML is the canonical spelling written for version 2. The loader accepts that
+transitions. block YAML is the canonical spelling written for version 3. The loader accepts that
 and the JSON flow spelling earlier checkpoints used, within snapshot byte, object and
 nesting budgets; anchors, aliases and tags are refused. Mapping presentation order has no execution meaning. Existing `step`/`inspect` documents
 remain observational, and `resume` still means pure source recovery. Without
@@ -604,11 +614,12 @@ from the embedded graph. A live parameter's `environment` argument values can be
 edited; doing so branches the computation. Completed memoized work is retained,
 so editing source alone does not invalidate dependent completed work.
 
-Version 2 requires the matching runtime package version and rejects unknown
+Version 3 requires the matching runtime package version and rejects unknown
 formats, fields, references, cycles, invalid graph topology and out-of-bounds
 continuations. Compatibility fixtures live in `tests/fixtures/snapshots/`.
 Version 1 execution documents migrate with empty promise and evaluated-value
-evidence fields; their existing continuations are preserved. Ordinary inspection
+evidence fields; their existing continuations are preserved. Version 1 and 2
+documents migrate their error records with no `hint`. Ordinary inspection
 and pure recovery documents are rejected. Future incompatible schema changes require a
 version increment and an explicit migration or rejection path. Snapshot budgets
 are 32 MiB, 100,000 shared objects and 128 codec levels; these supplement existing

@@ -1,0 +1,1 @@
+solve: !call [fn, [rows], !call [fold, !call [fn, [index, row], !call [set, !ref index, !call [get, !ref row, id], !ref row]], {}, !ref rows]]

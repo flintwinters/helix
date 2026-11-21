@@ -220,7 +220,7 @@ root:
       actual_present: true
       at: /host
       expected: string
-      message: "expected string, got integer"
+      message: "expected string, got integer 5"
       rule: type
     - actual: 0
       actual_present: true
@@ -293,15 +293,15 @@ root:
       actual_present: true
       at: /0/1
       expected: integer
-      message: "expected integer, got string"
+      message: "expected integer, got string \"a\""
       rule: type
     - actual: b
       actual_present: true
       at: /1/0
       expected: integer
-      message: "expected integer, got string"
+      message: "expected integer, got string \"b\""
       rule: type
-  no_type: "unknown type `nonsense`"
+  no_type: "`is` argument 2: unknown type `nonsense`"
   port:
     check:
       ref: object0

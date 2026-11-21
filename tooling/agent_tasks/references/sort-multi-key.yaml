@@ -1,0 +1,15 @@
+l: !call [import, std:list]
+before: !call
+  - fn
+  - [a, b]
+  - !call
+    - let
+    - field: !call [fn, [row, name], !call [get, !ref row, !ref name]]
+    - !call
+      - cond
+      - !call [ne, !call [field, !ref a, dept], !call [field, !ref b, dept]]
+      - !call [lt, !call [field, !ref a, dept], !call [field, !ref b, dept]]
+      - !call [ne, !call [field, !ref a, salary], !call [field, !ref b, salary]]
+      - !call [gt, !call [field, !ref a, salary], !call [field, !ref b, salary]]
+      - !call [lt, !call [field, !ref a, name], !call [field, !ref b, name]]
+solve: !call [fn, [rows], !call [map, !call [fn, [row], !call [get, !ref row, name]], !call [l.sort_by, !ref rows, !ref before]]]

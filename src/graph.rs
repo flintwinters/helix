@@ -2,10 +2,12 @@
 //! Parent links define lexical/object resolution; paths are always root-relative.
 
 mod effects;
+mod hint;
 pub(crate) mod http;
 mod scope;
 mod syntax;
 pub(crate) use effects::Effects;
+pub(crate) use hint::{members_of, missing_key, missing_member, nearest, not_callable};
 pub(crate) use scope::Site;
 pub(crate) use syntax::Syntax;
 
@@ -45,35 +47,16 @@ impl Graph {
         };
         let parsed = Parser::new_from_str(src)
             .load(&mut builder, true)
-            .map_err(|e| HelixError {
-                kind: "parse".into(),
-                message: e.to_string(),
-                file: None,
-                path: None,
-                reference: None,
-                span: span(e.marker()),
-                phase: None,
-                data: None,
-                calls: Vec::new(),
-                cause: None,
+            .map_err(|e| {
+                HelixError::unlocated("parse", e.info().to_owned(), span(e.marker()))
+                    .with_hint(hint::yaml(src, e.info(), e.marker().index()))
             });
         if let Some(err) = builder.error {
             return Err(err);
         }
         parsed?;
         if builder.graph.nodes.is_empty() {
-            return Err(HelixError {
-                kind: "parse".into(),
-                message: "empty document".into(),
-                file: None,
-                path: None,
-                reference: None,
-                span: Span { line: 1, col: 1 },
-                phase: None,
-                data: None,
-                calls: Vec::new(),
-                cause: None,
-            });
+            return Err(HelixError::unlocated("parse", "empty document".into(), Span { line: 1, col: 1 }));
         }
         Ok(builder.graph)
     }
@@ -234,16 +217,10 @@ impl Graph {
     /// An error of `kind` blamed on node `id`, with its path, span and file.
     pub fn error(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
         HelixError {
-            kind: kind.into(),
-            message,
             file: self.source(id).map(str::to_string),
             path: Some(self.path(id)),
             reference: Some(self.segments(id)),
-            span: self.span(id),
-            phase: None,
-            data: None,
-            calls: Vec::new(),
-            cause: None,
+            ..HelixError::unlocated(kind, message, self.span(id))
         }
     }
 
@@ -297,19 +274,12 @@ struct Builder<'src> {
 
 impl Builder<'_> {
     /// Record the first error; `on_event` ignores everything after it.
-    fn fail(&mut self, kind: &'static str, message: &str, at: Marker) {
-        self.error = Some(HelixError {
-            kind: kind.into(),
-            message: message.into(),
-            file: None,
-            path: None,
-            reference: None,
-            span: span(&at),
-            phase: None,
-            data: None,
-            calls: Vec::new(),
-            cause: None,
-        });
+    fn fail(&mut self, kind: &'static str, message: impl Into<String>, at: Marker) {
+        self.fail_hinted(kind, message, None, at);
+    }
+
+    fn fail_hinted(&mut self, kind: &'static str, message: impl Into<String>, hint: Option<String>, at: Marker) {
+        self.error = Some(HelixError::unlocated(kind, message.into(), span(&at)).with_hint(hint));
     }
 
     /// Correct yaml-rust2 0.13 empty-block chomping: clip/strip discard all
@@ -509,17 +479,31 @@ impl MarkedEventReceiver for Builder<'_> {
                 if self.awaiting_key() {
                     return self.fail("unsupported", "Helix tags cannot annotate mapping keys", at);
                 }
-                if (local == Some("call") && container != Some("seq"))
-                    || (local == Some("ref") && container.is_some())
-                {
-                    return self.fail("parse", "!call requires a sequence; !ref requires a scalar", at);
+                let shape = match container {
+                    Some("seq") => "a sequence",
+                    Some(_) => "a mapping",
+                    None => "a scalar",
+                };
+                if local == Some("call") && container != Some("seq") {
+                    return self.fail("parse", format!("`!call` requires a sequence such as `!call [add, 1, 2]`, got {shape}"), at);
+                }
+                if local == Some("ref") && container.is_some() {
+                    return self.fail("parse", format!("`!ref` requires a scalar name such as `!ref x`, got {shape}"), at);
                 }
             } else if tag.handle != "tag:yaml.org,2002:"
                 || container.is_some_and(|expected| tag.suffix != expected)
                 || (container.is_none()
                     && !matches!(tag.suffix.as_str(), "str" | "int" | "float" | "bool" | "null"))
             {
-                return self.fail("unsupported", "unsupported YAML tag", at);
+                let written = match tag.handle.as_str() {
+                    "tag:yaml.org,2002:" => format!("!!{}", tag.suffix),
+                    handle => format!("{handle}{}", tag.suffix),
+                };
+                let hint = match (tag.handle.as_str(), crate::builtins::arity(&tag.suffix)) {
+                    ("!", Some(_)) => format!("`{}` is a builtin actor; write `!call [{}, ...]`", tag.suffix, tag.suffix),
+                    _ => "Helix tags are `!call`, `!ref` and `!literal`; plain YAML values need no tag".into(),
+                };
+                return self.fail_hinted("unsupported", format!("unsupported YAML tag `{written}`"), Some(hint), at);
             }
         }
         if let Some(tag) = local {

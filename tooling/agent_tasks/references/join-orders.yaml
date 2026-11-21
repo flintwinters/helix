@@ -1,0 +1,13 @@
+l: !call [import, std:list]
+names_by_id: !call [fn, [customers], !call [fold, !call [fn, [acc, customer], !call [set, !ref acc, !call [get, !ref customer, id], !call [get, !ref customer, name]]], {}, !ref customers]]
+join: !call
+  - fn
+  - [names, orders]
+  - !call
+    - map
+    - !call
+      - fn
+      - [row]
+      - !call [dict, order, !call [get, !ref row, id], name, !call [get, !ref names, !call [get, !ref row, customer], null], total, !call [l.sum, !call [get, !ref row, amounts]]]
+    - !ref orders
+solve: !call [fn, [input], !call [join, !call [names_by_id, !call [get, !ref input, customers]], !call [get, !ref input, orders]]]

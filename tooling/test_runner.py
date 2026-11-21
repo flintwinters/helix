@@ -1,4 +1,5 @@
 """Explicit test execution contexts, fixture selection and bounded case concurrency."""
+import json
 import shlex
 import subprocess
 import sys
@@ -209,7 +210,7 @@ class TestContext:
 
     def __post_init__(self):
         commands = self.commands if self.commands is not None else {
-            self.root / "tests" / "cases": "run", self.root / "tests" / "check": "check --evaluate",
+            self.root / "tests" / "cases": "run --annotations", self.root / "tests" / "check": "check --evaluate",
         }
         object.__setattr__(self, "commands", MappingProxyType(dict(commands)))
 
@@ -444,26 +445,28 @@ class TestContext:
         sources = [source for source in sorted(directory.glob("*.yaml")) if source.is_file()]
         if not sources:
             return [f"standard library source directory contains no modules: {directory}"]
-        modules = self.helix("std")
+        modules = self.helix("std", "--json")
         expected_modules = {f"std:{source.stem}" for source in sources}
-        discovered_modules = modules.stdout.splitlines()
-        if (modules.returncode != 0 or modules.stderr or set(discovered_modules) != expected_modules
-                or len(discovered_modules) != len(expected_modules)):
+        try:
+            discovered_modules = [row["module"] for row in json.loads(modules.stdout)]
+        except (ValueError, TypeError, KeyError):
+            discovered_modules = None
+        if (modules.returncode != 0 or modules.stderr or discovered_modules is None
+                or set(discovered_modules) != expected_modules or len(discovered_modules) != len(expected_modules)):
             failures.append(test_failure(self.root, directory, "std-list",
                 "standard library discovery failed", "std", modules,
-                expected="".join(f"{name}\n" for name in sorted(expected_modules)),
-                replay_args=["inspect", "std"]))
+                expected=json.dumps(sorted(expected_modules)), replay_args=["runtime", "cli", "std", "--json"]))
         for source in sources:
-            shown = self.helix("std", source.stem)
+            shown = self.helix("std", source.stem, "--source")
             expected = source.read_text()
             if shown.returncode != 0 or shown.stderr or shown.stdout != expected:
                 failures.append(test_failure(self.root, source, "std-show",
                     "standard library source differs or did not finish cleanly", "std", shown,
-                    expected=expected, replay_args=["inspect", "std", source.stem]))
+                    expected=expected, replay_args=["runtime", "cli", "std", source.stem, "--source"]))
         unknown = self.helix("std", "unknown")
         if (unknown.returncode != 2 or unknown.stdout
                 or "unknown standard module `unknown`" not in unknown.stderr):
             failures.append(test_failure(self.root, directory, "std-unknown",
                 "unknown standard library must report a usage error", "std", unknown,
-                expected="", replay_args=["inspect", "std", "unknown"]))
+                expected="", replay_args=["runtime", "cli", "std", "unknown"]))
         return failures

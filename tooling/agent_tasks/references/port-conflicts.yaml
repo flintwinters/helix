@@ -1,0 +1,34 @@
+l: !call [import, std:list]
+# host -> port text -> service -> true
+index: !call
+  - fn
+  - [rows]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [acc, row]
+      - !call
+        - let
+        - host: !call [get, !ref row, host]
+          port: !call [str, !call [get, !ref row, port]]
+          ports: !call [get, !ref acc, !ref host, {}]
+        - !call [set, !ref acc, !ref host, !call [set, !ref ports, !ref port, !call [set, !call [get, !ref ports, !ref port, {}], !call [get, !ref row, service], true]]]
+    - {}
+    - !ref rows
+conflicts: !call
+  - fn
+  - [host, ports]
+  - !call
+    - filter
+    - !call [fn, [conflict], !call [gt, !call [len, !call [get, !ref conflict, services]], 1]]
+    - !call
+      - map
+      - !call [fn, [port], !call [dict, host, !ref host, port, !ref port, services, !call [keys, !call [get, !ref ports, !call [str, !ref port]]]]]
+      - !call [l.sort, !call [map, !call [fn, [port], !call [int, !ref port]], !call [keys, !ref ports]]]
+solve: !call
+  - fn
+  - [rows]
+  - !call
+    - !call [fn, [bindings], !call [l.flat_map, !call [keys, !ref bindings], !call [fn, [host], !call [conflicts, !ref host, !call [get, !ref bindings, !ref host]]]]]
+    - !call [index, !ref rows]

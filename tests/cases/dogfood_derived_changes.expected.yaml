@@ -1063,7 +1063,7 @@ root:
     file: "std:types"
     kind: type
     line: 31
-    message: "expected a record or class type, got string"
+    message: "`fields` argument 1: expected a record or class type, got string \"integer\""
     path: "/optional_fields/$call/2/$call/1/specs/$call/1"
     phase: type
     reference:
@@ -1150,25 +1150,25 @@ root:
       actual_present: true
       at: /revision
       expected: integer
-      message: "expected integer, got string"
+      message: "expected integer, got string \"next\""
       rule: type
     - actual: 42
       actual_present: true
       at: /ticket
       expected: string
-      message: "expected string, got integer"
+      message: "expected string, got integer 42"
       rule: type
   wrong_nested:
     - actual: false
       actual_present: true
       at: /changes/content
       expected: string
-      message: "expected string, got boolean"
+      message: "expected string, got boolean false"
       rule: type
     - actual: "0644"
       actual_present: true
       at: /changes/mode
       expected: integer
-      message: "expected integer, got string"
+      message: "expected integer, got string \"0644\""
       rule: type
 status: finished

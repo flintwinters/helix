@@ -68,12 +68,42 @@ def verify(h):
                 assert_locked(False)
                 replace_binary(b'next executable generation')
                 assert snapshot.read_bytes() == b'complete executable generation'
-            assert not snapshot.exists(), 'snapshot directory survived its test context'
+                events.clear()
+                with manage.frozen_test_context(context) as (current, code):
+                    assert code == 0 and current.binary != snapshot
+                    assert current.binary.read_bytes() == b'next executable generation'
+                    assert snapshot.exists(), 'a snapshot in use was pruned by a later build'
+            assert current.binary.exists(), 'an idle current snapshot was not retained for reuse'
+            events.clear()
+            with manage.frozen_test_context(context) as (reused, code):
+                assert code == 0 and reused.binary == current.binary
+                assert not snapshot.exists(), 'an idle snapshot of a replaced build survived'
+                assert events == ['enter', 'build', 'exit'], events
+            # Cargo's recorded inputs, all older than the stamped build start, skip the rebuild;
+            # any newer input, or a binary replaced by another builder, does not.
+            source = root / 'src.rs'
+            for path in (root / 'Cargo.toml', root / 'Cargo.lock', source):
+                path.write_text('')
+                os.utime(path, ns=(0, 0))
+            binary.with_suffix('.d').write_text(f'{binary}: {source}\n')
+
+            def edit_after_build(path):
+                after = (root / 'runtime' / 'build.stamp').stat().st_mtime_ns + 1
+                os.utime(path, ns=(after, after))
+
+            for touched, rebuilt in ((None, False), (source, True), (None, False), (binary, True), (None, False)):
+                if touched is not None:
+                    edit_after_build(touched)
+                events.clear()
+                with manage.frozen_test_context(context) as (frozen, code):
+                    assert code == 0 and frozen.binary.read_bytes() == binary.read_bytes()
+                assert ('build' in events) == rebuilt, (touched, events)
             events.clear()
             assert manage.build() == 0
             assert events == ['enter', 'build', 'exit'], events
             assert_locked(False)
 
+        edit_after_build(source)
         with patch.object(manage, 'ROOT', root), patch.object(manage, '_build_unlocked', return_value=7), \
              patch.object(shutil, 'copy2') as copy_mock:
             with manage.frozen_test_context(context) as (frozen, code):
@@ -81,6 +111,7 @@ def verify(h):
                 copy_mock.assert_not_called()
                 assert_locked(False)
 
+        replace_binary(b'uncopyable executable generation')
         with patch.object(manage, 'ROOT', root), patch.object(manage, '_build_unlocked', return_value=0), \
              patch.object(os, 'link', side_effect=OSError('cannot link')), \
              patch.object(shutil, 'copy2', side_effect=OSError('copy interrupted')):
@@ -92,7 +123,8 @@ def verify(h):
             else:
                 raise AssertionError('copy failure was swallowed')
             assert_locked(False)
-            assert [entry.name for entry in (root / 'runtime').iterdir()] == ['build.lock']
+            assert not any((root / 'runtime' / 'execution-binary' / manage._identity(binary)).glob('helix*')), \
+                'a partial snapshot was retained'
 
         # Cargo test/install can rebuild the same target as ordinary manage builds.
         from tests.suites.contracts import execution
@@ -161,7 +193,7 @@ def verify(h):
              patch.object(manage, '_build_unlocked', side_effect=compile), \
              patch.object(subprocess, 'call', side_effect=execute) as call_mock:
             assert manage.main() == 9
-            assert len(invoked) == 1 and not invoked[0].exists()
+            assert len(invoked) == 1 and invoked[0].exists(), 'the idle snapshot was not retained for reuse'
             call_mock.reset_mock()
             with patch.object(manage, '_build_unlocked', return_value=7):
                 assert manage.main() == 7

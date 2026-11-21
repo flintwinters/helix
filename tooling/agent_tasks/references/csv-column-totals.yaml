@@ -1,0 +1,21 @@
+l: !call [import, std:list]
+total: !call [fn, [data, i], !call [l.sum, !call [map, !call [fn, [row], !call [int, !call [get, !ref row, !ref i]]], !ref data]]]
+totals: !call
+  - fn
+  - [rows, columns]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [result, column]
+      - !call
+        - set
+        - !ref result
+        - !ref column
+        - !call
+          - total
+          - !call [slice, !ref rows, 1, !call [len, !ref rows]]
+          - !call [l.find_index, !call [get, !ref rows, 0], !call [fn, [name], !call [eq, !ref name, !ref column]]]
+    - {}
+    - !ref columns
+solve: !call [fn, [input], !call [totals, !call [csv_parse, !call [get, !ref input, csv]], !call [get, !ref input, columns]]]

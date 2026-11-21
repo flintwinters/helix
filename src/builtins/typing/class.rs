@@ -191,7 +191,7 @@ impl Class {
 fn conflict(field: &str, first: &str, second: &str, what: &str, resolver: &str) -> Fault {
     let message = format!("field `{field}` has {what} from both `{first}` and `{second}`; resolve it in `{resolver}`");
     let data = mapping([("field", s(field)), ("sources", Value::Array(vec![s(first), s(second)].into()))]);
-    Fault { cause: None, kind: "conflict".into(), message, arg: Some(1), data: Some(data) }
+    Fault { hint: None, cause: None, kind: "conflict".into(), message, arg: Some(1), data: Some(data) }
 }
 
 /// Merge `parents` with this class's own `fields` and `values` (arguments 2 and 3 of `extend`).
@@ -273,7 +273,7 @@ fn narrow(field: &str, spec: &Value, inherited: &[&Slot], name: &str, arg: usize
         if !subtype(&own.ty, &theirs.ty, pred) || (!own.required && theirs.required) {
             let message = format!("`{name}` redeclares field `{field}` in a way that does not fit the declaration from `{}`", slot.declared_by);
             let data = mapping([("field", s(field)), ("sources", Value::Array(vec![s(&slot.declared_by), s(name)].into()))]);
-            return Err(Fault { cause: None, kind: "conflict".into(), message, arg: Some(arg), data: Some(data) });
+            return Err(Fault { hint: None, cause: None, kind: "conflict".into(), message, arg: Some(arg), data: Some(data) });
         }
     }
     Ok(())
@@ -295,7 +295,7 @@ fn validate(class: &Class, declaration_arg: Option<usize>, pred: &mut Pred) -> R
     }
     let message = format!("{} misfit{} in the values of `{}`: {}", found.len(), if found.len() == 1 { "" } else { "s" }, class.name, found[0].1);
     let broken = found.iter().any(|(v, _)| matches!(v, Value::Hash(h) if h.get(&s("rule")).and_then(Value::as_str) == Some("predicate_error")));
-    Err(Fault { cause: None, kind: if broken { "predicate" } else { "type" }.into(), message, arg: None, data: Some(mapping([("violations", Value::Array(found.into_iter().map(|f| f.0).collect()))])) })
+    Err(Fault { hint: None, cause: None, kind: if broken { "predicate" } else { "type" }.into(), message, arg: None, data: Some(mapping([("violations", Value::Array(found.into_iter().map(|f| f.0).collect()))])) })
 }
 
 fn check_slot(field: &str, value: &Value, ty: &Ty, pred: &mut Pred) -> Vec<(Value, String)> {
@@ -327,7 +327,7 @@ fn constrained(class: &Class, pred: &mut Pred) -> Result<(), Fault> {
     }
     let entries:Vec<_> = found.iter().map(Violation::to_value).collect();
     let kind = if found.iter().any(|v| v.rule() == "predicate_error") { "predicate" } else { "type" };
-    Err(Fault { cause: None, kind: kind.into(), message: found[0].message().into(), arg: None, data: Some(mapping([("violations", Value::Array(entries.into()))])) })
+    Err(Fault { hint: None, cause: None, kind: kind.into(), message: found[0].message().into(), arg: None, data: Some(mapping([("violations", Value::Array(entries.into()))])) })
 }
 
 /// Fill defaults and mark the class concrete, or fail listing every required field still open.
@@ -348,7 +348,7 @@ fn realize(mut class: Class, arg: Option<usize>, pred: &mut Pred) -> Result<Clas
         let list = missing.iter().map(|m| format!("`{}` (required by {})", m.name, m.declared_by)).collect::<Vec<_>>().join(", ");
         let entries:Vec<_> = missing.iter().map(|m| mapping([("field", s(&m.name)), ("required_by", s(&m.declared_by))])).collect();
         let message = format!("class `{}` is abstract: missing {list}", class.name);
-        return Err(Fault { cause: None, kind: "abstract".into(), message, arg, data: Some(mapping([("missing", Value::Array(entries.into()))])) });
+        return Err(Fault { hint: None, cause: None, kind: "abstract".into(), message, arg, data: Some(mapping([("missing", Value::Array(entries.into()))])) });
     }
     validate(&class, arg, pred)?;
     constrained(&class, pred)?;

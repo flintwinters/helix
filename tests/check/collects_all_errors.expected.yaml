@@ -72,11 +72,11 @@ errors:
           actual_present: true
           at: /
           expected: string
-          message: "expected string, got integer"
+          message: "expected string, got integer 7"
           rule: type
     kind: type
     line: 4
-    message: "1 type violation: expected string, got integer"
+    message: "1 type violation: expected string, got integer 7"
     path: "/fleet/three/$call/1"
     reference:
       - fleet

@@ -1,0 +1,9 @@
+t: !call [import, std:text]
+solve: !call
+  - fn
+  - [source]
+  - !call
+    - t.join
+    - !call [map, !call [fn, [m], !call [get, !call [get, !call [get, !ref m, captures], 0], text]],
+        !call [regex_find, "[^ \t\n]+", !ref source]]
+    - " "

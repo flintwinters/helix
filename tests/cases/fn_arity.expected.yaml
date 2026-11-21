@@ -9,7 +9,7 @@ error:
   column: 12
   kind: arity
   line: 2
-  message: "function `/double` takes 1 argument, got 2"
+  message: "function `/double` takes 1 argument (n), got 2"
   path: /bad
   reference:
     - bad

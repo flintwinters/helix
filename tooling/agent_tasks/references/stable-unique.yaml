@@ -1,0 +1,2 @@
+l: !call [import, std:list]
+solve: !call [fn, [xs], !call [l.unique, !ref xs]]

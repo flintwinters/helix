@@ -402,7 +402,7 @@ objects:
                       actual_present: true
                       at: /dependencies/1
                       expected: string
-                      message: "expected string, got integer"
+                      message: "expected string, got integer 7"
                       rule: type
                     - actual: ~
                       actual_present: true
@@ -414,13 +414,13 @@ objects:
                       actual_present: true
                       at: /name
                       expected: string
-                      message: "expected string, got integer"
+                      message: "expected string, got integer 9"
                       rule: type
                     - actual: false
                       actual_present: true
                       at: /owner
                       expected: string
-                      message: "expected string, got boolean"
+                      message: "expected string, got boolean false"
                       rule: type
           project:
             "$call":
@@ -655,7 +655,7 @@ root:
           actual_present: true
           at: /dependencies/1
           expected: string
-          message: "expected string, got integer"
+          message: "expected string, got integer 7"
           rule: type
         - actual: ~
           actual_present: true
@@ -667,13 +667,13 @@ root:
           actual_present: true
           at: /name
           expected: string
-          message: "expected string, got integer"
+          message: "expected string, got integer 9"
           rule: type
         - actual: false
           actual_present: true
           at: /owner
           expected: string
-          message: "expected string, got boolean"
+          message: "expected string, got boolean false"
           rule: type
     - broken: []
       duplicate: false

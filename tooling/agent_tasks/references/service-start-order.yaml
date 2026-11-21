@@ -1,0 +1,25 @@
+dep: !call [import, std:dependency]
+index: !call [fn, [names], !call [fold, !call [fn, [acc, name], !call [set, !ref acc, !ref name, true]], {}, !ref names]]
+tasks: !call
+  - fn
+  - [services, active]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [acc, name]
+      - !call [set, !ref acc, !ref name, !call [filter, !call [fn, [after], !call [has, !ref active, !ref after]], !call [get, !call [get, !ref services, !ref name], after]]]
+    - {}
+    - !call [keys, !ref active]
+result: !call [fn, [plan], !call [dict, order, !call [get, !ref plan, order], blocked, !call [keys, !call [get, !ref plan, pending]]]]
+solve: !call
+  - fn
+  - [services]
+  - !call
+    - result
+    - !call
+      - dep.plan
+      - !call
+        - tasks
+        - !ref services
+        - !call [index, !call [filter, !call [fn, [name], !call [get, !call [get, !ref services, !ref name], enabled]], !call [keys, !ref services]]]

@@ -1,86 +1,69 @@
 use std::path::Path;
 use std::process::ExitCode;
 
+use helix::tooling::help;
 use helix::{Status, Vm, json_document, yaml_document};
 use yaml_rust2::Yaml;
 
-const USAGE: &str = "usage: helix search index [PATH ...] [--library PATH_OR_STD_MODULE] [--no-std] [--no-default-excludes]\n       helix search parse FILE_OR_STDIN\n       helix search probe --cases FILE [--harness FILE] [--root PATH] [--max-steps N]\n       helix exec [--stream] [--input DATA] [--file QUERY] [--json | --yaml] [PROGRAM | -]    inline source or stdin; default raw strings, otherwise YAML\n       helix run <file.yaml | ->    emit full VM state\n       helix sandbox <root | -> <file.yaml | ->    restrict transitive file imports\n       helix recover <file.yaml | ->    save a pure recovery checkpoint on failure\n       helix resume <state.yaml | ->    run edited recovery source\n       helix check [--evaluate] <file.yaml | ->    static checks; --evaluate collects runtime errors\n       helix fmt <file.yaml | ->    canonical source on stdout\n       helix repl    evaluate one YAML document per line\n       helix watch FILE [--interval-ms N] [--iterations N]    re-run on dependency changes\n       helix step FILE [--steps N]    inspect after N transitions\n       helix system-snapshot FILE [--steps N]    form and save coordinated promised participants\n       helix system-restore FILE [--steps N]    restore all participants and communication\n       helix snapshot FILE [--steps N]    save executable state after N transitions\n       helix restore FILE [--steps N]    restore and run; --steps emits another checkpoint\n       helix target-release FILE    acknowledge independently established target quiescence\n       helix checkpoint FILE    inspect durable effects and recovery action without execution\n       helix reconcile CHECKPOINT OUTCOME    record an observed uncertain-effect outcome\n       helix trace FILE [--limit N]    stream transition inspections\n       helix inspect <state.yaml | ->    summarize saved state without execution\n       helix schema    print program JSON Schema\n       helix lsp    serve Language Server Protocol on stdin/stdout\n       helix completion <bash | zsh | fish>    print shell completion script\n       helix std [module]    list the standard modules, or print one's source\n       helix perform [grants] <file> [-- args...]    explicit host effects; state to stderr\n       helix --help\n\nexec failures emit VM state to stderr, leave stdout empty, and exit 1.\nUse exec -- PROGRAM to escape reserved arguments.";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    let argv: Vec<&str> = args.iter().map(String::as_str).collect();
+    // Structured help comes from the one command table, before commands with their own prose help.
+    if let [cmd, "--help" | "-h", "--json"] = argv.as_slice() && help::find(cmd).is_some() {
+        return help::command(&argv);
+    }
     if let Some(code) = helix::tooling::cli::dispatch(&args) {
         return code;
     }
     if args.first().is_some_and(|arg| arg == "perform") {
         return helix::tooling::perform::run(&args[1..]);
     }
-    match args
-        .iter()
-        .map(String::as_str)
-        .collect::<Vec<_>>()
-        .as_slice()
-    {
-        ["--help" | "-h"] => {
-            println!("{USAGE}");
-            ExitCode::SUCCESS
-        }
-        [cmd, "--help" | "-h"] if helix::tooling::interactive::COMMANDS.contains(cmd) => {
-            println!("{USAGE}");
-            ExitCode::SUCCESS
-        }
+    match argv.as_slice() {
+        ["--help" | "-h" | "help", rest @ ..] => help::command(rest),
+        [cmd, "--help" | "-h", rest @ ..] if help::find(cmd).is_some() => help::command(&[&[*cmd], rest].concat()),
         ["exec", format] if matches!(*format, "--json" | "--yaml") => {
-            execute("-", "exec", None, format)
+            execute("-", "exec", None, format, false)
         }
         ["exec", format, "--", source] if matches!(*format, "--json" | "--yaml") => {
-            execute(source, "exec", None, format)
+            execute(source, "exec", None, format, false)
         }
         ["exec", format, source]
             if matches!(*format, "--json" | "--yaml") && !source.starts_with("--") =>
         {
-            execute(source, "exec", None, format)
+            execute(source, "exec", None, format, false)
         }
         ["exec"] => run("-", "exec"),
         ["exec", "--", source] => run(source, "exec"),
         ["exec", source] if !source.starts_with("--") => run(source, "exec"),
+        ["run", "--annotations", path] => execute(path, "run", None, "raw", true),
         ["run", path] => run(path, "run"),
         ["recover", path] => run(path, "recover"),
         ["resume", path] => run(path, "resume"),
         ["check", "--evaluate", path] | ["check", path, "--evaluate"] => run(path, "check"),
-        ["sandbox", root, path] => execute(path, "run", Some(root), "raw"),
-        ["std"] => {
-            helix::std_modules().for_each(|name| println!("std:{name}"));
-            ExitCode::SUCCESS
-        }
-        ["std", name] => match helix::std_source(name.trim_start_matches("std:")) {
-            Some(source) => {
-                print!("{source}");
-                ExitCode::SUCCESS
-            }
-            None => {
-                eprintln!(
-                    "unknown standard module `{name}`; available: {}",
-                    helix::std_modules().collect::<Vec<_>>().join(", ")
-                );
+        ["sandbox", root, path] => execute(path, "run", Some(root), "raw", false),
+        ["std", rest @ ..] => helix::tooling::catalog::command(rest),
+        ["docs", rest @ ..] => helix::tooling::docs::command(rest),
+        ["builtins", rest @ ..] => helix::tooling::docs::builtins(rest),
+        [cmd, ..] => match help::find(cmd) {
+            None => help::unknown(cmd),
+            Some(command) => {
+                eprintln!("{}\n`helix --help` lists every command", command.usage());
                 ExitCode::from(2)
             }
         },
-        [cmd, ..] if !helix::tooling::interactive::COMMANDS.contains(cmd) =>
-        {
-            eprintln!("unknown command `{cmd}`; {USAGE}");
-            ExitCode::from(2)
-        }
-        _ => {
-            eprintln!("{USAGE}");
+        [] => {
+            eprintln!("{}", help::overview());
             ExitCode::from(2)
         }
     }
 }
 
 fn run(path: &str, mode: &str) -> ExitCode {
-    execute(path, mode, None, "raw")
+    execute(path, mode, None, "raw", false)
 }
 
-fn execute(path: &str, mode: &str, allowed_root: Option<&str>, format: &str) -> ExitCode {
+fn execute(path: &str, mode: &str, allowed_root: Option<&str>, format: &str, annotations: bool) -> ExitCode {
     let read = if path == "-" {
         std::io::read_to_string(std::io::stdin())
     } else if mode == "exec" {
@@ -152,13 +135,34 @@ fn execute(path: &str, mode: &str, allowed_root: Option<&str>, format: &str) -> 
         "{}",
         if matches!(mode, "recover" | "resume") {
             vm.recovery_state_string()
-        } else {
+        } else if annotations || mode != "run" {
             vm.state_string()
+        } else {
+            let mut state = vm.state();
+            omit_annotations(&mut state);
+            yaml_document(&state)
         }
     );
     if vm.status() == Status::Finished {
         ExitCode::SUCCESS
     } else {
         ExitCode::FAILURE
+    }
+}
+
+/// Default `run` output drops evaluation annotations (the bulk of its size) and
+/// reports how many were omitted; `Vm::state` keeps them for API consumers.
+fn omit_annotations(state: &mut Yaml) {
+    let Yaml::Hash(fields) = state else { return };
+    let omitted = match fields.remove(&Yaml::String("annotations".into())) {
+        Some(Yaml::Array(items)) => items.len(),
+        _ => 0,
+    };
+    fields.remove(&Yaml::String("annotations_truncated".into()));
+    if omitted > 0 {
+        fields.insert(
+            Yaml::String("annotations_omitted".into()),
+            Yaml::Integer(omitted as i64),
+        );
     }
 }

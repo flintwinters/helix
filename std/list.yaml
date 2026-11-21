@@ -101,7 +101,7 @@ flatten: !call
       - !call [get, !ref xss, 0, []]
       - !call
           - let
-          - middle: !call [div, !call [len, !ref xss], 2]
+          - {middle: !call [div, !call [len, !ref xss], 2]}
           - !call
               - concat
               - !call [flatten, !call [slice, !ref xss, 0, !ref middle]]
@@ -196,7 +196,10 @@ range: !call
                           - !ref xs
                           - !call
                               - map
-                              - !call [fn, [x], !call [add, !ref x, !ref size]]
+                              - !call
+                                  - fn
+                                  - [x]
+                                  - !call [add, !ref x, !ref size]
                               - !ref xs
                   - !call [len, !ref xs]
           - [0]
@@ -212,7 +215,7 @@ reverse: !call
       - !ref xs
       - !call
           - let
-          - middle: !call [div, !call [len, !ref xs], 2]
+          - {middle: !call [div, !call [len, !ref xs], 2]}
           - !call
               - concat
               - !call [reverse, !call [slice, !ref xs, !ref middle, !call [len, !ref xs]]]
@@ -247,7 +250,10 @@ sort_by: !call
                       - sort_by
                       - !call
                           - filter
-                          - !call [fn, [x], !call [before, !ref x, !ref pivot]]
+                          - !call
+                              - fn
+                              - [x]
+                              - !call [before, !ref x, !ref pivot]
                           - !ref xs
                       - !ref before
                   - !call
@@ -264,7 +270,10 @@ sort_by: !call
                       - sort_by
                       - !call
                           - filter
-                          - !call [fn, [x], !call [before, !ref pivot, !ref x]]
+                          - !call
+                              - fn
+                              - [x]
+                              - !call [before, !ref pivot, !ref x]
                           - !ref xs
                       - !ref before
           - !call [get, !ref xs, !call [div, !call [len, !ref xs], 2]]

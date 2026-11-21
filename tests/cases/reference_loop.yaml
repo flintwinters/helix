@@ -1,0 +1,3 @@
+# References that only name each other report the loop of names.
+x: !ref y
+y: !ref x

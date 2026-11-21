@@ -15,7 +15,7 @@ pub(super) fn as_f64(value: &Value) -> Option<f64> {
     }
 }
 
-pub(super) fn type_name(v: &Value) -> &'static str {
+pub(crate) fn type_name(v: &Value) -> &'static str {
     match v {
         Value::Integer(_) => "integer",
         Value::Float(_) => "float",
@@ -26,6 +26,14 @@ pub(super) fn type_name(v: &Value) -> &'static str {
         Value::Null => "null",
         Value::Machine(_) => "vm",
         Value::Function(_) => "function",
+    }
+}
+
+/// The type of `v` with a bounded excerpt of it, for expected-versus-actual messages.
+pub(crate) fn described(v: &Value) -> String {
+    match v {
+        Value::Null | Value::Function(_) | Value::Machine(_) => type_name(v).into(),
+        other => format!("{} {}", type_name(other), crate::emit::excerpt(other, 60)),
     }
 }
 

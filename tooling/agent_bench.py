@@ -18,11 +18,11 @@ from pathlib import Path
 
 import yaml
 
-from tooling.agent_tasks import TASKS, VERSION, inputs, oracle
+from tooling.agent_tasks import TASKS, VERSION, inputs, oracle, source_digest
 from tooling.output import emit
 
 API = 'https://openrouter.ai/api/v1'
-PROTOCOL_VERSION = 3
+PROTOCOL_VERSION = 4
 
 
 def save(path, value):
@@ -79,6 +79,7 @@ def messages(documentation, task, mode='one-shot'):
                 'public_test.yaml that imports candidate.yaml, CALLS solve on the example input and asserts the expected output. '
                 'Use workspace tools to read documentation and write candidate.yaml exporting solve(input). '
                 'Use helix with args ["run", "public_test.yaml"] to execute that test. Fix problems and rerun as needed. '
+                'Write source with !call/!ref/!literal tags in block style (one argument or binding per line), and run helix fmt on it before saving. '
                 'Running candidate.yaml alone only defines the function; it does not test its body. '
                 'Submit the saved files using the submit tool after the public test succeeds. '
                 'Do not rewrite code in a final chat answer. You may add helper modules and your own tests. '
@@ -103,7 +104,7 @@ def invocation(values):
                      {'$call': [{'$ref': 'candidate.solve'}, {'$literal': values}]}]}
 
 
-def prepare_workspace(root, directory, task):
+def prepare_workspace(root, directory, task, ctx):
     workspace = directory / 'workspace'
     workspace.mkdir()
     for name in ('LANGUAGE.md', 'LIBRARY.md'):
@@ -112,7 +113,11 @@ def prepare_workspace(root, directory, task):
     driver = {'$call': ['assert', {'$call': ['eq', invocation(example['input']),
                                            {'$literal': example['output']}]},
                         'solve(example.input) must equal example.output']}
-    (workspace / 'public_test.yaml').write_text(json.dumps(driver, ensure_ascii=False) + '\n')
+    # The binary owns canonical tag/block syntax; Python only supplies the normalized value.
+    result = ctx.helix('fmt', '-', stdin=json.dumps(driver, ensure_ascii=False))
+    if result.returncode != 0:
+        raise RuntimeError(f'helix fmt rejected the public test driver: {result.stderr.strip()}')
+    (workspace / 'public_test.yaml').write_text(result.stdout)
 
 
 def invoke(ctx, directory, values):
@@ -300,7 +305,7 @@ def generate_attempt(root, args, ctx, directory, docs, task, trial, key):
     attempt.mkdir()
     mode = getattr(args, 'mode', 'one-shot')
     if mode == 'cli':
-        prepare_workspace(root, attempt, task)
+        prepare_workspace(root, attempt, task, ctx)
     row = {'task': task, 'trial': trial, 'artifact': str(attempt.relative_to(directory))}
     started = time.perf_counter()
     try:
@@ -341,9 +346,11 @@ def run(root, args, ctx):
     jobs = getattr(args, 'jobs', 1)
     if args.trials < 1 or args.samples < 1 or args.max_tokens < 1 or not 0 <= args.temperature <= 2 or getattr(args, 'max_turns', 16) < 1 or getattr(args, 'max_tool_calls', 32) < 1 or jobs < 1:
         raise ValueError('trial, sample, token, turn, tool and job counts must be positive; temperature must be in [0,2]')
-    selected = args.task or list(TASKS)
-    if len(set(selected)) != len(selected) or any(task not in TASKS for task in selected):
+    if len(set(args.task or [])) != len(args.task or []) or any(task not in TASKS for task in args.task or []):
         raise ValueError('task IDs must be known and unique; use agent-bench list')
+    plan = retry_plan(args.retry, args.task) if getattr(args, 'retry', None) else [
+        (task, trial) for task in (args.task or list(TASKS)) for trial in range(1, args.trials + 1)]
+    selected = list(dict.fromkeys(task for task, _ in plan))
     directory = Path(args.directory).resolve() if args.directory else root / 'runtime' / 'agent-bench' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     directory.mkdir(parents=True, exist_ok=False)
     docs = context(root)
@@ -361,7 +368,9 @@ def run(root, args, ctx):
                 'max_turns': getattr(args, 'max_turns', 16), 'max_tool_calls': getattr(args, 'max_tool_calls', 32),
                 'trials': args.trials, 'samples': args.samples, 'temperature': args.temperature,
                 'max_tokens': args.max_tokens, 'tasks': selected, 'context_sha256': digest(docs),
-                'task_source_sha256': digest((root / 'tooling/agent_tasks.py').read_text()),
+                'retry_of': str(Path(args.retry).resolve()) if getattr(args, 'retry', None) else None,
+                'attempts': [[task, trial] for task, trial in plan], 'test_timeout_seconds': ctx.timeout,
+                'task_source_sha256': source_digest(),
                 'git_revision': subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, capture_output=True, text=True, check=True).stdout.strip(),
                 'git_diff_sha256': digest(subprocess.run(['git', 'diff', 'HEAD'], cwd=root, capture_output=True, text=True, check=True).stdout),
                 'binary_sha256': hashlib.sha256(ctx.binary.read_bytes()).hexdigest(),
@@ -399,7 +408,7 @@ def run(root, args, ctx):
 
     with ThreadPoolExecutor(max_workers=jobs) as pool:
         futures = [pool.submit(generate_attempt, root, args, ctx, directory, docs, task, trial, key)
-                   for task in selected for trial in range(1, args.trials + 1)]
+                   for task, trial in plan]
         for future in as_completed(futures):
             row = future.result()
             rows.append(row)
@@ -423,10 +432,31 @@ def run(root, args, ctx):
                 row['runtime_ratio_to_reference'] = median / reference_score['median_cli_wall_ms'] if median is not None else None
             save(attempt / 'result.json', row)
             checkpoint('scoring')
-            print(f"agent-bench: scored {task} {row['trial']}/{args.trials}: "
+            print(f"agent-bench: scored {task} trial {row['trial']}: "
                   + ('passed' if row.get('score', {}).get('passed') else 'failed'), file=sys.stderr, flush=True)
     checkpoint('complete')
     return {'directory': str(directory), 'dry_run': False, 'summary': summary(rows)}
+
+
+def retry_plan(source, tasks=None):
+    """(task, trial) pairs of a recorded run whose generation failed before submitting a program.
+
+    Retried attempts keep their original trial numbers in a new directory; the
+    source run is never modified, so both results stay inspectable side by side.
+    """
+    source = Path(source).resolve()
+    manifest = json.loads((source / 'manifest.json').read_text())
+    if manifest['task_version'] != VERSION or manifest['task_source_sha256'] != source_digest():
+        raise ValueError('task version changed since the source run; its attempts are not comparable')
+    plan = []
+    for task in manifest['tasks']:
+        for path in sorted((source / task).glob('trial-*/result.json')):
+            row = json.loads(path.read_text())
+            if row.get('error') and (not tasks or task in tasks):
+                plan.append((task, row['trial']))
+    if not plan:
+        raise ValueError(f'{source} has no failed generations to retry')
+    return plan
 
 
 def replay(root, args, ctx):
@@ -434,7 +464,7 @@ def replay(root, args, ctx):
         raise ValueError('score requires --directory')
     directory = Path(args.directory).resolve()
     manifest = json.loads((directory / 'manifest.json').read_text())
-    if manifest['task_version'] != VERSION or manifest['task_source_sha256'] != digest((root / 'tooling/agent_tasks.py').read_text()):
+    if manifest['task_version'] != VERSION or manifest['task_source_sha256'] != source_digest():
         raise ValueError('task version changed; original scoring code is required')
     rows = []
     for task in manifest['tasks']:
@@ -451,6 +481,7 @@ def replay(root, args, ctx):
             rows.append(row)
     report = {'schema': 'helix.agent-bench.v1', 'rows': rows, 'summary': summary(rows),
               'evaluation': {'binary_sha256': hashlib.sha256(ctx.binary.read_bytes()).hexdigest(),
+                             'test_timeout_seconds': ctx.timeout,
                              'samples': args.samples, 'recorded_at': datetime.now(timezone.utc).isoformat(),
                              'environment': {'platform': platform.platform(), 'python': platform.python_version()}}}
     save(directory / 'replay.json', report)
@@ -496,7 +527,7 @@ def saved_report(args):
     report = json.loads((directory / filename).read_text())
     audit = submission_audit(directory, report['rows']) if getattr(args, 'audit', False) else None
     return {'submission_audit': audit, 'evaluation_source': filename, 'evaluation': report.get('evaluation'), 'execution': report.get('execution'), 'directory': str(directory), 'provenance': {key: manifest.get(key) for key in (
-        'schema', 'protocol_version', 'context_delivery', 'jobs', 'max_turns', 'max_tool_calls', 'task_version', 'model', 'trials', 'samples', 'temperature', 'max_tokens',
+        'schema', 'protocol_version', 'context_delivery', 'jobs', 'max_turns', 'max_tool_calls', 'retry_of', 'test_timeout_seconds', 'task_version', 'model', 'trials', 'samples', 'temperature', 'max_tokens',
         'context_sha256', 'task_source_sha256', 'git_revision', 'git_diff_sha256', 'binary_sha256',
         'environment', 'timing_contract')}, 'mode': manifest.get('mode', 'one-shot'),
         'summary': summary(report['rows'])}

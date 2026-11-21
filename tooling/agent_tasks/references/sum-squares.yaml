@@ -1,0 +1,1 @@
+solve: !call [fn, [xs], !call [fold, !call [fn, [acc, x], !call [if, !call [gt, !ref x, 0], !call [add, !ref acc, !call [mul, !ref x, !ref x]], !ref acc]], 0, !ref xs]]

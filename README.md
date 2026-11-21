@@ -46,7 +46,9 @@ For a result without the state envelope:
 After building, use `target/debug/helix` directly, or install it with
 `cargo install --path .`. `helix exec` accepts inline source or reads stdin;
 string results are written verbatim, other values as YAML, and errors go to stderr.
-Run `helix --help` for the other commands.
+Run `helix --help` for the other commands. Learning is hierarchical and every level
+accepts `--json`: `helix docs` navigates the embedded references section by section,
+`helix builtins` lists builtin actors with arity, and `helix std` browses the library.
 
 For [jq](https://jqlang.org/manual/) and [yq](https://mikefarah.gitbook.io/yq/commands/evaluate)
 pipelines, select an explicit output format so string results remain quoted data:
@@ -193,8 +195,10 @@ and needs Git, Node.js, and npm; the command sets it up when needed.
   verified logical checkpoint with a detailed message.
 
 Use `./manage.py --help` or `--help-json` for command discovery,
-`./manage.py test --describe` for suite contracts, and `./manage.py std [module]`
-to discover embedded libraries and read their source.
+`./manage.py test --describe` for suite contracts, and `./manage.py std` to browse
+embedded libraries level by level: modules, then `std MODULE` signatures, then
+`std MODULE.EXPORT` source. `./manage.py docs [DOC [SECTION]]` and
+`./manage.py builtins [NAME]` forward the binary's reference navigation.
 
 ## Usage log
 
@@ -241,8 +245,6 @@ exit 1, and invalid arguments or unreadable input exit 2.
   `--interval-ms` controls polling and `--iterations` bounds run attempts (including unreadable-input attempts).
 - `helix schema` emits the structural program schema; [editor setup](editor/README.md)
   explains its limits and the `helix lsp` stdio server.
-- `helix completion bash` (or `zsh`, `fish`) prints a script to source in that
-  shell; checked-in scripts live in `completions/`.
 
 The corresponding project commands live under `./manage.py runtime`; saved
 state inspection is `./manage.py inspect state FILE`. Verify these contracts

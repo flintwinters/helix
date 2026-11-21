@@ -483,7 +483,7 @@ objects:
 root:
   applied: 5
   caught:
-    not_a_type: "expected a list of parameter types, got string"
+    not_a_type: "`function_of` argument 1: expected a list of parameter types, got string \"integer\""
     unannotated_callback: "1 type violation in the arguments of `/twice`: expected function (integer) -> integer, got function (any) -> any"
     wrong_callback: "1 type violation in the arguments of `/twice`: expected function (integer) -> integer, got function (any) -> string"
   explained:

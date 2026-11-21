@@ -1903,12 +1903,12 @@ root:
             actual_present: true
             at: /
             expected: string
-            message: "expected string, got integer"
+            message: "expected string, got integer 42"
             rule: type
       file: "std:provider"
       kind: type
       line: 86
-      message: "1 type violation: expected string, got integer"
+      message: "1 type violation: expected string, got integer 42"
       path: "/checked/$call/2/$call/2/$call/1/$call/1"
       phase: type
       reference:

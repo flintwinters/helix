@@ -3,24 +3,36 @@
 `./manage.py quality agent-bench` owns model coding experiments.
 `./manage.py test --suite agent_bench` verifies the harness offline; paid model
 calls are explicit experiments, never part of the default regression suite.
-The current [50-attempt workspace baseline](baseline-workspace-5x10-v3.json) uses
-protocol v3; earlier final-chat measurements are retained below as historical data.
+The latest [50-attempt workspace baseline](baseline-workspace-5x10-v3.json) used
+protocol v3; no protocol-v4 run is recorded yet. Earlier final-chat measurements are
+retained below as historical data.
 
-## Protocol v3: edit, execute, submit saved files
+## Protocol v4: edit, execute, submit saved files
 
-The task corpus remains version 2: sum of squares, word counts, grouped totals,
-stable deduplication and dependency planning. The default is ten independent
-attempts per task. Each exports `solve(input)` from `candidate.yaml`.
+Task corpus version 3 has 55 tasks under [tooling/agent_tasks/](../../tooling/agent_tasks/):
+the five version-2 tasks plus text processing, record reshaping, CSV/JSON/YAML
+formats, infrastructure plans and business reports. They range from one-line
+folds to multi-step pipelines, but target common programming work rather than
+puzzles: hidden cases scale input to 256 elements, so solutions must stay within
+the 10-second and value-budget limits by using Helix's cost model (parameters,
+not repeated `let` reads; regex tokenizing; std sorting). Each task's Python oracle
+and passing Helix reference live beside it. The baseline below predates corpus v3;
+no v3-corpus run is recorded yet. The default is ten independent attempts per task. Each exports `solve(input)` from `candidate.yaml`.
 
 Each CLI-assisted attempt has a separate workspace containing authoritative
 `LANGUAGE.md` and `LIBRARY.md` files and a read-only `public_test.yaml`. The test
 imports `candidate.yaml`, invokes `solve` on the task's disclosed example input,
 and asserts the disclosed expected output. It shares the evaluator's invocation
-builder, so the public and hidden calling conventions cannot drift.
+builder, so the public and hidden calling conventions cannot drift. The driver is
+written by `helix fmt` as block-style `!call`/`!ref`/`!literal` source, and the agent
+prompt and tool descriptions steer candidates to the same style via `helix fmt`.
 
 The model can read documentation progressively, create and edit candidate/helper
-files, and run `helix` with argv for `--help`, `std [MODULE]`, `schema`,
-`check FILE`, `fmt FILE` or `run FILE`. A `-` file argument accepts source on stdin.
+files, and run `helix` with argv for `--help`, `help [COMMAND]`,
+`docs [DOC [SECTION]]`, `builtins [NAME]`, `std [MODULE[.EXPORT]]`, `schema`,
+`check FILE`, `fmt FILE` or `run FILE`; lookups accept `--json`. Protocol v4 added
+the help/docs/builtins lookups to v3's surface, so the two are not comparable.
+A `-` file argument accepts source on stdin.
 Runtime calls use the existing sandbox with workspace-local and embedded imports
 and no host effect grants. Workspace reads and writes cannot escape the attempt
 or modify the supplied documentation/public test. Tool feedback is capped at

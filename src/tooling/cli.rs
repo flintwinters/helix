@@ -30,7 +30,6 @@ pub fn dispatch(args: &[String]) -> Option<ExitCode> {
             }
         },
         ["repl"] => interactive::repl(),
-        ["completion", shell] => interactive::completion(shell),
         ["target-release", path] => super::snapshots::target_release(path),
         ["checkpoint", path] => super::snapshots::checkpoint(path),
         ["reconcile", path, outcome] => super::snapshots::reconcile(path, outcome),

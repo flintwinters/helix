@@ -2,7 +2,7 @@ error:
   column: 5
   kind: type
   line: 8
-  message: "expected list, got integer"
+  message: "`map` list: expected list, got integer 5"
   path: "/r/$call/2"
   reference:
     - r

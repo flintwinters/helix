@@ -1,0 +1,22 @@
+solve: !call
+  - fn
+  - [rows]
+  - !call
+    - get
+    - !call
+      - fold
+      - !call
+        - fn
+        - [state, row]
+        - !call
+          - let
+          - email: !call [get, !ref row, email]
+            seen: !call [get, !ref state, seen]
+          - !call
+            - if
+            - !call [has, !ref seen, !ref email]
+            - !ref state
+            - !call [dict, seen, !call [set, !ref seen, !ref email, true], rows, !call [append, !call [get, !ref state, rows], !ref row]]
+      - {seen: {}, rows: []}
+      - !ref rows
+    - rows

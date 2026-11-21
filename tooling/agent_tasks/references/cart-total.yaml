@@ -1,0 +1,15 @@
+solve: !call
+  - fn
+  - [input]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [total, item]
+      - !call
+        - let
+        - cost: !call [mul, !call [get, !ref item, price_cents], !call [get, !ref item, qty]]
+          percent: !call [get, !call [get, !ref input, discounts], !call [get, !ref item, sku], 0]
+        - !call [add, !ref total, !call [sub, !ref cost, !call [div, !call [mul, !ref cost, !ref percent], 100]]]
+    - 0
+    - !call [get, !ref input, items]

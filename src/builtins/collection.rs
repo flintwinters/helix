@@ -113,11 +113,13 @@ fn get(args: &[Value]) -> Result<Value, Fault> {
     match (found, args.get(2)) {
         (Some(value), _) => Ok(value.clone()),
         (None, Some(default)) => Ok(default.clone()),
-        (None, None) => Err(Fault::at(1, "missing", match &args[1] {
-            Value::String(k) => format!("no key `{k}`"),
-            Value::Integer(i) => format!("no index {i}"),
-            _ => "no such entry".to_string(),
-        })),
+        (None, None) => Err(match (&args[0], &args[1]) {
+            (Value::Hash(map), Value::String(k)) => Fault::at(1, "missing", format!("map has no key `{k}`"))
+                .with_hint(crate::graph::missing_key(map, k)),
+            (Value::Array(v), Value::Integer(i)) => Fault::at(1, "missing", format!("index {i} is out of range for a list of length {}", v.len()))
+                .with_hint("pass a default as the third argument to tolerate absence".into()),
+            _ => Fault::at(1, "missing", "no such entry".to_string()),
+        }),
     }
 }
 

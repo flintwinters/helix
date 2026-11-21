@@ -1,0 +1,11 @@
+solve: !call
+  - fn
+  - [input]
+  - !call
+    - let
+    - index: !call [fn, [items], !call [fold, !call [fn, [acc, x], !call [set, !ref acc, !ref x, true]], {}, !ref items]]
+      left: !call [index, !call [get, !ref input, left]]
+      right: !call [index, !call [get, !ref input, right]]
+      # map keys come back in Unicode order
+      within: !call [fn, [from, other, wanted], !call [filter, !call [fn, [x], !call [eq, !call [has, !ref other, !ref x], !ref wanted]], !call [keys, !ref from]]]
+    - !call [dict, both, !call [within, !ref left, !ref right, true], only_left, !call [within, !ref left, !ref right, false], only_right, !call [within, !ref right, !ref left, false]]

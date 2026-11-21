@@ -327,6 +327,9 @@ pub(crate) struct HelixError {
     pub kind: String,
     pub(crate) phase: Option<&'static str>,
     pub message: String,
+    /// Advisory correction derived from authoritative sources (builtins, lexical scope, std
+    /// exports, syntax rules); it never changes the kind, message or blame.
+    pub(crate) hint: Option<String>,
     /// The imported file the error lies in; absent for the program itself. `path`, `line` and
     /// `column` are relative to that file.
     pub file: Option<String>,

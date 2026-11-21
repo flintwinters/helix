@@ -1,0 +1,30 @@
+l: !call [import, std:list]
+t: !call [import, std:text]
+segments: !call [fn, [path], !call [map, !call [fn, [m], !call [get, !call [get, !call [get, !ref m, captures], 0], text]], !call [regex_find, "[^/]+", !ref path]]]
+# Adds bytes to "/" and every ancestor directory named by the first depth segments.
+rollup: !call
+  - fn
+  - [totals, dirs, bytes]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [acc, depth]
+      - !call
+        - !call [fn, [directory], !call [set, !ref acc, !ref directory, !call [add, !call [get, !ref acc, !ref directory, 0], !ref bytes]]]
+        - !call [concat, /, !call [t.join, !call [slice, !ref dirs, 0, !ref depth], /]]
+    - !ref totals
+    - !call [l.range, !call [add, !call [len, !ref dirs], 1]]
+solve: !call
+  - fn
+  - [files]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [totals, file]
+      - !call
+        - !call [fn, [parts], !call [rollup, !ref totals, !call [slice, !ref parts, 0, !call [sub, !call [len, !ref parts], 1]], !call [get, !ref file, bytes]]]
+        - !call [segments, !call [get, !ref file, path]]
+    - {}
+    - !ref files

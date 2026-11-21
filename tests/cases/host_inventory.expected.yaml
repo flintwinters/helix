@@ -1842,12 +1842,12 @@ root:
               actual_present: true
               at: /hosts/0/connection
               expected: "record | record"
-              message: "expected record | record, got map"
+              message: "expected record | record, got map {transport: \"ssh\"}"
               rule: type
         file: "std:inventory"
         kind: type
         line: 201
-        message: "1 type violation: expected record | record, got map"
+        message: "1 type violation: expected record | record, got map {transport: \"ssh\"}"
         path: "/resolve/$call/2/$call/1/$call/1/$call/1"
         phase: type
         reference:

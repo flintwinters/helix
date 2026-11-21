@@ -32,7 +32,7 @@ SUITES = {
     "agent_bench": "Offline agent benchmark contracts, independent oracles and usage accounting",
     "yaml_model": "Representation-independent explicit syntax, data roundtrip and deterministic effects",
     "static": "Non-executing checks, canonical formatting, schema and LSP protocol",
-    "interactive": "REPL, dependency watch, completion and local installation",
+    "interactive": "REPL, dependency watch and local installation",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
     "nginx_types": "Pure class realization, defaults and provenance feeding the existing nginx lifecycle",
     "target_coordination": "Cross-journal target exclusion and persistent crash uncertainty for cooperating controllers",
@@ -62,7 +62,7 @@ SUITES = {
     "pipeline": "helix exec inline/stdin execution, raw strings, YAML/JSON results, errors and jq/yq shell pipes",
     "generated": "Fixed-seed arithmetic oracles, collection laws, and serialization",
     "dogfood": "Standalone Helix test reports, collection laws, and runner failure contracts",
-    "errors": "Navigable function definitions, imported call chains, caught errors and causes",
+    "errors": "Navigable function definitions, imported call chains, caught errors, causes and correction hints",
     "imports": "Module resolution, isolation, cycles, and source blame",
     "execution": "Immutable stepping, retained branches, nested machines and explicit continuations",
     "library": "Rust public VM API contracts via cargo test",
@@ -131,6 +131,8 @@ def parser():
     }.items():
         leaf = command(runtime, name, description, ["runtime", name], f"runtime {name} - < program.yaml")
         leaf.add_argument("file", metavar="FILE", help="YAML file, or - for stdin; relative to repository root")
+    leaves["run"].add_argument("--annotations", action="store_true",
+                               help="include evaluation annotations (omitted by default; the count is reported as annotations_omitted)")
     leaves["check"].add_argument("--evaluate", action="store_true", help="execute and collect independent runtime errors")
     for name, description in {
         "fmt": "Emit canonical YAML source without executing",
@@ -164,9 +166,6 @@ def parser():
                               "lsp": "Serve the Language Server Protocol over stdio",
                               "schema": "Print the program JSON Schema"}.items():
         command(runtime, name, description, ["runtime", name], f"runtime {name}")
-    completion = command(runtime, "completion", "Print shell completion definitions",
-                         ["runtime", "completion"], "runtime completion bash")
-    completion.add_argument("shell", choices=("bash", "zsh", "fish"))
     sandbox = command(runtime, "sandbox", "Evaluate with file imports confined to ROOT (- denies file imports)",
                       ["runtime", "sandbox"], "runtime sandbox - program.yaml")
     sandbox.add_argument("root", metavar="ROOT", help="allowed import directory, or - for embedded modules only")
@@ -198,9 +197,17 @@ def parser():
     state = command(inspect, "state", "Summarize a saved state without executing it",
                     ["inspect", "state"], "inspect state state.yaml")
     state.add_argument("file", metavar="FILE", help="state file, or - for stdin")
-    modules = command(inspect, "std", "List standard modules or print one module's source",
-                      ["inspect", "std"], "inspect std math")
-    modules.add_argument("module", nargs="?", help="module name, optionally prefixed with std:")
+    modules = command(inspect, "std", "Browse the standard library: modules, then one module's signatures, then one export",
+                      ["inspect", "std"], "inspect std list.find")
+    modules.add_argument("module", nargs="?", metavar="MODULE[.EXPORT]", help="module, optionally prefixed with std:, or one export")
+    modules.add_argument("--source", dest="whole", action="store_true", help="print the module's complete source")
+    docs = command(inspect, "docs", "Navigate the embedded reference documents: list, a document's section tree, then one section",
+                   ["inspect", "docs"], "inspect docs language builtins")
+    docs.add_argument("document", nargs="?", metavar="DOC", help="language, library, host, or a Markdown path")
+    docs.add_argument("section", nargs="?", metavar="SECTION", help="section slug or title; near misses are suggested")
+    builtins = command(inspect, "builtins", "List builtin actors by family with arity, then one builtin's documentation",
+                       ["inspect", "builtins"], "inspect builtins get")
+    builtins.add_argument("name", nargs="?", metavar="NAME", help="one builtin; std exports are redirected to `inspect std`")
     command(inspect, "inventory", "Report source files grouped through Helix; save replay artifacts in runtime/",
             ["inspect", "inventory"], "inspect inventory")
     usage = command(inspect, "usage", "Summarize or query the log of runtime invocations made through manage.py",
@@ -235,6 +242,7 @@ def parser():
     bench.add_argument("--model", default="openai/gpt-6.1-luna", help="exact OpenRouter model ID")
     bench.add_argument("--trials", type=int, default=10, help="independent completions per task")
     bench.add_argument("--task", action="append", help="task ID; repeat to select several")
+    bench.add_argument("--retry", metavar="DIRECTORY", help="run: regenerate only the attempts of a recorded run that failed before submitting a program (keeps trial numbers; --task narrows)")
     bench.add_argument("--samples", type=int, default=3, help="timing samples after one warmup")
     bench.add_argument("--max-tokens", type=int, default=4096, help="completion token ceiling per model request")
     bench.add_argument("--temperature", type=float, default=0.7)

@@ -1,0 +1,1 @@
+solve: !call [fn, [xs], !call [fold, !call [fn, [acc, row], !call [if, !call [get, !ref row, active], !call [let, {key: !call [get, !ref row, category]}, !call [set, !ref acc, !ref key, !call [add, !call [get, !ref acc, !ref key, 0], !call [get, !ref row, amount]]]], !ref acc]], {}, !ref xs]]

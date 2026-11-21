@@ -1,0 +1,20 @@
+flatten: !call
+  - fn
+  - [result, mapping, prefix]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [acc, key]
+      - !call
+        - let
+        - value: !call [get, !ref mapping, !ref key]
+          path: !call [concat, !ref prefix, !ref key]
+        - !call
+          - if
+          - !call [eq, !call [type, !ref value], map]
+          - !call [flatten, !ref acc, !ref value, !call [concat, !ref path, .]]
+          - !call [set, !ref acc, !ref path, !ref value]
+    - !ref result
+    - !call [keys, !ref mapping]
+solve: !call [fn, [mapping], !call [flatten, {}, !ref mapping, ""]]

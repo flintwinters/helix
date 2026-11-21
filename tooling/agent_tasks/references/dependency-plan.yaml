@@ -1,0 +1,2 @@
+d: !call [import, std:dependency]
+solve: !call [fn, [tasks], !call [d.plan, !ref tasks]]

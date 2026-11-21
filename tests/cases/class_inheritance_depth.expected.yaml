@@ -258,7 +258,7 @@ root:
       actual_present: true
       at: /1/hostname
       expected: string
-      message: "expected string, got integer"
+      message: "expected string, got integer 2"
       rule: type
   deep:
     concrete: true

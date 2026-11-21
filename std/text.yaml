@@ -6,7 +6,6 @@
 # log2(parts)), and split reads fields from bounded windows of the source with
 # regex_find, never per character; each window is one iteration, so the runtime
 # iteration limit applies to source/4000.
-lists: !call [import, "std:list"]
 join: !call
   - fn
   - [[parts, !call [list_of, !ref string]], [separator, !ref string]]
@@ -16,17 +15,17 @@ join: !call
       - !call [get, !ref parts, 0, ""]
       - !call
           - let
-          - middle: !call [div, !call [len, !ref parts], 2]
+          - {middle: !call [div, !call [len, !ref parts], 2]}
           - !call
               - concat
               - !call [join, !call [slice, !ref parts, 0, !ref middle], !ref separator]
               - !ref separator
-              - !call [join, !call [slice, !ref parts, !ref middle, !call [len, !ref parts]], !ref separator]
+              - !call
+                  - join
+                  - !call [slice, !ref parts, !ref middle, !call [len, !ref parts]]
+                  - !ref separator
   - !ref string
-regex: !call
-  - fn
-  - [pattern, text]
-  - !call [regex_find, !ref pattern, !ref text]
+lists: !call [import, "std:list"]
 # The separator as a regex literal: every regex metacharacter gets a backslash.
 quote: !call
   - fn
@@ -40,18 +39,22 @@ quote: !call
               - [piece]
               - !call
                   - let
-                  - meta: !call [get, !call [get, !ref piece, captures], 1]
+                  - {meta: !call [get, !call [get, !ref piece, captures], 1]}
                   - !call
                       - if
-                      - !call [eq, !ref meta, null]
+                      - !call [eq, !ref meta, ~]
                       - !call [get, !call [get, !call [get, !ref piece, captures], 2], text]
-                      - !call [concat, '\', !call [get, !ref meta, text]]
+                      - !call [concat, "\\", !call [get, !ref meta, text]]
           - !call
               - regex_find
-              - '(?s)([\\.+*?()|\[\]{}^$#&~\-])|([^\\.+*?()|\[\]{}^$#&~\-]+)'
+              - "(?s)([\\\\.+*?()|\\[\\]{}^$#&~\\-])|([^\\\\.+*?()|\\[\\]{}^$#&~\\-]+)"
               - !ref text
       - ""
   - !ref string
+regex: !call
+  - fn
+  - [pattern, text]
+  - !call [regex_find, !ref pattern, !ref text]
 # One regex window of split: the complete fields in source[pos:pos+width] and how many
 # characters they consumed. A window with no complete field doubles; the last window
 # also yields the remaining tail. Parameters, not `let`, carry the values reused below.
@@ -87,7 +90,13 @@ scan: !call
                                       - !call
                                           - concat
                                           - !ref found
-                                          - !call [list, !call [slice, !ref source, !call [add, !ref pos, !ref used], !ref size]]
+                                          - !call
+                                              - list
+                                              - !call
+                                                  - slice
+                                                  - !ref source
+                                                  - !call [add, !ref pos, !ref used]
+                                                  - !ref size
                               - !call
                                   - dict
                                   - done
@@ -95,12 +104,19 @@ scan: !call
                                   - pos
                                   - !call [add, !ref pos, !ref used]
                                   - width
-                                  - !call [if, !call [eq, !ref used, 0], !call [mul, !ref width, 2], 4000]
+                                  - !call
+                                      - if
+                                      - !call [eq, !ref used, 0]
+                                      - !call [mul, !ref width, 2]
+                                      - 4000
                                   - chunks
                                   - !call [append, !ref chunks, !ref found]
                       - !call
                           - map
-                          - !call [fn, [match], !call [get, !call [get, !call [get, !ref match, captures], 1], text]]
+                          - !call
+                              - fn
+                              - [match]
+                              - !call [get, !call [get, !call [get, !ref match, captures], 1], text]
                           - !call [regex_find, !ref fields, !ref window]
                       - !call
                           - len
@@ -118,7 +134,11 @@ scan: !call
                   - slice
                   - !ref source
                   - !ref pos
-                  - !call [if, !call [lt, !call [add, !ref pos, !ref width], !ref size], !call [add, !ref pos, !ref width], !ref size]
+                  - !call
+                      - if
+                      - !call [lt, !call [add, !ref pos, !ref width], !ref size]
+                      - !call [add, !ref pos, !ref width]
+                      - !ref size
       - !call [get, !ref state, pos]
       - !call [get, !ref state, width]
       - !call [get, !ref state, chunks]
@@ -145,10 +165,16 @@ split: !call
                           - get
                           - !call
                               - until
-                              - !call [fn, [state], !call [get, !ref state, done]]
-                              - !call [fn, [state], !call [scan, !ref source, !ref fields, !ref prefix, !ref state]]
-                              - {done: false, pos: 0, width: 4000, chunks: []}
+                              - !call
+                                  - fn
+                                  - [state]
+                                  - !call [get, !ref state, done]
+                              - !call
+                                  - fn
+                                  - [state]
+                                  - !call [scan, !ref source, !ref fields, !ref prefix, !ref state]
+                              - {chunks: [], done: false, pos: 0, width: 4000}
                           - chunks
-              - !call [concat, '(?s)(.*?)', !call [quote, !ref separator]]
-              - !call [concat, '(?s)\A(?:.*?', !call [quote, !ref separator], ')*']
+              - !call [concat, "(?s)(.*?)", !call [quote, !ref separator]]
+              - !call [concat, "(?s)\\A(?:.*?", !call [quote, !ref separator], ")*"]
   - !call [list_of, !ref string]
