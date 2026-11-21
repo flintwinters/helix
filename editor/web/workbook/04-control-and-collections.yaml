@@ -10,18 +10,18 @@ steps:
       ```helix
       !call [cond, !call [lt, 5, 0], negative, !call [eq, 5, 0], zero, positive]
       ```
-    task: Define `sign`, returning `negative`, `zero` or `positive`. The checker maps it over `[-5, 0, 7]`.
+    task: Define `status` of a balance, returning `overdrawn`, `empty` or `funded`. The checker maps it over `[-5, 0, 7]`.
     start: |
-      sign: ~
+      status: ~
     probe: |
-      result: !call [map, !ref sign, [-5, 0, 7]]
+      result: !call [map, !ref status, [-5, 0, 7]]
     solution: |
-      sign: !call
+      status: !call
         - fn
         - [n]
-        - !call [cond, !call [lt, !ref n, 0], negative, !call [eq, !ref n, 0], zero, positive]
+        - !call [cond, !call [lt, !ref n, 0], overdrawn, !call [eq, !ref n, 0], empty, funded]
     hint: 'One `cond` with two tests and a default.'
-    expect: [negative, zero, positive]
+    expect: [overdrawn, empty, funded]
 
   - id: immutable
     title: Collections never mutate
@@ -34,18 +34,18 @@ steps:
       ```
 
       Retaining the old value is free to reason about: nothing else can change it.
-    task: Define `bump`, which returns the map with its `count` incremented by one and every other field untouched.
+    task: Define `credit account amount`, which returns the account with its `balance` increased by `amount` and every other field untouched. The checker credits Ada's account with 30.
     start: |
-      bump: ~
+      credit: ~
     probe: |
-      result: !call [bump, {count: 1, name: tally}]
+      result: !call [credit, {owner: !ref owner, balance: !ref balance}, 30]
     solution: |
-      bump: !call
+      credit: !call
         - fn
-        - [m]
-        - !call [set, !ref m, count, !call [add, !call [get, !ref m, count], 1]]
+        - [account, amount]
+        - !call [set, !ref account, balance, !call [add, !call [get, !ref account, balance], !ref amount]]
     hint: '`set` replaces one key and returns a new map.'
-    expect: {count: 2, name: tally}
+    expect: {owner: Ada, balance: 150}
 
   - id: until
     title: Iterating to a fixed point
@@ -62,33 +62,29 @@ steps:
       ```
 
       More than 100000 iterations is a `limit` error, so a runaway loop fails instead of spinning.
-    task: 'Define `collatz_steps n`: while `n` is not 1, halve it if even, else triple it and add one. Count the steps (27 takes 111).'
+    task: 'How long until the money doubles? Define `years_to_double amount`: with `accrue` (interest) applied once a year, count the years until the balance is at least twice the amount. The state is `{balance, years}`.'
     start: |
-      collatz_steps: ~
+      years_to_double: ~
     probe: |
-      result: !call [collatz_steps, 27]
+      result: !call [years_to_double, 8000]
     solution: |
-      collatz_steps: !call
+      years_to_double: !call
         - fn
-        - [n]
+        - [amount]
         - !call
           - get
           - !call
             - until
-            - !call [fn, [s], !call [eq, !ref s.n, 1]]
+            - !call [fn, [s], !call [ge, !ref s.balance, !call [mul, !ref amount, 2]]]
             - !call
               - fn
               - [s]
-              - n: !call
-                  - if
-                  - !call [eq, !call [mod, !ref s.n, 2], 0]
-                  - !call [div, !ref s.n, 2]
-                  - !call [add, !call [mul, !ref s.n, 3], 1]
-                steps: !call [add, !ref s.steps, 1]
-            - {n: !ref n, steps: 0}
-          - steps
-    hint: 'The state is `{n, steps}`; read `steps` from the final state with `get`.'
-    expect: 111
+              - balance: !call [accrue, !ref s.balance]
+                years: !call [add, !ref s.years, 1]
+            - {balance: !ref amount, years: 0}
+          - years
+    hint: 'Step with `accrue`, stop when the balance reaches `2 * amount`, then read `years` from the final state with `get`.'
+    expect: 15
 
   - id: std-list
     title: The standard library
@@ -102,19 +98,16 @@ steps:
       Discover them from a shell without reading source: `helix std list` shows signatures,
       `helix std list.group_by` one export's source, and `helix find` ranks builtins and exports by
       what you want (for example parameter and result types).
-    task: Define `initials`, counting how many words start with each letter. Use `slice`, `map` and `l.frequencies`.
+    task: Define `kind_counts`, how many transactions there are of each kind. Use `map` to take the kinds and `l.frequencies` to count them.
     start: |
       l: !call [import, "std:list"]
-      initials: ~
+      kind_counts: ~
     probe: |
-      result: !call [initials, [apple, avocado, banana]]
+      result: !call [kind_counts, !ref transactions]
     solution: |
-      l: !call [import, "std:list"]
-      initials: !call
+      kind_counts: !call
         - fn
-        - [words]
-        - !call
-          - l.frequencies
-          - !call [map, !call [fn, [w], !call [slice, !ref w, 0, 1]], !ref words]
-    hint: Take the first letter of each word, then count the letters.
-    expect: {a: 2, b: 1}
+        - [txs]
+        - !call [l.frequencies, !call [map, !call [fn, [t], !call [get, !ref t, kind]], !ref txs]]
+    hint: Take the `kind` of each transaction, then count them.
+    expect: {deposit: 2, withdraw: 2}

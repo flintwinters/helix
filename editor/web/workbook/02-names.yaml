@@ -1,5 +1,5 @@
 title: Names
-summary: Maps are scopes. References resolve lexically, so order never matters.
+summary: Maps are scopes. References resolve lexically, so order never matters. The numbers in Ada's ledger get names.
 steps:
   - id: refs
     title: Entries are names
@@ -10,17 +10,18 @@ steps:
       base: 20
       answer: !call [add, !ref base, 2]
       ```
-    task: 'Define `area` as `width` times `height`, so the whole map evaluates to `{width: 6, height: 7, area: 42}`.'
+    task: 'The magic numbers deserve names. Add `opening` (100), `deposit` (25) and `fee` (5) as entries and compute `balance` from them, so the balance is still 120.'
     start: |
-      width: 6
-      height: 7
-      area: ~
+      # opening: ...
+      # deposit: ...
+      # fee: ...
     solution: |
-      width: 6
-      height: 7
-      area: !call [mul, !ref width, !ref height]
-    hint: '`area` needs a `mul` of two references.'
-    expect: {width: 6, height: 7, area: 42}
+      opening: 100
+      deposit: 25
+      fee: 5
+      balance: !call [sub, !call [add, !ref opening, !ref deposit], !ref fee]
+    hint: 'Each name is a map entry; `balance` becomes the same nested call with `!ref` in place of the numbers.'
+    expect: {owner: Ada, opening: 100, deposit: 25, fee: 5, balance: 120}
 
   - id: order
     title: Order is irrelevant
@@ -35,15 +36,14 @@ steps:
       ```
 
       Two entries that depend on each other are a `cycle` error, not a hang.
-    task: Add the missing `price` (5) and `qty` (6) so `total` is `30`.
+    task: '`available` is what Ada can spend: the balance minus a `hold`. Add the missing `hold` of 20 so `available` is 100.'
     start: |
-      total: !call [mul, !ref price, !ref qty]
+      available: !call [sub, !ref balance, !ref hold]
     solution: |
-      total: !call [mul, !ref price, !ref qty]
-      price: 5
-      qty: 6
+      available: !call [sub, !ref balance, !ref hold]
+      hold: 20
     hint: Run the starter first and read the `unbound` error. It names what is missing.
-    expect: {total: 30, price: 5, qty: 6}
+    expect: {owner: Ada, opening: 100, deposit: 25, fee: 5, balance: 120, available: 100, hold: 20}
 
   - id: let
     title: Local names with let
@@ -53,13 +53,17 @@ steps:
       ```helix
       !call [let, {a: 2, b: !call [mul, !ref a, 3]}, !ref b]
       ```
-    task: Using `let`, bind `s` to `3 + 4` and evaluate `s * s`.
+    task: 'Add `interest`, 5% of `balance` (6). Keep the working out local: with `let`, bind `percent` to 5 and `scaled` to `balance * percent`, then divide `scaled` by 100.'
     start: |
-      !call [let, {}, 0]
+      interest: ~
     solution: |
-      !call [let, {s: !call [add, 3, 4]}, !call [mul, !ref s, !ref s]]
-    hint: 'The shape is `!call [let, {name: value}, body]`.'
-    expect: 49
+      interest: !call
+        - let
+        - percent: 5
+          scaled: !call [mul, !ref balance, !ref percent]
+        - !call [div, !ref scaled, 100]
+    hint: 'The shape is `!call [let, {name: value}, body]`; the body can use `balance` from the enclosing map.'
+    expect: {owner: Ada, opening: 100, deposit: 25, fee: 5, balance: 120, available: 100, hold: 20, interest: 6}
 
   - id: dotted
     title: Dotted references
@@ -72,18 +76,18 @@ steps:
         address: {city: Lisbon}
       where: !ref person.address.city
       ```
-    task: Define `city` as the city inside `person.address`.
+    task: Record the `branch` that holds the account, with a nested `address`, and define `city` as the city inside `branch.address`. The checker reads `city`.
     start: |
-      person:
-        name: Ada
+      branch:
+        name: Baixa
         address: {city: Lisbon, country: Portugal}
       city: ~
     probe: |
       result: !ref city
     solution: |
-      person:
-        name: Ada
+      branch:
+        name: Baixa
         address: {city: Lisbon, country: Portugal}
-      city: !ref person.address.city
+      city: !ref branch.address.city
     hint: A single `!ref` with dots does it.
     expect: Lisbon

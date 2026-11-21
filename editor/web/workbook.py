@@ -1,5 +1,9 @@
 """Workbook lessons and grading. Lessons are YAML under editor/web/workbook/; the Helix binary decides every verdict.
 
+The lessons build one program, Ada's ledger. A step's `start` and `solution` list only the top-level entries it
+adds or changes. `chapters()` merges `start` onto the previous step's solution and `solution` onto that start (so
+given helpers need not be repeated), so the learner always continues the program they already wrote.
+
 A runner is `run(args, stdin) -> (returncode, stdout, stderr)`, so the server (subprocess) and the test suite
 (`TestContext.helix`) share one implementation. Python only shuttles data: equality is Helix's own `eq`.
 """
@@ -11,10 +15,31 @@ LESSONS = pathlib.Path(__file__).parent / 'workbook'
 FIELDS = {'id', 'title', 'teach', 'task', 'start', 'solution', 'hint', 'expect', 'probe'}
 
 
+ENTRY = re.compile(r'^[A-Za-z_][\w.-]*:', re.M)
+
+
+def entries(source):
+    """Top-level map entries of `source` as ordered (name, text) pairs; text before the first entry is dropped."""
+    starts = [m.start() for m in ENTRY.finditer(source)]
+    spans = zip(starts, starts[1:] + [len(source)])
+    return [(source[a:source.index(':', a)], source[a:b].rstrip('\n') + '\n') for a, b in spans]
+
+
+def merge(previous, delta):
+    """`previous` with the entries of `delta` replaced in place or appended. Without entries to merge into
+    (a first step, or a scalar program) the delta is the whole program; a delta with no entries is only a comment."""
+    base, new = entries(previous or ''), entries(delta)
+    if not base: return delta
+    if not new: return previous.rstrip('\n') + '\n' + delta
+    replaced = dict(new)
+    kept = [replaced.pop(name, text) for name, text in base]
+    return ''.join(kept + [text for name, text in new if name in replaced])
+
+
 def chapters():
     """Chapters in filename order, each validated for the step schema (a malformed lesson fails loudly)."""
     import yaml  # lazily: the sandbox editor must start without PyYAML
-    result = []
+    result, previous = [], None
     for path in sorted(LESSONS.glob('*.yaml')):
         chapter = yaml.safe_load(path.read_text())
         chapter['file'] = path.name
@@ -23,6 +48,8 @@ def chapters():
             assert not unknown, f"{path.name}: step {step.get('id')!r} has unknown fields {sorted(unknown)}"
             missing = {'id', 'title', 'teach', 'start'} - set(step)
             assert not missing, f"{path.name}: step {step.get('id')!r} lacks {sorted(missing)}"
+            step['start'] = merge(previous, step['start'])
+            if 'solution' in step: previous = step['solution'] = merge(step['start'], step['solution'])
         result.append(chapter)
     ids = [s['id'] for c in result for s in c['steps']]
     assert len(ids) == len(set(ids)), 'step ids must be unique across chapters'

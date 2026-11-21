@@ -11,18 +11,18 @@ steps:
       ```helix
       !call [try, !call [div, 1, 0], !call [fn, [e], !ref e.kind]]
       ```
-    task: Define `safe_div a b`, which returns `0` when the division fails.
+    task: 'Define `average xs` as `total` divided by the length. An empty list divides by zero, so it must give `0`. The checker averages the deposits and an empty list.'
     start: |
-      safe_div: ~
+      average: ~
     probe: |
-      result: !call [safe_div, 1, 0]
+      result: [!call [average, !call [amounts_of, deposit, !ref transactions]], !call [average, []]]
     solution: |
-      safe_div: !call
+      average: !call
         - fn
-        - [a, b]
-        - !call [try, !call [div, !ref a, !ref b], !call [fn, [e], 0]]
+        - [xs]
+        - !call [try, !call [div, !call [total, !ref xs], !call [len, !ref xs]], !call [fn, [e], 0]]
     hint: The handler ignores the error and returns `0`.
-    expect: 0
+    expect: [35, 0]
 
   - id: raise
     title: Raising with data
@@ -65,24 +65,34 @@ steps:
         - !call [div, 1, 0]
         - !call [fn, [e], !call [cond, !call [eq, !ref e.kind, divide_by_zero], 0, !call [raise, !ref e]]]
       ```
-    task: Define `div_or_zero a b`. It returns `0` only for `divide_by_zero`; any other failure must propagate.
+    task: 'Define `settle_tx balance tx`, which applies a transaction with the given `apply_tx`. An overdraft (`insufficient_funds`) is skipped and leaves the balance unchanged; every other failure, such as an unknown kind, must propagate.'
     start: |
-      div_or_zero: ~
+      apply_tx: !call
+        - fn
+        - [balance, tx]
+        - !call
+          - cond
+          - !call [eq, !ref tx.kind, deposit]
+          - !call [add, !ref balance, !ref tx.amount]
+          - !call [eq, !ref tx.kind, withdraw]
+          - !call [withdraw, !ref balance, !ref tx.amount]
+          - !call [raise, unknown_kind, "unknown transaction kind", {kind: !ref tx.kind}]
+      settle_tx: ~
     probe: |
       result:
-        - !call [div_or_zero, 6, 3]
-        - !call [div_or_zero, 1, 0]
-        - !call [try, !call [div_or_zero, 1, "x"], !call [fn, [e], !ref e.kind]]
+        - !call [settle_tx, 100, {kind: deposit, amount: 25}]
+        - !call [settle_tx, 10, {kind: withdraw, amount: 50}]
+        - !call [try, !call [settle_tx, 10, {kind: refund, amount: 5}], !call [fn, [e], !ref e.kind]]
     solution: |
-      div_or_zero: !call
+      settle_tx: !call
         - fn
-        - [a, b]
+        - [balance, tx]
         - !call
           - try
-          - !call [div, !ref a, !ref b]
-          - !call [fn, [e], !call [cond, !call [eq, !ref e.kind, divide_by_zero], 0, !call [raise, !ref e]]]
+          - !call [apply_tx, !ref balance, !ref tx]
+          - !call [fn, [e], !call [cond, !call [eq, !ref e.kind, insufficient_funds], !ref balance, !call [raise, !ref e]]]
     hint: 'Inside the handler use `cond` on `e.kind`; the default branch re-raises `e`.'
-    expect: [2, 0, type]
+    expect: [125, 10, unknown_kind]
 
   - id: assert
     title: Assertions and cleanup
@@ -94,13 +104,13 @@ steps:
       ```helix
       !call [try, !call [assert, !call [gt, 1, 2], "one is not greater"], !call [fn, [e], !ref e.message]]
       ```
-    task: Define `positive n`, which returns `n` when it is above zero and otherwise fails an assertion with the message `must be positive`.
+    task: 'Define `positive n`, which returns `n` when it is above zero and otherwise fails an assertion with the message `must be positive`. Then make `apply_tx` use it on every amount, so a bad transaction is rejected up front.'
     start: |
       positive: ~
     probe: |
       result:
-        - !call [positive, 3]
-        - !call [try, !call [positive, -1], !call [fn, [e], !ref e.message]]
+        - !call [apply_tx, 100, {kind: deposit, amount: 25}]
+        - !call [try, !call [apply_tx, 100, {kind: deposit, amount: -1}], !call [fn, [e], !ref e.message]]
     solution: |
       positive: !call
         - fn
@@ -109,5 +119,36 @@ steps:
           - get
           - [!call [assert, !call [gt, !ref n, 0], "must be positive"], !ref n]
           - 1
+      apply_tx: !call
+        - fn
+        - [balance, tx]
+        - !call
+          - cond
+          - !call [eq, !ref tx.kind, deposit]
+          - !call [add, !ref balance, !call [positive, !ref tx.amount]]
+          - !call [eq, !ref tx.kind, withdraw]
+          - !call [withdraw, !ref balance, !call [positive, !ref tx.amount]]
+          - !call [raise, unknown_kind, "unknown transaction kind", {kind: !ref tx.kind}]
     hint: List items are evaluated in order, so a list of the assertion and `n` can be indexed for its last item.
-    expect: [3, must be positive]
+    expect: [125, must be positive]
+
+  - id: statement
+    title: The finished ledger
+    teach: |
+      Everything you wrote is now one program, and each piece is a plain value. A name holds a
+      number (chapter 2), a function turns it into a rule (3), `fold` replays a list (3 and 4), and
+      failures are data you can absorb or pass on (5).
+
+      The last piece is no new machinery: the same ordinary functions, composed.
+    task: 'Define `statement`: a map with the `owner`, the `closing` balance after settling every transaction from `opening` (skipping overdrafts), and the `deposits` total.'
+    start: |
+      statement: ~
+    probe: |
+      result: !ref statement
+    solution: |
+      statement:
+        owner: !ref owner
+        closing: !call [fold, !ref settle_tx, !ref opening, !ref transactions]
+        deposits: !call [total, !call [amounts_of, deposit, !ref transactions]]
+    hint: '`fold` threads the balance through `settle_tx`, which takes the balance then the transaction. The 500 withdrawal is skipped.'
+    expect: {owner: Ada, closing: 160, deposits: 70}

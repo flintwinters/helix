@@ -12,15 +12,16 @@ steps:
       ```
 
       A wrong argument count is an `arity` error blamed on the call.
-    task: Define `double`. The checker appends a `result` that calls `double` on `21`.
+    task: 'Ada earns 5% interest. Define `interest_on amount` (5% of the amount, with integer division) and make the ledger''s `interest` use it. The checker calls `interest_on` on `200`.'
     start: |
-      double: ~
+      interest_on: ~
+      interest: !call [interest_on, !ref balance]
     probe: |
-      result: !call [double, 21]
+      result: !call [interest_on, 200]
     solution: |
-      double: !call [fn, [n], !call [mul, !ref n, 2]]
-    hint: The parameter list is a plain list of names.
-    expect: 42
+      interest_on: !call [fn, [amount], !call [div, !call [mul, !ref amount, 5], 100]]
+    hint: The parameter list is a plain list of names; 5% is `amount * 5 / 100`.
+    expect: 10
 
   - id: closures
     title: Closures
@@ -33,15 +34,16 @@ steps:
       add10: !call [make_adder, 10]
       answer: !call [add10, 5]
       ```
-    task: Define `make_adder`. The checker evaluates `make_adder(10)` applied to `5`.
+    task: 'Rates will differ per product. Define `make_rate percent`, which returns a function of an amount, and define `interest_on` as `make_rate` at 5. The checker also builds a 10% rate and applies it to `50`.'
     start: |
-      make_adder: ~
+      make_rate: ~
+      interest_on: !call [make_rate, 5]
     probe: |
-      result: !call [!call [make_adder, 10], 5]
+      result: [!call [interest_on, 200], !call [!call [make_rate, 10], 50]]
     solution: |
-      make_adder: !call [fn, [n], !call [fn, [x], !call [add, !ref x, !ref n]]]
-    hint: The outer function returns an inner `fn` that mentions `n`.
-    expect: 15
+      make_rate: !call [fn, [percent], !call [fn, [amount], !call [div, !call [mul, !ref amount, !ref percent], 100]]]
+    hint: The outer function returns an inner `fn` that mentions `percent`.
+    expect: [10, 5]
 
   - id: map-filter
     title: Iteration takes the function first
@@ -58,21 +60,26 @@ steps:
       ```helix-error
       !call [map, [1, 2, 3], !call [fn, [x], !ref x]]
       ```
-    task: Define `even_squares`, which keeps the even numbers of a list and squares them.
+    task: 'The ledger needs transactions to work on. Define `amounts_of kind txs`, the amounts of the transactions of one kind. Use `filter` then `map`; the checker asks for deposits and withdrawals.'
     start: |
-      even_squares: ~
+      transactions:
+        - {kind: deposit, amount: 25}
+        - {kind: withdraw, amount: 10}
+        - {kind: deposit, amount: 45}
+        - {kind: withdraw, amount: 500}
+      amounts_of: ~
     probe: |
-      result: !call [even_squares, [1, 2, 3, 4, 5, 6]]
+      result: [!call [amounts_of, deposit, !ref transactions], !call [amounts_of, withdraw, !ref transactions]]
     solution: |
-      even_squares: !call
+      amounts_of: !call
         - fn
-        - [xs]
+        - [kind, txs]
         - !call
           - map
-          - !call [fn, [x], !call [mul, !ref x, !ref x]]
-          - !call [filter, !call [fn, [x], !call [eq, !call [mod, !ref x, 2], 0]], !ref xs]
-    hint: Filter with `eq (mod x 2) 0`, then map the square over the result.
-    expect: [4, 16, 36]
+          - !call [fn, [t], !call [get, !ref t, amount]]
+          - !call [filter, !call [fn, [t], !call [eq, !call [get, !ref t, kind], !ref kind]], !ref txs]
+    hint: Filter on the transaction's `kind`, then map `get amount` over what is left.
+    expect: [[25, 45], [10, 500]]
 
   - id: fold
     title: Folding
@@ -82,22 +89,15 @@ steps:
       ```helix
       !call [fold, !call [fn, [acc, x], !call [add, !ref acc, !ref x]], 0, [1, 2, 3, 4]]
       ```
-    task: Define `maximum` of a non-empty list of numbers using `fold` (start from the first element with `get`).
+    task: Define `total`, the sum of a list of numbers, using `fold`. The checker totals the deposit amounts.
     start: |
-      maximum: ~
+      total: ~
     probe: |
-      result: !call [maximum, [3, 9, 2]]
+      result: !call [total, !call [amounts_of, deposit, !ref transactions]]
     solution: |
-      maximum: !call
-        - fn
-        - [xs]
-        - !call
-          - fold
-          - !call [fn, [acc, x], !call [if, !call [gt, !ref x, !ref acc], !ref x, !ref acc]]
-          - !call [get, !ref xs, 0]
-          - !ref xs
-    hint: '`if` takes a test and two branches; `gt` compares.'
-    expect: 9
+      total: !call [fn, [xs], !call [fold, !call [fn, [acc, x], !call [add, !ref acc, !ref x]], 0, !ref xs]]
+    hint: '`fold f init xs` starts from `0` here; `f` adds the element to the accumulator.'
+    expect: 70
 
   - id: recursion
     title: Recursion
@@ -112,22 +112,22 @@ steps:
         - !call [if, !call [le, !ref n, 1], 1, !call [mul, !ref n, !call [fact, !call [sub, !ref n, 1]]]]
       answer: !call [fact, 5]
       ```
-    task: Define `fib` so that `fib(0) = 0`, `fib(1) = 1`, and the checker's `fib(15)` is `610`.
+    task: 'Define `compound amount years`: the amount after earning `interest_on` it, year after year. Zero years leaves it unchanged. The checker compounds `8000` for 3 years.'
     start: |
-      fib: ~
+      compound: ~
     probe: |
-      result: !call [fib, 15]
+      result: !call [compound, 8000, 3]
     solution: |
-      fib: !call
+      compound: !call
         - fn
-        - [n]
+        - [amount, years]
         - !call
           - if
-          - !call [lt, !ref n, 2]
-          - !ref n
-          - !call [add, !call [fib, !call [sub, !ref n, 1]], !call [fib, !call [sub, !ref n, 2]]]
-    hint: '`if` evaluates only the branch it takes.'
-    expect: 610
+          - !call [le, !ref years, 0]
+          - !ref amount
+          - !call [compound, !call [add, !ref amount, !call [interest_on, !ref amount]], !call [sub, !ref years, 1]]
+    hint: '`if` evaluates only the branch it takes; the recursive call has one year fewer.'
+    expect: 9261
 
   - id: compose
     title: Functions are values
@@ -139,19 +139,18 @@ steps:
       twice: !call [fn, [f, x], !call [f, !call [f, !ref x]]]
       answer: !call [twice, !call [fn, [n], !call [add, !ref n, 3]], 10]
       ```
-    task: Define `compose f g` returning a function that applies `g` first, then `f`.
+    task: Interest and the fee are separate steps. Define `compose f g` (apply `g` first, then `f`); `settle` already composes them into "earn interest, then pay the fee".
     start: |
-      inc: !call [fn, [n], !call [add, !ref n, 1]]
-      dbl: !call [fn, [n], !call [mul, !ref n, 2]]
+      accrue: !call [fn, [b], !call [add, !ref b, !call [interest_on, !ref b]]]
+      charge_fee: !call [fn, [b], !call [sub, !ref b, !ref fee]]
       compose: ~
+      settle: !call [compose, !ref charge_fee, !ref accrue]
     probe: |
-      result: !call [!call [compose, !ref inc, !ref dbl], 5]
+      result: !call [settle, 8000]
     solution: |
-      inc: !call [fn, [n], !call [add, !ref n, 1]]
-      dbl: !call [fn, [n], !call [mul, !ref n, 2]]
       compose: !call
         - fn
         - [f, g]
         - !call [fn, [x], !call [f, !call [g, !ref x]]]
-    hint: '`inc(dbl(5))` is 11; the inner function closes over `f` and `g`.'
-    expect: 11
+    hint: 'The inner function closes over `f` and `g`; `settle 8000` is `8000 + 400 - 5`.'
+    expect: 8395

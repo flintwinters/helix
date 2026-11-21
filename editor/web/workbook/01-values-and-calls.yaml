@@ -1,5 +1,5 @@
 title: Values and calls
-summary: A program is a YAML document that evaluates to a value. The only operation is an explicit call.
+summary: A program is a YAML document that evaluates to a value. The only operation is an explicit call. You start a ledger for Ada here and keep extending it through every chapter.
 steps:
   - id: hello
     title: A program is a value
@@ -13,14 +13,14 @@ steps:
 
       Press **Run** (Ctrl-Enter). The panel shows what the program evaluated to. Strings are strings
       whatever the quoting style, and numbers, booleans and `null` are what you expect.
-    task: Make the program evaluate to the string `hello, world`.
+    task: Make the program evaluate to the string `Ada`, the owner of the ledger you will build over the next chapters.
     start: |
       # Replace this line with a value.
       ~
     solution: |
-      hello, world
+      Ada
     hint: A bare scalar is already a complete program.
-    expect: hello, world
+    expect: Ada
 
   - id: maps
     title: Maps and lists are data
@@ -34,16 +34,16 @@ steps:
       ```
 
       The output panel on the right shows what you would expect from any language: a map holding a string and a list.
-    task: Write a map with `name` set to `Ada` and `born` set to the integer `1815`.
+    task: Turn the owner into the first record of the ledger, a map with `owner` set to `Ada` and `balance` set to the integer `100`.
     start: |
-      # name: ...
-      # born: ...
+      # owner: ...
+      # balance: ...
       {}
     solution: |
-      name: Ada
-      born: 1815
+      owner: Ada
+      balance: 100
     hint: 'Two block-style entries, `key: value`, no quotes needed.'
-    expect: {name: Ada, born: 1815}
+    expect: {owner: Ada, balance: 100}
 
   - id: first-call
     title: Calls are explicit
@@ -59,13 +59,13 @@ steps:
       on purpose and grouped by family.
 
       Without the tag a list is plain data, so `[add, 1, 2]` is just three values.
-    task: Compute the answer with `mul`, so the program evaluates to `42`.
+    task: Ada deposits 25. Compute the new `balance` with `add` instead of writing the number down.
     start: |
-      !call [mul, 1, 1]
+      # balance: ...
     solution: |
-      !call [mul, 6, 7]
-    hint: '`mul` multiplies its arguments.'
-    expect: 42
+      balance: !call [add, 100, 25]
+    hint: 'Replace the value of `balance` with a call: `!call [add, 100, 25]`.'
+    expect: {owner: Ada, balance: 125}
 
   - id: nesting
     title: Calls nest
@@ -76,13 +76,13 @@ steps:
       ```helix
       !call [mul, !call [add, 1, 2], 4]
       ```
-    task: Evaluate `(3 + 4) * 5` as one nested expression.
+    task: The bank also charges a fee of 5 on that deposit. Make `balance` the single nested expression `(100 + 25) - 5`.
     start: |
-      !call [mul, 0, 0]
+      # balance: ...
     solution: |
-      !call [mul, !call [add, 3, 4], 5]
-    hint: The sum is the first argument of `mul`.
-    expect: 35
+      balance: !call [sub, !call [add, 100, 25], 5]
+    hint: The deposit is the first argument of `sub`.
+    expect: {owner: Ada, balance: 120}
 
   - id: reading-errors
     title: Errors name the fix
@@ -96,10 +96,10 @@ steps:
 
       Read the output: `kind: type`, the message names the argument and what it expected, and
       `line`/`column` point at the call. Nothing coerces silently. A string is not a number.
-    task: The starter fails. Fix it so the program evaluates to `3`.
+    task: Someone typed the deposit as text, and the ledger fails. Fix it so `balance` is `120` again.
     start: |
-      !call [add, 1, "2"]
+      balance: !call [sub, !call [add, 100, "25"], 5]
     solution: |
-      !call [add, 1, 2]
-    hint: The second argument must be a number, not a string.
-    expect: 3
+      balance: !call [sub, !call [add, 100, 25], 5]
+    hint: The deposit must be a number, not a string.
+    expect: {owner: Ada, balance: 120}
