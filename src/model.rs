@@ -84,6 +84,8 @@ pub(crate) struct Measure {
     pub(crate) units: usize,
     pub(crate) nodes: usize,
     pub(crate) height: usize,
+    /// Contains a function or machine, which annotations summarize instead of copying.
+    pub(crate) opaque: bool,
 }
 /// Shared by clones of one container (they have identical contents, so one computation
 /// serves all references); a mutating handle replaces it with a fresh cell.

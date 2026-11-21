@@ -468,7 +468,7 @@ impl Evaluator {
         Ok(())
     }
     fn charge_value(&mut self, id: NodeId, value: &Value) -> Result<(), HelixError> {
-        let crate::model::Measure { units, nodes, height } = value.measure();
+        let crate::model::Measure { units, nodes, height, .. } = value.measure();
         if height > crate::graph::MAX_NESTING {
             return Err(self.err(
                 id,

@@ -211,6 +211,12 @@ fn projection(value: &Value, remaining: &mut usize, depth: usize, omitted: &mut 
         ].into_iter().collect())),
         _ => None,
     };
+    // Plain data is shared, not rebuilt: its memoized measure uses the same units.
+    let measure = value.measure();
+    if !measure.opaque && depth + measure.height <= crate::graph::MAX_NESTING {
+        *remaining = remaining.checked_sub(measure.units)?;
+        return Some(value.clone());
+    }
     if let Some(summary) = summary {
         *omitted = true;
         return projection(&summary, remaining, depth, omitted);

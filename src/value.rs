@@ -110,7 +110,7 @@ impl Value {
     }
     fn measured(&self, depth: usize) -> crate::model::Measure {
         use crate::model::Measure;
-        let one = Measure { units: 1, nodes: 1, height: 0 };
+        let one = Measure { units: 1, nodes: 1, height: 0, opaque: false };
         if depth > crate::graph::MAX_NESTING {
             return Measure { height: usize::MAX / 2, ..one };
         }
@@ -122,6 +122,7 @@ impl Value {
                     let m = item.measured(depth + 1);
                     total.units += m.units;
                     total.nodes += m.nodes;
+                    total.opaque |= m.opaque;
                     total.height = total.height.max(m.height + 1);
                 }
                 total
@@ -132,10 +133,12 @@ impl Value {
                     let m = item.measured(depth + 1);
                     total.units += key.0.measured(depth + 1).units + m.units;
                     total.nodes += m.nodes;
+                    total.opaque |= m.opaque;
                     total.height = total.height.max(m.height + 1);
                 }
                 total
             }),
+            Self::Function(_) | Self::Machine(_) => Measure { opaque: true, ..one },
             _ => one,
         }
     }
