@@ -109,7 +109,7 @@ const Workbook = (() => {
     try {
       const reply = await fetch('/grade?id=' + encodeURIComponent(current.id), {method: 'POST', body: editor.getValue()});
       const result = await reply.json();
-      output.setValue(result.output || '');
+      output.setValue(result.output || ''); showError(result.output || '');
       verdict.className = 'verdict ' + (result.passed ? 'pass' : 'fail');
       verdict.textContent = (result.passed ? '✓ ' : '✗ ') + result.message;
       if (result.passed) { state.done[current.id] = true; save(); }

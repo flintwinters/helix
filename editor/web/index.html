@@ -32,6 +32,8 @@
   .cm-s-material-darker .cm-helix-anchor{color:#ff9cac}
   .cm-s-material-darker .cm-meta{color:#89ddff}
   .cm-s-material-darker .cm-comment{color:#616161;font-style:italic}
+  .failed-line{background:#ff537030}
+  .failed-at{background:#ff5370;color:#fff;border-radius:2px}
   .cm-s-material-darker .cm-error{color:#ff5370;background:none;text-decoration:underline wavy #ff5370}
   #lesson{width:430px;flex:none;overflow:auto;background:#1a1a1a;padding:10px 16px;line-height:1.5}
   #lesson h2{margin:.4em 0;color:#ffcb6b} #lesson p{margin:.6em 0} #lesson code{background:#2a2a2a;padding:1px 4px;border-radius:3px;color:#c3e88d}
@@ -82,12 +84,29 @@ async function setMode(mode) {
   else { Workbook.leave(); editor.setValue(stored('helix-src', '!call [add, 1, 2]\n')); output.setValue(''); }
 }
 document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+// Show an error report in the output pane and, when it has a source position, mark the failing line red and the exact column.
+// Positions are 1-based like the editor's gutter. A parse error's hint may name the real culprit ("the `[` at line L column C ..."), marked too.
+let marks = [];
+function showError(text) {
+  marks.forEach(m => m.clear ? m.clear() : editor.removeLineClass(m, 'background', 'failed-line')); marks = [];
+  const line = text.match(/^  line: (\d+)$/m), column = text.match(/^  column: (\d+)$/m);
+  if (!/^error:/m.test(text) || !line || !column) return;
+  const mark = (line, column) => {
+    if (line < 1 || line > editor.lineCount()) return;  // the probe (appended by the checker) is not in the buffer
+    editor.addLineClass(line - 1, 'background', 'failed-line'); marks.push(line - 1);
+    marks.push(editor.markText({line: line - 1, ch: column - 1}, {line: line - 1, ch: column}, {className: 'failed-at'}));
+  };
+  const hint = text.match(/^  hint: .*?at line (\d+) column (\d+)/m);
+  if (hint) mark(+hint[1], +hint[2]);
+  mark(+line[1], +column[1]);
+}
+editor.on('change', () => { marks.forEach(m => m.clear ? m.clear() : editor.removeLineClass(m, 'background', 'failed-line')); marks = []; });
 async function go(cmd) {
   const status = document.getElementById('status');
   status.textContent = 'running…';
   try {
     const reply = await fetch('/' + cmd, {method:'POST', body:cmd === 'fmt' || !Workbook.active ? editor.getValue() : Workbook.program(editor.getValue())}), text = await reply.text();
-    if (cmd === 'fmt' && reply.ok) { if (text !== editor.getValue()) editor.setValue(text); } else output.setValue(text);
+    if (cmd === 'fmt' && reply.ok) { if (text !== editor.getValue()) editor.setValue(text); } else { output.setValue(text); showError(text); }
     status.textContent = '';
   } catch (e) { output.setValue(String(e)); status.textContent = 'failed'; }
 }
