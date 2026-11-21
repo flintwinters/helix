@@ -3,8 +3,6 @@ import http.server, json, re, pathlib, subprocess, sys, urllib.parse
 HERE = pathlib.Path(__file__).parent
 BIN = HERE.parents[1] / 'target' / 'debug' / 'helix'
 ROOT = HERE.parents[1]
-sys.path.insert(0, str(ROOT))
-from tooling.source_format import retain_comments  # the batch formatter's comment retention
 LIBRARIES = ('examples', 'std')  # the only trees the browser may list and read
 
 IMPORT = re.compile(r'import,\s*"?std:(\w+)')
@@ -25,17 +23,6 @@ COMMANDS = {'run': ['run'], 'check': ['check', '--evaluate'], 'fmt': ['fmt'], 's
 class Handler(http.server.BaseHTTPRequestHandler):
     def reply(self, body, status=200, kind='text/plain'):
         self.send_response(status); self.send_header('Content-Type', kind + '; charset=utf-8'); self.end_headers(); self.wfile.write(body)
-    def format(self, source, done):
-        """Canonical source with comments retained, verified like `manage.py runtime format`; 422 never replaces the buffer."""
-        if done.returncode: return self.reply(done.stdout + done.stderr, 422)
-        try:
-            formatted = retain_comments(source, done.stdout.decode())
-            verified = subprocess.run([BIN, 'fmt', '-'], input=formatted.encode(), capture_output=True, timeout=30)
-            if verified.returncode or verified.stdout != done.stdout:
-                return self.reply(b'comment preservation changed the parsed program; source left unchanged', 422)
-        except Exception as error:
-            return self.reply(f'comment preservation failed: {error}; source left unchanged'.encode(), 422)
-        self.reply(formatted.encode())
     def do_GET(self):
         path = urllib.parse.urlparse(self.path).path
         if path == '/builtins':  # actor names and families for highlighting, from the binary itself
@@ -56,8 +43,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         source = self.rfile.read(int(self.headers['Content-Length']))
         try:
             done = subprocess.run([BIN, *command, '-'], input=source, capture_output=True, timeout=30)
-            if command[0] == 'fmt':
-                return self.format(source.decode(), done)
+            if command[0] == 'fmt' and done.returncode:  # a failed format must never replace the buffer
+                return self.reply(done.stdout + done.stderr, 422)
             if command[0] != 'fmt' and done.returncode == 0:  # results are YAML: show them canonically formatted
                 pretty = subprocess.run([BIN, 'fmt', '-'], input=done.stdout, capture_output=True, timeout=30)
                 if pretty.returncode == 0: done.stdout = pretty.stdout

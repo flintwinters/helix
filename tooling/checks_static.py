@@ -783,8 +783,6 @@ def verify_numeric_enum_overlap(ctx):
 
 
 def verify_format(ctx):
-    from tooling.source_format import retain_comments
-
     compact = ctx.helix('fmt', '-', stdin='sum: {"$call": [fold, {"$ref": combine}, 0, {"$ref": xs}]}')
     assert compact.returncode == 0 and compact.stdout == 'sum: !call [fold, !ref combine, 0, !ref xs]\n', compact
     structured = 'double: !call [fn, [x], !call [mul, !ref x, 2]]'
@@ -807,16 +805,16 @@ def verify_format(ctx):
     assert yaml.safe_load(result.stdout) == json.loads(source), result
     annotated = '# header\nsum: !call [add, 1, 2] # arithmetic\ntext: |\n  # literal content\n'
     result = ctx.helix('fmt', '-', stdin=annotated)
-    retained = retain_comments(annotated, result.stdout)
-    assert '# header' in retained and '# arithmetic' in retained, retained
-    verified = ctx.helix('fmt', '-', stdin=retained)
-    assert (verified.returncode, verified.stdout) == (0, result.stdout), verified
-    assert retain_comments(retained, result.stdout) == retained, retained
+    retained = result.stdout
+    assert retained.startswith('# header\n') and 'sum: !call [add, 1, 2] # arithmetic\n' in retained, retained
+    assert 'text: "# literal content\\n"\n' in retained, retained
+    again = ctx.helix('fmt', '-', stdin=retained)
+    assert (again.returncode, again.stdout) == (0, retained), again
     for path in sorted((ctx.root / 'std').rglob('*.yaml')):
         source = path.read_text()
         result = ctx.helix('fmt', '-', stdin=source)
         assert result.returncode == 0, (path, result)
-        assert retain_comments(source, result.stdout) == source, path
+        assert result.stdout == source, path
     # Every parsable golden source must format to an idempotent source document.
     # The implementation independently compares the complete source graphs before emitting.
     for case in sorted((ctx.root / 'tests/cases').glob('*.yaml')):

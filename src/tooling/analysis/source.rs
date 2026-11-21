@@ -109,7 +109,8 @@ pub fn check(source: &str) -> (String, bool) {
 }
 
 /// Reuse the source emitter and refuse any output that changes the parsed program.
-/// Comments and scalar presentation are normalized; lexical quoting remains semantic.
+/// Comments are re-attached by structural path; scalar presentation is normalized and
+/// lexical quoting remains semantic.
 pub fn format(source: &str) -> Result<String, String> {
     let graph = Graph::parse(source)
         .map_err(|error| crate::emit::document(&error.to_value().plain_yaml().unwrap()))?;
@@ -119,5 +120,9 @@ pub fn format(source: &str) -> Result<String, String> {
     if !graph.same_code(ROOT, &reparsed, ROOT) {
         return Err("canonical formatting would change source semantics\n".into());
     }
-    Ok(formatted)
+    let commented = super::comments::retain(source, &formatted);
+    match Graph::parse(&commented) {
+        Ok(with_comments) if graph.same_code(ROOT, &with_comments, ROOT) => Ok(commented),
+        _ => Err("comment retention would change source semantics\n".into()),
+    }
 }

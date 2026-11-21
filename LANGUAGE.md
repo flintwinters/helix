@@ -64,8 +64,10 @@ is no separate function syntax.
 using local tags and block layouts for functions, bindings, branches and iteration bodies. Short
 expressions and data collections stay inline when they fit within 100 columns;
 larger collections use one entry per line.
-Formatting verifies the parsed program is unchanged. Single-document `fmt` and
-LSP formatting normalize away comments; batch formatting and the browser editor's Format retain them.
+Formatting verifies the parsed program is unchanged. Comments are re-attached by structural
+path (a standalone comment precedes the next entry, a trailing comment stays with its entry,
+leading header comments stay first) and the result is verified again; scalar presentation and
+key order are normalized.
 
 The supported YAML subset has string mapping keys, finite scalars, sequences and mappings. Duplicate keys, cyclic aliases, unknown custom tags and non-string keys are rejected. Acyclic aliases expand under resource bounds at the occurrence’s lexical scope; standard scalar tags (`!!str`, `!!int`, `!!float`, `!!bool`, `!!null`) and collection tags (`!!seq`, `!!map`) are supported. Integers include hexadecimal and octal notation within signed 64-bit bounds; floats remain finite. This is a semantic model over YAML representation nodes, not support for every YAML construct. JSON source has identical language meaning to equivalent YAML. Reformatting scalar styles or permuting mapping entries cannot change a program's meaning.
 

@@ -25,58 +25,6 @@ def _literal(loader, node):
 SourceLoader.add_constructor("!literal", _literal)
 
 
-def positions(source):
-    """Locate structural paths, including mapping keys, without constructing values."""
-    result = {}
-
-    def visit(node, path):
-        result[path] = (node.start_mark.line, node.start_mark.column)
-        if node.tag in ('!call', '!ref', '!literal'):
-            path = path + ('$' + node.tag[1:],)
-            result[path] = (node.start_mark.line, node.start_mark.column)
-        if isinstance(node, yaml.MappingNode):
-            for key, value in node.value:
-                visit(value, path + (key.value,))
-                result[path + (key.value,)] = (key.start_mark.line, key.start_mark.column)
-        elif isinstance(node, yaml.SequenceNode):
-            for index, value in enumerate(node.value):
-                visit(value, path + (index,))
-
-    visit(yaml.compose(source), ())
-    return result
-
-
-def retain_comments(source, formatted):
-    """Keep comments near their following structural path, even when it becomes inline.
-
-    Scalar token spans exclude hashes in quoted strings and block scalar content.
-    Inline comments become standalone comments before the containing output line.
-    """
-    tokens = list(yaml.scan(source))
-    protected = [(token.start_mark.index, token.end_mark.index) for token in tokens
-                 if isinstance(token, yaml.tokens.ScalarToken)]
-    before, after = positions(source), positions(formatted)
-    anchors = sorted(before, key=lambda path: (*before[path], len(path)))
-    comments = {}
-    offset = 0
-    for line_index, line in enumerate(source.splitlines(keepends=True)):
-        for column, char in enumerate(line):
-            if char == '#' and not any(start <= offset + column < end for start, end in protected):
-                following = next((path for path in anchors if before[path] >= (line_index, column)), None)
-                target = after[following][0] if following is not None else len(formatted.splitlines())
-                comments.setdefault(target, []).append(line[column:].rstrip())
-                break
-        offset += len(line)
-    output = []
-    lines = formatted.splitlines()
-    for index in range(len(lines) + 1):
-        indent = len(lines[index]) - len(lines[index].lstrip()) if index < len(lines) else 0
-        output.extend(' ' * indent + comment for comment in comments.get(index, []))
-        if index < len(lines):
-            output.append(lines[index])
-    return '\n'.join(output) + '\n'
-
-
 def format_files(ctx, paths, *, write=False, output_format='text'):
     files = set()
     for path in map(Path, paths):
@@ -91,11 +39,7 @@ def format_files(ctx, paths, *, write=False, output_format='text'):
             result = ctx.helix('fmt', '-', stdin=source)
             if result.returncode:
                 raise ValueError(result.stdout + result.stderr)
-            formatted = retain_comments(source, result.stdout)
-            # The runtime verifies its emission; verify comment reinsertion as well.
-            verified = ctx.helix('fmt', '-', stdin=formatted)
-            if verified.returncode or verified.stdout != result.stdout:
-                raise ValueError('comment preservation changed the parsed program')
+            formatted = result.stdout
             changed = source != formatted
             if write and changed:
                 path.write_text(formatted)

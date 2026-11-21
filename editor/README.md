@@ -13,8 +13,8 @@ the recursive program shape, explicit singleton call/reference forms and literal
 supplies source-aware diagnostics; evaluation errors remain `helix run` or
 `helix check --evaluate` responsibilities.
 
-`helix fmt file.yaml` writes canonical source to stdout. Formatting removes
-comments (the browser's Format button re-attaches them with `tooling/source_format.py`) and normalizes scalar presentation while preserving explicit syntax and scalar values. Mapping presentation order has no execution meaning. The formatter reparses its output and checks exact
+`helix fmt file.yaml` writes canonical source to stdout. Formatting keeps
+comments, re-attached by structural path, and normalizes scalar presentation while preserving explicit syntax and scalar values. Mapping presentation order has no execution meaning. The formatter reparses its output and checks exact
 source-graph equivalence before returning it. It never evaluates a program.
 
 Protocol reference: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/
