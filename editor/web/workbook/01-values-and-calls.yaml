@@ -1,0 +1,105 @@
+title: Values and calls
+summary: A program is a YAML document that evaluates to a value. The only operation is an explicit call.
+steps:
+  - id: hello
+    title: A program is a value
+    teach: |
+      A Helix program is one YAML document, and it **evaluates to a value**. There is no `main`,
+      no statements, no ceremony: scalars evaluate to themselves.
+
+      ```helix
+      hello, world
+      ```
+
+      Press **Run** (Ctrl-Enter). The panel shows what the program evaluated to. Strings are strings
+      whatever the quoting style, and numbers, booleans and `null` are what you expect.
+    task: Make the program evaluate to the string `hello, world`.
+    start: |
+      # Replace this line with a value.
+      ~
+    solution: |
+      hello, world
+    hint: A bare scalar is already a complete program.
+    expect: hello, world
+
+  - id: maps
+    title: Maps and lists are data
+    teach: |
+      Maps and lists evaluate their parts and are otherwise just data. Map keys are always strings,
+      and a list is *never* an implicit call.
+
+      ```helix
+      name: Ada
+      tags: [maths, engines]
+      ```
+
+      The sidebar on the right is the result you would get in any language: a map holding a string and a list.
+    task: Write a map with `name` set to `Ada` and `born` set to the integer `1815`.
+    start: |
+      # name: ...
+      # born: ...
+      {}
+    solution: |
+      name: Ada
+      born: 1815
+    hint: 'Two block-style entries, `key: value`, no quotes needed.'
+    expect: {name: Ada, born: 1815}
+
+  - id: first-call
+    title: Calls are explicit
+    teach: |
+      Code is data with a tag on it. `!call` marks a list as a call: the first element names the
+      actor, the rest are its arguments.
+
+      ```helix
+      !call [add, 1, 2]
+      ```
+
+      `add` is a builtin. Run `helix builtins` (or the Sandbox) to see the whole catalog: it is small
+      on purpose and grouped by family.
+
+      Without the tag a list is plain data, so `[add, 1, 2]` is just three values.
+    task: Compute the answer with `mul`, so the program evaluates to `42`.
+    start: |
+      !call [mul, 1, 1]
+    solution: |
+      !call [mul, 6, 7]
+    hint: '`mul` multiplies its arguments.'
+    expect: 42
+
+  - id: nesting
+    title: Calls nest
+    teach: |
+      An argument can itself be a call. Arguments are evaluated left to right and then handed to the actor,
+      so the tree you write is the tree that runs.
+
+      ```helix
+      !call [mul, !call [add, 1, 2], 4]
+      ```
+    task: Evaluate `(3 + 4) * 5` as one nested expression.
+    start: |
+      !call [mul, 0, 0]
+    solution: |
+      !call [mul, !call [add, 3, 4], 5]
+    hint: The sum is the first argument of `mul`.
+    expect: 35
+
+  - id: reading-errors
+    title: Errors name the fix
+    teach: |
+      Failures say what was rejected and what to do about it, with the exact source location. Here is
+      one you will meet early:
+
+      ```helix-error
+      !call [add, 1, "2"]
+      ```
+
+      Read the output: `kind: type`, the message names the argument and what it expected, and
+      `line`/`column` point at the call. Nothing coerces silently. A string is not a number.
+    task: The starter fails. Fix it so the program evaluates to `3`.
+    start: |
+      !call [add, 1, "2"]
+    solution: |
+      !call [add, 1, 2]
+    hint: The second argument must be a number, not a string.
+    expect: 3

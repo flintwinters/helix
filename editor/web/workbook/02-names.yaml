@@ -1,0 +1,89 @@
+title: Names
+summary: Maps are scopes. References resolve lexically, so order never matters.
+steps:
+  - id: refs
+    title: Entries are names
+    teach: |
+      Every map entry is a name in scope for its siblings. `!ref name` reads one.
+
+      ```helix
+      base: 20
+      answer: !call [add, !ref base, 2]
+      ```
+    task: 'Define `area` as `width` times `height`, so the whole map evaluates to `{width: 6, height: 7, area: 42}`.'
+    start: |
+      width: 6
+      height: 7
+      area: ~
+    solution: |
+      width: 6
+      height: 7
+      area: !call [mul, !ref width, !ref height]
+    hint: '`area` needs a `mul` of two references.'
+    expect: {width: 6, height: 7, area: 42}
+
+  - id: order
+    title: Order is irrelevant
+    teach: |
+      Entries are evaluated on demand, in canonical key order, so you can use a name before the line that defines it.
+      Reordering a map never changes its meaning. When order *does* matter, use a list or explicit control flow.
+
+      ```helix
+      total: !call [mul, !ref price, !ref qty]
+      price: 5
+      qty: 6
+      ```
+
+      Two entries that depend on each other are a `cycle` error, not a hang.
+    task: Add the missing `price` (5) and `qty` (6) so `total` is `30`.
+    start: |
+      total: !call [mul, !ref price, !ref qty]
+    solution: |
+      total: !call [mul, !ref price, !ref qty]
+      price: 5
+      qty: 6
+    hint: Run the starter first and read the `unbound` error. It names what is missing.
+    expect: {total: 30, price: 5, qty: 6}
+
+  - id: let
+    title: Local names with let
+    teach: |
+      `let` binds names for one expression. Bindings see each other and are evaluated only when used.
+
+      ```helix
+      !call [let, {a: 2, b: !call [mul, !ref a, 3]}, !ref b]
+      ```
+    task: Using `let`, bind `s` to `3 + 4` and evaluate `s * s`.
+    start: |
+      !call [let, {}, 0]
+    solution: |
+      !call [let, {s: !call [add, 3, 4]}, !call [mul, !ref s, !ref s]]
+    hint: 'The shape is `!call [let, {name: value}, body]`.'
+    expect: 49
+
+  - id: dotted
+    title: Dotted references
+    teach: |
+      A dotted name selects members: `!ref person.address.city`. Missing members are errors that list
+      what exists.
+
+      ```helix
+      person:
+        address: {city: Lisbon}
+      where: !ref person.address.city
+      ```
+    task: Define `city` as the city inside `person.address`.
+    start: |
+      person:
+        name: Ada
+        address: {city: Lisbon, country: Portugal}
+      city: ~
+    probe: |
+      result: !ref city
+    solution: |
+      person:
+        name: Ada
+        address: {city: Lisbon, country: Portugal}
+      city: !ref person.address.city
+    hint: A single `!ref` with dots does it.
+    expect: Lisbon

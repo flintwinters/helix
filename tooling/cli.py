@@ -35,6 +35,7 @@ SUITES = {
     "interactive": "REPL, dependency watch and local installation",
     "find": "Ranked builtin/std search with structural parameter and result type filters",
     "editor": "Browser editor highlighting of Helix structure, tags and rejected YAML forms (needs Node.js)",
+    "workbook": "Interactive workbook lessons: solutions pass, starters fail, prose examples run as labelled",
     "inspection": "Stepping, trace streams and observational saved-state summaries",
     "nginx_types": "Pure class realization, defaults and provenance feeding the existing nginx lifecycle",
     "target_coordination": "Cross-journal target exclusion and persistent crash uncertainty for cooperating controllers",

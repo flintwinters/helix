@@ -1,0 +1,157 @@
+title: Functions
+summary: Functions are lexical closures and ordinary values. Iteration is just a function away.
+steps:
+  - id: fn
+    title: Defining functions
+    teach: |
+      `!call [fn, [params], body]` makes a function. Naming one is just a map entry:
+
+      ```helix
+      double: !call [fn, [n], !call [mul, !ref n, 2]]
+      answer: !call [double, 21]
+      ```
+
+      A wrong argument count is an `arity` error blamed on the call.
+    task: Define `double`. The checker appends a `result` that calls `double` on `21`.
+    start: |
+      double: ~
+    probe: |
+      result: !call [double, 21]
+    solution: |
+      double: !call [fn, [n], !call [mul, !ref n, 2]]
+    hint: The parameter list is a plain list of names.
+    expect: 42
+
+  - id: closures
+    title: Closures
+    teach: |
+      Scope is lexical: a function sees the maps around its *definition*, not around its caller. A
+      function can therefore build and return another function that remembers its argument.
+
+      ```helix
+      make_adder: !call [fn, [n], !call [fn, [x], !call [add, !ref x, !ref n]]]
+      add10: !call [make_adder, 10]
+      answer: !call [add10, 5]
+      ```
+    task: Define `make_adder`. The checker evaluates `make_adder(10)` applied to `5`.
+    start: |
+      make_adder: ~
+    probe: |
+      result: !call [!call [make_adder, 10], 5]
+    solution: |
+      make_adder: !call [fn, [n], !call [fn, [x], !call [add, !ref x, !ref n]]]
+    hint: The outer function returns an inner `fn` that mentions `n`.
+    expect: 15
+
+  - id: map-filter
+    title: Iteration takes the function first
+    teach: |
+      Like every actor, iteration takes the function first and the data last:
+      `map f xs`, `filter f xs` (the predicate must return a boolean).
+
+      ```helix
+      !call [map, !call [fn, [x], !call [mul, !ref x, !ref x]], [1, 2, 3]]
+      ```
+
+      Swap the order and the error says exactly that:
+
+      ```helix-error
+      !call [map, [1, 2, 3], !call [fn, [x], !ref x]]
+      ```
+    task: Define `even_squares`, which keeps the even numbers of a list and squares them.
+    start: |
+      even_squares: ~
+    probe: |
+      result: !call [even_squares, [1, 2, 3, 4, 5, 6]]
+    solution: |
+      even_squares: !call
+        - fn
+        - [xs]
+        - !call
+          - map
+          - !call [fn, [x], !call [mul, !ref x, !ref x]]
+          - !call [filter, !call [fn, [x], !call [eq, !call [mod, !ref x, 2], 0]], !ref xs]
+    hint: Filter with `eq (mod x 2) 0`, then map the square over the result.
+    expect: [4, 16, 36]
+
+  - id: fold
+    title: Folding
+    teach: |
+      `fold f init xs` threads an accumulator through a list; `f` takes the accumulator, then the element.
+
+      ```helix
+      !call [fold, !call [fn, [acc, x], !call [add, !ref acc, !ref x]], 0, [1, 2, 3, 4]]
+      ```
+    task: Define `maximum` of a non-empty list of numbers using `fold` (start from the first element with `get`).
+    start: |
+      maximum: ~
+    probe: |
+      result: !call [maximum, [3, 9, 2]]
+    solution: |
+      maximum: !call
+        - fn
+        - [xs]
+        - !call
+          - fold
+          - !call [fn, [acc, x], !call [if, !call [gt, !ref x, !ref acc], !ref x, !ref acc]]
+          - !call [get, !ref xs, 0]
+          - !ref xs
+    hint: '`if` takes a test and two branches; `gt` compares.'
+    expect: 9
+
+  - id: recursion
+    title: Recursion
+    teach: |
+      A function reaches itself through its own name. Evaluation is iterative inside the engine,
+      so depth is a configured limit (`depth` error), not a Rust stack overflow.
+
+      ```helix
+      fact: !call
+        - fn
+        - [n]
+        - !call [if, !call [le, !ref n, 1], 1, !call [mul, !ref n, !call [fact, !call [sub, !ref n, 1]]]]
+      answer: !call [fact, 5]
+      ```
+    task: Define `fib` so that `fib(0) = 0`, `fib(1) = 1`, and the checker's `fib(15)` is `610`.
+    start: |
+      fib: ~
+    probe: |
+      result: !call [fib, 15]
+    solution: |
+      fib: !call
+        - fn
+        - [n]
+        - !call
+          - if
+          - !call [lt, !ref n, 2]
+          - !ref n
+          - !call [add, !call [fib, !call [sub, !ref n, 1]], !call [fib, !call [sub, !ref n, 2]]]
+    hint: '`if` evaluates only the branch it takes.'
+    expect: 610
+
+  - id: compose
+    title: Functions are values
+    teach: |
+      Pass them, return them, store them in maps. A parameter holding a function can head a call, and
+      `!call [call, f, args...]` calls any computed function.
+
+      ```helix
+      twice: !call [fn, [f, x], !call [f, !call [f, !ref x]]]
+      answer: !call [twice, !call [fn, [n], !call [add, !ref n, 3]], 10]
+      ```
+    task: Define `compose f g` returning a function that applies `g` first, then `f`.
+    start: |
+      inc: !call [fn, [n], !call [add, !ref n, 1]]
+      dbl: !call [fn, [n], !call [mul, !ref n, 2]]
+      compose: ~
+    probe: |
+      result: !call [!call [compose, !ref inc, !ref dbl], 5]
+    solution: |
+      inc: !call [fn, [n], !call [add, !ref n, 1]]
+      dbl: !call [fn, [n], !call [mul, !ref n, 2]]
+      compose: !call
+        - fn
+        - [f, g]
+        - !call [fn, [x], !call [f, !call [g, !ref x]]]
+    hint: '`inc(dbl(5))` is 11; the inner function closes over `f` and `g`.'
+    expect: 11
