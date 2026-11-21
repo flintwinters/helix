@@ -290,7 +290,7 @@ fn families(json: bool) -> ExitCode {
         let rows: Vec<_> = builtins::FAMILIES
             .iter()
             .flat_map(|family| builtins::members(family))
-            .map(|d| json!({"name": d.name, "family": d.family(), "signature": d.signature, "summary": d.summary, "min": d.arity.0, "max": d.arity.1}))
+            .map(|d| json!({"name": d.name, "family": d.family(), "signature": d.signature, "types": d.types, "summary": d.summary, "min": d.arity.0, "max": d.arity.1}))
             .collect();
         println!("{}", J::Array(rows));
         return ExitCode::SUCCESS;
@@ -317,10 +317,10 @@ fn builtin(found: &builtins::Descriptor, json: bool) -> ExitCode {
     let mentions = mentions(name);
     if json {
         let rows: Vec<_> = mentions.iter().map(|(doc, section, text)| json!({"document": doc, "section": section, "text": text})).collect();
-        println!("{}", json!({"name": name, "family": found.family(), "signature": found.signature, "summary": found.summary, "min": found.arity.0, "max": found.arity.1, "call": call, "mentions": rows}));
+        println!("{}", json!({"name": name, "family": found.family(), "signature": found.signature, "types": found.types, "summary": found.summary, "min": found.arity.0, "max": found.arity.1, "call": call, "mentions": rows}));
         return ExitCode::SUCCESS;
     }
-    println!("{name}: {}\n{} builtin, {} arguments\ncall: `{call}`", found.summary, found.family(), arity(found.arity));
+    println!("{name}: {}\n{} builtin, {} arguments\ncall: `{call}`\ntypes: {}", found.summary, found.family(), arity(found.arity), found.types);
     if mentions.is_empty() {
         println!("\nnot described further in the embedded references; search them with `helix docs`");
         return ExitCode::SUCCESS;

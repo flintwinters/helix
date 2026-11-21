@@ -31,6 +31,14 @@ def check(ctx):
     assert find(ctx, "--arity", "2", "--in", "text")["results"]
     assert all(row["arity"]["min"] <= 2 for row in find(ctx, "--arity", "2", "--in", "builtins")["results"])
 
+    # Builtins carry written types too; `number` abbreviates union(integer, float) and unions match by alternative.
+    each = find(ctx, "--takes", "list", "--takes", "function", "--in", "builtins")
+    assert {"map", "filter", "fold", "each"} <= {row["name"] for row in each["results"]}, names(each)
+    arithmetic = find(ctx, "--takes", "integer", "--returns", "float", "--in", "builtins")
+    assert {"add", "div"} <= {row["name"] for row in arithmetic["results"]} and "len" not in {row["name"] for row in arithmetic["results"]}
+    assert find(ctx, "--takes", "any", "--in", "builtins")["results"], "`any` is matched as written"
+    assert all(row["params"] is not None and row["returns"] for row in find(ctx, "--in", "builtins", "--limit", "500")["results"])
+
     # Types cannot see unannotated entries, and the report says how many.
     assert strings["unseen_by_types"] > 0
     shown = ctx.helix("find", "--takes", "string")

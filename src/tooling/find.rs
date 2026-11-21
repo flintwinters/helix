@@ -76,10 +76,26 @@ impl Ty {
         }
     }
 
-    /// Whether this query type describes `actual`: `_` matches anything, names match exactly or
-    /// by their last dotted segment (`number` finds `math.number`), applications match
-    /// argument-wise.
+    /// The alternatives of a union, with `number` read as `union(integer, float)`; any other type
+    /// is its own single alternative.
+    fn alternatives(&self) -> Vec<Ty> {
+        match self {
+            Ty::Name(name) if name.rsplit('.').next() == Some("number") => vec![Ty::Name("integer".into()), Ty::Name("float".into())],
+            Ty::App(head, args) if head == "union" => args.iter().flat_map(Ty::alternatives).collect(),
+            other => vec![other.clone()],
+        }
+    }
+
+    /// Whether this query type describes `actual`: `_` matches anything, and every alternative of
+    /// the query must be one the actual type admits. Names match exactly or by their last dotted
+    /// segment (`integer` finds `math.integer`), applications argument-wise. `any` is a name like
+    /// any other: it matches only itself and `_`.
     fn matches(&self, actual: &Ty) -> bool {
+        let admitted = actual.alternatives();
+        self.alternatives().iter().all(|query| admitted.iter().any(|actual| query.matches_alternative(actual)))
+    }
+
+    fn matches_alternative(&self, actual: &Ty) -> bool {
         match (self, actual) {
             (Ty::Any, _) => true,
             (Ty::Name(query), Ty::Name(name)) => query == name || name.rsplit('.').next() == Some(query),
@@ -123,7 +139,7 @@ struct Entry {
     /// Words searched beyond the name: documentation, family, parameter names.
     words: String,
     arity: (usize, Option<usize>),
-    /// Present for a `fn` export only; builtins and non-function exports carry no types.
+    /// Written parameter and result types: every builtin, and each `fn` export of a std module.
     shape: Option<Shape>,
     signature: String,
     next: String,
@@ -141,12 +157,19 @@ struct Query {
 }
 
 const USAGE: &str = "usage: helix find [WORDS...] [--takes TYPE]... [--returns TYPE] [--arity N] [--in builtins|std|MODULE] [--limit N] [--json]
-types are written as in source annotations: string, integer, list_of(string), map_of(_), `_` matches any";
+types are written as in source annotations: string, integer, number, list_of(string), union(string, list); `_` matches any type, `type` is any type descriptor";
 
 fn entries() -> Vec<Entry> {
     let mut found = Vec::new();
     for family in builtins::FAMILIES {
         for d in builtins::members(family) {
+            let (types, result) = d.parameter_types();
+            let params = d.parameter_names().into_iter().zip(types).map(|(name, ty)| match ty.strip_suffix("...") {
+                Some(ty) => (format!("{name}..."), Some(Ty::parse(ty).expect("builtin types are valid type syntax"))),
+                None => (name.to_string(), Some(Ty::parse(ty).expect("builtin types are valid type syntax"))),
+            }).collect();
+            let shape = Shape { params, result: Some(Ty::parse(result).expect("builtin types are valid type syntax")) };
+            let shape_signature = shape.render(d.name);
             found.push(Entry {
                 kind: "builtin",
                 module: None,
@@ -154,8 +177,8 @@ fn entries() -> Vec<Entry> {
                 summary: d.summary.to_string(),
                 words: format!("{} {}", d.family(), d.signature),
                 arity: d.arity,
-                shape: None,
-                signature: format!("{}({})", d.name, d.signature),
+                shape: Some(shape),
+                signature: shape_signature,
                 next: format!("helix builtins {}", d.name),
             });
         }
@@ -282,10 +305,7 @@ pub fn command(args: &[&str]) -> ExitCode {
                     unseen += usize::from(shape.result.is_none() || shape.params.iter().any(|(_, ty)| ty.is_none()));
                     continue;
                 }
-                None => {
-                    unseen += usize::from(entry.kind == "builtin");
-                    continue;
-                }
+                None => continue,
             }
         }
         hits.push((score, entry));
