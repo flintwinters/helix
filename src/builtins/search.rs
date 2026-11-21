@@ -17,6 +17,27 @@ pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
     if pattern.len() > 16_384 || text.len() > crate::model::MAX_VALUE_SIZE {
         return Err(Fault::whole("limit", "regex input exceeds bounds".into()));
     }
+    let re = compiled(pattern)?;
+    let mut matches = Vec::new();
+    for captures in re.captures_iter(text) {
+        if matches.len() >= 4096 {
+            return Err(Fault::whole("limit", "regex exceeds 4096 matches".into()));
+        }
+        matches.push(json!({"span":captures.get(0).map(|m|vec![m.start(),m.end()]),"captures":captures.iter().map(|m|m.map(|m|json!({"text":m.as_str(),"span":[m.start(),m.end()]}))).collect::<Vec<_>>()}));
+    }
+    crate::value::from_host_yaml(&crate::tooling::source::yaml(&json!(matches)))
+        .map_err(|e| Fault::whole("limit", e))
+}
+
+/// Compilation is a pure function of the pattern, so successful compiles are reused;
+/// the bounded per-thread cache is cleared when full rather than tracking recency.
+fn compiled(pattern: &str) -> Result<regex::Regex, Fault> {
+    thread_local! {
+        static CACHE: std::cell::RefCell<std::collections::HashMap<String, regex::Regex>> = Default::default();
+    }
+    if let Some(re) = CACHE.with_borrow(|cache| cache.get(pattern).cloned()) {
+        return Ok(re);
+    }
     let re = regex::RegexBuilder::new(pattern)
         .size_limit(1_000_000)
         .dfa_size_limit(1_000_000)
@@ -33,13 +54,11 @@ pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
                 e.to_string(),
             )
         })?;
-    let mut matches = Vec::new();
-    for captures in re.captures_iter(text) {
-        if matches.len() >= 4096 {
-            return Err(Fault::whole("limit", "regex exceeds 4096 matches".into()));
+    CACHE.with_borrow_mut(|cache| {
+        if cache.len() >= 64 {
+            cache.clear();
         }
-        matches.push(json!({"span":captures.get(0).map(|m|vec![m.start(),m.end()]),"captures":captures.iter().map(|m|m.map(|m|json!({"text":m.as_str(),"span":[m.start(),m.end()]}))).collect::<Vec<_>>()}));
-    }
-    crate::value::from_host_yaml(&crate::tooling::source::yaml(&json!(matches)))
-        .map_err(|e| Fault::whole("limit", e))
+        cache.insert(pattern.to_owned(), re.clone());
+    });
+    Ok(re)
 }
