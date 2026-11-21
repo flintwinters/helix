@@ -98,8 +98,7 @@ INVALID = {'http_serve': '{"$call": ["http_serve", null, null]}', 'promise': '{"
 
 
 def verify(h):
-    declarations = (h.root / "src/builtins.rs").read_text()
-    arities = re.findall(r'actor\("([a-z_]+)", (\d+), (None|Some\(\d+\)), Evaluation::[A-Za-z]+', declarations)
+    arities = [(row["name"], row["min"], row["max"]) for row in json.loads(h.helix("builtins", "--json").stdout)]
     assert len(arities) == len({name for name, _, _ in arities}), "actor registrations must be unique"
     assert {name for name, _, _ in arities} == WITNESSES.keys(), "update actor witnesses when adding/removing builtins"
     report = {name: {"result": 0, "wrong_type": 0, "wrong_arity": 0} for name in WITNESSES}
@@ -118,9 +117,9 @@ def verify(h):
         report[name]["wrong_type"] += 1
     assert INVALID.keys() | UNRESTRICTED == WITNESSES.keys(), "every actor needs a wrong-type witness or an explicit unrestricted-operand exemption"
     for name, minimum, maximum in arities:
-        counts = ([int(minimum) - 1] if int(minimum) else [])
-        if maximum != "None":
-            counts.append(int(re.search(r'\d+', maximum)[0]) + 1)
+        counts = [minimum - 1] if minimum else []
+        if maximum is not None:
+            counts.append(maximum + 1)
         for count in counts:
             source = json.dumps({'$call': [name, *([None] * count)]})
             result = h.helix("run", "-", stdin=source)

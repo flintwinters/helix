@@ -10,7 +10,9 @@ import yaml
 
 def verify(h):
     def invoke(command, source, *args):
-        result = h.helix(command, '-', *args, stdin=source)
+        # Restoration reproduces annotations, so the run oracle must retain them too.
+        flags = ['--annotations'] if command == 'run' else []
+        result = h.helix(command, *flags, '-', *args, stdin=source)
         assert result.returncode in (0, 1), (command, result)
         assert not result.stderr, (command, result.stderr)
         return result, yaml.load(result.stdout, Loader=getattr(yaml, 'CSafeLoader', yaml.SafeLoader))
@@ -169,7 +171,7 @@ def verify(h):
                  'std_typing', 'types_type_time_preflight_forms', 'types_annotations',
                  'dogfood_errors', 'types_refinement_failures', 'nginx_ssh_request'):
         path = h.root / 'tests/cases' / f'{name}.yaml'
-        ordinary = h.helix('run', str(path))
+        ordinary = h.helix('run', '--annotations', str(path))
         counts = (0, 37, 2_000_000) if name == 'nginx_ssh_request' else (0, 37)
         for count in counts:
             saved = h.helix('snapshot', str(path), '--steps', str(count))

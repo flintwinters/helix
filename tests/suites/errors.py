@@ -42,7 +42,7 @@ def verify(h):
 # marks errors that `check` reports without executing, with the same message and hint.
 HINTS = [
     ("total: !call [fold, [1, 2], 0, !ref add]", "unbound", "/total/$call/3", "unbound symbol `add`",
-     "`add` is a builtin actor, not a value: call it as `!call [add, ...]`, or wrap it to pass it as a function: `!call [fn, [a, b], !call [add, !ref a, !ref b]]`", True),
+     "`add` is a builtin actor, not a value: call it as `!call [add, a, b, more...]`, or wrap it to pass it as a function: `!call [fn, [a, b], !call [add, !ref a, !ref b]]`", True),
     ("counter: 3\ny: !call [add, !ref countr, 1]", "unbound", "/y/$call/1", "unbound symbol `countr`",
      "did you mean `counter`?", True),
     ("v: !call [mapp, [1]]", "unbound", "/v/$call/0", "unbound actor `mapp`", "did you mean `map`?", True),
