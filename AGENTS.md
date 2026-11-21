@@ -58,6 +58,12 @@ Follow these entrypoints into source instead of duplicating inventories or opera
 instructions here. Keep the [README](README.md) concise. Prefer scoped, actionable
 agent-consumable output with progressive discovery and explicit complete JSON reports.
 
+Agents are the primary users of Helix. When choosing between designs, prefer the one
+a model gets right on its first attempt: one obvious way to write a thing, failures
+that teach the correction, small outputs that show the answer before the noise, and
+lookups that redirect a wrong guess instead of dead-ending. Judge changes to syntax,
+errors, docs, library and CLI by recorded agent behavior, not by taste.
+
 ## Current big tasks
 
 0. Errors are first-class and a founding paradigm: make every failure name what was
