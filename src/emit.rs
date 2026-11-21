@@ -294,7 +294,7 @@ pub(crate) fn source(graph: &crate::model::Graph) -> String {
 /// from source, since inspection documents deliberately cannot be restored as executable values.
 pub(crate) fn recovery(
     graph: &crate::model::Graph,
-    memo: &std::collections::HashMap<crate::model::NodeId, crate::model::Value>,
+    memo: &crate::model::Memo,
 ) -> String {
     use crate::model::Value;
     let encode = |id| {

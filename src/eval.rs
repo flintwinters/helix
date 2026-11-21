@@ -3,7 +3,6 @@ use crate::graph::{Graph, NodeId, ROOT};
 use crate::link;
 use crate::model::{CallOrigin, HelixError, Segment, string as s};
 use crate::value::{Hash, Value};
-use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -46,8 +45,8 @@ impl Evaluator {
         Self {
             program,
             environment,
-            memo: HashMap::new(),
-            active: HashSet::new(),
+            memo: Default::default(),
+            active: Default::default(),
             requests: vec![request],
             answer: None,
             depth: 0,

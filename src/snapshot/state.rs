@@ -1,6 +1,5 @@
 //! Retained closures, machine versions and evaluator continuations.
 use super::*;
-use std::collections::HashSet;
 
 impl Wire for Arc<Function> {
     fn put(&self, e: &mut Encoder) -> R<J> {
@@ -211,7 +210,7 @@ fn get_evaluator(j: &J, d: &mut Decoder) -> R<Evaluator> {
     }
     requests.reverse();
     d.program = Some(program.clone());
-    let mut active = HashSet::new();
+    let mut active = crate::model::Active::default();
     for row in array(field(j, "active")?)? {
         keys(row, &["node", "depth"])?;
         let n = d.n(field(row, "node")?)?;

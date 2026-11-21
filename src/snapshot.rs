@@ -105,7 +105,7 @@ impl Encoder {
     fn on(&mut self, n: &Option<NodeId>) -> R<J> {
         n.as_ref().map(|n| self.n(n)).unwrap_or(Ok(J::Null))
     }
-    fn memo(&mut self, memo: &HashMap<NodeId, Value>) -> R<J> {
+    fn memo(&mut self, memo: &crate::model::Memo) -> R<J> {
         let mut entries = memo.iter().collect::<Vec<_>>();
         entries.sort_by_key(|(n, _)| **n);
         Ok(J::Array(
@@ -115,7 +115,7 @@ impl Encoder {
                 .collect::<R<_>>()?,
         ))
     }
-    fn omemo(&mut self, memo: &Option<HashMap<NodeId, Value>>) -> R<J> {
+    fn omemo(&mut self, memo: &Option<crate::model::Memo>) -> R<J> {
         memo.as_ref().map(|m| self.memo(m)).unwrap_or(Ok(J::Null))
     }
     fn phase(&mut self, phase: &Option<&'static str>) -> R<J> {
@@ -216,8 +216,8 @@ impl Decoder {
             Ok(Some(self.n(j)?))
         }
     }
-    fn memo(&mut self, j: &J) -> R<HashMap<NodeId, Value>> {
-        let mut memo = HashMap::new();
+    fn memo(&mut self, j: &J) -> R<crate::model::Memo> {
+        let mut memo = crate::model::Memo::default();
         for row in array(j)? {
             keys(row, &["node", "value"])?;
             let node = self.n(field(row, "node")?)?;
@@ -228,7 +228,7 @@ impl Decoder {
         }
         Ok(memo)
     }
-    fn omemo(&mut self, j: &J) -> R<Option<HashMap<NodeId, Value>>> {
+    fn omemo(&mut self, j: &J) -> R<Option<crate::model::Memo>> {
         if j.is_null() {
             Ok(None)
         } else {

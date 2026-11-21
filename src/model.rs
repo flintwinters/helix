@@ -6,6 +6,30 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use yaml_rust2::Yaml;
 pub(crate) type NodeId = usize;
+/// Multiplicative hasher for small integer keys (node ids, depths). Lookups on these keys
+/// run once per evaluated node; SipHash dominated them. Iteration order is never
+/// observable: every consumer sorts (see snapshot and inspection).
+#[derive(Default, Clone, Copy)]
+pub(crate) struct NodeHasher(u64);
+impl std::hash::Hasher for NodeHasher {
+    fn finish(&self) -> u64 {
+        self.0
+    }
+    fn write(&mut self, bytes: &[u8]) {
+        for &byte in bytes {
+            self.write_u64(byte as u64);
+        }
+    }
+    fn write_u64(&mut self, n: u64) {
+        self.0 = (self.0.rotate_left(5) ^ n).wrapping_mul(0x517c_c1b7_2722_0a95);
+    }
+    fn write_usize(&mut self, n: usize) {
+        self.write_u64(n as u64);
+    }
+}
+pub(crate) type NodeHash = std::hash::BuildHasherDefault<NodeHasher>;
+pub(crate) type Memo = HashMap<NodeId, Value, NodeHash>;
+pub(crate) type Active = HashSet<(NodeId, usize), NodeHash>;
 pub(crate) const ROOT: NodeId = 0;
 // Source, computed values and host data share these structural bounds.
 pub(crate) const MAX_NODES: usize = 100_000;
@@ -122,7 +146,7 @@ pub(crate) struct CallOrigin {
 pub(crate) enum Request {
     TypeEnd {
         previous: bool,
-        memo: Option<HashMap<NodeId, Value>>,
+        memo: Option<Memo>,
     },
     Eval(NodeId),
     Finish(NodeId, usize, bool),
@@ -277,8 +301,8 @@ impl PartialEq for EvidenceIndex {
 pub(crate) struct Evaluator {
     pub program: Arc<Program>,
     pub environment: Vec<Scope>,
-    pub(crate) memo: HashMap<NodeId, Value>,
-    pub(crate) active: HashSet<(NodeId, usize)>,
+    pub(crate) memo: Memo,
+    pub(crate) active: Active,
     pub(crate) requests: Vec<Request>,
     pub(crate) answer: Option<Outcome>,
     pub(crate) depth: usize,
