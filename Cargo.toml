@@ -17,3 +17,11 @@ tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+# Tests and the speed suite run the debug CLI; unoptimized interpreter code is
+# ~7x slower. Keep debug assertions/overflow checks and debuginfo, optimize code.
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3

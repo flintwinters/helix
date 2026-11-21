@@ -4,7 +4,7 @@
     "host": "felix-wolf",
     "machine": "x86_64",
     "processor": "",
-    "profile": "debug",
+    "profile": "dev-opt1",
     "samples": 5,
     "warmups": 1
   },
@@ -12,12 +12,12 @@
     {
       "workload": "fuzz-plan-unicode-crlf",
       "source_sha256": "94981e3b69c36e8985fcf0fd85acc061c7a0886b143c9c3d60b60c93443ad2e3",
-      "median_seconds": 1.462752251
+      "median_seconds": 0.0816
     },
     {
       "workload": "fuzz-plan-dogfood-testing",
       "source_sha256": "861b9a5c87c46787208714806c7adbefd4dfd73347fe573f0be09381b2d8b791",
-      "median_seconds": 2.930306643
+      "median_seconds": 0.1666
     }
   ]
 }

@@ -13,6 +13,9 @@ import yaml
 
 SAMPLES = 5
 WARMUPS = 1
+# Names the Cargo dev profile measured (Cargo.toml: opt-level 1, dependencies 3).
+# Changing it separates history and pinned baselines from other build profiles.
+PROFILE = "dev-opt1"
 # Advance only after a verified optimization warrants a new fixed reference.
 # Missing epochs in historical reports belong to the original baseline.
 BASELINE_EPOCHS = {"slice-ascii": 3, "slice-unicode": 3}
@@ -188,7 +191,7 @@ def verify(h):
     report = {
         "schema_version": 2,
         "environment": {"platform": platform.platform(), "machine": platform.machine(),
-                        "python": platform.python_version(), "profile": "debug",
+                        "python": platform.python_version(), "profile": PROFILE,
                         "binary_sha256": hashlib.sha256(h.binary.read_bytes()).hexdigest()},
         # File imports are mutable independently of the executable. Preserve their
         # provenance without excluding implementation changes from comparisons.
@@ -202,7 +205,7 @@ def verify(h):
     report["comparison_environment"] = {
         "platform": platform.platform(), "host": platform.node(),
         "machine": platform.machine(), "processor": platform.processor(),
-        "profile": "debug", "samples": SAMPLES, "warmups": WARMUPS,
+        "profile": PROFILE, "samples": SAMPLES, "warmups": WARMUPS,
     }
     baseline = json.loads((h.root / "tests" / "fixtures" / "speed-baseline.json").read_text())
     slowdowns = []

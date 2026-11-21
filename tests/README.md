@@ -362,7 +362,7 @@ offline; live OpenRouter calls use the explicit `quality agent-bench run` comman
 `memory` requires Linux and GNU `/usr/bin/time`. It measures only interpreter peak RSS (KiB), records platform/Python/debug-profile metadata, and saves exact sources and states. Workloads use 1,001/4,001/10,001-node arithmetic maps (each under two seconds and 192 MiB), with a broad 12x-plus-16-MiB scaling allowance, and compare 999 versus 99,999 constant-state iterations (at most 8 MiB extra RSS). The `scale` suite enforces a 0.8-second 10k-node bound, including Python YAML decoding. These tolerances catch large regressions while allowing allocator and host noise; they are not a historical statistical baseline. Linux CI runs these measurements and compiled mutation checks in the weekly/manual full sweep and uploads the reports even on success.
 
 Speed benchmarks run through `./manage.py test --suite speed` and the default full
-suite. They measure the debug CLI (startup, loading, evaluation and emission),
+suite. They measure the debug-profile CLI, built at `opt-level = 1` with optimized dependencies per `Cargo.toml` (startup, loading, evaluation and emission),
 excluding compilation and Python YAML decoding. Each workload gets one warmup
 and five measured runs, checked against its expected result. Arithmetic maps,
 function loops, ASCII/Unicode slicing, and long-key map reads/replacements run
@@ -386,7 +386,7 @@ Replaying a saved input otherwise uses the current checkout and executable.
 Reports flag `SLOWDOWN` when median time exceeds the earliest five compatible runs
 by more than 20% and three median absolute deviations of observed noise. Matching
 host/environment, sampling settings and workload source keep comparisons relevant;
-the fixed early baseline reveals cumulative drift. First runs establish history.
+the fixed early baseline reveals cumulative drift. Changing the Cargo dev profile changes `PROFILE` in `tests/suites/speed.py` and requires re-pinning. First runs establish history.
 The two mutation-planning workloads use pinned medians in
 `tests/fixtures/speed-baseline.json`. For matching inputs and benchmark environment,
 a median above the pinned value fails the suite with zero tolerance. Historical
