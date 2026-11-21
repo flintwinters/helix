@@ -289,6 +289,35 @@ These are deterministic finite checks, not exhaustive language verification.
 The bridge self-tests failing assertions, continued execution, missing reports,
 and malformed modules on every dogfood run.
 
+## Usage log
+
+Every runtime invocation made through `./manage.py` (`run`, `eval`, `exec`, `cli`,
+`perform`, `check`, ...) is recorded in `runtime/usage.sqlite3` (table `calls`: command,
+argv, complete source text including stdin programs, stdout, stderr, exit code, duration,
+caller). Analyse it with `./manage.py inspect usage` (summary), `--schema`, or read-only
+`--sql 'SELECT ...'`. Output is teed without altering the child's descriptors; streams
+attached to a terminal and the interactive `lsp`, `repl` and `watch` commands are stored
+as NULL. `HELIX_USAGE_LOG=0` disables logging, `HELIX_USAGE_DB` relocates it,
+`HELIX_AGENT` labels the caller (`claude-code` is inferred from `CLAUDECODE`). Test runs
+do not log, and the installed `helix` binary or `target/` executables invoked directly
+bypass the log. The log is written by `tooling/usage_log.yaml`, a Helix program using
+`std:sqlite`, so a build is needed to log but not to report; a failed write only warns.
+
+## Syntax migration
+
+Legacy actor-first arrays are no longer executable. Convert old source with
+`./manage.py runtime migrate-syntax --write FILE` and review the result; without
+`--write` it reports files that would change. Compare migrated outcomes with prior golden
+expectations via `./manage.py quality migration-audit --baseline REV` and review
+`runtime/migration-audit/report.json` before blessing new expectations.
+
+## Installing the CLI
+
+`cargo install --path . --locked` installs `helix`. `helix --help` lists commands
+(`repl`, `fmt`, `check`, `step`, `trace`, `inspect`, `watch`, `schema`, `lsp`; see
+[editor setup](../editor/README.md)); `./manage.py --help-json` describes project tooling.
+Exit codes: 0 success, 1 evaluation/validation failure, 2 invalid arguments or unreadable input.
+
 ## Failure artifacts
 
 The standard-library prerequisite independently compares embedded module discovery
