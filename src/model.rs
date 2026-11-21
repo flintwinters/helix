@@ -52,8 +52,10 @@ pub(crate) struct Measure {
     pub(crate) nodes: usize,
     pub(crate) height: usize,
 }
+/// Shared by clones of one container (they have identical contents, so one computation
+/// serves all references); a mutating handle replaces it with a fresh cell.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct Measured(pub(crate) std::sync::OnceLock<Measure>);
+pub(crate) struct Measured(pub(crate) Arc<std::sync::OnceLock<Measure>>);
 
 #[derive(Clone, Debug)]
 pub(crate) struct Program {
