@@ -1,0 +1,120 @@
+title: Control flow and collections
+summary: Lazy branches, immutable collections, iteration to a fixed point and the standard list library.
+steps:
+  - id: cond
+    title: Choosing
+    teach: |
+      `if` takes a test and two branches; `cond` takes test/value pairs and a final default. Only the
+      branch that is taken is evaluated, and `and`/`or` are lazy too.
+
+      ```helix
+      !call [cond, !call [lt, 5, 0], negative, !call [eq, 5, 0], zero, positive]
+      ```
+    task: Define `sign`, returning `negative`, `zero` or `positive`. The checker maps it over `[-5, 0, 7]`.
+    start: |
+      sign: ~
+    probe: |
+      result: !call [map, !ref sign, [-5, 0, 7]]
+    solution: |
+      sign: !call
+        - fn
+        - [n]
+        - !call [cond, !call [lt, !ref n, 0], negative, !call [eq, !ref n, 0], zero, positive]
+    hint: 'One `cond` with two tests and a default.'
+    expect: [negative, zero, positive]
+
+  - id: immutable
+    title: Collections never mutate
+    teach: |
+      Values are immutable. `set` and `append` return new collections; `get` reads (with an optional
+      default), `has` tests, `keys` lists in canonical order, `slice` takes `[from, to)`.
+
+      ```helix
+      !call [set, {a: 1}, b, 2]
+      ```
+
+      Retaining the old value is free to reason about: nothing else can change it.
+    task: Define `bump`, which returns the map with its `count` incremented by one and every other field untouched.
+    start: |
+      bump: ~
+    probe: |
+      result: !call [bump, {count: 1, name: tally}]
+    solution: |
+      bump: !call
+        - fn
+        - [m]
+        - !call [set, !ref m, count, !call [add, !call [get, !ref m, count], 1]]
+    hint: '`set` replaces one key and returns a new map.'
+    expect: {count: 2, name: tally}
+
+  - id: until
+    title: Iterating to a fixed point
+    teach: |
+      `until done step init` repeats `state = step(state)` until `done(state)` is `true`. State is any
+      value, so a small map carries several variables with no mutation.
+
+      ```helix
+      !call
+        - until
+        - !call [fn, [s], !call [ge, !ref s.n, 100]]
+        - !call [fn, [s], {n: !call [mul, !ref s.n, 2], steps: !call [add, !ref s.steps, 1]}]
+        - {n: 1, steps: 0}
+      ```
+
+      More than 100000 iterations is a `limit` error, so a runaway loop fails instead of spinning.
+    task: 'Define `collatz_steps n`: while `n` is not 1, halve it if even, else triple it and add one. Count the steps (27 takes 111).'
+    start: |
+      collatz_steps: ~
+    probe: |
+      result: !call [collatz_steps, 27]
+    solution: |
+      collatz_steps: !call
+        - fn
+        - [n]
+        - !call
+          - get
+          - !call
+            - until
+            - !call [fn, [s], !call [eq, !ref s.n, 1]]
+            - !call
+              - fn
+              - [s]
+              - n: !call
+                  - if
+                  - !call [eq, !call [mod, !ref s.n, 2], 0]
+                  - !call [div, !ref s.n, 2]
+                  - !call [add, !call [mul, !ref s.n, 3], 1]
+                steps: !call [add, !ref s.steps, 1]
+            - {n: !ref n, steps: 0}
+          - steps
+    hint: 'The state is `{n, steps}`; read `steps` from the final state with `get`.'
+    expect: 111
+
+  - id: std-list
+    title: The standard library
+    teach: |
+      Libraries are ordinary Helix source. Import one and call through its name:
+
+      ```helix
+      !call [let, {l: !call [import, "std:list"]}, !call [l.frequencies, [a, b, a]]]
+      ```
+
+      Discover them from a shell without reading source: `helix std list` shows signatures,
+      `helix std list.group_by` one export's source, and `helix find` ranks builtins and exports by
+      what you want (for example parameter and result types).
+    task: Define `initials`, counting how many words start with each letter. Use `slice`, `map` and `l.frequencies`.
+    start: |
+      l: !call [import, "std:list"]
+      initials: ~
+    probe: |
+      result: !call [initials, [apple, avocado, banana]]
+    solution: |
+      l: !call [import, "std:list"]
+      initials: !call
+        - fn
+        - [words]
+        - !call
+          - l.frequencies
+          - !call [map, !call [fn, [w], !call [slice, !ref w, 0, 1]], !ref words]
+    hint: Take the first letter of each word, then count the letters.
+    expect: {a: 2, b: 1}

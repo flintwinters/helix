@@ -1,0 +1,113 @@
+title: Errors are values
+summary: Failures carry a kind, a message and a location. You catch, classify, re-raise and clean up explicitly.
+steps:
+  - id: try
+    title: Catching
+    teach: |
+      `try expr handler` evaluates `expr`; if it fails, the handler is called with the error as an
+      ordinary map: `kind`, `message`, `line`, `column`, `reference` (and `data`, `calls`, `cause`
+      when present).
+
+      ```helix
+      !call [try, !call [div, 1, 0], !call [fn, [e], !ref e.kind]]
+      ```
+    task: Define `safe_div a b`, which returns `0` when the division fails.
+    start: |
+      safe_div: ~
+    probe: |
+      result: !call [safe_div, 1, 0]
+    solution: |
+      safe_div: !call
+        - fn
+        - [a, b]
+        - !call [try, !call [div, !ref a, !ref b], !call [fn, [e], 0]]
+    hint: The handler ignores the error and returns `0`.
+    expect: 0
+
+  - id: raise
+    title: Raising with data
+    teach: |
+      `raise kind message [data]` fails with a kind you choose. The optional data payload is ordinary
+      data, visible to handlers as `e.data`.
+
+      ```helix
+      !call [try, !call [raise, boom, "it broke", {code: 7}], !call [fn, [e], !ref e.data]]
+      ```
+    task: 'Define `withdraw balance amount`. When `amount` exceeds `balance`, raise `insufficient_funds` whose data is `{short: <how much is missing>}`; otherwise return the new balance.'
+    start: |
+      withdraw: ~
+    probe: |
+      result: !call
+        - try
+        - !call [withdraw, 10, 25]
+        - !call [fn, [e], !ref e.data]
+    solution: |
+      withdraw: !call
+        - fn
+        - [balance, amount]
+        - !call
+          - if
+          - !call [gt, !ref amount, !ref balance]
+          - !call [raise, insufficient_funds, "balance too low", {short: !call [sub, !ref amount, !ref balance]}]
+          - !call [sub, !ref balance, !ref amount]
+    hint: '`raise` takes kind, message, then the data map.'
+    expect: {short: 15}
+
+  - id: rethrow
+    title: Handle some failures, not all
+    teach: |
+      A handler that swallows everything hides bugs. Match the kinds you expect and re-raise the rest
+      with `!call [raise, e]`, which keeps the original as `cause`.
+
+      ```helix
+      !call
+        - try
+        - !call [div, 1, 0]
+        - !call [fn, [e], !call [cond, !call [eq, !ref e.kind, divide_by_zero], 0, !call [raise, !ref e]]]
+      ```
+    task: Define `div_or_zero a b`. It returns `0` only for `divide_by_zero`; any other failure must propagate.
+    start: |
+      div_or_zero: ~
+    probe: |
+      result:
+        - !call [div_or_zero, 6, 3]
+        - !call [div_or_zero, 1, 0]
+        - !call [try, !call [div_or_zero, 1, "x"], !call [fn, [e], !ref e.kind]]
+    solution: |
+      div_or_zero: !call
+        - fn
+        - [a, b]
+        - !call
+          - try
+          - !call [div, !ref a, !ref b]
+          - !call [fn, [e], !call [cond, !call [eq, !ref e.kind, divide_by_zero], 0, !call [raise, !ref e]]]
+    hint: 'Inside the handler use `cond` on `e.kind`; the default branch re-raises `e`.'
+    expect: [2, 0, type]
+
+  - id: assert
+    title: Assertions and cleanup
+    teach: |
+      `assert cond [message]` returns `null` or fails with an `assertion` error. `finally expr cleanup`
+      always runs the cleanup expression, then preserves the original result or error. Lists evaluate
+      their items in order, which sequences an assertion before a value.
+
+      ```helix
+      !call [try, !call [assert, !call [gt, 1, 2], "one is not greater"], !call [fn, [e], !ref e.message]]
+      ```
+    task: Define `positive n`, which returns `n` when it is above zero and otherwise fails an assertion with the message `must be positive`.
+    start: |
+      positive: ~
+    probe: |
+      result:
+        - !call [positive, 3]
+        - !call [try, !call [positive, -1], !call [fn, [e], !ref e.message]]
+    solution: |
+      positive: !call
+        - fn
+        - [n]
+        - !call
+          - get
+          - [!call [assert, !call [gt, !ref n, 0], "must be positive"], !ref n]
+          - 1
+    hint: List items are evaluated in order, so a list of the assertion and `n` can be indexed for its last item.
+    expect: [3, must be positive]
