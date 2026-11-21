@@ -193,6 +193,9 @@ def verify_saved_submission(h, target, identity):
     for path in ('../.env', '/etc/passwd', 'public_test.yaml', 'LANGUAGE.md'):
         assert 'error' in call('workspace', {'action': 'write', 'path': path, 'content': '42'})
     assert 'error' in call('workspace', {'action': 'read', 'path': '../.env'})
+    for misrouted in ({'args': ['run', 'x.yaml']}, {'action': 'builtins'}, {'action': 'run', 'path': 'x.yaml'}):
+        error = call('workspace', misrouted)['error']
+        assert 'call the helix tool' in error, (misrouted, error)
     source = TASKS['sum-squares']['reference']
     call('workspace', {'action': 'write', 'path': 'candidate.yaml', 'content': source})
     assert call('helix', {'args': ['check', 'candidate.yaml']})['exit_code'] == 0

@@ -196,7 +196,8 @@ def help_catalog(h):
             shown = h.helix(*args)
             assert shown.returncode == 0 and json.loads(shown.stdout) == entry, (args, shown)
         assert all(form["usage"].split()[1] == entry["command"] for form in entry["forms"]), entry
-    for args, hint in [(("help", "rn"), "did you mean `run`?"), (("help", "run", "extra"), "usage: helix help")]:
+    for args, hint in [(("help", "rn"), "did you mean `run`?"), (("help", "run", "extra"), "usage: helix help"),
+                       (("help", "get"), "see `helix builtins get`"), (("get",), "see `helix builtins get`")]:
         result = h.helix(*args)
         assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
 
@@ -226,6 +227,7 @@ def docs_catalog(h):
     assert text.returncode == 0 and text.stdout.startswith("## Host effects"), text
     assert "  ssh-remote-commands (" in text.stdout and "next: `helix docs host SUBSECTION`" in text.stdout, text
     for args, hint in [(("docs", "langauge"), "did you mean `language`?"),
+                       (("docs", "expressions"), "`helix docs language expressions`"),
                        (("docs", "language", "buitlins"), "did you mean `builtins`?"),
                        (("docs", "language", "types"), "names containing it: first-class-types")]:
         result = h.helix(*args)

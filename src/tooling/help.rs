@@ -152,6 +152,10 @@ pub fn overview() -> String {
 
 /// Reject a command name that no form accepts, naming the closest known command.
 pub fn unknown(name: &str) -> ExitCode {
+    if crate::builtins::descriptor(name).is_some() {
+        eprintln!("`{name}` is a builtin actor, not a command; see `helix builtins {name}`");
+        return ExitCode::from(2);
+    }
     match nearest(name, names()) {
         Some(close) => eprintln!("unknown command `{name}`; did you mean `{close}`? `helix --help` lists every command"),
         None => eprintln!("unknown command `{name}`; `helix --help` lists every command"),

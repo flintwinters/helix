@@ -77,6 +77,10 @@ def fingerprint(directory):
 
 def workspace_tool(directory, payload, state):
     action = payload.get('action')
+    if action not in ('read', 'write', 'list') and (action is not None or 'args' in payload):
+        spelled = payload['args'] if isinstance(payload.get('args'), list) else [action]
+        raise ValueError(f'workspace only reads, writes and lists files (action read, write or list); '
+                         f'{json.dumps(spelled)} is a Helix CLI request: call the helix tool with args {json.dumps(spelled)}')
     if action == 'list':
         return {'files': [str(path.relative_to(working_directory(directory)))
                           for path in sorted(working_directory(directory).rglob('*')) if path.is_file()]}
