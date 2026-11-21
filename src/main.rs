@@ -44,6 +44,7 @@ fn main() -> ExitCode {
         ["sandbox", root, path] => execute(path, "run", Some(root), "raw", false),
         ["std", rest @ ..] => helix::tooling::catalog::command(rest),
         ["docs", rest @ ..] => helix::tooling::docs::command(rest),
+        ["find", rest @ ..] => helix::tooling::find::command(rest),
         ["builtins", rest @ ..] => helix::tooling::docs::builtins(rest),
         [cmd, ..] => match help::find(cmd) {
             None => help::unknown(cmd),

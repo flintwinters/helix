@@ -32,6 +32,7 @@ pub const COMMANDS: &[Command] = &[
         ("[MODULE[.EXPORT]] [--json]", "browse the standard library: modules, a module's signatures, one export"),
         ("MODULE --source", "print a module's complete source"),
     ]),
+    entry("find", "learn", &[("[WORDS...] [--takes TYPE]... [--returns TYPE] [--arity N] [--in builtins|std|MODULE] [--limit N] [--json]", "ranked search of builtins and std; --takes/--returns match written parameter/result types such as list_of(string); `_` matches any")]),
     entry("schema", "learn", &[("", "print program JSON Schema")]),
     entry("check", "write and run", &[("[--evaluate] <file.yaml | ->", "static checks; --evaluate collects runtime errors")]),
     entry("fmt", "write and run", &[("<file.yaml | ->", "canonical source on stdout")]),
@@ -71,6 +72,7 @@ const START: &[&str] = &[
     "helix docs language    the language reference as a section tree; read one section at a time",
     "helix builtins         builtin actors (add, get, map, fn, ...) with arity; `helix builtins NAME` for one",
     "helix std              standard library modules; `helix std MODULE` lists signatures",
+    "helix find WORDS      search builtins and std by words or by parameter/result types (--takes, --returns)",
     "helix check FILE       static errors with corrections, before `helix run FILE`",
 ];
 

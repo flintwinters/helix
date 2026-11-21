@@ -3,6 +3,7 @@ pub mod analysis;
 pub mod catalog;
 pub mod cli;
 pub mod docs;
+pub mod find;
 pub mod help;
 pub mod inspection;
 pub mod interactive;

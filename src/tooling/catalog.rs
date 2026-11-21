@@ -9,25 +9,34 @@ use serde_json::{Value as J, json};
 use crate::graph::{Graph, Syntax, ROOT, nearest};
 use crate::model::NodeId;
 use crate::library;
+use super::find::Ty;
 
 /// Values longer than this are cut in an index line; signatures are never cut.
 const SHOWN: usize = 90;
 
-struct Module {
-    name: String,
+pub(crate) struct Module {
+    pub(crate) name: String,
     /// The comment block that opens the module.
-    doc: Vec<&'static str>,
-    exports: Vec<Export>,
+    pub(crate) doc: Vec<&'static str>,
+    pub(crate) exports: Vec<Export>,
 }
 
-struct Export {
-    name: String,
+pub(crate) struct Export {
+    pub(crate) name: String,
     /// `name(param: type, ...) -> result` for a function, otherwise `name: <value source>`.
-    signature: String,
+    pub(crate) signature: String,
     /// The comment lines written directly before the key.
-    doc: Vec<&'static str>,
+    pub(crate) doc: Vec<&'static str>,
+    /// The written parameter and result annotations when the export is a `fn`.
+    pub(crate) shape: Option<Shape>,
     /// The key's complete source text, including its comment.
     source: Text,
+}
+
+/// A function's written annotations; `None` marks what the source leaves unwritten.
+pub(crate) struct Shape {
+    pub(crate) params: Vec<(String, Option<Ty>)>,
+    pub(crate) result: Option<Ty>,
 }
 
 /// Source as written in the module, or canonically emitted when no written slice holds it.
@@ -86,7 +95,7 @@ pub fn command(args: &[&str]) -> ExitCode {
 }
 
 fn list(json: bool) -> ExitCode {
-    let modules: Vec<_> = library::names().map(|name| parse(name, library::source(name).unwrap())).collect();
+    let modules = modules();
     if json {
         let rows: Vec<_> = modules.iter().map(|m| json!({"module": format!("std:{}", m.name), "summary": summary(&m.doc)})).collect();
         println!("{}", J::Array(rows));
@@ -159,7 +168,7 @@ fn summary(doc: &[&str]) -> String {
 /// formatted, so a root map's keys each begin a column-zero line: a key's text starts at the
 /// comment block directly above it and ends where the next key's text starts. Exports assembled
 /// by a root `let` show the canonical source of their definitions instead.
-fn parse(name: &str, text: &'static str) -> Module {
+pub(crate) fn parse(name: &str, text: &'static str) -> Module {
     let mut lines = Vec::new();
     let mut offset = 0;
     for line in text.split_inclusive('\n') {
@@ -176,6 +185,7 @@ fn parse(name: &str, text: &'static str) -> Module {
             .into_iter()
             .map(|(key, node)| Export {
                 signature: signature(&graph, &key, node),
+                shape: shape(&graph, node),
                 doc: Vec::new(),
                 source: Text::Owned(crate::emit::entry(&graph, &key, node).trim_end_matches('\n').to_string()),
                 name: key,
@@ -203,6 +213,7 @@ fn parse(name: &str, text: &'static str) -> Module {
         .enumerate()
         .map(|(k, ((key, node), &(first, own)))| Export {
             signature: signature(&graph, &key, node),
+            shape: shape(&graph, node),
             doc: lines[first..own].iter().map(|(_, line)| uncomment(line)).collect(),
             source: Text::Written(text[start(first)..keys.get(k + 1).map_or(text.len(), |&(next, _)| start(next))].trim_end_matches('\n')),
             name: key,
@@ -213,6 +224,20 @@ fn parse(name: &str, text: &'static str) -> Module {
 
 fn uncomment(line: &'static str) -> &'static str {
     line.trim_start_matches('#').trim()
+}
+
+/// Every embedded module, parsed.
+pub(crate) fn modules() -> Vec<Module> {
+    library::names().map(|name| parse(name, library::source(name).unwrap())).collect()
+}
+
+fn shape(graph: &Graph, node: NodeId) -> Option<Shape> {
+    if graph.form(node) != Some("fn") {
+        return None;
+    }
+    let params = graph.parameters(node).ok()?.into_iter().map(|(name, ty)| (name, ty.map(|ty| Ty::from_graph(graph, ty)))).collect();
+    let result = graph.call(node).and_then(|items| items.get(3)).map(|&r| Ty::from_graph(graph, r));
+    Some(Shape { params, result })
 }
 
 /// `name(param: type, ...) -> result` from a `fn`'s written annotations; any other value

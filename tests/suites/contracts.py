@@ -389,7 +389,7 @@ def imports(h):
 
 def run(name, h):
     try:
-        if name in {"static", "interactive", "inspection"}:
+        if name in {"static", "interactive", "inspection", "find"}:
             from importlib import import_module
             return import_module(f"tooling.checks_{name}").check(h)
         if name in globals():
