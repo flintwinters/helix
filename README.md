@@ -5,28 +5,21 @@ plain YAML you can read, diff and edit.**
 
 ## Why Helix
 
-- **Execution is as readable as source.** Programs are YAML. Results, paused
-  machines and errors come back as YAML too, so a run can be inspected, diffed
-  and committed like any other file.
-- **Immutable machines.** Step a machine and you get a new one; the old version
-  keeps its meaning. Branch, compare or retry from any earlier state without
-  copying or locking anything.
-- **Resumable.** Versioned snapshots restore a program mid-execution, including
-  active calls and loops. Inspection output is for reading, not for restoring.
-- **Errors that teach.** Every failure carries a structured kind, a source
-  location, what was rejected and the concrete fix. Programs can catch and
-  branch on them.
-- **No hidden behavior.** Strings are always literal. Calls and references are
-  explicit (`!call`, `!ref`, `!literal`). Quoting style and key order never
-  change meaning.
-- **Effects need permission.** File, process, HTTP, clock and randomness access
-  is requested by the program and granted by the caller, never by the source or
-  by saved state. Pending and completed effects are visible in the machine state,
-  and journals refuse to replay an uncertain effect.
-- **Built for declarative machine configuration.** Resolve and validate purely
-  with types, review the plan, then apply explicitly authorized changes.
-- **Designed for agents.** Discoverable CLI and docs, scoped output, and complete
-  JSON reports on request.
+- **Execution is data.** Programs, results, paused machines and errors are YAML:
+  read, diff, commit. Syntax is explicit (`!call`, `!ref`, `!literal`); strings are
+  always literal; quoting and key order never change meaning.
+- **Immutable, resumable machines.** Step = new machine; old versions keep their
+  meaning. Versioned snapshots restore mid-execution (active calls, loops).
+  Inspection YAML is read-only, not restorable.
+- **Permissioned effects.** File, process, HTTP, clock, randomness: program
+  requests, caller grants. Never source or saved state. Pending and completed effects
+  visible in state; journals refuse to replay uncertain effects.
+- **Declarative machine configuration.** Pure resolve and validate, reviewed plan,
+  then authorized apply.
+- **Designed with agents.** Model agents run recorded coding tasks against the CLI
+  and language ([55 tasks](benchmarks/agent/README.md)). Transcripts and failures
+  drive CLI discovery, syntax, library and error-message changes. Errors name what
+  was rejected and the fix, and are catchable in-program.
 
 ```yaml
 math: !call [import, 'std:math']
