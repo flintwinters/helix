@@ -1,0 +1,15 @@
+l: !call [import, std:list]
+records: !call
+  - fn
+  - [rows]
+  - !call
+    - !call
+      - fn
+      - [header, columns]
+      - !call
+        - map
+        - !call [fn, [row], !call [fold, !call [fn, [record, i], !call [set, !ref record, !call [get, !ref header, !ref i], !call [get, !ref row, !ref i]]], {}, !ref columns]]
+        - !call [slice, !ref rows, 1, !call [len, !ref rows]]
+    - !call [get, !ref rows, 0]
+    - !call [l.range, !call [len, !call [get, !ref rows, 0]]]
+solve: !call [fn, [source], !call [records, !call [csv_parse, !ref source]]]

@@ -58,6 +58,8 @@ Follow these entrypoints into source instead of duplicating inventories or opera
 instructions here. Keep the [README](README.md) concise. Prefer scoped, actionable
 agent-consumable output with progressive discovery and explicit complete JSON reports.
 
+Agents are the primary users: prefer the design a model gets right first try, judged by recorded agent behavior.
+
 ## Current big tasks
 
 0. Errors are first-class and a founding paradigm: make every failure name what was

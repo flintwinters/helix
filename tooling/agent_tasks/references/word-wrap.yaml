@@ -1,0 +1,19 @@
+l: !call [import, std:list]
+solve: !call
+  - fn
+  - [input]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [lines, word]
+      - !call
+        - let
+        - last: !call [l.last, !ref lines, null]
+        - !call
+          - if
+          - !call [and, !call [ne, !ref last, null], !call [le, !call [add, !call [len, !ref last], 1, !call [len, !ref word]], !call [get, !ref input, width]]]
+          - !call [set, !ref lines, !call [sub, !call [len, !ref lines], 1], !call [concat, !ref last, " ", !ref word]]
+          - !call [append, !ref lines, !ref word]
+    - []
+    - !call [map, !call [fn, [m], !call [get, !call [get, !call [get, !ref m, captures], 0], text]], !call [regex_find, "[^ ]+", !call [get, !ref input, text]]]

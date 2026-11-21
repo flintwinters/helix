@@ -1,9 +1,10 @@
 root:
   caught:
     column: 25
+    hint: pass a default as the third argument to tolerate absence
     kind: missing
     line: 5
-    message: no index 9
+    message: index 9 is out of range for a list of length 2
     path: "/caught/$call/1/$call/2"
     reference:
       - caught

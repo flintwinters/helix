@@ -1,0 +1,14 @@
+solve: !call
+  - fn
+  - [rows]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [totals, row]
+      - !call
+        - let
+        - month: !call [slice, !call [get, !ref row, date], 0, 7]
+        - !call [set, !ref totals, !ref month, !call [add, !call [get, !ref totals, !ref month, 0], !call [get, !ref row, amount]]]
+    - {}
+    - !ref rows

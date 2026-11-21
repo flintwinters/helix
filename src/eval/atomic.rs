@@ -212,7 +212,7 @@ impl Evaluator {
                 fault.arg.and_then(|i| args.get(i).copied()).unwrap_or(site),
                 &fault.kind,
                 fault.message,
-            )
+            ).with_hint(fault.hint)
         })
     }
     /// Predicate execution failures are distinct from an ordinary rejected value.
@@ -298,7 +298,12 @@ impl Evaluator {
                         builtins::apply(name, args, &mut pred)
                     }
                 })
-                .map_err(|f| {
+                .map_err(|mut f| {
+                    // Name the argument a type failure rejects; content failures (a parse position)
+                    // and raised payloads keep their exact message.
+                    if let ("type", Some(i), None, None) = (f.kind.as_str(), f.arg, &f.data, &f.cause) {
+                        f.message = format!("`{name}` argument {}: {}", i + 1, f.message);
+                    }
                     let mut nodes = operation.nodes.clone();
                     if matches!(name.as_str(), "is" | "violations" | "expect") && f.arg == Some(1) {
                         if let Some(node) = nodes.get_mut(1) { *node = self.declaration_node(*node); }

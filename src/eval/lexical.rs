@@ -152,6 +152,15 @@ impl Evaluator {
             .collect()
     }
 
+    /// An `unbound` error for `name` at `id`; a missing member below a bound prefix is more
+    /// specific than the static name hint.
+    pub(super) fn unbound(&self, id: NodeId, name: &str, actor: bool) -> HelixError {
+        let mut error = self.graph().unbound(id, name, actor);
+        if let Some(hint) = self.unresolved_hint(id, name) {
+            error.hint = Some(hint);
+        }
+        self.phased(error)
+    }
     pub(super) fn resolve(&self, from: NodeId, name: &str) -> Option<Binding> {
         // A computed member captures its base expression. The full name remains
         // the free-binding key, so equality retains both code and member identity.
@@ -168,32 +177,59 @@ impl Evaluator {
     }
     /// The binding and, for a parameter, the frame (function node, birth) it was read from.
     fn resolve_frame(&self, from: NodeId, name: &str) -> Option<(Resolution, Option<(NodeId, usize)>)> {
+        self.walk(from, name, false).ok()
+    }
+    /// Why `name` does not resolve from `from`: the missing member below a bound written prefix,
+    /// or `None` when nothing in the name is bound.
+    pub(super) fn unresolved_hint(&self, from: NodeId, name: &str) -> Option<String> {
+        self.walk(from, name, true).err().flatten()
+    }
+    /// Resolve `name` from `from`; a failure carries the missing-member hint only when `explain`
+    /// asks for it, since ordinary resolution misses are not errors.
+    fn walk(&self, from: NodeId, name: &str, explain: bool) -> Result<(Resolution, Option<(NodeId, usize)>), Option<String>> {
         if let Some((binding, frame)) = self.resolve_name(from, name) {
-            return Some((Resolution { binding, members: Vec::new() }, frame));
+            return Ok((Resolution { binding, members: Vec::new() }, frame));
         }
-        let (head, rest) = name.split_once('.')?;
-        let (mut binding, frame) = self.resolve_name(from, head)?;
+        let (head, rest) = name.split_once('.').ok_or(None)?;
+        let (mut binding, frame) = self.resolve_site(self.graph().root_site(from, head)).ok_or(None)?;
         let parts = rest.split('.').collect::<Vec<_>>();
+        // `name[..end]` is the written prefix whose binding is `binding`.
+        let mut end = head.len();
         for (index, part) in parts.iter().enumerate() {
+            let missing = |found: &dyn Fn() -> Result<Vec<String>, &'static str>| {
+                Err(explain.then(|| crate::graph::missing_member(&name[..end], found(), part)))
+            };
             binding = match binding {
                 Binding::Node(node) => {
                     let node = self.program.modules.root_of(node).unwrap_or(node);
                     let Syntax::Mapping(entries) = self.graph().syntax(node) else {
-                        return Some((Resolution {
+                        return Ok((Resolution {
                             binding: Binding::Node(node),
                             members: parts[index..].iter().map(|s| (*s).to_string()).collect(),
                         }, frame));
                     };
-                    Binding::Node(entries.iter().find(|(k, _)| k == part)?.1)
+                    match entries.iter().find(|(k, _)| k == part) {
+                        Some((_, id)) => Binding::Node(*id),
+                        None => return missing(&|| Ok(entries.iter().map(|(k, _)| k.clone()).collect())),
+                    }
                 }
-                Binding::Value(Value::Hash(map)) => Binding::Value(map.get(&s(part))?.clone()),
-                _ => return None,
+                Binding::Value(value) => match &value {
+                    Value::Hash(map) => match map.get(&s(part)) {
+                        Some(member) => Binding::Value(member.clone()),
+                        None => return missing(&|| crate::graph::members_of(&value)),
+                    },
+                    other => return missing(&|| crate::graph::members_of(other)),
+                },
             };
+            end += 1 + part.len();
         }
-        Some((Resolution { binding, members: Vec::new() }, frame))
+        Ok((Resolution { binding, members: Vec::new() }, frame))
     }
     fn resolve_name(&self, from: NodeId, name: &str) -> Option<(Binding, Option<(NodeId, usize)>)> {
-        Some(match self.graph().lexical_site(from, name)? {
+        self.resolve_site(self.graph().lexical_site(from, name))
+    }
+    fn resolve_site(&self, site: Option<Site>) -> Option<(Binding, Option<(NodeId, usize)>)> {
+        Some(match site? {
             Site::Entry(node) => (Binding::Node(node), None),
             Site::Parameter(function, index) => {
                 let frame = self.environment.iter().rev().find(|f| f.function == function)?;

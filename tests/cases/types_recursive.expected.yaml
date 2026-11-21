@@ -10,7 +10,7 @@ root:
       actual_present: true
       at: /
       expected: "integer | list of t"
-      message: "expected integer | list of t, got list"
+      message: "expected integer | list of t, got list [1, [\"x\"]]"
       rule: type
   empty_name: type
   literal_coverage: true
@@ -106,8 +106,8 @@ root:
           type: list
       type: union
     type: rec
-  unbound: "type variable `t` is not bound by an enclosing `rec`"
-  unguarded: "type variable `t` is unguarded: it must sit under a list, map, tuple, record or function"
+  unbound: "`is` argument 2: type variable `t` is not bound by an enclosing `rec`"
+  unguarded: "`rec` argument 2: type variable `t` is unguarded: it must sit under a list, map, tuple, record or function"
   uninhabited:
     name: "n"
     of:

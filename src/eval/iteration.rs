@@ -46,7 +46,7 @@ impl Evaluator {
         match iteration.name.as_str() {
             "map" => iteration.output.push(value),
             "filter" => {
-                if self.truth(&value, iteration.args[0])? {
+                if self.truth(&value, iteration.args[0], "`filter` predicate result")? {
                     iteration.output.push(item);
                 }
             }
@@ -60,7 +60,7 @@ impl Evaluator {
 
     pub(super) fn until_test(&mut self, iteration: Iteration) -> Result<(), HelixError> {
         let verdict = self.value();
-        if self.truth(&verdict, iteration.args[0])? {
+        if self.truth(&verdict, iteration.args[0], "`until` test result")? {
             self.finish(iteration.state);
         } else {
             let callback = iteration.args[1];

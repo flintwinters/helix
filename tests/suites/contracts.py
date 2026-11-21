@@ -147,9 +147,18 @@ def cli(h):
     for args in [(), ("unknown",), ("unknown", "--help"), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
         result = h.helix(*args)
         assert result.returncode == 2 and not result.stdout and result.stderr, (args, result)
-    for command in ("run", "check", "fmt", "step", "trace", "inspect", "watch", "repl", "lsp", "schema", "completion"):
+    for command in ("run", "check", "fmt", "step", "trace", "inspect", "watch", "repl", "lsp", "schema"):
         help_result = h.helix(command, "--help")
         assert help_result.returncode == 0 and "usage:" in help_result.stdout and not help_result.stderr
+        # Per-command help names only that command's forms.
+        assert all(line.split()[1] == command for line in help_result.stdout.replace("usage:", "").splitlines()
+                   if line.strip().startswith("helix ")), help_result.stdout
+    misspelled = h.helix("rn", "program.yaml")
+    assert misspelled.returncode == 2 and "did you mean `run`?" in misspelled.stderr, misspelled
+    std_catalog(h)
+    help_catalog(h)
+    docs_catalog(h)
+    builtin_catalog(h)
     missing = h.helix("run", "runtime/definitely-missing-helix-input.yaml")
     assert missing.returncode == 2 and not missing.stdout and "cannot read" in missing.stderr
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="cli-") as directory:
@@ -162,6 +171,111 @@ def cli(h):
                 assert file.returncode == stdin.returncode == code
                 assert file.stdout == stdin.stdout and not file.stderr and not stdin.stderr
                 assert h.malformed_state(file.stdout, code) is None
+
+
+def std_catalog(h):
+    """`helix std` is browsed in levels: modules, one module's signatures, one export's source."""
+    listing = h.helix("std", "--json")
+    assert listing.returncode == 0 and not listing.stderr, listing
+    modules = [row["module"].removeprefix("std:") for row in json.loads(listing.stdout)]
+    assert sorted(modules) == sorted(path.stem for path in (h.root / "std").glob("*.yaml")), modules
+    for module in modules:
+        index = h.helix("std", module, "--json")
+        assert index.returncode == 0 and not index.stderr, (module, index)
+        exports = json.loads(index.stdout)["exports"]
+        assert exports and all(e["signature"].startswith(e["name"]) for e in exports), (module, exports)
+        whole = (h.root / "std" / f"{module}.yaml").read_text()
+        for export in dict.fromkeys((exports[0]["name"], exports[-1]["name"])):
+            shown = h.helix("std", f"std:{module}.{export}", "--json")
+            assert shown.returncode == 0 and not shown.stderr, (module, export, shown)
+            source = json.loads(shown.stdout)["source"]
+            assert any(line.startswith(f"{export}: ") or line == f"{export}:" for line in source.splitlines()), source
+            # A map module's export is its written slice; a let-built module's is emitted canonically.
+            written = not next(line for line in whole.splitlines() if not line.startswith("#")).startswith("!call")
+            assert not written or source in whole, (module, export, source)
+        if written:
+            assert whole.rstrip("\n").endswith(source), (module, "the last export runs to the end of the module")
+    text = h.helix("std", "list")
+    assert text.returncode == 0 and "find(" in text.stdout and "`helix std list.EXPORT`" in text.stdout, text
+    one = h.helix("std", "list.find")
+    assert one.returncode == 0 and one.stdout.endswith("\n") and "import: `list: !call [import, 'std:list']`" in one.stdout
+    for args, hint in [(("std", "lst"), "did you mean `list`?"), (("std", "list.fnd"), "did you mean `find`?")]:
+        result = h.helix(*args)
+        assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
+
+
+def help_catalog(h):
+    """One command table answers `--help --json`, `help CMD --json` and `CMD --help --json`."""
+    catalog = h.helix("--help", "--json")
+    assert catalog.returncode == 0 and not catalog.stderr, catalog
+    commands = json.loads(catalog.stdout)["commands"]
+    assert {"run", "check", "docs", "builtins", "std", "help"} <= {c["command"] for c in commands}, commands
+    for entry in commands:
+        for args in (("help", entry["command"], "--json"), (entry["command"], "--help", "--json")):
+            shown = h.helix(*args)
+            assert shown.returncode == 0 and json.loads(shown.stdout) == entry, (args, shown)
+        assert all(form["usage"].split()[1] == entry["command"] for form in entry["forms"]), entry
+    for args, hint in [(("help", "rn"), "did you mean `run`?"), (("help", "run", "extra"), "usage: helix help"),
+                       (("help", "get"), "see `helix builtins get`"), (("get",), "see `helix builtins get`")]:
+        result = h.helix(*args)
+        assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
+
+
+def docs_catalog(h):
+    """`helix docs` navigates the embedded references: documents, a section tree, one section
+    whose text is the written source slice."""
+    listing = h.helix("docs", "--json")
+    assert listing.returncode == 0 and not listing.stderr, listing
+    documents = json.loads(listing.stdout)
+    assert {d["file"] for d in documents} == {"LANGUAGE.md", "LIBRARY.md", "HOST.md"}, documents
+    for document in documents:
+        written = (h.root / document["file"]).read_text()
+        assert document["lines"] == len(written.splitlines()), document
+        tree = json.loads(h.helix("docs", document["document"], "--json").stdout)
+        sections = tree["sections"]
+        assert len(sections) == document["sections"] and len({s["section"] for s in sections}) == len(sections), tree
+        assert all(s["parent"] in {None, *(p["section"] for p in sections)} for s in sections), sections
+        for section in sections:
+            shown = h.helix("docs", document["document"], section["section"], "--json")
+            assert shown.returncode == 0 and not shown.stderr, (section, shown)
+            text = json.loads(shown.stdout)["text"].rstrip("\n")
+            lines = written.splitlines()[section["line"] - 1:]
+            assert lines[0] == "#" * section["level"] + " " + section["title"], (section, lines[0])
+            assert "\n".join(lines).startswith(text), (section, text[:200])
+    text = h.helix("docs", "host", "host-effects-and-explicit-grants")
+    assert text.returncode == 0 and text.stdout.startswith("## Host effects"), text
+    assert "  ssh-remote-commands (" in text.stdout and "next: `helix docs host SUBSECTION`" in text.stdout, text
+    for args, hint in [(("docs", "langauge"), "did you mean `language`?"),
+                       (("docs", "expressions"), "`helix docs language expressions`"),
+                       (("docs", "language", "buitlins"), "did you mean `builtins`?"),
+                       (("docs", "language", "types"), "names containing it: first-class-types")]:
+        result = h.helix(*args)
+        assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
+
+
+def builtin_catalog(h):
+    """`helix builtins` lists actors the static checker independently binds, with the signature
+    whose arity the checker enforces and whose call form its arity hint teaches."""
+    listing = h.helix("builtins", "--json")
+    assert listing.returncode == 0 and not listing.stderr, listing
+    builtins = json.loads(listing.stdout)
+    assert {"add", "get", "fn", "let", "raise"} <= {b["name"] for b in builtins}, builtins
+    program = "\n".join(f"b{i}: !call [{b['name']}]" for i, b in enumerate(builtins))
+    diagnostics = h.helix("check", "-", stdin=program).stdout
+    assert "unbound" not in diagnostics, diagnostics
+    for b in builtins:
+        assert b["signature"] is not None and b["summary"], b
+        if b["min"]:
+            assert f"`{b['name']}` takes" in diagnostics, (b, diagnostics)
+            assert f"write `!call [{b['name']}, {b['signature']}]`" in diagnostics, (b, diagnostics)
+    one = h.helix("builtins", "get", "--json")
+    shown = json.loads(one.stdout)
+    assert one.returncode == 0 and shown["call"].startswith("!call [get, ") and shown["mentions"], shown
+    assert all(m["document"] in {"language", "library", "host"} for m in shown["mentions"]), shown
+    for args, hint in [(("builtins", "gett"), "did you mean `get`?"),
+                       (("builtins", "find"), "exported by std:list: see `helix std list.find`")]:
+        result = h.helix(*args)
+        assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
 
 
 def expression(rng, depth):

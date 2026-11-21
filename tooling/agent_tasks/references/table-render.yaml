@@ -1,0 +1,32 @@
+l: !call [import, std:list]
+m: !call [import, std:math]
+t: !call [import, std:text]
+repeat: !call [fn, [char, count], !call [until, !call [fn, [s], !call [ge, !call [len, !ref s], !ref count]], !call [fn, [s], !call [concat, !ref s, !ref char]], ""]]
+measure: !call
+  - fn
+  - [lines]
+  - !call
+    - fold
+    - !call [fn, [acc, row], !call [map, !call [fn, [pair], !call [m.max, !call [get, !ref pair, 0], !call [len, !call [get, !ref pair, 1]]]], !call [l.zip, !ref acc, !ref row]]]
+    - !call [map, !call [fn, [cell], 0], !call [get, !ref lines, 0]]
+    - !ref lines
+line: !call
+  - fn
+  - [widths, cells]
+  - !call
+    - t.join
+    - !call [map, !call [fn, [pair], !call [concat, !call [get, !ref pair, 1], !call [repeat, " ", !call [sub, !call [get, !ref pair, 0], !call [len, !call [get, !ref pair, 1]]]]]], !call [l.zip, !ref widths, !ref cells]]
+    - " | "
+render: !call
+  - fn
+  - [widths, lines]
+  - !call
+    - concat
+    - !call [list, !call [line, !ref widths, !call [get, !ref lines, 0]], !call [t.join, !call [map, !call [fn, [w], !call [repeat, "-", !ref w]], !ref widths], "-+-"]]
+    - !call [map, !call [fn, [cells], !call [line, !ref widths, !ref cells]], !call [slice, !ref lines, 1, !call [len, !ref lines]]]
+solve: !call
+  - fn
+  - [input]
+  - !call
+    - !call [fn, [lines], !call [render, !call [measure, !ref lines], !ref lines]]
+    - !call [concat, !call [list, !call [get, !ref input, columns]], !call [get, !ref input, rows]]

@@ -1,0 +1,35 @@
+t: !call [import, std:text]
+group: !call [fn, [found, i], !call [get, !call [get, !call [get, !call [get, !ref found, 0], captures], !ref i], text]]
+step: !call
+  - fn
+  - [state, line]
+  - !call
+    - let
+    - section: !call [get, !ref state, section]
+      sections: !call [get, !ref state, sections]
+      header: !call [regex_find, '^\[(.*)\]$', !ref line]
+      pair: !call [regex_find, '^([^=]*)=(.*)$', !ref line]
+    - !call
+      - cond
+      - !call [gt, !call [len, !call [regex_find, '^[;#]', !ref line]], 0]
+      - !ref state
+      - !call [gt, !call [len, !ref header], 0]
+      - !call
+        - let
+        - name: !call [group, !ref header, 1]
+        - !call [dict, section, !ref name, sections, !call [set, !ref sections, !ref name, !call [get, !ref sections, !ref name, {}]]]
+      - !call [gt, !call [len, !ref pair], 0]
+      - !call
+        - set
+        - !ref state
+        - sections
+        - !call
+          - set
+          - !ref sections
+          - !ref section
+          - !call [set, !call [get, !ref sections, !ref section, {}], !call [group, !ref pair, 1], !call [group, !ref pair, 2]]
+      - !ref state
+solve: !call
+  - fn
+  - [source]
+  - !call [get, !call [fold, !ref step, {section: "", sections: {}}, !call [t.split, !ref source, "\n"]], sections]

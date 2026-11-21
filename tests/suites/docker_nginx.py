@@ -172,7 +172,7 @@ class Docker:
         context.mkdir()
         for name in ("Cargo.toml", "Cargo.lock"):
             shutil.copy2(self.root / name, context / name)
-        for name in ("src", "std", "completions", "editor", "tests/programs", f"tests/fixtures/{self.fixture}"):
+        for name in ("src", "std", "editor", "tests/programs", f"tests/fixtures/{self.fixture}"):
             shutil.copytree(self.root / name, context / name)
         self.command("build", "--force-rm", "--platform", VERSIONS["platform"], "--label", f"{LABEL}={self.run_id}",
                      "--build-arg", "HELIX_BUILDER_IMAGE=" + VERSIONS["builder"],

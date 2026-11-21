@@ -36,32 +36,14 @@ fn analyze(source: &str) -> (Vec<Yaml>, Vec<Yaml>) {
                 let actor = graph.form(id);
                 if let Some(name) = actor {
                     if crate::builtins::arity(name).is_none() && graph.lexical_base(id, name).is_none() {
-                        errors.push(graph.error(items[0], "unbound", format!("unbound actor `{name}`"))
+                        errors.push(graph.unbound(items[0], name, true)
                             .to_value().plain_yaml().unwrap());
                     }
                 }
-                if let Some((name, (min, max))) =
-                    actor.and_then(|name| crate::builtins::arity(name).map(|arity| (name, arity)))
+                if let Some((message, hint)) =
+                    actor.and_then(crate::builtins::descriptor).and_then(|found| found.misfit(items.len() - 1))
                 {
-                    let count = items.len() - 1;
-                    if count < min || max.is_some_and(|max| count > max) {
-                        let expected = match max {
-                            Some(max) if min == max => min.to_string(),
-                            Some(max) => format!("{min} to {max}"),
-                            None => format!("at least {min}"),
-                        };
-                        errors.push(
-                            graph
-                                .error(
-                                    id,
-                                    "arity",
-                                    format!("`{name}` takes {expected} arguments, got {count}"),
-                                )
-                                .to_value()
-                                .plain_yaml()
-                                .unwrap(),
-                        );
-                    }
+                    errors.push(graph.error(id, "arity", message).with_hint(Some(hint)).to_value().plain_yaml().unwrap());
                 }
                 // Parameter declarations are syntax, not calls. Annotations and the body
                 // are still inspected, including bodies that will never be invoked.
@@ -89,7 +71,7 @@ fn analyze(source: &str) -> (Vec<Yaml>, Vec<Yaml>) {
             crate::graph::Syntax::Reference(name)
                 if !crate::builtins::is_primitive(name) && graph.lexical_base(id, name).is_none() =>
             {
-                errors.push(graph.error(id, "unbound", format!("unbound symbol `{name}`"))
+                errors.push(graph.unbound(id, name, false)
                     .to_value().plain_yaml().unwrap());
             }
             crate::graph::Syntax::Invalid(message) => errors.push(

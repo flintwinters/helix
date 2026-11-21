@@ -10,13 +10,13 @@ root:
       actual_present: true
       at: /b/0/x
       expected: integer
-      message: "expected integer, got boolean"
+      message: "expected integer, got boolean false"
       rule: type
     - actual: 1
       actual_present: true
       at: /b/0/y
       expected: boolean
-      message: "expected boolean, got integer"
+      message: "expected boolean, got integer 1"
       rule: type
     - actual: 0
       actual_present: true
@@ -34,19 +34,19 @@ root:
       actual_present: true
       at: /b/1/y
       expected: boolean
-      message: "expected boolean, got integer"
+      message: "expected boolean, got integer 1"
       rule: type
     - actual: false
       actual_present: true
       at: /z/a
       expected: integer
-      message: "expected integer, got boolean"
+      message: "expected integer, got boolean false"
       rule: type
     - actual: false
       actual_present: true
       at: /z/z
       expected: integer
-      message: "expected integer, got boolean"
+      message: "expected integer, got boolean false"
       rule: type
     - actual: ~
       actual_present: true
@@ -65,7 +65,7 @@ root:
       actual_present: true
       at: /
       expected: record
-      message: "expected record, got list"
+      message: "expected record, got list []"
       rule: type
   union:
     - actual: ~

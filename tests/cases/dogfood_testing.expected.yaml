@@ -2185,7 +2185,7 @@ root:
           column: 30
           kind: type
           line: 299
-          message: "expected boolean, got integer"
+          message: "`assert` argument 1: expected boolean, got integer 1"
           path: "/$call/1/self_test/$call/1/3/run/$call/2/$call/1"
           reference:
             - "$call"
@@ -3253,9 +3253,10 @@ root:
         path: "/capture/$call/2/$call/1/$call/4/$call/1"
     column: 52
     file: "std:test"
+    hint: "members: name; pass a default as the third argument to tolerate absence"
     kind: missing
     line: 22
-    message: "no key `run`"
+    message: "map has no key `run`"
     path: "/case/$call/2/$call/1/$call/1/$call/1/$call/2"
     reference:
       - case
@@ -3450,7 +3451,7 @@ root:
                   column: 30
                   kind: type
                   line: 299
-                  message: "expected boolean, got integer"
+                  message: "`assert` argument 1: expected boolean, got integer 1"
                   path: "/$call/1/self_test/$call/1/3/run/$call/2/$call/1"
                   reference:
                     - "$call"
@@ -3797,7 +3798,7 @@ root:
           column: 30
           kind: type
           line: 299
-          message: "expected boolean, got integer"
+          message: "`assert` argument 1: expected boolean, got integer 1"
           path: "/$call/1/self_test/$call/1/3/run/$call/2/$call/1"
           reference:
             - "$call"

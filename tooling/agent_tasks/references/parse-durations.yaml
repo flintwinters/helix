@@ -1,0 +1,27 @@
+scales: [3600, 60, 1]
+seconds: !call
+  - fn
+  - [source]
+  - !call
+    - let
+    - found: !call [regex_find, '^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$', !ref source]
+    - !call
+      - if
+      - !call [or, !call [eq, !ref source, ""], !call [eq, !call [len, !ref found], 0]]
+      - null
+      - !call
+        - fold
+        - !call
+          - fn
+          - [total, i]
+          - !call
+            - let
+            - part: !call [get, !call [get, !call [get, !ref found, 0], captures], !call [add, !ref i, 1]]
+            - !call
+              - if
+              - !call [eq, !ref part, null]
+              - !ref total
+              - !call [add, !ref total, !call [mul, !call [int, !call [get, !ref part, text]], !call [get, !ref scales, !ref i]]]
+        - 0
+        - [0, 1, 2]
+solve: !call [fn, [values], !call [map, !ref seconds, !ref values]]

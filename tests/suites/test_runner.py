@@ -269,20 +269,21 @@ def verify_standard_library_boundary(h):
         sources = {'alpha': 'answer: 42\n', 'beta': 'answer: 43\n'}
         for name, source in sources.items():
             (root / 'std' / f'{name}.yaml').write_text(source)
-        catalog = 'std:alpha\nstd:beta\n'
-        unknown = 'unknown standard module `unknown`; available: alpha, beta\n'
-        responses = {('std',): (0, catalog, ''),
-                     **{('std', name): (0, source, '') for name, source in sources.items()},
+        catalog = '[{"module":"std:alpha","summary":""},{"module":"std:beta","summary":""}]\n'
+        unknown = 'unknown standard module `unknown`; list modules with `helix std`\n'
+        responses = {('std', '--json'): (0, catalog, ''),
+                     **{('std', name, '--source'): (0, source, '') for name, source in sources.items()},
                      ('std', 'unknown'): (2, '', unknown)}
         scenarios = [
-            (('std',), (0, catalog, 'unexpected discovery stderr\n')),
-            (('std', 'alpha'), (0, sources['alpha'], 'unexpected source stderr\n')),
-            (('std', 'alpha'), (0, 'changed source\n', '')),
+            (('std', '--json'), (0, catalog, 'unexpected discovery stderr\n')),
+            (('std', '--json'), (0, 'std:alpha\nstd:beta\n', '')),
+            (('std', 'alpha', '--source'), (0, sources['alpha'], 'unexpected source stderr\n')),
+            (('std', 'alpha', '--source'), (0, 'changed source\n', '')),
             (('std', 'unknown'), (2, 'bogus source on stdout\n', unknown)),
             (('std', 'unknown'), (2, '', '')),
             (('std', 'unknown'), (2, '', 'unrelated host diagnostic\n')),
-            (('std', 'alpha'), (-11, 'partial source\n', 'crash detail\n')),
-            (('std',), 'timeout'),
+            (('std', 'alpha', '--source'), (-11, 'partial source\n', 'crash detail\n')),
+            (('std', '--json'), 'timeout'),
         ]
         for invocation, damaged in scenarios:
             expected_output = []
@@ -306,19 +307,20 @@ def verify_standard_library_boundary(h):
             assert f'exit: {code}' in diagnostic, diagnostic
             recipe = next(line.removeprefix('reproduce: ') for line in diagnostic.splitlines()
                           if line.startswith('reproduce: '))
-            assert shlex.split(recipe) == ['./manage.py', 'inspect', *invocation], recipe
+            assert shlex.split(recipe) == ['./manage.py', 'runtime', 'cli', *invocation], recipe
             evidence = root / next(line.removeprefix('evidence: ') for line in diagnostic.splitlines()
                                    if line.startswith('evidence: '))
             assert (evidence / 'actual.yaml').read_text() == stdout
             assert (evidence / 'stderr.txt').read_text() == stderr
-            assert (evidence / 'expected.yaml').read_text() == responses[invocation][1]
+            if invocation != ('std', '--json'):
+                assert (evidence / 'expected.yaml').read_text() == responses[invocation][1]
             assert all((root / 'std' / f'{name}.yaml').read_text() == source for name, source in sources.items())
 
         # Execute the final emitted catalog recipe without the injected timeout.
         # The current checkout, rather than the synthetic corpus, supplies modules.
         replayed = h.process_runner(shlex.split(recipe), cwd=h.root, capture_output=True,
                                     text=True, timeout=120)
-        direct = h.helix('std')
+        direct = h.helix('std', '--json')
         assert (replayed.returncode, replayed.stdout, replayed.stderr) == (
             direct.returncode, direct.stdout, direct.stderr), replayed
 

@@ -1,0 +1,3 @@
+l: !call [import, std:list]
+t: !call [import, std:text]
+solve: !call [fn, [source], !call [t.join, !call [l.reverse, !call [t.split, !ref source, " "]], " "]]

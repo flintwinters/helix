@@ -6,6 +6,16 @@ milestones, not stable releases; compatibility boundaries live in
 
 ## Current development
 
+- Errors carry an optional advisory `hint` derived from the builtin registry,
+  lexical scope, standard-module exports and reached map members: builtins used as
+  values, unimported std exports, misspelled names and members, module maps used as
+  call actors and unsupported tags such as `!if`. Messages name the rejected tag or
+  actor. Executable snapshots move to version 3; versions 1–2 migrate with no hint.
+  Type failures now show a bounded excerpt of the rejected value and name the builtin
+  argument or form operand; arity failures name the parameters; `get` names the
+  missing key or list length; YAML parse failures hint at their structural cause;
+  LSP diagnostics and `try`-caught values carry the hint.
+
 - `std:linux` packages form an installer layer keyed by manager: configuration nests
   `packages: {apt: {...}}` and ids are `package:MANAGER:NAME`. `apt` is the only
   defined and Docker-qualified manager; others need their own workload and fixture.
@@ -62,5 +72,5 @@ milestones, not stable releases; compatibility boundaries live in
 - Caller-authorized effects provide file/stream access, local commands, HTTP,
   environment, time and randomness. Pending effects and interruption preserve
   in-memory continuations; saved inspection graphs are not executable snapshots.
-- Imports, pure error recovery, stepping, inspection, REPL, formatting, watch,
-  completion and LSP support daily development through `manage.py`.
+- Imports, pure error recovery, stepping, inspection, REPL, formatting, watch
+  and LSP support daily development through `manage.py`.

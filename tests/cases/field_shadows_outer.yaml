@@ -1,0 +1,10 @@
+# A field's own value names the enclosing binding: building a record from same-named
+# parameters needs no renaming, and a dotted root still reads sibling fields.
+!call
+  - let
+  - point: !call [fn, [x, y], {x: !ref x, y: !call [add, !ref y, 1]}]
+    fields:
+      base: 2
+      derived: !call [add, !ref fields.base, 1]
+  - point: !call [point, 3, 4]
+    fields: !ref fields

@@ -16,7 +16,11 @@ def verify(h):
     assert parse(['agent-bench', 'run']).model == 'openai/gpt-6.1-luna'
     assert parse(['agent-bench', 'run']).trials == 10
     assert parse(['agent-bench', 'run']).jobs == 4
-    assert len(TASKS) == 5
+    assert len(TASKS) == 55
+    # Prompt-visible examples must agree with the hidden oracles they illustrate.
+    for name, definition in TASKS.items():
+        example = definition['example']
+        assert bench.same(oracle(name, example['input']), example['output']), name
     assert oracle('stable-unique', ['b', '', 'b', '雪', '']) == ['b', '', '雪']
     assert oracle('dependency-plan', {'z': [], 'a': ['z'], 'b': []}) == {
         'order': ['b', 'z', 'a'], 'pending': {}, 'missing': [], 'status': 'finished'}
@@ -31,6 +35,11 @@ def verify(h):
         {'category': 'zero', 'amount': -4, 'active': True},
     ]) == {'zero': 0}
     assert list(inputs('word-counts')) == list(inputs('word-counts'))
+    assert oracle('kv-config-parse', '=v\n k = v \n#x=1\n;y=2') == {'': 'v', ' k ': ' v ', ';y': '2'}
+    assert oracle('host-range-expand', ['n[08:10]', 'db']) == ['n08', 'n09', 'n10', 'db']
+    assert oracle('ledger-balances', [{'op': 'transfer', 'from': 'a', 'to': 'a', 'amount': 1}]) == {
+        'balances': {}, 'rejected': [0]}
+    assert oracle('disk-usage-rollup', [{'path': '/f', 'bytes': 3}]) == {'/': 3}
     assert bench.same({'a': [1]}, {'a': [1]})
     assert not bench.same(True, 1) and not bench.same(1.0, 1)
     assert not bench.same({'x': True}, {'x': 1})
@@ -124,6 +133,14 @@ def verify_cli(h, directory):
     with patch.object(usage_log, 'append', side_effect=lambda root, binary, record: records.append(record)):
         rejected = execute(h, target, {'args': ['perform', '--allow-read', '/']}, identity, 2)
         assert rejected['exit_code'] == 2 and records[-1]['caller_role'] == 'benchmark-model'
+        for index, args in enumerate((['help', 'run', '--json'], ['docs', 'language', 'builtins'],
+                                      ['builtins', 'get'], ['std', 'list', '--source']), 10):
+            looked = execute(h, target, {'args': args}, identity, index)
+            assert looked['exit_code'] == 0 and looked['executed_argv'] == args and looked['stdout'], looked
+        for index, args in enumerate((['docs', '../secret.md'], ['builtins', 'get', 'map'],
+                                      ['help', '--source'], ['docs', 'language', '--evaluate']), 20):
+            refused = execute(h, target, {'args': args}, identity, index)
+            assert refused['exit_code'] == 2 and refused['executed_argv'] == [], refused
         denied = execute(h, target, {'args': ['run', '-'], 'stdin': '!call [import, ../.env]'}, identity, 3)
         assert denied['exit_code'] == 1 and records[-1]['model'] == 'fake/luna'
         target = directory / 'agent-workspace'
@@ -176,6 +193,9 @@ def verify_saved_submission(h, target, identity):
     for path in ('../.env', '/etc/passwd', 'public_test.yaml', 'LANGUAGE.md'):
         assert 'error' in call('workspace', {'action': 'write', 'path': path, 'content': '42'})
     assert 'error' in call('workspace', {'action': 'read', 'path': '../.env'})
+    for misrouted in ({'args': ['run', 'x.yaml']}, {'action': 'builtins'}, {'action': 'run', 'path': 'x.yaml'}):
+        error = call('workspace', misrouted)['error']
+        assert 'call the helix tool' in error, (misrouted, error)
     source = TASKS['sum-squares']['reference']
     call('workspace', {'action': 'write', 'path': 'candidate.yaml', 'content': source})
     assert call('helix', {'args': ['check', 'candidate.yaml']})['exit_code'] == 0
@@ -211,3 +231,18 @@ def verify_concurrent_generation(h, directory):
     assert report['summary']['sum-squares']['successes'] == 2, report
     saved = json.loads((Path(args.directory) / 'report.json').read_text())
     assert saved['phase'] == 'complete'
+    # A retry regenerates exactly the recorded attempts that never submitted, under their trial numbers.
+    failed = Path(args.directory) / 'sum-squares/trial-002/result.json'
+    failed.write_text(json.dumps({**json.loads(failed.read_text()), 'error': 'Model turn budget exhausted before a final program'}))
+    assert bench.retry_plan(args.directory) == [('sum-squares', 2)]
+    assert bench.retry_plan(args.directory, ['sum-squares']) == [('sum-squares', 2)]
+    retry = SimpleNamespace(**{**vars(args), 'retry': args.directory, 'directory': str(directory / 'retry'), 'jobs': 1})
+    barrier = threading.Barrier(1)  # one retried attempt: generation needs no partner
+    with patch.object(bench, 'generate', generated), \
+         patch.object(bench, 'request', return_value={'data': [{'id': 'fake/model'}]}), \
+         patch.object(bench, 'api_key', return_value='fake'), contextlib.redirect_stderr(io.StringIO()):
+        report = bench.run(h.root, retry, h)
+    assert [(row['task'], row['trial']) for row in json.loads((Path(retry.directory) / 'report.json').read_text())['rows']] == [('sum-squares', 2)]
+    manifest = json.loads((Path(retry.directory) / 'manifest.json').read_text())
+    assert manifest['retry_of'] == str(Path(args.directory).resolve()) and manifest['test_timeout_seconds'] == h.timeout
+    assert report['summary']['sum-squares']['successes'] == 1, report

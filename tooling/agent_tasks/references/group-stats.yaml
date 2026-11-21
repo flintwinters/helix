@@ -1,0 +1,34 @@
+m: !call [import, std:math]
+solve: !call
+  - fn
+  - [rows]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [result, row]
+      - !call
+        - let
+        - group: !call [get, !ref row, group]
+          value: !call [get, !ref row, value]
+          stats: !call [get, !ref result, !ref group, null]
+        - !call
+          - set
+          - !ref result
+          - !ref group
+          - !call
+            - if
+            - !call [eq, !ref stats, null]
+            - !call [dict, count, 1, min, !ref value, max, !ref value, total, !ref value]
+            - !call
+              - dict
+              - count
+              - !call [add, !call [get, !ref stats, count], 1]
+              - min
+              - !call [m.min, !call [get, !ref stats, min], !ref value]
+              - max
+              - !call [m.max, !call [get, !ref stats, max], !ref value]
+              - total
+              - !call [add, !call [get, !ref stats, total], !ref value]
+    - {}
+    - !ref rows

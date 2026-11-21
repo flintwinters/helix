@@ -3,7 +3,7 @@ error:
   file: tests/cases/modules/hermetic.yaml
   kind: type
   line: 3
-  message: "expected number, got string"
+  message: "`add` argument 1: expected number, got string \"secret\""
   path: "/leak/$call/1"
   reference:
     - leak

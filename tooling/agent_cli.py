@@ -13,8 +13,12 @@ TOOL = {
     'type': 'function',
     'function': {
         'name': 'helix',
-        'description': 'Call the Helix CLI. Allowed argv: ["--help"], ["std"] or ["std", MODULE], '
-        '["schema"], ["check", FILE], ["fmt", FILE], ["run", FILE]. FILE may be - with stdin YAML. '
+        'description': 'Call the Helix CLI. Allowed argv: ["--help"], ["help", COMMAND], '
+        '["docs"], ["docs", DOC] (its section tree), ["docs", DOC, SECTION], ["builtins"], ["builtins", NAME], '
+        '["std"], ["std", MODULE] (its signatures), '
+        '["std", "MODULE.EXPORT"] (one export\'s source), ["std", MODULE, "--source"], '
+        '["schema"], ["check", FILE], ["fmt", FILE], ["run", FILE]. Append "--json" to help, docs, builtins or std '
+        'lookups for structured output. FILE may be - with stdin YAML. '
         'Run is confined to this attempt directory with embedded std: imports and no host effect grants. '
         'Run public_test.yaml to invoke candidate.solve on the provided example. Running candidate.yaml alone only defines the function. No shell commands.',
         'parameters': {'type': 'object', 'properties': {
@@ -73,6 +77,10 @@ def fingerprint(directory):
 
 def workspace_tool(directory, payload, state):
     action = payload.get('action')
+    if action not in ('read', 'write', 'list') and (action is not None or 'args' in payload):
+        spelled = payload['args'] if isinstance(payload.get('args'), list) else [action]
+        raise ValueError(f'workspace only reads, writes and lists files (action read, write or list); '
+                         f'{json.dumps(spelled)} is a Helix CLI request: call the helix tool with args {json.dumps(spelled)}')
     if action == 'list':
         return {'files': [str(path.relative_to(working_directory(directory)))
                           for path in sorted(working_directory(directory).rglob('*')) if path.is_file()]}
@@ -126,6 +134,23 @@ def tool(ctx, directory, name, payload, identity, index, state):
     return result
 
 
+# Read-only lookups and how many names each accepts; names are identifiers, never paths.
+LOOKUPS = {'help': 1, 'docs': 2, 'builtins': 1, 'std': 1}
+
+
+def lookup(args):
+    """Whether argv is a read-only documentation lookup: `help`, `docs`, `builtins` or `std`
+    with identifier-like names, then optionally `--json` (or `--source` for one std module)."""
+    if not args or args[0] not in LOOKUPS:
+        return False
+    names, flags = args[1:], []
+    while names and names[-1].startswith('--'):
+        flags.insert(0, names.pop())
+    plain = all(name.replace('_', '').replace('-', '').replace('.', '').isalnum() for name in names)
+    allowed = (['--json'], ['--source']) if args[0] == 'std' and len(names) == 1 else (['--json'],)
+    return len(names) <= LOOKUPS[args[0]] and plain and flags in ([], *allowed)
+
+
 def execute(ctx, directory, payload, identity, index, state=None):
     """Record the model's requested CLI operation even when denied; no inherited implementer identity."""
     workspace = working_directory(directory)
@@ -138,9 +163,7 @@ def execute(ctx, directory, payload, identity, index, state=None):
     if not isinstance(args, list) or not all(isinstance(arg, str) for arg in args):
         error = 'args must be an array of strings'
         args = []
-    elif args in (['--help'], ['std'], ['schema']):
-        command = args
-    elif len(args) == 2 and args[0] == 'std' and args[1].replace('_', '').isalnum():
+    elif args in (['--help'], ['schema']) or lookup(args):
         command = args
     elif len(args) == 2 and args[0] in ('fmt', 'run', 'check'):
         try:
@@ -160,7 +183,9 @@ def execute(ctx, directory, payload, identity, index, state=None):
         except (ValueError, OSError) as failure:
             error = str(failure)
     else:
-        error = 'Unsupported CLI arguments. Use --help, std [MODULE], schema, check FILE, fmt FILE, or run FILE.'
+        error = ('Unsupported CLI arguments. Use --help, help [COMMAND], docs [DOC [SECTION]], builtins [NAME], '
+                 'std [MODULE[.EXPORT]] [--source], schema, check FILE, fmt FILE, or run FILE; '
+                 'add --json to a lookup for structured output.')
     if error:
         code, stdout, stderr = 2, '', error
     else:

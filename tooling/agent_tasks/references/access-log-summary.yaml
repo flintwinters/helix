@@ -1,0 +1,29 @@
+l: !call [import, std:list]
+words: !call [fn, [line], !call [map, !call [fn, [m], !call [get, !call [get, !call [get, !ref m, captures], 0], text]], !call [regex_find, "[^ ]+", !ref line]]]
+column: !call [fn, [rows, i], !call [map, !call [fn, [row], !call [get, !ref row, !ref i]], !ref rows]]
+ranked: !call
+  - fn
+  - [counts]
+  # keys arrive in Unicode order and sort_by is stable, so ties keep path order
+  - !call [l.sort_by, !call [keys, !ref counts], !call [fn, [a, b], !call [gt, !call [get, !ref counts, !ref a], !call [get, !ref counts, !ref b]]]]
+summarize: !call
+  - fn
+  - [fields, paths]
+  - !call
+    - dict
+    - requests
+    - !call [len, !ref fields]
+    - bytes
+    - !call [l.sum, !call [map, !call [fn, [size], !call [if, !call [eq, !ref size, "-"], 0, !call [int, !ref size]]], !call [column, !ref fields, 4]]]
+    - status_classes
+    - !call [l.frequencies, !call [map, !call [fn, [status], !call [concat, !call [slice, !ref status, 0, 1], xx]], !call [column, !ref fields, 3]]]
+    - top_paths
+    - !call [map, !call [fn, [path], !call [list, !ref path, !call [get, !ref paths, !ref path]]], !call [l.take, !call [ranked, !ref paths], 3]]
+    - unique_ips
+    - !call [len, !call [l.frequencies, !call [column, !ref fields, 0]]]
+solve: !call
+  - fn
+  - [lines]
+  - !call
+    - !call [fn, [fields], !call [summarize, !ref fields, !call [l.frequencies, !call [column, !ref fields, 2]]]]
+    - !call [map, !ref words, !ref lines]

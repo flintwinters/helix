@@ -780,7 +780,7 @@ root:
     column: 25
     kind: type
     line: 14
-    message: "expected a type, got integer"
+    message: "`list_of` argument 1: expected a type, got integer 42"
     path: "/caught_inside/$call/1/$call/1/$call/1"
     phase: type
     reference:

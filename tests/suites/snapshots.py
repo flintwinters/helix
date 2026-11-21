@@ -149,7 +149,7 @@ def verify(h):
     assert written.startswith('format: helix-execution\n'), written[:80]
     anchor = written.replace('runtime: ', 'runtime: &r ', 1)
     for forged in (anchor, written.replace('runtime: ', 'runtime: !!str ', 1), written + '---\n' + written,
-                   written.replace('version: 2', 'version: 2\nversion: 2', 1)):
+                   written.replace('version: 3', 'version: 3\nversion: 3', 1)):
         result, report = invoke('restore', forged)
         assert result.returncode == 1 and report['errors'][0]['kind'] == 'snapshot', (forged[:200], report)
 

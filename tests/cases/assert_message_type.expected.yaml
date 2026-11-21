@@ -2,7 +2,7 @@ error:
   column: 30
   kind: type
   line: 2
-  message: "expected string message, got integer"
+  message: "`assert` argument 2: expected string message, got integer 7"
   path: "/check/$call/2"
   reference:
     - check

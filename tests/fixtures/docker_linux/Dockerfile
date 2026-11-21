@@ -6,7 +6,6 @@ WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY std ./std
-COPY completions ./completions
 COPY editor/helix.schema.json ./editor/helix.schema.json
 RUN cargo build --locked --release
 

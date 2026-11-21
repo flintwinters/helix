@@ -136,7 +136,7 @@ objects:
         source: "<root>"
 root:
   checked: one is not two
-  detail: no index 9
+  detail: index 9 is out of range for a list of length 2
   first_kind: divide_by_zero
   nested: missing
   ok: 5

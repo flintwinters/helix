@@ -930,7 +930,7 @@ def verify_lsp(ctx):
     request = [
         {'id': 1, 'method': 'initialize', 'params': {}},
         {'method': 'textDocument/didOpen', 'params': {'textDocument': {
-            'uri': uri, 'version': 1, 'text': '{"$ref": "misspelled_callback"}'}}},
+            'uri': uri, 'version': 1, 'text': 'counter: 3\ny: !call [add, !ref countr, 1]'}}},
         {'id': 2, 'method': 'shutdown'},
         {'method': 'exit'},
     ]
@@ -939,8 +939,9 @@ def verify_lsp(ctx):
     assert result.returncode == 0 and not result.stderr, result
     replies = messages(result.stdout)
     diagnostic = replies[1]['params']['diagnostics'][0]
-    assert diagnostic['code'] == 'unbound' and 'misspelled_callback' in diagnostic['message'], diagnostic
-    assert diagnostic['range']['start'] == {'line': 0, 'character': 0}, diagnostic
+    # LSP has no hint field, so the correction follows the message.
+    assert diagnostic['code'] == 'unbound' and diagnostic['message'] == 'unbound symbol `countr`\nhint: did you mean `counter`?', diagnostic
+    assert diagnostic['range']['start'] == {'line': 1, 'character': 20}, diagnostic
     for bad in (b'Content-Length: 99999999\r\n\r\n', b'Content-Length: 3\r\n\r\nxx', b'Content-Length: 1\r\n\r\nx'):
         result = subprocess.run([str(ctx.binary), 'lsp'], input=bad, capture_output=True, cwd=ctx.root, timeout=ctx.timeout)
         assert result.returncode != 0 and not result.stdout, result

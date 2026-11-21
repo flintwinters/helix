@@ -1,0 +1,16 @@
+solve: !call
+  - fn
+  - [rows]
+  - !call
+    - fold
+    - !call
+      - fn
+      - [result, row]
+      - !call
+        - let
+        - region: !call [get, !ref row, region]
+          month: !call [get, !ref row, month]
+          months: !call [get, !ref result, !ref region, {}]
+        - !call [set, !ref result, !ref region, !call [set, !ref months, !ref month, !call [add, !call [get, !ref months, !ref month, 0], !call [get, !ref row, amount]]]]
+    - {}
+    - !ref rows

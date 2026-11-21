@@ -245,7 +245,7 @@ root:
     packages:
       of: string
       type: list
-  undeclared: "`typo` sets `hostnam`, which no parent or field declares"
+  undeclared: "`inherit` argument 3: `typo` sets `hostnam`, which no parent or field declares"
   web01:
     concrete: true
     fields:
@@ -329,11 +329,11 @@ root:
           actual_present: true
           at: /hostname
           expected: string
-          message: "expected string, got integer"
+          message: "expected string, got integer 5"
           rule: type
     kind: type
     line: 45
-    message: "1 misfit in the values of `bad`: /hostname: expected string, got integer"
+    message: "1 misfit in the values of `bad`: /hostname: expected string, got integer 5"
     path: "/wrong_value/$call/1"
     reference:
       - wrong_value

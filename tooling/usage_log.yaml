@@ -42,6 +42,7 @@
           - ", "
       - ")"
     json: !call [import, "std:json"]
+    # One query lists the existing columns, so a connection per column is not needed.
     log: !call
       - fn
       - [database, record]
@@ -51,37 +52,12 @@
               - list
               - !call [sqlite.execute, !ref database, !ref schema, []]
               - !call
-                  - map
+                  - migrate
+                  - !ref database
                   - !call
-                      - fn
-                      - [column]
-                      - !call
-                          - if
-                          - !call
-                              - eq
-                              - 0
-                              - !call
-                                  - get
-                                  - !call
-                                      - get
-                                      - !call
-                                          - sqlite.query
-                                          - !ref database
-                                          - "SELECT COUNT(*) AS n FROM pragma_table_info('calls') WHERE name = ?"
-                                          - [!ref column]
-                                      - 0
-                                  - "n"
-                          - !call
-                              - sqlite.execute
-                              - !ref database
-                              - !call
-                                  - concat
-                                  - "ALTER TABLE calls ADD COLUMN "
-                                  - !ref column
-                                  - " TEXT"
-                              - []
-                          - 0
-                  - !ref added
+                      - map
+                      - !call [fn, [row], !call [get, !ref row, "name"]]
+                      - !call [sqlite.query, !ref database, "SELECT name FROM pragma_table_info('calls')", []]
               - !call
                   - sqlite.execute
                   - !ref database
@@ -93,7 +69,25 @@
                           - [c]
                           - !call [get, !ref record, !ref c]
                       - !ref columns
-          - 1
+          - 2
+    migrate: !call
+      - fn
+      - [database, present]
+      - !call
+          - map
+          - !call
+              - fn
+              - [column]
+              - !call
+                  - if
+                  - !call [has, !ref present, !ref column]
+                  - 0
+                  - !call
+                      - sqlite.execute
+                      - !ref database
+                      - !call [concat, "ALTER TABLE calls ADD COLUMN ", !ref column, " TEXT"]
+                      - []
+          - !ref added
     schema: "CREATE TABLE IF NOT EXISTS calls (\n    id INTEGER PRIMARY KEY,\n    started_at TEXT NOT NULL,       -- UTC ISO-8601\n    duration_ms INTEGER,            -- NULL when interrupted before the child returned\n    command TEXT NOT NULL,          -- manage.py command, e.g. eval, run, exec, cli, perform\n    argv TEXT NOT NULL,             -- JSON array: manage.py arguments as typed\n    cwd TEXT NOT NULL,\n    exit_code INTEGER,              -- NULL when interrupted\n    program_path TEXT,              -- source file argument, if any (repository-relative)\n    program TEXT,                   -- complete inline, stdin or file source at invocation\n    program_sha256 TEXT,\n    stdin_program INTEGER NOT NULL, -- 1 when the program was read from stdin (captured in program)\n    caller_role TEXT,               -- implementer or benchmark-model (NULL for legacy rows)\n    model TEXT,                     -- exact model ID for benchmark-originated calls\n    benchmark_run TEXT,\n    benchmark_task TEXT,\n    benchmark_trial TEXT,\n    agent TEXT,                     -- HELIX_AGENT, else claude-code when CLAUDECODE is set\n    stdout TEXT,                    -- complete; NULL when a terminal or an interactive command\n    stderr TEXT                     -- complete; NULL when a terminal or an interactive command\n)\n"
     sqlite: !call [import, "std:sqlite"]
     text: !call [import, "std:text"]

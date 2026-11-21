@@ -254,18 +254,19 @@ first failures (`benchmarks/agent/`) name the failure classes to fix first.
 
 - [ ] Every rejection names the offending text (tag, name, key, field, value
   excerpt), not only its category
-- [ ] Errors carry an optional structured `hint` with the concrete correction.
+- [x] Errors carry an optional structured `hint` with the concrete correction.
   Hints derive from authoritative sources (builtin registry, lexical scope,
   standard-module exports, syntax rules), never hand-maintained lists; they are
   advisory and never change `kind`, `message` or blame
-- [ ] Unbound names suggest the nearest visible names and builtins, and the
+- [x] Unbound names suggest the nearest visible names and builtins, and the
   standard module exporting a missing member with its exact import binding; a
   builtin used as a value explains calling it or wrapping it in `fn`
-- [ ] Unsupported syntax names the supported spelling (`!if` → `!call [if, ...]`);
-  YAML parse failures point at the likely structural cause and `fmt`
-- [ ] Type, arity and contract failures state expected versus actual (bounded
+- [x] Unsupported syntax names the supported spelling (`!if` → `!call [if, ...]`);
+  YAML parse failures point at the likely structural cause (unclosed flow
+  bracket, tab indentation, unquoted `: `, misaligned keys)
+- [x] Type, arity and contract failures state expected versus actual (bounded
   value excerpt) and blame the declaration that demanded it
-- [ ] One implementation: `run`, `exec`, `check`, LSP and `try`-caught values
+- [x] One implementation: `run`, `exec`, `check`, LSP and `try`-caught values
   report the same diagnostic for the same fault
 - [ ] Text presentation shows a bounded source excerpt with a caret; JSON stays
   complete; oversized output summarizes and names the drill-down
@@ -277,7 +278,7 @@ first failures (`benchmarks/agent/`) name the failure classes to fix first.
 ## 6. Daily tooling — complete within current CLI/editor scope
 
 `run`, REPL, canonical formatter, non-executing `check`, step/trace, saved-state
-inspection, content-based watch, JSON Schema/LSP, shell completion and
+inspection, content-based watch, JSON Schema/LSP and
 `cargo install`; `std:test` supplies composable in-language assertions, comparisons
 and reports used by golden checks. Evidence: `interactive`, `inspection`, `static`, `cli`.
 

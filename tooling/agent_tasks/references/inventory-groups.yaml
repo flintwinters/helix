@@ -1,0 +1,19 @@
+solve: !call
+  - fn
+  - [hosts]
+  - !call
+    - let
+    - groups: !call
+        - fold
+        - !call
+          - fn
+          - [acc, host]
+          - !call
+            - fold
+            - !call [fn, [inner, tag], !call [set, !ref inner, !ref tag, !call [set, !call [get, !ref inner, !ref tag, {}], !call [get, !ref host, name], true]]]
+            - !ref acc
+            - !call [get, !ref host, tags]
+        - {}
+        - !ref hosts
+    # map keys come back in Unicode order, deduplicated
+    - !call [fold, !call [fn, [acc, tag], !call [set, !ref acc, !ref tag, !call [keys, !call [get, !ref groups, !ref tag]]]], {}, !call [keys, !ref groups]]

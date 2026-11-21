@@ -9,7 +9,7 @@ error:
   column: 7
   kind: arity
   line: 5
-  message: "function `/r/$call/1` takes 2 arguments, got 1"
+  message: "function `/r/$call/1` takes 2 arguments (a, b), got 1"
   path: "/r/$call/1"
   reference:
     - r

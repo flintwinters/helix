@@ -1,7 +1,6 @@
 """Interactive CLI lifecycle and installation contracts; invoked only by manage.py."""
 import os
 import queue
-import shutil
 import subprocess
 import threading
 
@@ -11,7 +10,6 @@ import yaml
 def check(ctx):
     verify_repl(ctx)
     verify_watch(ctx)
-    verify_completions(ctx)
     verify_install(ctx)
     return []
 
@@ -103,22 +101,6 @@ def verify_watch(ctx):
     missing.unlink(missing_ok=True)
     assert ctx.helix('watch', str(missing), '--iterations', '1').returncode == 2
     assert ctx.helix('watch', str(main), '--iterations', '1').returncode == 0
-
-
-def verify_completions(ctx):
-    for shell in ('bash', 'zsh', 'fish'):
-        result = ctx.helix('completion', shell)
-        assert result.returncode == 0 and not result.stderr and '@COMMANDS@' not in result.stdout, result
-        assert all(command in result.stdout for command in ('repl', 'watch', 'inspect', 'lsp', 'completion', 'perform')), result
-        if shutil.which(shell):
-            syntax = subprocess.run([shell, '-n'], input=result.stdout, text=True, capture_output=True,
-                                    cwd=ctx.root, timeout=ctx.timeout)
-            assert syntax.returncode == 0, syntax.stderr
-    assert ctx.helix('completion', 'unknown').returncode == 2
-    result = ctx.helix('completion', 'bash')
-    script = result.stdout + '\nCOMP_WORDS=(helix wa); COMP_CWORD=1; _helix_complete; printf "%s\\n" "${COMPREPLY[@]}"\n'
-    completed = subprocess.run(['bash'], input=script, capture_output=True, text=True, cwd=ctx.root, timeout=ctx.timeout)
-    assert completed.returncode == 0 and completed.stdout == 'watch\n', completed
 
 
 def verify_install(ctx):

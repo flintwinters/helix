@@ -1,0 +1,23 @@
+l: !call [import, std:list]
+# counts is a parameter, so the comparator reads a value instead of re-evaluating a binding
+top: !call
+  - fn
+  - [counts, "n"]
+  - !call
+    - map
+    - !call [fn, [word], !call [list, !ref word, !call [get, !ref counts, !ref word]]]
+    - !call
+      - l.take
+      # keys arrive in Unicode order and sort_by is stable, so ties keep word order
+      - !call [l.sort_by, !call [keys, !ref counts], !call [fn, [a, b], !call [gt, !call [get, !ref counts, !ref a], !call [get, !ref counts, !ref b]]]]
+      - !ref "n"
+solve: !call
+  - fn
+  - [input]
+  - !call
+    - top
+    - !call
+      - l.frequencies
+      - !call [map, !call [fn, [m], !call [get, !call [get, !call [get, !ref m, captures], 0], text]],
+          !call [regex_find, '[A-Za-z]+', !call [get, !ref input, text]]]
+    - !call [get, !ref input, "n"]

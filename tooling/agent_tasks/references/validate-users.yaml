@@ -1,0 +1,24 @@
+l: !call [import, std:list]
+check: !call
+  - fn
+  - [row]
+  - !call
+    - let
+    - field: !call [fn, [name], !call [get, !ref row, !ref name, null]]
+      age: !call [field, age]
+      valid: !call
+        - dict
+        - name
+        - !call [and, !call [eq, !call [type, !call [field, name]], string], !call [ne, !call [field, name], ""]]
+        - age
+        - !call [and, !call [eq, !call [type, !ref age], integer], !call [ge, !ref age, 0], !call [le, !ref age, 150]]
+        - email
+        - !call [and, !call [eq, !call [type, !call [field, email]], string], !call [gt, !call [len, !call [regex_find, '^[^@]+@[^@]+$', !call [field, email]]], 0]]
+    - !call [filter, !call [fn, [name], !call [not, !call [get, !ref valid, !ref name]]], [name, age, email]]
+solve: !call
+  - fn
+  - [rows]
+  - !call
+    - filter
+    - !call [fn, [result], !call [gt, !call [len, !call [get, !ref result, errors]], 0]]
+    - !call [map, !call [fn, [entry], !call [dict, index, !call [get, !ref entry, 0], errors, !call [check, !call [get, !ref entry, 1]]]], !call [l.enumerate, !ref rows]]

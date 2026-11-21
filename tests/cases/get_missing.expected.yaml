@@ -1,8 +1,9 @@
 error:
   column: 24
+  hint: "did you mean `a`? Otherwise pass a default as the third argument to tolerate absence"
   kind: missing
   line: 3
-  message: "no key `b`"
+  message: "map has no key `b`"
   path: "/x/$call/2"
   reference:
     - x

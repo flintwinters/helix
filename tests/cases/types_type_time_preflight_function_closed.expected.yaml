@@ -6,11 +6,11 @@ error:
         actual_present: true
         at: /port
         expected: integer
-        message: "expected integer, got string"
+        message: "expected integer, got string \"http\""
         rule: type
   kind: type
   line: 4
-  message: "1 type violation: expected integer, got string"
+  message: "1 type violation: expected integer, got string \"http\""
   path: "/bad/$call/1"
   phase: type
   reference:

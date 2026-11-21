@@ -418,6 +418,24 @@ budgets; this migration does not add observation, application or disk recovery.
 
 `permission` (a denied file import), `effect` (a host input forbidden at type time), `import` (module loading or circular dependency), `parse`, `unbound`, `type`, `predicate` (a type predicate raised or returned a non-boolean), `conflict` (incompatible class parents), `abstract` (unfilled required fields on realization), `arity`, `cycle`, `overflow`, `divide_by_zero`, `missing`, `range`, `conversion`, `unsupported`, `depth` (syntax/value, call, dependency or import nesting), `limit` (work/data/graph or iteration budgets), `assertion` (failed `assert`), plus any kind chosen by user code with `raise`.
 
+An error may carry an advisory `hint` string naming the likely correction. Hints are derived
+only from authoritative sources: the builtin registry, lexical scope, standard-module exports,
+the members of the value actually reached and the tag syntax. Examples are a builtin used as a
+value (`!ref add`), a name exported by a standard module that is not imported, a misspelled
+visible name or map member, a module map used as a call actor and an unsupported tag such as
+`!if`, a missing `get` key or index, swapped iteration operands, malformed `fn` parameters
+and the likely structural cause of a YAML parse failure (an unclosed flow bracket, tab
+indentation, an unquoted `: `, misaligned keys). `run`, `exec`, `check`, the LSP and
+`try`-caught error values all carry the same hint. A hint never changes `kind`, `message`
+or blame; match on `kind` and treat `hint` text as unstable guidance, not a contract.
+
+Messages name the offending text, such as the tag, name, call actor or key. Type failures
+state expected versus actual with a bounded excerpt of the value (`expected number, got
+string "x"`); a builtin type failure names its argument (`` `add` argument 2: ``) and a form
+names its operand (`` `if` condition: ``, `` `filter` predicate result: ``). Arity failures
+name the declared parameters. Parse messages leave the position to the error's `line` and
+`column`.
+
 ## Testing in Helix
 
 See [Testing in Helix](LIBRARY.md#testing-in-helix).
@@ -579,7 +597,7 @@ an unpromised external system still requires the existing host effect contracts.
 `./manage.py runtime snapshot program.yaml --steps 20` emits a versioned
 executable checkpoint. `./manage.py runtime restore checkpoint.json` runs it in a
 fresh process; adding `--steps N` saves another checkpoint after at most N
-transitions. block YAML is the canonical spelling written for version 2. The loader accepts that
+transitions. block YAML is the canonical spelling written for version 3. The loader accepts that
 and the JSON flow spelling earlier checkpoints used, within snapshot byte, object and
 nesting budgets; anchors, aliases and tags are refused. Mapping presentation order has no execution meaning. Existing `step`/`inspect` documents
 remain observational, and `resume` still means pure source recovery. Without
@@ -596,11 +614,12 @@ from the embedded graph. A live parameter's `environment` argument values can be
 edited; doing so branches the computation. Completed memoized work is retained,
 so editing source alone does not invalidate dependent completed work.
 
-Version 2 requires the matching runtime package version and rejects unknown
+Version 3 requires the matching runtime package version and rejects unknown
 formats, fields, references, cycles, invalid graph topology and out-of-bounds
 continuations. Compatibility fixtures live in `tests/fixtures/snapshots/`.
 Version 1 execution documents migrate with empty promise and evaluated-value
-evidence fields; their existing continuations are preserved. Ordinary inspection
+evidence fields; their existing continuations are preserved. Version 1 and 2
+documents migrate their error records with no `hint`. Ordinary inspection
 and pure recovery documents are rejected. Future incompatible schema changes require a
 version increment and an explicit migration or rejection path. Snapshot budgets
 are 32 MiB, 100,000 shared objects and 128 codec levels; these supplement existing
