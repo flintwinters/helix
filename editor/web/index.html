@@ -41,7 +41,7 @@
   <button data-cmd="check">Check</button><button data-cmd="step">Run + annotations</button><button data-cmd="fmt">Format</button>
   <span id="status"></span>
 </header>
-<main><nav id="browser"><input id="filter" placeholder="filter examples and std"></nav><textarea id="src"></textarea><pre id="out"></pre></main>
+<main><nav id="browser"><input id="filter" placeholder="filter (depth · file = import depth)"></nav><textarea id="src"></textarea><pre id="out"></pre></main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="/helix-mode.js"></script>
 <script>
@@ -66,7 +66,7 @@ fetch('/files').then(r => r.json()).then(files => {
     const box = document.createElement('details'); box.open = true;
     box.innerHTML = '<summary></summary>'; box.firstChild.textContent = group + '/';
     for (const f of files.filter(f => f.group === group)) {
-      const a = document.createElement('a'); a.textContent = f.path.slice(group.length + 1); a.title = f.path;
+      const a = document.createElement('a'); a.textContent = f.depth + ' · ' + f.path.slice(group.length + 1); a.title = f.path;
       a.onclick = async () => {
         editor.setValue(await (await fetch('/file?path=' + encodeURIComponent(f.path))).text());
         links.forEach(l => l.classList.toggle('on', l === a)); document.getElementById('out').textContent = '';

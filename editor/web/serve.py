@@ -1,13 +1,22 @@
 """Serves index.html and runs the helix CLI on posted source. Usage: python3 editor/web/serve.py [port]"""
-import http.server, json, pathlib, subprocess, sys, urllib.parse
+import http.server, json, re, pathlib, subprocess, sys, urllib.parse
 HERE = pathlib.Path(__file__).parent
 BIN = HERE.parents[1] / 'target' / 'debug' / 'helix'
 ROOT = HERE.parents[1]
 LIBRARIES = ('examples', 'std')  # the only trees the browser may list and read
 
+IMPORT = re.compile(r'import,\s*"?std:(\w+)')
+
+def depth(path, seen=()):
+    """Import depth under std/: 0 for self-contained files, else 1 + the deepest imported module."""
+    deps = {m for m in IMPORT.findall(path.read_text()) if (ROOT / 'std' / f'{m}.yaml') not in seen + (path,)}
+    return 1 + max(depth(ROOT / 'std' / f'{m}.yaml', seen + (path,)) for m in deps) if deps else 0
+
 def library_files():
-    return [{'group': top, 'path': f.relative_to(ROOT).as_posix()}
-            for top in LIBRARIES for f in sorted((ROOT / top).rglob('*.yaml'))]
+    """Learning order within each tree: fewest transitive imports first, then shortest."""
+    def key(f): return depth(f), len(f.read_text().splitlines()), f.name
+    return [{'group': top, 'path': f.relative_to(ROOT).as_posix(), 'depth': depth(f)}
+            for top in LIBRARIES for f in sorted((ROOT / top).rglob('*.yaml'), key=key)]
 
 COMMANDS = {'run': ['run'], 'check': ['check', '--evaluate'], 'fmt': ['fmt'], 'step': ['run', '--annotations']}
 
