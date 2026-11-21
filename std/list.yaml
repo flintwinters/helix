@@ -245,12 +245,21 @@ sort_by: !call
                                   - [low, high, middle]
                                   - !call
                                       - if
-                                      - !call [before, !ref item, !call [get, !ref ordered, !ref middle]]
+                                      - !call
+                                          - before
+                                          - !ref item
+                                          - !call [get, !ref ordered, !ref middle]
                                       - !call [list, !ref low, !ref middle]
                                       - !call [list, !call [add, !ref middle, 1], !ref high]
                               - !call [get, !ref bounds, 0]
                               - !call [get, !ref bounds, 1]
-                              - !call [div, !call [add, !call [get, !ref bounds, 0], !call [get, !ref bounds, 1]], 2]
+                              - !call
+                                  - div
+                                  - !call
+                                      - add
+                                      - !call [get, !ref bounds, 0]
+                                      - !call [get, !ref bounds, 1]
+                                  - 2
                       - !call [list, 0, !call [len, !ref ordered]]
                   - 0
       - []
