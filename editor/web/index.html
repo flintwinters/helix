@@ -33,7 +33,7 @@
   .cm-s-material-darker .cm-meta{color:#89ddff}
   .cm-s-material-darker .cm-comment{color:#616161;font-style:italic}
   .cm-s-material-darker .cm-error{color:#ff5370;background:none;text-decoration:underline wavy #ff5370}
-  #out{flex:1;margin:0;padding:10px;overflow:auto;white-space:pre-wrap;background:#1a1a1a;font:13px monospace}
+  #out{flex:1;min-width:0;display:flex}#out .CodeMirror{background:#1a1a1a;font-size:13px}
   @media(max-width:700px){main{flex-direction:column}#browser{width:auto;max-height:30vh}}
 </style></head><body>
 <header>
@@ -41,24 +41,28 @@
   <button data-cmd="check">Check</button><button data-cmd="step">Run + annotations</button><button data-cmd="fmt">Format</button>
   <span id="status"></span>
 </header>
-<main><nav id="browser"><input id="filter" placeholder="filter (depth · file = import depth)"></nav><textarea id="src"></textarea><pre id="out"></pre></main>
+<main><nav id="browser"><input id="filter" placeholder="filter (depth · file = import depth)"></nav><textarea id="src"></textarea><div id="out"></div></main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="/helix-mode.js"></script>
 <script>
 const saved = localStorage.getItem('helix-src');
 const editor = CodeMirror.fromTextArea(document.getElementById('src'), {mode:'helix', theme:'material-darker', lineNumbers:true, indentWithTabs:false, tabSize:2, extraKeys:{'Ctrl-Enter':()=>go('run'), 'Tab':cm=>cm.replaceSelection('  ')}});
 editor.setValue(saved ?? '!call [add, 1, 2]\n');
-fetch('/builtins').then(r => r.json()).then(list => editor.setOption('mode',
-  {name:'helix', builtins:Object.fromEntries(list.map(b => [b.name, b.family]))})).catch(() => {});
+// Output is YAML too, so it gets the same mode, theme and builtins as the source buffer.
+const output = CodeMirror(document.getElementById('out'), {mode:'helix', theme:'material-darker', readOnly:true, lineNumbers:false, lineWrapping:true});
+fetch('/builtins').then(r => r.json()).then(list => {
+  const mode = {name:'helix', builtins:Object.fromEntries(list.map(b => [b.name, b.family]))};
+  editor.setOption('mode', mode); output.setOption('mode', mode);
+}).catch(() => {});
 editor.on('change', () => localStorage.setItem('helix-src', editor.getValue()));
 async function go(cmd) {
-  const status = document.getElementById('status'), out = document.getElementById('out');
+  const status = document.getElementById('status');
   status.textContent = 'running…';
   try {
     const text = await (await fetch('/' + cmd, {method:'POST', body:editor.getValue()})).text();
-    if (cmd === 'fmt' && text.trim()) editor.setValue(text); else out.textContent = text;
+    if (cmd === 'fmt' && text.trim()) editor.setValue(text); else output.setValue(text);
     status.textContent = '';
-  } catch (e) { out.textContent = String(e); status.textContent = 'failed'; }
+  } catch (e) { output.setValue(String(e)); status.textContent = 'failed'; }
 }
 fetch('/files').then(r => r.json()).then(files => {
   const nav = document.getElementById('browser'), filter = document.getElementById('filter'), links = [];
@@ -69,7 +73,7 @@ fetch('/files').then(r => r.json()).then(files => {
       const a = document.createElement('a'); a.textContent = f.depth + ' · ' + f.path.slice(group.length + 1); a.title = f.path;
       a.onclick = async () => {
         editor.setValue(await (await fetch('/file?path=' + encodeURIComponent(f.path))).text());
-        links.forEach(l => l.classList.toggle('on', l === a)); document.getElementById('out').textContent = '';
+        links.forEach(l => l.classList.toggle('on', l === a)); output.setValue('');
       };
       links.push(a); box.append(a);
     }

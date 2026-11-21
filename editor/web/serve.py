@@ -43,6 +43,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         source = self.rfile.read(int(self.headers['Content-Length']))
         try:
             done = subprocess.run([BIN, *command, '-'], input=source, capture_output=True, timeout=30)
+            if command[0] != 'fmt' and done.returncode == 0:  # results are YAML: show them canonically formatted
+                pretty = subprocess.run([BIN, 'fmt', '-'], input=done.stdout, capture_output=True, timeout=30)
+                if pretty.returncode == 0: done.stdout = pretty.stdout
             self.reply(done.stdout + done.stderr)
         except subprocess.TimeoutExpired:
             self.reply(b'timed out after 30s')
