@@ -59,8 +59,8 @@ async function go(cmd) {
   const status = document.getElementById('status');
   status.textContent = 'running…';
   try {
-    const text = await (await fetch('/' + cmd, {method:'POST', body:editor.getValue()})).text();
-    if (cmd === 'fmt' && text.trim()) editor.setValue(text); else output.setValue(text);
+    const reply = await fetch('/' + cmd, {method:'POST', body:editor.getValue()}), text = await reply.text();
+    if (cmd === 'fmt' && reply.ok) { if (text !== editor.getValue()) editor.setValue(text); } else output.setValue(text);
     status.textContent = '';
   } catch (e) { output.setValue(String(e)); status.textContent = 'failed'; }
 }
