@@ -9,6 +9,11 @@
   button{padding:6px 14px;border:0;border-radius:4px;background:#37474f;color:#eee;cursor:pointer}
   button.primary{background:#2e7d32}
   main{flex:1;display:flex;min-height:0}
+  #browser{width:230px;overflow:auto;background:#1a1a1a;padding:6px 0;font-size:13px}
+  #browser summary{padding:3px 10px;cursor:pointer;color:#ffcb6b;font-weight:600}
+  #browser a{display:block;padding:2px 10px 2px 24px;color:#ccc;cursor:pointer;white-space:nowrap}
+  #browser a:hover{background:#2a2a2a}#browser a.on{background:#37474f;color:#fff}
+  #browser input{box-sizing:border-box;width:calc(100% - 12px);margin:0 6px 6px;padding:4px;background:#2a2a2a;border:0;color:#eee;border-radius:4px}
   .CodeMirror{flex:1;height:auto;font-size:14px}
   /* Helix token styles over material-darker; class names come from helix-mode.js */
   .cm-s-material-darker .cm-helix-tag{font-style:italic;font-weight:600}
@@ -29,14 +34,14 @@
   .cm-s-material-darker .cm-comment{color:#616161;font-style:italic}
   .cm-s-material-darker .cm-error{color:#ff5370;background:none;text-decoration:underline wavy #ff5370}
   #out{flex:1;margin:0;padding:10px;overflow:auto;white-space:pre-wrap;background:#1a1a1a;font:13px monospace}
-  @media(max-width:700px){main{flex-direction:column}}
+  @media(max-width:700px){main{flex-direction:column}#browser{width:auto;max-height:30vh}}
 </style></head><body>
 <header>
   <button class="primary" data-cmd="run">Run (Ctrl+Enter)</button>
   <button data-cmd="check">Check</button><button data-cmd="step">Run + annotations</button><button data-cmd="fmt">Format</button>
   <span id="status"></span>
 </header>
-<main><textarea id="src"></textarea><pre id="out"></pre></main>
+<main><nav id="browser"><input id="filter" placeholder="filter examples and std"></nav><textarea id="src"></textarea><pre id="out"></pre></main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="/helix-mode.js"></script>
 <script>
@@ -55,5 +60,22 @@ async function go(cmd) {
     status.textContent = '';
   } catch (e) { out.textContent = String(e); status.textContent = 'failed'; }
 }
+fetch('/files').then(r => r.json()).then(files => {
+  const nav = document.getElementById('browser'), filter = document.getElementById('filter'), links = [];
+  for (const group of [...new Set(files.map(f => f.group))]) {
+    const box = document.createElement('details'); box.open = true;
+    box.innerHTML = '<summary></summary>'; box.firstChild.textContent = group + '/';
+    for (const f of files.filter(f => f.group === group)) {
+      const a = document.createElement('a'); a.textContent = f.path.slice(group.length + 1); a.title = f.path;
+      a.onclick = async () => {
+        editor.setValue(await (await fetch('/file?path=' + encodeURIComponent(f.path))).text());
+        links.forEach(l => l.classList.toggle('on', l === a)); document.getElementById('out').textContent = '';
+      };
+      links.push(a); box.append(a);
+    }
+    nav.append(box);
+  }
+  filter.oninput = () => links.forEach(a => a.hidden = !a.title.includes(filter.value));
+}).catch(() => {});
 document.querySelectorAll('button[data-cmd]').forEach(b => b.onclick = () => go(b.dataset.cmd));
 </script></body></html>

@@ -25,3 +25,7 @@ structure (`!call` heads by builtin family, `fn` parameters and `let` names as d
 (`{$call: ...}` maps outside `!literal`, unknown tags, `.inf`/`.nan`). Builtin names come
 from `helix builtins --json` via `serve.py`. `./manage.py test --suite editor` tokenizes
 through Node with `editor/web/tokens.js`.
+
+The browser editor's sidebar lists every `examples/**/*.yaml` and `std/**/*.yaml` file
+(`serve.py` serves only those listed paths) and loads the chosen one into the buffer;
+editing it never writes back to the repository.
