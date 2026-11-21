@@ -33,7 +33,8 @@ def verify(h):
     # Include compile-time assets as well as Rust and standard-library sources.
     for name in ("src", "std", "editor"):
         shutil.copytree(h.root / name, workspace / name)
-    for name in ("Cargo.toml", "Cargo.lock"):
+    # docs.rs embeds the reference documents with include_str!.
+    for name in ("Cargo.toml", "Cargo.lock", "LANGUAGE.md", "LIBRARY.md", "HOST.md"):
         shutil.copy2(h.root / name, workspace / name)
     target = run_directory / "target"
     mutant = replace(h, binary=target / "debug" / "helix")
