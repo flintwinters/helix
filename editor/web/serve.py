@@ -8,6 +8,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def reply(self, body, status=200, kind='text/plain'):
         self.send_response(status); self.send_header('Content-Type', kind + '; charset=utf-8'); self.end_headers(); self.wfile.write(body)
     def do_GET(self):
+        path = urllib.parse.urlparse(self.path).path
+        if path == '/builtins':  # actor names and families for highlighting, from the binary itself
+            done = subprocess.run([BIN, 'builtins', '--json'], capture_output=True, timeout=30)
+            return self.reply(done.stdout if done.returncode == 0 else b'[]', kind='application/json')
+        if path == '/helix-mode.js':
+            return self.reply((HERE / 'helix-mode.js').read_bytes(), kind='text/javascript')
         self.reply((HERE / 'index.html').read_bytes(), kind='text/html')
     def do_POST(self):
         command = COMMANDS.get(urllib.parse.urlparse(self.path).path.strip('/'))

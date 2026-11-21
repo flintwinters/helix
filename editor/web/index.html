@@ -10,6 +10,24 @@
   button.primary{background:#2e7d32}
   main{flex:1;display:flex;min-height:0}
   .CodeMirror{flex:1;height:auto;font-size:14px}
+  /* Helix token styles over material-darker; class names come from helix-mode.js */
+  .cm-s-material-darker .cm-helix-tag{font-style:italic;font-weight:600}
+  .cm-s-material-darker .cm-helix-tag-call{color:#c792ea}
+  .cm-s-material-darker .cm-helix-tag-ref{color:#82aaff}
+  .cm-s-material-darker .cm-helix-tag-literal{color:#ffcb6b}
+  .cm-s-material-darker .cm-helix-form{color:#c792ea;font-weight:600}
+  .cm-s-material-darker .cm-builtin{color:#89ddff}
+  .cm-s-material-darker .cm-helix-actor{color:#82aaff;font-weight:600}
+  .cm-s-material-darker .cm-helix-ref{color:#eeffff;text-decoration:underline dotted #82aaff80}
+  .cm-s-material-darker .cm-def{color:#f78c6c}
+  .cm-s-material-darker .cm-property{color:#ffcb6b}
+  .cm-s-material-darker .cm-string{color:#c3e88d}
+  .cm-s-material-darker .cm-number,.cm-s-material-darker .cm-atom{color:#f78c6c}
+  .cm-s-material-darker .cm-helix-indicator,.cm-s-material-darker .cm-bracket{color:#89ddff}
+  .cm-s-material-darker .cm-helix-anchor{color:#ff9cac}
+  .cm-s-material-darker .cm-meta{color:#89ddff}
+  .cm-s-material-darker .cm-comment{color:#616161;font-style:italic}
+  .cm-s-material-darker .cm-error{color:#ff5370;background:none;text-decoration:underline wavy #ff5370}
   #out{flex:1;margin:0;padding:10px;overflow:auto;white-space:pre-wrap;background:#1a1a1a;font:13px monospace}
   @media(max-width:700px){main{flex-direction:column}}
 </style></head><body>
@@ -20,11 +38,13 @@
 </header>
 <main><textarea id="src"></textarea><pre id="out"></pre></main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/yaml/yaml.min.js"></script>
+<script src="/helix-mode.js"></script>
 <script>
 const saved = localStorage.getItem('helix-src');
-const editor = CodeMirror.fromTextArea(document.getElementById('src'), {mode:'yaml', theme:'material-darker', lineNumbers:true, indentWithTabs:false, tabSize:2, extraKeys:{'Ctrl-Enter':()=>go('run'), 'Tab':cm=>cm.replaceSelection('  ')}});
+const editor = CodeMirror.fromTextArea(document.getElementById('src'), {mode:'helix', theme:'material-darker', lineNumbers:true, indentWithTabs:false, tabSize:2, extraKeys:{'Ctrl-Enter':()=>go('run'), 'Tab':cm=>cm.replaceSelection('  ')}});
 editor.setValue(saved ?? '!call [add, 1, 2]\n');
+fetch('/builtins').then(r => r.json()).then(list => editor.setOption('mode',
+  {name:'helix', builtins:Object.fromEntries(list.map(b => [b.name, b.family]))})).catch(() => {});
 editor.on('change', () => localStorage.setItem('helix-src', editor.getValue()));
 async function go(cmd) {
   const status = document.getElementById('status'), out = document.getElementById('out');

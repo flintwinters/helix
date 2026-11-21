@@ -18,3 +18,10 @@ comments and normalizes scalar presentation while preserving explicit syntax and
 source-graph equivalence before returning it. It never evaluates a program.
 
 Protocol reference: https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/
+
+`editor/web/helix-mode.js` is the browser editor's CodeMirror mode. It styles Helix
+structure (`!call` heads by builtin family, `fn` parameters and `let` names as definitions,
+`!ref` names, `!literal` payloads as data) and flags forms Helix rejects as written YAML
+(`{$call: ...}` maps outside `!literal`, unknown tags, `.inf`/`.nan`). Builtin names come
+from `helix builtins --json` via `serve.py`. `./manage.py test --suite editor` tokenizes
+through Node with `editor/web/tokens.js`.
