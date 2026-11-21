@@ -148,6 +148,16 @@ fn open(name: &str) -> Result<Document, ExitCode> {
             }
         };
     }
+    // A section name asked for as a document: point at the document that holds it.
+    let wanted = slug(name);
+    let holders: Vec<String> = embedded()
+        .filter(|document| document.sections.iter().any(|s| s.slug == wanted))
+        .map(|document| format!("`helix docs {} {wanted}`", document.name))
+        .collect();
+    if !holders.is_empty() {
+        eprintln!("`{name}` is a section, not a document; read it with {}", holders.join(" or "));
+        return Err(ExitCode::from(2));
+    }
     Err(unknown("document", name, DOCUMENTS.iter().map(|(doc, _, _)| *doc), "list documents with `helix docs`"))
 }
 
