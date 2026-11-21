@@ -21,7 +21,7 @@ def verify(h):
     cases = [h.root / "tests" / "cases" / f"{name}.yaml" for name in (
         "types_reflection", "types_type_time", "types_type_time_effect", "types_type_time_error")]
     for case in cases:
-        result = h.helix("run", str(case.relative_to(h.root)))
+        result = h.helix("run", "--annotations", str(case.relative_to(h.root)))
         assert result.stdout == case.with_suffix(".expected.yaml").read_text(), case
         root_source = h.root_section(result.stdout)
         if root_source is not None:

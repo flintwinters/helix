@@ -34,14 +34,28 @@ pub(crate) enum Value {
 }
 
 /// Ordered, string-keyed objects. The language never permits arbitrary value keys.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub(crate) struct Hash(pub(crate) Arc<std::collections::BTreeMap<MapKey, Value>>);
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Hash(pub(crate) Arc<std::collections::BTreeMap<MapKey, Value>>, pub(crate) Measured);
 
 #[derive(Clone, Debug)]
 pub(crate) struct MapKey(pub(crate) Value);
 
-#[derive(Clone, Debug, Default, PartialEq)]
-pub(crate) struct List(pub(crate) Arc<Vec<Value>>);
+#[derive(Clone, Debug, Default)]
+pub(crate) struct List(pub(crate) Arc<Vec<Value>>, pub(crate) Measured);
+
+/// Resource size of a value tree: produced units, graph-node count and container height.
+/// Containers memoize it so charging a finished value does not re-walk shared contents;
+/// every mutation path clears the memo.
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct Measure {
+    pub(crate) units: usize,
+    pub(crate) nodes: usize,
+    pub(crate) height: usize,
+}
+/// Shared by clones of one container (they have identical contents, so one computation
+/// serves all references); a mutating handle replaces it with a fresh cell.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Measured(pub(crate) Arc<std::sync::OnceLock<Measure>>);
 
 #[derive(Clone, Debug)]
 pub(crate) struct Program {
