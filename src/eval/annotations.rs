@@ -49,6 +49,11 @@ impl Evaluator {
         let identity = (std::sync::Arc::as_ptr(&self.program) as usize, node);
         let limit = self.limits.max_value_size.min(MAX_ANNOTATION_UNITS);
         let cached = self.evaluated_index.nodes.get(&identity).map(|(index, _)| *index);
+        if let Some(index) = cached {
+            if self.refresh_flat_row(index, value) {
+                return;
+            }
+        }
         // Reserve small-row headroom. Once nearly full, avoid source-path
         // traversal for new nodes; existing entries still update.
         if cached.is_none() && limit.saturating_sub(self.evaluated_units) < 64 {
@@ -120,6 +125,31 @@ impl Evaluator {
         let nodes = &mut self.evaluated_index.nodes;
         if cached.is_none() && nodes.len() < self.evaluated.len() {
             nodes.insert(identity, (index, self.program.clone()));
+        }
+    }
+
+    /// A node re-evaluated to a flat scalar of the size its row already holds changes only
+    /// that row's value, so units and budgets stay put and nothing needs re-projecting.
+    fn refresh_flat_row(&mut self, index: usize, value: &Value) -> bool {
+        fn units(value: &Value) -> Option<usize> {
+            match value {
+                Value::String(text) => Some(1 + text.len()),
+                Value::Null | Value::Boolean(_) | Value::Integer(_) | Value::Float(_) => Some(1),
+                _ => None,
+            }
+        }
+        let Some(new_units) = units(value) else { return false };
+        let Value::Hash(row) = &mut self.evaluated[index] else { return false };
+        match row.0.get("value") {
+            Some(old) if units(old) == Some(new_units) => {
+                if old != value {
+                    let slot = std::sync::Arc::make_mut(&mut row.0).get_mut("value").unwrap();
+                    *slot = value.clone();
+                    row.1 = Default::default();
+                }
+                true
+            }
+            _ => false,
         }
     }
 
