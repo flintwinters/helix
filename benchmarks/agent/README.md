@@ -16,7 +16,9 @@ Each CLI-assisted attempt has a separate workspace containing authoritative
 `LANGUAGE.md` and `LIBRARY.md` files and a read-only `public_test.yaml`. The test
 imports `candidate.yaml`, invokes `solve` on the task's disclosed example input,
 and asserts the disclosed expected output. It shares the evaluator's invocation
-builder, so the public and hidden calling conventions cannot drift.
+builder, so the public and hidden calling conventions cannot drift. The driver is
+written by `helix fmt` as block-style `!call`/`!ref`/`!literal` source, and the agent
+prompt and tool descriptions steer candidates to the same style via `helix fmt`.
 
 The model can read documentation progressively, create and edit candidate/helper
 files, and run `helix` with argv for `--help`, `std [MODULE]`, `schema`,

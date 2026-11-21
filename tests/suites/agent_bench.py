@@ -103,6 +103,11 @@ def verify(h):
         verify_concurrent_generation(h, directory)
 
 
+def bench_tool_text():
+    from tooling.agent_cli import TOOLS
+    return ' '.join(t['function']['description'] for t in TOOLS)
+
+
 def verify_cli(h, directory):
     import sqlite3
     from tooling import usage_log
@@ -128,7 +133,12 @@ def verify_cli(h, directory):
         assert denied['exit_code'] == 1 and records[-1]['model'] == 'fake/luna'
         target = directory / 'agent-workspace'
         target.mkdir()
-        bench.prepare_workspace(h.root, target, 'sum-squares')
+        bench.prepare_workspace(h.root, target, 'sum-squares', h)
+        written = (target / 'workspace' / 'public_test.yaml').read_text()
+        assert '!call' in written and '!literal' in written and '$call' not in written, written
+        assert '\n' in written.rstrip('\n'), 'public test must use block style'
+        prompt = ' '.join(m['content'] for m in bench.messages('', 'sum-squares', 'cli'))
+        assert 'block style' in prompt and 'fmt' in prompt and 'fmt' in bench_tool_text()
         def response(name, arguments, tokens, cost):
             return {'choices': [{'message': {'content': None, 'tool_calls': [{'id': name, 'type': 'function',
                 'function': {'name': name, 'arguments': json.dumps(arguments)}}]}}],

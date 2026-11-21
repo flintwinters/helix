@@ -15,6 +15,7 @@ TOOL = {
         'name': 'helix',
         'description': 'Call the Helix CLI. Allowed argv: ["--help"], ["std"] or ["std", MODULE], '
         '["schema"], ["check", FILE], ["fmt", FILE], ["run", FILE]. FILE may be - with stdin YAML. '
+        'fmt prints canonical block-style tag source; format candidates with it before saving. '
         'Run is confined to this attempt directory with embedded std: imports and no host effect grants. '
         'Run public_test.yaml to invoke candidate.solve on the provided example. Running candidate.yaml alone only defines the function. No shell commands.',
         'parameters': {'type': 'object', 'properties': {
@@ -29,7 +30,7 @@ _LOG_LOCK = threading.Lock()
 FILES = {
     'type': 'function', 'function': {
         'name': 'workspace',
-        'description': 'Read, write or list files in your working directory. Save your solve module as candidate.yaml. LANGUAGE.md, LIBRARY.md and public_test.yaml are read-only. Read supports one-based start_line and line_count for progressive documentation discovery.',
+        'description': 'Read, write or list files in your working directory. Save your solve module as candidate.yaml in !call/!ref/!literal block style (as printed by helix fmt). LANGUAGE.md, LIBRARY.md and public_test.yaml are read-only. Read supports one-based start_line and line_count for progressive documentation discovery.',
         'parameters': {'type': 'object', 'properties': {
             'action': {'type': 'string', 'enum': ['read', 'write', 'list']},
             'path': {'type': 'string'}, 'content': {'type': 'string'},

@@ -79,6 +79,7 @@ def messages(documentation, task, mode='one-shot'):
                 'public_test.yaml that imports candidate.yaml, CALLS solve on the example input and asserts the expected output. '
                 'Use workspace tools to read documentation and write candidate.yaml exporting solve(input). '
                 'Use helix with args ["run", "public_test.yaml"] to execute that test. Fix problems and rerun as needed. '
+                'Write source with !call/!ref/!literal tags in block style (one argument or binding per line), and run helix fmt on it before saving. '
                 'Running candidate.yaml alone only defines the function; it does not test its body. '
                 'Submit the saved files using the submit tool after the public test succeeds. '
                 'Do not rewrite code in a final chat answer. You may add helper modules and your own tests. '
@@ -103,7 +104,7 @@ def invocation(values):
                      {'$call': [{'$ref': 'candidate.solve'}, {'$literal': values}]}]}
 
 
-def prepare_workspace(root, directory, task):
+def prepare_workspace(root, directory, task, ctx):
     workspace = directory / 'workspace'
     workspace.mkdir()
     for name in ('LANGUAGE.md', 'LIBRARY.md'):
@@ -112,7 +113,11 @@ def prepare_workspace(root, directory, task):
     driver = {'$call': ['assert', {'$call': ['eq', invocation(example['input']),
                                            {'$literal': example['output']}]},
                         'solve(example.input) must equal example.output']}
-    (workspace / 'public_test.yaml').write_text(json.dumps(driver, ensure_ascii=False) + '\n')
+    # The binary owns canonical tag/block syntax; Python only supplies the normalized value.
+    result = ctx.helix('fmt', '-', stdin=json.dumps(driver, ensure_ascii=False))
+    if result.returncode != 0:
+        raise RuntimeError(f'helix fmt rejected the public test driver: {result.stderr.strip()}')
+    (workspace / 'public_test.yaml').write_text(result.stdout)
 
 
 def invoke(ctx, directory, values):
@@ -300,7 +305,7 @@ def generate_attempt(root, args, ctx, directory, docs, task, trial, key):
     attempt.mkdir()
     mode = getattr(args, 'mode', 'one-shot')
     if mode == 'cli':
-        prepare_workspace(root, attempt, task)
+        prepare_workspace(root, attempt, task, ctx)
     row = {'task': task, 'trial': trial, 'artifact': str(attempt.relative_to(directory))}
     started = time.perf_counter()
     try:
