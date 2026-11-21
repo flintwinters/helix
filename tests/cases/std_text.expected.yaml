@@ -2264,7 +2264,7 @@ objects:
         - join
       source: "std:text"
     program:
-      ref: object35
+      ref: object37
   object1:
     bindings:
       find_index:
@@ -2301,7 +2301,7 @@ objects:
         - all
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object10:
     bindings:
       flatten:
@@ -2364,7 +2364,7 @@ objects:
         - flatten
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object11:
     bindings: {}
     code:
@@ -2402,7 +2402,7 @@ objects:
         - frequencies
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object12:
     bindings:
       grouping.by:
@@ -2429,7 +2429,7 @@ objects:
         - group_by
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object13:
     bindings: {}
     code:
@@ -2473,7 +2473,7 @@ objects:
         - by
       source: "std:group"
     program:
-      ref: object35
+      ref: object37
   object14:
     bindings: {}
     code:
@@ -2507,7 +2507,7 @@ objects:
         - last
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object15:
     bindings:
       number:
@@ -2538,7 +2538,7 @@ objects:
         - abs
       source: "std:math"
     program:
-      ref: object35
+      ref: object37
   object16:
     bindings:
       max:
@@ -2580,7 +2580,7 @@ objects:
         - clamp
       source: "std:math"
     program:
-      ref: object35
+      ref: object37
   object17:
     bindings:
       number:
@@ -2611,7 +2611,7 @@ objects:
         - max
       source: "std:math"
     program:
-      ref: object35
+      ref: object37
   object18:
     bindings:
       number:
@@ -2642,7 +2642,7 @@ objects:
         - min
       source: "std:math"
     program:
-      ref: object35
+      ref: object37
   object19:
     bindings:
       number:
@@ -2676,7 +2676,7 @@ objects:
         - sign
       source: "std:math"
     program:
-      ref: object35
+      ref: object37
   object2:
     bindings:
       find_index:
@@ -2706,7 +2706,7 @@ objects:
         - any
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object20:
     bindings:
       number:
@@ -2731,7 +2731,7 @@ objects:
         - square
       source: "std:math"
     program:
-      ref: object35
+      ref: object37
   object21:
     bindings: {}
     code:
@@ -2779,7 +2779,7 @@ objects:
         - partition
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object22:
     bindings:
       math.number:
@@ -2817,7 +2817,7 @@ objects:
         - product
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object23:
     bindings:
       math.max:
@@ -2883,7 +2883,7 @@ objects:
         - range
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object24:
     bindings:
       reverse:
@@ -2940,7 +2940,7 @@ objects:
         - reverse
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object25:
     bindings:
       sort_by:
@@ -2972,7 +2972,7 @@ objects:
         - sort
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object26:
     bindings:
       sort_by:
@@ -3066,7 +3066,7 @@ objects:
         - sort_by
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object27:
     bindings:
       math.number:
@@ -3104,7 +3104,7 @@ objects:
         - sum
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object28:
     bindings:
       math.min:
@@ -3147,7 +3147,7 @@ objects:
         - take
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object29:
     bindings: {}
     code:
@@ -3182,7 +3182,7 @@ objects:
         - unique
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object3:
     bindings: {}
     code:
@@ -3206,7 +3206,7 @@ objects:
         - count
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object30:
     bindings:
       math.min:
@@ -3259,8 +3259,32 @@ objects:
         - zip
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object31:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - pattern
+          - text
+        - "$call":
+            - gt
+            - "$call":
+                - len
+                - "$call":
+                    - regex_find
+                    - "$ref": pattern
+                    - "$ref": text
+            - 0
+    environment: []
+    kind: function
+    location:
+      path:
+        - matches
+      source: "std:text"
+    program:
+      ref: object37
+  object32:
     bindings:
       join:
         code:
@@ -3325,8 +3349,8 @@ objects:
         - quote
       source: "std:text"
     program:
-      ref: object35
-  object32:
+      ref: object37
+  object33:
     bindings: {}
     code:
       "$call":
@@ -3344,8 +3368,56 @@ objects:
         - regex
       source: "std:text"
     program:
-      ref: object35
-  object33:
+      ref: object37
+  object34:
+    bindings:
+      quote:
+        code:
+          path:
+            - quote
+          source: "std:text"
+    code:
+      "$call":
+        - fn
+        - - - source
+            - "$ref": string
+          - - from
+            - "$ref": string
+          - - to
+            - "$ref": string
+        - "$call":
+            - if
+            - "$call":
+                - eq
+                - "$call":
+                    - len
+                    - "$ref": from
+                - 0
+            - "$call":
+                - raise
+                - range
+                - replace pattern must not be empty
+            - "$call":
+                - regex_replace
+                - "$call":
+                    - quote
+                    - "$ref": from
+                - "$ref": source
+                - "$call":
+                    - regex_replace
+                    - "[$]"
+                    - "$ref": to
+                    - "$$$$"
+        - "$ref": string
+    environment: []
+    kind: function
+    location:
+      path:
+        - replace
+      source: "std:text"
+    program:
+      ref: object37
+  object35:
     bindings: {}
     code:
       "$call":
@@ -3506,8 +3578,8 @@ objects:
         - scan
       source: "std:text"
     program:
-      ref: object35
-  object34:
+      ref: object37
+  object36:
     bindings:
       lists.flatten:
         code:
@@ -3611,8 +3683,8 @@ objects:
         - split
       source: "std:text"
     program:
-      ref: object35
-  object35:
+      ref: object37
+  object37:
     kind: program
     sources:
       - code:
@@ -3850,6 +3922,20 @@ objects:
             "$call":
               - import
               - "std:list"
+          matches:
+            "$call":
+              - fn
+              - - pattern
+                - text
+              - "$call":
+                  - gt
+                  - "$call":
+                      - len
+                      - "$call":
+                          - regex_find
+                          - "$ref": pattern
+                          - "$ref": text
+                  - 0
           quote:
             "$call":
               - fn
@@ -3910,6 +3996,39 @@ objects:
                   - regex_find
                   - "$ref": pattern
                   - "$ref": text
+          replace:
+            "$call":
+              - fn
+              - - - source
+                  - "$ref": string
+                - - from
+                  - "$ref": string
+                - - to
+                  - "$ref": string
+              - "$call":
+                  - if
+                  - "$call":
+                      - eq
+                      - "$call":
+                          - len
+                          - "$ref": from
+                      - 0
+                  - "$call":
+                      - raise
+                      - range
+                      - replace pattern must not be empty
+                  - "$call":
+                      - regex_replace
+                      - "$call":
+                          - quote
+                          - "$ref": from
+                      - "$ref": source
+                      - "$call":
+                          - regex_replace
+                          - "[$]"
+                          - "$ref": to
+                          - "$$$$"
+              - "$ref": string
           scan:
             "$call":
               - fn
@@ -5002,7 +5121,7 @@ objects:
         - drop
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object5:
     bindings:
       range:
@@ -5040,7 +5159,7 @@ objects:
         - enumerate
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object6:
     bindings:
       find_index:
@@ -5081,7 +5200,7 @@ objects:
         - find
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object7:
     bindings: {}
     code:
@@ -5139,7 +5258,7 @@ objects:
         - find_index
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object8:
     bindings: {}
     code:
@@ -5160,7 +5279,7 @@ objects:
         - first
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
   object9:
     bindings:
       flatten:
@@ -5189,7 +5308,7 @@ objects:
         - flat_map
       source: "std:list"
     program:
-      ref: object35
+      ref: object37
 root:
   basic:
     - one
@@ -5296,14 +5415,18 @@ root:
         ref: object29
       zip:
         ref: object30
-    quote:
+    matches:
       ref: object31
-    regex:
+    quote:
       ref: object32
-    scan:
+    regex:
       ref: object33
-    split:
+    replace:
       ref: object34
+    scan:
+      ref: object35
+    split:
+      ref: object36
   unicode:
     - ""
     - "é"

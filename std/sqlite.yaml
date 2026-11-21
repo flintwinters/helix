@@ -13,6 +13,11 @@ execute: !call
   - !call [get, !call [request, !ref path, !ref sql, !ref params, true], changes]
 l: !call [import, "std:list"]
 # Rows as maps keyed by column name; duplicate column names keep the last value.
+query: !call
+  - fn
+  - [path, sql, params]
+  - !call [records, !call [request, !ref path, !ref sql, !ref params, false]]
+# Rows of a request result as maps keyed by column name; duplicate column names keep the last value.
 # `result` is a parameter of an applied function, not a `let`: a `let` binding is re-evaluated
 # on every read, which would re-issue the statement once per row.
 records: !call
@@ -28,18 +33,17 @@ records: !call
               - !call
                   - fn
                   - [record, pair]
-                  - !call
-                      - set
-                      - !ref record
-                      - !call [get, !ref pair, 0]
-                      - !call [get, !ref pair, 1]
+                  - !call [set, !ref record, !call [get, !ref pair, 0], !call [get, !ref pair, 1]]
               - !call [dict]
               - !call [l.zip, !call [get, !ref result, columns], !ref row]
       - !call [get, !ref result, rows]
-query: !call
+request: !call
   - fn
-  - [path, sql, params]
-  - !call [records, !call [request, !ref path, !ref sql, !ref params, false]]
+  - [path, sql, params, write]
+  - !call
+      - effect
+      - sqlite
+      - !call [dict, path, !ref path, sql, !ref sql, params, !ref params, write, !ref write]
 # One result per statement, in order: `{rows, changes}` with rows as in `query`.
 transaction: !call
   - fn
@@ -49,7 +53,12 @@ transaction: !call
       - !call
           - fn
           - [result]
-          - !call [dict, rows, !call [records, !ref result], changes, !call [get, !ref result, changes]]
+          - !call
+              - dict
+              - rows
+              - !call [records, !ref result]
+              - changes
+              - !call [get, !ref result, changes]
       - !call
           - get
           - !call
@@ -57,10 +66,3 @@ transaction: !call
               - sqlite
               - !call [dict, path, !ref path, statements, !ref statements, write, true]
           - results
-request: !call
-  - fn
-  - [path, sql, params, write]
-  - !call
-      - effect
-      - sqlite
-      - !call [dict, path, !ref path, sql, !ref sql, params, !ref params, write, !ref write]

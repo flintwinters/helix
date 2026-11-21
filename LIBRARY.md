@@ -18,7 +18,7 @@ Standard libraries are Helix source embedded in the executable:
 | `std:facts` | Explicit typed Ubuntu observations, pure fact projection and reviewed provider configuration ([facts contracts](#ubuntu-facts-and-reviewed-configuration)) |
 | `std:inventory` | `resolve(document, dynamic, selection)` (validated host inventory, explicit connection overrides with provenance, and a reviewable target list) |
 | `std:fuzz` | `plan(source)` (ordered damaged-source slice plans) |
-| `std:text` | `split(source, separator)` (literal, non-overlapping), `join(parts, separator)` |
+| `std:text` | `split(source, separator)` (literal, non-overlapping), `join(parts, separator)`, `replace(source, from, to)` (literal), `matches(pattern, text)` (regex test), `regex(pattern, text)` |
 | `std:diff` | `compare(old, new)` (shallow configuration changes) |
 | `std:validation` | `batch(values, validate)` (indexed validation and transformation reports) |
 | `std:dependency` | `plan(tasks)` (stable dependency batches and blocked-task report) |
@@ -39,7 +39,7 @@ Standard libraries are Helix source embedded in the executable:
 
 `std:fuzz.plan` describes each line prefix followed by deletion of that line, then character prefixes at offsets 0, 5, 10 and so on (strictly before the end). It preserves duplicates and line terminators, recognizes CRLF as one boundary and also recognizes LF, CR, vertical tab, form feed, U+001C–U+001E, U+0085, U+2028 and U+2029. Empty input yields no variants; offsets count Unicode scalars. This pure policy supports host-supervised malformed-input testing: process crashes and timeouts must still be detected outside Helix. Each variant is a list of `[start, end]` source-slice spans; hosts concatenate those slices to materialize one damaged input at a time. The plan preserves mutation policy in Helix without retaining quadratic output text. Scanning immutable strings and accumulating spans can still consume quadratic work; runtime budgets apply.
 
-`std:text.split` preserves empty fields, including the one field in an empty source, and rejects an empty separator with a `range` error. Matching uses Unicode scalar indices. `join` accepts a list of strings and a string separator; an empty list produces an empty string and an empty separator concatenates directly. Arguments are checked even for empty inputs. Scanning and immutable copies can take quadratic time and allocations; runtime iteration and work budgets apply.
+`std:text.split` preserves empty fields, including the one field in an empty source, and rejects an empty separator with a `range` error. Matching uses Unicode scalar indices. `join` accepts a list of strings and a string separator; an empty list produces an empty string and an empty separator concatenates directly. `replace` substitutes every literal, non-overlapping `from` (an empty `from` is a `range` error; `$` in `to` is plain text). Arguments are checked even for empty inputs. Scanning and immutable copies can take quadratic time and allocations; runtime iteration and work budgets apply.
 
 `std:diff.compare` accepts two maps and returns `added` and `removed` key lists plus `changed` records containing `key`, `before` and `after`. Added, removed and changed keys each follow canonical string-key order. Missing keys differ from explicit null; nested values are compared structurally as whole values. Lookup and immutable copying suit small configurations and may be quadratic.
 
@@ -321,7 +321,9 @@ Matching establishes syntax, not behavioral equivalence.
 capture text/spans (unmatched groups are null). The full match is capture zero.
 Patterns are limited to 16 KiB, text to 1 MB, compiled automata to 1 MB each,
 nesting to 64 and results to 4096 matches. Invalid patterns raise `regex`;
-exceeded bounds raise `limit`.
+exceeded bounds raise `limit`. `regex_replace(pattern, text, replacement)` replaces every
+non-overlapping match; the replacement (at most 16 KiB) expands `$1`, `${name}` and `$$`,
+and the result is bounded by the value size limit. `std:text.matches` tests for any match.
 
 Source-aware pipelines can use `function_candidates(source)` and
 `select_functions(source, predicate)` to retain the source's shared code while

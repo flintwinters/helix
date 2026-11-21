@@ -18,6 +18,9 @@ pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
         return Err(Fault::whole("limit", "regex input exceeds bounds".into()));
     }
     let re = compiled(pattern)?;
+    if actor == "regex_replace" {
+        return replace(&re, text, &args[2]);
+    }
     let mut matches = Vec::new();
     for captures in re.captures_iter(text) {
         if matches.len() >= 4096 {
@@ -27,6 +30,35 @@ pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
     }
     crate::value::from_host_yaml(&crate::tooling::source::yaml(&json!(matches)))
         .map_err(|e| Fault::whole("limit", e))
+}
+
+/// Replace every non-overlapping match; `$1`, `${name}` and `$$` in the replacement follow the
+/// `regex` crate. Match count and output size stay bounded like `regex_find`.
+fn replace(re: &regex::Regex, text: &str, replacement: &Value) -> Result<Value, Fault> {
+    let Value::String(replacement) = replacement else {
+        return Err(Fault::expected(2, "string", replacement));
+    };
+    if replacement.len() > 16_384 {
+        return Err(Fault::at(2, "limit", "regex replacement exceeds 16 KiB".into()));
+    }
+    let (mut out, mut last) = (String::new(), 0);
+    for (count, captures) in re.captures_iter(text).enumerate() {
+        if count >= 4096 {
+            return Err(Fault::whole("limit", "regex exceeds 4096 matches".into()));
+        }
+        let whole = captures.get(0).expect("group zero always participates");
+        out.push_str(&text[last..whole.start()]);
+        captures.expand(replacement, &mut out);
+        last = whole.end();
+        if out.len() > crate::model::MAX_VALUE_SIZE {
+            return Err(Fault::whole("limit", "regex replacement result exceeds the value size limit".into()));
+        }
+    }
+    out.push_str(&text[last..]);
+    if out.len() > crate::model::MAX_VALUE_SIZE {
+        return Err(Fault::whole("limit", "regex replacement result exceeds the value size limit".into()));
+    }
+    Ok(Value::String(out.into()))
 }
 
 /// Compilation is a pure function of the pattern, so successful compiles are reused;

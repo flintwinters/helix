@@ -220,7 +220,7 @@ execution. Evidence: `effects`, `permissions`, `execution`, `semantics`,
 `long_commands`, `durable_effects` and the `effects_world`/`effects_pending`/
 `std_codecs` goldens.
 
-Bounds: files and streams are UTF-8 text; HTTP is GET through installed `curl`.
+Bounds: files and streams are UTF-8 text; HTTP is bounded requests through installed `curl`.
 Retained branches need explicit host handling and share no global effect
 deduplication. Caller-owned journals preserve completed effects and require
 explicit reconciliation of uncertain requests; this is not exactly-once external

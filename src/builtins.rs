@@ -132,6 +132,7 @@ const ACTORS: &[Descriptor] = &[
     actor("http_serve", "address, handler", "string, function -> any", "serve HTTP requests through a handler function (host capability)", Evaluation::Engine),
     actor("source_subtype", "left, right", "any, any -> boolean", "whether the bounded checker proves one source type below another", Evaluation::Search),
     actor("regex_find", "pattern, text", "string, string -> list", "regex matches as UTF-8 byte spans with capture text; prefer `std:text.regex`", Evaluation::Search),
+    actor("regex_replace", "pattern, text, replacement", "string, string, string -> string", "replace every regex match; the replacement expands `$1`, `${name}` and `$$`; prefer `std:text.replace`", Evaluation::Search),
     actor("source_parse", "source", "string -> any", "parse Helix source text into its normalized representation", Evaluation::Data),
     actor("json_parse", "text", "string -> any", "strict JSON text to a value", Evaluation::Data),
     actor("json_dump", "value", "any -> string", "a value to JSON text", Evaluation::Data),

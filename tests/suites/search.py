@@ -113,6 +113,24 @@ def verify_queries(h, source):
     for limited_pattern, limited_text in [("a" * 16385, ""), ("", "a" * 4096), ("[a-z]{1000000}", "")]:
         result = h.helix("exec", json.dumps({"$call": ["regex_find", limited_pattern, limited_text]}))
         assert result.returncode == 1 and yaml.safe_load(result.stderr)["error"]["kind"] == "limit", result.stderr[-1000:]
+    for replace_pattern, text, replacement, expected in [("(a)(t)", "cat at", "$2$1", "cta ta"), ("é", "éaé", "e", "eae"),
+                                                          ("x*", "ab", "-", "-a-b-"), ("(?P<w>b+)", "abbc", "[${w}]", "a[bb]c"),
+                                                          ("a", "aaa", "$$", "$$$"), ("z", "abc", "q", "abc")]:
+        result = invoke(h, c("regex_replace", replace_pattern, text, replacement))
+        assert result == expected, (replace_pattern, result)
+    for replace_pattern, text, replacement, expected in [("a.c", "abc a.c", "$", "abc $"), ("$1", "a$1b", "$1", "a$1b"), ("é", "éé", "$&", "$&$&")]:
+        result = invoke(h, c("t.replace", text, replace_pattern, replacement), {"t": c("import", "std:text")})
+        assert result == expected, (replace_pattern, result)
+    for text_pattern, text, expected in [("a+b", "caab", True), ("^b", "ab", False)]:
+        assert invoke(h, c("t.matches", text_pattern, text), {"t": c("import", "std:text")}) is expected
+    result = h.helix("exec", '!call [regex_replace, "[", text, x]')
+    assert result.returncode == 1 and "regex" in result.stderr, result
+    for limited in [c("regex_replace", "a", "a" * 4097, "b"), c("regex_replace", "a", "a", "b" * 16385),
+                    c("regex_replace", "a", "a" * 4000, "b" * 16000)]:
+        result = h.helix("exec", json.dumps(limited))
+        assert result.returncode == 1 and yaml.safe_load(result.stderr)["error"]["kind"] == "limit", result.stderr[-1000:]
+    result = h.helix("exec", json.dumps({"$call": ["let", {"t": {"$call": ["import", "std:text"]}}, {"$call": ["t.replace", "abc", "", "x"]}]}))
+    assert result.returncode == 1 and yaml.safe_load(result.stderr)["error"]["kind"] == "range", result.stderr[-1000:]
     relation = invoke(h, c("s.result_type", literal({"types": function["types"]}), "integer"))
     assert relation["status"] == "matches", relation
     candidates = invoke(h, c("s.select_bodies", r("data"), literal(pattern)), bindings)

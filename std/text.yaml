@@ -26,6 +26,11 @@ join: !call
                   - !ref separator
   - !ref string
 lists: !call [import, "std:list"]
+# Whether the regex matches anywhere in the text.
+matches: !call
+  - fn
+  - [pattern, text]
+  - !call [gt, !call [len, !call [regex_find, !ref pattern, !ref text]], 0]
 # The separator as a regex literal: every regex metacharacter gets a backslash.
 quote: !call
   - fn
@@ -55,6 +60,21 @@ regex: !call
   - fn
   - [pattern, text]
   - !call [regex_find, !ref pattern, !ref text]
+# Literal, left-to-right, non-overlapping replacement of every `from` with `to`; an empty
+# `from` is rejected. `$` in `to` is data here, unlike the `$1` expansion of regex_replace.
+replace: !call
+  - fn
+  - [[source, !ref string], [from, !ref string], [to, !ref string]]
+  - !call
+      - if
+      - !call [eq, !call [len, !ref from], 0]
+      - !call [raise, range, replace pattern must not be empty]
+      - !call
+          - regex_replace
+          - !call [quote, !ref from]
+          - !ref source
+          - !call [regex_replace, "[$]", !ref to, "$$$$"]
+  - !ref string
 # One regex window of split: the complete fields in source[pos:pos+width] and how many
 # characters they consumed. A window with no complete field doubles; the last window
 # also yields the remaining tail. Parameters, not `let`, carry the values reused below.
