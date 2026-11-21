@@ -69,26 +69,13 @@ impl Graph {
         self.nodes[id].span
     }
 
-    /// Root-relative path such as `/` or `/inner/y/1`.
-    pub fn path(&self, id: NodeId) -> String {
-        let mut parts = Vec::new();
-        let mut cur = id;
-        while let Some(parent) = self.nodes[cur].parent {
-            parts.push(
-                match &self.nodes[parent].kind {
-                    Kind::Map(entries) => entries
-                        .iter()
-                        .find(|(_, c)| *c == cur)
-                        .map(|(k, _)| k.clone()),
-                    Kind::Seq(items) => items.iter().position(|c| *c == cur).map(|i| i.to_string()),
-                    Kind::Scalar { .. } => None,
-                }
-                .expect("child is listed in its parent"),
-            );
-            cur = parent;
+    /// `file:line:column` (or `line:column` in the program itself) for naming a node in prose.
+    pub fn place(&self, id: NodeId) -> String {
+        let span = self.span(id);
+        match self.source(id) {
+            Some(file) => format!("{file}:{}:{}", span.line, span.col),
+            None => format!("{}:{}", span.line, span.col),
         }
-        parts.reverse();
-        format!("/{}", parts.join("/"))
     }
 
     /// String keys and integer indices are distinct even for empty, numeric or slash keys.
@@ -214,11 +201,10 @@ impl Graph {
         self.sources.get(&top).map(String::as_str)
     }
 
-    /// An error of `kind` blamed on node `id`, with its path, span and file.
+    /// An error of `kind` blamed on node `id`, with its reference, span and file.
     pub fn error(&self, id: NodeId, kind: impl Into<String>, message: String) -> HelixError {
         HelixError {
             file: self.source(id).map(str::to_string),
-            path: Some(self.path(id)),
             reference: Some(self.segments(id)),
             ..HelixError::unlocated(kind, message, self.span(id))
         }

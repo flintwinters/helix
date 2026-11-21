@@ -356,7 +356,7 @@ fn check_collection_does_not_preflight_unchosen_regions_on_success() {
             assert_eq!(checked.status(), Status::Error);
             let errors = state["errors"].as_vec().unwrap();
             assert_eq!(errors.len(), 1);
-            assert_eq!(errors[0]["path"].as_str(), Some("/other"));
+            assert_eq!(errors[0]["reference"][0].as_str(), Some("other"));
             assert!(errors[0]["phase"].is_badvalue());
         } else {
             assert_eq!(checked.status(), Status::Finished);
@@ -809,7 +809,7 @@ fn computed_member_projection_preserves_suspended_branches_and_blame() {
     let mut missing = pending.resolve_effect(Ok(Yaml::Hash(Default::default())));
     missing.run();
     assert_eq!(missing.state()["error"]["kind"].as_str(), Some("unbound"));
-    assert_eq!(missing.state()["error"]["path"].as_str(), Some("/$call/2"));
+    assert_eq!(missing.state()["error"]["reference"][1].as_i64(), Some(2));
     assert_eq!(missing.state()["error"]["message"].as_str(), Some("unbound symbol `box.answer`"));
 }
 

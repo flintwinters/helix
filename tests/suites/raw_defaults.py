@@ -3,6 +3,7 @@ import json
 import yaml
 
 from tests.suites.contracts import checked
+from tests.suites.source_contracts import reference
 
 
 def call(actor, *args):
@@ -44,7 +45,7 @@ def verify(h):
         process = h.helix("run", "-", stdin=json.dumps(expression))
         assert process.returncode == 1, process
         error = yaml.safe_load(process.stdout)["error"]
-        assert error["kind"] == "type" and error["path"] == path, error
+        assert error["kind"] == "type" and error["reference"] == reference(path), error
     # The existing engine invokes raw default refinements, including defaults
     # hidden by supplied fields; malformed predicate results remain errors.
     for body, kind in ((False, "type"), (7, "predicate")):

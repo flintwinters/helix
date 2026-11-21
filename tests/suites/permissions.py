@@ -24,7 +24,7 @@ def verify(h):
             if code:
                 error = state["error"]
                 assert error["kind"] == "permission", error
-                assert error["path"].endswith("/1") and error["line"] >= 1, error
+                assert error["reference"][-1] == 1 and error["line"] >= 1, error
             return state
         run('{"m": {"$call": ["import", "std:math"]}, "r": {"$call": ["m.square", 3]}}', "-", 0)
         run('{"m": {"$call": ["import", "local.yaml"]}}', "-", 1)

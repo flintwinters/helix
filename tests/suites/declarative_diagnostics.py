@@ -3,7 +3,7 @@ import json
 
 import yaml
 
-from tests.suites.source_contracts import location
+from tests.suites.source_contracts import location, reference
 
 
 def verify(h):
@@ -22,42 +22,42 @@ def verify(h):
 
     source, error = failure({'f': call('fn', [['left', 'string'], ['right', 'integer']], None),
                              'bad': call('f', 1, False)})
-    assert error['kind'] == 'type' and error['path'] == '/bad/$call/1', error
-    assert (error['line'], error['column']) == location(source, error['path']), error
+    assert error['kind'] == 'type' and error['reference'] == ['bad', '$call', 1], error
+    assert (error['line'], error['column']) == location(source, '/bad/$call/1'), error
     found = error['data']['violations']
     assert [row['argument'] for row in found] == ['left', 'right'], found
     for index, row in enumerate(found, 1):
         at = row['argument_location']
         expected_path = f'/bad/$call/{index}'
-        assert at['path'] == expected_path, row
+        assert at['reference']['path'] == reference(expected_path), row
         assert (at['line'], at['column']) == location(source, expected_path), row
-    assert error['calls'][0]['path'] == '/bad', error
+    assert error['calls'][0]['reference'] == ['bad'], error
 
     _, error = failure(call('map', call('fn', [['item', 'string']], ref('item')), [1]))
-    assert error['path'] == '/$call/1', error
-    assert error['data']['violations'][0]['argument_location']['path'] == '/$call/1', error
+    assert error['reference'] == ['$call', 1], error
+    assert error['data']['violations'][0]['argument_location']['reference']['path'] == ['$call', 1], error
 
     _, error = failure({'bad_type': {'type': 'list'}, 'checked': call('expect', [], ref('bad_type'))})
-    assert error['kind'] == 'type' and error['path'] == '/bad_type', error
+    assert error['kind'] == 'type' and error['reference'] == reference('/bad_type'), error
 
     for body, original_kind in ((7, None), (call('raise', 'rule_bug', 'predicate exploded'), 'rule_bug')):
         _, error = failure({'rule': call('fn', ['value'], body),
                             'checked': call('expect', 1, call('refine', 'integer', ref('rule')))})
-        assert error['kind'] == 'predicate' and error['path'] == '/rule', error
+        assert error['kind'] == 'predicate' and error['reference'] == reference('/rule'), error
         assert error['data']['violations'][0]['rule'] == 'predicate_error', error
         if original_kind is not None:
             assert error['cause']['kind'] == original_kind, error
 
     function = call('fn', [], 1, {'type': 'list'})
     _, error = failure(call(function))
-    assert error['kind'] == 'type' and error['path'] == '/$call/0/$call/3', error
+    assert error['kind'] == 'type' and error['reference'] == reference('/$call/0/$call/3'), error
 
     typed = call('fn', [['value', 'integer']], ref('value'))
     for expression, expected_path in (
             (call('call', typed, 'bad'), '/$call/2'),
             (call(call('if', True, typed, typed), 'bad'), '/$call/1')):
         source, error = failure(expression)
-        assert error['path'] == expected_path, error
+        assert error['reference'] == reference(expected_path), error
         assert (error['line'], error['column']) == location(source, expected_path), error
 
     # Whole-program evaluation visits independent fields once, including nested
@@ -70,8 +70,8 @@ def verify(h):
     process = h.helix('check', '--evaluate', '-', stdin=source)
     state = yaml.safe_load(process.stdout)
     assert process.returncode == 1 and state['status'] == 'error', state
-    assert sorted(error['path'] for error in state['errors']) == [
-        '/first/$call/1', '/nested/second/$call/1'], state
+    assert sorted((error['reference'] for error in state['errors']), key=str) == [
+        ['first', '$call', 1], ['nested', 'second', '$call', 1]], state
     definition = json.dumps(program['uncalled'])
     evaluated = h.helix('check', '--evaluate', '-', stdin=definition)
     assert evaluated.returncode == 0 and yaml.safe_load(evaluated.stdout)['status'] == 'finished', evaluated
@@ -90,7 +90,7 @@ def verify(h):
         assert process.returncode == 1 and state['status'] == 'error', state
         errors = state['errors']
         assert len(errors) == 2, state
-        assert all(error['kind'] == 'predicate' and error['path'] == '/rule'
+        assert all(error['kind'] == 'predicate' and error['reference'] == reference('/rule')
                    for error in errors), errors
         actuals = [error['data']['violations'][0]['actual'] for error in errors]
         assert [(type(value), value) for value in actuals] == [
@@ -135,7 +135,7 @@ def verify(h):
                             'checked': call('expect', {'a': 1, 'b': 2}, call('record',
                                 'a', call('refine', 'integer', ref('first_rule')),
                                 'b', call('refine', 'integer', ref('last_rule'))))})
-        assert error['kind'] == 'predicate' and error['path'] == f'/{blamed}', error
+        assert error['kind'] == 'predicate' and error['reference'] == reference(f'/{blamed}'), error
         if cause is None:
             assert 'cause' not in error, error
         else:
@@ -150,8 +150,8 @@ def verify(h):
             'guarded': call('refine', 'integer', ref('rule'))}))
         bindings = {'module': call('import', str(module))}
         _, error = failure(call('let', bindings, call('module.accept', 'bad')))
-        assert error['path'] == '/$call/2/$call/1' and 'file' not in error, error
+        assert error['reference'] == reference('/$call/2/$call/1') and 'file' not in error, error
         assert error['data']['violations'][0]['argument_location']['reference']['source'] == '<root>', error
         _, error = failure(call('let', bindings, call('expect', 1, ref('module.guarded'))))
-        assert error['kind'] == 'predicate' and error['path'] == '/rule', error
+        assert error['kind'] == 'predicate' and error['reference'] == reference('/rule'), error
         assert error['file'].endswith('/module.yaml') and error['cause']['kind'] == 'imported_rule', error

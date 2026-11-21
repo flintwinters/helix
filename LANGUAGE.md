@@ -22,7 +22,7 @@ status: finished        # ready | running | finished | error | signaled
 root: { ... }           # every value, evaluated
 ```
 
-On failure `status: error` and an `error:` block replaces `root:` with `kind`, `message`, `path` (root-relative, e.g. `/inner/y/1`), `line` and `column` (both 1-indexed). Errors within source also carry an unambiguous `reference`: a list of string keys and integer list indices. The root is `[]`; an empty key is `[""]`, and a slash in a key stays inside that string.
+On failure `status: error` and an `error:` block replaces `root:` with `kind`, `message`, `line` and `column` (both 1-indexed). Errors within source also carry an exact `reference`: a list of string keys and integer list indices. The root is `[]`; an empty key is `[""]`, and a slash in a key stays inside that string.
 
 ## Values
 
@@ -83,7 +83,7 @@ Scope is **lexical**, through parent links: a body sees its parameters, then the
 
 Functions retain their original immutable code and lexical environment, including lazy source bindings. Passing a function never emits or reparses source, and creating one does not execute its free bindings. Different constructor calls retain independent environments. Functions compare structurally by original code and captured lexical bindings (code retains scalar kinds and sequence order; scalar style and mapping presentation order do not participate); recursive bindings are compared with cycle detection. This is not a proof that two functions compute the same result. Function errors retain their original source spans and module identity.
 
-`!call [try, !ref expr, !ref handler]` evaluates `expr`; if that fails, `handler` (a function name or inline `fn`) is called with the error as a map (`kind`, `message`, `path`, `line`, `column`, as in saved error state) and its result replaces the failure. Without a failure the handler never runs. `!call [assert, !ref cond]` / `!call [assert, !ref cond, message]` returns `null` when `cond` is `true`, otherwise fails with an `assertion` error carrying the message. `!call [raise, !ref kind, !ref message]` / `!call [raise, !ref kind, !ref message, !ref data]` fails with a user-chosen `kind` string (a non-empty string), message and optional plain-value `data` payload, blamed on the `raise` expression; it has the same shape as a builtin error and `data` appears in the error map. `!call [raise, !ref error]` re-raises a caught error map (so a handler can match the kinds it expects with `cond` and re-raise the rest rather than swallow them).
+`!call [try, !ref expr, !ref handler]` evaluates `expr`; if that fails, `handler` (a function name or inline `fn`) is called with the error as a map (`kind`, `message`, `reference`, `line`, `column`, as in saved error state) and its result replaces the failure. Without a failure the handler never runs. `!call [assert, !ref cond]` / `!call [assert, !ref cond, message]` returns `null` when `cond` is `true`, otherwise fails with an `assertion` error carrying the message. `!call [raise, !ref kind, !ref message]` / `!call [raise, !ref kind, !ref message, !ref data]` fails with a user-chosen `kind` string (a non-empty string), message and optional plain-value `data` payload, blamed on the `raise` expression; it has the same shape as a builtin error and `data` appears in the error map. `!call [raise, !ref error]` re-raises a caught error map (so a handler can match the kinds it expects with `cond` and re-raise the rest rather than swallow them).
 
 `!call [let, {name: value}, !ref body]` evaluates `body` with the bindings in scope. Bindings see each other (mutually, as in a map) and are evaluated only when used; a self-dependent binding is a `cycle`.
 
@@ -279,7 +279,7 @@ helpers: !call [import, helpers.yaml]
 answer: !call [math.square, 6]
 ```
 
-Dotted references select map members (`helpers.constant`, `helpers.nested.function`); an exact lexical binding containing dots takes precedence. Use imported functions as call heads or iteration callbacks, such as `!call [map, !ref math.square, [1, 2, 3]]`. Missing members in argument position are `unbound` errors; an unresolved call actor is an `unbound` error. Module errors include `file`; their `path`, `line`, and `column` refer to that file.
+Dotted references select map members (`helpers.constant`, `helpers.nested.function`); an exact lexical binding containing dots takes precedence. Use imported functions as call heads or iteration callbacks, such as `!call [map, !ref math.square, [1, 2, 3]]`. Missing members in argument position are `unbound` errors; an unresolved call actor is an `unbound` error. Module errors include `file`; their `reference`, `line`, and `column` refer to that file.
 
 Exact-name precedence searches the entire lexical chain before trying a namespace
 base, including for parameter names containing dots. Static call checking, purity
@@ -443,8 +443,8 @@ See [Testing in Helix](LIBRARY.md#testing-in-helix).
 ## Debugging and pure failed-run recovery
 
 Function failures carry an optional `calls` list, ordered from the innermost call outward.
-Each entry records the call-site `path`, `line`, `column`, optional imported `file`,
-and the function declaration's `function` path, `function_line`, `function_column`,
+Each entry records the call-site `reference`, `line`, `column`, optional imported `file`,
+and the function declaration's `function_line`, `function_column`,
 and optional `function_file`. Call-site and declaration files are independent: a call
 in the main program can invoke a function declared in an imported module. Missing
 file fields refer to the main program; coordinates are 1-indexed. Use these fields

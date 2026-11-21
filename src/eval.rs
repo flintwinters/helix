@@ -1,7 +1,7 @@
 //! Explicit execution requests and continuations. No transition invokes another interpreter.
 use crate::graph::{Graph, NodeId, ROOT};
 use crate::link;
-use crate::model::{CallOrigin, HelixError, string as s};
+use crate::model::{CallOrigin, HelixError, Segment, string as s};
 use crate::value::{Hash, Value};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -276,8 +276,8 @@ impl Evaluator {
                         site,
                         "arity",
                         format!(
-                            "function `{}` takes {}{}, got {}",
-                            function.program.graph.path(function.node),
+                            "the function defined at {} takes {}{}, got {}",
+                            function.program.graph.place(function.node),
                             arguments(params.len()),
                             if params.is_empty() { String::new() } else {
                                 format!(" ({})", params.iter().map(|(name, _)| name.as_str()).collect::<Vec<_>>().join(", "))
@@ -386,14 +386,10 @@ impl Evaluator {
                     if let Some(file) = graph.source(site) {
                         location.insert(s("file"), s(file));
                     }
-                    location.insert(s("path"), s(&graph.path(site)));
+                    location.insert(s("reference"), Segment::render(&graph.segments(site)));
                     let span = graph.span(site);
                     location.insert(s("line"), Value::Integer(span.line as i64));
                     location.insert(s("column"), Value::Integer(span.col as i64));
-                    location.insert(
-                        s("function"),
-                        s(&function.program.graph.path(function.node)),
-                    );
                     if let Some(file) = function.program.graph.source(function.node) {
                         location.insert(s("function_file"), s(file));
                     }

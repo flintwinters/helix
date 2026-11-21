@@ -97,10 +97,9 @@ def verify(h):
         error = yaml.safe_load(result.stdout)["error"]
         assert result.returncode == 1 and error["file"].endswith("helper.yaml")
         inner, outer = error["calls"]
-        assert inner["file"].endswith("helper.yaml") and inner["path"] == "/middle/$call/2"
+        assert inner["file"].endswith("helper.yaml") and inner["reference"] == ["middle", "$call", 2]
         assert (inner["line"], inner["column"]) == location((base / "helper.yaml").read_text(), "/middle/$call/2")
-        assert inner["function"] == "/leaf"
-        assert "file" not in outer and outer["path"] == "/value"
+        assert "file" not in outer and outer["reference"] == ["value"]
         # The checkpoint parser rejects duplicate keys and never evaluates checkpoint fields.
         for invalid in ["status: error\nstatus: error\nrecovery: '42'", '{"status": {"$call": ["raise", {"$ref": "evil"}]}}']:
             result = h.helix("resume", "-", stdin=invalid)

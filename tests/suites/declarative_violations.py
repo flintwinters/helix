@@ -48,8 +48,7 @@ def verify(h):
             violation, = root[key]["data"]["violations"]
         assert violation["rule"] == rule and violation["actual"] in (0, 1), violation
         predicate = violation["predicate"]
-        assert predicate["source"] == "<root>" and predicate["path"] == path, predicate
-        assert predicate["reference"] == [path[1:]], predicate
+        assert predicate["source"] == "<root>" and predicate["reference"] == [path[1:]], predicate
         assert predicate["line"] == 1 and predicate["column"] > 0, predicate
     assert root["base"][0]["rule"] == "type" and "predicate" not in root["base"][0]
     assert root["skipped"] == []
@@ -57,4 +56,4 @@ def verify(h):
         result = h.helix("run", "-", stdin=json.dumps(call(actor, 1, call("refine", "integer", call("fn", ["x"], 7)))))
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, result
         error = yaml.safe_load(result.stdout)["error"]
-        assert error["kind"] == "predicate" and error["path"] == "/$call/2/$call/2", error
+        assert error["kind"] == "predicate" and error["reference"] == ["$call", 2, "$call", 2], error

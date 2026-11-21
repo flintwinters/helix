@@ -266,11 +266,10 @@ def verify_policy_annotations(h):
         assert error["kind"] == "type" and "arguments" in error["message"], error
         position = {"catalog": 1, "requested": 2, "bless": 3, "previous": 2,
                     "observation": 1, "observations": 1}[parameter]
-        assert error["path"] == f"/$call/2/probe/$call/{position}" and error["line"] > 0 and error["column"] > 0, error
-        assert all(v["argument_location"]["path"] == error["path"] for v in error["data"]["violations"]), error
+        assert error["reference"] == ["$call", 2, "probe", "$call", position] and error["line"] > 0 and error["column"] > 0, error
+        assert all(v["argument_location"]["reference"]["path"] == error["reference"] for v in error["data"]["violations"]), error
         assert {violation["argument"] for violation in error["data"]["violations"]} == {parameter}, error
-        assert any(frame.get("function") == f"/{operation}"
-                   and frame.get("function_file", "").endswith("tooling/test_policy.yaml")
+        assert any(frame.get("function_file", "").endswith("tooling/test_policy.yaml")
                    for frame in error["calls"]), error
 
     observation = {"suite": "golden", "failures": [], "stdout": "雪\n", "stderr": "warning\n",
@@ -303,7 +302,7 @@ def verify_policy_annotations(h):
             assert code == 1 and result["status"] == "error", (operation, result)
             error = result["error"]
             assert error["kind"] == "type" and "in the result" in error["message"], error
-            assert error["path"] == f"/{operation}/$call/2" and error["file"] == str(module), error
+            assert error["reference"] == [operation, "$call", 2] and error["file"] == str(module), error
 
 
 def verify_scoped_rerun(h):

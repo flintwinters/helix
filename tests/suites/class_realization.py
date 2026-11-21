@@ -4,7 +4,7 @@ import json
 import yaml
 
 from tests.suites.contracts import checked
-from tests.suites.source_contracts import location
+from tests.suites.source_contracts import location, reference
 
 
 def verify(h):
@@ -91,6 +91,6 @@ def verify(h):
         process = h.helix('run', '-', stdin=source)
         assert process.returncode == 1 and h.malformed_state(process.stdout, 1) is None, process
         error = yaml.safe_load(process.stdout)['error']
-        assert error['kind'] == 'abstract' and error['path'] == path, error
+        assert error['kind'] == 'abstract' and error['reference'] == reference(path), error
         assert (error['line'], error['column']) == location(source, path), error
         assert error['data']['missing'] == [{'field': 'needed', 'required_by': 'probe'}], error

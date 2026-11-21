@@ -3,6 +3,5 @@ error:
   kind: divide_by_zero
   line: 1
   message: "`div` by zero"
-  path: /
   reference: []
 status: error

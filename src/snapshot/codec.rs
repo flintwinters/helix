@@ -242,7 +242,6 @@ record!(HelixError {
     message: v,
     hint: v,
     file: v,
-    path: v,
     reference: v,
     span: v,
     data: v,

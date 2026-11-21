@@ -7,7 +7,7 @@ import io
 import yaml
 
 from tests.suites.contracts import checked
-from tests.suites.source_contracts import location
+from tests.suites.source_contracts import location, reference
 
 # An executable witness per actor. Results here are independent of implementation dispatch.
 WITNESSES = {
@@ -125,7 +125,7 @@ def verify(h):
             result = h.helix("run", "-", stdin=source)
             assert h.malformed_state(result.stdout, result.returncode) is None, (name, result)
             error = yaml.safe_load(result.stdout)["error"]
-            assert error["kind"] == "arity" and error["path"] == "/", (name, count, error)
+            assert error["kind"] == "arity" and error["reference"] == [], (name, count, error)
             report[name]["wrong_arity"] += 1
     for source, expected in [
         ('{"$call": ["len", ""]}', 0), ('{"$call": ["len", []]}', 0), ('{"$call": ["len", {}]}', 0),
@@ -163,7 +163,7 @@ def verify(h):
                                  ('{"$call": ["get", [], -1]}', '/$call/2', 23), ('{"$call": ["not", 1]}', '/$call/1', 19)]:
         result = h.helix("run", "-", stdin=source)
         error = yaml.safe_load(result.stdout)["error"]
-        assert (error["path"], error["line"], error["column"]) == (path, *location(source, path)), error
+        assert (error["reference"], error["line"], error["column"]) == (reference(path), *location(source, path)), error
     artifact = h.root / "runtime" / "coverage"
     artifact.mkdir(exist_ok=True)
     (artifact / "actors.json").write_text(json.dumps({"schema": 1, "scenarios": report,

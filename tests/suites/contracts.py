@@ -384,7 +384,7 @@ def imports(h):
         (base / "shared.yaml").write_text('{"value": {"$call": ["add", {"$ref": "private"}, 1]}}')
         main.write_text('{"private": 9, "s": {"$call": ["import", "shared.yaml"]}}')
         error = yaml.safe_load(h.helix("run", str(main)).stdout)["error"]
-        assert error["kind"] == "unbound" and error["path"] == "/value/$call/1", error
+        assert error["kind"] == "unbound" and error["reference"] == ["value", "$call", 1], error
 
 
 def run(name, h):
@@ -420,7 +420,7 @@ def parser(h):
         assert yaml.safe_load(result.stdout)["error"]["kind"] == "unsupported"
     result = h.helix("run", "-", stdin='{"outer": {"result": {"$call": ["add", {"$ref": "missing"}, 1]}}}')
     error = yaml.safe_load(result.stdout)["error"]
-    assert (error["path"], error["line"], error["column"]) == ("/outer/result/$call/1", 1, 40), error
+    assert (error["reference"], error["line"], error["column"]) == (["outer", "result", "$call", 1], 1, 40), error
 
 
 def fuzz(h):

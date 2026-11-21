@@ -60,7 +60,7 @@ def verify(h):
         assert report["status"] == "invalid" and report["targets"] == [], (name, report)
         assert report["diagnostics"] and all(isinstance(item, dict) for item in report["diagnostics"]), (name, report)
         for diagnostic in report["diagnostics"]:
-            assert {"kind", "message", "path", "line", "column"} <= diagnostic.keys(), (name, diagnostic)
+            assert {"kind", "message", "reference", "line", "column"} <= diagnostic.keys(), (name, diagnostic)
         return report["diagnostics"]
 
     local = host("controller")

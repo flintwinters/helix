@@ -277,7 +277,7 @@ def verify_constraint_descriptors(h):
             assert process.returncode == 1 and h.malformed_state(process.stdout, 1) is None, (name, constraints, process)
             error = yaml.safe_load(process.stdout)["error"]
             assert error["kind"] == "type" and "constraint" in error["message"], (name, constraints, error)
-            assert error["path"].startswith("/probe"), error
+            assert error["reference"][0] == "probe", error
 
     # Both omission and an explicit empty list are valid declarations; controls
     # prove rejection is about malformed constraints, not every class descriptor.

@@ -303,7 +303,7 @@ impl Vm {
             }
             if let Some(error) = machine.error.take() {
                 if !self.errors.iter().any(|e| {
-                    e.path == error.path
+                    e.reference == error.reference
                         && e.kind == error.kind
                         && e.message == error.message
                         && e.phase == error.phase

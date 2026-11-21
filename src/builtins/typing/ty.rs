@@ -181,7 +181,6 @@ impl Violation {
             let graph = &function.program.graph;
             let mut location = match graph.reference(function.node) { Value::Hash(h) => h, _ => unreachable!() };
             location.insert(s("reference"), location.get(&s("path")).unwrap().clone());
-            location.insert(s("path"), s(&graph.path(function.node)));
             location.insert(s("line"), Value::Integer(graph.span(function.node).line as i64));
             location.insert(s("column"), Value::Integer(graph.span(function.node).col as i64));
             self.predicate = Some(Value::Hash(location));

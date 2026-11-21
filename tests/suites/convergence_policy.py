@@ -39,7 +39,7 @@ def verify(h):
                                      call("fn", ["error"], ref("error")))
             result = checked(h, json.dumps(source))
             assert result["invalid"]["kind"] == kind, result["invalid"]
-            assert result["invalid"]["path"].startswith("/invalid/$call/1/$call/"), result["invalid"]
+            assert result["invalid"]["reference"][:4] == ["invalid", "$call", 1, "$call"], result["invalid"]
     print("convergence: 128 configured fields, independent plan oracle, purity, no-op and original blame")
 
 
@@ -95,4 +95,4 @@ def verify_constraint_realization(h):
         assert result["concrete"] is False, result
         assert result["rechecked"]["kind"] == "predicate" and detail in result["rechecked"]["message"], result
         violation, = result["rechecked"]["data"]["violations"]
-        assert violation["rule"] == "predicate_error" and violation["predicate"]["path"] == "/$call/1/pending/$call/2", violation
+        assert violation["rule"] == "predicate_error" and violation["predicate"]["reference"] == ["$call", 1, "pending", "$call", 2], violation

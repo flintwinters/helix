@@ -9,6 +9,11 @@ from tooling import checks_docs
 from tooling.source_format import SourceLoader
 
 
+def path_of(finding):
+    """Slash-joined rendering of a finding's structured `reference`, for readable expectations."""
+    return '/' + '/'.join(str(segment) for segment in finding['reference'])
+
+
 def check(ctx):
     try:
         checks_docs.verify(ctx)
@@ -45,7 +50,7 @@ def verify_checks(ctx):
         assert result.returncode == 0 and report['mode'] == 'static' and report['diagnostics'] == [], result
     result = ctx.helix('check', '-', stdin='{"unused": {"$call": ["fn", [], {"$call": ["add", 1]}]}, "lazy": {"$call": ["if", true, 42, {"$call": ["sub", 1]}]}}')
     report = yaml.safe_load(result.stdout)
-    assert result.returncode == 1 and [d['path'] for d in report['diagnostics']] == ['/lazy/$call/3', '/unused/$call/2'], result
+    assert result.returncode == 1 and [path_of(d) for d in report['diagnostics']] == ['/lazy/$call/3', '/unused/$call/2'], result
     # Body inference must respect the source pass's arity rejection before
     # indexing operands, including special forms and collection operations.
     for operands in (['map'], ['filter', 42], ['if'], ['let'], ['type_time'],
@@ -179,14 +184,14 @@ def verify_policy_result_fields(ctx):
         report = yaml.safe_load(process.stdout)
         assert report['mode'] == 'static', (operation, report)
         relevant = [item for item in report['diagnostics']
-                    if item['kind'] == 'type' and item.get('path', '').startswith(f'/{operation}/$call/2')
-                    and (field in item['message'] or field in item.get('path', ''))]
+                    if item['kind'] == 'type' and path_of(item).startswith(f'/{operation}/$call/2')
+                    and (field in item['message'] or field in path_of(item))]
         assert process.returncode == 1 and relevant, (operation, field, report)
         assert all(item['line'] > 0 and item['column'] > 0 for item in relevant), relevant
         if field == 'command':
             from tests.suites.source_contracts import location
             path = '/report/$call/2/$call/2/command'
-            assert any(item['path'] == path and (item['line'], item['column']) ==
+            assert any(path_of(item) == path and (item['line'], item['column']) ==
                        location(source.read_text(), path) for item in relevant), relevant
 
 
@@ -212,7 +217,7 @@ def verify_string_literals(ctx):
     source = json.dumps(fn([], wrapped, expected_record), indent=2)
     code, report = static_report(ctx, source)
     path = '/$call/2/$call/2/$call/1/$call/2/command'
-    assert code == 1 and any(item['kind'] == 'type' and item['path'] == path and
+    assert code == 1 and any(item['kind'] == 'type' and path_of(item) == path and
                             (item['line'], item['column']) == location(source, path)
                             for item in report['diagnostics']), report
     # References and unknown values keep blame on the function body: locating a
@@ -222,7 +227,7 @@ def verify_string_literals(ctx):
         source = json.dumps(fn(params, {'$ref': 'value'}, expected_record), indent=2)
         code, report = static_report(ctx, source)
         findings = report['diagnostics'] if definite else report['unchecked']
-        assert code == int(definite) and any(item['path'] == '/$call/2' and
+        assert code == int(definite) and any(path_of(item) == '/$call/2' and
             (item['line'], item['column']) == location(source, '/$call/2') for item in findings), report
     # Numeric inference retains its existing kind-level behavior.
     for body, annotation, valid in ((1, 'integer', True), (1.0, 'integer', False)):
@@ -252,7 +257,7 @@ def verify_string_literals(ctx):
     records.append({'bad': call('add', 'not numeric', 1)})
     code, report = static_report(ctx, json.dumps(call('map', callback, records)))
     assert code == 1 and any(item['kind'] == 'type' and
-                            item['path'] == '/$call/2/40/bad/$call/1'
+                            path_of(item) == '/$call/2/40/bad/$call/1'
                             for item in report['diagnostics']), report
 
     # These small source DAGs describe exponentially large inferred trees when
@@ -277,7 +282,7 @@ def verify_string_literals(ctx):
         bindings['b0'] = pair('b', call('add', 'not numeric', 1))
         code, report = static_report(ctx, json.dumps(source))
         path = '/$call/1/b0/' + ('1' if shape == 'list' else 'right') + '/$call/1'
-        assert code == 1 and any(item['kind'] == 'type' and item['path'] == path
+        assert code == 1 and any(item['kind'] == 'type' and path_of(item) == path
                                 for item in report['diagnostics']), (shape, report)
 
     # Reusing a long-key record is compact source but its expanded inferred
@@ -304,7 +309,7 @@ def verify_raw_descriptors(ctx):
     for descriptor in ({'type': 'list'}, {'type': 'record', 'fields': {'bad': 3}},
                        {'$literal': {'type': 'unknown'}}):
         code, report = static_report(ctx, json.dumps(call('expect', 1, descriptor)))
-        assert code == 1 and any(row['path'] == '/$call/2' and 'invalid type declaration' in row['message']
+        assert code == 1 and any(path_of(row) == '/$call/2' and 'invalid type declaration' in row['message']
                                  for row in report['diagnostics']), report
     for descriptor in (record, {'$literal': record}):
         code, report = static_report(ctx, json.dumps(call('expect', {'name': 'valid'}, descriptor)))
@@ -347,7 +352,7 @@ def verify_iteration_callbacks(ctx):
         path.with_suffix('.report.yaml').write_text(process.stdout)
         report = yaml.safe_load(process.stdout)
         findings = report['diagnostics'] if definite else report['unchecked']
-        relevant = [item for item in findings if item['path'] == callback_path]
+        relevant = [item for item in findings if path_of(item) == callback_path]
         assert process.returncode == int(definite) and report['mode'] == 'static' and relevant, (label, report)
         assert all(item['kind'] == ('type' if definite else 'unchecked') and
                    (item['line'], item['column']) == location(source, callback_path) for item in relevant), relevant
@@ -376,7 +381,7 @@ def verify_iteration_callbacks(ctx):
                              (call('map', fn(['a', 'b'], None), [1]), '/$call/1'),
                              (call('map', increment, {}), '/$call/2')):
         code, report = static_report(ctx, json.dumps(expression))
-        assert code == 1 and any(item['kind'] == 'type' and item['path'] == path
+        assert code == 1 and any(item['kind'] == 'type' and path_of(item) == path
                                  for item in report['diagnostics']), report
 
     # Callback operands are values: a scalar spelling does not resolve a binding.
@@ -389,7 +394,7 @@ def verify_iteration_callbacks(ctx):
             process = ctx.helix('run', '-', stdin=json.dumps(expression))
             assert process.returncode == 0 and yaml.safe_load(process.stdout)['root'] == [2], process
         else:
-            assert any(item['kind'] == 'type' and item['path'] == '/$call/2/$call/1'
+            assert any(item['kind'] == 'type' and path_of(item) == '/$call/2/$call/1'
                        for item in report['diagnostics']), report
 
     # Empty input never invokes or even resolves the callback at runtime.
@@ -410,7 +415,7 @@ def verify_iteration_callbacks(ctx):
     # that every possible element fails, even when the source list is nonempty.
     code, report = static_report(ctx, json.dumps(call('map', increment, [1, 'two'])))
     assert code == 0 and report['diagnostics'] == [] and any(
-        item['path'] == '/$call/1' for item in report['unchecked']), report
+        path_of(item) == '/$call/1' for item in report['unchecked']), report
 
 
 def verify_declarative_annotations(ctx):
@@ -432,11 +437,11 @@ def verify_declarative_annotations(ctx):
     code, report = static_report(ctx, text)
     assert code == 1, report
     expected = {'/a/$call/1', '/b/$call/1/name', '/c/$call/2'}
-    assert {item['path'] for item in report['diagnostics']} == expected, report
+    assert {path_of(item) for item in report['diagnostics']} == expected, report
     for item in report['diagnostics']:
-        assert (item['line'], item['column']) == location(text, item['path']), item
+        assert (item['line'], item['column']) == location(text, path_of(item)), item
     assert {'/dynamic_value/$call/1', '/dynamic_type/$call/2', '/uncalled/$call/1/0/1'} <= {
-        item['path'] for item in report['unchecked']}, report
+        path_of(item) for item in report['unchecked']}, report
     assert 'root' not in report and 'pending_effect' not in report, report
 
     for annotation in ('UnknownType', 7, call('list_of', 'UnknownType')):
@@ -447,10 +452,10 @@ def verify_declarative_annotations(ctx):
         ):
             text = json.dumps(expression, indent=2)
             code, report = static_report(ctx, text)
-            assert code == 1 and any(item['path'] == path and 'invalid type declaration' in item['message']
+            assert code == 1 and any(path_of(item) == path and 'invalid type declaration' in item['message']
                                      for item in report['diagnostics']), report
-            assert not any(item['path'] == path for item in report['unchecked']), report
-            assert all((item['line'], item['column']) == location(text, item['path'])
+            assert not any(path_of(item) == path for item in report['unchecked']), report
+            assert all((item['line'], item['column']) == location(text, path_of(item))
                        for item in report['diagnostics']), report
 
     # An annotation preserves the underlying value type for later obligations.
@@ -499,7 +504,7 @@ def verify_name_resolution(ctx):
         process = ctx.helix('check', str(fixture.relative_to(ctx.root)))
         fixture.with_suffix('.report.yaml').write_text(process.stdout)
         report = yaml.safe_load(process.stdout)
-        relevant = [item for item in report['diagnostics'] if item['kind'] == 'unbound' and item['path'] == path]
+        relevant = [item for item in report['diagnostics'] if item['kind'] == 'unbound' and path_of(item) == path]
         assert process.returncode == 1 and report['mode'] == 'static' and relevant, (name, report)
         assert all(typo in item['message'] and (item['line'], item['column']) == location(source, path)
                    for item in relevant), (name, relevant)
@@ -527,7 +532,7 @@ def verify_name_resolution(ctx):
     for source, path in ((ref('add'), '/'), (ref('absent'), '/'),
                          (call(ref('add'), 1, 2), '/$call/0'), (call('missing_callback'), '/$call/0')):
         code, report = static_report(ctx, json.dumps(source))
-        assert code == 1 and any(item['kind'] == 'unbound' and item['path'] == path
+        assert code == 1 and any(item['kind'] == 'unbound' and path_of(item) == path
                                  for item in report['diagnostics']), report
 
 
@@ -585,7 +590,7 @@ def verify_record_boundaries(ctx):
     ]
     for name, source in incompatible:
         code, report = static_report(ctx, json.dumps(source))
-        assert code == 1 and any(item['kind'] == 'type' and item['path'] == '/$call/2'
+        assert code == 1 and any(item['kind'] == 'type' and path_of(item) == '/$call/2'
                                  for item in report['diagnostics']), (name, report)
 
     source = fn([['row', 'map'], ['key', 'string']],
@@ -593,7 +598,7 @@ def verify_record_boundaries(ctx):
                 record(bad='integer', unknown='any'))
     code, report = static_report(ctx, json.dumps(source))
     relevant = [item for item in report['diagnostics']
-                if item['kind'] == 'type' and item['path'] == '/$call/2/bad']
+                if item['kind'] == 'type' and path_of(item) == '/$call/2/bad']
     assert code == 1 and relevant, ('unknown sibling must not hide bad field', report)
     assert all(item['line'] > 0 and item['column'] > 0 for item in relevant), relevant
 
@@ -651,7 +656,7 @@ def verify_annotation_bounds(ctx):
         assert result.returncode == 0 and yaml.safe_load(result.stdout)['root']['answer'] == body, (name, result)
     source = annotated({'Alias': 'integer'}, 'Alias')
     code, report = static_report(ctx, json.dumps(source))
-    assert code == 1 and any(item['path'] == '/produce/$call/3' and
+    assert code == 1 and any(path_of(item) == '/produce/$call/3' and
         'invalid type declaration' in item['message'] for item in report['diagnostics']), report
 
     aliases = {'alias0': 'integer'}
@@ -687,7 +692,7 @@ def verify_annotation_bounds(ctx):
         assert code == 0 and report['diagnostics'] == [], (name, report)
         # Analysis-budget exhaustion is a distinct outcome from an unsupported form.
         kind, text = ('exhausted', 'budget') if name.endswith('_budget') else ('unchecked', 'outside the supported')
-        assert any(item['path'] == '/produce/$call/3' and item['kind'] == kind and text in item['message']
+        assert any(path_of(item) == '/produce/$call/3' and item['kind'] == kind and text in item['message']
                    for item in report['unchecked']), (name, report)
 
 
@@ -698,7 +703,7 @@ def verify_unannotated_inference(ctx):
     program = {'one': call('fn', [], 1), 'twice': call('fn', [['x', 'integer']], call('add', {'$ref': 'x'}, 1))}
     wrong = {**program, 'bad': call('fn', [], call('one'), 'string'), 'bad2': call('fn', [], call('twice', 1), 'string')}
     code, report = static_report(ctx, json.dumps(wrong))
-    assert code == 1 and {d['path'] for d in report['diagnostics']} == {'/bad/$call/2', '/bad2/$call/2'}, report
+    assert code == 1 and {path_of(d) for d in report['diagnostics']} == {'/bad/$call/2', '/bad2/$call/2'}, report
     code, report = static_report(ctx, json.dumps({**program, 'ok': call('fn', [], call('one'), 'integer')}))
     assert code == 0 and report['diagnostics'] == [], report
 
@@ -715,7 +720,7 @@ def verify_computed_heads(ctx):
     ]
     for source, path in examples:
         code, report = static_report(ctx, json.dumps(source))
-        assert code == 1 and any(d['kind'] == 'type' and d['path'] == path for d in report['diagnostics']), report
+        assert code == 1 and any(d['kind'] == 'type' and path_of(d) == path for d in report['diagnostics']), report
     for source in (
         {'$literal': examples[0][0]},
         {'$call': [{'$literal': bad_function}]},
@@ -730,12 +735,12 @@ def verify_retired_closure(ctx):
     # Unknown heads are not assigned the retired builtin's arity or binding rules.
     code, report = static_report(ctx, json.dumps({'$call': ['closure']}))
     assert code == 1 and [item['kind'] for item in report['diagnostics']] == ['unbound'], report
-    assert report['diagnostics'][0]['path'] == '/$call/0', report
+    assert path_of(report['diagnostics'][0]) == '/$call/0', report
     source = {'$call': ['let', {
         'closure': {'$call': ['fn', [['value', 'integer']], {'$ref': 'value'}, 'integer']},
     }, {'$call': ['closure', 'wrong']}]}
     code, report = static_report(ctx, json.dumps(source))
-    assert code == 1 and any(item['kind'] == 'type' and item['path'] == '/$call/2/$call/1'
+    assert code == 1 and any(item['kind'] == 'type' and path_of(item) == '/$call/2/$call/1'
                              for item in report['diagnostics']), report
 
 

@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 
 import yaml
-from tests.suites.source_contracts import location
+from tests.suites.source_contracts import location, reference
 
 
 def verify(h):
@@ -18,9 +18,8 @@ def verify(h):
             assert result.returncode == 1 and not result.stderr, result
             error = state["errors"][0] if command == "check" else state["error"]
             inner, outer = error["calls"]
-            assert inner["file"].endswith("helper.yaml") and inner["path"] == "/middle/$call/2", inner
-            assert "file" not in outer and outer["path"] == "/value", outer
-            assert [frame["function"] for frame in [inner, outer]] == ["/leaf", "/middle"]
+            assert inner["file"].endswith("helper.yaml") and inner["reference"] == ["middle", "$call", 2], inner
+            assert "file" not in outer and outer["reference"] == ["value"], outer
             for frame, definition in [(inner, "/leaf"), (outer, "/middle")]:
                 assert frame["function_file"].endswith("helper.yaml"), frame
                 assert (frame["function_line"], frame["function_column"]) == location((base / "helper.yaml").read_text(), definition), frame
@@ -29,10 +28,10 @@ def verify(h):
         result = h.helix("run", str(program))
         error = yaml.safe_load(result.stdout)["error"]
         cause = error["cause"]
-        assert cause["kind"] == "arity" and cause["calls"][0]["function"] == "/leaf", cause
+        assert cause["kind"] == "arity" and cause["calls"][0]["function_line"] == 1, cause
         assert cause["calls"][0]["function_file"].endswith("helper.yaml"), cause
         handler = error["calls"][0]
-        assert handler["function"] == "/value/$call/2" and "function_file" not in handler, handler
+        assert "function_file" not in handler, handler
         assert (handler["function_line"], handler["function_column"]) == location(program.read_text(), "/value/$call/2"), handler
 
     verify_hints(h)
@@ -83,7 +82,7 @@ HINTS = [
      "did you mean `port`? Otherwise pass a default as the third argument to tolerate absence", False),
     ("a: !call [get, [1, 2, 3], 7]", "missing", "/a/$call/2", "index 7 is out of range for a list of length 3",
      "pass a default as the third argument to tolerate absence", False),
-    ("f: !call [fn, [x], !ref x]\na: !call [f, 1, 2]", "arity", "/a", "function `/f` takes 1 argument (x), got 2", None, False),
+    ("f: !call [fn, [x], !ref x]\na: !call [f, 1, 2]", "arity", "/a", "the function defined at 1:10 takes 1 argument (x), got 2", None, False),
     ("f: !call [fn, x, !ref x]", "type", "/f/$call/1", "`fn` parameters must be a list of names or `[name, type]` pairs",
      "write the parameters as a list, even for one: `!call [fn, [x], body]`", False),
     ("f: !call [fn, [x, [y, integer, 3]], !ref x]", "type", "/f/$call/1/1", "`fn` parameter 2 must be a name or a `[name, type]` pair",
@@ -104,8 +103,8 @@ def verify_hints(h):
             state = yaml.safe_load(result.stdout)
             assert result.returncode == 1, (source, command, result)
             error = state["error"] if command == ("run",) else state[REPORTED[command]][0]
-            observed = (error["kind"], error.get("path") if path else None, error["message"], error.get("hint"))
-            assert observed == (kind, path, message, hint), (source, command, error)
+            observed = (error["kind"], error.get("reference") if path else None, error["message"], error.get("hint"))
+            assert observed == (kind, reference(path) if path else None, message, hint), (source, command, error)
     # A caught error value carries the same hint as the uncaught report.
     caught = "a: !call [try, !call [get, {port: 80}, prot], !call [fn, [e], !call [get, !ref e, hint]]]"
     result = h.helix("run", "-", stdin=caught)

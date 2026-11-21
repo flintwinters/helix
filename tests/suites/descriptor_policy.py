@@ -65,5 +65,5 @@ def verify(h):
         assert result.returncode == 1 and h.malformed_state(result.stdout, 1) is None, result
         error = yaml.safe_load(result.stdout)["error"]
         assert error["kind"] == kind and message in error["message"], (args, error)
-        assert error["path"] == ("/probe" if blame is None else f"/probe/$call/{blame}"), (args, error)
+        assert error["reference"] == (["probe"] if blame is None else ["probe", "$call", blame]), (args, error)
     print(f"descriptor policy: {len(constructors)} value/size cases and {len(invalid)} original-source faults")

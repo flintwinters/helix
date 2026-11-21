@@ -79,7 +79,7 @@ report: !call
                     - and
                     - !call [has, !ref e, line]
                     - !call [has, !ref e, column]
-                    - !call [has, !ref e, path]
+                    - !call [has, !ref e, reference]
     - name: matching_error_wrong_field
       run: !call
         - fn

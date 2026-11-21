@@ -445,7 +445,7 @@ impl Checker<'_> {
         }
         let Some(items) = self.graph.call(function) else { return };
         let (Some(&body), Some(&annotation)) = (items.get(2), items.get(3)) else { return };
-        let what = format!("the body of `{}`", self.graph.path(function));
+        let what = format!("the body of `{}`", self.graph.place(function));
         self.annotated_value(body, annotation, &what);
     }
 

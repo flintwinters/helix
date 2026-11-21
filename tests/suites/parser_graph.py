@@ -2,7 +2,7 @@
 import yaml
 
 from tests.suites.contracts import checked
-from tests.suites.source_contracts import location
+from tests.suites.source_contracts import location, reference
 
 
 def verify(h):
@@ -24,7 +24,7 @@ def verify(h):
         assert h.malformed_state(result.stdout, result.returncode) is None
         error = yaml.safe_load(result.stdout)['error']
         line, column = location(source, path)
-        assert (error['kind'], error['path'], error['line'], error['column']) == ('unbound', path, line, column), error
+        assert (error['kind'], error['reference'], error['line'], error['column']) == ('unbound', reference(path), line, column), error
     scalars = [
         ('null', None), ('~', None), ('TRUE', True), ('false', False),
         ('"true"', 'true'), ("'1'", '1'), ('1.25', 1.25), ('-2', -2),

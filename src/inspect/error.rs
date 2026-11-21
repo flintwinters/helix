@@ -10,7 +10,6 @@ impl HelixError {
             message,
             hint: None,
             file: None,
-            path: None,
             reference: None,
             span,
             data: None,
@@ -37,22 +36,8 @@ impl HelixError {
         if let Some(file) = &self.file {
             h.insert(s("file"), s(file));
         }
-        if let Some(path) = &self.path {
-            h.insert(s("path"), s(path));
-        }
         if let Some(reference) = &self.reference {
-            h.insert(
-                s("reference"),
-                Value::Array(
-                    reference
-                        .iter()
-                        .map(|part| match part {
-                            Segment::Key(key) => s(key),
-                            Segment::Index(index) => Value::Integer(*index as i64),
-                        })
-                        .collect(),
-                ),
-            );
+            h.insert(s("reference"), Segment::render(reference));
         }
         h.insert(s("line"), Value::Integer(self.span.line as i64));
         h.insert(s("column"), Value::Integer(self.span.col as i64));

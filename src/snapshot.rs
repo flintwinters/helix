@@ -11,7 +11,7 @@ mod yaml;
 pub(crate) mod validate;
 use codec::Wire;
 type R<T> = Result<T, String>;
-const VERSION: u64 = 3;
+const VERSION: u64 = 4;
 const MAX_BYTES: usize = 32 * 1024 * 1024;
 const MAX_OBJECTS: usize = 100_000;
 const MAX_DEPTH: usize = 128;
@@ -318,6 +318,9 @@ impl Vm {
         if version < 3 {
             add_error_hints(&mut doc["objects"])?;
         }
+        if version < 4 {
+            drop_error_paths(&mut doc["objects"]);
+        }
         let objects = field(&doc, "objects")?
             .as_object()
             .ok_or("expected objects map")?;
@@ -369,6 +372,24 @@ fn add_error_hints(j: &mut J) -> R<()> {
         _ => {}
     }
     Ok(())
+}
+/// Version 4 removed the slash-joined `path` from error records; `reference` is the exact
+/// location. Earlier records (already carrying `hint`) lose the redundant string.
+fn drop_error_paths(j: &mut J) {
+    const FIELDS: [&str; 11] =
+        ["kind", "phase", "message", "hint", "file", "path", "reference", "span", "data", "calls", "cause"];
+    match j {
+        J::Object(map) => {
+            for value in map.values_mut() {
+                drop_error_paths(value);
+            }
+            if map.len() == FIELDS.len() && FIELDS.iter().all(|f| map.contains_key(*f)) {
+                map.remove("path");
+            }
+        }
+        J::Array(items) => items.iter_mut().for_each(drop_error_paths),
+        _ => {}
+    }
 }
 fn to_yaml(j: &J) -> R<yaml_rust2::Yaml> {
     use yaml_rust2::Yaml;

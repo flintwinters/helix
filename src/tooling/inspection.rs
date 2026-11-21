@@ -191,10 +191,8 @@ pub fn inspect(path: &str) -> ExitCode {
     };
     let location = if machine["location"] != Yaml::BadValue {
         field(machine, "location")
-    } else if state["error"]["reference"] != Yaml::BadValue {
-        field(&state["error"], "reference")
     } else {
-        field(&state["error"], "path")
+        field(&state["error"], "reference")
     };
     let summary = map([
         ("format", text("helix.state-summary.v1")),

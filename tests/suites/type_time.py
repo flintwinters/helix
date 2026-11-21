@@ -215,7 +215,7 @@ def verify_linked_phases(h):
         assert process.returncode == 0 and process.stdout == "once\n", (process, result)
         error = result["root"][1]
         assert error["kind"] == "purity" and error["phase"] == "type", result
-        assert error["file"].endswith("module.yaml") and error["path"] == "/value", error
+        assert error["file"].endswith("module.yaml") and error["reference"] == ["value"], error
         assert len(result.get("effects", [])) == 1, result
 
 
@@ -239,4 +239,4 @@ def verify_check_mode(h):
     assert checked["mode"] == "check" and "phase" not in checked
     errors = checked["errors"]
     assert len(errors) == 2 and [e.get("phase") for e in errors] == [None, "type"], errors
-    assert all(e["kind"] == "divide_by_zero" and e["path"] == "/failure" for e in errors)
+    assert all(e["kind"] == "divide_by_zero" and e["reference"] == ["failure"] for e in errors)

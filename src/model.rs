@@ -16,6 +16,15 @@ pub(crate) enum Segment {
     Key(String),
     Index(usize),
 }
+impl Segment {
+    /// Plain-value spelling of a location: string keys and integer indices.
+    pub(crate) fn render(segments: &[Segment]) -> Value {
+        Value::Array(segments.iter().map(|part| match part {
+            Segment::Key(key) => string(key),
+            Segment::Index(index) => Value::Integer(*index as i64),
+        }).collect())
+    }
+}
 /// A source name and the path from its root.
 pub(crate) type Location = (String, Vec<Segment>);
 pub(crate) type Outcome = Result<Value, HelixError>;
@@ -333,8 +342,6 @@ pub(crate) struct HelixError {
     /// The imported file the error lies in; absent for the program itself. `path`, `line` and
     /// `column` are relative to that file.
     pub file: Option<String>,
-    /// Root-relative object path of the offending node; absent for parse errors.
-    pub path: Option<String>,
     pub(crate) reference: Option<Vec<Segment>>,
     pub span: Span,
     /// Plain-value payload attached by user code via `raise`.

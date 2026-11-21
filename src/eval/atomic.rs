@@ -173,7 +173,7 @@ impl Evaluator {
                 function.node,
                 &format!(
                     "the arguments of `{}`",
-                    function.program.graph.path(function.node)
+                    function.program.graph.place(function.node)
                 ),
                 found.clone(),
             );
@@ -184,7 +184,6 @@ impl Evaluator {
                 .and_then(|index| origin.args.get(index)).copied().unwrap_or(origin.site);
             let location = origin.program.graph.error(node, "type", String::new());
             error.file = location.file;
-            error.path = location.path;
             error.reference = location.reference;
             error.span = location.span;
             return Err(self.blame_predicate(error));
@@ -229,7 +228,6 @@ impl Evaluator {
         error.kind = "predicate".into();
         error.file = location.get(&s("source")).and_then(Value::as_str)
             .filter(|source| *source != "<root>").map(str::to_owned);
-        error.path = location.get(&s("path")).and_then(Value::as_str).map(str::to_owned);
         if let Some(Value::Integer(line)) = location.get(&s("line")) { error.span.line = *line as usize; }
         if let Some(Value::Integer(column)) = location.get(&s("column")) { error.span.col = *column as usize; }
         if let Some(Value::Array(parts)) = location.get(&s("reference")) {
@@ -372,7 +370,6 @@ fn argument_violation(name: &str, origin: &CallOrigin, index: usize, violation: 
     let span = graph.span(node);
     h.insert(s("argument_location"), Value::Hash([
         (s("reference"), graph.reference(node)),
-        (s("path"), s(&graph.path(node))),
         (s("line"), Value::Integer(span.line as i64)),
         (s("column"), Value::Integer(span.col as i64)),
     ].into_iter().collect()));
