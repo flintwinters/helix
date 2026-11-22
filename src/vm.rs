@@ -142,6 +142,10 @@ impl Vm {
         }
     }
     fn advance(&mut self) {
+        self.advance_with(Evaluator::transition);
+    }
+
+    pub(crate) fn advance_with(&mut self, transition: impl FnOnce(&mut Evaluator)) {
         if self.terminal() {
             return;
         }
@@ -173,7 +177,7 @@ impl Vm {
                 }
             } else {
                 self.status = Status::Running;
-                evaluator.transition();
+                transition(evaluator);
                 if evaluator.pending_effect.is_some() {
                     self.status = Status::Signaled;
                 }

@@ -361,6 +361,24 @@ offline; live OpenRouter calls use the explicit `quality agent-bench run` comman
 
 `memory` requires Linux and GNU `/usr/bin/time`. It measures only interpreter peak RSS (KiB), records platform/Python/debug-profile metadata, and saves exact sources and states. Workloads use 1,001/4,001/10,001-node arithmetic maps (each under two seconds and 192 MiB), with a broad 12x-plus-16-MiB scaling allowance, and compare 999 versus 99,999 constant-state iterations (at most 8 MiB extra RSS). The `scale` suite enforces a 0.8-second 10k-node bound, including Python YAML decoding. These tolerances catch large regressions while allowing allocator and host noise; they are not a historical statistical baseline. Linux CI runs these measurements and compiled mutation checks in the weekly/manual full sweep and uploads the reports even on success.
 
+### Localizing slow evaluation
+
+Run `./manage.py profile program.yaml` for a `helix.profile.v1` JSON report.
+It separates load time from execution time and ranks evaluator sites by
+transition count (`by_count`) and elapsed time inside the evaluator
+(`by_time`). Rows give a source path, line, column, phase and the written actor
+when there is one. Use counts to compare repeated work across revisions and
+timing to find expensive evaluations with low counts. Timing is sampled around
+each transition and includes measurement overhead. The run total also includes
+VM bookkeeping and profiler work. Site timings are exclusive; continuations
+without a reported site contribute to `other`.
+
+Use `--top N` to expand each ranking (default 20) and `--limit N` to bound VM
+advances (default 2,000,000). The profile stops at the first signal or error
+and never grants host effects. An error or reached limit exits 1 and still
+emits the report. Use the speed suite below for end-to-end regression
+measurements. The profile contract runs through `./manage.py test --suite inspection`.
+
 Speed benchmarks run through `./manage.py test --suite speed` and the default full
 suite. They measure the debug-profile CLI, built at `opt-level = 1` with optimized dependencies per `Cargo.toml` (startup, loading, evaluation and emission),
 excluding compilation and Python YAML decoding. Each workload gets one warmup

@@ -147,7 +147,7 @@ def cli(h):
     for args in [(), ("unknown",), ("unknown", "--help"), ("run",), ("run", "-", "extra"), ("check",), ("std", "unknown")]:
         result = h.helix(*args)
         assert result.returncode == 2 and not result.stdout and result.stderr, (args, result)
-    for command in ("run", "check", "fmt", "step", "trace", "inspect", "watch", "repl", "lsp", "schema"):
+    for command in ("run", "check", "fmt", "step", "profile", "trace", "inspect", "watch", "repl", "lsp", "schema"):
         help_result = h.helix(command, "--help")
         assert help_result.returncode == 0 and "usage:" in help_result.stdout and not help_result.stderr
         # Per-command help names only that command's forms.

@@ -51,6 +51,7 @@ pub fn dispatch(args: &[String]) -> Option<ExitCode> {
             Ok(count) => inspection::step(path, count),
             Err(_) => usage("--steps requires a nonnegative integer"),
         },
+        ["profile", path, options @ ..] => super::profile::run(path, options),
         ["trace", path] => inspection::trace(path, None),
         ["trace", path, "--limit", count] => match count.parse() {
             Ok(count) => inspection::trace(path, Some(count)),

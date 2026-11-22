@@ -370,9 +370,9 @@ def runtime(args, binary) -> int:
     if command in ("run", "recover", "resume", "check"):
         return subprocess.call([str(binary), command, *(["--evaluate"] if command == "check" and args.evaluate else []),
                                 *(["--annotations"] if command == "run" and args.annotations else []), args.file], cwd=ROOT)
-    if command in ("fmt", "step", "snapshot", "restore", "system-snapshot", "system-restore", "checkpoint", "target-release", "trace", "watch", "state", "repl", "schema", "lsp"):
+    if command in ("fmt", "step", "snapshot", "restore", "system-snapshot", "system-restore", "checkpoint", "target-release", "profile", "trace", "watch", "state", "repl", "schema", "lsp"):
         extra = [args.file] if hasattr(args, "file") else []
-        for name in ("steps", "limit", "interval_ms", "iterations"):
+        for name in ("steps", "limit", "top", "interval_ms", "iterations"):
             value = getattr(args, name, None)
             if value is not None:
                 extra.extend(["--" + name.replace("_", "-"), str(value)])

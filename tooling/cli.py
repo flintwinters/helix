@@ -36,7 +36,7 @@ SUITES = {
     "find": "Ranked builtin/std search with structural parameter and result type filters",
     "editor": "Browser editor highlighting of Helix structure, tags and rejected YAML forms (needs Node.js)",
     "workbook": "Interactive workbook lessons: solutions pass, starters fail, prose examples run as labelled",
-    "inspection": "Stepping, trace streams and observational saved-state summaries",
+    "inspection": "Stepping, trace streams, hotspot profiles and observational saved-state summaries",
     "nginx_types": "Pure class realization, defaults and provenance feeding the existing nginx lifecycle",
     "target_coordination": "Cross-journal target exclusion and persistent crash uncertainty for cooperating controllers",
     "secret_effects": "Opaque host secret inputs, suppressed captures, fresh grants and safe durable reconciliation",
@@ -146,6 +146,7 @@ def parser():
         "restore": "Restore executable state; optionally save after more transitions",
         "checkpoint": "Inspect durable effects and recovery action without execution",
         "target-release": "Acknowledge independently established target quiescence after recovery",
+        "profile": "Rank evaluator hotspots by time and transition count (JSON)",
         "trace": "Stream evaluation transitions as YAML documents",
         "watch": "Re-run when program or transitive import contents change",
     }.items():
@@ -157,8 +158,10 @@ def parser():
             leaf.add_argument("--steps", type=int, default=0 if name in ("snapshot", "system-snapshot") else None, help="transitions before saving; restore runs to completion when omitted")
         if name == "step":
             leaf.add_argument("--steps", type=int, default=1, help="number of transitions (default: 1)")
-        if name == "trace":
+        if name in ("trace", "profile"):
             leaf.add_argument("--limit", type=int, help="maximum transitions")
+        if name == "profile":
+            leaf.add_argument("--top", type=int, help="maximum rows per ranking (default: 20)")
         if name == "watch":
             leaf.add_argument("--interval-ms", type=int, default=250, help="poll interval in milliseconds")
             leaf.add_argument("--iterations", type=int, help="exit after this many run attempts")

@@ -1,4 +1,6 @@
 """Step, trace and saved-state observation contracts; run via manage.py test."""
+import json
+
 import yaml
 
 
@@ -77,4 +79,38 @@ def check(ctx):
         assert ctx.helix(command, "runtime/no-such-inspection-file.yaml").returncode == 2
     malformed = ctx.helix("step", "-", stdin="[")
     assert malformed.returncode == 1 and yaml.safe_load(malformed.stdout)["status"] == "error"
+    check_profile(ctx, len(versions) - 1, source, effect_source, failure["state"]["error"])
     return []
+
+
+def check_profile(ctx, advances, source, effect_source, expected_error):
+    def profile(program, *args, code=0):
+        result = ctx.helix("profile", "-", *args, stdin=program)
+        assert result.returncode == code and not result.stderr, result
+        report = json.loads(result.stdout)
+        assert report["format"] == "helix.profile.v1", report
+        return report
+
+    report = profile(source)
+    assert report["stop"] == "finished" and report["advances"] == advances, report
+    assert report["attributed_transitions"] + report["other"]["transitions"] == advances, report
+    assert {"add", "mul"} <= {row["actor"] for row in report["by_count"]}, report
+    for ranking, metric in [("by_count", "transitions"), ("by_time", "elapsed_ns")]:
+        costs = [row[metric] for row in report[ranking]]
+        assert costs == sorted(costs, reverse=True), report
+    repeated = "result: !call [map, !call [fn, [x], !call [add, !ref x, 1]], [1, 2, 3]]"
+    count = profile(repeated)
+    hot = next(row for row in count["by_count"] if row["actor"] == "add" and row["phase"] == "atomic_builtin")
+    assert hot["transitions"] == 3 and hot["location"]["path"][0] == "result" and hot["line"] == 1, hot
+    short = profile(repeated, "--top", "1")
+    assert len(short["by_count"]) == len(short["by_time"]) == 1 and short["site_count"] > 1, short
+    limited = profile(repeated, "--limit", "2", code=1)
+    assert limited["stop"] == "limit" and limited["advances"] == 2, limited
+    imported = profile("m: !call [import, 'std:math']\nx: !call [m.square, 3]", "--top", "1000")
+    assert any(row["location"]["source"] == "std:math" for row in imported["by_count"]), imported
+    signaled = profile(effect_source)
+    assert signaled["stop"] == "signaled" and signaled["pending_operation"] == "file_read", signaled
+    failed = profile("answer: !call [div, 1, 0]", code=1)
+    assert failed["error"]["kind"] == expected_error["kind"], failed
+    malformed = profile("[", code=1)
+    assert malformed["error"]["kind"] == "parse" and malformed["advances"] == 0, malformed

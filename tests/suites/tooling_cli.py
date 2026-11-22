@@ -14,10 +14,10 @@ from tooling.cli import SUITES
 
 
 def verify(h):
-    def invoke(*args):
+    def invoke(*args, stdin=""):
         return subprocess.run(
             [sys.executable, str(h.root / "manage.py"), *args],
-            cwd=h.root, input="", capture_output=True, text=True, timeout=120,
+            cwd=h.root, input=stdin, capture_output=True, text=True, timeout=120,
         )
 
     for source, code in [('{"$call": ["add", 20, 22]}', 0), ('{"$call": ["div", 1, 0]}', 1), ("[", 1)]:
@@ -119,11 +119,16 @@ def verify(h):
             command, result, direct
         )
 
+    profiled = invoke("runtime", "profile", "-", "--limit", "0", "--top", "0", stdin="answer: !call [add, 1, 2]")
+    report = json.loads(profiled.stdout)
+    assert profiled.returncode == 1 and report["stop"] == "limit" and report["advances"] == 0, (profiled, report)
+    assert report["by_time"] == report["by_count"] == []
+
     # All shortcuts and canonical paths share parsed arguments, including opaque flags.
     from tooling.cli import parse
     for name, path in catalog["shortcuts"].items():
         extra = {"run": ["-"], "check": ["-"], "recover": ["-"], "resume": ["-"],
-                 "fmt": ["-"], "format": ["std"], "step": ["-"], "snapshot": ["-"], "restore": ["-"], "system-snapshot": ["-"], "system-restore": ["-"], "checkpoint": ["checkpoint.json"], "target-release": ["target.lock"], "reconcile": ["checkpoint.json", "observed.yaml"], "trace": ["-"], "watch": ["example.yaml"],
+                 "fmt": ["-"], "format": ["std"], "step": ["-"], "snapshot": ["-"], "restore": ["-"], "system-snapshot": ["-"], "system-restore": ["-"], "checkpoint": ["checkpoint.json"], "target-release": ["target.lock"], "reconcile": ["checkpoint.json", "observed.yaml"], "profile": ["-"], "trace": ["-"], "watch": ["example.yaml"],
                  "state": ["-"], "sandbox": ["-", "-"], "eval": ["--", "-42"], "cli": ["--help", "--unknown"],
                  "lint": ["--format=text"], "test": ["--suite", "cli"], "migrate-syntax": ["tests/cases"],
                  "docker-nginx": ["describe"], "agent-bench": ["list"]}.get(name, [])

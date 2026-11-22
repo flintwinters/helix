@@ -48,6 +48,7 @@ pub const COMMANDS: &[Command] = &[
     entry("watch", "write and run", &[("FILE [--interval-ms N] [--iterations N]", "re-run on dependency changes")]),
     entry("perform", "write and run", &[("[grants] <file> [-- args...]", "explicit host effects; state to stderr; `helix perform --help` lists grants")]),
     entry("step", "observe", &[("FILE [--steps N]", "inspect after N transitions")]),
+    entry("profile", "observe", &[("FILE [--limit N] [--top N]", "rank evaluator hotspots by time and transition count")]),
     entry("trace", "observe", &[("FILE [--limit N]", "stream transition inspections")]),
     entry("inspect", "observe", &[("<state.yaml | ->", "summarize saved state without execution")]),
     entry("search", "observe", &[

@@ -6,6 +6,7 @@ pub mod docs;
 pub mod find;
 pub mod help;
 pub mod inspection;
+mod profile;
 pub mod interactive;
 pub mod perform;
 

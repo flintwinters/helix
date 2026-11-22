@@ -34,7 +34,7 @@ fn read(path: &str) -> io::Result<String> {
         std::fs::read_to_string(path)
     }
 }
-fn load(path: &str) -> Result<Vm, ExitCode> {
+pub(super) fn load(path: &str) -> Result<Vm, ExitCode> {
     read(path)
         .map(|source| {
             if path == "-" {
