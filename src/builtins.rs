@@ -279,8 +279,21 @@ pub(crate) fn members(family: &str) -> impl Iterator<Item = &'static Descriptor>
     ACTORS.iter().filter(move |actor| actor.family() == family)
 }
 
+/// Registry lookup by name. The index is derived from `ACTORS` once; the first registration
+/// of a name wins, as in a linear scan.
 pub(crate) fn descriptor(name: &str) -> Option<&'static Descriptor> {
-    ACTORS.iter().find(|actor| actor.name == name)
+    static INDEX: std::sync::OnceLock<std::collections::HashMap<&'static str, &'static Descriptor, crate::model::NodeHash>> =
+        std::sync::OnceLock::new();
+    INDEX
+        .get_or_init(|| {
+            let mut index = std::collections::HashMap::default();
+            for actor in ACTORS.iter() {
+                index.entry(actor.name).or_insert(actor);
+            }
+            index
+        })
+        .get(name)
+        .copied()
 }
 
 /// Every builtin actor name, in registration order.

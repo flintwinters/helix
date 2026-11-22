@@ -35,9 +35,9 @@ impl Function {
                     if let Ok(params) = evaluator.parameters(&function) {
                         for (name, annotation) in params {
                             if let Some(ty) = annotation {
-                                pending.push((ty, locals.clone(), true));
+                                pending.push((*ty, locals.clone(), true));
                             }
-                            locals.insert(name);
+                            locals.insert(name.clone());
                         }
                     }
                     if let Some(body) = items.get(2) {
@@ -130,21 +130,11 @@ impl Evaluator {
         nodes
     }
 
-    pub(super) fn parameters(
-        &self,
-        function: &Function,
-    ) -> Result<Vec<(String, Option<NodeId>)>, HelixError> {
-        function.program.graph.parameters(function.node)
+    pub(super) fn parameters<'f>(&self, function: &'f Function) -> Result<&'f [(String, Option<NodeId>)], HelixError> {
+        function.program.graph.params(function.node).map(Vec::as_slice).map_err(Clone::clone)
     }
     pub(super) fn capture_environment(&self, node: NodeId) -> Vec<Scope> {
-        let mut ancestors = HashSet::new();
-        let mut parent = self.graph().parent(node);
-        while let Some(id) = parent {
-            if self.graph().form(id) == Some("fn") {
-                ancestors.insert(id);
-            }
-            parent = self.graph().parent(id);
-        }
+        let ancestors = self.graph().enclosing_functions(node);
         self.environment
             .iter()
             .filter(|scope| ancestors.contains(&scope.function))
@@ -191,7 +181,7 @@ impl Evaluator {
             return Ok((Resolution { binding, members: Vec::new() }, frame));
         }
         let (head, rest) = name.split_once('.').ok_or(None)?;
-        let (mut binding, frame) = self.resolve_site(self.graph().root_site(from, head)).ok_or(None)?;
+        let (mut binding, frame) = self.resolve_site(self.graph().sites(from, name).root).ok_or(None)?;
         let parts = rest.split('.').collect::<Vec<_>>();
         // `name[..end]` is the written prefix whose binding is `binding`.
         let mut end = head.len();

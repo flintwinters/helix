@@ -1,11 +1,13 @@
 //! The object graph: YAML parsed into an arena of nodes with parent links and source spans.
 //! Parent links define lexical/object resolution; paths are always root-relative.
 
+mod derived;
 mod effects;
 mod hint;
 pub(crate) mod http;
 mod scope;
 mod syntax;
+pub(crate) use derived::Derived;
 pub(crate) use effects::Effects;
 pub(crate) use hint::{members_of, missing_key, missing_member, nearest, not_callable};
 pub(crate) use scope::Site;
@@ -58,6 +60,7 @@ impl Graph {
         if builder.graph.nodes.is_empty() {
             return Err(HelixError::unlocated("parse", "empty document".into(), Span { line: 1, col: 1 }));
         }
+        builder.graph.derived.reset();
         Ok(builder.graph)
     }
 
@@ -184,12 +187,14 @@ impl Graph {
             }
         }
         self.nodes.append(&mut other.nodes);
+        self.derived.reset();
         Ok(offset)
     }
 
     /// Record that the subtree grafted at `root` is the file `name`; its errors report it.
     pub fn set_source(&mut self, root: NodeId, name: String) {
         self.sources.insert(root, name);
+        self.derived.reset();
     }
 
     /// The imported file `id` belongs to, if it is not part of the main program.

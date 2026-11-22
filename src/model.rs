@@ -354,6 +354,8 @@ pub(crate) struct Graph {
     pub(crate) nodes: Vec<Node>,
     /// Imported files by the root of the subtree they were grafted as.
     pub(crate) sources: HashMap<NodeId, String>,
+    /// Memoized pure functions of the nodes above; see `graph/derived.rs`.
+    pub(crate) derived: crate::graph::Derived,
 }
 
 #[derive(Clone, Debug, PartialEq)]

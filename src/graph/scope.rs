@@ -4,6 +4,7 @@ use super::{Graph, Kind, NodeId, Syntax};
 use crate::model::HelixError;
 
 /// Where a lexical name is declared.
+#[derive(Clone, Copy)]
 pub(crate) enum Site {
     /// A map entry or `let` binding.
     Entry(NodeId),
@@ -14,6 +15,10 @@ pub(crate) enum Site {
 impl Graph {
     /// A `fn`'s parameter names with their annotation nodes, in order.
     pub(crate) fn parameters(&self, function: NodeId) -> Result<Vec<(String, Option<NodeId>)>, HelixError> {
+        self.params(function).cloned().map_err(Clone::clone)
+    }
+
+    pub(super) fn parameters_uncached(&self, function: NodeId) -> Result<Vec<(String, Option<NodeId>)>, HelixError> {
         let Some(items) = self.call(function) else {
             unreachable!()
         };
@@ -49,6 +54,10 @@ impl Graph {
     /// The innermost lexical declaration of the exact name `name` visible from `from`,
     /// independent of any frame.
     pub(crate) fn lexical_site(&self, from: NodeId, name: &str) -> Option<Site> {
+        self.sites(from, name).exact
+    }
+
+    pub(super) fn lexical_site_uncached(&self, from: NodeId, name: &str) -> Option<Site> {
         self.declarations(from, false, |declared, site| (declared == name).then_some(site))
     }
 
@@ -93,7 +102,7 @@ impl Graph {
                     .filter(|(_, v)| own || deferred || *v != child)
                     .find_map(|(k, v)| visit(k, Site::Entry(*v))),
                 Syntax::Call(items) if items.get(2) == Some(&child) => match (self.form(id), self.kind(items[1])) {
-                    (Some("fn"), _) => self.parameters(id).ok().and_then(|params| {
+                    (Some("fn"), _) => self.params(id).ok().and_then(|params| {
                         params.iter().enumerate().find_map(|(index, (n, _))| visit(n, Site::Parameter(id, index)))
                     }),
                     (Some("let"), Kind::Map(entries)) => entries.iter().find_map(|(k, v)| visit(k, Site::Entry(*v))),
