@@ -247,33 +247,19 @@ File imports provide isolated namespaces, documented visibility and
 circular-import diagnostics. Dependencies are repository-pinned vendored paths
 (`imports`, `import_vendored`).
 
-### Errors that teach — open
+### Errors that teach — complete for the recorded failure review
 
-Evidence comes from recorded failures: the usage log and agent benchmark
-first failures (`benchmarks/agent/`) name the failure classes to fix first.
+Name the rejected syntax, binding, operand or declaration and explain how to fix
+it. Derive corrections from authoritative syntax, registries, lexical scope and
+observed values. Keep diagnostic kind and blame stable across entrypoints, and
+preserve guidance when an error is caught as data.
 
-- [ ] Every rejection names the offending text (tag, name, key, field, value
-  excerpt), not only its category
-- [x] Errors carry an optional structured `hint` with the concrete correction.
-  Hints derive from authoritative sources (builtin registry, lexical scope,
-  standard-module exports, syntax rules), never hand-maintained lists; they are
-  advisory and never change `kind`, `message` or blame
-- [x] Unbound names suggest the nearest visible names and builtins, and the
-  standard module exporting a missing member with its exact import binding; a
-  builtin used as a value explains calling it or wrapping it in `fn`
-- [x] Unsupported syntax names the supported spelling (`!if` → `!call [if, ...]`);
-  YAML parse failures point at the likely structural cause (unclosed flow
-  bracket, tab indentation, unquoted `: `, misaligned keys)
-- [x] Type, arity and contract failures state expected versus actual (bounded
-  value excerpt) and blame the declaration that demanded it
-- [x] One implementation: `run`, `exec`, `check`, LSP and `try`-caught values
-  report the same diagnostic for the same fault
-- [ ] Text presentation shows a bounded source excerpt with a caret; JSON stays
-  complete; oversized output summarizes and names the drill-down
-- [ ] A failed run names the next debugging step (`recover`, `step`, `trace`,
-  `check --evaluate`) applicable to that failure
-- [ ] Each recurring benchmark first-failure class has a focused regression, and
-  small-model repair rates are measured before and after (task 5 protocol)
+The review used local usage-log failures and the archived
+[agent benchmark failures](benchmarks/agent/README.md). The errors suite covers
+builtin actors used as values, unsupported tags, module calls, value cycles,
+unknown types, unbound recursive type variables and the two recorded malformed
+flow sequences. These regressions measure diagnostic behavior. Model repair
+rates are measured separately under the agent benchmark protocol.
 
 ## 6. Daily tooling — complete within current CLI/editor scope
 
