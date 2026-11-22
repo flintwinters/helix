@@ -10,7 +10,7 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let argv: Vec<&str> = args.iter().map(String::as_str).collect();
     // Structured help comes from the one command table, before commands with their own prose help.
-    if let [cmd, "--help" | "-h", "--json"] = argv.as_slice() && help::find(cmd).is_some() {
+    if let [cmd, "--help" | "-h", "--yaml"] = argv.as_slice() && help::find(cmd).is_some() {
         return help::command(&argv);
     }
     if let Some(code) = helix::tooling::cli::dispatch(&args) {

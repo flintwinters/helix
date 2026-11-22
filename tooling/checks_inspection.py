@@ -1,5 +1,4 @@
 """Step, trace and saved-state observation contracts; run via manage.py test."""
-import json
 
 import yaml
 
@@ -87,7 +86,7 @@ def check_profile(ctx, advances, source, effect_source, expected_error):
     def profile(program, *args, code=0):
         result = ctx.helix("profile", "-", *args, stdin=program)
         assert result.returncode == code and not result.stderr, result
-        report = json.loads(result.stdout)
+        report = yaml.safe_load(result.stdout)
         assert report["format"] == "helix.profile.v1", report
         return report
 

@@ -1,5 +1,5 @@
 //! The CLI's command table: one inventory renders the overview, each command's usage, the
-//! structured `--json` catalog and command-name validation, so they cannot drift apart.
+//! structured `--yaml` catalog and command-name validation, so they cannot drift apart.
 use std::process::ExitCode;
 
 use serde_json::{Value as J, json};
@@ -22,17 +22,17 @@ const fn entry(name: &'static str, group: &'static str, forms: &'static [(&'stat
 /// Every command, grouped in the order a newcomer needs them: learn, write and run, observe,
 /// recover. `--help` output follows this order.
 pub const COMMANDS: &[Command] = &[
-    entry("help", "learn", &[("[COMMAND] [--json]", "this overview, or one command's forms; also `helix COMMAND --help`")]),
+    entry("help", "learn", &[("[COMMAND] [--yaml]", "this overview, or one command's forms; also `helix COMMAND --help`")]),
     entry("docs", "learn", &[
-        ("[DOC [SECTION]] [--json]", "reference documents: list, a document's section tree, then one section"),
-        ("PATH.md [SECTION] [--json]", "the same navigation for any Markdown file"),
+        ("[DOC [SECTION]] [--yaml]", "reference documents: list, a document's section tree, then one section"),
+        ("PATH.md [SECTION] [--yaml]", "the same navigation for any Markdown file"),
     ]),
-    entry("builtins", "learn", &[("[NAME] [--json]", "builtin actors by family with arity, then one builtin's documentation")]),
+    entry("builtins", "learn", &[("[NAME] [--yaml]", "builtin actors by family with arity, then one builtin's documentation")]),
     entry("std", "learn", &[
-        ("[MODULE[.EXPORT]] [--json]", "browse the standard library: modules, a module's signatures, one export"),
+        ("[MODULE[.EXPORT]] [--yaml]", "browse the standard library: modules, a module's signatures, one export"),
         ("MODULE --source", "print a module's complete source"),
     ]),
-    entry("find", "learn", &[("[WORDS...] [--takes TYPE]... [--returns TYPE] [--arity N] [--in builtins|std|MODULE] [--limit N] [--json]", "ranked search of builtins and std; --takes/--returns match written parameter/result types such as list_of(string); `_` matches any")]),
+    entry("find", "learn", &[("[WORDS...] [--takes TYPE]... [--returns TYPE] [--arity N] [--in builtins|std|MODULE] [--limit N] [--yaml]", "ranked search of builtins and std; --takes/--returns match written parameter/result types such as list_of(string); `_` matches any")]),
     entry("schema", "learn", &[("", "print program JSON Schema")]),
     entry("check", "write and run", &[("[--evaluate] <file.yaml | ->", "static checks; --evaluate collects runtime errors")]),
     entry("fmt", "write and run", &[("<file.yaml | ->", "canonical source on stdout")]),
@@ -106,23 +106,23 @@ impl Command {
     }
 }
 
-/// `helix help [COMMAND] [--json]`, `helix --help [--json]` and `helix COMMAND --help [--json]`.
+/// `helix help [COMMAND] [--yaml]`, `helix --help [--yaml]` and `helix COMMAND --help [--yaml]`.
 pub fn command(args: &[&str]) -> ExitCode {
-    let json = args.contains(&"--json");
-    let mut rest: Vec<&str> = args.iter().copied().filter(|arg| !matches!(*arg, "--json" | "--help" | "-h")).collect();
+    let json = args.contains(&"--yaml");
+    let mut rest: Vec<&str> = args.iter().copied().filter(|arg| !matches!(*arg, "--yaml" | "--help" | "-h")).collect();
     // `helix help --help` asks about `help` itself.
     if rest.is_empty() && args.len() > usize::from(json) {
         rest.push("help");
     }
     match rest.as_slice() {
-        [] if json => println!("{}", json!({
+        [] if json => super::source::print_report(&json!({
             "usage": "helix COMMAND [ARGS]",
             "start": START,
             "commands": COMMANDS.iter().map(Command::json).collect::<Vec<_>>(),
         })),
         [] => println!("{}", overview()),
         [name] => match find(name) {
-            Some(found) if json => println!("{}", found.json()),
+            Some(found) if json => super::source::print_report(&found.json()),
             Some(found) => println!("{}", found.usage()),
             None => return unknown(name),
         },
@@ -136,7 +136,7 @@ pub fn command(args: &[&str]) -> ExitCode {
 
 /// Every form grouped by purpose, after the starting points.
 pub fn overview() -> String {
-    let mut text = String::from("usage: helix COMMAND [ARGS]    `helix help COMMAND` shows one command; add --json for structured output\n\nstart here:\n");
+    let mut text = String::from("usage: helix COMMAND [ARGS]    `helix help COMMAND` shows one command; add --yaml for structured output\n\nstart here:\n");
     for line in START {
         text += &format!("  {line}\n");
     }

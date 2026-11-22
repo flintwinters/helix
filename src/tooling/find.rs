@@ -156,7 +156,7 @@ struct Query {
     json: bool,
 }
 
-const USAGE: &str = "usage: helix find [WORDS...] [--takes TYPE]... [--returns TYPE] [--arity N] [--in builtins|std|MODULE] [--limit N] [--json]
+const USAGE: &str = "usage: helix find [WORDS...] [--takes TYPE]... [--returns TYPE] [--arity N] [--in builtins|std|MODULE] [--limit N] [--yaml]
 types are written as in source annotations: string, integer, number, list_of(string), union(string, list); `_` matches any type, `type` is any type descriptor";
 
 fn entries() -> Vec<Entry> {
@@ -249,7 +249,7 @@ fn parse(args: &[&str]) -> Result<Query, String> {
     let ty = |flag: &str, text: String| Ty::parse(&text).map_err(|why| format!("{flag} `{text}`: {why}; write a type as in annotations, such as `string` or `list_of(string)`"));
     while let Some(arg) = args.next() {
         match *arg {
-            "--json" => query.json = true,
+            "--yaml" => query.json = true,
             "--takes" => query.takes.push(ty("--takes", value("--takes", &mut args)?)?),
             "--returns" => query.returns = Some(ty("--returns", value("--returns", &mut args)?)?),
             "--arity" => query.arity = Some(value("--arity", &mut args)?.parse().map_err(|_| "--arity requires a nonnegative integer".to_string())?),
@@ -271,7 +271,7 @@ fn in_scope(entry: &Entry, scope: &str) -> bool {
     }
 }
 
-/// `helix find [WORDS...] [--takes TYPE]... [--returns TYPE] [--arity N] [--in SCOPE] [--limit N] [--json]`.
+/// `helix find [WORDS...] [--takes TYPE]... [--returns TYPE] [--arity N] [--in SCOPE] [--limit N] [--yaml]`.
 pub fn command(args: &[&str]) -> ExitCode {
     let query = match parse(args) {
         Ok(query) => query,
@@ -330,7 +330,7 @@ pub fn command(args: &[&str]) -> ExitCode {
     };
     if query.json {
         let rows: Vec<_> = hits.iter().map(|(score, entry)| row(*score, entry)).collect();
-        println!("{}", json!({"query": args, "total": total, "shown": rows.len(), "unseen_by_types": unseen, "results": rows}));
+        super::source::print_report(&json!({"query": args, "total": total, "shown": rows.len(), "unseen_by_types": unseen, "results": rows}));
         return ExitCode::SUCCESS;
     }
     for (_, entry) in &hits {
@@ -345,7 +345,7 @@ pub fn command(args: &[&str]) -> ExitCode {
         if total > hits.len() {
             println!("\n{} more; narrow with words, `--in MODULE`, or raise `--limit`", total - hits.len());
         }
-        println!("\nnext: `{}` shows the first result; --json gives every field", hits[0].1.next);
+        println!("\nnext: `{}` shows the first result; --yaml gives every field", hits[0].1.next);
     }
     if unseen > 0 {
         println!("note: {unseen} candidates lack type annotations, so --takes/--returns cannot see them");

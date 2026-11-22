@@ -80,7 +80,7 @@ Callbacks are checked as functions even for empty lists. Predicates must return 
 Browse level by level instead of reading whole modules: `./manage.py std` lists modules with a
 summary, `./manage.py std math` lists one module's signatures and comment summaries,
 `./manage.py std math.abs` shows one export's source and import line, and `--source` prints a whole
-module. `--format json` (or the binary's `helix std ... --json`) returns the same levels as data.
+module. `--format yaml` (or the binary's `helix std ... --yaml`) returns the same levels as data.
 
 ## Testing in Helix
 

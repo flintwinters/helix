@@ -15,6 +15,10 @@ pub(crate) fn yaml(value: &J) -> Yaml {
         .unwrap()
         .remove(0)
 }
+pub(super) fn print_report(value: &J) {
+    print!("{}", crate::yaml_document(&yaml(value)));
+}
+
 pub(crate) fn reference(graph: &Graph, id: usize, source: &str) -> J {
     json!({"source":graph.source(id).unwrap_or(source), "path": graph.segments(id).into_iter().map(|s| match s {Segment::Key(k)=>json!(k),Segment::Index(i)=>json!(i)}).collect::<Vec<_>>()})
 }

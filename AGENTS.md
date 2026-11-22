@@ -56,7 +56,7 @@ without duplicating the same decisions in another language.
 
 Follow these entrypoints into source instead of duplicating inventories or operational
 instructions here. Keep the [README](README.md) concise. Prefer scoped, actionable
-agent-consumable output with progressive discovery and explicit complete JSON reports.
+agent-consumable output with progressive discovery and complete versioned YAML reports. Use YAML for project reports.
 
 Agents are the primary users: prefer the design a model gets right first try, judged by recorded agent behavior.
 

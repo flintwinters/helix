@@ -172,8 +172,8 @@ def verify(h):
         with patch.object(test_runner, "SUITES", {"first": "probe", "second": "probe"}), \
              patch.object(contracts, "run", side_effect=[["host failure"], []]) as dispatch, \
              contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-            assert replace(h, process_runner=runner).regression(False, ["first", "second"], output_format="json") == 1
-        report = json.loads(stdout.getvalue())
+            assert replace(h, process_runner=runner).regression(False, ["first", "second"], output_format="yaml") == 1
+        report = yaml.safe_load(stdout.getvalue())
         assert dispatch.call_count == (0 if phase == "plan" else 2)
         assert report["failure_count"] == (1 if phase == "plan" else 2)
         if phase == "report":
@@ -327,8 +327,8 @@ def verify_scoped_rerun(h):
         stdout = io.StringIO()
         with patch.object(test_runner.TestContext, 'check_standard_library', return_value=[]), \
              contextlib.redirect_stdout(stdout):
-            assert context.regression(False, ['golden'], cases=[cases[0]], output_format='json') == 1
-        initial = json.loads(stdout.getvalue())
+            assert context.regression(False, ['golden'], cases=[cases[0]], output_format='yaml') == 1
+        initial = yaml.safe_load(stdout.getvalue())
         golden = next(row for row in initial['results'] if row['suite'] == 'golden')
         selected_path = str(cases[0].relative_to(h.root))
         assert golden.get('case_paths') == [selected_path] and golden['cases'] == 1, initial
@@ -351,8 +351,8 @@ def verify_scoped_rerun(h):
              patch.object(manage, 'frozen_test_context', frozen), \
              patch.object(test_runner.TestContext, 'check_standard_library', return_value=[]), \
              contextlib.redirect_stdout(stdout):
-            assert manage.test(False, output_format='json', rerun_failed=str(saved)) == 1
-        rerun = json.loads(stdout.getvalue())
+            assert manage.test(False, output_format='yaml', rerun_failed=str(saved)) == 1
+        rerun = yaml.safe_load(stdout.getvalue())
         golden = next(row for row in rerun['results'] if row['suite'] == 'golden')
         assert golden['case_paths'] == [selected_path] and golden['cases'] == 1 and golden['blessed'] is False, rerun
         assert invoked == [selected_path, selected_path], invoked
@@ -394,9 +394,9 @@ def verify_scoped_rerun(h):
                  patch.object(test_runner.TestContext, 'golden_case', side_effect=golden_case), \
                  patch.object(test_runner.TestContext, 'robustness', side_effect=robustness), \
                  contextlib.redirect_stdout(stdout):
-                assert manage.test(False, jobs=1, output_format='json', rerun_failed=str(saved)) == 0, (name, stdout.getvalue())
+                assert manage.test(False, jobs=1, output_format='yaml', rerun_failed=str(saved)) == 0, (name, stdout.getvalue())
             assert executed == expected and saved.read_bytes() == historical, (name, executed)
-            report = json.loads(stdout.getvalue())
+            report = yaml.safe_load(stdout.getvalue())
             for row in report['results']:
                 old = next((old for old in previous['results'] if old['suite'] == row['suite']), {})
                 if row['suite'] in expected:
@@ -413,8 +413,8 @@ def verify_scoped_rerun(h):
              patch.object(manage, 'frozen_test_context', frozen), \
              patch.object(contracts, 'run', return_value=[]) as dispatch, \
              contextlib.redirect_stdout(stdout):
-            assert manage.test(False, output_format='json', rerun_failed=str(saved)) == 0
-        assert [row['suite'] for row in json.loads(stdout.getvalue())['results']] == ['startup']
+            assert manage.test(False, output_format='yaml', rerun_failed=str(saved)) == 0
+        assert [row['suite'] for row in yaml.safe_load(stdout.getvalue())['results']] == ['startup']
         assert dispatch.call_count == 1
 
         saved.write_text(json.dumps(report_fixture(previous['results'][1])))
@@ -423,8 +423,8 @@ def verify_scoped_rerun(h):
              patch.object(manage, 'frozen_test_context') as build, \
              patch.object(test_runner, 'discover_cases', side_effect=AssertionError('empty rerun discovered fixtures')), \
              contextlib.redirect_stdout(stdout):
-            assert manage.test(False, output_format='json', rerun_failed=str(saved)) == 0
-        assert not build.called and json.loads(stdout.getvalue()) == report_fixture()
+            assert manage.test(False, output_format='yaml', rerun_failed=str(saved)) == 0
+        assert not build.called and yaml.safe_load(stdout.getvalue()) == report_fixture()
 
         outside = directory / 'not a fixture root'
         outside.mkdir()
@@ -453,9 +453,9 @@ def verify_scoped_rerun(h):
                  patch.object(manage, 'frozen_test_context') as build, \
                  patch.object(test_runner.TestContext, 'regression') as dispatch, \
                  contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-                code = manage.test(False, output_format='json', rerun_failed=str(saved))
+                code = manage.test(False, output_format='yaml', rerun_failed=str(saved))
             assert code == 2 and not stdout.getvalue(), (row, code, stdout.getvalue(), stderr.getvalue())
-            assert json.loads(stderr.getvalue())['error']['kind'] == 'selection', (row, stderr.getvalue())
+            assert yaml.safe_load(stderr.getvalue())['error']['kind'] == 'selection', (row, stderr.getvalue())
             assert not build.called and not dispatch.called and saved.read_bytes() == historical, row
 
 
@@ -473,7 +473,7 @@ def verify_rerun_wiring(h):
         path.write_text(json.dumps(report_fixture({**suite_fixture("golden"), "blessed": True, "cases": 1})))
         with patch.object(manage, "frozen_test_context", frozen), \
              patch.object(test_runner.TestContext, "regression", return_value=0) as dispatch:
-            assert manage.test(False, output_format="json", rerun_failed=str(path)) == 0
+            assert manage.test(False, output_format="yaml", rerun_failed=str(path)) == 0
             assert dispatch.call_count == 1
             args = dispatch.call_args.args
             assert args[0] is False and args[1] == ["golden"] and args[3] is None, args
@@ -483,7 +483,7 @@ def verify_rerun_wiring(h):
              patch.object(test_policy, "rerun", return_value=[]), \
              patch.object(test_runner.TestContext, "regression") as dispatch, \
              contextlib.redirect_stdout(stdout):
-            assert manage.test(False, output_format="json", rerun_failed=str(path)) == 1
+            assert manage.test(False, output_format="yaml", rerun_failed=str(path)) == 1
             assert dispatch.call_count == 0
-        result = json.loads(stdout.getvalue())
+        result = yaml.safe_load(stdout.getvalue())
         assert result["results"][0]["suite"] == "orchestration" and result["failure_count"] == 1, result

@@ -175,20 +175,20 @@ def cli(h):
 
 def std_catalog(h):
     """`helix std` is browsed in levels: modules, one module's signatures, one export's source."""
-    listing = h.helix("std", "--json")
+    listing = h.helix("std", "--yaml")
     assert listing.returncode == 0 and not listing.stderr, listing
-    modules = [row["module"].removeprefix("std:") for row in json.loads(listing.stdout)]
+    modules = [row["module"].removeprefix("std:") for row in yaml.safe_load(listing.stdout)]
     assert sorted(modules) == sorted(path.stem for path in (h.root / "std").glob("*.yaml")), modules
     for module in modules:
-        index = h.helix("std", module, "--json")
+        index = h.helix("std", module, "--yaml")
         assert index.returncode == 0 and not index.stderr, (module, index)
-        exports = json.loads(index.stdout)["exports"]
+        exports = yaml.safe_load(index.stdout)["exports"]
         assert exports and all(e["signature"].startswith(e["name"]) for e in exports), (module, exports)
         whole = (h.root / "std" / f"{module}.yaml").read_text()
         for export in dict.fromkeys((exports[0]["name"], exports[-1]["name"])):
-            shown = h.helix("std", f"std:{module}.{export}", "--json")
+            shown = h.helix("std", f"std:{module}.{export}", "--yaml")
             assert shown.returncode == 0 and not shown.stderr, (module, export, shown)
-            source = json.loads(shown.stdout)["source"]
+            source = yaml.safe_load(shown.stdout)["source"]
             assert any(line.startswith(f"{export}: ") or line == f"{export}:" for line in source.splitlines()), source
             # A map module's export is its written slice; a let-built module's is emitted canonically.
             written = not next(line for line in whole.splitlines() if not line.startswith("#")).startswith("!call")
@@ -205,15 +205,15 @@ def std_catalog(h):
 
 
 def help_catalog(h):
-    """One command table answers `--help --json`, `help CMD --json` and `CMD --help --json`."""
-    catalog = h.helix("--help", "--json")
+    """One command table answers `--help --yaml`, `help CMD --yaml` and `CMD --help --yaml`."""
+    catalog = h.helix("--help", "--yaml")
     assert catalog.returncode == 0 and not catalog.stderr, catalog
-    commands = json.loads(catalog.stdout)["commands"]
+    commands = yaml.safe_load(catalog.stdout)["commands"]
     assert {"run", "check", "docs", "builtins", "std", "help"} <= {c["command"] for c in commands}, commands
     for entry in commands:
-        for args in (("help", entry["command"], "--json"), (entry["command"], "--help", "--json")):
+        for args in (("help", entry["command"], "--yaml"), (entry["command"], "--help", "--yaml")):
             shown = h.helix(*args)
-            assert shown.returncode == 0 and json.loads(shown.stdout) == entry, (args, shown)
+            assert shown.returncode == 0 and yaml.safe_load(shown.stdout) == entry, (args, shown)
         assert all(form["usage"].split()[1] == entry["command"] for form in entry["forms"]), entry
     for args, hint in [(("help", "rn"), "did you mean `run`?"), (("help", "run", "extra"), "usage: helix help"),
                        (("help", "get"), "see `helix builtins get`"), (("get",), "see `helix builtins get`")]:
@@ -224,21 +224,21 @@ def help_catalog(h):
 def docs_catalog(h):
     """`helix docs` navigates the embedded references: documents, a section tree, one section
     whose text is the written source slice."""
-    listing = h.helix("docs", "--json")
+    listing = h.helix("docs", "--yaml")
     assert listing.returncode == 0 and not listing.stderr, listing
-    documents = json.loads(listing.stdout)
+    documents = yaml.safe_load(listing.stdout)
     assert {d["file"] for d in documents} == {"LANGUAGE.md", "LIBRARY.md", "HOST.md"}, documents
     for document in documents:
         written = (h.root / document["file"]).read_text()
         assert document["lines"] == len(written.splitlines()), document
-        tree = json.loads(h.helix("docs", document["document"], "--json").stdout)
+        tree = yaml.safe_load(h.helix("docs", document["document"], "--yaml").stdout)
         sections = tree["sections"]
         assert len(sections) == document["sections"] and len({s["section"] for s in sections}) == len(sections), tree
         assert all(s["parent"] in {None, *(p["section"] for p in sections)} for s in sections), sections
         for section in sections:
-            shown = h.helix("docs", document["document"], section["section"], "--json")
+            shown = h.helix("docs", document["document"], section["section"], "--yaml")
             assert shown.returncode == 0 and not shown.stderr, (section, shown)
-            text = json.loads(shown.stdout)["text"].rstrip("\n")
+            text = yaml.safe_load(shown.stdout)["text"].rstrip("\n")
             lines = written.splitlines()[section["line"] - 1:]
             assert lines[0] == "#" * section["level"] + " " + section["title"], (section, lines[0])
             assert "\n".join(lines).startswith(text), (section, text[:200])
@@ -256,9 +256,9 @@ def docs_catalog(h):
 def builtin_catalog(h):
     """`helix builtins` lists actors the static checker independently binds, with the signature
     whose arity the checker enforces and whose call form its arity hint teaches."""
-    listing = h.helix("builtins", "--json")
+    listing = h.helix("builtins", "--yaml")
     assert listing.returncode == 0 and not listing.stderr, listing
-    builtins = json.loads(listing.stdout)
+    builtins = yaml.safe_load(listing.stdout)
     assert {"add", "get", "fn", "let", "raise"} <= {b["name"] for b in builtins}, builtins
     program = "\n".join(f"b{i}: !call [{b['name']}]" for i, b in enumerate(builtins))
     diagnostics = h.helix("check", "-", stdin=program).stdout
@@ -268,8 +268,8 @@ def builtin_catalog(h):
         if b["min"]:
             assert f"`{b['name']}` takes" in diagnostics, (b, diagnostics)
             assert f"write `!call [{b['name']}, {b['signature']}]`" in diagnostics, (b, diagnostics)
-    one = h.helix("builtins", "get", "--json")
-    shown = json.loads(one.stdout)
+    one = h.helix("builtins", "get", "--yaml")
+    shown = yaml.safe_load(one.stdout)
     assert one.returncode == 0 and shown["call"].startswith("!call [get, ") and shown["mentions"], shown
     assert all(m["document"] in {"language", "library", "host"} for m in shown["mentions"]), shown
     for args, hint in [(("builtins", "gett"), "did you mean `get`?"),

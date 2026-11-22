@@ -1,11 +1,22 @@
 """Versioned project-tool reports; language output keeps its own wire format."""
-import json
 
 DEFAULT_FORMAT = "text"
 
 
 def emit(report, *, stream=None):
-    print(json.dumps({"version": 1, **report}, ensure_ascii=False, indent=2), file=stream)
+    print(report_yaml({"version": 1, **report}), end="", file=stream)
+
+
+def report_yaml(value):
+    """Render ordinary data, including when build-free discovery runs with Python -S."""
+    try:
+        from yaml import safe_dump
+    except ModuleNotFoundError:
+        import json
+
+        # JSON flow syntax inside an explicit YAML document needs no third-party packages.
+        return "---\n" + json.dumps(value, ensure_ascii=False, indent=2) + "\n"
+    return safe_dump(value, allow_unicode=True, sort_keys=False)
 
 
 def observed_test_status(result):
@@ -34,7 +45,7 @@ def render_test_result(result):
         details.append(result["reason"])
     suffix = f" ({'; '.join(details)})" if details else ""
     print(f"{result['suite']}: {result['status']}{suffix}")
-    # Successful chatter stays available in the explicit JSON report.
+    # Successful chatter stays available in the explicit YAML report.
     # Warnings on stderr and all failing-suite evidence remain visible.
     for channel in ("stdout", "stderr"):
         if result.get(channel) and (result["failures"] or channel == "stderr"):
@@ -49,7 +60,7 @@ def render_test_report(report, *, output_format=DEFAULT_FORMAT, rendered_results
     """Render a decided report, omitting only text rows already shown as progress."""
     results = report["results"]
     code = report["exit_code"]
-    if output_format == "json":
+    if output_format == "yaml":
         emit(report)
     else:
         for result in results[rendered_results:]:

@@ -1,11 +1,11 @@
 """`helix find` contracts: ranked text search, structural type filters and honest unseen counts; run via manage.py test."""
-import json
+import yaml
 
 
 def find(ctx, *args):
-    result = ctx.helix("find", "--json", *args)
+    result = ctx.helix("find", "--yaml", *args)
     assert result.returncode == 0, result
-    return json.loads(result.stdout)
+    return yaml.safe_load(result.stdout)
 
 
 def names(report):

@@ -1,5 +1,4 @@
 """Supervised Helix orchestration; the host validates authority and retained evidence."""
-import json
 from pathlib import Path, PurePosixPath
 
 from tooling.test_reports import failure
@@ -53,26 +52,30 @@ def _result_problem(row):
 
 def load_rerun_report(path, catalog):
     """Validate persisted observations before any build; reports never carry authority."""
-    def unique_object(pairs):
-        result = {}
-        for key, value in pairs:
-            if key in result:
-                raise ValueError(f"duplicate JSON field {key!r}")
-            result[key] = value
-        return result
+    import yaml
+
+    class ReportLoader(yaml.SafeLoader):
+        def construct_mapping(self, node, deep=False):
+            result = {}
+            for key_node, value_node in node.value:
+                key = self.construct_object(key_node, deep=deep)
+                if not isinstance(key, str) or key in result:
+                    raise ValueError(f"invalid or duplicate report field {key!r}")
+                result[key] = self.construct_object(value_node, deep=deep)
+            return result
 
     def invalid(message):
         raise ValueError(f"invalid test report {path}: {message}")
 
     try:
-        value = json.loads(Path(path).read_text(), object_pairs_hook=unique_object)
-    except (ValueError, UnicodeError, RecursionError) as error:
+        value = yaml.load(Path(path).read_text(), Loader=ReportLoader)
+    except (ValueError, UnicodeError, RecursionError, yaml.YAMLError) as error:
         invalid(str(error))
     fields = {"version", "command", "status", "exit_code", "failure_count", "results"}
     if (not isinstance(value, dict) or set(value) != fields
             or type(value["version"]) is not int or value["version"] != 1
             or value["command"] != "test" or not isinstance(value["results"], list)):
-        invalid("expected a version 1 test-result JSON report from --format=json test")
+        invalid("expected a version 1 test-result YAML report from --format=yaml test")
     known = set(catalog) | {"standard_library", "orchestration"}
     seen = set()
     rows = value["results"]

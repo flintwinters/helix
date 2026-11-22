@@ -55,10 +55,10 @@ impl std::ops::Deref for Text {
     }
 }
 
-/// `helix std [MODULE | MODULE.EXPORT] [--source | --json]`.
+/// `helix std [MODULE | MODULE.EXPORT] [--source | --yaml]`.
 pub fn command(args: &[&str]) -> ExitCode {
-    let (json, source) = (args.contains(&"--json"), args.contains(&"--source"));
-    let rest: Vec<&str> = args.iter().copied().filter(|arg| !matches!(*arg, "--json" | "--source")).collect();
+    let (json, source) = (args.contains(&"--yaml"), args.contains(&"--source"));
+    let rest: Vec<&str> = args.iter().copied().filter(|arg| !matches!(*arg, "--yaml" | "--source")).collect();
     match rest.as_slice() {
         [] if !source => list(json),
         [path] => {
@@ -88,7 +88,7 @@ pub fn command(args: &[&str]) -> ExitCode {
             }
         }
         _ => {
-            eprintln!("usage: helix std [MODULE | MODULE.EXPORT] [--json]; helix std MODULE --source");
+            eprintln!("usage: helix std [MODULE | MODULE.EXPORT] [--yaml]; helix std MODULE --source");
             ExitCode::from(2)
         }
     }
@@ -98,7 +98,7 @@ fn list(json: bool) -> ExitCode {
     let modules = modules();
     if json {
         let rows: Vec<_> = modules.iter().map(|m| json!({"module": format!("std:{}", m.name), "summary": summary(&m.doc)})).collect();
-        println!("{}", J::Array(rows));
+        super::source::print_report(&J::Array(rows));
         return ExitCode::SUCCESS;
     }
     let width = modules.iter().map(|m| m.name.len()).max().unwrap_or(0) + 4;
@@ -112,7 +112,7 @@ fn list(json: bool) -> ExitCode {
 fn index(module: &Module, json: bool) -> ExitCode {
     if json {
         let exports: Vec<_> = module.exports.iter().map(|e| json!({"name": e.name, "signature": e.signature, "summary": summary(&e.doc)})).collect();
-        println!("{}", json!({"module": format!("std:{}", module.name), "doc": module.doc, "exports": exports}));
+        super::source::print_report(&json!({"module": format!("std:{}", module.name), "doc": module.doc, "exports": exports}));
         return ExitCode::SUCCESS;
     }
     println!("std:{}", module.name);
@@ -132,7 +132,7 @@ fn index(module: &Module, json: bool) -> ExitCode {
 
 fn show(module: &Module, export: &Export, json: bool) -> ExitCode {
     if json {
-        println!("{}", json!({"module": format!("std:{}", module.name), "name": export.name, "signature": export.signature, "doc": export.doc, "source": &*export.source}));
+        super::source::print_report(&json!({"module": format!("std:{}", module.name), "name": export.name, "signature": export.signature, "doc": export.doc, "source": &*export.source}));
         return ExitCode::SUCCESS;
     }
     println!("{}    # std:{}", export.signature, module.name);

@@ -5,7 +5,7 @@ import sys
 
 def verify(h):
     # Assert the import boundary rather than a machine-dependent timing limit.
-    for args in [(), ("--help",), ("--help-json",), ("runtime", "--help"),
+    for args in [(), ("--help",), ("--help-yaml",), ("runtime", "--help"),
                  ("test", "--list"), ("quality", "test", "--describe")]:
         profiled = subprocess.run(
             [sys.executable, "-X", "importtime", str(h.root / "manage.py"), *args],
@@ -14,13 +14,15 @@ def verify(h):
         assert profiled.returncode == 0, profiled.stderr
         imported = {line.rsplit("|", 1)[-1].strip() for line in profiled.stderr.splitlines()
                     if line.startswith("import time:")}
-        assert not imported & {"subprocess", "tempfile", "difflib", "shlex", "yaml"}, imported
+        assert not imported & {"subprocess", "tempfile", "difflib", "shlex"}, imported
+        if args != ("--help-yaml",):
+            assert "yaml" not in imported, imported
 
     # Default discovery is scoped; the complete machine catalog is opt-in.
     from tooling.cli import parse
     import contextlib
     import io
-    import json
+    import yaml
     from tooling.output import test_report
 
     def help_output(args):
@@ -30,12 +32,12 @@ def verify(h):
         return output.getvalue()
 
     brief = help_output([])
-    full = help_output(["--help-json"])
+    full = help_output(["--help-yaml"])
     assert "usage:" in brief and len(brief) < len(full) / 3
-    assert "tree" in json.loads(full)
+    assert "tree" in yaml.safe_load(full)
     assert "--suite" not in help_output(["runtime"])
     assert parse(["build"]).format == "text"
-    assert parse(["--format=json", "build"]).format == "json"
+    assert parse(["--format=yaml", "build"]).format == "yaml"
 
     results = [
         {"suite": "golden", "status": "passed", "failures": [],
@@ -57,5 +59,5 @@ def verify(h):
     assert "warning" in stderr.getvalue() and "failure stderr" in stderr.getvalue()
     stdout = io.StringIO()
     with contextlib.redirect_stdout(stdout):
-        assert test_report(results, output_format="json") == 1
-    assert json.loads(stdout.getvalue())["results"] == results
+        assert test_report(results, output_format="yaml") == 1
+    assert yaml.safe_load(stdout.getvalue())["results"] == results

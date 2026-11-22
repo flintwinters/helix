@@ -222,7 +222,7 @@ def verify_rerun_reports(h):
 def verify_structured_results(h):
     import contextlib
     import io
-    import json
+    import yaml
     from unittest.mock import patch
 
     from tests.suites import contracts
@@ -234,8 +234,8 @@ def verify_structured_results(h):
     stdout, stderr = io.StringIO(), io.StringIO()
     with patch.object(contracts, "run", side_effect=failing), \
          contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-        assert h.regression(False, ["startup"], output_format="json") == 1
-    report = json.loads(stdout.getvalue())
+        assert h.regression(False, ["startup"], output_format="yaml") == 1
+    report = yaml.safe_load(stdout.getvalue())
     assert not stderr.getvalue()
     assert report["version"] == 1 and report["exit_code"] == report["failure_count"] == 1
     assert report["status"] == "failed"
@@ -246,5 +246,15 @@ def verify_structured_results(h):
     stdout = io.StringIO()
     with patch.object(contracts, "run", side_effect=RuntimeError("unexpected crash")), \
          contextlib.redirect_stdout(stdout):
-        assert h.regression(False, ["startup"], output_format="json") == 1
-    assert "unexpected crash" in json.loads(stdout.getvalue())["results"][0]["failures"][0]
+        assert h.regression(False, ["startup"], output_format="yaml") == 1
+    assert "unexpected crash" in yaml.safe_load(stdout.getvalue())["results"][0]["failures"][0]
+
+
+def completed_documents(path):
+    """Read flushed YAML records from a progress stream that may still be written."""
+    import yaml
+
+    if not path.exists():
+        return []
+    complete, marker, _ = path.read_text().rpartition("\n...\n")
+    return list(yaml.safe_load_all(complete + marker)) if marker else []

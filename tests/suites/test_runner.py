@@ -2,6 +2,8 @@
 import threading
 from dataclasses import replace
 
+import yaml
+
 from tooling.test_runner import TestContext, collect_cases, discover_cases
 
 
@@ -100,8 +102,8 @@ def verify_discovery_failures(h, directory, healthy):
                  patch.object(TestContext, 'robustness', return_value=[]) as robust, \
                  patch.object(contracts, 'run', return_value=[]) as dispatch, \
                  contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-                code = context.regression(False, [suite], cases=cases, output_format='json')
-            result = json.loads(stdout.getvalue())
+                code = context.regression(False, [suite], cases=cases, output_format='yaml')
+            result = yaml.safe_load(stdout.getvalue())
             assert code == 1 and result['version'] == 1 and result['command'] == 'test', result
             assert result['status'] == 'failed' and result['exit_code'] == 1 and result['failure_count'] == 1, result
             assert len(result['results']) == 1 and result['results'][0]['suite'] == 'orchestration', result
@@ -116,8 +118,8 @@ def verify_discovery_failures(h, directory, healthy):
              patch.object(test_policy, 'report', side_effect=summarize) as report, \
              patch.object(contracts, 'run', return_value=[]) as dispatch, \
              contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-            code = context.regression(False, [suite], output_format='json')
-        result = json.loads(stdout.getvalue())
+            code = context.regression(False, [suite], output_format='yaml')
+        result = yaml.safe_load(stdout.getvalue())
         assert code == 0 and result['status'] == 'passed' and dispatch.call_count == 1, result
         assert not stderr.getvalue(), stderr.getvalue()
         if suite == 'startup':
@@ -271,19 +273,19 @@ def verify_standard_library_boundary(h):
             (root / 'std' / f'{name}.yaml').write_text(source)
         catalog = '[{"module":"std:alpha","summary":""},{"module":"std:beta","summary":""}]\n'
         unknown = 'unknown standard module `unknown`; list modules with `helix std`\n'
-        responses = {('std', '--json'): (0, catalog, ''),
+        responses = {('std', '--yaml'): (0, catalog, ''),
                      **{('std', name, '--source'): (0, source, '') for name, source in sources.items()},
                      ('std', 'unknown'): (2, '', unknown)}
         scenarios = [
-            (('std', '--json'), (0, catalog, 'unexpected discovery stderr\n')),
-            (('std', '--json'), (0, 'std:alpha\nstd:beta\n', '')),
+            (('std', '--yaml'), (0, catalog, 'unexpected discovery stderr\n')),
+            (('std', '--yaml'), (0, 'std:alpha\nstd:beta\n', '')),
             (('std', 'alpha', '--source'), (0, sources['alpha'], 'unexpected source stderr\n')),
             (('std', 'alpha', '--source'), (0, 'changed source\n', '')),
             (('std', 'unknown'), (2, 'bogus source on stdout\n', unknown)),
             (('std', 'unknown'), (2, '', '')),
             (('std', 'unknown'), (2, '', 'unrelated host diagnostic\n')),
             (('std', 'alpha', '--source'), (-11, 'partial source\n', 'crash detail\n')),
-            (('std', '--json'), 'timeout'),
+            (('std', '--yaml'), 'timeout'),
         ]
         for invocation, damaged in scenarios:
             expected_output = []
@@ -312,7 +314,7 @@ def verify_standard_library_boundary(h):
                                    if line.startswith('evidence: '))
             assert (evidence / 'actual.yaml').read_text() == stdout
             assert (evidence / 'stderr.txt').read_text() == stderr
-            if invocation != ('std', '--json'):
+            if invocation != ('std', '--yaml'):
                 assert (evidence / 'expected.yaml').read_text() == responses[invocation][1]
             assert all((root / 'std' / f'{name}.yaml').read_text() == source for name, source in sources.items())
 
@@ -320,7 +322,7 @@ def verify_standard_library_boundary(h):
         # The current checkout, rather than the synthetic corpus, supplies modules.
         replayed = h.process_runner(shlex.split(recipe), cwd=h.root, capture_output=True,
                                     text=True, timeout=120)
-        direct = h.helix('std', '--json')
+        direct = h.helix('std', '--yaml')
         assert (replayed.returncode, replayed.stdout, replayed.stderr) == (
             direct.returncode, direct.stdout, direct.stderr), replayed
 
@@ -359,7 +361,7 @@ def verify_report_reliability(h):
         scenarios = [('none', None), ('string', 'not a failure list'), ('empty_string', ''),
                      ('mapping', {'failure': 'lost'}), ('empty_mapping', {}),
                      ('nonstring', [42]), ('policy_launch', [])]
-        for output_format in ('text', 'json'):
+        for output_format in ('text', 'yaml'):
             for name, invalid in scenarios:
                 executed = []
                 def runner(args, **kwargs):
@@ -399,8 +401,8 @@ def verify_report_reliability(h):
                            for row in rows), rows
                 if name != 'policy_launch':
                     assert len(rows[1]['failures']) == 1 and 'TypeError' in rows[1]['failures'][0], rows
-                if output_format == 'json':
-                    report = json.loads(stdout.getvalue())
+                if output_format == 'yaml':
+                    report = yaml.safe_load(stdout.getvalue())
                     assert report['version'] == 1 and report['status'] == 'failed' and report['exit_code'] == 1, report
                     assert report['failure_count'] == 1 and not stderr.getvalue(), (report, stderr.getvalue())
                     assert [{key: value for key, value in row.items() if key != 'status'}
@@ -521,7 +523,7 @@ def verify_generator_failure_evidence(h, directory):
 
 
 def verify_completed_output(h):
-    """Completed rows are visible before later work; JSON remains one final report."""
+    """Completed rows are visible before later work; YAML remains one final report."""
     import contextlib
     import io
     import json
@@ -539,7 +541,7 @@ def verify_completed_output(h):
         def flush(self):
             self.flushed = self.getvalue()
 
-    for output_format in ('text', 'json'):
+    for output_format in ('text', 'yaml'):
         for report_failure in (False, True):
             stdout, stderr = FlushedOutput(), FlushedOutput()
             checkpoints = []
@@ -577,9 +579,9 @@ def verify_completed_output(h):
                  contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
                 code = h.regression(False, ['first', 'second'], output_format=output_format)
             assert code == 1 and len(checkpoints) == 2, (code, checkpoints)
-            if output_format == 'json':
+            if output_format == 'yaml':
                 assert all(point == ('', '', '', '') for point in checkpoints), checkpoints
-                result = json.loads(stdout.getvalue())
+                result = yaml.safe_load(stdout.getvalue())
                 assert stderr.getvalue() == '', stderr.getvalue()
                 assert (result['version'], result['command'], result['status'], result['exit_code']) == (1, 'test', 'failed', 1), result
                 assert len(result['results']) == 3 + int(report_failure), result

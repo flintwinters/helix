@@ -47,7 +47,7 @@ def format_files(ctx, paths, *, write=False, output_format='text'):
         except (OSError, ValueError, yaml.YAMLError) as error:
             results.append({'path': str(path), 'status': 'error', 'reason': str(error)})
     code = int(any(item['status'] == 'error' or (not write and item['status'] == 'changed') for item in results))
-    if output_format == 'json':
+    if output_format == 'yaml':
         emit({'command': 'format', 'files': results, 'written': write, 'exit_code': code})
     else:
         for item in results:

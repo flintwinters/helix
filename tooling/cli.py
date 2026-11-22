@@ -83,7 +83,7 @@ SUITES = {
 
 CONTRACT = (
     "Project reports default to concise text; "
-    "--format=json before the command selects complete versioned reports. "
+    "--format=yaml before the command selects complete versioned reports. "
     "Runtime commands build automatically and emit YAML on stdout. "
     "Exit codes: 0 success, 1 evaluation/test failure, 2 invalid usage or unreadable input "
     "(build and forwarded tools retain their own codes). "
@@ -101,8 +101,8 @@ def parser():
         description="Build, execute, inspect, and verify Helix.",
         epilog=textwrap.fill(CONTRACT, width=88), formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    root.add_argument("--help-json", action="store_true", help="print the complete command/argument tree as JSON without building")
-    root.add_argument("--format", choices=("json", "text"), default=DEFAULT_FORMAT,
+    root.add_argument("--help-yaml", action="store_true", help="print the complete command/argument tree as YAML without building")
+    root.add_argument("--format", choices=("yaml", "text"), default=DEFAULT_FORMAT,
                       help="project report format (default: %(default)s); place before the command; runtime/forwarded output keeps its own format")
     aliases = {}
     leaves = {}
@@ -146,7 +146,7 @@ def parser():
         "restore": "Restore executable state; optionally save after more transitions",
         "checkpoint": "Inspect durable effects and recovery action without execution",
         "target-release": "Acknowledge independently established target quiescence after recovery",
-        "profile": "Rank evaluator hotspots by time and transition count (JSON)",
+        "profile": "Rank evaluator hotspots by time and transition count (YAML)",
         "trace": "Stream evaluation transitions as YAML documents",
         "watch": "Re-run when program or transitive import contents change",
     }.items():
@@ -183,7 +183,7 @@ def parser():
     formats.add_argument("--yaml", dest="output_format", action="store_const", const="--yaml", help="emit YAML, including quoted string results, for yq")
     pipeline.add_argument("--input", help="ordinary-data file, or - for stdin")
     pipeline.add_argument("--file", help="query source file")
-    pipeline.add_argument("--stream", action="store_true", help="incremental JSONL list-producing query")
+    pipeline.add_argument("--stream", action="store_true", help="incremental YAML-document list-producing query")
     pipeline.add_argument("source", nargs="?", default="-", metavar="PROGRAM", help="inline YAML, or - for stdin (default)")
     search = command(runtime, "search", "Stream source index, parse source, or explicitly probe selected functions",
                      ["runtime", "search"], "runtime search index std --no-std")
@@ -263,8 +263,8 @@ def parser():
     testing.add_argument("--suite", action="append", choices=SUITES, metavar="SUITE", help="repeat to select suites; default: all except explicitly reported opt-in Docker acceptance")
     testing.add_argument("--case", action="append", metavar="GLOB",
                          help="filter fixture stems or repository-relative paths; repeat for a union; requires golden/robustness suites only")
-    testing.add_argument("--rerun-failed", metavar="REPORT.json",
-                         help="rerun failed suites and recorded case selections from a versioned JSON report; no inherited blessing or Docker authorization")
+    testing.add_argument("--rerun-failed", metavar="REPORT.yaml",
+                         help="rerun failed suites and recorded case selections from a versioned YAML report; no inherited blessing or Docker authorization")
     testing.add_argument("--jobs", type=int, default=DEFAULT_TEST_JOBS, metavar="N",
                          help="golden/robustness case workers (default: %(default)s; 1 runs serially)")
     testing.add_argument("--list", action="store_true", help="list suite names without building")
@@ -276,14 +276,14 @@ def parser():
         f"  {name:<10} {' '.join(path)}" for name, path in aliases.items() if len(path) > 1
     )
     testing.epilog += "\nDiscover suite contracts: ./manage.py test --describe"
-    testing.epilog += "\nRerun failures: ./manage.py test --rerun-failed runtime/test-report.json"
+    testing.epilog += "\nRerun failures: ./manage.py test --rerun-failed runtime/test-report.yaml"
     testing.formatter_class = argparse.RawDescriptionHelpFormatter
     root.discovery = {"shortcuts": aliases, "suites": SUITES}
     return root, aliases, leaves
 
 
 def describe(parser):
-    """Derive JSON discovery directly from argparse's command and option definitions."""
+    """Derive YAML discovery directly from argparse's command and option definitions."""
     arguments = []
     commands = {}
     for action in parser._actions:
@@ -306,12 +306,12 @@ def parse(argv):
     if argv and (argv[0] == "--format" or argv[0].startswith("--format=")):
         if argv[0] == "--format":
             if len(argv) < 2:
-                root.error("--format requires json or text")
+                root.error("--format requires yaml or text")
             output_format, argv = argv[1], argv[2:]
         else:
             output_format, argv = argv[0].split("=", 1)[1], argv[1:]
-        if output_format not in ("json", "text"):
-            root.error("--format must be json or text")
+        if output_format not in ("yaml", "text"):
+            root.error("--format must be yaml or text")
 
     def configure(node):
         node.output_format = output_format
@@ -321,8 +321,8 @@ def parse(argv):
                     configure(child)
 
     configure(root)
-    if argv == ["--help-json"]:
-        root.output_format = "json"
+    if argv == ["--help-yaml"]:
+        root.output_format = "yaml"
         root.print_help()
         return None
     if argv and argv[0] in aliases:
@@ -340,8 +340,8 @@ def parse(argv):
             return argparse.Namespace(command=name, extra=extra, format=output_format)
     args = root.parse_args(argv)
     args.format = output_format
-    if args.help_json:
-        root.error("--help-json must be used alone")
+    if args.help_yaml:
+        root.error("--help-yaml must be used alone")
     if args.command is None:
         args.help_parser.print_help()
         return None

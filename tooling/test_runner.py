@@ -1,5 +1,4 @@
 """Explicit test execution contexts, fixture selection and bounded case concurrency."""
-import json
 import shlex
 import subprocess
 import sys
@@ -377,7 +376,7 @@ class TestContext:
 
         def completed(observation):
             results.append(observation)
-            if output_format != "json":
+            if output_format != "yaml":
                 render_test_result({**observation, "status": observed_test_status(observation)})
 
         def record(name, check, **details):
@@ -445,17 +444,19 @@ class TestContext:
         sources = [source for source in sorted(directory.glob("*.yaml")) if source.is_file()]
         if not sources:
             return [f"standard library source directory contains no modules: {directory}"]
-        modules = self.helix("std", "--json")
+        import yaml
+
+        modules = self.helix("std", "--yaml")
         expected_modules = {f"std:{source.stem}" for source in sources}
         try:
-            discovered_modules = [row["module"] for row in json.loads(modules.stdout)]
-        except (ValueError, TypeError, KeyError):
+            discovered_modules = [row["module"] for row in yaml.safe_load(modules.stdout)]
+        except (ValueError, TypeError, KeyError, yaml.YAMLError):
             discovered_modules = None
         if (modules.returncode != 0 or modules.stderr or discovered_modules is None
                 or set(discovered_modules) != expected_modules or len(discovered_modules) != len(expected_modules)):
             failures.append(test_failure(self.root, directory, "std-list",
                 "standard library discovery failed", "std", modules,
-                expected=json.dumps(sorted(expected_modules)), replay_args=["runtime", "cli", "std", "--json"]))
+                expected=yaml.safe_dump(sorted(expected_modules)), replay_args=["runtime", "cli", "std", "--yaml"]))
         for source in sources:
             shown = self.helix("std", source.stem, "--source")
             expected = source.read_text()

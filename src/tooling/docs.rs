@@ -161,10 +161,10 @@ fn open(name: &str) -> Result<Document, ExitCode> {
     Err(unknown("document", name, DOCUMENTS.iter().map(|(doc, _, _)| *doc), "list documents with `helix docs`"))
 }
 
-/// `helix docs [DOC [SECTION]] [--json]`.
+/// `helix docs [DOC [SECTION]] [--yaml]`.
 pub fn command(args: &[&str]) -> ExitCode {
-    let json = args.contains(&"--json");
-    let rest: Vec<&str> = args.iter().copied().filter(|arg| *arg != "--json").collect();
+    let json = args.contains(&"--yaml");
+    let rest: Vec<&str> = args.iter().copied().filter(|arg| *arg != "--yaml").collect();
     let document = match rest.as_slice() {
         [] => return list(json),
         [name] | [name, _] => match open(name) {
@@ -192,7 +192,7 @@ fn list(json: bool) -> ExitCode {
             .iter()
             .map(|d| json!({"document": d.name, "file": d.file, "title": d.title, "summary": d.summary(), "lines": d.lines.len(), "sections": d.sections.len()}))
             .collect();
-        println!("{}", J::Array(rows));
+        super::source::print_report(&J::Array(rows));
         return ExitCode::SUCCESS;
     }
     for document in &documents {
@@ -205,7 +205,7 @@ fn list(json: bool) -> ExitCode {
 fn tree(document: &Document, json: bool) -> ExitCode {
     if json {
         let sections: Vec<_> = document.sections.iter().map(|s| outline(document, s)).collect();
-        println!("{}", json!({"document": document.name, "file": document.file, "title": document.title, "intro": document.text(document.intro), "sections": sections}));
+        super::source::print_report(&json!({"document": document.name, "file": document.file, "title": document.title, "intro": document.text(document.intro), "sections": sections}));
         return ExitCode::SUCCESS;
     }
     println!("{}: {} ({} lines)\n\n{}\n", document.file, document.title, document.lines.len(), document.text(document.intro));
@@ -246,7 +246,7 @@ fn section(document: &Document, index: usize, json: bool) -> ExitCode {
         value["document"] = json!(document.name);
         value["text"] = json!(text);
         value["subsections"] = J::Array(children.iter().map(|child| outline(document, child)).collect());
-        println!("{value}");
+        super::source::print_report(&value);
         return ExitCode::SUCCESS;
     }
     println!("{text}");
@@ -260,10 +260,10 @@ fn section(document: &Document, index: usize, json: bool) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-/// `helix builtins [NAME] [--json]`.
+/// `helix builtins [NAME] [--yaml]`.
 pub fn builtins(args: &[&str]) -> ExitCode {
-    let json = args.contains(&"--json");
-    let rest: Vec<&str> = args.iter().copied().filter(|arg| *arg != "--json").collect();
+    let json = args.contains(&"--yaml");
+    let rest: Vec<&str> = args.iter().copied().filter(|arg| *arg != "--yaml").collect();
     match rest.as_slice() {
         [] => families(json),
         [name] => match builtins::descriptor(name) {
@@ -292,7 +292,7 @@ fn families(json: bool) -> ExitCode {
             .flat_map(|family| builtins::members(family))
             .map(|d| json!({"name": d.name, "family": d.family(), "signature": d.signature, "types": d.types, "summary": d.summary, "min": d.arity.0, "max": d.arity.1}))
             .collect();
-        println!("{}", J::Array(rows));
+        super::source::print_report(&J::Array(rows));
         return ExitCode::SUCCESS;
     }
     println!("builtin actors by family, as `!call [NAME, parameters]`; `[, x]` is optional and `x...` repeats");
@@ -317,7 +317,7 @@ fn builtin(found: &builtins::Descriptor, json: bool) -> ExitCode {
     let mentions = mentions(name);
     if json {
         let rows: Vec<_> = mentions.iter().map(|(doc, section, text)| json!({"document": doc, "section": section, "text": text})).collect();
-        println!("{}", json!({"name": name, "family": found.family(), "signature": found.signature, "types": found.types, "summary": found.summary, "min": found.arity.0, "max": found.arity.1, "call": call, "mentions": rows}));
+        super::source::print_report(&json!({"name": name, "family": found.family(), "signature": found.signature, "types": found.types, "summary": found.summary, "min": found.arity.0, "max": found.arity.1, "call": call, "mentions": rows}));
         return ExitCode::SUCCESS;
     }
     println!("{name}: {}\n{} builtin, {} arguments\ncall: `{call}`\ntypes: {}", found.summary, found.family(), arity(found.arity), found.types);

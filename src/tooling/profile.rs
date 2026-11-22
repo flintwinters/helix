@@ -147,8 +147,7 @@ pub(super) fn run(path: &str, options: &[&str]) -> ExitCode {
         "error": if vm.status() == Status::Error { crate::tooling::source::json(&vm.state()["error"]) } else { Value::Null },
     });
     let mut stdout = io::stdout().lock();
-    let written = serde_json::to_writer(&mut stdout, &report)
-        .and_then(|()| writeln!(stdout).map_err(serde_json::Error::io));
+    let written = stdout.write_all(crate::yaml_document(&super::source::yaml(&report)).as_bytes());
     match written {
         Ok(()) if limited || vm.status() == Status::Error => ExitCode::FAILURE,
         Ok(()) => ExitCode::SUCCESS,

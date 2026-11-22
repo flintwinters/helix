@@ -1,5 +1,7 @@
 """Browser editor highlighting: Helix structure styles from editor/web/helix-mode.js under Node; run via manage.py test."""
 import json
+
+import yaml
 import shutil
 import subprocess
 
@@ -37,9 +39,9 @@ def tokens(ctx, source, builtins):
 
 
 def check(ctx):
-    listed = ctx.helix("builtins", "--json")
+    listed = ctx.helix("builtins", "--yaml")
     assert listed.returncode == 0, listed
-    builtins = {row["name"]: row["family"] for row in json.loads(listed.stdout)}
+    builtins = {row["name"]: row["family"] for row in yaml.safe_load(listed.stdout)}
     seen = tokens(ctx, SOURCE, builtins)
     expected = [
         (1, "# comment", "comment"), (2, "all", "property"), (2, "!call", "helix-tag helix-tag-call"),

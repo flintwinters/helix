@@ -47,40 +47,40 @@ def verify(h):
     assert help_result.returncode == 0
     assert "eval" in help_result.stdout and "cli" in help_result.stdout
 
-    discovery = invoke("--help-json")
+    discovery = invoke("--help-yaml")
     assert discovery.returncode == 0 and not discovery.stderr
-    catalog = json.loads(discovery.stdout)
+    catalog = yaml.safe_load(discovery.stdout)
     assert catalog["version"] == 1
     assert set(catalog["tree"]["commands"]) == {"build", "runtime", "inspect", "quality"}
     assert list(catalog["suites"]) == list(SUITES)
-    assert json.loads(invoke("--format=json", "quality", "test", "--list").stdout)["suites"] == list(SUITES)
+    assert yaml.safe_load(invoke("--format=yaml", "quality", "test", "--list").stdout)["suites"] == list(SUITES)
     assert invoke("--format=text", "test", "--list").stdout.splitlines() == list(SUITES)
-    descriptions = invoke("--format=json", "test", "--describe")
+    descriptions = invoke("--format=yaml", "test", "--describe")
     assert descriptions.returncode == 0
-    assert json.loads(descriptions.stdout)["suites"] == SUITES
-    assert json.loads(invoke("--format=json", "--help").stdout) == catalog
+    assert yaml.safe_load(descriptions.stdout)["suites"] == SUITES
+    assert yaml.safe_load(invoke("--format=yaml", "--help").stdout) == catalog
     assert "usage:" in invoke("--format", "text", "--help").stdout
 
     def walk(node, path=()):
-        help_result = invoke("--format=json", *path, "--help")
+        help_result = invoke("--format=yaml", *path, "--help")
         assert help_result.returncode == 0 and not help_result.stderr, path
-        assert json.loads(help_result.stdout)["tree"] == node
+        assert yaml.safe_load(help_result.stdout)["tree"] == node
         for name, child in node["commands"].items():
             walk(child, (*path, name))
 
     walk(catalog["tree"])
     for path in [(), ("runtime",), ("inspect",), ("quality",)]:
-        result = invoke("--format=json", *path)
-        assert result.returncode == 0 and json.loads(result.stdout)["tree"] and not result.stderr
+        result = invoke("--format=yaml", *path)
+        assert result.returncode == 0 and yaml.safe_load(result.stdout)["tree"] and not result.stderr
     # Discovery needs only Python's standard library, with no Cargo or PyYAML.
     bare = subprocess.run(
-        [sys.executable, "-S", str(h.root / "manage.py"), "--help-json"],
+        [sys.executable, "-S", str(h.root / "manage.py"), "--help-yaml"],
         cwd=h.root, capture_output=True, text=True, timeout=10,
     )
-    assert bare.returncode == 0 and json.loads(bare.stdout) == catalog
+    assert bare.returncode == 0 and yaml.safe_load(bare.stdout) == catalog
     # Invalid fixture selection must fail before trying to build, even without Cargo.
     unmatched = subprocess.run(
-        [sys.executable, str(h.root / "manage.py"), "--format=json", "test", "--suite", "golden",
+        [sys.executable, str(h.root / "manage.py"), "--format=yaml", "test", "--suite", "golden",
          "--case", "__no_fixture_for_context_contract__"],
         cwd=h.root, env={**os.environ, "PATH": ""}, capture_output=True, text=True, timeout=10,
     )
@@ -88,23 +88,23 @@ def verify(h):
     for args in [("runtime", "unknown"), ("runtime", "run"),
                  ("quality", "test", "--suite", "unknown"),
                  ("quality", "test", "--bless", "--suite", "cli"),
-                 ("--help-json", "build")]:
-        result = invoke("--format=json", *args)
+                 ("--help-yaml", "build")]:
+        result = invoke("--format=yaml", *args)
         assert result.returncode == 2 and not result.stdout, args
-        assert json.loads(result.stderr)["error"]["kind"] == "usage", args
+        assert yaml.safe_load(result.stderr)["error"]["kind"] == "usage", args
     text_error = invoke("--format=text", "runtime", "unknown")
     assert text_error.returncode == 2 and "error:" in text_error.stderr
-    assert json.loads(unmatched.stderr)["error"]["kind"] == "selection"
+    assert yaml.safe_load(unmatched.stderr)["error"]["kind"] == "selection"
     missing_cargo = subprocess.run(
-        [sys.executable, str(h.root / "manage.py"), "--format=json", "build"], cwd=h.root,
+        [sys.executable, str(h.root / "manage.py"), "--format=yaml", "build"], cwd=h.root,
         env={**os.environ, "PATH": ""}, capture_output=True, text=True, timeout=10,
     )
     assert missing_cargo.returncode == 2 and not missing_cargo.stderr
-    build_error = json.loads(missing_cargo.stdout)
+    build_error = yaml.safe_load(missing_cargo.stdout)
     assert build_error["exit_code"] == 2 and build_error["status"] == "failed"
     for args in [("test", "--suite", "startup"), ("build",), ("std",)]:
-        result = invoke("--format=json", *args)
-        report = json.loads(result.stdout)
+        result = invoke("--format=yaml", *args)
+        report = yaml.safe_load(result.stdout)
         assert result.returncode == report["exit_code"] == 0, report
         assert report["version"] == 1
         if args[0] == "test":
@@ -120,7 +120,7 @@ def verify(h):
         )
 
     profiled = invoke("runtime", "profile", "-", "--limit", "0", "--top", "0", stdin="answer: !call [add, 1, 2]")
-    report = json.loads(profiled.stdout)
+    report = yaml.safe_load(profiled.stdout)
     assert profiled.returncode == 1 and report["stop"] == "limit" and report["advances"] == 0, (profiled, report)
     assert report["by_time"] == report["by_count"] == []
 
@@ -137,7 +137,7 @@ def verify(h):
             k: v for k, v in vars(full).items() if k != "help_parser"
         }, name
     assert parse(["cli", "--", "--help"]).extra == ["--help"]
-    assert parse(["--format=text", "cli", "--", "--format=json"]).extra == ["--format=json"]
+    assert parse(["--format=text", "cli", "--", "--format=yaml"]).extra == ["--format=yaml"]
     with contextlib.redirect_stdout(io.StringIO()):
         assert parse(["lint", "--help"]) is None
 
@@ -146,22 +146,22 @@ def verify_failed_suite_reruns(h):
     from tests.suites.test_reports import report_fixture, suite_fixture
 
     with tempfile.TemporaryDirectory(dir=h.root / "runtime", prefix="cli-rerun-") as temporary:
-        path = Path(temporary) / "previous report.json"
+        path = Path(temporary) / "previous report.yaml"
 
         def invoke(*extra, bare=False):
             return subprocess.run(
-                [sys.executable, *(["-S"] if bare else []), str(h.root / "manage.py"),
-                 "--format=json", "test", "--rerun-failed", str(path), *extra],
+                [sys.executable, str(h.root / "manage.py"),
+                 "--format=yaml", "test", "--rerun-failed", str(path), *extra],
                 cwd=h.root, env={**os.environ, **({"PATH": ""} if bare else {})},
                 capture_output=True, text=True, timeout=10 if bare else 120,
             )
 
         previous = report_fixture(suite_fixture("startup"), suite_fixture("static", "passed"),
                                   suite_fixture("docker_nginx", "skipped"))
-        path.write_text(json.dumps(previous, indent=2) + "\n")
+        path.write_text(yaml.safe_dump(previous))
         original = path.read_bytes()
         process = invoke("--jobs", "1")
-        result = json.loads(process.stdout)
+        result = yaml.safe_load(process.stdout)
         assert process.returncode == 0 and result["status"] == "passed", (process, result)
         assert [row["suite"] for row in result["results"]] == ["startup"], result
         assert result["results"][0]["status"] == "passed", result
@@ -172,16 +172,16 @@ def verify_failed_suite_reruns(h):
                       ("--list",), ("--describe",)):
             process = invoke(*extra, bare=True)
             assert process.returncode == 2 and not process.stdout, (extra, process)
-            assert json.loads(process.stderr)["error"]["kind"] == "usage", process
+            assert yaml.safe_load(process.stderr)["error"]["kind"] == "usage", process
         for previous in (report_fixture(), report_fixture(suite_fixture("startup", "passed"),
                                                          suite_fixture("docker_nginx", "skipped"))):
-            path.write_text(json.dumps(previous))
+            path.write_text(yaml.safe_dump(previous))
             process = invoke(bare=True)
             assert process.returncode == 0 and not process.stderr, process
-            assert json.loads(process.stdout) == report_fixture(), process
+            assert yaml.safe_load(process.stdout) == report_fixture(), process
 
-        # These inputs must be rejected before Cargo, PyYAML, or any selected test can run.
-        invalid = ["{", json.dumps({**previous, "version": 2}),
+        # These inputs must be rejected before Cargo or any selected test can run.
+        invalid = ["{", "version: 1\nversion: 1\n", json.dumps({**previous, "version": 2}),
                    json.dumps(report_fixture(suite_fixture("obsolete-suite"))),
                    json.dumps(report_fixture(suite_fixture("startup"), suite_fixture("startup"))),
                    json.dumps({**report_fixture(suite_fixture("startup")), "failure_count": 0}),
@@ -191,11 +191,11 @@ def verify_failed_suite_reruns(h):
             path.write_text(source)
             process = invoke(bare=True)
             assert process.returncode == 2 and not process.stdout, (source, process)
-            assert json.loads(process.stderr)["error"]["kind"] == "selection", process
+            assert yaml.safe_load(process.stderr)["error"]["kind"] == "selection", process
             assert path.read_text() == source
         path.unlink()
         process = invoke(bare=True)
-        assert process.returncode == 2 and json.loads(process.stderr)["error"]["kind"] == "selection", process
+        assert process.returncode == 2 and yaml.safe_load(process.stderr)["error"]["kind"] == "selection", process
 
 
 def verify_usage_log(h):
@@ -229,7 +229,7 @@ def verify_usage_log(h):
     last = sqlite3.connect(database).execute(
         "SELECT program, stdin_program, stdout FROM calls ORDER BY id DESC LIMIT 1").fetchone()
     assert piped.returncode == 0 and last == ("[1, 2]\n", 1, piped.stdout), (piped, last)
-    report = json.loads(invoke("--format=json", "usage", "--sql", "SELECT COUNT(*) AS n FROM calls").stdout)
+    report = yaml.safe_load(invoke("--format=yaml", "usage", "--sql", "SELECT COUNT(*) AS n FROM calls").stdout)
     assert report["query"] == [{"n": 5}]
     assert invoke("usage", "--sql", "DELETE FROM calls").returncode == 2
     unusable = invoke("usage", HELIX_USAGE_DB=str(h.root / "runtime" / "missing" / "usage.sqlite3"))

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Single entrypoint for Helix; use --help or --help-json to discover commands."""
-import json
+"""Single entrypoint for Helix; use --help or --help-yaml to discover commands."""
 import sys
 import os
 from pathlib import Path
@@ -193,7 +192,7 @@ def usage(args) -> int:
             emit({"command": "usage", "status": "error", "exit_code": 2, "error": {"kind": "usage_log", "message": message}},
                  stream=sys.stderr)
         return 2
-    if args.format == "json":
+    if args.format == "yaml":
         emit({"command": "usage", "status": "ok", **{name: [dict(zip(columns, row)) for row in rows]
                                                       for name, (columns, rows) in tables.items()}})
         return 0
@@ -264,7 +263,7 @@ def main() -> int:
         from tests.suites.docker_nginx import dispatch
         return dispatch(ROOT, args.action, args.run_id, args.format)
     if command == "test" and (args.list or args.describe):
-        if args.format == "json":
+        if args.format == "yaml":
             emit({"command": "test", "status": "ok", "suites": SUITES if args.describe else list(SUITES)})
         else:
             for name, description in SUITES.items():
@@ -273,7 +272,7 @@ def main() -> int:
     if command == "migrate-syntax":
         from tooling.syntax_migration import migrate_files
         results = migrate_files([Path(path) for path in args.paths], write=args.write)
-        if args.format == "json":
+        if args.format == "yaml":
             emit({"command": command, "status": "ok", "written": args.write, "files": results})
         else:
             for result in results:
@@ -382,10 +381,12 @@ def runtime(args, binary) -> int:
     if command in ("std", "docs", "builtins"):
         names = [getattr(args, name, None) for name in ("module", "document", "section", "name")]
         selected = [*filter(None, names), *(["--source"] if getattr(args, "whole", False) else [])]
-        if args.format == "json" and "--source" not in selected:
-            result = subprocess.run([str(binary), command, *selected, "--json"], cwd=ROOT, capture_output=True, text=True)
+        if args.format == "yaml" and "--source" not in selected:
+            import yaml
+
+            result = subprocess.run([str(binary), command, *selected, "--yaml"], cwd=ROOT, capture_output=True, text=True)
             emit({"command": command, "status": "failed" if result.returncode else "ok", "exit_code": result.returncode,
-                  "result": json.loads(result.stdout) if result.returncode == 0 else None, "stderr": result.stderr})
+                  "result": yaml.safe_load(result.stdout) if result.returncode == 0 else None, "stderr": result.stderr})
             return result.returncode
         return subprocess.call([str(binary), command, *selected], cwd=ROOT)
     raise AssertionError(f"unhandled runtime command: {command}")
