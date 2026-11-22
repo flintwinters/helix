@@ -31,21 +31,21 @@ Selected cases retain discovery order and use the existing `--jobs` workers.
 Test runs default to one line per suite and a final outcome/count summary.
 Case counts, rewritten expectations, skip reasons, stderr warnings, and failing
 suite diagnostics remain visible. Successful stdout is available with
-`./manage.py --format=json test ...`, which emits the complete versioned JSON
+`./manage.py --format=yaml test ...`, which emits the complete versioned YAML
 report with per-suite status, failures, captured streams, and execution metadata.
 Failure messages retain replay commands and artifact paths. Discovery is scoped
-text by default; `--format=json` opts into structured discovery. Usage/selection
+text by default; `--format=yaml` opts into structured discovery. Usage/selection
 errors go to stderr and exit 2 in either format. Compilation failures report the
 build phase before tests run.
 
 ## Rerun failed suites
 
-Save the versioned JSON report, then use it to retry failed suites in the current
+Save the versioned YAML report, then use it to retry failed suites in the current
 checkout, preserving any explicit fixture selection:
 
 ```sh
-./manage.py --format=json test --suite golden --case types_reflection_inverse > runtime/test-report.json
-./manage.py --format=json test --rerun-failed runtime/test-report.json > runtime/test-rerun.json
+./manage.py --format=yaml test --suite golden --case types_reflection_inverse > runtime/test-report.yaml
+./manage.py --format=yaml test --rerun-failed runtime/test-report.yaml > runtime/test-rerun.yaml
 ```
 
 The rerun leaves the input report unchanged. It selects failed suites through
@@ -102,9 +102,9 @@ Text output flushes each completed suite result and its visible evidence before
 the next suite starts. Final aggregation prints one summary and any additional
 orchestration failure, without repeating completed results. Early suite statuses
 describe host observations; they do not guarantee that final policy aggregation
-will succeed. JSON remains silent until one complete versioned report is ready.
+will succeed. YAML remains silent until one complete versioned report is ready.
 The harness verifies visibility and flushing at the next suite boundary without
-timing sleeps, along with policy-failure fallback and unchanged JSON output.
+timing sleeps, along with policy-failure fallback and unchanged YAML output.
 
 Golden testing uses the general `std:test.table` and `equal` operations to compare
 recorded observations: repeated executions, ordinary-root replay and exact expected
@@ -233,7 +233,7 @@ its exact CLI command. Promote confirmed bugs to paired golden regression cases.
 | Quoted/block scalars, nested lookup, duplicate-key rejection, unsupported YAML constructs, precise source blame | `parser` | Parent-link consequences checked through nested lexical lookup and precise paths/spans; no graph-internal API exposed |
 | Token mutations across parsing/linking/evaluation/emission, deletion minimization | `fuzz`; seed 901723 | Bounded 200 samples; not coverage-guided fuzzing |
 | 1,001 / 4,001 / 10,001-node flat arithmetic maps | `scale` | `memory` adds peak RSS and broad scaling thresholds; no historical statistical baseline |
-| Every registered actor: independent result witness, declared arity boundaries, applicable wrong types and error blame | `semantics`; `tests/suites/semantics.py`; `runtime/coverage/actors.json` | Finite scenarios; unrestricted operands have no wrong-type case; not every argument-position/type cross-product |
+| Every registered actor: independent result witness, declared arity boundaries, applicable wrong types and error blame | `semantics`; `tests/suites/semantics.py`; `runtime/coverage/actors.yaml` | Finite scenarios; unrestricted operands have no wrong-type case; not every argument-position/type cross-product |
 | Captures, recursion, nested callbacks, lazy recovery and memoization composed together | `dogfood`; `tests/dogfood/interactions.yaml` | Pure recovery only; no suspended continuations |
 | Nested lists/maps/records/unions versus independent Python membership, invalid declarations, ordered violations, diamonds, explicit/default provenance and constraint revalidation | `type_algebra`; `tests/suites/type_algebra.py` | Finite implemented fragment, plus generated `type_laws` checks of reflexivity, transitivity, union/intersection bounds, commutativity, idempotence, absorption and top/bottom identities over a finite pool, with soundness against membership witnesses; these are executable checks, not proofs; section 8 still owns stronger algebra and proof obligations |
 | Immutable steps versus run, retained pause points, nested machines, type phases, constraints, unwinding and host payload allocation growth | `execution`; `tests/execution.rs`, `tests/execution_memory.rs` | Named inspection is not a disk snapshot format; allocation checks bound growth rather than allocator-specific fixed overhead |
@@ -309,19 +309,19 @@ Legacy actor-first arrays are no longer executable. Convert old source with
 `./manage.py runtime migrate-syntax --write FILE` and review the result; without
 `--write` it reports files that would change. Compare migrated outcomes with prior golden
 expectations via `./manage.py quality migration-audit --baseline REV` and review
-`runtime/migration-audit/report.json` before blessing new expectations.
+`runtime/migration-audit/report.yaml` before blessing new expectations.
 
 ## Installing the CLI
 
 `cargo install --path . --locked` installs `helix`. `helix --help` lists commands
 (`repl`, `fmt`, `check`, `step`, `trace`, `inspect`, `watch`, `schema`, `lsp`; see
-[editor setup](../editor/README.md)); `./manage.py --help-json` describes project tooling.
+[editor setup](../editor/README.md)); `./manage.py --help-yaml` describes project tooling.
 Exit codes: 0 success, 1 evaluation/validation failure, 2 invalid arguments or unreadable input.
 
 ## Failure artifacts
 
 The standard-library prerequisite independently compares embedded module discovery
-(`std --json`) and `std MODULE --source` against a nonempty repository corpus. Successful responses must have
+(`std --yaml`) and `std MODULE --source` against a nonempty repository corpus. Successful responses must have
 empty stderr; unknown modules must produce a usage error on stderr without stdout.
 Failures retain both streams and expected output, with exact `runtime cli std`
 replay commands in the shared artifact directories.
@@ -363,7 +363,7 @@ offline; live OpenRouter calls use the explicit `quality agent-bench run` comman
 
 ### Localizing slow evaluation
 
-Run `./manage.py profile program.yaml` for a `helix.profile.v1` JSON report.
+Run `./manage.py profile program.yaml` for a `helix.profile.v1` YAML report.
 It separates load time from execution time and ranks evaluator sites by
 transition count (`by_count`) and elapsed time inside the evaluator
 (`by_time`). Rows give a source path, line, column, phase and the written actor
@@ -396,7 +396,7 @@ redeclaration of own required, optional and default fields without first buildin
 the input through `from_fields`. Report inputs use the suite catalog with retained logs, mixed outcomes
 and a failure-heavy variant; Python checks every output row and summary. The
 workloads save raw samples, median/range, throughput, platform and binary hash to
-`runtime/speed/report.json`; unique run directories retain inputs and states.
+`runtime/speed/report.yaml`; unique run directories retain inputs and states.
 Report benchmarks also retain the imported policy source and its hash, since it
 is not embedded in the executable. That implementation fingerprint is provenance,
 not a history filter: policy changes are what these fixed workloads compare.
@@ -425,7 +425,7 @@ Workload epochs in `tests/suites/speed.py` separate fixed historical baselines.
 Advance only the affected epochs after measured improvements, and retain the
 historical reports.
 
-Memory and compiled-mutation artifacts use unique per-run directories. Their root `report.json` files identify the latest run directory; concurrent runs cannot replace each other's inputs, RSS files or compiled binaries. Successful mutation runs remove their build target after retaining source/control logs.
+Memory and compiled-mutation artifacts use unique per-run directories. Their root `report.yaml` files identify the latest run directory; concurrent runs cannot replace each other's inputs, RSS files or compiled binaries. Successful mutation runs remove their build target after retaining source/control logs.
 
 Immutable execution profiles record run/step/checkpoint allocation counts and timings in `runtime/execution-profile.log`. Ordinary-data roots must remain emission fixpoints, including scalars and empty containers. Function and machine values use named object graphs and are checked through inspection and execution contracts rather than source reconstruction.
 

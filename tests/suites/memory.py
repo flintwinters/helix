@@ -49,8 +49,8 @@ def verify(h):
                                    "binary": str(h.binary), "profile": "debug", "rss": "GNU time max RSS, KiB"},
                   "measurements": measurements}
         report["run_directory"] = str(artifact)
-        (artifact / "report.json").write_text(json.dumps(report, indent=2) + "\n")
-        (base / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+        (artifact / "report.yaml").write_text(yaml.safe_dump(report, sort_keys=False))
+        (base / "report.yaml").write_text(yaml.safe_dump(report, sort_keys=False))
         for measurement in measurements:
             print(f"memory: {measurement}")
         print("memory: replay inputs, states and environment in runtime/memory/")

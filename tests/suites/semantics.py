@@ -99,7 +99,7 @@ INVALID = {'http_serve': '{"$call": ["http_serve", null, null]}', 'promise': '{"
 
 
 def verify(h):
-    arities = [(row["name"], row["min"], row["max"]) for row in json.loads(h.helix("builtins", "--json").stdout)]
+    arities = [(row["name"], row["min"], row["max"]) for row in yaml.safe_load(h.helix("builtins", "--yaml").stdout)]
     assert len(arities) == len({name for name, _, _ in arities}), "actor registrations must be unique"
     assert {name for name, _, _ in arities} == WITNESSES.keys(), "update actor witnesses when adding/removing builtins"
     report = {name: {"result": 0, "wrong_type": 0, "wrong_arity": 0} for name in WITNESSES}
@@ -167,7 +167,7 @@ def verify(h):
         assert (error["reference"], error["line"], error["column"]) == (reference(path), *location(source, path)), error
     artifact = h.root / "runtime" / "coverage"
     artifact.mkdir(exist_ok=True)
-    (artifact / "actors.json").write_text(json.dumps({"schema": 1, "scenarios": report,
+    (artifact / "actors.yaml").write_text(yaml.safe_dump({"schema": 1, "scenarios": report,
         "unrestricted_operands": sorted(UNRESTRICTED),
-        "limits": "scenario counts, not instrumented Rust branch percentages"}, indent=2) + "\n")
+        "limits": "scenario counts, not instrumented Rust branch percentages"}, sort_keys=False))
     print(f"semantics: {len(arities)} actors with result witnesses and all declared arity boundaries")

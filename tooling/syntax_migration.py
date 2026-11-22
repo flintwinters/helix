@@ -266,11 +266,11 @@ def audit_golden(context, baseline=None, output_format="text"):
                                                           semantic(new.get("error", new.get("errors"))))})
     failed = [row for row in results if row["malformed"] or row["before"] != row["after"]]
     changed = [row for row in results if row["semantic_root_changes"]]
-    report = context.root / "runtime" / "migration-audit" / "report.json"
+    report = context.root / "runtime" / "migration-audit" / "report.yaml"
     report.parent.mkdir(parents=True, exist_ok=True)
     evidence = {"baseline": baseline, "cases": results, "new_cases": new_cases}
-    report.write_text(json.dumps(evidence, ensure_ascii=True, indent=2) + "\n")
-    if output_format == "json":
+    report.write_text(yaml.safe_dump(evidence, sort_keys=False))
+    if output_format == "yaml":
         from tooling.output import emit
         emit({"command": "migration-audit", "status": "failed" if failed else "ok",
               "status_failures": len(failed), "changed_roots": len(changed),

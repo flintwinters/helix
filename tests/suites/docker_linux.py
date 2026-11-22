@@ -13,6 +13,8 @@ import subprocess
 import sys
 import time
 
+import yaml
+
 from tests.suites.docker_nginx import Docker, LABEL, VERSIONS, controller_report, validate_versions
 
 
@@ -175,7 +177,7 @@ class LinuxDocker(Docker):
         metadata = json.loads(self.command("inspect", self.container).stdout)[0]
         assert metadata["HostConfig"]["Privileged"] is False and metadata["HostConfig"]["PidMode"] != "host", metadata["HostConfig"]
         assert not metadata["Mounts"], "fixture must not mount host paths or Docker sockets"
-        (self.artifacts / f"container-{self.serial:04d}.json").write_text(json.dumps(metadata, indent=2))
+        (self.artifacts / f"container-{self.serial:04d}.yaml").write_text(yaml.safe_dump(metadata, sort_keys=False))
         self.command("exec", "-d", self.container, "sleep", "86400")
         state = self.probe()
         self.sentinel = state["paths"][SENTINEL]
@@ -185,7 +187,7 @@ class LinuxDocker(Docker):
     def probe(self):
         state = json.loads(self.exec("python3", "-c", PROBE, json.dumps(WATCHED)).stdout)
         self.serial += 1
-        (self.artifacts / f"observation-{self.serial:04d}.json").write_text(json.dumps(state, indent=2))
+        (self.artifacts / f"observation-{self.serial:04d}.yaml").write_text(yaml.safe_dump(state, sort_keys=False))
         return state
 
     def actions(self):
@@ -635,8 +637,8 @@ def exact_files(d):
     report = d.controller("check", capacity)
     assert report["status"] == "changed" or report["status"] == "failed" and report["error"]["kind"] == "limit", report
     assert d.probe() == before and d.actions() == trace, "capacity probe mutated host"
-    (d.artifacts / "inline-capacity.json").write_text(json.dumps({"bytes": 140000, "check_status": report["status"],
-        "error_kind": report.get("error", {}).get("kind"), "application_qualified": False, "host_unchanged": True}, indent=2))
+    (d.artifacts / "inline-capacity.yaml").write_text(yaml.safe_dump({"bytes": 140000, "check_status": report["status"],
+        "error_kind": report.get("error", {}).get("kind"), "application_qualified": False, "host_unchanged": True}, sort_keys=False))
 
 
 def identity_changes(d):
@@ -992,8 +994,8 @@ def peers(d):
             peer_converge(d, source, target, "changed")
             assert d.performed(len(before)) == [("file:/etc/helix-demo/app.conf", "set")], d.actions()[len(before):]
             peer_converge(d, source, target, "unchanged")
-        (d.artifacts / "peers.json").write_text(json.dumps({"controllers": [n["container"] for n in nodes],
-            "transport": "container-to-container SSH with pinned host keys", "status": "passed"}, indent=2) + "\n")
+        (d.artifacts / "peers.yaml").write_text(yaml.safe_dump({"controllers": [n["container"] for n in nodes],
+            "transport": "container-to-container SSH with pinned host keys", "status": "passed"}, sort_keys=False))
 
 
 def peer_failures(d):
@@ -1204,7 +1206,7 @@ def verify(h):
                       elapsed_ms=round((time.monotonic() - d.started) * 1000), versions=VERSIONS, packages=PACKAGES,
                       scenarios=results, commands=d.events, cleanup_errors=errors,
                       cleanup=f"./manage.py docker-nginx cleanup {d.run_id}")
-        (d.artifacts / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+        (d.artifacts / "report.yaml").write_text(yaml.safe_dump(report, sort_keys=False))
         if retained:
             print(f"docker_linux retained containers: run_id={d.run_id}; cleanup: {report['cleanup']}")
         d.progress(phase="complete", status=report["status"], completed=results)

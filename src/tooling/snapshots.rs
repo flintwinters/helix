@@ -54,10 +54,7 @@ pub fn command(path: &str, restoring: bool, steps: Option<usize>) -> ExitCode {
     }
 }
 fn error(message: &str) -> ExitCode {
-    println!(
-        "{}",
-        serde_json::json!({"status":"error","errors":[{"kind":"snapshot","message":message}]})
-    );
+    super::source::print_report(&serde_json::json!({"status":"error","errors":[{"kind":"snapshot","message":message}]}));
     ExitCode::FAILURE
 }
 
@@ -107,7 +104,7 @@ pub fn reconcile(path: &str, outcome_path: &str) -> ExitCode {
     })();
     match result {
         Ok(()) => {
-            println!("{}", serde_json::json!({"status":"reconciled"}));
+            super::source::print_report(&serde_json::json!({"status":"reconciled"}));
             ExitCode::SUCCESS
         }
         Err(e) => error(&e),
@@ -128,7 +125,7 @@ pub fn checkpoint(path: &str) -> ExitCode {
 /// Explicit acknowledgement of independently established target quiescence.
 pub fn target_release(path: &str) -> ExitCode {
     match crate::vm::effects::locks::TargetGuard::acknowledge(Path::new(path)) {
-        Ok(()) => { println!("{{\"status\":\"released\"}}"); ExitCode::SUCCESS }
+        Ok(()) => { print!("status: released\n"); ExitCode::SUCCESS }
         Err(message) => error(&message),
     }
 }

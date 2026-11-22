@@ -153,9 +153,11 @@ def compatible_history(base, environment, name, source_hash, field, counter=None
     """Values of `field` from the earliest five compatible runs, avoiding a drifting baseline.
     Counted values compare only with the same counter: perf and callgrind totals differ."""
     values = []
-    for path in sorted(base.glob("run-*/report.json"), key=lambda p: p.stat().st_mtime):
+    reports = {path.parent: path for path in base.glob("run-*/report.json")}
+    reports.update((path.parent, path) for path in base.glob("run-*/report.yaml"))
+    for path in sorted(reports.values(), key=lambda p: p.stat().st_mtime):
         try:
-            previous = json.loads(path.read_text())
+            previous = yaml.safe_load(path.read_text())
             if previous.get("comparison_environment") != environment:
                 continue
             for row in previous["measurements"]:
@@ -163,7 +165,7 @@ def compatible_history(base, environment, name, source_hash, field, counter=None
                         and row.get("baseline_epoch", 1) == BASELINE_EPOCHS.get(name, 1)
                         and (counter is None or row.get("counter") == counter)):
                     values.append(row[field])
-        except (OSError, ValueError, KeyError, TypeError):
+        except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError):
             continue
         if len(values) >= 5:
             break
@@ -352,9 +354,9 @@ def verify(h):
             print(f"speed: {name}: median {median:.6f}s, range {min(samples):.6f}..{max(samples):.6f}s ({operations / median:.0f} operations/s)", flush=True)
     finally:
         report["host_load_end"] = host_load()
-        content = json.dumps(report, indent=2) + "\n"
-        (artifact / "report.json").write_text(content)
-        (base / "report.json").write_text(content)
+        content = yaml.safe_dump(report, sort_keys=False)
+        (artifact / "report.yaml").write_text(content)
+        (base / "report.yaml").write_text(content)
         print(f"speed: report and replay inputs/states: {artifact}", flush=True)
     if slowdowns:
         raise AssertionError("pinned speed baseline exceeded: " + ", ".join(slowdowns))
@@ -381,7 +383,7 @@ def verify_comparison(base):
         assert instruction_comparison(root, {}, "w", "hash", "callgrind", 1000)["status"] == "no baseline"
         counted = root / "run-counted"
         counted.mkdir()
-        (counted / "report.json").write_text(json.dumps({
+        (counted / "report.yaml").write_text(yaml.safe_dump({
             "comparison_environment": {}, "measurements": [
                 {"workload": "w", "source_sha256": "hash", "counter": "callgrind", "median_instructions": 1000}]}))
         for count, status in ((1000, "ok"), (1020, "ok"), (1021, "SLOWDOWN")):
@@ -390,7 +392,7 @@ def verify_comparison(base):
         assert instruction_comparison(root, {}, "w", "hash", "perf", 5000)["status"] == "no baseline"
         run = root / "run-baseline"
         run.mkdir()
-        (run / "report.json").write_text(json.dumps({
+        (run / "report.yaml").write_text(yaml.safe_dump({
             "comparison_environment": {}, "measurements": [
                 {"workload": "w", "source_sha256": "hash", "median_seconds": 1}]}))
         for samples, expected in [([1.1] * 5, "ok"), ([1.5] * 5, "SLOWDOWN"),
@@ -401,11 +403,11 @@ def verify_comparison(base):
         # Old slice reports remain readable but cannot hide a post-optimization regression.
         report = {"comparison_environment": {}, "measurements": [
             {"workload": "slice-ascii", "source_sha256": "hash", "median_seconds": 1}]}
-        path = run / "report.json"
-        path.write_text(json.dumps(report))
+        path = run / "report.yaml"
+        path.write_text(yaml.safe_dump(report))
         assert history_comparison(root, {}, "slice-ascii", "hash", [2] * 5)["status"] == "no baseline"
         report["measurements"][0]["baseline_epoch"] = BASELINE_EPOCHS["slice-ascii"]
-        path.write_text(json.dumps(report))
+        path.write_text(yaml.safe_dump(report))
         assert history_comparison(root, {}, "slice-ascii", "hash", [2] * 5)["status"] == "SLOWDOWN"
         # A loaded host's slowdown is reported but never flagged: load inflates every sample alike.
         assert history_comparison(root, {}, "slice-ascii", "hash", [2] * 5, loaded=True)["status"] == "unreliable: host busy"

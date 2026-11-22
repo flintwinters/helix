@@ -69,6 +69,6 @@ pub fn command(path: &str, restoring: bool, steps: Option<usize>) -> ExitCode {
     }
 }
 fn failure(message: &str) -> ExitCode {
-    println!("{}", serde_json::json!({"status":"error","errors":[{"kind":"promised_system","message":message}]}));
+    super::source::print_report(&serde_json::json!({"status":"error","errors":[{"kind":"promised_system","message":message}]}));
     ExitCode::FAILURE
 }

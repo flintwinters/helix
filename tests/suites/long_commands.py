@@ -42,11 +42,11 @@ def verify(h):
             return state
 
         def records(path):
-            return [json.loads(line) for line in path.read_text().splitlines(keepends=True)
-                    if line.endswith('\n')] if path.exists() else []
+            from tests.suites.test_reports import completed_documents
+            return completed_documents(path)
 
         # Reject invalid policy before source loading, spawning, or progress-file creation.
-        progress = base / 'invalid.jsonl'
+        progress = base / 'invalid.yaml'
         marker = base / 'invalid-mutated'
         prepare(f'open({str(marker)!r}, "w").write("bad")')
         invalid = [('--command-timeout-ms', '0'), ('--command-timeout-ms', '86400001'),
@@ -59,13 +59,13 @@ def verify(h):
             assert result.returncode == 2 and not marker.exists() and not progress.exists(), result
         result = h.helix('perform', '--command-progress', str(progress), str(program))
         assert result.returncode == 1 and not marker.exists() and not progress.exists(), result
-        occupied = base / 'occupied.jsonl'
+        occupied = base / 'occupied.yaml'
         occupied.write_text('preserve')
         failed(f'open({str(marker)!r}, "w").write("bad")', 'io', '--command-progress', str(occupied))
         assert occupied.read_text() == 'preserve' and not marker.exists()
 
         # The deadline can exceed the old ten-second ceiling; heartbeat output stays separate.
-        progress = base / 'long.jsonl'
+        progress = base / 'long.yaml'
         result = h.helix('perform', '--allow-command', '/bin/sh',
                          '--command-timeout-ms', '14000', '--command-progress', str(progress),
                          'tests/cases/long_commands.yaml')
@@ -238,7 +238,7 @@ def verify(h):
         cancelled(tree_script(), signal.SIGINT, lambda: pids.exists() and pids.stat().st_size > 0,
                   '--command-timeout-ms', '5000', catch='value')
         counter.unlink()
-        progress = base / 'retry-cancel.jsonl'
+        progress = base / 'retry-cancel.yaml'
         cancelled(count + 'raise SystemExit(75)', signal.SIGTERM,
                   lambda: any(event['event'] == 'retry' for event in records(progress)),
                   *retry, '--command-retry-delay-ms', '5000', '--command-progress', str(progress))

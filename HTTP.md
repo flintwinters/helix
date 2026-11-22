@@ -49,7 +49,7 @@ budgets. Completed machines and their histories are retired; the server retains
 active work and summary counters. Worker code cannot start another server or
 perform process-wide stdin/exit operations.
 
-`--server-progress NEW_FILE` writes versioned JSONL readiness and shutdown metadata,
+`--server-progress NEW_FILE` writes versioned YAML readiness and shutdown metadata,
 including the ephemeral address and failure counts. The file must not exist.
 Metadata omits request bodies. Program stdout and full-state stderr retain their
 usual `perform` contracts. Journaled server startup is rejected before binding;

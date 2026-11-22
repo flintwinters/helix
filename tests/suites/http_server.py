@@ -10,6 +10,8 @@ import time
 from pathlib import Path
 import yaml
 
+from tests.suites.test_reports import completed_documents
+
 
 def call(name, *args):
     return {'$call': [name, *args]}
@@ -33,7 +35,7 @@ def verify(h):
             nonlocal serial
             serial += 1
             program = base / f'program-{serial}.yaml'
-            progress = base / f'progress-{serial}.jsonl'
+            progress = base / f'progress-{serial}.yaml'
             program.write_text(json.dumps(call('let', {'http': call('import', 'std:http'), **{name: call('import', 'std:' + name) for name in modules}},
                 call('http.serve', {'bind': '127.0.0.1:0', 'requests': requests, **(options or {})}, handler))))
             process = subprocess.Popen([str(h.binary), 'perform', '--allow-listen', '127.0.0.1:0',
@@ -43,12 +45,10 @@ def verify(h):
                 ready = None
                 deadline = time.monotonic() + 10
                 while time.monotonic() < deadline:
-                    if progress.exists():
-                        contents = progress.read_text()
-                        lines = contents.splitlines()
-                        if lines and contents.endswith('\n'):
-                            ready = json.loads(lines[0])
-                            break
+                    records = completed_documents(progress)
+                    if records:
+                        ready = records[0]
+                        break
                     assert process.poll() is None, process.communicate()
                     time.sleep(.01)
                 assert ready and ready['event'] == 'ready', ready
@@ -58,7 +58,7 @@ def verify(h):
                 assert process.returncode == expected_exit and not stdout, (process.returncode, stdout, stderr)
                 state = yaml.safe_load(stderr)
                 assert state['status'] == 'finished', state
-                assert json.loads(progress.read_text().splitlines()[-1])['event'] == 'shutdown'
+                assert completed_documents(progress)[-1]['event'] == 'shutdown'
             finally:
                 if process.poll() is None:
                     process.terminate()

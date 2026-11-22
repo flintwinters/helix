@@ -10,7 +10,7 @@ def verify(h):
     server = (h.root / 'tests/programs/peer_server.yaml').read_text()
     malformed = h.helix('system-snapshot', '-', stdin=json.dumps({'participants': {'broken': '['}}))
     assert malformed.returncode == 1 and not malformed.stderr, malformed
-    damaged_source = json.loads(malformed.stdout)
+    damaged_source = yaml.safe_load(malformed.stdout)
     machine = damaged_source['machines']['broken']
     assert machine['objects'][machine['machine']]['value']['status'] == 'error', machine
     failed = h.helix('system-snapshot', '-', '--steps', '100',

@@ -30,7 +30,7 @@ prompt and tool descriptions steer candidates to the same style via `helix fmt`.
 The model can read documentation progressively, create and edit candidate/helper
 files, and run `helix` with argv for `--help`, `help [COMMAND]`,
 `docs [DOC [SECTION]]`, `builtins [NAME]`, `std [MODULE[.EXPORT]]`, `schema`,
-`check FILE`, `fmt FILE` or `run FILE`; lookups accept `--json`. Protocol v4 added
+`check FILE`, `fmt FILE` or `run FILE`; lookups accept `--yaml`. Protocol v4 added
 the help/docs/builtins lookups to v3's surface, so the two are not comparable.
 A `-` file argument accepts source on stdin.
 Runtime calls use the existing sandbox with workspace-local and embedded imports
@@ -98,7 +98,7 @@ and [usage accounting](https://github.com/OpenRouterTeam/docs/blob/main/cookbook
 Run directories default to `runtime/agent-bench/TIMESTAMP`; `--directory` selects
 a new explicit path. Each contains context/task snapshots, prompts, responses,
 workspace edits, CLI results, conversations, frozen evaluation files and scores.
-`report.json` updates through generation/scoring/complete phases. The manifest
+`report.yaml` updates through generation/scoring/complete phases. The manifest
 records protocol/task versions, context delivery, concurrency, sampling, model
 catalog, Git/binary/context fingerprints and platform. `report` is read-only and
 build-free. `report --audit` recomputes the tested workspace fingerprint and checks

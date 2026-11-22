@@ -12,22 +12,48 @@ pub(crate) fn data(text: &str) -> Result<Yaml, String> {
     let graph = crate::graph::Graph::parse_data(text).map_err(|e| e.message)?;
     Ok(graph.data(0).plain_yaml().unwrap())
 }
-/// The same bounded JSONL boundary serves streaming queries and explicit probes.
+/// Read one bounded, explicitly framed YAML document or a legacy JSON line.
 pub(crate) fn record(
     reader: &mut impl BufRead,
-) -> Result<Option<(serde_json::Value, Yaml)>, String> {
+) -> Result<Option<Yaml>, String> {
     let mut text = String::new();
-    let size = std::io::Read::take(reader, MAX_INPUT_BYTES + 1)
-        .read_line(&mut text)
-        .map_err(|e| e.to_string())?;
-    if size == 0 {
+    if read_record_line(reader, &mut text)? == 0 {
         return Ok(None);
     }
-    if size as u64 > MAX_INPUT_BYTES {
-        return Err("JSONL record exceeds 16000000 bytes".into());
+    let value = if text.trim_end() == "---" {
+        loop {
+            let start = text.len();
+            if read_record_line(reader, &mut text)? == 0 {
+                return Err("unterminated YAML stream document; end it with `...`".into());
+            }
+            if text[start..].trim_end() == "..." {
+                break data(&text)?;
+            }
+        }
+    } else {
+        serde_json::from_str::<serde_json::Value>(&text)
+            .map_err(|error| format!("expected a YAML document starting with `---`: {error}"))?;
+        data(&text)?
+    };
+    Ok(Some(value))
+}
+
+fn read_record_line(reader: &mut impl BufRead, text: &mut String) -> Result<usize, String> {
+    let size = std::io::Read::take(reader, MAX_INPUT_BYTES + 1 - text.len() as u64)
+        .read_line(text)
+        .map_err(|error| error.to_string())?;
+    if text.len() as u64 > MAX_INPUT_BYTES {
+        return Err("stream document exceeds 16000000 bytes".into());
     }
-    let json = serde_json::from_str(&text).map_err(|e| format!("invalid JSONL: {e}"))?;
-    Ok(Some((json, data(&text)?)))
+    Ok(size)
+}
+
+/// Frame each response so a consumer can finish reading it before the next request.
+pub(crate) fn write_record(out: &mut impl Write, value: &Yaml) -> io::Result<()> {
+    writeln!(out, "---")?;
+    out.write_all(yaml_document(value).as_bytes())?;
+    writeln!(out, "...")?;
+    out.flush()
 }
 pub(crate) fn read(path: &str) -> Result<String, String> {
     read_bounded(path, MAX_INPUT_BYTES)
@@ -137,7 +163,11 @@ fn execute(args: &[String]) -> Result<(), (u8, String)> {
             vec![value.clone()]
         };
         for record in records {
-            let rendered = if stream || format == "json" {
+            if stream && format != "json" {
+                write_record(&mut out, &record).map_err(|error| (1, error.to_string()))?;
+                continue;
+            }
+            let rendered = if format == "json" {
                 json_document(&record).map_err(|e| (1, e.into()))?
             } else if format == "raw" {
                 match record {
@@ -154,7 +184,7 @@ fn execute(args: &[String]) -> Result<(), (u8, String)> {
     };
     if stream {
         let mut input = io::stdin().lock();
-        while let Some((_, value)) = record(&mut input).map_err(|e| (1, e))? {
+        while let Some(value) = record(&mut input).map_err(|e| (1, e))? {
             invoke(value)?;
         }
     } else {

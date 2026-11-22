@@ -127,10 +127,10 @@ def verify_stream(h):
     assert result.returncode == 0, result
     assert json.loads(result.stdout) == {"$call": ["raise", "test", "data stays data"]}, result
     query = '!call [fn, [x], !call [list, !ref x, !ref x]]'
-    result = h.helix("exec", "--stream", query, stdin='1\n{"雪": 2}\n')
+    result = h.helix("exec", "--stream", query, stdin='---\n1\n...\n---\n雪: 2\n...\n')
     assert result.returncode == 0, result
-    assert [json.loads(line) for line in result.stdout.splitlines()] == [1, 1, {"雪": 2}, {"雪": 2}], result
+    assert list(yaml.safe_load_all(result.stdout)) == [1, 1, {"雪": 2}, {"雪": 2}], result
     result = h.helix("exec", "--stream", identity, stdin='1\n')
     assert result.returncode == 1 and "list" in result.stderr, result
     result = h.helix("exec", "--stream", query, stdin='1\ninvalid\n')
-    assert result.returncode == 1 and result.stdout == '1\n1\n', result
+    assert result.returncode == 1 and list(yaml.safe_load_all(result.stdout)) == [1, 1], result

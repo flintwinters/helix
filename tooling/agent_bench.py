@@ -19,14 +19,31 @@ from pathlib import Path
 import yaml
 
 from tooling.agent_tasks import TASKS, VERSION, inputs, oracle, source_digest
-from tooling.output import emit
+from tooling.output import emit, report_yaml
 
 API = 'https://openrouter.ai/api/v1'
 PROTOCOL_VERSION = 4
 
 
 def save(path, value):
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+    if path.suffix == '.yaml':
+        path.write_text(report_yaml(value))
+    else:
+        path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+
+def report_path(directory, name):
+    path = directory / f'{name}.yaml'
+    return path if path.exists() else path.with_suffix('.json')
+
+
+def load_report(directory, name):
+    return yaml.safe_load(report_path(directory, name).read_text())
+
+
+def run_results(directory, task):
+    return [report_path(trial, 'result') for trial in sorted((directory / task).glob('trial-*'))
+            if report_path(trial, 'result').is_file()]
 
 
 def digest(value):
@@ -338,7 +355,7 @@ def generate_attempt(root, args, ctx, directory, docs, task, trial, key):
     except (ValueError, KeyError, IndexError, TypeError, OSError) as error:
         row['error'] = str(error)
     row['attempt_generation_wall_ms'] = (time.perf_counter() - started) * 1000
-    save(attempt / 'result.json', row)
+    save(attempt / 'result.yaml', row)
     return row
 
 
@@ -377,8 +394,8 @@ def run(root, args, ctx):
                 'environment': {'platform': platform.platform(), 'python': platform.python_version()},
                 'timing_contract': 'Generation is concurrent. After all generation stops, CLI correctness and timing run serially; timings include startup, parsing, linking, execution and serialization, with one warmup and n=256. No build or API time; debug build.',
                 'dry_run': args.dry_run}
-    save(directory / 'manifest.json', manifest)
-    save(directory / 'tasks.json', {task: {**TASKS[task], 'cases': [
+    save(directory / 'manifest.yaml', manifest)
+    save(directory / 'tasks.yaml', {task: {**TASKS[task], 'cases': [
         {'id': name, 'input': values, 'expected': oracle(task, values)}
         for name, values in inputs(task)]} for task in selected})
     references, rows = {}, []
@@ -387,9 +404,9 @@ def run(root, args, ctx):
         reference.mkdir(parents=True)
         (reference / 'candidate.yaml').write_text(TASKS[task]['reference'])
         checked = score(ctx, reference, task, 0)
-        save(reference / 'score.json', checked)
+        save(reference / 'score.yaml', checked)
         if not checked['passed']:
-            raise ValueError(f'reference failed for {task}; see {reference / "score.json"}')
+            raise ValueError(f'reference failed for {task}; see {reference / "score.yaml"}')
         save(directory / task / 'messages.json', messages(docs, task, getattr(args, 'mode', 'one-shot')))
         references[task] = reference
     if args.dry_run:
@@ -400,7 +417,7 @@ def run(root, args, ctx):
 
     def checkpoint(phase):
         rows.sort(key=lambda row: (selected.index(row['task']), row['trial']))
-        save(directory / 'report.json', {'schema': manifest['schema'], 'phase': phase,
+        save(directory / 'report.yaml', {'schema': manifest['schema'], 'phase': phase,
                                         'execution': {'jobs': jobs,
                                             'generation_wall_ms': generation_wall_ms if generation_wall_ms is not None else (time.perf_counter() - generation_started) * 1000,
                                             'evaluation_wall_ms': (time.perf_counter() - evaluation_started) * 1000 if evaluation_started is not None else 0},
@@ -420,7 +437,7 @@ def run(root, args, ctx):
     # No API generation or model CLI activity overlaps these measurements.
     for task in selected:
         reference_score = score(ctx, references[task], task, args.samples)
-        save(references[task] / 'score.json', reference_score)
+        save(references[task] / 'score.yaml', reference_score)
         if not reference_score['passed']:
             raise ValueError(f'reference failed for {task} during isolated evaluation')
         for row in [row for row in rows if row['task'] == task]:
@@ -430,7 +447,7 @@ def run(root, args, ctx):
                 row['score'] = score(ctx, evaluation, task, args.samples)
                 median = row['score'].get('median_cli_wall_ms')
                 row['runtime_ratio_to_reference'] = median / reference_score['median_cli_wall_ms'] if median is not None else None
-            save(attempt / 'result.json', row)
+            save(attempt / 'result.yaml', row)
             checkpoint('scoring')
             print(f"agent-bench: scored {task} trial {row['trial']}: "
                   + ('passed' if row.get('score', {}).get('passed') else 'failed'), file=sys.stderr, flush=True)
@@ -445,13 +462,13 @@ def retry_plan(source, tasks=None):
     source run is never modified, so both results stay inspectable side by side.
     """
     source = Path(source).resolve()
-    manifest = json.loads((source / 'manifest.json').read_text())
+    manifest = load_report(source, 'manifest')
     if manifest['task_version'] != VERSION or manifest['task_source_sha256'] != source_digest():
         raise ValueError('task version changed since the source run; its attempts are not comparable')
     plan = []
     for task in manifest['tasks']:
-        for path in sorted((source / task).glob('trial-*/result.json')):
-            row = json.loads(path.read_text())
+        for path in run_results(source, task):
+            row = yaml.safe_load(path.read_text())
             if row.get('error') and (not tasks or task in tasks):
                 plan.append((task, row['trial']))
     if not plan:
@@ -463,7 +480,7 @@ def replay(root, args, ctx):
     if not args.directory:
         raise ValueError('score requires --directory')
     directory = Path(args.directory).resolve()
-    manifest = json.loads((directory / 'manifest.json').read_text())
+    manifest = load_report(directory, 'manifest')
     if manifest['task_version'] != VERSION or manifest['task_source_sha256'] != source_digest():
         raise ValueError('task version changed; original scoring code is required')
     rows = []
@@ -471,8 +488,8 @@ def replay(root, args, ctx):
         reference = score(ctx, directory / task / 'reference', task, args.samples)
         if not reference['passed']:
             raise ValueError(f'reference failed for {task}')
-        for path in sorted((directory / task).glob('trial-*/result.json')):
-            row = json.loads(path.read_text())
+        for path in run_results(directory, task):
+            row = yaml.safe_load(path.read_text())
             attempt = path.parent
             if (attempt / 'candidate.yaml').exists():
                 row['score'] = score(ctx, attempt / row.get('evaluation_directory', '.'), task, args.samples)
@@ -484,7 +501,7 @@ def replay(root, args, ctx):
                              'test_timeout_seconds': ctx.timeout,
                              'samples': args.samples, 'recorded_at': datetime.now(timezone.utc).isoformat(),
                              'environment': {'platform': platform.platform(), 'python': platform.python_version()}}}
-    save(directory / 'replay.json', report)
+    save(directory / 'replay.yaml', report)
     return {'directory': str(directory), 'summary': report['summary']}
 
 
@@ -522,9 +539,10 @@ def saved_report(args):
     if not args.directory:
         raise ValueError('report requires --directory')
     directory = Path(args.directory).resolve()
-    manifest = json.loads((directory / 'manifest.json').read_text())
-    filename = 'replay.json' if getattr(args, 'replay', False) else 'report.json'
-    report = json.loads((directory / filename).read_text())
+    manifest = load_report(directory, 'manifest')
+    path = report_path(directory, 'replay' if getattr(args, 'replay', False) else 'report')
+    report = yaml.safe_load(path.read_text())
+    filename = path.name
     audit = submission_audit(directory, report['rows']) if getattr(args, 'audit', False) else None
     return {'submission_audit': audit, 'evaluation_source': filename, 'evaluation': report.get('evaluation'), 'execution': report.get('execution'), 'directory': str(directory), 'provenance': {key: manifest.get(key) for key in (
         'schema', 'protocol_version', 'context_delivery', 'jobs', 'max_turns', 'max_tool_calls', 'retry_of', 'test_timeout_seconds', 'task_version', 'model', 'trials', 'samples', 'temperature', 'max_tokens',

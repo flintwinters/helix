@@ -386,7 +386,7 @@ increase these limits or authorize retries. `perform` exposes the same policy:
 | `--command-attempts` | 1 | 1–32 total attempts |
 | `--command-retry-delay-ms` | 0 | 0–60000 milliseconds between attempts |
 | `--command-retry-exit-code` | None | Repeatable integer 1–255 explicitly classified by the caller as transient and safe to retry |
-| `--command-progress` | None | New JSONL file for versioned progress metadata; existing paths are refused |
+| `--command-progress` | None | New YAML document stream for versioned progress metadata; existing paths are refused |
 
 A successful command result keeps `{code, stdout, stderr}` and contains the final
 attempt's output. Earlier attempts still consume the shared output budget. Exceeding
@@ -406,7 +406,7 @@ is observational host data, not a durable recovery journal. Library callbacks an
 progress storage must remain responsive; their own blocking IO is outside the
 command deadline guarantee.
 
-Each JSONL record has `version: 1`, branch-local `effect_id`, one-based `attempt`,
+Each YAML document has `version: 1`, branch-local `effect_id`, one-based `attempt`,
 `event`, `elapsed_ms`, cumulative `stdout_bytes` and `stderr_bytes`, and nullable
 `code`. Events are `starting` (before spawn, also checking the progress sink),
 `started`, `output`, `heartbeat`, `retry`, `finished`, or the failure categories

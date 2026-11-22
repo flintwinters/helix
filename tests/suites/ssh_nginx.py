@@ -7,6 +7,8 @@ import signal
 import subprocess
 import time
 
+import yaml
+
 from tests.suites import docker_nginx as local
 from tests.suites.ssh_host import keygen
 
@@ -245,5 +247,5 @@ def verify(h):
                 result['status'] = 'failed'
             d.progress(suite='ssh_nginx', phase='complete', status=result['status'])
             result['commands'] = d.events
-            (d.artifacts / 'ssh-report.json').write_text(json.dumps(result, indent=2) + '\n')
+            (d.artifacts / 'ssh-report.yaml').write_text(yaml.safe_dump(result, sort_keys=False))
             print(f'ssh_nginx evidence: {d.artifacts.relative_to(h.root)}')

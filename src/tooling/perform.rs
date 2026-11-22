@@ -69,12 +69,11 @@ pub fn run(args: &[String]) -> ExitCode {
             "--server-connections" => match value.parse() { Ok(n) => host.server_policy.connections = n, Err(_) => return usage("invalid connection capacity") },
             "--server-deadline-ms" => match value.parse() { Ok(n) => host.server_policy.deadline_ms = n, Err(_) => return usage("invalid request deadline") },
             "--server-progress" => {
-                use std::io::Write;
                 let mut file = match std::fs::OpenOptions::new().write(true).create_new(true).open(value) {
                     Ok(file) => file, Err(error) => return usage(&error.to_string()),
                 };
                 host.server_progress = Some(Box::new(move |event| {
-                    writeln!(file, "{event}").and_then(|_| file.flush()).map_err(|error| ("io".into(), error.to_string()))?;
+                    super::stream::write_record(&mut file, &super::source::yaml(event)).map_err(|error| ("io".into(), error.to_string()))?;
                     Ok(yaml_rust2::Yaml::Null)
                 }));
             },
@@ -104,7 +103,7 @@ pub fn run(args: &[String]) -> ExitCode {
                 Err(_) => { eprintln!("seed must be an unsigned integer"); return ExitCode::from(2); }
             },
             "--help" => {
-                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-listen ADDRESS (exact numeric loopback; port 0 explicit), --allow-secret NAME=FILE (private UTF-8 input; command output suppressed), --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U], --ssh-control-dir PRIVATE_DIR (reuse connections), --allow-stdin, --allow-stdout, --allow-time, --allow-random\nHTTP policy: --server-connections N, --server-handlers N, --server-actors N, --server-mailbox N, --server-header-limit BYTES, --server-body-limit BYTES, --server-static-limit BYTES, --server-deadline-ms N. --server-progress NEW_FILE writes readiness/address and shutdown metadata. See HTTP.md for defaults and scope.\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nCommand policy (caller grants, not source): --command-timeout-ms N (1..86400000, default 10000; total across retries), --command-output-limit N (1..16777216 bytes per stream across retries, default 1048576), --command-attempts N (1..32, default 1), --command-retry-delay-ms N (0..60000), repeatable --command-retry-exit-code N (1..255; only explicitly classified exit codes retry)\n--command-progress NEW_FILE writes versioned JSONL metadata, never command output; existing files are refused. SIGINT/SIGTERM cancel commands and clean up their Unix process group.\n--target-lock FILE coordinates cooperating controllers across journals; crashes/errors retain a marker until explicit helix target-release FILE after independent quiescence/reconciliation. All controllers must use the same path; this is not a remote fencing service.\n--checkpoint NEW_FILE journals before and after each effect; --resume-checkpoint FILE restores with fresh grants and refuses uncertain outcomes. helix reconcile FILE OUTCOME records an independently observed outcome for the exact uncertain request.\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
+                println!("helix perform [grants] <file> [-- args...]\nGrants: --allow-listen ADDRESS (exact numeric loopback; port 0 explicit), --allow-secret NAME=FILE (private UTF-8 input; command output suppressed), --allow-read ROOT, --allow-write ROOT, --allow-env NAME, --allow-command EXECUTABLE, --allow-http ORIGIN, --allow-ssh ALIAS,host=H,known_hosts=FILE[,user=U][,port=N][,identity=FILE][,jump=J][,become=U], --ssh-control-dir PRIVATE_DIR (reuse connections), --allow-stdin, --allow-stdout, --allow-time, --allow-random\nHTTP policy: --server-connections N, --server-handlers N, --server-actors N, --server-mailbox N, --server-header-limit BYTES, --server-body-limit BYTES, --server-static-limit BYTES, --server-deadline-ms N. --server-progress NEW_FILE writes readiness/address and shutdown metadata. See HTTP.md for defaults and scope.\nDeterminism: --fixed-time MILLISECONDS, --seed INTEGER (still require grants)\nCommand policy (caller grants, not source): --command-timeout-ms N (1..86400000, default 10000; total across retries), --command-output-limit N (1..16777216 bytes per stream across retries, default 1048576), --command-attempts N (1..32, default 1), --command-retry-delay-ms N (0..60000), repeatable --command-retry-exit-code N (1..255; only explicitly classified exit codes retry)\n--command-progress NEW_FILE writes versioned YAML metadata, never command output; existing files are refused. SIGINT/SIGTERM cancel commands and clean up their Unix process group.\n--target-lock FILE coordinates cooperating controllers across journals; crashes/errors retain a marker until explicit helix target-release FILE after independent quiescence/reconciliation. All controllers must use the same path; this is not a remote fencing service.\n--checkpoint NEW_FILE journals before and after each effect; --resume-checkpoint FILE restores with fresh grants and refuses uncertain outcomes. helix reconcile FILE OUTCOME records an independently observed outcome for the exact uncertain request.\nProgram stdout is stdout; full state is stderr. exit effect chooses successful process exit code.");
                 return ExitCode::SUCCESS;
             }
             _ => { eprintln!("unknown perform option {option}"); return ExitCode::from(2); }
@@ -211,7 +210,6 @@ fn usage(message: &str) -> ExitCode {
 }
 
 fn progress_sink(path: std::path::PathBuf) -> crate::ProgressCallback {
-    use std::io::Write;
     let mut file = None;
     Box::new(move |event| {
         let mut write = || -> std::io::Result<()> {
@@ -224,9 +222,7 @@ fn progress_sink(path: std::path::PathBuf) -> crate::ProgressCallback {
                 "stdout_bytes": event.stdout_bytes, "stderr_bytes": event.stderr_bytes,
                 "code": event.code,
             });
-            let output = file.as_mut().unwrap();
-            writeln!(output, "{record}")?;
-            output.flush()
+            super::stream::write_record(file.as_mut().unwrap(), &super::source::yaml(&record))
         };
         write().map_err(|error| ("io".into(), format!("command progress: {error}")))
     })
@@ -280,6 +276,8 @@ mod signals {
 }
 
 fn checkpoint_error(message: &str) -> ExitCode {
-    eprintln!("{}", serde_json::json!({"status":"error","errors":[{"kind":"checkpoint","message":message}]}));
+    eprint!("{}", crate::yaml_document(&super::source::yaml(&serde_json::json!({
+        "status": "error", "errors": [{"kind": "checkpoint", "message": message}],
+    }))));
     ExitCode::FAILURE
 }

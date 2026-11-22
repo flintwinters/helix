@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 from tooling import usage_log
+from tooling.output import report_yaml
 
 
 TOOL = {
@@ -17,7 +18,7 @@ TOOL = {
         '["docs"], ["docs", DOC] (its section tree), ["docs", DOC, SECTION], ["builtins"], ["builtins", NAME], '
         '["std"], ["std", MODULE] (its signatures), '
         '["std", "MODULE.EXPORT"] (one export\'s source), ["std", MODULE, "--source"], '
-        '["schema"], ["check", FILE], ["fmt", FILE], ["run", FILE]. Append "--json" to help, docs, builtins or std '
+        '["schema"], ["check", FILE], ["fmt", FILE], ["run", FILE]. Append "--yaml" to help, docs, builtins or std '
         'lookups for structured output. FILE may be - with stdin YAML. '
         'fmt prints canonical block-style tag source; format candidates with it before saving. '
         'Run is confined to this attempt directory with embedded std: imports and no host effect grants. '
@@ -131,7 +132,7 @@ def tool(ctx, directory, name, payload, identity, index, state):
     except (ValueError, OSError) as error:
         result = {'error': str(error)}
     event = {'tool': name, 'arguments': payload, 'result': result, 'identity': identity}
-    (directory / f'tool-{index:03d}.json').write_text(json.dumps(event, ensure_ascii=False, indent=2) + '\n')
+    (directory / f'tool-{index:03d}.yaml').write_text(report_yaml(event))
     return result
 
 
@@ -141,14 +142,14 @@ LOOKUPS = {'help': 1, 'docs': 2, 'builtins': 1, 'std': 1}
 
 def lookup(args):
     """Whether argv is a read-only documentation lookup: `help`, `docs`, `builtins` or `std`
-    with identifier-like names, then optionally `--json` (or `--source` for one std module)."""
+    with identifier-like names, then optionally `--yaml` (or `--source` for one std module)."""
     if not args or args[0] not in LOOKUPS:
         return False
     names, flags = args[1:], []
     while names and names[-1].startswith('--'):
         flags.insert(0, names.pop())
     plain = all(name.replace('_', '').replace('-', '').replace('.', '').isalnum() for name in names)
-    allowed = (['--json'], ['--source']) if args[0] == 'std' and len(names) == 1 else (['--json'],)
+    allowed = (['--yaml'], ['--source']) if args[0] == 'std' and len(names) == 1 else (['--yaml'],)
     return len(names) <= LOOKUPS[args[0]] and plain and flags in ([], *allowed)
 
 
@@ -186,7 +187,7 @@ def execute(ctx, directory, payload, identity, index, state=None):
     else:
         error = ('Unsupported CLI arguments. Use --help, help [COMMAND], docs [DOC [SECTION]], builtins [NAME], '
                  'std [MODULE[.EXPORT]] [--source], schema, check FILE, fmt FILE, or run FILE; '
-                 'add --json to a lookup for structured output.')
+                 'add --yaml to a lookup for structured output.')
     if error:
         code, stdout, stderr = 2, '', error
     else:
@@ -208,7 +209,7 @@ def execute(ctx, directory, payload, identity, index, state=None):
     }
     observation = {'args': args, 'executed_argv': command, 'exit_code': code, 'stdout': stdout,
                    'stderr': stderr, 'duration_ms': duration, 'identity': identity}
-    (directory / f'tool-{index:03d}.json').write_text(json.dumps(observation, ensure_ascii=False, indent=2) + '\n')
+    (directory / f'tool-{index:03d}.yaml').write_text(report_yaml(observation))
     # Log explicitly even when the surrounding regression harness disables developer telemetry.
     with _LOG_LOCK:
         usage_log.append(ctx.root, ctx.binary, record)

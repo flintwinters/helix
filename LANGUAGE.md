@@ -641,11 +641,11 @@ replayed merely because its VM request is still pending.
 
 `helix exec --input DATA --file QUERY` evaluates QUERY once, then invokes its
 one-argument function with ordinary YAML data from DATA (`-` means stdin).
-`helix exec --stream --file QUERY` consumes JSONL incrementally; each invocation
+`helix exec --stream --file QUERY` consumes YAML documents incrementally, framed with `---` and `...`; each invocation
 uses fresh execution state and returns a list of ordinary-data output records.
 Empty lists suppress records. Outputs flush per input; earlier outputs survive a
 later failure. Queries link once, retaining their immutable lexical captures.
-`--json` and `--yaml` control single-input output; streaming always emits JSONL.
+YAML is the default stream format. Use `--json` for an explicit JSON export.
 Inline queries remain accepted. Inputs never become executable source.
 
 ### Streaming source discovery and explicit probes
@@ -663,7 +663,7 @@ Default excluded directory names are `.git`, `.hg`, `.svn`, `.worktrees`,
 `venv`, `__pycache__`, `dist` and `build`. `--no-default-excludes` disables them;
 an explicitly selected directory is always visited. `search parse FILE_OR_STDIN`
 reflects one source without linking imports. Both operations emit version 1
-JSONL. Index emits source, function, call, reference and documentation records,
+a stream of YAML documents. Index emits source, function, call, reference and documentation records,
 individual diagnostic records and a final completeness summary. Incomplete
 scans exit 1, argument errors exit 2; a complete empty selection succeeds.
 No indexing operation evaluates annotations, function bodies or host effects.

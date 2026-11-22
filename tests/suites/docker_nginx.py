@@ -10,6 +10,8 @@ import sys
 import time
 import uuid
 
+import yaml
+
 
 LABEL = "org.helix.docker-nginx.run"
 VERSIONS = json.loads((Path(__file__).resolve().parents[1] / "fixtures/docker_nginx/versions.json").read_text())
@@ -120,7 +122,7 @@ class Docker:
 
     def progress(self, **values):
         state = dict(version=1, run_id=self.run_id, elapsed_ms=round((time.monotonic()-self.started)*1000), **values)
-        (self.artifacts / "progress.json").write_text(json.dumps(state, indent=2) + "\n")
+        (self.artifacts / "progress.yaml").write_text(yaml.safe_dump(state, sort_keys=False))
 
     def command(self, *args, timeout=60, check=True, input_text=None):
         deadline = min(self.deadline, self.scenario_deadline or self.deadline)
@@ -198,7 +200,7 @@ class Docker:
         metadata = json.loads(self.command("inspect", self.container).stdout)[0]
         assert metadata["HostConfig"]["Privileged"] is False and metadata["HostConfig"]["PidMode"] != "host", metadata["HostConfig"]
         assert not metadata["Mounts"], "fixture must not mount host paths or Docker sockets"
-        (self.artifacts / f"container-{self.serial:04d}.json").write_text(json.dumps(metadata, indent=2))
+        (self.artifacts / f"container-{self.serial:04d}.yaml").write_text(yaml.safe_dump(metadata, sort_keys=False))
         self.exec("cat", "/proc/self/attr/current", check=False)
         self.exec("cat", "/proc/self/status")
         self.exec("python3", "-c", "from pathlib import Path; p=Path('/var/lib/helix-unmanaged'); p.mkdir(exist_ok=True); (p/'sentinel').write_text('unmanaged\\n')")
@@ -239,7 +241,7 @@ class Docker:
     def probe(self, port=8080):
         state = json.loads(self.exec("python3", "-c", PROBE, str(port)).stdout)
         self.serial += 1
-        (self.artifacts / f"observation-{self.serial:04d}.json").write_text(json.dumps(state, indent=2))
+        (self.artifacts / f"observation-{self.serial:04d}.yaml").write_text(yaml.safe_dump(state, sort_keys=False))
         return state
 
     def actions(self):
@@ -812,7 +814,7 @@ def verify(h):
                       elapsed_ms=round((time.monotonic()-d.started)*1000), versions=VERSIONS,
                       scenarios=results, commands=d.events, cleanup_errors=cleanup_errors,
                       cleanup=f"./manage.py docker-nginx cleanup {d.run_id}")
-        (d.artifacts / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+        (d.artifacts / "report.yaml").write_text(yaml.safe_dump(report, sort_keys=False))
         d.progress(phase="complete", status=report["status"], completed=results)
         if cleanup_errors and not active_failure:
             raise AssertionError("Docker evidence/cleanup failed: " + "; ".join(cleanup_errors))
@@ -829,7 +831,7 @@ def dispatch(root, action, run_id, output_format):
                                    "HELIX_DOCKER_NGINX_REPEAT": "2 (default), 1..10",
                                    "HELIX_DOCKER_NGINX_KEEP_FAILED": "1 retains failed resources for inspection"},
                       cleanup="./manage.py docker-nginx cleanup RUN_ID")
-        if output_format == "json":
+        if output_format == "yaml":
             emit(report)
         else:
             for name, meaning in SCENARIOS.items():
@@ -839,10 +841,10 @@ def dispatch(root, action, run_id, output_format):
                   "Cleanup only a named run: ./manage.py docker-nginx cleanup RUN_ID")
         return 0
     if run_id is None:
-        raise ValueError("cleanup requires a run ID from runtime/docker-nginx/RUN_ID/report.json")
+        raise ValueError("cleanup requires a run ID from runtime/docker-nginx/RUN_ID/report.yaml")
     d = Docker(root, run_id)
     d.cleanup()
-    if output_format == "json":
+    if output_format == "yaml":
         emit(dict(version=1, command="docker-nginx", status="cleaned", run_id=run_id))
     else:
         print(f"docker_nginx: cleaned resources labeled {LABEL}={run_id}; artifacts retained")
@@ -920,8 +922,8 @@ def verify_harness(h):
                 else:
                     raise AssertionError("independent observation accepted corrupt actual state")
         with contextlib.redirect_stdout(io.StringIO()) as output:
-            assert dispatch(h.root, "describe", None, "json") == 0
-        assert set(json.loads(output.getvalue())["scenarios"]) == set(SCENARIOS)
+            assert dispatch(h.root, "describe", None, "yaml") == 0
+        assert set(yaml.safe_load(output.getvalue())["scenarios"]) == set(SCENARIOS)
     finally:
         shutil.rmtree(d.artifacts)
 

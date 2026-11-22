@@ -7,6 +7,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import yaml
+
 from tooling import agent_bench as bench
 from tooling.agent_tasks import TASKS, inputs, oracle
 
@@ -86,7 +88,7 @@ def verify(h):
         assert summary['total_tokens_per_success'] == 32
         assert summary['pass_rate'] == 0.5 and summary['total_tokens'] == 32, summary
         assert summary['reported_cost_usd'] == 0.002 and summary['attempts'] == 2, summary
-        saved = json.loads((Path(args.directory) / 'report.json').read_text())
+        saved = yaml.safe_load((Path(args.directory) / 'report.yaml').read_text())
         assert bench.saved_report(args)['summary']['sum-squares']['total_tokens'] == 32
         assert len(saved['rows']) == 2 and len(saved['rows'][0]['score']['cli_wall_ms']) == 1
         with patch.object(bench, 'request', side_effect=AssertionError('replay must be offline')):
@@ -94,7 +96,7 @@ def verify(h):
         assert replay['summary']['sum-squares']['pass_rate'] == 0.5
         args.replay = True
         assert bench.saved_report(args)['evaluation']['samples'] == 1
-        assert bench.saved_report(args)['evaluation_source'] == 'replay.json'
+        assert bench.saved_report(args)['evaluation_source'] == 'replay.yaml'
         # An unavailable requested version must never become a run of another model.
         missing = SimpleNamespace(**{**vars(args), 'model': 'openai/gpt-6.1-luna',
                                      'directory': str(directory / 'missing-model')})
@@ -138,7 +140,7 @@ def verify_cli(h, directory):
     with patch.object(usage_log, 'append', side_effect=lambda root, binary, record: records.append(record)):
         rejected = execute(h, target, {'args': ['perform', '--allow-read', '/']}, identity, 2)
         assert rejected['exit_code'] == 2 and records[-1]['caller_role'] == 'benchmark-model'
-        for index, args in enumerate((['help', 'run', '--json'], ['docs', 'language', 'builtins'],
+        for index, args in enumerate((['help', 'run', '--yaml'], ['docs', 'language', 'builtins'],
                                       ['builtins', 'get'], ['std', 'list', '--source']), 10):
             looked = execute(h, target, {'args': args}, identity, index)
             assert looked['exit_code'] == 0 and looked['executed_argv'] == args and looked['stdout'], looked
@@ -239,11 +241,11 @@ def verify_concurrent_generation(h, directory):
          patch.object(bench, 'api_key', return_value='fake'), contextlib.redirect_stderr(io.StringIO()):
         report = bench.run(h.root, args, h)
     assert report['summary']['sum-squares']['successes'] == 2, report
-    saved = json.loads((Path(args.directory) / 'report.json').read_text())
+    saved = yaml.safe_load((Path(args.directory) / 'report.yaml').read_text())
     assert saved['phase'] == 'complete'
     # A retry regenerates exactly the recorded attempts that never submitted, under their trial numbers.
-    failed = Path(args.directory) / 'sum-squares/trial-002/result.json'
-    failed.write_text(json.dumps({**json.loads(failed.read_text()), 'error': 'Model turn budget exhausted before a final program'}))
+    failed = Path(args.directory) / 'sum-squares/trial-002/result.yaml'
+    failed.write_text(yaml.safe_dump({**yaml.safe_load(failed.read_text()), 'error': 'Model turn budget exhausted before a final program'}))
     assert bench.retry_plan(args.directory) == [('sum-squares', 2)]
     assert bench.retry_plan(args.directory, ['sum-squares']) == [('sum-squares', 2)]
     retry = SimpleNamespace(**{**vars(args), 'retry': args.directory, 'directory': str(directory / 'retry'), 'jobs': 1})
@@ -252,7 +254,7 @@ def verify_concurrent_generation(h, directory):
          patch.object(bench, 'request', return_value={'data': [{'id': 'fake/model'}]}), \
          patch.object(bench, 'api_key', return_value='fake'), contextlib.redirect_stderr(io.StringIO()):
         report = bench.run(h.root, retry, h)
-    assert [(row['task'], row['trial']) for row in json.loads((Path(retry.directory) / 'report.json').read_text())['rows']] == [('sum-squares', 2)]
-    manifest = json.loads((Path(retry.directory) / 'manifest.json').read_text())
+    assert [(row['task'], row['trial']) for row in yaml.safe_load((Path(retry.directory) / 'report.yaml').read_text())['rows']] == [('sum-squares', 2)]
+    manifest = yaml.safe_load((Path(retry.directory) / 'manifest.yaml').read_text())
     assert manifest['retry_of'] == str(Path(args.directory).resolve()) and manifest['test_timeout_seconds'] == h.timeout
     assert report['summary']['sum-squares']['successes'] == 1, report

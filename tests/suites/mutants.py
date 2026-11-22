@@ -1,13 +1,14 @@
 """Compile deliberate faults in an isolated workspace and demand real suites reject them."""
 import contextlib
 import io
-import json
 import os
 import shutil
 import subprocess
 import tempfile
 from dataclasses import replace
 from pathlib import Path
+
+import yaml
 
 from tests.suites import contracts
 
@@ -78,6 +79,6 @@ def verify(h):
                 # Rebuild the control between mutations so faults cannot accidentally combine.
                 build("restored")
     finally:
-        (base / "report.json").write_text(json.dumps({"run_directory": str(run_directory), "mutations": reports}, indent=2) + "\n")
+        (base / "report.yaml").write_text(yaml.safe_dump({"run_directory": str(run_directory), "mutations": reports}, sort_keys=False))
         if len(reports) == len(MUTATIONS) and all(row["killed"] for row in reports):
             shutil.rmtree(target)

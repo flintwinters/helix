@@ -24,7 +24,7 @@ def verify(h):
         payload = {'program': sys.executable, 'args': ['-c', script], 'stdin': handle}
         source = base / 'program.yaml'
         source.write_text(json.dumps({'$call': ['effect', 'command', payload]}))
-        checkpoint, progress = base / 'journal.json', base / 'progress.jsonl'
+        checkpoint, progress = base / 'journal.json', base / 'progress.yaml'
         grants = ['--allow-command', sys.executable, '--allow-secret', f'deploy-token={secret}']
         run = h.helix('perform', *grants, '--command-progress', str(progress),
                       '--checkpoint', str(checkpoint), str(source))

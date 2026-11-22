@@ -41,9 +41,7 @@ impl<W: Write> Index<W> {
             self.complete = false;
             record = json!({"version":1,"kind":"diagnostic","source":record["source"],"reference":record["reference"],"location":record["location"],"error":{"kind":"limit","message":message},"message":"index evidence exceeds ordinary-data bounds"});
         }
-        serde_json::to_writer(&mut self.out, &record)?;
-        self.out.write_all(b"\n")?;
-        self.out.flush()
+        super::stream::write_record(&mut self.out, &super::source::yaml(&record))
     }
     fn diagnostic(&mut self, source: &str, message: String) -> io::Result<()> {
         self.complete = false;

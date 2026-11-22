@@ -11,7 +11,7 @@ import yaml
 
 def records(result, code=0):
     assert result.returncode == code, (result.returncode, result.stderr[-4000:])
-    return [json.loads(line) for line in result.stdout.splitlines()]
+    return list(yaml.safe_load_all(result.stdout))
 
 
 def invoke(h, body, bindings=None):
@@ -207,18 +207,27 @@ loop: !call [fn, [], !call [until, !call [fn, [x], false], !call [fn, [x], !ref 
 
 
 
+def read_stream_document(stream):
+    lines = []
+    for line in stream:
+        lines.append(line)
+        if line == "...\n":
+            return yaml.safe_load("".join(lines))
+    raise AssertionError(f"incomplete YAML stream document: {lines}")
+
+
 def verify_streaming(h, root):
     query = root / "identity.yaml"
     query.write_text('!call [fn, [x], [!ref x]]')
     process = subprocess.Popen([str(h.binary), "exec", "--stream", "--file", str(query)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=root)
     try:
-        process.stdin.write('{"first":true}\n')
+        process.stdin.write("---\nfirst: true\n...\n")
         process.stdin.flush()
         import selectors
         selector = selectors.DefaultSelector()
         selector.register(process.stdout, selectors.EVENT_READ)
         assert selector.select(timeout=10), "stream did not emit before EOF"
-        assert json.loads(process.stdout.readline()) == {"first": True}
+        assert read_stream_document(process.stdout) == {"first": True}
         selector.close()
         process.stdin.close()
         assert process.wait(timeout=10) == 0, process.stderr.read()
@@ -308,7 +317,7 @@ def verify_stream_memory(h, root):
             value = {"index": index, "text": "x" * 2048}
             process.stdin.write(json.dumps(value) + "\n")
             process.stdin.flush()
-            assert json.loads(process.stdout.readline()) == value
+            assert read_stream_document(process.stdout) == value
             if index in (31, 255):
                 status = Path(f"/proc/{process.pid}/status")
                 if status.exists():

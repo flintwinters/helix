@@ -3,7 +3,7 @@ use super::source::json;
 use crate::{Status, Vm, value::Value};
 use serde_json::{Value as J, json};
 use std::{
-    io::{self, Write},
+    io,
     path::{Path, PathBuf},
 };
 use yaml_rust2::Yaml;
@@ -49,11 +49,10 @@ pub fn run(args: &[String]) -> Result<bool, (u8, String)> {
         .map_err(|e| (2, e.to_string()))?;
     let mut out = io::stdout().lock();
     let mut input = io::stdin().lock();
-    while let Some((candidate, _)) = super::stream::record(&mut input).map_err(|e| (1, e))? {
+    while let Some(value) = super::stream::record(&mut input).map_err(|e| (1, e))? {
+        let candidate = super::source::json(&value);
         if candidate["kind"] != "function" {
-            serde_json::to_writer(&mut out, &candidate).map_err(|e| (1, e.to_string()))?;
-            writeln!(out).map_err(|e| (1, e.to_string()))?;
-            out.flush().map_err(|e| (1, e.to_string()))?;
+            super::stream::write_record(&mut out, &value).map_err(|error| (1, error.to_string()))?;
             continue;
         }
         for (index, case) in cases.iter().enumerate() {
@@ -75,9 +74,7 @@ pub fn run(args: &[String]) -> Result<bool, (u8, String)> {
                     record["detail"] = json!(detail);
                 }
             }
-            serde_json::to_writer(&mut out, &record).map_err(|e| (1, e.to_string()))?;
-            writeln!(out).map_err(|e| (1, e.to_string()))?;
-            out.flush().map_err(|e| (1, e.to_string()))?;
+            super::stream::write_record(&mut out, &super::source::yaml(&record)).map_err(|error| (1, error.to_string()))?;
         }
     }
     Ok(true)
