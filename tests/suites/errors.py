@@ -1,4 +1,5 @@
 """Error navigation contracts across source boundaries and error-as-data flows."""
+import json
 from pathlib import Path
 import tempfile
 
@@ -35,6 +36,7 @@ def verify(h):
         assert (handler["function_line"], handler["function_column"]) == location(program.read_text(), "/value/$call/2"), handler
 
     verify_hints(h)
+    verify_recorded_repairs(h)
 
 
 # Each rejected spelling, the error it raises, and the correction its hint names. `static`
@@ -57,6 +59,23 @@ HINTS = [
      "`cfg.port` is an integer, not a map, so it has no member `x`", False),
     ("math: !call [import, 'std:math']\na: !call [math, 3, 9]", "type", "/a/$call/0", "call actor `math` must resolve to a function, got map",
      "`math` is a map; call one of its function members as `!call [math.abs, ...]`; members: abs, clamp, max, min, number, sign, square", False),
+    ("m: {a: 0, f: !call [fn, [], 1]}\nx: !call [m]", "type", "/x/$call/0",
+     "call actor `m` must resolve to a function, got map",
+     "`m` is a map; call one of its function members as `!call [m.f, ...]`; members: a, f", False),
+    ("m: {a: 0}\nx: !call [m]", "type", "/x/$call/0",
+     "call actor `m` must resolve to a function, got map",
+     "`m` is a map; select a function as the call actor; members: a", False),
+    ("x: !call [source_subtype, a, b]", "type", "/x/$call/1",
+     "`source_subtype` argument 1: unknown type `a`; use a primitive (any, never, integer, float, string, boolean, null, list, map, secret, function, vm) or pass a type descriptor",
+     None, False),
+    ("x: !call [source_subtype, interger, integer]", "type", "/x/$call/1",
+     "`source_subtype` argument 1: unknown type `interger`; use `integer` if you meant that primitive type", None, False),
+    ("x: !call [is, 1, !call [var, t]]", "type", "/x/$call/2",
+     "`is` argument 2: type variable `t` is not bound by an enclosing `rec`; use the name of an enclosing binder or wrap the descriptor in `!call [rec, t, body]`",
+     None, False),
+    ("a: !call [add, !ref b, 1]\nb: !call [add, !ref a, 1]", "cycle", None,
+     "value depends on itself",
+     "evaluating this value reads it again through the references it contains; compute one value in the loop from inputs that do not depend on it, or recurse through a function", False),
     ("x: !if [true, 1, 2]", "unsupported", None, "unsupported YAML tag `!if`", "`if` is a builtin actor; write `!call [if, ...]`", True),
     ("a: !!binary aGVsbG8=", "unsupported", None, "unsupported YAML tag `!!binary`",
      "Helix tags are `!call`, `!ref` and `!literal`; plain YAML values need no tag", True),
@@ -109,3 +128,20 @@ def verify_hints(h):
     caught = "a: !call [try, !call [get, {port: 80}, prot], !call [fn, [e], !call [get, !ref e, hint]]]"
     result = h.helix("run", "-", stdin=caught)
     assert yaml.safe_load(result.stdout)["root"]["a"].startswith("did you mean `port`?"), result
+
+
+def verify_recorded_repairs(h):
+    """Replay the malformed flow sequences preserved in the workspace benchmark."""
+    evidence = h.root / "benchmarks/agent/workspace-repairs-v3.json"
+    for repair in json.loads(evidence.read_text())["repairs"]:
+        write, failure, *_ = repair["events"]
+        assert write["action"] == "write" and failure["action"] == "execute-public-test", repair
+        source = write["arguments"]["content"]
+        recorded = yaml.safe_load(failure["stdout"])["error"]
+        assert recorded["kind"] == "parse" and failure["exit_code"] == 1, repair
+        for command, field in [(("run",), "error"), (("check",), "diagnostics")]:
+            result = h.helix(*command, "-", stdin=source)
+            state = yaml.safe_load(result.stdout)
+            error = state[field] if field == "error" else state[field][0]
+            assert result.returncode == 1 and error["kind"] == "parse", (command, error)
+            assert "add `]` where the collection ends, or write it in block style" in error["hint"], error

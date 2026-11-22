@@ -2,7 +2,7 @@ error:
   column: 24
   kind: type
   line: 2
-  message: "`is` argument 2: unknown type `port`"
+  message: "`is` argument 2: unknown type `port`; use a primitive (any, never, integer, float, string, boolean, null, list, map, secret, function, vm) or pass a type descriptor"
   reference:
     - unknown
     - "$call"

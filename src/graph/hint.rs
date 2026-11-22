@@ -178,8 +178,14 @@ pub(crate) fn not_callable(written: Option<&str>, value: &Value) -> Option<Strin
         return None;
     };
     let keys = keys(map);
-    let example = keys.first().map_or_else(String::new, |key| format!(" as `!call [{written}.{key}, ...]`"));
-    Some(format!("`{written}` is a map; call one of its function members{example}; {}", members(written, &keys)))
+    let function = keys.iter().find(|key| {
+        matches!(map.get(&Value::String(key.as_str().into())), Some(Value::Function(_)))
+    });
+    let correction = function.map_or_else(
+        || "select a function as the call actor".to_string(),
+        |key| format!("call one of its function members as `!call [{written}.{key}, ...]`"),
+    );
+    Some(format!("`{written}` is a map; {correction}; {}", members(written, &keys)))
 }
 
 fn keys(map: &Hash) -> Vec<String> {

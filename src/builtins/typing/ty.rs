@@ -239,7 +239,13 @@ impl Ty {
                 "secret" => Ty::Secret,
                 "function" => Ty::Function,
                 "vm" => Ty::Vm,
-                other => return Err(format!("unknown type `{other}`")),
+                other => {
+                    let correction = match crate::graph::nearest(other, primitives().iter().copied()) {
+                        Some(name) => format!("use `{name}` if you meant that primitive type"),
+                        None => format!("use a primitive ({}) or pass a type descriptor", primitives().join(", ")),
+                    };
+                    return Err(format!("unknown type `{other}`; {correction}"));
+                }
             }),
             Value::Hash(map) => {
                 let kind = text(map, "type").ok_or("a type map needs a string `type`")?;
@@ -317,7 +323,7 @@ impl Ty {
     /// other `rec`s (`rec t. t | integer` has no values to find and is rejected). Linear in the type.
     pub(crate) fn close(&self, bound: &mut Vec<String>, unguarded: &mut Vec<String>) -> Result<(), String> {
         match self {
-            Ty::Var(name) if !bound.contains(name) => Err(format!("type variable `{name}` is not bound by an enclosing `rec`")),
+            Ty::Var(name) if !bound.contains(name) => Err(format!("type variable `{name}` is not bound by an enclosing `rec`; use the name of an enclosing binder or wrap the descriptor in `!call [rec, {name}, body]`")),
             Ty::Var(name) if unguarded.contains(name) => Err(format!("type variable `{name}` is unguarded: it must sit under a list, map, tuple, record or function")),
             Ty::Rec(name, body) => {
                 bound.push(name.clone());

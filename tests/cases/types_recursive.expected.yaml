@@ -106,7 +106,7 @@ root:
           type: list
       type: union
     type: rec
-  unbound: "`is` argument 2: type variable `t` is not bound by an enclosing `rec`"
+  unbound: "`is` argument 2: type variable `t` is not bound by an enclosing `rec`; use the name of an enclosing binder or wrap the descriptor in `!call [rec, t, body]`"
   unguarded: "`rec` argument 2: type variable `t` is unguarded: it must sit under a list, map, tuple, record or function"
   uninhabited:
     name: "n"

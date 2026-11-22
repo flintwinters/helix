@@ -302,7 +302,7 @@ root:
       expected: integer
       message: "expected integer, got string \"b\""
       rule: type
-  no_type: "`is` argument 2: unknown type `nonsense`"
+  no_type: "`is` argument 2: unknown type `nonsense`; use a primitive (any, never, integer, float, string, boolean, null, list, map, secret, function, vm) or pass a type descriptor"
   port:
     check:
       ref: object0
