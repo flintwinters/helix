@@ -259,6 +259,15 @@ impl Vm {
         }
     }
     pub fn run(&mut self) {
+        // SPIKE: measure the lowered evaluator's ceiling; opt-in until its observability is settled.
+        if self.status == Status::Ready && self.promises.is_empty() && std::env::var_os("HELIX_LOWER").is_some() {
+            let value = self.evaluator.as_ref().and_then(|e| crate::eval::lowered::run(&e.program.graph, ROOT));
+            if let Some(value) = value {
+                self.result = Some(value);
+                self.status = Status::Finished;
+                return;
+            }
+        }
         while !self.terminal() {
             self.advance();
         }

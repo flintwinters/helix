@@ -14,6 +14,7 @@ mod fast;
 mod forms;
 mod iteration;
 mod lexical;
+pub(crate) mod lowered;
 mod preflight;
 
 use crate::model::Limits;

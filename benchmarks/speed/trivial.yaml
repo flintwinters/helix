@@ -1,0 +1,1 @@
+!call [let, {f: !call [fn, [n], !ref n]}, !call [f, 1]]
