@@ -1,7 +1,10 @@
 """Repeatable CLI speed measurements, with semantic checks outside timed regions."""
 import hashlib
 import json
+import os
 import platform
+import re
+import shutil
 import statistics
 import subprocess
 import tempfile
@@ -140,9 +143,16 @@ def workloads():
         yield name, json.dumps(source), expected, len(rows)
 
 
-def history_comparison(base, environment, name, source_hash, samples):
-    """Compare against the earliest five compatible runs, avoiding a drifting baseline."""
-    medians = []
+# Load per CPU above which wall time says more about the host than the program.
+BUSY_LOAD = 0.5
+# Counted instructions are deterministic (perf varies ~0.1%, callgrind ~0), so a small margin is a regression.
+INSTRUCTION_MARGIN = 1.02
+
+
+def compatible_history(base, environment, name, source_hash, field, counter=None):
+    """Values of `field` from the earliest five compatible runs, avoiding a drifting baseline.
+    Counted values compare only with the same counter: perf and callgrind totals differ."""
+    values = []
     for path in sorted(base.glob("run-*/report.json"), key=lambda p: p.stat().st_mtime):
         try:
             previous = json.loads(path.read_text())
@@ -150,12 +160,19 @@ def history_comparison(base, environment, name, source_hash, samples):
                 continue
             for row in previous["measurements"]:
                 if (row["workload"] == name and row.get("source_sha256") == source_hash
-                        and row.get("baseline_epoch", 1) == BASELINE_EPOCHS.get(name, 1)):
-                    medians.append(row["median_seconds"])
+                        and row.get("baseline_epoch", 1) == BASELINE_EPOCHS.get(name, 1)
+                        and (counter is None or row.get("counter") == counter)):
+                    values.append(row[field])
         except (OSError, ValueError, KeyError, TypeError):
             continue
-        if len(medians) >= 5:
+        if len(values) >= 5:
             break
+    return values
+
+
+def history_comparison(base, environment, name, source_hash, samples, loaded=False):
+    """Wall-time comparison; a loaded host reports the change but never flags it."""
+    medians = compatible_history(base, environment, name, source_hash, "median_seconds")
     if not medians:
         return {"status": "no baseline"}
     baseline = statistics.median(medians)
@@ -164,8 +181,22 @@ def history_comparison(base, environment, name, source_hash, samples):
     noise = max(statistics.median(abs(x - baseline) for x in medians),
                 statistics.median(abs(x - current) for x in samples))
     flagged = current > baseline * 1.20 and current - baseline > 3 * noise
-    return {"status": "SLOWDOWN" if flagged else "ok", "baseline_runs": len(medians),
+    status = "ok" if loaded or not flagged else "SLOWDOWN"
+    if loaded and flagged:
+        status = "unreliable: host busy"
+    return {"status": status, "baseline_runs": len(medians),
             "baseline_seconds": baseline, "change_percent": (current / baseline - 1) * 100}
+
+
+def instruction_comparison(base, environment, name, source_hash, counter, counted):
+    """Compare counted instructions with the earliest compatible runs; load cannot inflate them."""
+    history = compatible_history(base, environment, name, source_hash, "median_instructions", counter)
+    if not history:
+        return {"status": "no baseline", "unit": "instructions", "counter": counter}
+    baseline = statistics.median(history)
+    return {"status": "SLOWDOWN" if counted > baseline * INSTRUCTION_MARGIN else "ok",
+            "baseline_runs": len(history), "baseline_instructions": baseline,
+            "change_percent": (counted / baseline - 1) * 100, "unit": "instructions", "counter": counter}
 
 
 def pinned_limit(baseline, environment, name, source_hash):
@@ -189,8 +220,24 @@ def pinned_comparison(limit, median):
             "unit": "instructions", "enforced": True}
 
 
-def instructions(h, program, record):
-    """Retired user-space instructions of one run, counted by `perf stat` into `record`."""
+def counter_name():
+    """The deterministic instruction counter available here: `perf` when installed, else
+    callgrind, else none (wall time alone is not trustworthy on a shared host)."""
+    return "perf" if shutil.which("perf") else "callgrind" if shutil.which("valgrind") else None
+
+
+def instructions(h, program, record, counter):
+    """Retired user-space instructions of one run: `perf stat` or callgrind, written to `record`."""
+    if counter == "callgrind":
+        # Emulated and ~50x slower than native, but exact and independent of host load.
+        result = subprocess.run(["valgrind", "--tool=callgrind", f"--callgrind-out-file={record}.out",
+                                 str(h.binary), "run", str(program)],
+                                cwd=h.root, capture_output=True, text=True, timeout=h.timeout * 100)
+        assert result.returncode == 0, (program.name, result.returncode, result.stderr[-500:])
+        found = re.search(r"refs:\s+([\d,]+)", result.stderr)
+        assert found, f"callgrind reported no instruction total for {program.name}"
+        Path(f"{record}.out").unlink(missing_ok=True)
+        return int(found.group(1).replace(",", ""))
     try:
         result = subprocess.run(["perf", "stat", "-x,", "-e", "instructions:u", "-o", str(record), "--",
                                  str(h.binary), "run", str(program)],
@@ -208,6 +255,10 @@ def instructions(h, program, record):
         "`sudo sysctl kernel.perf_event_paranoid=2` (persist it in /etc/sysctl.d/)")
 
 
+def host_load():
+    return os.getloadavg()[0] / (os.cpu_count() or 1)
+
+
 def verify(h):
     base = h.root / "runtime" / "speed"
     base.mkdir(parents=True, exist_ok=True)
@@ -215,6 +266,7 @@ def verify(h):
     artifact = Path(tempfile.mkdtemp(dir=base, prefix="run-"))
     policy_source = (h.root / "tooling" / "test_policy.yaml").read_bytes()
     (artifact / "test_policy.source.yaml").write_bytes(policy_source)
+    counter = counter_name()
     report = {
         "schema_version": 2,
         "environment": {"platform": platform.platform(), "machine": platform.machine(),
@@ -226,8 +278,9 @@ def verify(h):
             "sha256": hashlib.sha256(policy_source).hexdigest(), "artifact": "test_policy.source.yaml"}},
         "method": {"clock": "perf_counter_ns", "samples": SAMPLES, "warmups": WARMUPS,
                    "scope": "CLI process startup, file loading, evaluation and state emission; excludes build and Python YAML decoding",
-                   "policy": "correctness, subprocess timeout, and compatible pinned median instruction counts are enforced",
-                   "pinned_counter": "perf stat instructions:u, in separate untimed runs"},
+                   "policy": "correctness, subprocess timeout, and compatible pinned median instruction counts are enforced; "
+                             "counted instructions are the regression signal, wall time is informational",
+                   "counter": counter, "counter_note": "perf stat instructions:u, else callgrind; separate untimed runs"},
         "run_directory": str(artifact), "measurements": [],
     }
     report["comparison_environment"] = {
@@ -237,6 +290,7 @@ def verify(h):
     }
     baseline = json.loads((h.root / "tests" / "fixtures" / "speed-baseline.json").read_text())
     slowdowns = []
+    report["host_load_start"] = host_load()
     try:
         for name, source, expected, operations in workloads():
             program = artifact / f"{name}.yaml"
@@ -270,16 +324,23 @@ def verify(h):
             median = statistics.median(samples)
             environment = report["comparison_environment"]
             limit = pinned_limit(baseline, environment, name, source_hash)
-            if limit is None:
-                comparison = history_comparison(base, environment, name, source_hash, samples)
-            else:
-                # Counted separately so `perf` overhead never enters the timed samples.
-                counts = [instructions(h, program, artifact / f"{name}.perf.{index}.csv") for index in range(SAMPLES)]
+            loaded = host_load() > BUSY_LOAD
+            if counter:
+                # Counted separately so the counter never enters the timed samples. Callgrind is
+                # exact, so one run suffices; perf varies slightly, so it takes the median.
+                runs = SAMPLES if counter == "perf" else 1
+                counts = [instructions(h, program, artifact / f"{name}.count.{index}.csv", counter) for index in range(runs)]
                 counted = statistics.median(counts)
-                measurement.update(instructions=counts, median_instructions=counted)
-                comparison = pinned_comparison(limit, counted)
-                if comparison["status"] == "SLOWDOWN":
-                    slowdowns.append(f"{name}: {counted:.0f} instructions > {limit}")
+                measurement.update(counter=counter, instructions=counts, median_instructions=counted)
+                if limit is not None and counter == "perf":
+                    comparison = pinned_comparison(limit, counted)
+                    if comparison["status"] == "SLOWDOWN":
+                        slowdowns.append(f"{name}: {counted:.0f} instructions > {limit}")
+                else:
+                    comparison = instruction_comparison(base, environment, name, source_hash, counter, counted)
+            else:
+                comparison = history_comparison(base, environment, name, source_hash, samples, loaded)
+            measurement["host_busy"] = loaded or host_load() > BUSY_LOAD
             measurement.update(source_sha256=source_hash, comparison=comparison)
             detail = comparison["status"]
             if "change_percent" in comparison:
@@ -290,6 +351,7 @@ def verify(h):
                                operations_per_second=operations / median)
             print(f"speed: {name}: median {median:.6f}s, range {min(samples):.6f}..{max(samples):.6f}s ({operations / median:.0f} operations/s)", flush=True)
     finally:
+        report["host_load_end"] = host_load()
         content = json.dumps(report, indent=2) + "\n"
         (artifact / "report.json").write_text(content)
         (base / "report.json").write_text(content)
@@ -316,6 +378,16 @@ def verify_comparison(base):
     with tempfile.TemporaryDirectory(dir=base, prefix="policy-") as directory:
         root = Path(directory)
         assert history_comparison(root, {}, "w", "hash", [1] * 5)["status"] == "no baseline"
+        assert instruction_comparison(root, {}, "w", "hash", "callgrind", 1000)["status"] == "no baseline"
+        counted = root / "run-counted"
+        counted.mkdir()
+        (counted / "report.json").write_text(json.dumps({
+            "comparison_environment": {}, "measurements": [
+                {"workload": "w", "source_sha256": "hash", "counter": "callgrind", "median_instructions": 1000}]}))
+        for count, status in ((1000, "ok"), (1020, "ok"), (1021, "SLOWDOWN")):
+            assert instruction_comparison(root, {}, "w", "hash", "callgrind", count)["status"] == status
+        # perf and callgrind totals are different units: a counter never compares with the other.
+        assert instruction_comparison(root, {}, "w", "hash", "perf", 5000)["status"] == "no baseline"
         run = root / "run-baseline"
         run.mkdir()
         (run / "report.json").write_text(json.dumps({
@@ -335,3 +407,5 @@ def verify_comparison(base):
         report["measurements"][0]["baseline_epoch"] = BASELINE_EPOCHS["slice-ascii"]
         path.write_text(json.dumps(report))
         assert history_comparison(root, {}, "slice-ascii", "hash", [2] * 5)["status"] == "SLOWDOWN"
+        # A loaded host's slowdown is reported but never flagged: load inflates every sample alike.
+        assert history_comparison(root, {}, "slice-ascii", "hash", [2] * 5, loaded=True)["status"] == "unreliable: host busy"

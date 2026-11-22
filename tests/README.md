@@ -383,7 +383,14 @@ Report benchmarks also retain the imported policy source and its hash, since it
 is not embedded in the executable. That implementation fingerprint is provenance,
 not a history filter: policy changes are what these fixed workloads compare.
 Replaying a saved input otherwise uses the current checkout and executable.
-Reports flag `SLOWDOWN` when median time exceeds the earliest five compatible runs
+Every workload also gets a deterministic instruction count in separate untimed runs: `perf stat
+instructions:u` when installed, otherwise callgrind (one exact run; the report records the
+`counter`). Counted instructions are the regression signal: a median more than 2% above the
+earliest five compatible runs of the same counter is `SLOWDOWN`, and repeat runs agree to
+about 0.1% even on a busy host. Wall time is informational. When the host load per CPU exceeds
+0.5 a wall-time change is reported as `unreliable: host busy` instead of flagged, and the
+report records start/end load. Without any counter the suite falls back to wall time alone.
+Wall-time reports flag `SLOWDOWN` when median time exceeds the earliest five compatible runs
 by more than 20% and three median absolute deviations of observed noise. Matching
 host/environment, sampling settings and workload source keep comparisons relevant;
 the fixed early baseline reveals cumulative drift. Changing the Cargo dev profile changes `PROFILE` in `tests/suites/speed.py` and requires re-pinning. First runs establish history.
@@ -392,7 +399,7 @@ The two mutation-planning workloads pin median retired user-space instructions
 `tests/fixtures/speed-baseline.json`. Wall and CPU time both inflate on a busy host,
 so they cannot carry a zero-tolerance gate. Counts vary by about 0.1%, so a pin is
 the worst observed median plus 0.5% headroom. In a matching benchmark environment,
-a median above it fails the suite, and so does a missing counter (install `perf`;
+a median above it fails the suite, and so does a missing `perf` counter (install `perf`;
 `kernel.perf_event_paranoid` at most 2). A pinned workload whose source changed
 fails until re-pinned. Historical flags for other comparisons are observational. Normal interpreter timeouts still apply. The weekly/manual full CI sweep includes this suite.
 
