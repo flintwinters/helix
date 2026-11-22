@@ -10,6 +10,7 @@ mod atomic;
 mod annotations;
 mod effects;
 mod expression;
+mod fast;
 mod forms;
 mod iteration;
 mod lexical;

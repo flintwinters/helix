@@ -32,6 +32,9 @@ impl Evaluator {
             return Ok(());
         }
         let local = self.in_function(id);
+        if local && matches!(program.graph.syntax(id), Syntax::Call(_)) && self.fast_region(id) {
+            return Ok(());
+        }
         let depth = if local { self.depth } else { 0 };
         if !self.active.insert((id, depth)) {
             return Err(self.err(id, "cycle", "value depends on itself").with_hint(Some(

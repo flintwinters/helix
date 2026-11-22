@@ -100,7 +100,7 @@ def check_profile(ctx, advances, source, effect_source, expected_error):
         assert costs == sorted(costs, reverse=True), report
     repeated = "result: !call [map, !call [fn, [x], !call [add, !ref x, 1]], [1, 2, 3]]"
     count = profile(repeated)
-    hot = next(row for row in count["by_count"] if row["actor"] == "add" and row["phase"] == "atomic_builtin")
+    hot = next(row for row in count["by_count"] if row["actor"] == "add" and row["phase"] == "evaluate")
     assert hot["transitions"] == 3 and hot["location"]["path"][0] == "result" and hot["line"] == 1, hot
     short = profile(repeated, "--top", "1")
     assert len(short["by_count"]) == len(short["by_time"]) == 1 and short["site_count"] > 1, short
