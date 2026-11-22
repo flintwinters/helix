@@ -5,7 +5,9 @@
 //! once per node, and is dropped whenever the graph is mutated. Nothing here is
 //! serialized, inspected or compared, so deleting the cache changes no behavior.
 use super::scope::Site;
+use super::syntax::Class;
 use super::{Graph, NodeId};
+use crate::builtins::{self, Descriptor};
 use crate::model::HelixError;
 use std::sync::OnceLock;
 
@@ -23,6 +25,10 @@ pub(crate) struct Sites {
 }
 
 pub(crate) struct Tables {
+    /// Filled eagerly: classifying is one cheap pass, and every evaluation step reads it.
+    classes: Vec<Class>,
+    /// The builtin a call node names, if its head is a builtin identifier.
+    builtins: Vec<OnceLock<Option<&'static Descriptor>>>,
     sites: Vec<OnceLock<Sites>>,
     parameters: Vec<OnceLock<Result<Parameters, HelixError>>>,
     /// Enclosing `fn` nodes: the frames a closure created here captures.
@@ -62,9 +68,24 @@ fn cells<T>(len: usize) -> Vec<OnceLock<T>> {
 impl Graph {
     fn tables(&self) -> &Tables {
         self.derived.0.get_or_init(|| Tables {
+            classes: (0..self.nodes.len()).map(|id| self.classify(id)).collect(),
+            builtins: cells(self.nodes.len()),
             sites: cells(self.nodes.len()),
             parameters: cells(self.nodes.len()),
             ancestors: cells(self.nodes.len()),
+        })
+    }
+
+    /// The syntactic class of `id`, classified once.
+    pub(crate) fn class(&self, id: NodeId) -> Class {
+        self.tables().classes[id]
+    }
+
+    /// The builtin that call `call` names by its head identifier. A node's head is fixed, so
+    /// the entry needs no name check.
+    pub(crate) fn builtin_call(&self, call: NodeId) -> Option<&'static Descriptor> {
+        *self.tables().builtins[call].get_or_init(|| {
+            self.call(call).and_then(|items| self.identifier(items[0])).and_then(builtins::descriptor)
         })
     }
 

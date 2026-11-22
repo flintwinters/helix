@@ -39,7 +39,7 @@ impl Evaluator {
             )));
         }
         self.push(Request::Finish(id, depth, local));
-        match self.graph().syntax(id) {
+        match program.graph.syntax(id) {
             Syntax::Invalid(message) => return Err(self.err(id, "syntax", message)),
             Syntax::Reference(_) => unreachable!(),
             Syntax::Scalar(value) => self.finish(Value::from_yaml(value)),
@@ -54,19 +54,18 @@ impl Evaluator {
             }
             Syntax::Sequence(items) => self.collect(id, None, items.to_vec(), None),
             Syntax::Call(items) => {
-                let items = items.to_vec();
                 let head = items[0];
-                if let Some(name) = self.graph().identifier(head).map(str::to_string) {
-                    if builtins::arity(&name).is_some() {
-                        self.apply(id, Actor::Builtin(name), items[1..].to_vec())?;
-                    } else if let Some(found) = self.resolve_input(id, &name) {
-                        self.push(Request::Actor(id, items));
-                        self.read_resolution(head, &name, true, found)?;
+                if let Some(descriptor) = program.graph.builtin_call(id) {
+                    self.apply_builtin(id, descriptor, items[1..].to_vec())?;
+                } else if let Some(name) = program.graph.identifier(head) {
+                    if let Some(found) = self.resolve_input(id, name) {
+                        self.push(Request::Actor(id, items.to_vec()));
+                        self.read_resolution(head, name, true, found)?;
                     } else {
-                        return Err(self.unbound(head, &name, true));
+                        return Err(self.unbound(head, name, true));
                     }
                 } else {
-                    self.push(Request::Actor(id, items));
+                    self.push(Request::Actor(id, items.to_vec()));
                     self.eval(head);
                 }
             }
@@ -172,22 +171,21 @@ impl Evaluator {
             self.finish(Value::Array(values.into()));
         }
     }
-    pub(super) fn apply(
+    /// A builtin call whose descriptor is already resolved. Arity and form policy are checked
+    /// here, the one place a builtin call is admitted.
+    fn apply_builtin(
         &mut self,
         id: NodeId,
-        actor: Actor,
+        descriptor: &'static builtins::Descriptor,
         args: Vec<NodeId>,
     ) -> Result<(), HelixError> {
-        if let Actor::Builtin(name) = &actor {
-            let descriptor = builtins::descriptor(name).unwrap();
-            if let Some((message, hint)) = descriptor.misfit(args.len()) {
-                return Err(self.err(id, "arity", message).with_hint(Some(hint)));
-            }
-            if matches!(descriptor.evaluation, builtins::Evaluation::Form(_)) {
-                return self.form(id, descriptor, args);
-            }
+        if let Some((message, hint)) = descriptor.misfit(args.len()) {
+            return Err(self.err(id, "arity", message).with_hint(Some(hint)));
         }
-        self.collect(id, Some(actor), args, None);
+        if matches!(descriptor.evaluation, builtins::Evaluation::Form(_)) {
+            return self.form(id, descriptor, args);
+        }
+        self.collect(id, Some(Actor::Builtin(descriptor.name.to_string())), args, None);
         Ok(())
     }
 }

@@ -190,7 +190,7 @@ impl Evaluator {
             Request::Actor(id, items) => {
                 let value = self.value();
                 if let Value::Function(function) = value {
-                    self.apply(id, Actor::Function(function), items[1..].to_vec())?;
+                    self.collect(id, Some(Actor::Function(function)), items[1..].to_vec(), None);
                 } else {
                     let written = self.graph().identifier(items[0]);
                     let subject = written.map_or_else(|| "a computed call actor".to_string(), |name| format!("call actor `{name}`"));
@@ -229,38 +229,41 @@ impl Evaluator {
                 self.collect_next(site, actor, nodes, keys, values);
             }
             Request::Apply(site, actor, nodes, values) => match actor {
-                Actor::Builtin(name) if name == "effect" => {
-                    self.request_effect(site, &nodes, &values)?
-                }
-
-                Actor::Builtin(name) if name == "http_serve" => {
-                    let Value::Function(handler) = &values[1] else {
-                        return Err(self.err(site, "type", "HTTP handler must be a function"));
-                    };
-                    crate::graph::http::validate_function(handler,1).map_err(|why| self.err(site,"type",why))?;
-                    crate::graph::http::validate_options(&values[0])
-                        .map_err(|why| self.err(site, "type", why))?;
-                    let Value::Hash(options) = &values[0] else { unreachable!() };
-                    let bind = options.get(&s("bind")).unwrap().clone();
-                    self.request_effect(site, &[site, site], &[s("http_serve"), bind])?;
-                    self.push(Request::Serve(site, values[0].clone(), handler.clone()));
-                }
+                // Engine operations are the only builtins with bespoke dispatch; every other
+                // builtin takes the common path below.
+                Actor::Builtin(name) => match name.as_str() {
+                    "effect" => {
+                        self.request_effect(site, &nodes, &values)?
+                    }
+                    "http_serve" => {
+                        let Value::Function(handler) = &values[1] else {
+                            return Err(self.err(site, "type", "HTTP handler must be a function"));
+                        };
+                        crate::graph::http::validate_function(handler,1).map_err(|why| self.err(site,"type",why))?;
+                        crate::graph::http::validate_options(&values[0])
+                            .map_err(|why| self.err(site, "type", why))?;
+                        let Value::Hash(options) = &values[0] else { unreachable!() };
+                        let bind = options.get(&s("bind")).unwrap().clone();
+                        self.request_effect(site, &[site, site], &[s("http_serve"), bind])?;
+                        self.push(Request::Serve(site, values[0].clone(), handler.clone()));
+                    }
+                    "step" => {
+                        let Value::Machine(child) = &values[0] else {
+                            return Err(self.err(nodes[0], "type", "expected a vm"));
+                        };
+                        // Child dispatch is flattened by the outer VM runner (see advance_child).
+                        self.finish(Value::Machine(child.clone()));
+                        self.push(Request::AdvanceChild);
+                    }
+                    "inspect" => {
+                        let Value::Machine(child) = &values[0] else {
+                            return Err(self.err(nodes[0], "type", "expected a vm"));
+                        };
+                        self.finish(crate::inspect::machine(child));
+                    }
+                    _ => self.schedule_builtin(site, nodes, name, values),
+                },
                 Actor::Function(function) => self.push(Request::Call(site, function, values, nodes)),
-                Actor::Builtin(name) if name == "step" => {
-                    let Value::Machine(child) = &values[0] else {
-                        return Err(self.err(nodes[0], "type", "expected a vm"));
-                    };
-                    // Child dispatch is flattened by the outer VM runner (see advance_child).
-                    self.finish(Value::Machine(child.clone()));
-                    self.push(Request::AdvanceChild);
-                }
-                Actor::Builtin(name) if name == "inspect" => {
-                    let Value::Machine(child) = &values[0] else {
-                        return Err(self.err(nodes[0], "type", "expected a vm"));
-                    };
-                    self.finish(crate::inspect::machine(child));
-                }
-                Actor::Builtin(name) => self.schedule_builtin(site, nodes, name, values),
             },
             Request::Serve(_, _, _) => {
                 let outcome = self.take();

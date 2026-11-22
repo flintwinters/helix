@@ -13,18 +13,53 @@ pub(crate) enum Syntax<'a> {
     Invalid(&'static str),
 }
 
+/// A node's syntactic class, cached per node by `derived.rs`. Payloads name the child node
+/// whose kind the class was decided on, so `syntax` reads slices without repeating key tests.
+#[derive(Clone, Copy)]
+pub(crate) enum Class {
+    Scalar,
+    Sequence,
+    Mapping,
+    /// The `$call` value: a nonempty sequence.
+    Call(NodeId),
+    /// The `$ref` value: a nonempty string scalar.
+    Reference(NodeId),
+    Literal(NodeId),
+    Invalid(&'static str),
+}
+
 impl Graph {
     pub(crate) fn syntax(&self, id: NodeId) -> Syntax<'_> {
+        match (self.class(id), self.kind(id)) {
+            (Class::Scalar, Kind::Scalar { value }) => Syntax::Scalar(value),
+            (Class::Sequence, Kind::Seq(items)) => Syntax::Sequence(items),
+            (Class::Mapping, Kind::Map(entries)) => Syntax::Mapping(entries),
+            (Class::Call(value), _) => match self.kind(value) {
+                Kind::Seq(items) => Syntax::Call(items),
+                _ => unreachable!("a `$call` class names a sequence"),
+            },
+            (Class::Reference(value), _) => match self.kind(value) {
+                Kind::Scalar { value: Yaml::String(name) } => Syntax::Reference(name),
+                _ => unreachable!("a `$ref` class names a string"),
+            },
+            (Class::Literal(value), _) => Syntax::Literal(value),
+            (Class::Invalid(message), _) => Syntax::Invalid(message),
+            _ => unreachable!("a node's class is decided from its kind"),
+        }
+    }
+
+    /// Uncached classification; `derived.rs` memoizes it per node.
+    pub(crate) fn classify(&self, id: NodeId) -> Class {
         match self.kind(id) {
-            Kind::Scalar { value, .. } => Syntax::Scalar(value),
-            Kind::Seq(items) => Syntax::Sequence(items),
+            Kind::Scalar { .. } => Class::Scalar,
+            Kind::Seq(_) => Class::Sequence,
             Kind::Map(entries) => {
                 if let [(key, value)] = entries.as_slice() {
                     match key.as_str() {
                         "$call" => {
                             return match self.kind(*value) {
-                                Kind::Seq(items) if !items.is_empty() => Syntax::Call(items),
-                                _ => Syntax::Invalid("$call requires a nonempty sequence"),
+                                Kind::Seq(items) if !items.is_empty() => Class::Call(*value),
+                                _ => Class::Invalid("$call requires a nonempty sequence"),
                             };
                         }
                         "$ref" => {
@@ -32,15 +67,15 @@ impl Graph {
                                 Kind::Scalar {
                                     value: Yaml::String(name),
                                     ..
-                                } if !name.is_empty() => Syntax::Reference(name),
-                                _ => Syntax::Invalid("$ref requires a nonempty string"),
+                                } if !name.is_empty() => Class::Reference(*value),
+                                _ => Class::Invalid("$ref requires a nonempty string"),
                             };
                         }
-                        "$literal" => return Syntax::Literal(*value),
+                        "$literal" => return Class::Literal(*value),
                         _ => {}
                     }
                 }
-                Syntax::Mapping(entries)
+                Class::Mapping
             }
         }
     }
