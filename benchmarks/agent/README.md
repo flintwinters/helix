@@ -3,7 +3,7 @@
 `./manage.py quality agent-bench` owns model coding experiments.
 `./manage.py test --suite agent_bench` verifies the harness offline; paid model
 calls are explicit experiments, never part of the default regression suite.
-The latest [50-attempt workspace baseline](baseline-workspace-5x10-v3.json) used
+The latest [50-attempt workspace baseline](baseline-workspace-5x10-v3.yaml) used
 protocol v3; no protocol-v4 run is recorded yet. Earlier final-chat measurements are
 retained below as historical data.
 
@@ -126,8 +126,8 @@ program failures; those runs do not measure protocol v3's workspace workflow.
 
 Protocol v1 used three tasks and five attempts per task. Its task definitions
 remain recoverable from the recorded Git history; replay refuses changed task
-definitions. The checked-in [one-shot report](baseline-one-shot-v1.json) and
-[CLI-assisted report](baseline-cli-v1.json) retain the initial measurements for
+definitions. The checked-in [one-shot report](baseline-one-shot-v1.yaml) and
+[CLI-assisted report](baseline-cli-v1.yaml) retain the initial measurements for
 `openai/gpt-6-luna`. These are historical GPT-6 results, not measurements of the
 requested GPT-6.1 Luna model. Generation used five trials per task. Evaluation was replayed
 with five timing samples after the regression jobs finished; both reports select
@@ -135,7 +135,7 @@ that replay explicitly. Original API responses, prompts and full scores remain i
 the referenced runtime directories. Small-sample differences are observations,
 not evidence that CLI access changes the model's underlying success probability.
 
-[Live caller attribution](baseline-cli-attribution-v1.json) records the SQLite
+[Live caller attribution](baseline-cli-attribution-v1.yaml) records the SQLite
 counts for this CLI run. The [failed word-count candidate](evidence/word-counts-cli-trial-002.yaml)
 is preserved byte-for-byte: it expected a record containing `input` and returned a
 record containing `output`, while the task required a list argument and a count
@@ -144,12 +144,12 @@ concrete interface-understanding failure, despite having execution feedback.
 
 ## Recorded 50-attempt protocol-v2 run
 
-The [five-task summary](baseline-cli-5x10-v2.json) records ten CLI-assisted
+The [five-task summary](baseline-cli-5x10-v2.yaml) records ten CLI-assisted
 attempts per task using explicitly approved `openai/gpt-6-luna`, not the unavailable
 6.1 default. All 50 attempts produced candidates; 46 passed every oracle case.
 There were no API errors. The run used 131 model requests and 81 CLI calls.
 
-[Per-attempt measurements](attempts-cli-5x10-v2.json) preserve all 50 outcomes,
+[Per-attempt measurements](attempts-cli-5x10-v2.yaml) preserve all 50 outcomes,
 response model IDs, input/output token usage and cost, generation latency,
 CLI-call counts, source hashes, correctness counts, five raw timing samples for
 successful candidates, and the first failing-case diagnostic. The summary owns
@@ -157,7 +157,7 @@ per-task completion intervals and reference runtime ratios. Full API responses,
 conversations, programs and six-case observations remain under
 `runtime/agent-bench/luna-cli-5x10-v2/`.
 
-[SQLite attribution evidence](baseline-cli-5x10-attribution-v2.json) accounts for
+[SQLite attribution evidence](baseline-cli-5x10-attribution-v2.yaml) accounts for
 all 81 CLI calls as `benchmark-model` / `openai/gpt-6-luna`, with ten distinct trial
 IDs for every task. Scorer and timing invocations are separate harness operations.
 
@@ -186,17 +186,17 @@ The explicit run command was:
 
 ## Recorded workspace run (protocol v3)
 
-The [audited summary](baseline-workspace-5x10-v3.json) and
-[all 50 per-attempt records](attempts-workspace-5x10-v3.json) measure the corrected
+The [audited summary](baseline-workspace-5x10-v3.yaml) and
+[all 50 per-attempt records](attempts-workspace-5x10-v3.yaml) measure the corrected
 workspace workflow with ten attempts on each task, using the approved GPT-6 Luna
 model. All 50 submitted saved workspaces passed all six hidden cases. The
 summary's submission audit verifies every tested workspace fingerprint, archived
 source hash and frozen evaluation copy. It is reproducible with `report --audit`.
 
 There were 52 public-test executions: two initially failed, and the model edited
-and retested their code before submission. [Repair traces](workspace-repairs-v3.json)
+and retested their code before submission. [Repair traces](workspace-repairs-v3.yaml)
 preserve those write/test/submit sequences. The model received no hidden-case
-feedback. The [SQLite audit](baseline-workspace-attribution-v3.json) accounts for
+feedback. The [SQLite audit](baseline-workspace-attribution-v3.yaml) accounts for
 all 79 actual CLI calls, including 52 public tests, with model identity and ten
 distinct trial IDs for every task. All 404 workspace/CLI/submission tool requests
 are recorded separately in the local run directory.

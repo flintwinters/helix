@@ -1,0 +1,98 @@
+version: 1
+command: agent-bench
+status: ok
+evaluation_source: replay.json
+evaluation:
+  binary_sha256: 8690ceedc124f4ee6f05fa80405abd206daefd1e3656ab995141cc62458e2f28
+  samples: 5
+  recorded_at: '2026-11-15T23:00:22.126214+00:00'
+  environment:
+    platform: Linux-7.3.0-10-generic-x86_64-with-glibc2.44
+    python: 3.14.8
+directory: /home/felix/projects/experiments/helix/helix/runtime/agent-bench/luna-baseline-v1
+provenance:
+  schema: helix.agent-bench.v1
+  task_version: 1
+  model: openai/gpt-6-luna
+  trials: 5
+  samples: 3
+  temperature: 0.7
+  max_tokens: 4096
+  context_sha256: b0b2d59e21f3d56e6fbfd303376e53ff580a0861b6247a3dbf841db1d9f70d51
+  task_source_sha256: 2072d8b951805e77f66dc04d677e93b5788997e29ec2800aa33c6f8ff64fe90b
+  git_revision: 06ee7fc8bb2a019f808c5a3195599596dc9ee6e2
+  git_diff_sha256: 4a6dfaba2dcb82d3fdb9fc22d259b7d52e4f6373c8ec597276be8d48e345f780
+  binary_sha256: 8690ceedc124f4ee6f05fa80405abd206daefd1e3656ab995141cc62458e2f28
+  environment:
+    platform: Linux-7.3.0-10-generic-x86_64-with-glibc2.44
+    python: 3.14.8
+  timing_contract: CLI wall time includes process startup, parsing, linking, execution and serialization;
+    one warmup, n=256. No build or API time. Ratios use a same-run reference; debug build.
+mode: one-shot
+summary:
+  group-totals:
+    model_requests: 5
+    tool_calls: 0
+    attempts: 5
+    evaluated: 5
+    successes: 5
+    pass_rate: 1.0
+    pass_rate_wilson_95:
+    - 0.5655175352168251
+    - 1
+    mean_case_score: 1.0
+    usage_observations: 5
+    prompt_tokens: 118125
+    completion_tokens: 3045
+    total_tokens: 121170
+    mean_total_tokens_per_attempt: 24234.0
+    total_tokens_per_success: 24234.0
+    reported_cost_usd: 0.002718325
+    cost_observations: 5
+    median_successful_cli_wall_ms: 83.7890210095793
+    median_generation_ms: 5730.346691969316
+    median_runtime_ratio_to_reference: 0.8777436150005152
+  sum-squares:
+    model_requests: 5
+    tool_calls: 0
+    attempts: 5
+    evaluated: 5
+    successes: 5
+    pass_rate: 1.0
+    pass_rate_wilson_95:
+    - 0.5655175352168251
+    - 1
+    mean_case_score: 1.0
+    usage_observations: 5
+    prompt_tokens: 117810
+    completion_tokens: 1719
+    total_tokens: 119529
+    mean_total_tokens_per_attempt: 23905.8
+    total_tokens_per_success: 23905.8
+    reported_cost_usd: 0.004748235
+    cost_observations: 5
+    median_successful_cli_wall_ms: 55.32120895804837
+    median_generation_ms: 4161.176720983349
+    median_runtime_ratio_to_reference: 0.7202886351007346
+  word-counts:
+    model_requests: 5
+    tool_calls: 0
+    attempts: 5
+    evaluated: 5
+    successes: 5
+    pass_rate: 1.0
+    pass_rate_wilson_95:
+    - 0.5655175352168251
+    - 1
+    mean_case_score: 1.0
+    usage_observations: 5
+    prompt_tokens: 117900
+    completion_tokens: 2144
+    total_tokens: 120044
+    mean_total_tokens_per_attempt: 24008.8
+    total_tokens_per_success: 24008.8
+    reported_cost_usd: 0.0022604
+    cost_observations: 5
+    median_successful_cli_wall_ms: 76.29790704231709
+    median_generation_ms: 4941.032204951625
+    median_runtime_ratio_to_reference: 1.1123919329145449

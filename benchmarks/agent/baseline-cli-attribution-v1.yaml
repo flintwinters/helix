@@ -1,0 +1,19 @@
+version: 1
+command: usage
+status: ok
+query:
+- caller_role: benchmark-model
+  model: openai/gpt-6-luna
+  benchmark_run: luna-cli-baseline-v1
+  benchmark_task: group-totals
+  calls: 9
+- caller_role: benchmark-model
+  model: openai/gpt-6-luna
+  benchmark_run: luna-cli-baseline-v1
+  benchmark_task: sum-squares
+  calls: 5
+- caller_role: benchmark-model
+  model: openai/gpt-6-luna
+  benchmark_run: luna-cli-baseline-v1
+  benchmark_task: word-counts
+  calls: 8

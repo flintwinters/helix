@@ -1,5 +1,4 @@
 """Error navigation contracts across source boundaries and error-as-data flows."""
-import json
 from pathlib import Path
 import tempfile
 
@@ -132,8 +131,8 @@ def verify_hints(h):
 
 def verify_recorded_repairs(h):
     """Replay the malformed flow sequences preserved in the workspace benchmark."""
-    evidence = h.root / "benchmarks/agent/workspace-repairs-v3.json"
-    for repair in json.loads(evidence.read_text())["repairs"]:
+    evidence = h.root / "benchmarks/agent/workspace-repairs-v3.yaml"
+    for repair in yaml.safe_load(evidence.read_text())["repairs"]:
         write, failure, *_ = repair["events"]
         assert write["action"] == "write" and failure["action"] == "execute-public-test", repair
         source = write["arguments"]["content"]

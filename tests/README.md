@@ -414,7 +414,7 @@ host/environment, sampling settings and workload source keep comparisons relevan
 the fixed early baseline reveals cumulative drift. Changing the Cargo dev profile changes `PROFILE` in `tests/suites/speed.py` and requires re-pinning. First runs establish history.
 The two mutation-planning workloads pin median retired user-space instructions
 (`perf stat -e instructions:u`, separate untimed runs) in
-`tests/fixtures/speed-baseline.json`. Wall and CPU time both inflate on a busy host,
+`tests/fixtures/speed-baseline.yaml`. Wall and CPU time both inflate on a busy host,
 so they cannot carry a zero-tolerance gate. Counts vary by about 0.1%, so a pin is
 the worst observed median plus 0.5% headroom. In a matching benchmark environment,
 a median above it fails the suite, and so does a missing `perf` counter (install `perf`;

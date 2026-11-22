@@ -151,7 +151,7 @@ and inspected through the bounded checkpoint API rather than dumped through comm
 
 ## Qualification evidence
 
-[`qualification.json`](qualification.json) preserves the original baseline and records
+[`qualification.yaml`](qualification.yaml) preserves the original baseline and records
 the later hardening qualification: 26 scenarios across the integrated run and corrected
 continuation, two repetitions of the high-risk peer scenarios, and a retained hardened pair.
 The integrated run's initial directory-mtime assertion failure remains recorded explicitly.

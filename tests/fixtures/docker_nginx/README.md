@@ -106,7 +106,7 @@ the user-facing server-name input.
 
 ## Qualification evidence
 
-[`qualification.json`](qualification.json) records the complete scenario results,
+[`qualification.yaml`](qualification.yaml) records the complete scenario results,
 image/package/controller identities, duration, cleanup result and regression
 checks for this milestone. Its raw-report path points into the retained
 project-local `runtime/docker-nginx/` artifacts, with a SHA-256 digest; those raw
@@ -170,6 +170,6 @@ Run `./manage.py test --suite ssh_nginx` for the local/SSH comparison and
 controller-death recovery sequence. It uses the same pinned platform and resource
 semantics as local acceptance; no systemd, rollback or fleet claim follows.
 
-[`ssh-qualification.json`](ssh-qualification.json) records the separate SSH
+[`ssh-qualification.yaml`](ssh-qualification.yaml) records the separate SSH
 acceptance runs, exact controller/source identities and retained raw-report
 digests. Its claim is bounded by the supported environment above.

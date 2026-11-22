@@ -840,7 +840,7 @@ assert not list(pathlib.Path('/var/lib/helix-linux-host').glob('.identity-*'))
 print(json.dumps({'rounds':4,'readers':12,'status':'passed'}))
 """
     report = d.exec("python3", "-c", source)
-    (d.artifacts / "concurrent-observations.json").write_text(report.stdout)
+    (d.artifacts / "concurrent-observations.yaml").write_text(yaml.safe_dump(json.loads(report.stdout), sort_keys=False))
     assert d.actions() == []
 
 

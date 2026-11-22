@@ -1,0 +1,39 @@
+version: 1
+command: usage
+status: ok
+query:
+- caller_role: benchmark-model
+  model: openai/gpt-6-luna
+  benchmark_run: luna-cli-5x10-v2
+  benchmark_task: dependency-plan
+  calls: 30
+  trials: 10
+  failed_calls: 6
+- caller_role: benchmark-model
+  model: openai/gpt-6-luna
+  benchmark_run: luna-cli-5x10-v2
+  benchmark_task: group-totals
+  calls: 11
+  trials: 10
+  failed_calls: 1
+- caller_role: benchmark-model
+  model: openai/gpt-6-luna
+  benchmark_run: luna-cli-5x10-v2
+  benchmark_task: stable-unique
+  calls: 16
+  trials: 10
+  failed_calls: 1
+- caller_role: benchmark-model
+  model: openai/gpt-6-luna
+  benchmark_run: luna-cli-5x10-v2
+  benchmark_task: sum-squares
+  calls: 10
+  trials: 10
+  failed_calls: 0
+- caller_role: benchmark-model
+  model: openai/gpt-6-luna
+  benchmark_run: luna-cli-5x10-v2
+  benchmark_task: word-counts
+  calls: 14
+  trials: 10
+  failed_calls: 0

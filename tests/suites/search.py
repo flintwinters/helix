@@ -8,6 +8,8 @@ import time
 
 import yaml
 
+from tooling.output import emit
+
 
 def records(result, code=0):
     assert result.returncode == code, (result.returncode, result.stderr[-4000:])
@@ -77,7 +79,7 @@ quoted: !literal {$call: [fn, [], 7]}
         # Installed-style invocation does not need repository sources or a current checkout.
         external = records(h.helix("search", "index", str(module), "--library", "std:math", "--no-std", cwd=root))
         assert any(r.get("source") == "std:math" for r in external), external[-1]
-        print(json.dumps({"measurement": "small_project", "seconds": round(time.monotonic()-start, 3), "records": len(index)}))
+        emit({"measurement": "small_project", "seconds": round(time.monotonic()-start, 3), "records": len(index)})
         verify_queries(h, source)
         verify_audit(h, root)
         verify_probes(h, root)
@@ -251,9 +253,9 @@ def verify_scale(h, root):
         result = h.helix("search", "index", *args)
         rows = records(result)
         assert rows[-1]["complete"], rows[-1]
-        print(json.dumps({"measurement": name, "seconds": round(time.monotonic()-start, 3),
+        emit({"measurement": name, "seconds": round(time.monotonic()-start, 3),
                           "sources": rows[-1]["sources"], "output_bytes": len(result.stdout.encode()),
-                          "records": len(rows)}))
+                          "records": len(rows)})
 
 
 def verify_production_query(h, root):
@@ -274,8 +276,8 @@ def verify_production_query(h, root):
         capture_output=True, text=True, cwd=root, timeout=60)
     selected = records(result)
     assert selected and any(n["reference"]["path"] == ["abs"] for n in selected[0]["selection"]), selected
-    print(json.dumps({"measurement": "production_query", "seconds": round(time.monotonic()-start, 3),
-                      "selected": len(selected[0]["selection"])}))
+    emit({"measurement": "production_query", "seconds": round(time.monotonic()-start, 3),
+                      "selected": len(selected[0]["selection"])})
 
 
 def verify_standard_stream(h, root):
@@ -290,7 +292,7 @@ def verify_standard_stream(h, root):
         capture_output=True, text=True, cwd=root, timeout=120)
     rows = records(result)
     assert rows[-1]["complete"] and any(row.get("source") == "std:search" for row in rows), rows[-1:]
-    print(json.dumps({"measurement": "embedded_library_stream", "seconds": round(time.monotonic()-start, 3), "records": len(rows)}))
+    emit({"measurement": "embedded_library_stream", "seconds": round(time.monotonic()-start, 3), "records": len(rows)})
 
 
 def verify_additional_roots(h, root):
@@ -326,7 +328,7 @@ def verify_stream_memory(h, root):
         assert process.wait(timeout=10) == 0, process.stderr.read()
         if len(samples) == 2:
             assert samples[1] - samples[0] <= 8192, samples
-            print(json.dumps({"measurement": "stream_memory", "records": 256, "rss_kib": samples}))
+            emit({"measurement": "stream_memory", "records": 256, "rss_kib": samples})
     finally:
         if process.poll() is None:
             process.kill()

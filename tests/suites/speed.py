@@ -210,7 +210,7 @@ def pinned_limit(baseline, environment, name, source_hash):
         if row["workload"] == name:
             assert row["source_sha256"] == source_hash, (
                 f"pinned workload `{name}` changed source (pinned {row['source_sha256']}, now {source_hash}); "
-                "re-measure it and update tests/fixtures/speed-baseline.json")
+                "re-measure it and update tests/fixtures/speed-baseline.yaml")
             return row["median_instructions"]
     return None
 
@@ -290,7 +290,7 @@ def verify(h):
         "machine": platform.machine(), "processor": platform.processor(),
         "profile": PROFILE, "samples": SAMPLES, "warmups": WARMUPS,
     }
-    baseline = json.loads((h.root / "tests" / "fixtures" / "speed-baseline.json").read_text())
+    baseline = yaml.safe_load((h.root / "tests" / "fixtures" / "speed-baseline.yaml").read_text())
     slowdowns = []
     report["host_load_start"] = host_load()
     try:
