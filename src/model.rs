@@ -287,13 +287,13 @@ pub(crate) struct Limits {
 #[derive(Clone, Debug, Default)]
 pub(crate) struct EvidenceIndex {
     /// Row by program allocation and node; the program keeps the allocation live.
-    pub(crate) nodes: HashMap<(usize, NodeId), (usize, Arc<Program>)>,
+    pub(crate) nodes: HashMap<(usize, NodeId), (usize, Arc<Program>), NodeHash>,
     /// Row by observable source location.
     pub(crate) locations: HashMap<Location, usize>,
     /// Projected units of each row.
     pub(crate) units: Vec<usize>,
     /// Row overhead of each node refused since the last new row.
-    pub(crate) absent: HashMap<(usize, NodeId), (usize, Arc<Program>)>,
+    pub(crate) absent: HashMap<(usize, NodeId), (usize, Arc<Program>), NodeHash>,
 }
 impl PartialEq for EvidenceIndex {
     fn eq(&self, _: &Self) -> bool { true }

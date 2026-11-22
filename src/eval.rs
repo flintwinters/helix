@@ -180,10 +180,8 @@ impl Evaluator {
                     let value = value.clone();
                     self.charge_value(id, &value)?;
                     self.note_evaluated(id, &value);
-                }
-                if !local {
-                    if let Some(Ok(value)) = &self.answer {
-                        self.memo.insert(id, value.clone());
+                    if !local {
+                        self.memo.insert(id, value);
                     }
                 }
             }
