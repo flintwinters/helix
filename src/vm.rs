@@ -152,20 +152,19 @@ impl Vm {
                 self.fail(self.evaluator.as_ref().unwrap().program.graph.error(ROOT, "snapshot", message));
                 break;
             }
-            let rollback = (!self.promises.is_empty()).then(|| self.clone());
-            let child = Arc::make_mut(
+            let rollback = (!self.promises.is_empty()).then(|| Box::new(self.clone()));
+            // One uniqueness check per transition; fields other than `evaluator` stay borrowable.
+            let evaluator = Arc::make_mut(
                 self.evaluator
                     .as_mut()
                     .expect("an active machine has an evaluator"),
-            )
-            .take_child();
-            if let Some(mut child) = child {
-                let parent_state = self.evaluator.as_ref().unwrap();
+            );
+            if let Some(mut child) = evaluator.take_child() {
                 let previous = child.evaluator.as_ref().map(|e| (e.inherited_type_time, e.effects_allowed));
-                if let Some(evaluator) = &mut child.evaluator {
-                    let evaluator = Arc::make_mut(evaluator);
-                    evaluator.inherited_type_time |= parent_state.type_time || parent_state.inherited_type_time;
-                    evaluator.effects_allowed &= parent_state.effects_allowed;
+                if let Some(child_evaluator) = &mut child.evaluator {
+                    let child_evaluator = Arc::make_mut(child_evaluator);
+                    child_evaluator.inherited_type_time |= evaluator.type_time || evaluator.inherited_type_time;
+                    child_evaluator.effects_allowed &= evaluator.effects_allowed;
                 }
                 self.status = Status::Running;
                 parents.push((std::mem::replace(self, child), previous, rollback));
@@ -174,7 +173,6 @@ impl Vm {
                 }
             } else {
                 self.status = Status::Running;
-                let evaluator = Arc::make_mut(self.evaluator.as_mut().unwrap());
                 evaluator.transition();
                 if evaluator.pending_effect.is_some() {
                     self.status = Status::Signaled;
@@ -188,19 +186,19 @@ impl Vm {
                         Err(error) => self.fail(error),
                     }
                 }
-                self.enforce_promises(rollback);
+                self.enforce_promises(rollback.map(|vm| *vm));
                 break;
             }
         }
-        while let Some((mut parent, previous, rollback)) = parents.pop() {
+        while let Some((parent, previous, rollback)) = parents.pop() {
             if let (Some(evaluator), Some((inherited_type_time, effects_allowed))) = (&mut self.evaluator, previous) {
                 let evaluator = Arc::make_mut(evaluator);
                 evaluator.inherited_type_time = inherited_type_time;
                 evaluator.effects_allowed = effects_allowed;
             }
-            Arc::make_mut(parent.evaluator.as_mut().unwrap()).return_child(self.clone());
-            parent.enforce_promises(rollback);
-            *self = parent;
+            let child = std::mem::replace(self, parent);
+            Arc::make_mut(self.evaluator.as_mut().unwrap()).return_child(child);
+            self.enforce_promises(rollback.map(|vm| *vm));
         }
     }
     /// Yielded requests have no authority until a host explicitly handles them.
