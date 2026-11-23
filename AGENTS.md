@@ -30,13 +30,12 @@ without duplicating the same decisions in another language.
   (JSON, error paths, inspection), and the static suite rejects them as written YAML.
   [src/model.rs](src/model.rs), [src/graph.rs](src/graph.rs) and
   [src/eval.rs](src/eval.rs) lead into the immutable model and iterative engine.
-- Speed work must keep the YAML nature: the graph and the stepwise machine define all
-  state, and any faster tier (lowering, caches, compilation) is derived, regenerable,
-  never serialized or compared, and deleting it leaves behavior byte-identical. A fast
-  tier only fast-forwards between states the stepwise machine reaches, with exact
-  transition/limit accounting, so the machine exports to YAML at any transition boundary
-  and every observable state equals stepwise execution. Fast-forward only when the whole
-  region fits the caller's budget; otherwise step. Prove it by differential tests.
+- Speed work must keep the YAML nature. Any lowered representation `L` needs a readback
+  `read: L -> YAML` that is injective on reachable states, round-trips (`read(lower(y)) = y`,
+  so no source structure, names, order or spans are lost) and commutes with execution
+  (`read(step_L(s)) = step_YAML(read(s))`). Lowered form may be the real machine state,
+  but export to YAML must work wherever the machine is observable. Prove by differential
+  tests through `read`; never drop structure that `read` cannot restore.
 - [src/vm.rs](src/vm.rs) owns public machine execution;
   [src/snapshot.rs](src/snapshot.rs) owns versioned restoration.
   Snapshot closure and portability boundaries belong to charter section 2.
