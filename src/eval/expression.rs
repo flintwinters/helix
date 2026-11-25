@@ -11,6 +11,11 @@ impl Evaluator {
                 "limit",
                 format!("evaluation exceeds {} node visits", self.limits.max_work),
             )
+            .with_hint(Some(
+                "Profile a representative input with helix profile. Pass expensive callback dependencies \
+                 as eager function arguments. See helix docs language keeping-evaluation-work-bounded."
+                    .into(),
+            ))
         })?;
         if self.active.len() >= self.limits.max_eval_depth {
             return Err(self.err(

@@ -495,6 +495,21 @@ Keep only the needed fields in accumulators. Use `helix profile FILE --top 8`
 on a representative input to locate hot source expressions before increasing
 the workload.
 
+A callback can re-evaluate a captured lazy binding on every invocation.
+To compute an expensive value once, pass it as an eager function argument
+before constructing the callback. For example, the outer function below
+receives a precomputed lookup map and its inner callback reuses that value.
+
+```yaml
+!call
+  - !call
+      - fn
+      - [lookup, keys]
+      - !call [map, !call [fn, [key], !call [get, !ref lookup, !ref key, ~]], !ref keys]
+  - !call [build_lookup, !ref records]
+  - !ref wanted_keys
+```
+
 `helix sandbox ROOT FILE` (also `./manage.py runtime sandbox ROOT FILE`) loads the main file explicitly supplied by the caller and restricts all file imports to canonical paths below ROOT. ROOT `-` permits only embedded `std:` modules. Path traversal, sibling-prefix and symlink escapes are rejected as `permission` errors at the import argument, including transitive and uncalled imports. Ordinary `run` retains trusted loading. Library callers use `Vm::load_sandboxed(source, optional_file, roots)`; empty roots deny file imports. These permissions are host configuration and are never granted by program/state data.
 
 This is an import capability boundary, not operating-system isolation: a host concurrently replacing directory ancestors can race path authorization. Arbitrarily large source files are read before evaluation limits apply, and these budgets are not a byte-exact heap quota. File writes, network and process effects use the [explicit caller grants](HOST.md#host-effects-and-explicit-grants). Recovery output is source data and conveys no permission grant.
