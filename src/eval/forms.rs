@@ -36,6 +36,7 @@ impl Evaluator {
         };
         match form {
             Form::TypeTime => {
+                self.interrupt_sharing();
                 let previous = self.type_time;
                 self.type_time = true;
                 let memo = if previous {

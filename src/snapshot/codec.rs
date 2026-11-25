@@ -284,11 +284,13 @@ variants!(Request {
     Refine(site:n, nodes:ns, value:v), Refined(site:n, nodes:ns, value:v), Atomic(atomic:v), PredicateEnd(atomic:v, signature:v),
     SignatureOf(site:n, function:v, pure:v), SignatureSlot(function:v, found:v, pure:v);
     AdvanceChild {},
+    ShareBinding { node:n, owner:v, eligible:v },
     TypeEnd { previous:v, memo:omemo },
     Project { site:n, name:v, members:v, actor:v },
     Collect { site:n, actor:v, nodes:ns, keys:v, values:v },
     CallEnd { environment:v, program:v },
     BodyEnd { result_type:on, body:n },
+    SharedBodyEnd { result_type:on, body:n, born:v, bindings:memo },
     Parameters { site:caller, origin:v, function:v, args:v, index:v, found:v },
     ParameterType { site:caller, origin:v, function:v, args:v, index:v, found:v, annotation:n },
     ParameterChecked { site:caller, origin:v, function:v, args:v, index:v, ty:v, found:v },

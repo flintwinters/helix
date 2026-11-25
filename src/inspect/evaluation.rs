@@ -347,16 +347,27 @@ impl Request {
                     ),
                 )],
             ),
-            Self::BodyEnd { result_type, body } => object(
-                "return_body",
-                vec![
-                    (
-                        "result_type",
-                        result_type.map(|n| g.reference(n)).unwrap_or(Value::Null),
-                    ),
+            Self::ShareBinding { node, eligible, .. } => object("share_binding", vec![
+                ("node", g.reference(*node)),
+                ("eligible", Value::Boolean(*eligible)),
+            ]),
+            Self::BodyEnd { result_type, body }
+            | Self::SharedBodyEnd { result_type, body, .. } => {
+                let mut fields = vec![
+                    ("result_type", result_type.map(|n| g.reference(n)).unwrap_or(Value::Null)),
                     ("body", g.reference(*body)),
-                ],
-            ),
+                ];
+                if let Self::SharedBodyEnd { bindings, .. } = self
+                    && !bindings.is_empty()
+                {
+                    let mut entries: Vec<_> = bindings.iter().collect();
+                    entries.sort_unstable_by_key(|(node, _)| **node);
+                    fields.push(("shared_bindings", Value::Array(entries.into_iter().map(|(node, value)| {
+                        object("binding", vec![("node", g.reference(*node)), ("value", value.clone())])
+                    }).collect())));
+                }
+                object("return_body", fields)
+            }
             Self::ResultAnnotation(id, declaration, v) => object(
                 "result_annotation",
                 vec![("body", g.reference(*id)), ("declaration", g.reference(*declaration)), ("value", v.clone())],

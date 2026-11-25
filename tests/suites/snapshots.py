@@ -17,6 +17,54 @@ def verify(h):
         assert not result.stderr, (command, result.stderr)
         return result, yaml.load(result.stdout, Loader=getattr(yaml, 'CSafeLoader', yaml.SafeLoader))
 
+
+    # The two invocations own separate caches. A nested callback reads each
+    # activation's first successful result without forcing the unused binding.
+    shared = """
+solve: !call
+  - fn
+  - [x]
+  - !call
+      - let
+      - {shared: !call [add, !ref x, 1], unused: !call [div, 1, 0]}
+      - !call [map, !call [fn, [x], !call [add, !ref shared, !ref x]], [0, 1, 2]]
+result: [!call [solve, 10], !call [solve, 20]]
+"""
+    _, unbroken = invoke('run', shared)
+    assert unbroken['root']['result'] == [[11, 12, 13], [21, 22, 23]]
+    saw_pending = saw_cached = False
+    for steps in range(200):
+        result, snapshot = invoke('snapshot', shared, '--steps', str(steps))
+        requests = [request for row in snapshot['objects'].values() if row['kind'] == 'evaluator'
+                    for request in row['value']['requests']]
+        pending = any(row['kind'] == 'ShareBinding' for row in requests)
+        cached = any(row['kind'] == 'SharedBodyEnd' and row['bindings'] for row in requests)
+        if (pending and not saw_pending) or (cached and not saw_cached):
+            canonical, _ = invoke('restore', result.stdout, '--steps', '0')
+            assert canonical.stdout == result.stdout
+            _, restored = invoke('restore', result.stdout)
+            assert restored == unbroken, (steps, restored)
+            saw_pending |= pending
+            saw_cached |= cached
+        if saw_pending and saw_cached:
+            break
+    assert saw_pending and saw_cached
+
+    with tempfile.TemporaryDirectory(dir=h.root / 'runtime', prefix='shared-binding-') as directory:
+        source = Path(directory) / 'effects.yaml'
+        source.write_text("""
+run: !call
+  - fn
+  - []
+  - !call
+      - let
+      - {write: !call [effect, stdout, x]}
+      - !call [map, !call [fn, [unused], !ref write], [1, 2]]
+result: !call [run]
+""")
+        performed = h.helix('perform', '--allow-stdout', str(source))
+        assert performed.returncode == 0 and performed.stdout == 'xx', performed
+
     program = {'$call': ['let', {'f': {'$call': ['fn', [['x', 'integer']],
         {'$call': ['add', {'$ref': 'x'}, 3]}, 'integer']}}, {'$call': ['f', 7]}]}
     text = json.dumps(program)
@@ -151,7 +199,7 @@ def verify(h):
     assert written.startswith('format: helix-execution\n'), written[:80]
     anchor = written.replace('runtime: ', 'runtime: &r ', 1)
     for forged in (anchor, written.replace('runtime: ', 'runtime: !!str ', 1), written + '---\n' + written,
-                   written.replace('version: 4', 'version: 4\nversion: 4', 1)):
+                   written.replace('version: 5', 'version: 5\nversion: 5', 1)):
         result, report = invoke('restore', forged)
         assert result.returncode == 1 and report['errors'][0]['kind'] == 'snapshot', (forged[:200], report)
 

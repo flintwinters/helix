@@ -138,10 +138,39 @@ impl Evaluator {
                 if !actor { self.charge_value(site, &value)?; }
                 self.finish(value);
             }
-            Binding::Node(node) => self.eval(node),
+            Binding::Node(node) => self.read_binding(node),
         }
         Ok(())
     }
+
+    // The return continuation owns the cache. A captured frame can find it
+    // while its call is live, and an escaped closure holds no cache to release.
+    fn read_binding(&mut self, node: NodeId) {
+        let graph = self.graph();
+        let let_binding = graph.parent(node)
+            .and_then(|map| graph.lexical_parent(map).map(|form| (map, form)))
+            .is_some_and(|(map, form)| graph.form(form) == Some("let")
+                && graph.call(form).is_some_and(|items| items.get(1) == Some(&map)));
+        if let_binding && !self.type_time && !self.inherited_type_time
+            && let Some(function) = graph.enclosing_functions(node).first()
+            && let Some(scope) = self.environment.iter().rev().find(|scope| scope.function == *function)
+            && let Some((owner, Request::SharedBodyEnd { bindings, .. })) =
+                self.requests.iter().enumerate().rev().find(|(_, request)| {
+                    matches!(request, Request::SharedBodyEnd { born, .. } if *born == scope.born)
+                })
+        {
+            if let Some(value) = bindings.get(&node) {
+                // A read shares the existing value. Consumers still pay to build outputs.
+                self.finish(value.clone());
+                return;
+            }
+            if graph.form(node) != Some("fn") && !matches!(graph.syntax(node), Syntax::Scalar(_)) {
+                self.push(Request::ShareBinding { node, owner, eligible: true });
+            }
+        }
+        self.eval(node);
+    }
+
     pub(super) fn collect(
         &mut self,
         site: NodeId,

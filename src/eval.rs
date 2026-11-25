@@ -44,6 +44,7 @@ impl Evaluator {
     }
     fn start(program: Arc<Program>, environment: Vec<Scope>, request: Request) -> Self {
         let limits = Limits::default();
+        let scopes = environment.iter().map(|scope| scope.born.saturating_add(1)).max().unwrap_or(0);
         Self {
             program,
             environment,
@@ -65,7 +66,7 @@ impl Evaluator {
             annotation_units: 0,
             annotations_truncated: false,
             region: None,
-            scopes: 0,
+            scopes,
             effects_allowed: true,
             signal: None,
             remaining_work: limits.max_work,
@@ -115,7 +116,17 @@ impl Evaluator {
     fn finish(&mut self, value: Value) {
         self.answer = Some(Ok(value));
     }
+    /// A result can only be reused if obtaining it was independent of effects,
+    /// child advancement, type-time bookkeeping, and failures (even caught ones).
+    fn interrupt_sharing(&mut self) {
+        for request in &mut self.requests {
+            if let Request::ShareBinding { eligible, .. } = request {
+                *eligible = false;
+            }
+        }
+    }
     fn fail(&mut self, mut error: HelixError) {
+        self.interrupt_sharing();
         if self.type_time || self.inherited_type_time {
             error.phase = Some("type");
         }
@@ -126,6 +137,7 @@ impl Evaluator {
             return None;
         }
         self.requests.pop();
+        self.interrupt_sharing();
         let Value::Machine(child) = self.value() else {
             unreachable!()
         };
@@ -373,7 +385,17 @@ impl Evaluator {
                 self.program = program;
                 self.depth -= 1;
             }
-            Request::BodyEnd { result_type, body } => {
+            Request::ShareBinding { node, owner, eligible } => {
+                if eligible
+                    && let Some(Ok(value)) = &self.answer
+                    && !value.measure().opaque
+                    && let Some(Request::SharedBodyEnd { bindings, .. }) = self.requests.get_mut(owner)
+                {
+                    bindings.insert(node, value.clone());
+                }
+            }
+            Request::BodyEnd { result_type, body }
+            | Request::SharedBodyEnd { result_type, body, .. } => {
                 self.environment.pop();
                 if let Some(ty) = result_type {
                     let value = self.value();

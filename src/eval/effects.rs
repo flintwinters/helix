@@ -9,6 +9,7 @@ impl Evaluator {
         nodes: &[NodeId],
         values: &[Value],
     ) -> Result<(), HelixError> {
+        self.interrupt_sharing();
         if self.type_time || self.inherited_type_time {
             return Err(self.err(site, "purity", "effects are forbidden during type time"));
         }

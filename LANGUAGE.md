@@ -91,7 +91,12 @@ Functions retain their original immutable code and lexical environment, includin
 
 **Iteration** takes a function (a name or inline `fn`) first, like every actor: `!call [map, !ref f, !ref list]`, `!call [filter, !ref f, !ref list]` (`f` must return a boolean), `!call [fold, !ref f, !ref init, !ref list]` (`f` takes accumulator then element), `!call [each, !ref f, !ref list]` (calls `f` for each element, returns `null`; useful for ordered effects). `!call [until, !ref done, !ref step, !ref init]` repeats `state = step(state)` until `done(state)` is `true` and returns the state; more than 100000 steps is a `limit` error.
 
-**Evaluation order**: map fields by canonical string-key order, sequence elements and arguments left to right, all of them, except the forms that choose: `if`, `cond`, `and`, `or` (lazy), `fn` (body not run until called), `let` (bindings on use). Memoization is per node outside function bodies; inside a body every call re-evaluates.
+**Evaluation order**: map fields by canonical string-key order, sequence elements and arguments left to right, all of them, except the forms that choose: `if`, `cond`, `and`, `or` (lazy), `fn` (body not run until called), `let` (bindings on use). Outside functions, memoization is per node. During an active function call,
+a computed `let` binding can share its ordinary-data result across reads,
+including by callbacks that capture that activation. Reads demand the binding
+lazily. Sharing ends when the owning call returns. An evaluation that requests
+an effect, advances a child machine, enters type time, or encounters an error
+does not populate the cache. Functions and machines are not cached here.
 
 `!call [finally, !ref expr, !ref cleanup]` evaluates `expr`, then evaluates `cleanup` whether `expr` succeeds or fails. A successful cleanup discards its own value and preserves the original result or error. A failing cleanup replaces the original result or error. Cleanup is an expression, not a callback; use a function call when needed. This applies to evaluation errors; parse and import failures happen before evaluation.
 
@@ -495,9 +500,9 @@ Keep only the needed fields in accumulators. Use `helix profile FILE --top 8`
 on a representative input to locate hot source expressions before increasing
 the workload.
 
-A callback can re-evaluate a captured lazy binding on every invocation.
-To compute an expensive value once, pass it as an eager function argument
-before constructing the callback. For example, the outer function below
+When a binding cannot be shared, a callback can re-evaluate it on every
+invocation. To compute an expensive value once explicitly, pass it as an
+eager function argument before constructing the callback. For example, the outer function below
 receives a precomputed lookup map and its inner callback reuses that value.
 
 ```yaml

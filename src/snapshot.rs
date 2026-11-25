@@ -11,7 +11,7 @@ mod yaml;
 pub(crate) mod validate;
 use codec::Wire;
 type R<T> = Result<T, String>;
-const VERSION: u64 = 4;
+const VERSION: u64 = 5;
 const MAX_BYTES: usize = 32 * 1024 * 1024;
 const MAX_OBJECTS: usize = 100_000;
 const MAX_DEPTH: usize = 128;

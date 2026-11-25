@@ -199,7 +199,9 @@ impl Evaluator {
             born: self.scopes,
         });
         self.scopes += 1;
-        self.push(Request::BodyEnd { result_type, body });
+        self.push(Request::SharedBodyEnd {
+            result_type, body, born: self.scopes - 1, bindings: Default::default(),
+        });
         self.eval(body);
         Ok(())
     }

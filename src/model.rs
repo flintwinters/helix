@@ -98,8 +98,8 @@ pub(crate) struct Program {
     pub(crate) modules: Modules,
     pub(crate) code: Vec<Value>,
 }
-/// One call frame. `born` orders frames by creation so type time can tell inputs that existed
-/// before a region from frames the region made; it is not part of a frame's identity.
+/// One call frame. `born` identifies its activation within the evaluator and lets type
+/// time distinguish earlier inputs from frames made in a region. Equality ignores it.
 #[derive(Clone, Debug)]
 pub(crate) struct Scope {
     pub function: NodeId,
@@ -175,6 +175,17 @@ pub(crate) enum Request {
     CallEnd {
         environment: Vec<Scope>,
         program: Arc<Program>,
+    },
+    ShareBinding {
+        node: NodeId,
+        owner: usize,
+        eligible: bool,
+    },
+    SharedBodyEnd {
+        result_type: Option<NodeId>,
+        body: NodeId,
+        born: usize,
+        bindings: Memo,
     },
     BodyEnd {
         result_type: Option<NodeId>,

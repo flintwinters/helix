@@ -72,8 +72,19 @@ pub(super) fn evaluator(e: &Evaluator) -> R<()> {
     if returns != e.depth {
         return Err("call depth disagrees with return continuations".into());
     }
-    for request in &e.requests {
+    for (position, request) in e.requests.iter().enumerate() {
         match request {
+            Request::ShareBinding { owner, .. }
+                if *owner >= position
+                    || !matches!(e.requests.get(*owner), Some(Request::SharedBodyEnd { .. })) =>
+            {
+                return Err("invalid pending shared binding".into());
+            }
+            Request::SharedBodyEnd { born, bindings, .. }
+                if *born >= e.scopes || bindings.values().any(|v| v.measure().opaque) =>
+            {
+                return Err("invalid shared binding activation".into());
+            }
             Request::Actor(_, nodes) if nodes.is_empty() => {
                 return Err("actor continuation requires operands".into());
             }
