@@ -1,6 +1,20 @@
 # Immutable map algorithms for small inputs; fold's runtime iteration limit applies.
 # Copies of growing maps can take quadratic time and total allocations.
 # Shallow merge: right wins, existing left keys keep their position, new keys append.
+# Build a lookup index from a list in one traversal. The key callback returns a string.
+# If a key repeats, the last item wins. Use get for subsequent lookups.
+index_by: !call
+  - fn
+  - [[items, !ref list], [key, !ref function]]
+  - !call
+      - fold
+      - !call
+          - fn
+          - [index, item]
+          - !call [set, !ref index, !call [key, !ref item], !ref item]
+      - {}
+      - !ref items
+  - !ref map
 merge: !call
   - fn
   - [[left, !ref map], [right, !ref map]]
@@ -58,18 +72,4 @@ select: !call
               - !ref result
       - {}
       - !call [keys, !ref source]
-  - !ref map
-# Build a lookup index from a list in one traversal. The key callback returns a string.
-# If a key repeats, the last item wins. Use get for subsequent lookups.
-index_by: !call
-  - fn
-  - [[items, !ref list], [key, !ref function]]
-  - !call
-      - fold
-      - !call
-          - fn
-          - [index, item]
-          - !call [set, !ref index, !call [key, !ref item], !ref item]
-      - {}
-      - !ref items
   - !ref map
