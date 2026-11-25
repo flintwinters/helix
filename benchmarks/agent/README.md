@@ -24,8 +24,10 @@ Each CLI-assisted attempt has a separate workspace containing authoritative
 imports `candidate.yaml`, invokes `solve` on the task's disclosed example input,
 and asserts the disclosed expected output. It shares the evaluator's invocation
 builder, so the public and hidden calling conventions cannot drift. The driver is
-written by `helix fmt` as block-style `!call`/`!ref`/`!literal` source, and the agent
-prompt and tool descriptions steer candidates to the same style via `helix fmt`.
+written by `helix fmt` as block-style `!call`/`!ref`/`!literal` source.
+Agents can submit any supported YAML layout. After scoring, the harness writes
+`candidate.formatted.yaml` for review when formatting succeeds. Submitted
+source and the evaluation workspace retain their original bytes.
 
 The model can read documentation progressively, create and edit candidate/helper
 files, and run `helix` with argv for `--help`, `help [COMMAND]`,

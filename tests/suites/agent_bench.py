@@ -91,6 +91,10 @@ def verify(h):
         saved = yaml.safe_load((Path(args.directory) / 'report.yaml').read_text())
         assert bench.saved_report(args)['summary']['sum-squares']['total_tokens'] == 32
         assert len(saved['rows']) == 2 and len(saved['rows'][0]['score']['cli_wall_ms']) == 1
+        failed_attempt = Path(args.directory) / saved['rows'][1]['artifact']
+        assert (failed_attempt / 'candidate.yaml').read_text() == 'solve: !call [fn, [xs], 0]\n'
+        formatted = (failed_attempt / 'candidate.formatted.yaml').read_text()
+        assert formatted.startswith('solve: !call\n') and formatted.count('\n') > 1
         with patch.object(bench, 'request', side_effect=AssertionError('replay must be offline')):
             replay = bench.replay(h.root, args, h)
         assert replay['summary']['sum-squares']['pass_rate'] == 0.5
@@ -157,7 +161,8 @@ def verify_cli(h, directory):
         assert '!call' in written and '!literal' in written and '$call' not in written, written
         assert '\n' in written.rstrip('\n'), 'public test must use block style'
         prompt = ' '.join(m['content'] for m in bench.messages('', 'sum-squares', 'cli'))
-        assert 'block style' in prompt and 'fmt' in prompt and 'fmt' in bench_tool_text()
+        assert 'block style' not in prompt and 'fmt' not in prompt
+        assert 'block style' not in bench_tool_text() and 'before saving' not in bench_tool_text()
         def response(name, arguments, tokens, cost):
             return {'choices': [{'message': {'content': None, 'tool_calls': [{'id': name, 'type': 'function',
                 'function': {'name': name, 'arguments': json.dumps(arguments)}}]}}],

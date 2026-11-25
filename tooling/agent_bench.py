@@ -114,7 +114,7 @@ def messages(documentation, task, mode='one-shot'):
                 'public_test.yaml that imports candidate.yaml, CALLS solve on the example input and asserts the expected output. '
                 'Use workspace tools to read documentation and write candidate.yaml exporting solve(input). '
                 'Use helix with args ["run", "public_test.yaml"] to execute that test. Fix problems and rerun as needed. '
-                'Write source with !call/!ref/!literal tags in block style (one argument or binding per line), and run helix fmt on it before saving. '
+                'Write source with !call/!ref/!literal tags. '
                 'Running candidate.yaml alone only defines the function; it does not test its body. '
                 'Submit the saved files using the submit tool after the public test succeeds. '
                 'Do not rewrite code in a final chat answer. You may add helper modules and your own tests. '
@@ -491,8 +491,21 @@ def run(root, args, ctx):
             checkpoint('scoring')
             print(f"agent-bench: scored {task} trial {row['trial']}: "
                   + ('passed' if row.get('score', {}).get('passed') else 'failed'), file=sys.stderr, flush=True)
+    for row in rows:
+        if 'score' in row:
+            format_submission(ctx, directory / row['artifact'])
     checkpoint('complete')
     return {'directory': str(directory), 'dry_run': False, 'summary': summary(rows)}
+
+
+def format_submission(ctx, attempt):
+    """Write a review copy after scoring, keeping submitted and evaluated bytes intact."""
+    source = attempt / 'candidate.yaml'
+    result = ctx.helix('fmt', str(source))
+    if result.returncode == 0:
+        (attempt / 'candidate.formatted.yaml').write_text(result.stdout)
+    else:
+        print(f'agent-bench: could not format {source}: {result.stderr.strip()}', file=sys.stderr)
 
 
 def retry_plan(source, tasks=None, error=None):
