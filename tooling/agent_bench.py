@@ -22,7 +22,7 @@ from tooling.agent_tasks import TASKS, VERSION, inputs, oracle, source_digest
 from tooling.output import emit, report_yaml
 
 API = 'https://openrouter.ai/api/v1'
-PROTOCOL_VERSION = 4
+PROTOCOL_VERSION = 5
 
 
 def save(path, value):
@@ -116,7 +116,7 @@ def messages(documentation, task, mode='one-shot'):
                 'Use helix with args ["run", "public_test.yaml"] to execute that test. Fix problems and rerun as needed. '
                 'Write source with !call/!ref/!literal tags. '
                 'Running candidate.yaml alone only defines the function; it does not test its body. '
-                'Submit the saved files using the submit tool after the public test succeeds. '
+                'The first passing public test automatically accepts the saved files and ends your attempt. '
                 'Do not rewrite code in a final chat answer. You may add helper modules and your own tests. '
                 'Hidden oracle cases stay private and run only after submission.')
     return [
@@ -252,11 +252,12 @@ def summary(rows):
 
 
 def generate(ctx, directory, prompt, args, identity):
-    from tooling.agent_cli import tool, tools
+    from tooling.agent_cli import PUBLIC_TEST, tool, tools
     mode = getattr(args, 'mode', 'one-shot')
     conversation = [dict(message) for message in prompt]
     responses, calls, api_ms, requests_made = [], 0, 0.0, 0
     response, error = None, None
+    accepted = None
     state = {'full_cli': getattr(args, 'full_cli', False)}
     available_tools = tools(state['full_cli'])
     cli_calls, public_test_calls, public_test_successes = 0, 0, 0
@@ -287,7 +288,7 @@ def generate(ctx, directory, prompt, args, identity):
         if not tool_calls:
             conversation.append({'role': 'assistant', 'content': message.get('content')})
             if mode == 'cli':
-                conversation.append({'role': 'user', 'content': 'Use the workspace to save candidate.yaml, execute public_test.yaml, and call submit. Final chat text does not submit files.'})
+                conversation.append({'role': 'user', 'content': 'Save candidate.yaml with the workspace tool and run public_test.yaml. Passing it ends the attempt automatically.'})
                 continue
             break
         conversation.append({'role': 'assistant', 'content': message.get('content'), 'tool_calls': tool_calls})
@@ -301,20 +302,18 @@ def generate(ctx, directory, prompt, args, identity):
             except (ValueError, TypeError):
                 arguments = None
             name = call.get('function', {}).get('name')
-            if name == 'helix':
-                cli_calls += 1
-                if isinstance(arguments, dict) and arguments.get('args') == ['run', 'public_test.yaml']:
-                    public_test_calls += 1
+            public_test = name == 'helix' and isinstance(arguments, dict) and arguments.get('args') == PUBLIC_TEST
+            cli_calls += name == 'helix'
+            public_test_calls += public_test
             caller = {key: value for key, value in identity.items() if key != 'key'}
             observation = tool(ctx, directory, name, arguments, caller, calls, state)
-            if name == 'helix' and isinstance(arguments, dict) and arguments.get('args') == ['run', 'public_test.yaml'] and observation.get('exit_code') == 0:
-                public_test_successes += 1
+            public_test_successes += public_test and observation.get('exit_code') == 0
             conversation.append({'role': 'tool', 'tool_call_id': call['id'],
                                  'content': json.dumps(observation, ensure_ascii=False)})
             if observation.get('submitted'):
-                state['submitted'] = observation['source_sha256']
+                accepted = observation
                 break
-        if state.get('submitted'):
+        if accepted:
             break
         if error:
             break
@@ -332,8 +331,8 @@ def generate(ctx, directory, prompt, args, identity):
             'tool_calls': min(calls, getattr(args, 'max_tool_calls', 32)),
             'generation_ms': api_ms, 'cli_calls': cli_calls, 'public_test_calls': public_test_calls,
             'public_test_successes': public_test_successes,
-            'submitted_workspace_sha256': state.get('validated') if state.get('submitted') else None,
-            'submitted_sha256': state.get('submitted'), 'error': error}
+            'submitted_workspace_sha256': accepted['workspace_sha256'] if accepted else None,
+            'submitted_sha256': accepted['source_sha256'] if accepted else None, 'error': error}
 
 
 def generate_attempt(root, args, ctx, directory, docs, task, trial, key):

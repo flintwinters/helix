@@ -167,19 +167,21 @@ def verify_cli(h, directory):
             return {'choices': [{'message': {'content': None, 'tool_calls': [{'id': name, 'type': 'function',
                 'function': {'name': name, 'arguments': json.dumps(arguments)}}]}}],
                 'usage': {'prompt_tokens': tokens, 'completion_tokens': 2, 'total_tokens': tokens + 2, 'cost': cost}}
+        passed_test = response('helix', {'args': ['run', 'public_test.yaml']}, 20, .002)
+        trailing_edit = response('workspace', {'action': 'write', 'path': 'candidate.yaml', 'content': 'broken'}, 0, 0)
+        passed_test['choices'][0]['message']['tool_calls'].extend(trailing_edit['choices'][0]['message']['tool_calls'])
         responses = iter([
             response('workspace', {'action': 'write', 'path': 'candidate.yaml', 'content': TASKS['sum-squares']['reference']}, 10, .001),
-            response('helix', {'args': ['run', 'public_test.yaml']}, 20, .002),
-            response('submit', {}, 5, .001),
+            passed_test,
         ])
-        cli = SimpleNamespace(mode='cli', model='fake/luna', temperature=.7, max_tokens=100, max_turns=4, max_tool_calls=5)
+        cli = SimpleNamespace(mode='cli', model='fake/luna', temperature=.7, max_tokens=100, max_turns=2, max_tool_calls=5)
         with patch.object(bench, 'request', side_effect=lambda *args: next(responses)):
             generated = bench.generate(h, target, [{'role': 'user', 'content': 'test'}], cli, {**identity, 'key': 'fake-secret'})
-        assert generated['tool_calls'] == 3 and generated['model_requests'] == 3 and generated['error'] is None, generated
+        assert generated['tool_calls'] == 2 and generated['model_requests'] == 2 and generated['error'] is None, generated
         assert generated['public_test_successes'] == 1
         assert generated['submitted_workspace_sha256']
         assert generated['cli_calls'] == 1 and generated['public_test_calls'] == 1, generated
-        assert generated['usage']['total_tokens'] == 41 and generated['usage']['cost'] == .004, generated
+        assert generated['usage']['total_tokens'] == 34 and generated['usage']['cost'] == .003, generated
         assert generated['submitted_sha256'] == bench.digest(TASKS['sum-squares']['reference']), generated
         assert 'fake-secret' not in (target / 'conversation.json').read_text()
         assert records[-1]['caller_role'] == 'benchmark-model'
@@ -203,10 +205,10 @@ def verify_saved_submission(h, target, identity):
     # Defining a function can succeed without executing its faulty body.
     bad = 'solve: !call [fn, [xs], !ref missing]\n'
     assert call('workspace', {'action': 'write', 'path': 'candidate.yaml', 'content': bad}).get('written')
-    assert call('helix', {'args': ['run', 'candidate.yaml']})['exit_code'] == 0
-    assert 'error' in call('submit', {})
-    assert call('helix', {'args': ['run', 'public_test.yaml']})['exit_code'] == 1
-    assert 'error' in call('submit', {})
+    definition = call('helix', {'args': ['run', 'candidate.yaml']})
+    assert definition['exit_code'] == 0 and not definition.get('submitted')
+    failed = call('helix', {'args': ['run', 'public_test.yaml']})
+    assert failed['exit_code'] == 1 and not failed.get('submitted')
     for path in ('../.env', '/etc/passwd', 'public_test.yaml', 'LANGUAGE.md'):
         assert 'error' in call('workspace', {'action': 'write', 'path': path, 'content': '42'})
     assert 'error' in call('workspace', {'action': 'read', 'path': '../.env'})
@@ -216,13 +218,8 @@ def verify_saved_submission(h, target, identity):
     source = TASKS['sum-squares']['reference']
     call('workspace', {'action': 'write', 'path': 'candidate.yaml', 'content': source})
     assert call('helix', {'args': ['check', 'candidate.yaml']})['exit_code'] == 0
-    assert call('helix', {'args': ['run', 'public_test.yaml']})['exit_code'] == 0
-    assert call('submit', {})['source_sha256'] == bench.digest(source)
-    # Editing after a successful test cannot submit a different, untested artifact.
-    call('workspace', {'action': 'write', 'path': 'candidate.yaml', 'content': source + '# edited\n'})
-    assert 'error' in call('submit', {})
-    assert call('helix', {'args': ['run', 'public_test.yaml']})['exit_code'] == 0
-    assert call('submit', {})['submitted']
+    passed = call('helix', {'args': ['run', 'public_test.yaml']})
+    assert passed['submitted'] and passed['source_sha256'] == bench.digest(source)
     assert call('workspace', {'action': 'read', 'path': 'LANGUAGE.md', 'line_count': 3})['total_lines'] > 3
 
 

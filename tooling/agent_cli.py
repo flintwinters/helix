@@ -22,7 +22,7 @@ TOOL = {
         '["schema"], ["check", FILE], ["fmt", FILE], ["run", FILE]. Append "--yaml" to help, docs, builtins or std '
         'lookups for structured output. FILE may be - with stdin YAML. '
         'Run is confined to this attempt directory with embedded std: imports and no host effect grants. '
-        'Run public_test.yaml to invoke candidate.solve on the provided example. Running candidate.yaml alone only defines the function. No shell commands.',
+        'Run public_test.yaml to invoke candidate.solve on the provided example. A successful public test ends the attempt. Running candidate.yaml alone only defines the function. No shell commands.',
         'parameters': {'type': 'object', 'properties': {
             'args': {'type': 'array', 'items': {'type': 'string'}},
             'stdin': {'type': 'string'},
@@ -44,15 +44,9 @@ FILES = {
         }, 'required': ['action'], 'additionalProperties': False},
     },
 }
-SUBMIT = {
-    'type': 'function', 'function': {
-        'name': 'submit',
-        'description': 'Submit the saved candidate.yaml and helpers exactly as tested. First run helix with args ["run", "public_test.yaml"]. Any subsequent file edit requires rerunning that test. Hidden tests are evaluated after submission.',
-        'parameters': {'type': 'object', 'properties': {}, 'additionalProperties': False},
-    },
-}
-TOOLS = [TOOL, FILES, SUBMIT]
+TOOLS = [TOOL, FILES]
 READ_ONLY = {'LANGUAGE.md', 'LIBRARY.md', 'public_test.yaml'}
+PUBLIC_TEST = ['run', 'public_test.yaml']
 
 
 def tools(full_cli):
@@ -62,8 +56,8 @@ def tools(full_cli):
         'description': 'Invoke the complete Helix CLI with argv and optional stdin. Start with ["--help"]. Use ["find", WORD] to discover an operation, one operation per query and ["profile", FILE, "--top", "8"] to identify expensive expressions. '
         'The working directory is a read-only view of the attempt files; use the workspace tool to save source. '
         '/tmp is private to each call. There is no network or host credential access. '
-        'Run ["run", "public_test.yaml"] before calling submit.'}}
-    return [full_tool, FILES, SUBMIT]
+        'A successful ["run", "public_test.yaml"] ends the attempt immediately.'}}
+    return [full_tool, FILES]
 
 
 def isolated_cli(ctx, workspace, args, source=None):
@@ -106,7 +100,7 @@ def fingerprint(directory):
     return hashlib.sha256(json.dumps(files).encode()).hexdigest()
 
 
-def workspace_tool(directory, payload, state):
+def workspace_tool(directory, payload):
     action = payload.get('action')
     if action not in ('read', 'write', 'list') and (action is not None or 'args' in payload):
         spelled = payload['args'] if isinstance(payload.get('args'), list) else [action]
@@ -124,7 +118,6 @@ def workspace_tool(directory, payload, state):
             raise ValueError('write requires string content')
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content)
-        state.pop('validated', None)
         return {'written': payload['path'], 'bytes': len(content.encode())}
     if action == 'read':
         start, count = payload.get('start_line', 1), payload.get('line_count', 120)
@@ -137,15 +130,6 @@ def workspace_tool(directory, payload, state):
     raise ValueError('action must be read, write or list')
 
 
-def submit_tool(directory, state):
-    path = local_path(directory, 'candidate.yaml')
-    if not path.is_file():
-        raise ValueError('write candidate.yaml before submitting')
-    if state.get('validated') != fingerprint(directory):
-        raise ValueError('run public_test.yaml successfully against the current saved files before submitting')
-    return {'submitted': True, 'source_sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
-
-
 def tool(ctx, directory, name, payload, identity, index, state):
     if name == 'helix':
         return execute(ctx, directory, payload, identity, index, state)
@@ -153,9 +137,7 @@ def tool(ctx, directory, name, payload, identity, index, state):
         if not isinstance(payload, dict):
             raise ValueError('tool arguments must be an object')
         if name == 'workspace':
-            result = workspace_tool(directory, payload, state)
-        elif name == 'submit':
-            result = submit_tool(directory, state)
+            result = workspace_tool(directory, payload)
         else:
             raise ValueError('unknown tool')
     except (ValueError, OSError) as error:
@@ -227,10 +209,13 @@ def execute(ctx, directory, payload, identity, index, state=None):
         else:
             result = ctx.helix(*command, stdin=source if command in (['fmt', '-'], ['check', '-']) else None, cwd=workspace)
         code, stdout, stderr = result.returncode, result.stdout, result.stderr
-    if state is not None and args == ['run', 'public_test.yaml']:
-        state.pop('validated', None)
-        if code == 0:
-            state['validated'] = fingerprint(directory)
+    completion = {}
+    if state is not None and args == PUBLIC_TEST and code == 0:
+        candidate = workspace / 'candidate.yaml'
+        if candidate.is_file():
+            completion = {'submitted': True,
+                          'source_sha256': hashlib.sha256(candidate.read_bytes()).hexdigest(),
+                          'workspace_sha256': fingerprint(directory)}
     duration = (time.perf_counter() - clock) * 1000
     record = {
         'started_at': started.isoformat(timespec='milliseconds'), 'duration_ms': round(duration),
@@ -242,7 +227,7 @@ def execute(ctx, directory, payload, identity, index, state=None):
         'agent': 'openrouter:' + identity['model'], 'caller_role': 'benchmark-model', **identity,
     }
     observation = {'args': args, 'executed_argv': command, 'exit_code': code, 'stdout': stdout,
-                   'stderr': stderr, 'duration_ms': duration, 'identity': identity}
+                   'stderr': stderr, 'duration_ms': duration, 'identity': identity, **completion}
     (directory / f'tool-{index:03d}.yaml').write_text(report_yaml(observation))
     # Log explicitly even when the surrounding regression harness disables developer telemetry.
     with _LOG_LOCK:
