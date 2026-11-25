@@ -1,7 +1,6 @@
 //! Bounded regex observations; selection and matching policy live in Helix.
 use super::Fault;
 use crate::value::Value;
-use serde_json::json;
 pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
     if actor == "source_subtype" {
         let left = super::Ty::parse(&args[0]).map_err(|e| Fault::at(0, "type", e))?;
@@ -26,10 +25,27 @@ pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
         if matches.len() >= 4096 {
             return Err(Fault::whole("limit", "regex exceeds 4096 matches".into()));
         }
-        matches.push(json!({"span":captures.get(0).map(|m|vec![m.start(),m.end()]),"captures":captures.iter().map(|m|m.map(|m|json!({"text":m.as_str(),"span":[m.start(),m.end()]}))).collect::<Vec<_>>()}));
+        let span = |m: regex::Match| Value::Array(vec![Value::Integer(m.start() as i64), Value::Integer(m.end() as i64)].into());
+        let group = |m: Option<regex::Match>| m.map_or(Value::Null, |m| record([("text", Value::String(m.as_str().into())), ("span", span(m))]));
+        matches.push(record([
+            ("span", captures.get(0).map_or(Value::Null, span)),
+            ("captures", Value::Array(captures.iter().map(group).collect::<Vec<_>>().into())),
+        ]));
     }
-    crate::value::from_host_yaml(&crate::tooling::source::yaml(&json!(matches)))
-        .map_err(|e| Fault::whole("limit", e))
+    let matches = Value::Array(matches.into());
+    let measure = matches.measure();
+    if measure.units > crate::model::MAX_VALUE_SIZE || measure.nodes > crate::model::MAX_NODES {
+        return Err(Fault::whole("limit", "effect data exceeds runtime limits".into()));
+    }
+    Ok(matches)
+}
+
+fn record<const N: usize>(fields: [(&str, Value); N]) -> Value {
+    let mut hash = crate::model::Hash::new();
+    for (key, value) in fields {
+        hash.insert(crate::model::string(key), value);
+    }
+    Value::Hash(hash)
 }
 
 /// Replace every non-overlapping match; `$1`, `${name}` and `$$` in the replacement follow the
