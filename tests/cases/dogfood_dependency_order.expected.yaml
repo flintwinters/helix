@@ -534,490 +534,6 @@ annotations:
     value: {}
   - declaration:
       code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "std:dependency"
-    type: map
-    value:
-      build: []
-      lint:
-        - build
-      review:
-        - test
-        - lint
-      test:
-        - build
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-      source: "std:dependency"
-    type:
-      of: string
-      type: list
-    value:
-      - build
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:map"
-    type: map
-    value:
-      build: []
-      lint:
-        - build
-      review:
-        - test
-        - lint
-      test:
-        - build
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:map"
-    type:
-      of: string
-      type: list
-    value:
-      - lint
-      - review
-      - test
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - select
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value:
-      lint:
-        - build
-      review:
-        - test
-        - lint
-      test:
-        - build
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value:
-      lint:
-        - build
-      review:
-        - test
-        - lint
-      test:
-        - build
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "std:dependency"
-    type: map
-    value:
-      lint:
-        - build
-      review:
-        - test
-        - lint
-      test:
-        - build
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-      source: "std:dependency"
-    type:
-      of: string
-      type: list
-    value:
-      - lint
-      - test
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:map"
-    type: map
-    value:
-      lint:
-        - build
-      review:
-        - test
-        - lint
-      test:
-        - build
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:map"
-    type:
-      of: string
-      type: list
-    value:
-      - review
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - select
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value:
-      review:
-        - test
-        - lint
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value:
-      review:
-        - test
-        - lint
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "std:dependency"
-    type: map
-    value:
-      review:
-        - test
-        - lint
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-      source: "std:dependency"
-    type:
-      of: string
-      type: list
-    value:
-      - review
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:map"
-    type: map
-    value:
-      review:
-        - test
-        - lint
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:map"
-    type:
-      of: string
-      type: list
-    value: []
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - select
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value: {}
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value: {}
-  - declaration:
-      code:
         "$call":
           - map_of
           - "$call":
@@ -1064,176 +580,6 @@ annotations:
       downstream:
         - a
       independent: []
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "std:dependency"
-    type: map
-    value:
-      a:
-        - b
-      b:
-        - a
-      downstream:
-        - a
-      independent: []
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-      source: "std:dependency"
-    type:
-      of: string
-      type: list
-    value:
-      - independent
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:map"
-    type: map
-    value:
-      a:
-        - b
-      b:
-        - a
-      downstream:
-        - a
-      independent: []
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:map"
-    type:
-      of: string
-      type: list
-    value:
-      - a
-      - b
-      - downstream
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - select
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value:
-      a:
-        - b
-      b:
-        - a
-      downstream:
-        - a
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value:
-      a:
-        - b
-      b:
-        - a
-      downstream:
-        - a
   - declaration:
       code:
         "$ref": map
@@ -1643,158 +989,6 @@ annotations:
         - compile
   - declaration:
       code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "std:dependency"
-    type: map
-    value:
-      docs: []
-      test:
-        - compile
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - omit
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - step
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-      source: "std:dependency"
-    type:
-      of: string
-      type: list
-    value:
-      - docs
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:map"
-    type: map
-    value:
-      docs: []
-      test:
-        - compile
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - select
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:map"
-    kind: parameter
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:map"
-    type:
-      of: string
-      type: list
-    value:
-      - test
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - select
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - select
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value:
-      test:
-        - compile
-  - declaration:
-      code:
-        "$ref": map
-      location:
-        path:
-          - omit
-          - "$call"
-          - 3
-        source: "std:map"
-    kind: result
-    target:
-      path:
-        - omit
-        - "$call"
-        - 2
-      source: "std:map"
-    type: map
-    value:
-      test:
-        - compile
-  - declaration:
-      code:
         "$call":
           - map_of
           - "$call":
@@ -1870,44 +1064,99 @@ objects:
         - done
       source: "std:dependency"
     program:
-      ref: object59
+      ref: object60
   object1:
     bindings: {}
     code:
       "$call":
         - fn
-        - - - left
-            - "$ref": map
-          - - right
-            - "$ref": map
+        - - - items
+            - "$ref": list
+          - - key
+            - "$ref": function
         - "$call":
             - fold
             - "$call":
                 - fn
-                - - result
-                  - key
+                - - index
+                  - item
                 - "$call":
                     - set
-                    - "$ref": result
-                    - "$ref": key
+                    - "$ref": index
                     - "$call":
-                        - get
-                        - "$ref": right
-                        - "$ref": key
-            - "$ref": left
-            - "$call":
-                - keys
-                - "$ref": right
+                        - key
+                        - "$ref": item
+                    - "$ref": item
+            - {}
+            - "$ref": items
         - "$ref": map
     environment: []
     kind: function
     location:
       path:
-        - merge
+        - index_by
       source: "std:map"
     program:
-      ref: object59
+      ref: object60
   object10:
+    bindings:
+      failure_report:
+        code:
+          path:
+            - failure_report
+          source: "std:provider"
+      plan:
+        code:
+          path:
+            - plan
+          source: "std:provider"
+    code:
+      "$call":
+        - fn
+        - - p
+          - args
+          - ctx
+          - guard
+        - "$call":
+            - if
+            - "$call":
+                - eq
+                - "$call":
+                    - get
+                    - "$ref": guard
+                    - status
+                - ready
+            - "$call":
+                - try
+                - "$call":
+                    - plan
+                    - "$ref": p
+                    - "$ref": args
+                    - "$call":
+                        - call
+                        - "$call":
+                            - get
+                            - "$ref": p
+                            - observe
+                        - "$ref": args
+                    - "$ref": ctx
+                - "$call":
+                    - fn
+                    - - error
+                    - "$call":
+                        - failure_report
+                        - observe
+                        - "$ref": error
+            - "$ref": guard
+    environment: []
+    kind: function
+    location:
+      path:
+        - check_guarded
+      source: "std:provider"
+    program:
+      ref: object60
+  object11:
     bindings:
       checked_types:
         code:
@@ -1977,8 +1226,8 @@ objects:
         - checked
       source: "std:provider"
     program:
-      ref: object59
-  object11:
+      ref: object60
+  object12:
     bindings:
       lists.all:
         code:
@@ -2085,8 +1334,8 @@ objects:
         - checked_types
       source: "std:provider"
     program:
-      ref: object59
-  object12:
+      ref: object60
+  object13:
     bindings: {}
     code:
       "$call":
@@ -2107,8 +1356,8 @@ objects:
         - 2
       source: "std:provider"
     program:
-      ref: object59
-  object13:
+      ref: object60
+  object14:
     bindings:
       validated_data:
         code:
@@ -2132,8 +1381,8 @@ objects:
         - data
       source: "std:provider"
     program:
-      ref: object59
-  object14:
+      ref: object60
+  object15:
     bindings: {}
     code:
       "$call":
@@ -2161,8 +1410,8 @@ objects:
         - failure_report
       source: "std:provider"
     program:
-      ref: object59
-  object15:
+      ref: object60
+  object16:
     bindings:
       find_index:
         code:
@@ -2198,8 +1447,8 @@ objects:
         - all
       source: "std:list"
     program:
-      ref: object59
-  object16:
+      ref: object60
+  object17:
     bindings:
       find_index:
         code:
@@ -2228,8 +1477,8 @@ objects:
         - any
       source: "std:list"
     program:
-      ref: object59
-  object17:
+      ref: object60
+  object18:
     bindings: {}
     code:
       "$call":
@@ -2252,8 +1501,8 @@ objects:
         - count
       source: "std:list"
     program:
-      ref: object59
-  object18:
+      ref: object60
+  object19:
     bindings:
       math.min:
         code:
@@ -2297,8 +1546,44 @@ objects:
         - drop
       source: "std:list"
     program:
-      ref: object59
-  object19:
+      ref: object60
+  object2:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - left
+            - "$ref": map
+          - - right
+            - "$ref": map
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - key
+                - "$call":
+                    - set
+                    - "$ref": result
+                    - "$ref": key
+                    - "$call":
+                        - get
+                        - "$ref": right
+                        - "$ref": key
+            - "$ref": left
+            - "$call":
+                - keys
+                - "$ref": right
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - merge
+      source: "std:map"
+    program:
+      ref: object60
+  object20:
     bindings:
       range:
         code:
@@ -2335,50 +1620,8 @@ objects:
         - enumerate
       source: "std:list"
     program:
-      ref: object59
-  object2:
-    bindings:
-      select:
-        code:
-          path:
-            - select
-          source: "std:map"
-    code:
-      "$call":
-        - fn
-        - - - source
-            - "$ref": map
-          - - requested
-            - "$call":
-                - list_of
-                - "$ref": string
-        - "$call":
-            - select
-            - "$ref": source
-            - "$call":
-                - filter
-                - "$call":
-                    - fn
-                    - - name
-                    - "$call":
-                        - not
-                        - "$call":
-                            - has
-                            - "$ref": requested
-                            - "$ref": name
-                - "$call":
-                    - keys
-                    - "$ref": source
-        - "$ref": map
-    environment: []
-    kind: function
-    location:
-      path:
-        - omit
-      source: "std:map"
-    program:
-      ref: object59
-  object20:
+      ref: object60
+  object21:
     bindings:
       find_index:
         code:
@@ -2418,8 +1661,8 @@ objects:
         - find
       source: "std:list"
     program:
-      ref: object59
-  object21:
+      ref: object60
+  object22:
     bindings: {}
     code:
       "$call":
@@ -2476,8 +1719,8 @@ objects:
         - find_index
       source: "std:list"
     program:
-      ref: object59
-  object22:
+      ref: object60
+  object23:
     bindings: {}
     code:
       "$call":
@@ -2497,8 +1740,8 @@ objects:
         - first
       source: "std:list"
     program:
-      ref: object59
-  object23:
+      ref: object60
+  object24:
     bindings:
       flatten:
         code:
@@ -2526,8 +1769,8 @@ objects:
         - flat_map
       source: "std:list"
     program:
-      ref: object59
-  object24:
+      ref: object60
+  object25:
     bindings:
       flatten:
         code:
@@ -2589,8 +1832,8 @@ objects:
         - flatten
       source: "std:list"
     program:
-      ref: object59
-  object25:
+      ref: object60
+  object26:
     bindings: {}
     code:
       "$call":
@@ -2627,8 +1870,8 @@ objects:
         - frequencies
       source: "std:list"
     program:
-      ref: object59
-  object26:
+      ref: object60
+  object27:
     bindings:
       grouping.by:
         code:
@@ -2654,8 +1897,8 @@ objects:
         - group_by
       source: "std:list"
     program:
-      ref: object59
-  object27:
+      ref: object60
+  object28:
     bindings: {}
     code:
       "$call":
@@ -2698,8 +1941,8 @@ objects:
         - by
       source: "std:group"
     program:
-      ref: object59
-  object28:
+      ref: object60
+  object29:
     bindings: {}
     code:
       "$call":
@@ -2732,8 +1975,50 @@ objects:
         - last
       source: "std:list"
     program:
-      ref: object59
-  object29:
+      ref: object60
+  object3:
+    bindings:
+      select:
+        code:
+          path:
+            - select
+          source: "std:map"
+    code:
+      "$call":
+        - fn
+        - - - source
+            - "$ref": map
+          - - requested
+            - "$call":
+                - list_of
+                - "$ref": string
+        - "$call":
+            - select
+            - "$ref": source
+            - "$call":
+                - filter
+                - "$call":
+                    - fn
+                    - - name
+                    - "$call":
+                        - not
+                        - "$call":
+                            - has
+                            - "$ref": requested
+                            - "$ref": name
+                - "$call":
+                    - keys
+                    - "$ref": source
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - omit
+      source: "std:map"
+    program:
+      ref: object60
+  object30:
     bindings:
       number:
         code:
@@ -2763,51 +2048,8 @@ objects:
         - abs
       source: "std:math"
     program:
-      ref: object59
-  object3:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - source
-            - "$ref": map
-          - - key
-            - "$ref": string
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - result
-                  - name
-                - "$call":
-                    - if
-                    - "$call":
-                        - eq
-                        - "$ref": name
-                        - "$ref": key
-                    - "$ref": result
-                    - "$call":
-                        - set
-                        - "$ref": result
-                        - "$ref": name
-                        - "$call":
-                            - get
-                            - "$ref": source
-                            - "$ref": name
-            - {}
-            - "$call":
-                - keys
-                - "$ref": source
-        - "$ref": map
-    environment: []
-    kind: function
-    location:
-      path:
-        - remove
-      source: "std:map"
-    program:
-      ref: object59
-  object30:
+      ref: object60
+  object31:
     bindings:
       max:
         code:
@@ -2848,8 +2090,8 @@ objects:
         - clamp
       source: "std:math"
     program:
-      ref: object59
-  object31:
+      ref: object60
+  object32:
     bindings:
       number:
         code:
@@ -2879,8 +2121,8 @@ objects:
         - max
       source: "std:math"
     program:
-      ref: object59
-  object32:
+      ref: object60
+  object33:
     bindings:
       number:
         code:
@@ -2910,8 +2152,8 @@ objects:
         - min
       source: "std:math"
     program:
-      ref: object59
-  object33:
+      ref: object60
+  object34:
     bindings:
       number:
         code:
@@ -2944,8 +2186,8 @@ objects:
         - sign
       source: "std:math"
     program:
-      ref: object59
-  object34:
+      ref: object60
+  object35:
     bindings:
       number:
         code:
@@ -2969,8 +2211,8 @@ objects:
         - square
       source: "std:math"
     program:
-      ref: object59
-  object35:
+      ref: object60
+  object36:
     bindings: {}
     code:
       "$call":
@@ -3017,8 +2259,8 @@ objects:
         - partition
       source: "std:list"
     program:
-      ref: object59
-  object36:
+      ref: object60
+  object37:
     bindings:
       math.number:
         code:
@@ -3055,8 +2297,8 @@ objects:
         - product
       source: "std:list"
     program:
-      ref: object59
-  object37:
+      ref: object60
+  object38:
     bindings:
       math.max:
         code:
@@ -3121,8 +2363,8 @@ objects:
         - range
       source: "std:list"
     program:
-      ref: object59
-  object38:
+      ref: object60
+  object39:
     bindings:
       reverse:
         code:
@@ -3178,8 +2420,51 @@ objects:
         - reverse
       source: "std:list"
     program:
-      ref: object59
-  object39:
+      ref: object60
+  object4:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - source
+            - "$ref": map
+          - - key
+            - "$ref": string
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - name
+                - "$call":
+                    - if
+                    - "$call":
+                        - eq
+                        - "$ref": name
+                        - "$ref": key
+                    - "$ref": result
+                    - "$call":
+                        - set
+                        - "$ref": result
+                        - "$ref": name
+                        - "$call":
+                            - get
+                            - "$ref": source
+                            - "$ref": name
+            - {}
+            - "$call":
+                - keys
+                - "$ref": source
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - remove
+      source: "std:map"
+    program:
+      ref: object60
+  object40:
     bindings:
       sort_by:
         code:
@@ -3210,53 +2495,8 @@ objects:
         - sort
       source: "std:list"
     program:
-      ref: object59
-  object4:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - source
-            - "$ref": map
-          - - requested
-            - "$call":
-                - list_of
-                - "$ref": string
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - result
-                  - name
-                - "$call":
-                    - if
-                    - "$call":
-                        - has
-                        - "$ref": requested
-                        - "$ref": name
-                    - "$call":
-                        - set
-                        - "$ref": result
-                        - "$ref": name
-                        - "$call":
-                            - get
-                            - "$ref": source
-                            - "$ref": name
-                    - "$ref": result
-            - {}
-            - "$call":
-                - keys
-                - "$ref": source
-        - "$ref": map
-    environment: []
-    kind: function
-    location:
-      path:
-        - select
-      source: "std:map"
-    program:
-      ref: object59
-  object40:
+      ref: object60
+  object41:
     bindings:
       sort_by:
         code:
@@ -3349,8 +2589,8 @@ objects:
         - sort_by
       source: "std:list"
     program:
-      ref: object59
-  object41:
+      ref: object60
+  object42:
     bindings:
       math.number:
         code:
@@ -3387,8 +2627,8 @@ objects:
         - sum
       source: "std:list"
     program:
-      ref: object59
-  object42:
+      ref: object60
+  object43:
     bindings:
       math.min:
         code:
@@ -3430,8 +2670,8 @@ objects:
         - take
       source: "std:list"
     program:
-      ref: object59
-  object43:
+      ref: object60
+  object44:
     bindings: {}
     code:
       "$call":
@@ -3465,8 +2705,8 @@ objects:
         - unique
       source: "std:list"
     program:
-      ref: object59
-  object44:
+      ref: object60
+  object45:
     bindings:
       math.min:
         code:
@@ -3518,8 +2758,8 @@ objects:
         - zip
       source: "std:list"
     program:
-      ref: object59
-  object45:
+      ref: object60
+  object46:
     bindings:
       mutated:
         code:
@@ -3579,8 +2819,8 @@ objects:
         - mutate
       source: "std:provider"
     program:
-      ref: object59
-  object46:
+      ref: object60
+  object47:
     bindings:
       data:
         code:
@@ -3646,8 +2886,8 @@ objects:
         - mutated
       source: "std:provider"
     program:
-      ref: object59
-  object47:
+      ref: object60
+  object48:
     bindings:
       checked:
         code:
@@ -3700,8 +2940,8 @@ objects:
         - plan
       source: "std:provider"
     program:
-      ref: object59
-  object48:
+      ref: object60
+  object49:
     bindings:
       data:
         code:
@@ -3752,8 +2992,53 @@ objects:
         - plan_checked
       source: "std:provider"
     program:
-      ref: object59
-  object49:
+      ref: object60
+  object5:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - source
+            - "$ref": map
+          - - requested
+            - "$call":
+                - list_of
+                - "$ref": string
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - result
+                  - name
+                - "$call":
+                    - if
+                    - "$call":
+                        - has
+                        - "$ref": requested
+                        - "$ref": name
+                    - "$call":
+                        - set
+                        - "$ref": result
+                        - "$ref": name
+                        - "$call":
+                            - get
+                            - "$ref": source
+                            - "$ref": name
+                    - "$ref": result
+            - {}
+            - "$call":
+                - keys
+                - "$ref": source
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - select
+      source: "std:map"
+    program:
+      ref: object60
+  object50:
     bindings:
       data:
         code:
@@ -3811,8 +3096,392 @@ objects:
         - planned
       source: "std:provider"
     program:
-      ref: object59
-  object5:
+      ref: object60
+  object51:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - ok
+          - kind
+          - message
+          - value
+        - "$call":
+            - if
+            - "$ref": ok
+            - "$ref": value
+            - "$call":
+                - raise
+                - "$ref": kind
+                - "$ref": message
+    environment: []
+    kind: function
+    location:
+      path:
+        - require
+      source: "std:provider"
+    program:
+      ref: object60
+  object52:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - p
+          - args
+          - before
+          - ctx
+          - steps
+        - "$call":
+            - dict
+            - version
+            - 1
+            - provider
+            - "$call":
+                - get
+                - "$ref": p
+                - id
+            - revision
+            - "$call":
+                - get
+                - "$ref": p
+                - revision
+            - args
+            - "$ref": args
+            - context
+            - "$ref": ctx
+            - before
+            - "$ref": before
+            - steps
+            - "$ref": steps
+            - status
+            - "$call":
+                - if
+                - "$call":
+                    - eq
+                    - "$ref": steps
+                    - []
+                - unchanged
+                - changed
+            - phase
+            - plan
+            - applied
+            - false
+    environment: []
+    kind: function
+    location:
+      path:
+        - reviewed
+      source: "std:provider"
+    program:
+      ref: object60
+  object53:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - reason
+        - "$call":
+            - dict
+            - version
+            - 1
+            - status
+            - unsupported
+            - phase
+            - preflight
+            - applied
+            - false
+            - steps
+            - []
+            - reason
+            - "$ref": reason
+    environment: []
+    kind: function
+    location:
+      path:
+        - unsupported
+      source: "std:provider"
+    program:
+      ref: object60
+  object54:
+    bindings:
+      lists.all:
+        code:
+          path:
+            - all
+          source: "std:list"
+      require:
+        code:
+          path:
+            - require
+          source: "std:provider"
+    code:
+      "$call":
+        - fn
+        - - steps
+          - ctx
+        - "$call":
+            - require
+            - "$call":
+                - eq
+                - "$call":
+                    - duplicates
+                    - "$call":
+                        - map
+                        - "$call":
+                            - fn
+                            - - s
+                            - "$call":
+                                - get
+                                - "$ref": s
+                                - field
+                        - "$ref": steps
+                - []
+            - provider_duplicate_field
+            - A plan must name each managed field at most once
+            - "$call":
+                - require
+                - "$call":
+                    - or
+                    - "$call":
+                        - get
+                        - "$ref": ctx
+                        - allow_remove
+                    - "$call":
+                        - lists.all
+                        - "$ref": steps
+                        - "$call":
+                            - fn
+                            - - s
+                            - "$call":
+                                - ne
+                                - "$call":
+                                    - get
+                                    - "$ref": s
+                                    - op
+                                - remove
+                - provider_removal_denied
+                - Removal requires explicit caller consent in addition to managed ownership
+                - "$ref": steps
+    environment: []
+    kind: function
+    location:
+      path:
+        - valid_steps
+      source: "std:provider"
+    program:
+      ref: object60
+  object55:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - value
+          - encoded
+        - "$ref": value
+    environment: []
+    kind: function
+    location:
+      path:
+        - validated_data
+      source: "std:provider"
+    program:
+      ref: object60
+  object56:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - review
+          - result
+          - after
+        - "$call":
+            - let
+            - report:
+                "$call":
+                  - set
+                  - "$call":
+                      - set
+                      - "$call":
+                          - set
+                          - "$call":
+                              - set
+                              - "$ref": review
+                              - phase
+                              - verify
+                          - applied
+                          - true
+                      - result
+                      - "$ref": result
+                  - after
+                  - "$ref": after
+            - "$call":
+                - if
+                - "$call":
+                    - eq
+                    - "$call":
+                        - get
+                        - "$ref": after
+                        - status
+                    - unchanged
+                - "$ref": report
+                - "$call":
+                    - set
+                    - "$call":
+                        - set
+                        - "$ref": report
+                        - status
+                        - failed
+                    - error
+                    - "$call":
+                        - dict
+                        - kind
+                        - provider_postcondition
+                        - message
+                        - Fresh observation does not produce an empty plan
+    environment: []
+    kind: function
+    location:
+      path:
+        - verified
+      source: "std:provider"
+    program:
+      ref: object60
+  object57:
+    bindings:
+      check:
+        code:
+          path:
+            - check
+          source: "std:provider"
+      verified:
+        code:
+          path:
+            - verified
+          source: "std:provider"
+    code:
+      "$call":
+        - fn
+        - - p
+          - args
+          - ctx
+          - review
+          - result
+        - "$call":
+            - verified
+            - "$ref": review
+            - "$ref": result
+            - "$call":
+                - check
+                - "$ref": p
+                - "$ref": args
+                - "$ref": ctx
+    environment: []
+    kind: function
+    location:
+      path:
+        - verify_result
+      source: "std:provider"
+    program:
+      ref: object60
+  object58:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - pending
+          - order
+        - "$call":
+            - filter
+            - "$call":
+                - fn
+                - - task
+                - "$call":
+                    - fold
+                    - "$call":
+                        - fn
+                        - - ok
+                          - dep
+                        - "$call":
+                            - and
+                            - "$ref": ok
+                            - "$call":
+                                - has
+                                - "$ref": order
+                                - "$ref": dep
+                    - true
+                    - "$call":
+                        - get
+                        - "$ref": pending
+                        - "$ref": task
+            - "$call":
+                - keys
+                - "$ref": pending
+    environment: []
+    kind: function
+    location:
+      path:
+        - ready
+      source: "std:dependency"
+    program:
+      ref: object60
+  object59:
+    bindings:
+      maps.omit:
+        code:
+          path:
+            - omit
+          source: "std:map"
+      ready:
+        code:
+          path:
+            - ready
+          source: "std:dependency"
+    code:
+      "$call":
+        - fn
+        - - state
+        - "$call":
+            - let
+            - batch:
+                "$call":
+                  - ready
+                  - "$ref": pending
+                  - "$ref": order
+              order:
+                "$call":
+                  - get
+                  - "$ref": state
+                  - order
+              pending:
+                "$call":
+                  - get
+                  - "$ref": state
+                  - pending
+            - "$call":
+                - set
+                - "$call":
+                    - set
+                    - {}
+                    - order
+                    - "$call":
+                        - concat
+                        - "$ref": order
+                        - "$ref": batch
+                - pending
+                - "$call":
+                    - maps.omit
+                    - "$ref": pending
+                    - "$ref": batch
+    environment: []
+    kind: function
+    location:
+      path:
+        - step
+      source: "std:dependency"
+    program:
+      ref: object60
+  object6:
     bindings:
       done:
         code:
@@ -3928,392 +3597,8 @@ objects:
         - plan
       source: "std:dependency"
     program:
-      ref: object59
-  object50:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - ok
-          - kind
-          - message
-          - value
-        - "$call":
-            - if
-            - "$ref": ok
-            - "$ref": value
-            - "$call":
-                - raise
-                - "$ref": kind
-                - "$ref": message
-    environment: []
-    kind: function
-    location:
-      path:
-        - require
-      source: "std:provider"
-    program:
-      ref: object59
-  object51:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - p
-          - args
-          - before
-          - ctx
-          - steps
-        - "$call":
-            - dict
-            - version
-            - 1
-            - provider
-            - "$call":
-                - get
-                - "$ref": p
-                - id
-            - revision
-            - "$call":
-                - get
-                - "$ref": p
-                - revision
-            - args
-            - "$ref": args
-            - context
-            - "$ref": ctx
-            - before
-            - "$ref": before
-            - steps
-            - "$ref": steps
-            - status
-            - "$call":
-                - if
-                - "$call":
-                    - eq
-                    - "$ref": steps
-                    - []
-                - unchanged
-                - changed
-            - phase
-            - plan
-            - applied
-            - false
-    environment: []
-    kind: function
-    location:
-      path:
-        - reviewed
-      source: "std:provider"
-    program:
-      ref: object59
-  object52:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - reason
-        - "$call":
-            - dict
-            - version
-            - 1
-            - status
-            - unsupported
-            - phase
-            - preflight
-            - applied
-            - false
-            - steps
-            - []
-            - reason
-            - "$ref": reason
-    environment: []
-    kind: function
-    location:
-      path:
-        - unsupported
-      source: "std:provider"
-    program:
-      ref: object59
-  object53:
-    bindings:
-      lists.all:
-        code:
-          path:
-            - all
-          source: "std:list"
-      require:
-        code:
-          path:
-            - require
-          source: "std:provider"
-    code:
-      "$call":
-        - fn
-        - - steps
-          - ctx
-        - "$call":
-            - require
-            - "$call":
-                - eq
-                - "$call":
-                    - duplicates
-                    - "$call":
-                        - map
-                        - "$call":
-                            - fn
-                            - - s
-                            - "$call":
-                                - get
-                                - "$ref": s
-                                - field
-                        - "$ref": steps
-                - []
-            - provider_duplicate_field
-            - A plan must name each managed field at most once
-            - "$call":
-                - require
-                - "$call":
-                    - or
-                    - "$call":
-                        - get
-                        - "$ref": ctx
-                        - allow_remove
-                    - "$call":
-                        - lists.all
-                        - "$ref": steps
-                        - "$call":
-                            - fn
-                            - - s
-                            - "$call":
-                                - ne
-                                - "$call":
-                                    - get
-                                    - "$ref": s
-                                    - op
-                                - remove
-                - provider_removal_denied
-                - Removal requires explicit caller consent in addition to managed ownership
-                - "$ref": steps
-    environment: []
-    kind: function
-    location:
-      path:
-        - valid_steps
-      source: "std:provider"
-    program:
-      ref: object59
-  object54:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - value
-          - encoded
-        - "$ref": value
-    environment: []
-    kind: function
-    location:
-      path:
-        - validated_data
-      source: "std:provider"
-    program:
-      ref: object59
-  object55:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - review
-          - result
-          - after
-        - "$call":
-            - let
-            - report:
-                "$call":
-                  - set
-                  - "$call":
-                      - set
-                      - "$call":
-                          - set
-                          - "$call":
-                              - set
-                              - "$ref": review
-                              - phase
-                              - verify
-                          - applied
-                          - true
-                      - result
-                      - "$ref": result
-                  - after
-                  - "$ref": after
-            - "$call":
-                - if
-                - "$call":
-                    - eq
-                    - "$call":
-                        - get
-                        - "$ref": after
-                        - status
-                    - unchanged
-                - "$ref": report
-                - "$call":
-                    - set
-                    - "$call":
-                        - set
-                        - "$ref": report
-                        - status
-                        - failed
-                    - error
-                    - "$call":
-                        - dict
-                        - kind
-                        - provider_postcondition
-                        - message
-                        - Fresh observation does not produce an empty plan
-    environment: []
-    kind: function
-    location:
-      path:
-        - verified
-      source: "std:provider"
-    program:
-      ref: object59
-  object56:
-    bindings:
-      check:
-        code:
-          path:
-            - check
-          source: "std:provider"
-      verified:
-        code:
-          path:
-            - verified
-          source: "std:provider"
-    code:
-      "$call":
-        - fn
-        - - p
-          - args
-          - ctx
-          - review
-          - result
-        - "$call":
-            - verified
-            - "$ref": review
-            - "$ref": result
-            - "$call":
-                - check
-                - "$ref": p
-                - "$ref": args
-                - "$ref": ctx
-    environment: []
-    kind: function
-    location:
-      path:
-        - verify_result
-      source: "std:provider"
-    program:
-      ref: object59
-  object57:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - pending
-          - order
-        - "$call":
-            - filter
-            - "$call":
-                - fn
-                - - task
-                - "$call":
-                    - fold
-                    - "$call":
-                        - fn
-                        - - ok
-                          - dep
-                        - "$call":
-                            - and
-                            - "$ref": ok
-                            - "$call":
-                                - has
-                                - "$ref": order
-                                - "$ref": dep
-                    - true
-                    - "$call":
-                        - get
-                        - "$ref": pending
-                        - "$ref": task
-            - "$call":
-                - keys
-                - "$ref": pending
-    environment: []
-    kind: function
-    location:
-      path:
-        - ready
-      source: "std:dependency"
-    program:
-      ref: object59
-  object58:
-    bindings:
-      maps.omit:
-        code:
-          path:
-            - omit
-          source: "std:map"
-      ready:
-        code:
-          path:
-            - ready
-          source: "std:dependency"
-    code:
-      "$call":
-        - fn
-        - - state
-        - "$call":
-            - let
-            - batch:
-                "$call":
-                  - ready
-                  - "$ref": pending
-                  - "$ref": order
-              order:
-                "$call":
-                  - get
-                  - "$ref": state
-                  - order
-              pending:
-                "$call":
-                  - get
-                  - "$ref": state
-                  - pending
-            - "$call":
-                - set
-                - "$call":
-                    - set
-                    - {}
-                    - order
-                    - "$call":
-                        - concat
-                        - "$ref": order
-                        - "$ref": batch
-                - pending
-                - "$call":
-                    - maps.omit
-                    - "$ref": pending
-                    - "$ref": batch
-    environment: []
-    kind: function
-    location:
-      path:
-        - step
-      source: "std:dependency"
-    program:
-      ref: object59
-  object59:
+      ref: object60
+  object60:
     kind: program
     sources:
       - code:
@@ -4547,6 +3832,29 @@ objects:
                           - "$ref": batch
         source: "std:dependency"
       - code:
+          index_by:
+            "$call":
+              - fn
+              - - - items
+                  - "$ref": list
+                - - key
+                  - "$ref": function
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - index
+                        - item
+                      - "$call":
+                          - set
+                          - "$ref": index
+                          - "$call":
+                              - key
+                              - "$ref": item
+                          - "$ref": item
+                  - {}
+                  - "$ref": items
+              - "$ref": map
           merge:
             "$call":
               - fn
@@ -6260,7 +5568,7 @@ objects:
                   - "$ref": "n"
               - "$ref": number
         source: "std:math"
-  object6:
+  object7:
     bindings:
       apply_checked:
         code:
@@ -6320,8 +5628,8 @@ objects:
         - apply
       source: "std:provider"
     program:
-      ref: object59
-  object7:
+      ref: object60
+  object8:
     bindings:
       mutate:
         code:
@@ -6388,8 +5696,8 @@ objects:
         - apply_checked
       source: "std:provider"
     program:
-      ref: object59
-  object8:
+      ref: object60
+  object9:
     bindings:
       check_guarded:
         code:
@@ -6440,65 +5748,7 @@ objects:
         - check
       source: "std:provider"
     program:
-      ref: object59
-  object9:
-    bindings:
-      failure_report:
-        code:
-          path:
-            - failure_report
-          source: "std:provider"
-      plan:
-        code:
-          path:
-            - plan
-          source: "std:provider"
-    code:
-      "$call":
-        - fn
-        - - p
-          - args
-          - ctx
-          - guard
-        - "$call":
-            - if
-            - "$call":
-                - eq
-                - "$call":
-                    - get
-                    - "$ref": guard
-                    - status
-                - ready
-            - "$call":
-                - try
-                - "$call":
-                    - plan
-                    - "$ref": p
-                    - "$ref": args
-                    - "$call":
-                        - call
-                        - "$call":
-                            - get
-                            - "$ref": p
-                            - observe
-                        - "$ref": args
-                    - "$ref": ctx
-                - "$call":
-                    - fn
-                    - - error
-                    - "$call":
-                        - failure_report
-                        - observe
-                        - "$ref": error
-            - "$ref": guard
-    environment: []
-    kind: function
-    location:
-      path:
-        - check_guarded
-      source: "std:provider"
-    program:
-      ref: object59
+      ref: object60
 root:
   checks:
     missing: []
@@ -6525,48 +5775,50 @@ root:
     done:
       ref: object0
     maps:
-      merge:
+      index_by:
         ref: object1
-      omit:
+      merge:
         ref: object2
-      remove:
+      omit:
         ref: object3
-      select:
+      remove:
         ref: object4
+      select:
+        ref: object5
     plan:
-      ref: object5
+      ref: object6
     provider:
       apply:
-        ref: object6
-      apply_checked:
         ref: object7
-      check:
+      apply_checked:
         ref: object8
-      check_guarded:
+      check:
         ref: object9
-      checked:
+      check_guarded:
         ref: object10
-      checked_types:
+      checked:
         ref: object11
+      checked_types:
+        ref: object12
       context_type:
         fields:
           allow_remove: boolean
           capabilities:
             of:
               check:
-                ref: object12
+                ref: object13
               of: string
               type: refine
             type: list
           managed: boolean
           platform:
             check:
-              ref: object12
+              ref: object13
             of: string
             type: refine
         type: record
       data:
-        ref: object13
+        ref: object14
       descriptor:
         fields:
           apply: function
@@ -6574,7 +5826,7 @@ root:
           capabilities:
             of:
               check:
-                ref: object12
+                ref: object13
               of: string
               type: refine
             type: list
@@ -6585,7 +5837,7 @@ root:
             value: stop
           id:
             check:
-              ref: object12
+              ref: object13
             of: string
             type: refine
           observation: any
@@ -6594,14 +5846,14 @@ root:
           platforms:
             of:
               check:
-                ref: object12
+                ref: object13
               of: string
               type: refine
             type: list
           result: any
           revision:
             check:
-              ref: object12
+              ref: object13
             of: string
             type: refine
           version:
@@ -6609,55 +5861,55 @@ root:
             value: 1
         type: record
       failure_report:
-        ref: object14
+        ref: object15
       lists:
         all:
-          ref: object15
-        any:
           ref: object16
-        count:
+        any:
           ref: object17
-        drop:
+        count:
           ref: object18
-        enumerate:
+        drop:
           ref: object19
-        find:
+        enumerate:
           ref: object20
-        find_index:
+        find:
           ref: object21
-        first:
+        find_index:
           ref: object22
-        flat_map:
+        first:
           ref: object23
-        flatten:
+        flat_map:
           ref: object24
-        frequencies:
+        flatten:
           ref: object25
-        group_by:
+        frequencies:
           ref: object26
+        group_by:
+          ref: object27
         grouping:
           by:
-            ref: object27
+            ref: object28
         last:
-          ref: object28
+          ref: object29
         math:
           abs:
-            ref: object29
-          clamp:
             ref: object30
-          max:
+          clamp:
             ref: object31
-          min:
+          max:
             ref: object32
+          min:
+            ref: object33
           number:
             of:
               - integer
               - float
             type: union
           sign:
-            ref: object33
-          square:
             ref: object34
+          square:
+            ref: object35
         numbers:
           of:
             of:
@@ -6666,56 +5918,56 @@ root:
             type: union
           type: list
         partition:
-          ref: object35
-        product:
           ref: object36
-        range:
+        product:
           ref: object37
-        reverse:
+        range:
           ref: object38
-        sort:
+        reverse:
           ref: object39
-        sort_by:
+        sort:
           ref: object40
-        sum:
+        sort_by:
           ref: object41
-        take:
+        sum:
           ref: object42
-        unique:
+        take:
           ref: object43
-        zip:
+        unique:
           ref: object44
+        zip:
+          ref: object45
       mutate:
-        ref: object45
-      mutated:
         ref: object46
+      mutated:
+        ref: object47
       name:
         check:
-          ref: object12
+          ref: object13
         of: string
         type: refine
       names:
         of:
           check:
-            ref: object12
+            ref: object13
           of: string
           type: refine
         type: list
       plan:
-        ref: object47
-      plan_checked:
         ref: object48
-      planned:
+      plan_checked:
         ref: object49
-      require:
+      planned:
         ref: object50
-      reviewed:
+      require:
         ref: object51
+      reviewed:
+        ref: object52
       step:
         fields:
           field:
             check:
-              ref: object12
+              ref: object13
             of: string
             type: refine
           from:
@@ -6733,7 +5985,7 @@ root:
           fields:
             field:
               check:
-                ref: object12
+                ref: object13
               of: string
               type: refine
             from:
@@ -6748,19 +6000,19 @@ root:
           type: record
         type: list
       unsupported:
-        ref: object52
-      valid_steps:
         ref: object53
-      validated_data:
+      valid_steps:
         ref: object54
-      verified:
+      validated_data:
         ref: object55
-      verify_result:
+      verified:
         ref: object56
+      verify_result:
+        ref: object57
     ready:
-      ref: object57
-    step:
       ref: object58
+    step:
+      ref: object59
   empty:
     missing: []
     order: []
