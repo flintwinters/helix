@@ -74,6 +74,8 @@ const START: &[&str] = &[
     "helix builtins         builtin actors (add, get, map, fn, ...) with arity; `helix builtins NAME` for one",
     "helix std              standard library modules; `helix std MODULE` lists signatures",
     "helix find WORDS      search builtins and std by words or by parameter/result types (--takes, --returns)",
+    "helix docs language resource-bounds-and-confined-loading    work limits and efficient patterns",
+    "helix profile FILE --top 8    identify costly expressions on a representative input",
     "helix check FILE       static errors with corrections, before `helix run FILE`",
 ];
 

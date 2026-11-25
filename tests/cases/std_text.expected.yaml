@@ -41,294 +41,6 @@ annotations:
     value: "::"
   - declaration:
       code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ""
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ""
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": list
-      location:
-        path:
-          - flatten
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: list
-      type: list
-    value:
-      - - one
-        - two
-        - three
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - flatten
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - flatten
-        - "$call"
-        - 2
-      source: "std:list"
-    type: list
-    value:
-      - one
-      - two
-      - three
-  - declaration:
-      code:
         "$call":
           - list_of
           - "$ref": string
@@ -394,292 +106,6 @@ annotations:
     value: /
   - declaration:
       code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type: string
-    value: /
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - /
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ""
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: /
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: /
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type: string
-    value: /
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - /
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ""
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: /
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: /
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": list
-      location:
-        path:
-          - flatten
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: list
-      type: list
-    value:
-      - - "é"
-        - "é"
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - flatten
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - flatten
-        - "$call"
-        - 2
-      source: "std:list"
-    type: list
-    value:
-      - "é"
-      - "é"
-  - declaration:
-      code:
         "$call":
           - list_of
           - "$ref": string
@@ -742,296 +168,6 @@ annotations:
       source: "<root>"
     type: string
     value: "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ""
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ""
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": list
-      location:
-        path:
-          - flatten
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: list
-      type: list
-    value:
-      - - ""
-        - a
-        - ""
-        - ""
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - flatten
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - flatten
-        - "$call"
-        - 2
-      source: "std:list"
-    type: list
-    value:
-      - ""
-      - a
-      - ""
-      - ""
   - declaration:
       code:
         "$call":
@@ -1168,164 +304,6 @@ annotations:
     value: ""
   - declaration:
       code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - "🙂"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ""
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "🙂"
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - "世界"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ""
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "世界"
-  - declaration:
-      code:
         "$ref": string
       location:
         path:
@@ -1382,290 +360,6 @@ annotations:
       source: "<root>"
     type: string
     value: ","
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type: string
-    value: ","
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - ","
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ""
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ","
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ","
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type: string
-    value: ","
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - ","
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ""
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ","
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - quote
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - quote
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: ","
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": list
-      location:
-        path:
-          - flatten
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:list"
-    kind: parameter
-    target:
-      path:
-        - split
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: list
-      type: list
-    value:
-      - - ""
-  - declaration:
-      code:
-        "$ref": list
-      location:
-        path:
-          - flatten
-          - "$call"
-          - 3
-        source: "std:list"
-    kind: result
-    target:
-      path:
-        - flatten
-        - "$call"
-        - 2
-      source: "std:list"
-    type: list
-    value:
-      - ""
   - declaration:
       code:
         "$call":
@@ -1782,323 +476,6 @@ annotations:
     value: "::"
   - declaration:
       code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - one
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: one
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - two
-      - three
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - two
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 1
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: two
-  - declaration:
-      code:
-        "$call":
-          - list_of
-          - "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 0
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 1
-      source: "std:text"
-    type:
-      of: string
-      type: list
-    value:
-      - three
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 1
-          - 1
-          - 1
-        source: "std:text"
-    kind: parameter
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-        - "$call"
-        - 3
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "::"
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: three
-  - declaration:
-      code:
-        "$ref": string
-      location:
-        path:
-          - join
-          - "$call"
-          - 3
-        source: "std:text"
-    kind: result
-    target:
-      path:
-        - join
-        - "$call"
-        - 2
-      source: "std:text"
-    type: string
-    value: "two::three"
-  - declaration:
-      code:
         "$ref": string
       location:
         path:
@@ -2164,6 +541,152 @@ annotations:
     value: ":"
   - declaration:
       code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - join
+        - "$call"
+        - 2
+      source: "std:text"
+    type: string
+    value: ":a:"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - no_match
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: abc
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - no_match
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: abcd
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - split
+        - "$call"
+        - 2
+      source: "std:text"
+    type:
+      of: string
+      type: list
+    value:
+      - abc
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - overlap
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: aaaaa
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - overlap
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: aa
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - split
+        - "$call"
+        - 2
+      source: "std:text"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+      - ""
+      - a
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": string
@@ -2178,32 +701,310 @@ annotations:
     kind: parameter
     target:
       path:
+        - roundtrip
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - ""
+      - a
+      - ""
+      - ""
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - roundtrip
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: "::"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
         - join
         - "$call"
         - 2
+      source: "std:text"
+    type: string
+    value: "::a::::"
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - single
         - "$call"
-        - 3
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value:
+      - hello
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - single
         - "$call"
         - 2
+      source: "<root>"
+    type: string
+    value: "|"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - join
+        - "$call"
+        - 2
+      source: "std:text"
+    type: string
+    value: hello
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - unicode
         - "$call"
         - 1
+      source: "<root>"
+    type: string
+    value: "🙂é🙂世界🙂"
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - unicode
         - "$call"
-        - 1
+        - 2
+      source: "<root>"
+    type: string
+    value: "🙂"
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - split
+        - "$call"
+        - 2
       source: "std:text"
     type:
       of: string
       type: list
     value:
       - ""
-annotations_truncated: true
+      - "é"
+      - "世界"
+      - ""
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - wrong_element
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ","
+  - declaration:
+      code:
+        "$call":
+          - list_of
+          - "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - wrong_empty_join_separator
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type:
+      of: string
+      type: list
+    value: []
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - join
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - wrong_parts
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ","
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - wrong_separator
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: abc
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - split
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - wrong_source
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: string
+    value: ","
 objects:
   object0:
-    bindings:
-      join:
-        code:
-          path:
-            - join
-          source: "std:text"
+    bindings: {}
     code:
       "$call":
         - fn
@@ -2214,48 +1015,9 @@ objects:
           - - separator
             - "$ref": string
         - "$call":
-            - if
-            - "$call":
-                - lt
-                - "$call":
-                    - len
-                    - "$ref": parts
-                - 2
-            - "$call":
-                - get
-                - "$ref": parts
-                - 0
-                - ""
-            - "$call":
-                - let
-                - middle:
-                    "$call":
-                      - div
-                      - "$call":
-                          - len
-                          - "$ref": parts
-                      - 2
-                - "$call":
-                    - concat
-                    - "$call":
-                        - join
-                        - "$call":
-                            - slice
-                            - "$ref": parts
-                            - 0
-                            - "$ref": middle
-                        - "$ref": separator
-                    - "$ref": separator
-                    - "$call":
-                        - join
-                        - "$call":
-                            - slice
-                            - "$ref": parts
-                            - "$ref": middle
-                            - "$call":
-                                - len
-                                - "$ref": parts
-                        - "$ref": separator
+            - text_join
+            - "$ref": parts
+            - "$ref": separator
         - "$ref": string
     environment: []
     kind: function
@@ -2264,1003 +1026,8 @@ objects:
         - join
       source: "std:text"
     program:
-      ref: object37
+      ref: object6
   object1:
-    bindings:
-      find_index:
-        code:
-          path:
-            - find_index
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - predicate
-            - "$ref": function
-        - "$call":
-            - lt
-            - "$call":
-                - find_index
-                - "$ref": xs
-                - "$call":
-                    - fn
-                    - - x
-                    - "$call":
-                        - not
-                        - "$call":
-                            - predicate
-                            - "$ref": x
-            - 0
-        - "$ref": boolean
-    environment: []
-    kind: function
-    location:
-      path:
-        - all
-      source: "std:list"
-    program:
-      ref: object37
-  object10:
-    bindings:
-      flatten:
-        code:
-          path:
-            - flatten
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xss
-            - "$call":
-                - list_of
-                - "$ref": list
-        - "$call":
-            - if
-            - "$call":
-                - lt
-                - "$call":
-                    - len
-                    - "$ref": xss
-                - 2
-            - "$call":
-                - get
-                - "$ref": xss
-                - 0
-                - []
-            - "$call":
-                - let
-                - middle:
-                    "$call":
-                      - div
-                      - "$call":
-                          - len
-                          - "$ref": xss
-                      - 2
-                - "$call":
-                    - concat
-                    - "$call":
-                        - flatten
-                        - "$call":
-                            - slice
-                            - "$ref": xss
-                            - 0
-                            - "$ref": middle
-                    - "$call":
-                        - flatten
-                        - "$call":
-                            - slice
-                            - "$ref": xss
-                            - "$ref": middle
-                            - "$call":
-                                - len
-                                - "$ref": xss
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - flatten
-      source: "std:list"
-    program:
-      ref: object37
-  object11:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$call":
-                - list_of
-                - "$ref": string
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - counts
-                  - x
-                - "$call":
-                    - set
-                    - "$ref": counts
-                    - "$ref": x
-                    - "$call":
-                        - add
-                        - "$call":
-                            - get
-                            - "$ref": counts
-                            - "$ref": x
-                            - 0
-                        - 1
-            - {}
-            - "$ref": xs
-        - "$ref": map
-    environment: []
-    kind: function
-    location:
-      path:
-        - frequencies
-      source: "std:list"
-    program:
-      ref: object37
-  object12:
-    bindings:
-      grouping.by:
-        code:
-          path:
-            - by
-          source: "std:group"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - key_for
-            - "$ref": function
-        - "$call":
-            - grouping.by
-            - "$ref": xs
-            - "$ref": key_for
-        - "$ref": map
-    environment: []
-    kind: function
-    location:
-      path:
-        - group_by
-      source: "std:list"
-    program:
-      ref: object37
-  object13:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - key
-            - "$ref": function
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - groups
-                  - item
-                - "$call":
-                    - let
-                    - name:
-                        "$call":
-                          - key
-                          - "$ref": item
-                    - "$call":
-                        - set
-                        - "$ref": groups
-                        - "$ref": name
-                        - "$call":
-                            - append
-                            - "$call":
-                                - get
-                                - "$ref": groups
-                                - "$ref": name
-                                - []
-                            - "$ref": item
-            - {}
-            - "$ref": xs
-        - "$ref": map
-    environment: []
-    kind: function
-    location:
-      path:
-        - by
-      source: "std:group"
-    program:
-      ref: object37
-  object14:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - fallback
-        - "$call":
-            - if
-            - "$call":
-                - eq
-                - "$call":
-                    - len
-                    - "$ref": xs
-                - 0
-            - "$ref": fallback
-            - "$call":
-                - get
-                - "$ref": xs
-                - "$call":
-                    - sub
-                    - "$call":
-                        - len
-                        - "$ref": xs
-                    - 1
-    environment: []
-    kind: function
-    location:
-      path:
-        - last
-      source: "std:list"
-    program:
-      ref: object37
-  object15:
-    bindings:
-      number:
-        code:
-          path:
-            - number
-          source: "std:math"
-    code:
-      "$call":
-        - fn
-        - - - "n"
-            - "$ref": number
-        - "$call":
-            - if
-            - "$call":
-                - lt
-                - "$ref": "n"
-                - 0
-            - "$call":
-                - neg
-                - "$ref": "n"
-            - "$ref": "n"
-        - "$ref": number
-    environment: []
-    kind: function
-    location:
-      path:
-        - abs
-      source: "std:math"
-    program:
-      ref: object37
-  object16:
-    bindings:
-      max:
-        code:
-          path:
-            - max
-          source: "std:math"
-      min:
-        code:
-          path:
-            - min
-          source: "std:math"
-      number:
-        code:
-          path:
-            - number
-          source: "std:math"
-    code:
-      "$call":
-        - fn
-        - - - "n"
-            - "$ref": number
-          - - lo
-            - "$ref": number
-          - - hi
-            - "$ref": number
-        - "$call":
-            - max
-            - "$ref": lo
-            - "$call":
-                - min
-                - "$ref": "n"
-                - "$ref": hi
-        - "$ref": number
-    environment: []
-    kind: function
-    location:
-      path:
-        - clamp
-      source: "std:math"
-    program:
-      ref: object37
-  object17:
-    bindings:
-      number:
-        code:
-          path:
-            - number
-          source: "std:math"
-    code:
-      "$call":
-        - fn
-        - - - a
-            - "$ref": number
-          - - b
-            - "$ref": number
-        - "$call":
-            - if
-            - "$call":
-                - gt
-                - "$ref": a
-                - "$ref": b
-            - "$ref": a
-            - "$ref": b
-        - "$ref": number
-    environment: []
-    kind: function
-    location:
-      path:
-        - max
-      source: "std:math"
-    program:
-      ref: object37
-  object18:
-    bindings:
-      number:
-        code:
-          path:
-            - number
-          source: "std:math"
-    code:
-      "$call":
-        - fn
-        - - - a
-            - "$ref": number
-          - - b
-            - "$ref": number
-        - "$call":
-            - if
-            - "$call":
-                - lt
-                - "$ref": a
-                - "$ref": b
-            - "$ref": a
-            - "$ref": b
-        - "$ref": number
-    environment: []
-    kind: function
-    location:
-      path:
-        - min
-      source: "std:math"
-    program:
-      ref: object37
-  object19:
-    bindings:
-      number:
-        code:
-          path:
-            - number
-          source: "std:math"
-    code:
-      "$call":
-        - fn
-        - - - "n"
-            - "$ref": number
-        - "$call":
-            - cond
-            - "$call":
-                - lt
-                - "$ref": "n"
-                - 0
-            - -1
-            - "$call":
-                - gt
-                - "$ref": "n"
-                - 0
-            - 1
-            - 0
-        - "$ref": integer
-    environment: []
-    kind: function
-    location:
-      path:
-        - sign
-      source: "std:math"
-    program:
-      ref: object37
-  object2:
-    bindings:
-      find_index:
-        code:
-          path:
-            - find_index
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - predicate
-            - "$ref": function
-        - "$call":
-            - ge
-            - "$call":
-                - find_index
-                - "$ref": xs
-                - "$ref": predicate
-            - 0
-        - "$ref": boolean
-    environment: []
-    kind: function
-    location:
-      path:
-        - any
-      source: "std:list"
-    program:
-      ref: object37
-  object20:
-    bindings:
-      number:
-        code:
-          path:
-            - number
-          source: "std:math"
-    code:
-      "$call":
-        - fn
-        - - - "n"
-            - "$ref": number
-        - "$call":
-            - mul
-            - "$ref": "n"
-            - "$ref": "n"
-        - "$ref": number
-    environment: []
-    kind: function
-    location:
-      path:
-        - square
-      source: "std:math"
-    program:
-      ref: object37
-  object21:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - predicate
-            - "$ref": function
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - parts
-                  - x
-                - "$call":
-                    - let
-                    - side:
-                        "$call":
-                          - if
-                          - "$call":
-                              - predicate
-                              - "$ref": x
-                          - 0
-                          - 1
-                    - "$call":
-                        - set
-                        - "$ref": parts
-                        - "$ref": side
-                        - "$call":
-                            - append
-                            - "$call":
-                                - get
-                                - "$ref": parts
-                                - "$ref": side
-                            - "$ref": x
-            - - []
-              - []
-            - "$ref": xs
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - partition
-      source: "std:list"
-    program:
-      ref: object37
-  object22:
-    bindings:
-      math.number:
-        code:
-          path:
-            - number
-          source: "std:math"
-      numbers:
-        code:
-          path:
-            - numbers
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": numbers
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - acc
-                  - x
-                - "$call":
-                    - mul
-                    - "$ref": acc
-                    - "$ref": x
-            - 1
-            - "$ref": xs
-        - "$ref": math.number
-    environment: []
-    kind: function
-    location:
-      path:
-        - product
-      source: "std:list"
-    program:
-      ref: object37
-  object23:
-    bindings:
-      math.max:
-        code:
-          path:
-            - max
-          source: "std:math"
-    code:
-      "$call":
-        - fn
-        - - - "n"
-            - "$ref": integer
-        - "$call":
-            - slice
-            - "$call":
-                - until
-                - "$call":
-                    - fn
-                    - - xs
-                    - "$call":
-                        - ge
-                        - "$call":
-                            - len
-                            - "$ref": xs
-                        - "$ref": "n"
-                - "$call":
-                    - fn
-                    - - xs
-                    - "$call":
-                        - call
-                        - "$call":
-                            - fn
-                            - - size
-                            - "$call":
-                                - concat
-                                - "$ref": xs
-                                - "$call":
-                                    - map
-                                    - "$call":
-                                        - fn
-                                        - - x
-                                        - "$call":
-                                            - add
-                                            - "$ref": x
-                                            - "$ref": size
-                                    - "$ref": xs
-                        - "$call":
-                            - len
-                            - "$ref": xs
-                - - 0
-            - 0
-            - "$call":
-                - math.max
-                - "$ref": "n"
-                - 0
-        - "$call":
-            - list_of
-            - "$ref": integer
-    environment: []
-    kind: function
-    location:
-      path:
-        - range
-      source: "std:list"
-    program:
-      ref: object37
-  object24:
-    bindings:
-      reverse:
-        code:
-          path:
-            - reverse
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-        - "$call":
-            - if
-            - "$call":
-                - lt
-                - "$call":
-                    - len
-                    - "$ref": xs
-                - 2
-            - "$ref": xs
-            - "$call":
-                - let
-                - middle:
-                    "$call":
-                      - div
-                      - "$call":
-                          - len
-                          - "$ref": xs
-                      - 2
-                - "$call":
-                    - concat
-                    - "$call":
-                        - reverse
-                        - "$call":
-                            - slice
-                            - "$ref": xs
-                            - "$ref": middle
-                            - "$call":
-                                - len
-                                - "$ref": xs
-                    - "$call":
-                        - reverse
-                        - "$call":
-                            - slice
-                            - "$ref": xs
-                            - 0
-                            - "$ref": middle
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - reverse
-      source: "std:list"
-    program:
-      ref: object37
-  object25:
-    bindings:
-      sort_by:
-        code:
-          path:
-            - sort_by
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-        - "$call":
-            - sort_by
-            - "$ref": xs
-            - "$call":
-                - fn
-                - - a
-                  - b
-                - "$call":
-                    - lt
-                    - "$ref": a
-                    - "$ref": b
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - sort
-      source: "std:list"
-    program:
-      ref: object37
-  object26:
-    bindings:
-      sort_by:
-        code:
-          path:
-            - sort_by
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - before
-            - "$ref": function
-        - "$call":
-            - if
-            - "$call":
-                - lt
-                - "$call":
-                    - len
-                    - "$ref": xs
-                - 2
-            - "$ref": xs
-            - "$call":
-                - call
-                - "$call":
-                    - fn
-                    - - pivot
-                    - "$call":
-                        - concat
-                        - "$call":
-                            - sort_by
-                            - "$call":
-                                - filter
-                                - "$call":
-                                    - fn
-                                    - - x
-                                    - "$call":
-                                        - before
-                                        - "$ref": x
-                                        - "$ref": pivot
-                                - "$ref": xs
-                            - "$ref": before
-                        - "$call":
-                            - filter
-                            - "$call":
-                                - fn
-                                - - x
-                                - "$call":
-                                    - and
-                                    - "$call":
-                                        - not
-                                        - "$call":
-                                            - before
-                                            - "$ref": x
-                                            - "$ref": pivot
-                                    - "$call":
-                                        - not
-                                        - "$call":
-                                            - before
-                                            - "$ref": pivot
-                                            - "$ref": x
-                            - "$ref": xs
-                        - "$call":
-                            - sort_by
-                            - "$call":
-                                - filter
-                                - "$call":
-                                    - fn
-                                    - - x
-                                    - "$call":
-                                        - before
-                                        - "$ref": pivot
-                                        - "$ref": x
-                                - "$ref": xs
-                            - "$ref": before
-                - "$call":
-                    - get
-                    - "$ref": xs
-                    - "$call":
-                        - div
-                        - "$call":
-                            - len
-                            - "$ref": xs
-                        - 2
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - sort_by
-      source: "std:list"
-    program:
-      ref: object37
-  object27:
-    bindings:
-      math.number:
-        code:
-          path:
-            - number
-          source: "std:math"
-      numbers:
-        code:
-          path:
-            - numbers
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": numbers
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - acc
-                  - x
-                - "$call":
-                    - add
-                    - "$ref": acc
-                    - "$ref": x
-            - 0
-            - "$ref": xs
-        - "$ref": math.number
-    environment: []
-    kind: function
-    location:
-      path:
-        - sum
-      source: "std:list"
-    program:
-      ref: object37
-  object28:
-    bindings:
-      math.min:
-        code:
-          path:
-            - min
-          source: "std:math"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - "n"
-            - "$ref": integer
-        - "$call":
-            - if
-            - "$call":
-                - lt
-                - "$ref": "n"
-                - 0
-            - "$call":
-                - raise
-                - range
-                - take count must be non-negative
-            - "$call":
-                - slice
-                - "$ref": xs
-                - 0
-                - "$call":
-                    - math.min
-                    - "$ref": "n"
-                    - "$call":
-                        - len
-                        - "$ref": xs
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - take
-      source: "std:list"
-    program:
-      ref: object37
-  object29:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-        - "$call":
-            - fold
-            - "$call":
-                - fn
-                - - seen
-                  - item
-                - "$call":
-                    - if
-                    - "$call":
-                        - has
-                        - "$ref": seen
-                        - "$ref": item
-                    - "$ref": seen
-                    - "$call":
-                        - append
-                        - "$ref": seen
-                        - "$ref": item
-            - []
-            - "$ref": xs
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - unique
-      source: "std:list"
-    program:
-      ref: object37
-  object3:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - predicate
-            - "$ref": function
-        - "$call":
-            - len
-            - "$call":
-                - filter
-                - "$ref": predicate
-                - "$ref": xs
-        - "$ref": integer
-    environment: []
-    kind: function
-    location:
-      path:
-        - count
-      source: "std:list"
-    program:
-      ref: object37
-  object30:
-    bindings:
-      math.min:
-        code:
-          path:
-            - min
-          source: "std:math"
-      range:
-        code:
-          path:
-            - range
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - ys
-            - "$ref": list
-        - "$call":
-            - map
-            - "$call":
-                - fn
-                - - i
-                - "$call":
-                    - list
-                    - "$call":
-                        - get
-                        - "$ref": xs
-                        - "$ref": i
-                    - "$call":
-                        - get
-                        - "$ref": ys
-                        - "$ref": i
-            - "$call":
-                - range
-                - "$call":
-                    - math.min
-                    - "$call":
-                        - len
-                        - "$ref": xs
-                    - "$call":
-                        - len
-                        - "$ref": ys
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - zip
-      source: "std:list"
-    program:
-      ref: object37
-  object31:
     bindings: {}
     code:
       "$call":
@@ -3283,8 +1050,8 @@ objects:
         - matches
       source: "std:text"
     program:
-      ref: object37
-  object32:
+      ref: object6
+  object2:
     bindings:
       join:
         code:
@@ -3349,8 +1116,8 @@ objects:
         - quote
       source: "std:text"
     program:
-      ref: object37
-  object33:
+      ref: object6
+  object3:
     bindings: {}
     code:
       "$call":
@@ -3368,8 +1135,8 @@ objects:
         - regex
       source: "std:text"
     program:
-      ref: object37
-  object34:
+      ref: object6
+  object4:
     bindings:
       quote:
         code:
@@ -3416,186 +1183,9 @@ objects:
         - replace
       source: "std:text"
     program:
-      ref: object37
-  object35:
+      ref: object6
+  object5:
     bindings: {}
-    code:
-      "$call":
-        - fn
-        - - source
-          - fields
-          - prefix
-          - state
-        - "$call":
-            - call
-            - "$call":
-                - fn
-                - - pos
-                  - width
-                  - chunks
-                  - size
-                - "$call":
-                    - call
-                    - "$call":
-                        - fn
-                        - - window
-                        - "$call":
-                            - call
-                            - "$call":
-                                - fn
-                                - - found
-                                  - used
-                                - "$call":
-                                    - if
-                                    - "$call":
-                                        - ge
-                                        - "$call":
-                                            - add
-                                            - "$ref": pos
-                                            - "$ref": width
-                                        - "$ref": size
-                                    - "$call":
-                                        - dict
-                                        - done
-                                        - true
-                                        - chunks
-                                        - "$call":
-                                            - append
-                                            - "$ref": chunks
-                                            - "$call":
-                                                - concat
-                                                - "$ref": found
-                                                - "$call":
-                                                    - list
-                                                    - "$call":
-                                                        - slice
-                                                        - "$ref": source
-                                                        - "$call":
-                                                            - add
-                                                            - "$ref": pos
-                                                            - "$ref": used
-                                                        - "$ref": size
-                                    - "$call":
-                                        - dict
-                                        - done
-                                        - false
-                                        - pos
-                                        - "$call":
-                                            - add
-                                            - "$ref": pos
-                                            - "$ref": used
-                                        - width
-                                        - "$call":
-                                            - if
-                                            - "$call":
-                                                - eq
-                                                - "$ref": used
-                                                - 0
-                                            - "$call":
-                                                - mul
-                                                - "$ref": width
-                                                - 2
-                                            - 4000
-                                        - chunks
-                                        - "$call":
-                                            - append
-                                            - "$ref": chunks
-                                            - "$ref": found
-                            - "$call":
-                                - map
-                                - "$call":
-                                    - fn
-                                    - - match
-                                    - "$call":
-                                        - get
-                                        - "$call":
-                                            - get
-                                            - "$call":
-                                                - get
-                                                - "$ref": match
-                                                - captures
-                                            - 1
-                                        - text
-                                - "$call":
-                                    - regex_find
-                                    - "$ref": fields
-                                    - "$ref": window
-                            - "$call":
-                                - len
-                                - "$call":
-                                    - get
-                                    - "$call":
-                                        - get
-                                        - "$call":
-                                            - get
-                                            - "$call":
-                                                - get
-                                                - "$call":
-                                                    - regex_find
-                                                    - "$ref": prefix
-                                                    - "$ref": window
-                                                - 0
-                                            - captures
-                                        - 0
-                                    - text
-                    - "$call":
-                        - slice
-                        - "$ref": source
-                        - "$ref": pos
-                        - "$call":
-                            - if
-                            - "$call":
-                                - lt
-                                - "$call":
-                                    - add
-                                    - "$ref": pos
-                                    - "$ref": width
-                                - "$ref": size
-                            - "$call":
-                                - add
-                                - "$ref": pos
-                                - "$ref": width
-                            - "$ref": size
-            - "$call":
-                - get
-                - "$ref": state
-                - pos
-            - "$call":
-                - get
-                - "$ref": state
-                - width
-            - "$call":
-                - get
-                - "$ref": state
-                - chunks
-            - "$call":
-                - len
-                - "$ref": source
-    environment: []
-    kind: function
-    location:
-      path:
-        - scan
-      source: "std:text"
-    program:
-      ref: object37
-  object36:
-    bindings:
-      lists.flatten:
-        code:
-          path:
-            - flatten
-          source: "std:list"
-      quote:
-        code:
-          path:
-            - quote
-          source: "std:text"
-      scan:
-        code:
-          path:
-            - scan
-          source: "std:text"
     code:
       "$call":
         - fn
@@ -3604,75 +1194,9 @@ objects:
           - - separator
             - "$ref": string
         - "$call":
-            - if
-            - "$call":
-                - eq
-                - "$call":
-                    - len
-                    - "$ref": separator
-                - 0
-            - "$call":
-                - raise
-                - range
-                - split separator must not be empty
-            - "$call":
-                - if
-                - "$call":
-                    - gt
-                    - "$call":
-                        - len
-                        - "$ref": separator
-                    - 1024
-                - "$call":
-                    - raise
-                    - range
-                    - split separator must be at most 1024 characters
-                - "$call":
-                    - call
-                    - "$call":
-                        - fn
-                        - - fields
-                          - prefix
-                        - "$call":
-                            - lists.flatten
-                            - "$call":
-                                - get
-                                - "$call":
-                                    - until
-                                    - "$call":
-                                        - fn
-                                        - - state
-                                        - "$call":
-                                            - get
-                                            - "$ref": state
-                                            - done
-                                    - "$call":
-                                        - fn
-                                        - - state
-                                        - "$call":
-                                            - scan
-                                            - "$ref": source
-                                            - "$ref": fields
-                                            - "$ref": prefix
-                                            - "$ref": state
-                                    - chunks: []
-                                      done: false
-                                      pos: 0
-                                      width: 4000
-                                - chunks
-                    - "$call":
-                        - concat
-                        - "(?s)(.*?)"
-                        - "$call":
-                            - quote
-                            - "$ref": separator
-                    - "$call":
-                        - concat
-                        - "(?s)\\A(?:.*?"
-                        - "$call":
-                            - quote
-                            - "$ref": separator
-                        - ")*"
+            - text_split
+            - "$ref": source
+            - "$ref": separator
         - "$call":
             - list_of
             - "$ref": string
@@ -3683,8 +1207,8 @@ objects:
         - split
       source: "std:text"
     program:
-      ref: object37
-  object37:
+      ref: object6
+  object6:
     kind: program
     sources:
       - code:
@@ -3875,53 +1399,10 @@ objects:
                 - - separator
                   - "$ref": string
               - "$call":
-                  - if
-                  - "$call":
-                      - lt
-                      - "$call":
-                          - len
-                          - "$ref": parts
-                      - 2
-                  - "$call":
-                      - get
-                      - "$ref": parts
-                      - 0
-                      - ""
-                  - "$call":
-                      - let
-                      - middle:
-                          "$call":
-                            - div
-                            - "$call":
-                                - len
-                                - "$ref": parts
-                            - 2
-                      - "$call":
-                          - concat
-                          - "$call":
-                              - join
-                              - "$call":
-                                  - slice
-                                  - "$ref": parts
-                                  - 0
-                                  - "$ref": middle
-                              - "$ref": separator
-                          - "$ref": separator
-                          - "$call":
-                              - join
-                              - "$call":
-                                  - slice
-                                  - "$ref": parts
-                                  - "$ref": middle
-                                  - "$call":
-                                      - len
-                                      - "$ref": parts
-                              - "$ref": separator
+                  - text_join
+                  - "$ref": parts
+                  - "$ref": separator
               - "$ref": string
-          lists:
-            "$call":
-              - import
-              - "std:list"
           matches:
             "$call":
               - fn
@@ -4029,158 +1510,6 @@ objects:
                           - "$ref": to
                           - "$$$$"
               - "$ref": string
-          scan:
-            "$call":
-              - fn
-              - - source
-                - fields
-                - prefix
-                - state
-              - "$call":
-                  - call
-                  - "$call":
-                      - fn
-                      - - pos
-                        - width
-                        - chunks
-                        - size
-                      - "$call":
-                          - call
-                          - "$call":
-                              - fn
-                              - - window
-                              - "$call":
-                                  - call
-                                  - "$call":
-                                      - fn
-                                      - - found
-                                        - used
-                                      - "$call":
-                                          - if
-                                          - "$call":
-                                              - ge
-                                              - "$call":
-                                                  - add
-                                                  - "$ref": pos
-                                                  - "$ref": width
-                                              - "$ref": size
-                                          - "$call":
-                                              - dict
-                                              - done
-                                              - true
-                                              - chunks
-                                              - "$call":
-                                                  - append
-                                                  - "$ref": chunks
-                                                  - "$call":
-                                                      - concat
-                                                      - "$ref": found
-                                                      - "$call":
-                                                          - list
-                                                          - "$call":
-                                                              - slice
-                                                              - "$ref": source
-                                                              - "$call":
-                                                                  - add
-                                                                  - "$ref": pos
-                                                                  - "$ref": used
-                                                              - "$ref": size
-                                          - "$call":
-                                              - dict
-                                              - done
-                                              - false
-                                              - pos
-                                              - "$call":
-                                                  - add
-                                                  - "$ref": pos
-                                                  - "$ref": used
-                                              - width
-                                              - "$call":
-                                                  - if
-                                                  - "$call":
-                                                      - eq
-                                                      - "$ref": used
-                                                      - 0
-                                                  - "$call":
-                                                      - mul
-                                                      - "$ref": width
-                                                      - 2
-                                                  - 4000
-                                              - chunks
-                                              - "$call":
-                                                  - append
-                                                  - "$ref": chunks
-                                                  - "$ref": found
-                                  - "$call":
-                                      - map
-                                      - "$call":
-                                          - fn
-                                          - - match
-                                          - "$call":
-                                              - get
-                                              - "$call":
-                                                  - get
-                                                  - "$call":
-                                                      - get
-                                                      - "$ref": match
-                                                      - captures
-                                                  - 1
-                                              - text
-                                      - "$call":
-                                          - regex_find
-                                          - "$ref": fields
-                                          - "$ref": window
-                                  - "$call":
-                                      - len
-                                      - "$call":
-                                          - get
-                                          - "$call":
-                                              - get
-                                              - "$call":
-                                                  - get
-                                                  - "$call":
-                                                      - get
-                                                      - "$call":
-                                                          - regex_find
-                                                          - "$ref": prefix
-                                                          - "$ref": window
-                                                      - 0
-                                                  - captures
-                                              - 0
-                                          - text
-                          - "$call":
-                              - slice
-                              - "$ref": source
-                              - "$ref": pos
-                              - "$call":
-                                  - if
-                                  - "$call":
-                                      - lt
-                                      - "$call":
-                                          - add
-                                          - "$ref": pos
-                                          - "$ref": width
-                                      - "$ref": size
-                                  - "$call":
-                                      - add
-                                      - "$ref": pos
-                                      - "$ref": width
-                                  - "$ref": size
-                  - "$call":
-                      - get
-                      - "$ref": state
-                      - pos
-                  - "$call":
-                      - get
-                      - "$ref": state
-                      - width
-                  - "$call":
-                      - get
-                      - "$ref": state
-                      - chunks
-                  - "$call":
-                      - len
-                      - "$ref": source
           split:
             "$call":
               - fn
@@ -4189,1126 +1518,13 @@ objects:
                 - - separator
                   - "$ref": string
               - "$call":
-                  - if
-                  - "$call":
-                      - eq
-                      - "$call":
-                          - len
-                          - "$ref": separator
-                      - 0
-                  - "$call":
-                      - raise
-                      - range
-                      - split separator must not be empty
-                  - "$call":
-                      - if
-                      - "$call":
-                          - gt
-                          - "$call":
-                              - len
-                              - "$ref": separator
-                          - 1024
-                      - "$call":
-                          - raise
-                          - range
-                          - split separator must be at most 1024 characters
-                      - "$call":
-                          - call
-                          - "$call":
-                              - fn
-                              - - fields
-                                - prefix
-                              - "$call":
-                                  - lists.flatten
-                                  - "$call":
-                                      - get
-                                      - "$call":
-                                          - until
-                                          - "$call":
-                                              - fn
-                                              - - state
-                                              - "$call":
-                                                  - get
-                                                  - "$ref": state
-                                                  - done
-                                          - "$call":
-                                              - fn
-                                              - - state
-                                              - "$call":
-                                                  - scan
-                                                  - "$ref": source
-                                                  - "$ref": fields
-                                                  - "$ref": prefix
-                                                  - "$ref": state
-                                          - chunks: []
-                                            done: false
-                                            pos: 0
-                                            width: 4000
-                                      - chunks
-                          - "$call":
-                              - concat
-                              - "(?s)(.*?)"
-                              - "$call":
-                                  - quote
-                                  - "$ref": separator
-                          - "$call":
-                              - concat
-                              - "(?s)\\A(?:.*?"
-                              - "$call":
-                                  - quote
-                                  - "$ref": separator
-                              - ")*"
+                  - text_split
+                  - "$ref": source
+                  - "$ref": separator
               - "$call":
                   - list_of
                   - "$ref": string
         source: "std:text"
-      - code:
-          all:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - predicate
-                  - "$ref": function
-              - "$call":
-                  - lt
-                  - "$call":
-                      - find_index
-                      - "$ref": xs
-                      - "$call":
-                          - fn
-                          - - x
-                          - "$call":
-                              - not
-                              - "$call":
-                                  - predicate
-                                  - "$ref": x
-                  - 0
-              - "$ref": boolean
-          any:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - predicate
-                  - "$ref": function
-              - "$call":
-                  - ge
-                  - "$call":
-                      - find_index
-                      - "$ref": xs
-                      - "$ref": predicate
-                  - 0
-              - "$ref": boolean
-          count:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - predicate
-                  - "$ref": function
-              - "$call":
-                  - len
-                  - "$call":
-                      - filter
-                      - "$ref": predicate
-                      - "$ref": xs
-              - "$ref": integer
-          drop:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - "n"
-                  - "$ref": integer
-              - "$call":
-                  - if
-                  - "$call":
-                      - lt
-                      - "$ref": "n"
-                      - 0
-                  - "$call":
-                      - raise
-                      - range
-                      - drop count must be non-negative
-                  - "$call":
-                      - slice
-                      - "$ref": xs
-                      - "$call":
-                          - math.min
-                          - "$ref": "n"
-                          - "$call":
-                              - len
-                              - "$ref": xs
-                      - "$call":
-                          - len
-                          - "$ref": xs
-              - "$ref": list
-          enumerate:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-              - "$call":
-                  - map
-                  - "$call":
-                      - fn
-                      - - i
-                      - "$call":
-                          - list
-                          - "$ref": i
-                          - "$call":
-                              - get
-                              - "$ref": xs
-                              - "$ref": i
-                  - "$call":
-                      - range
-                      - "$call":
-                          - len
-                          - "$ref": xs
-              - "$ref": list
-          find:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - predicate
-                  - "$ref": function
-                - fallback
-              - "$call":
-                  - let
-                  - i:
-                      "$call":
-                        - find_index
-                        - "$ref": xs
-                        - "$ref": predicate
-                  - "$call":
-                      - if
-                      - "$call":
-                          - lt
-                          - "$ref": i
-                          - 0
-                      - "$ref": fallback
-                      - "$call":
-                          - get
-                          - "$ref": xs
-                          - "$ref": i
-          find_index:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - predicate
-                  - "$ref": function
-              - "$call":
-                  - let
-                  - position:
-                      "$call":
-                        - until
-                        - "$call":
-                            - fn
-                            - - i
-                            - "$call":
-                                - or
-                                - "$call":
-                                    - ge
-                                    - "$ref": i
-                                    - "$call":
-                                        - len
-                                        - "$ref": xs
-                                - "$call":
-                                    - predicate
-                                    - "$call":
-                                        - get
-                                        - "$ref": xs
-                                        - "$ref": i
-                        - "$call":
-                            - fn
-                            - - i
-                            - "$call":
-                                - add
-                                - "$ref": i
-                                - 1
-                        - 0
-                  - "$call":
-                      - if
-                      - "$call":
-                          - lt
-                          - "$ref": position
-                          - "$call":
-                              - len
-                              - "$ref": xs
-                      - "$ref": position
-                      - -1
-              - "$ref": integer
-          first:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - fallback
-              - "$call":
-                  - get
-                  - "$ref": xs
-                  - 0
-                  - "$ref": fallback
-          flat_map:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - transform
-                  - "$ref": function
-              - "$call":
-                  - flatten
-                  - "$call":
-                      - map
-                      - "$ref": transform
-                      - "$ref": xs
-              - "$ref": list
-          flatten:
-            "$call":
-              - fn
-              - - - xss
-                  - "$call":
-                      - list_of
-                      - "$ref": list
-              - "$call":
-                  - if
-                  - "$call":
-                      - lt
-                      - "$call":
-                          - len
-                          - "$ref": xss
-                      - 2
-                  - "$call":
-                      - get
-                      - "$ref": xss
-                      - 0
-                      - []
-                  - "$call":
-                      - let
-                      - middle:
-                          "$call":
-                            - div
-                            - "$call":
-                                - len
-                                - "$ref": xss
-                            - 2
-                      - "$call":
-                          - concat
-                          - "$call":
-                              - flatten
-                              - "$call":
-                                  - slice
-                                  - "$ref": xss
-                                  - 0
-                                  - "$ref": middle
-                          - "$call":
-                              - flatten
-                              - "$call":
-                                  - slice
-                                  - "$ref": xss
-                                  - "$ref": middle
-                                  - "$call":
-                                      - len
-                                      - "$ref": xss
-              - "$ref": list
-          frequencies:
-            "$call":
-              - fn
-              - - - xs
-                  - "$call":
-                      - list_of
-                      - "$ref": string
-              - "$call":
-                  - fold
-                  - "$call":
-                      - fn
-                      - - counts
-                        - x
-                      - "$call":
-                          - set
-                          - "$ref": counts
-                          - "$ref": x
-                          - "$call":
-                              - add
-                              - "$call":
-                                  - get
-                                  - "$ref": counts
-                                  - "$ref": x
-                                  - 0
-                              - 1
-                  - {}
-                  - "$ref": xs
-              - "$ref": map
-          group_by:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - key_for
-                  - "$ref": function
-              - "$call":
-                  - grouping.by
-                  - "$ref": xs
-                  - "$ref": key_for
-              - "$ref": map
-          grouping:
-            "$call":
-              - import
-              - "std:group"
-          last:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - fallback
-              - "$call":
-                  - if
-                  - "$call":
-                      - eq
-                      - "$call":
-                          - len
-                          - "$ref": xs
-                      - 0
-                  - "$ref": fallback
-                  - "$call":
-                      - get
-                      - "$ref": xs
-                      - "$call":
-                          - sub
-                          - "$call":
-                              - len
-                              - "$ref": xs
-                          - 1
-          math:
-            "$call":
-              - import
-              - "std:math"
-          numbers:
-            "$call":
-              - list_of
-              - "$ref": math.number
-          partition:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - predicate
-                  - "$ref": function
-              - "$call":
-                  - fold
-                  - "$call":
-                      - fn
-                      - - parts
-                        - x
-                      - "$call":
-                          - let
-                          - side:
-                              "$call":
-                                - if
-                                - "$call":
-                                    - predicate
-                                    - "$ref": x
-                                - 0
-                                - 1
-                          - "$call":
-                              - set
-                              - "$ref": parts
-                              - "$ref": side
-                              - "$call":
-                                  - append
-                                  - "$call":
-                                      - get
-                                      - "$ref": parts
-                                      - "$ref": side
-                                  - "$ref": x
-                  - - []
-                    - []
-                  - "$ref": xs
-              - "$ref": list
-          product:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": numbers
-              - "$call":
-                  - fold
-                  - "$call":
-                      - fn
-                      - - acc
-                        - x
-                      - "$call":
-                          - mul
-                          - "$ref": acc
-                          - "$ref": x
-                  - 1
-                  - "$ref": xs
-              - "$ref": math.number
-          range:
-            "$call":
-              - fn
-              - - - "n"
-                  - "$ref": integer
-              - "$call":
-                  - slice
-                  - "$call":
-                      - until
-                      - "$call":
-                          - fn
-                          - - xs
-                          - "$call":
-                              - ge
-                              - "$call":
-                                  - len
-                                  - "$ref": xs
-                              - "$ref": "n"
-                      - "$call":
-                          - fn
-                          - - xs
-                          - "$call":
-                              - call
-                              - "$call":
-                                  - fn
-                                  - - size
-                                  - "$call":
-                                      - concat
-                                      - "$ref": xs
-                                      - "$call":
-                                          - map
-                                          - "$call":
-                                              - fn
-                                              - - x
-                                              - "$call":
-                                                  - add
-                                                  - "$ref": x
-                                                  - "$ref": size
-                                          - "$ref": xs
-                              - "$call":
-                                  - len
-                                  - "$ref": xs
-                      - - 0
-                  - 0
-                  - "$call":
-                      - math.max
-                      - "$ref": "n"
-                      - 0
-              - "$call":
-                  - list_of
-                  - "$ref": integer
-          reverse:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-              - "$call":
-                  - if
-                  - "$call":
-                      - lt
-                      - "$call":
-                          - len
-                          - "$ref": xs
-                      - 2
-                  - "$ref": xs
-                  - "$call":
-                      - let
-                      - middle:
-                          "$call":
-                            - div
-                            - "$call":
-                                - len
-                                - "$ref": xs
-                            - 2
-                      - "$call":
-                          - concat
-                          - "$call":
-                              - reverse
-                              - "$call":
-                                  - slice
-                                  - "$ref": xs
-                                  - "$ref": middle
-                                  - "$call":
-                                      - len
-                                      - "$ref": xs
-                          - "$call":
-                              - reverse
-                              - "$call":
-                                  - slice
-                                  - "$ref": xs
-                                  - 0
-                                  - "$ref": middle
-              - "$ref": list
-          sort:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-              - "$call":
-                  - sort_by
-                  - "$ref": xs
-                  - "$call":
-                      - fn
-                      - - a
-                        - b
-                      - "$call":
-                          - lt
-                          - "$ref": a
-                          - "$ref": b
-              - "$ref": list
-          sort_by:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - before
-                  - "$ref": function
-              - "$call":
-                  - if
-                  - "$call":
-                      - lt
-                      - "$call":
-                          - len
-                          - "$ref": xs
-                      - 2
-                  - "$ref": xs
-                  - "$call":
-                      - call
-                      - "$call":
-                          - fn
-                          - - pivot
-                          - "$call":
-                              - concat
-                              - "$call":
-                                  - sort_by
-                                  - "$call":
-                                      - filter
-                                      - "$call":
-                                          - fn
-                                          - - x
-                                          - "$call":
-                                              - before
-                                              - "$ref": x
-                                              - "$ref": pivot
-                                      - "$ref": xs
-                                  - "$ref": before
-                              - "$call":
-                                  - filter
-                                  - "$call":
-                                      - fn
-                                      - - x
-                                      - "$call":
-                                          - and
-                                          - "$call":
-                                              - not
-                                              - "$call":
-                                                  - before
-                                                  - "$ref": x
-                                                  - "$ref": pivot
-                                          - "$call":
-                                              - not
-                                              - "$call":
-                                                  - before
-                                                  - "$ref": pivot
-                                                  - "$ref": x
-                                  - "$ref": xs
-                              - "$call":
-                                  - sort_by
-                                  - "$call":
-                                      - filter
-                                      - "$call":
-                                          - fn
-                                          - - x
-                                          - "$call":
-                                              - before
-                                              - "$ref": pivot
-                                              - "$ref": x
-                                      - "$ref": xs
-                                  - "$ref": before
-                      - "$call":
-                          - get
-                          - "$ref": xs
-                          - "$call":
-                              - div
-                              - "$call":
-                                  - len
-                                  - "$ref": xs
-                              - 2
-              - "$ref": list
-          sum:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": numbers
-              - "$call":
-                  - fold
-                  - "$call":
-                      - fn
-                      - - acc
-                        - x
-                      - "$call":
-                          - add
-                          - "$ref": acc
-                          - "$ref": x
-                  - 0
-                  - "$ref": xs
-              - "$ref": math.number
-          take:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - "n"
-                  - "$ref": integer
-              - "$call":
-                  - if
-                  - "$call":
-                      - lt
-                      - "$ref": "n"
-                      - 0
-                  - "$call":
-                      - raise
-                      - range
-                      - take count must be non-negative
-                  - "$call":
-                      - slice
-                      - "$ref": xs
-                      - 0
-                      - "$call":
-                          - math.min
-                          - "$ref": "n"
-                          - "$call":
-                              - len
-                              - "$ref": xs
-              - "$ref": list
-          unique:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-              - "$call":
-                  - fold
-                  - "$call":
-                      - fn
-                      - - seen
-                        - item
-                      - "$call":
-                          - if
-                          - "$call":
-                              - has
-                              - "$ref": seen
-                              - "$ref": item
-                          - "$ref": seen
-                          - "$call":
-                              - append
-                              - "$ref": seen
-                              - "$ref": item
-                  - []
-                  - "$ref": xs
-              - "$ref": list
-          zip:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - ys
-                  - "$ref": list
-              - "$call":
-                  - map
-                  - "$call":
-                      - fn
-                      - - i
-                      - "$call":
-                          - list
-                          - "$call":
-                              - get
-                              - "$ref": xs
-                              - "$ref": i
-                          - "$call":
-                              - get
-                              - "$ref": ys
-                              - "$ref": i
-                  - "$call":
-                      - range
-                      - "$call":
-                          - math.min
-                          - "$call":
-                              - len
-                              - "$ref": xs
-                          - "$call":
-                              - len
-                              - "$ref": ys
-              - "$ref": list
-        source: "std:list"
-      - code:
-          by:
-            "$call":
-              - fn
-              - - - xs
-                  - "$ref": list
-                - - key
-                  - "$ref": function
-              - "$call":
-                  - fold
-                  - "$call":
-                      - fn
-                      - - groups
-                        - item
-                      - "$call":
-                          - let
-                          - name:
-                              "$call":
-                                - key
-                                - "$ref": item
-                          - "$call":
-                              - set
-                              - "$ref": groups
-                              - "$ref": name
-                              - "$call":
-                                  - append
-                                  - "$call":
-                                      - get
-                                      - "$ref": groups
-                                      - "$ref": name
-                                      - []
-                                  - "$ref": item
-                  - {}
-                  - "$ref": xs
-              - "$ref": map
-        source: "std:group"
-      - code:
-          abs:
-            "$call":
-              - fn
-              - - - "n"
-                  - "$ref": number
-              - "$call":
-                  - if
-                  - "$call":
-                      - lt
-                      - "$ref": "n"
-                      - 0
-                  - "$call":
-                      - neg
-                      - "$ref": "n"
-                  - "$ref": "n"
-              - "$ref": number
-          clamp:
-            "$call":
-              - fn
-              - - - "n"
-                  - "$ref": number
-                - - lo
-                  - "$ref": number
-                - - hi
-                  - "$ref": number
-              - "$call":
-                  - max
-                  - "$ref": lo
-                  - "$call":
-                      - min
-                      - "$ref": "n"
-                      - "$ref": hi
-              - "$ref": number
-          max:
-            "$call":
-              - fn
-              - - - a
-                  - "$ref": number
-                - - b
-                  - "$ref": number
-              - "$call":
-                  - if
-                  - "$call":
-                      - gt
-                      - "$ref": a
-                      - "$ref": b
-                  - "$ref": a
-                  - "$ref": b
-              - "$ref": number
-          min:
-            "$call":
-              - fn
-              - - - a
-                  - "$ref": number
-                - - b
-                  - "$ref": number
-              - "$call":
-                  - if
-                  - "$call":
-                      - lt
-                      - "$ref": a
-                      - "$ref": b
-                  - "$ref": a
-                  - "$ref": b
-              - "$ref": number
-          number:
-            "$call":
-              - union
-              - "$ref": integer
-              - "$ref": float
-          sign:
-            "$call":
-              - fn
-              - - - "n"
-                  - "$ref": number
-              - "$call":
-                  - cond
-                  - "$call":
-                      - lt
-                      - "$ref": "n"
-                      - 0
-                  - -1
-                  - "$call":
-                      - gt
-                      - "$ref": "n"
-                      - 0
-                  - 1
-                  - 0
-              - "$ref": integer
-          square:
-            "$call":
-              - fn
-              - - - "n"
-                  - "$ref": number
-              - "$call":
-                  - mul
-                  - "$ref": "n"
-                  - "$ref": "n"
-              - "$ref": number
-        source: "std:math"
-  object4:
-    bindings:
-      math.min:
-        code:
-          path:
-            - min
-          source: "std:math"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - "n"
-            - "$ref": integer
-        - "$call":
-            - if
-            - "$call":
-                - lt
-                - "$ref": "n"
-                - 0
-            - "$call":
-                - raise
-                - range
-                - drop count must be non-negative
-            - "$call":
-                - slice
-                - "$ref": xs
-                - "$call":
-                    - math.min
-                    - "$ref": "n"
-                    - "$call":
-                        - len
-                        - "$ref": xs
-                - "$call":
-                    - len
-                    - "$ref": xs
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - drop
-      source: "std:list"
-    program:
-      ref: object37
-  object5:
-    bindings:
-      range:
-        code:
-          path:
-            - range
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-        - "$call":
-            - map
-            - "$call":
-                - fn
-                - - i
-                - "$call":
-                    - list
-                    - "$ref": i
-                    - "$call":
-                        - get
-                        - "$ref": xs
-                        - "$ref": i
-            - "$call":
-                - range
-                - "$call":
-                    - len
-                    - "$ref": xs
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - enumerate
-      source: "std:list"
-    program:
-      ref: object37
-  object6:
-    bindings:
-      find_index:
-        code:
-          path:
-            - find_index
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - predicate
-            - "$ref": function
-          - fallback
-        - "$call":
-            - let
-            - i:
-                "$call":
-                  - find_index
-                  - "$ref": xs
-                  - "$ref": predicate
-            - "$call":
-                - if
-                - "$call":
-                    - lt
-                    - "$ref": i
-                    - 0
-                - "$ref": fallback
-                - "$call":
-                    - get
-                    - "$ref": xs
-                    - "$ref": i
-    environment: []
-    kind: function
-    location:
-      path:
-        - find
-      source: "std:list"
-    program:
-      ref: object37
-  object7:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - predicate
-            - "$ref": function
-        - "$call":
-            - let
-            - position:
-                "$call":
-                  - until
-                  - "$call":
-                      - fn
-                      - - i
-                      - "$call":
-                          - or
-                          - "$call":
-                              - ge
-                              - "$ref": i
-                              - "$call":
-                                  - len
-                                  - "$ref": xs
-                          - "$call":
-                              - predicate
-                              - "$call":
-                                  - get
-                                  - "$ref": xs
-                                  - "$ref": i
-                  - "$call":
-                      - fn
-                      - - i
-                      - "$call":
-                          - add
-                          - "$ref": i
-                          - 1
-                  - 0
-            - "$call":
-                - if
-                - "$call":
-                    - lt
-                    - "$ref": position
-                    - "$call":
-                        - len
-                        - "$ref": xs
-                - "$ref": position
-                - -1
-        - "$ref": integer
-    environment: []
-    kind: function
-    location:
-      path:
-        - find_index
-      source: "std:list"
-    program:
-      ref: object37
-  object8:
-    bindings: {}
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - fallback
-        - "$call":
-            - get
-            - "$ref": xs
-            - 0
-            - "$ref": fallback
-    environment: []
-    kind: function
-    location:
-      path:
-        - first
-      source: "std:list"
-    program:
-      ref: object37
-  object9:
-    bindings:
-      flatten:
-        code:
-          path:
-            - flatten
-          source: "std:list"
-    code:
-      "$call":
-        - fn
-        - - - xs
-            - "$ref": list
-          - - transform
-            - "$ref": function
-        - "$call":
-            - flatten
-            - "$call":
-                - map
-                - "$ref": transform
-                - "$ref": xs
-        - "$ref": list
-    environment: []
-    kind: function
-    location:
-      path:
-        - flat_map
-      source: "std:list"
-    program:
-      ref: object37
 root:
   basic:
     - one
@@ -5340,93 +1556,16 @@ root:
   t:
     join:
       ref: object0
-    lists:
-      all:
-        ref: object1
-      any:
-        ref: object2
-      count:
-        ref: object3
-      drop:
-        ref: object4
-      enumerate:
-        ref: object5
-      find:
-        ref: object6
-      find_index:
-        ref: object7
-      first:
-        ref: object8
-      flat_map:
-        ref: object9
-      flatten:
-        ref: object10
-      frequencies:
-        ref: object11
-      group_by:
-        ref: object12
-      grouping:
-        by:
-          ref: object13
-      last:
-        ref: object14
-      math:
-        abs:
-          ref: object15
-        clamp:
-          ref: object16
-        max:
-          ref: object17
-        min:
-          ref: object18
-        number:
-          of:
-            - integer
-            - float
-          type: union
-        sign:
-          ref: object19
-        square:
-          ref: object20
-      numbers:
-        of:
-          of:
-            - integer
-            - float
-          type: union
-        type: list
-      partition:
-        ref: object21
-      product:
-        ref: object22
-      range:
-        ref: object23
-      reverse:
-        ref: object24
-      sort:
-        ref: object25
-      sort_by:
-        ref: object26
-      sum:
-        ref: object27
-      take:
-        ref: object28
-      unique:
-        ref: object29
-      zip:
-        ref: object30
     matches:
-      ref: object31
+      ref: object1
     quote:
-      ref: object32
+      ref: object2
     regex:
-      ref: object33
+      ref: object3
     replace:
-      ref: object34
-    scan:
-      ref: object35
+      ref: object4
     split:
-      ref: object36
+      ref: object5
   unicode:
     - ""
     - "é"

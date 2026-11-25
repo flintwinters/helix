@@ -12,6 +12,9 @@ pub(super) fn apply(actor: &str, args: &[Value]) -> Result<Value, Fault> {
         "dict" => dict(args),
         "len" => len(&args[0]),
         "concat" => concat(args),
+        "text_split" => text_split(args),
+        "text_join" => text_join(args),
+        "text_repeat" => text_repeat(args),
         "slice" => slice(args),
         "get" => get(args),
         "set" => set(args),
@@ -47,6 +50,63 @@ fn len(value: &Value) -> Result<Value, Fault> {
         other => return Err(Fault::expected(0, "string, list or map", other)),
     };
     Ok(Value::Integer(n as i64))
+}
+
+fn string(args: &[Value], at: usize) -> Result<&str, Fault> {
+    match &args[at] {
+        Value::String(text) => Ok(text),
+        other => Err(Fault::expected(at, "string", other)),
+    }
+}
+
+fn text_split(args: &[Value]) -> Result<Value, Fault> {
+    let source = string(args, 0)?;
+    let separator = string(args, 1)?;
+    if separator.is_empty() {
+        return Err(Fault::at(1, "range", "split separator must not be empty".into()));
+    }
+    if separator.chars().take(1025).count() > 1024 {
+        return Err(Fault::at(1, "range", "split separator must be at most 1024 characters".into()));
+    }
+    let mut fields = Vec::new();
+    for field in source.split(separator) {
+        if fields.len() == crate::model::MAX_NODES - 1 {
+            return Err(Fault::whole("limit", format!("value exceeds {} nodes", crate::model::MAX_NODES)));
+        }
+        fields.push(Value::String(field.to_owned()));
+    }
+    Ok(Value::Array(fields.into()))
+}
+
+fn text_join(args: &[Value]) -> Result<Value, Fault> {
+    let Value::Array(parts) = &args[0] else {
+        return Err(Fault::expected(0, "list of strings", &args[0]));
+    };
+    let separator = string(args, 1)?;
+    let limit = crate::model::MAX_VALUE_SIZE;
+    let mut joined = String::new();
+    for (index, part) in parts.iter().enumerate() {
+        let Value::String(part) = part else {
+            return Err(Fault::expected(0, "list of strings", &args[0]));
+        };
+        let prefix = if index == 0 { "" } else { separator };
+        if joined.len() + prefix.len() + part.len() >= limit {
+            return Err(Fault::whole("limit", format!("value exceeds {limit} units")));
+        }
+        joined.push_str(prefix);
+        joined.push_str(part);
+    }
+    Ok(Value::String(joined))
+}
+
+fn text_repeat(args: &[Value]) -> Result<Value, Fault> {
+    let text = string(args, 0)?;
+    let count = index(args, 1)?;
+    let limit = crate::model::MAX_VALUE_SIZE;
+    if text.len().checked_mul(count).is_none_or(|size| size >= limit) {
+        return Err(Fault::whole("limit", format!("value exceeds {limit} units")));
+    }
+    Ok(Value::String(text.repeat(count)))
 }
 
 /// All arguments must be strings, or all lists.

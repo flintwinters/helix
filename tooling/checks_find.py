@@ -16,6 +16,7 @@ def check(ctx):
     # Text: exact names outrank substrings, every word must match, scope narrows.
     report = find(ctx, "split")
     assert names(report)[0] == ("std:text", "split"), names(report)
+    assert (None, "text_repeat") in names(find(ctx, "padding"))
     assert all(row["kind"] in ("builtin", "std") and row["next"].startswith("helix ") for row in report["results"])
     assert find(ctx, "add", "--in", "builtins")["results"][0]["name"] == "add"
     assert find(ctx, "split", "zzzzqqq")["total"] == 0
