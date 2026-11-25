@@ -32,6 +32,24 @@ def save(path, value):
         path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
 
 
+def publish_matrix(path, report):
+    """Expose live review outcomes to a local HTML page via a classic script."""
+    rows = []
+    for row in report['rows']:
+        score = row.get('score') or {}
+        rows.append({
+            'task': row['task'], 'trial': row['trial'], 'artifact': row['artifact'],
+            'error': row.get('error'), 'tool_calls': row.get('tool_calls'),
+            'passed': score.get('passed'), 'cases_passed': score.get('cases_passed', 0),
+            'cases_total': score.get('cases_total', 0),
+        })
+    target = path.with_suffix('.matrix.js')
+    temporary = target.with_suffix('.tmp')
+    payload = json.dumps({'schema': report['schema'], 'rows': rows})
+    temporary.write_text(f'document.currentScript.matrixReport = {payload};\n')
+    temporary.replace(target)
+
+
 def report_path(directory, name):
     path = directory / f'{name}.yaml'
     return path if path.exists() else path.with_suffix('.json')
@@ -432,11 +450,18 @@ def run(root, args, ctx):
 
     def checkpoint(phase):
         rows.sort(key=lambda row: (selected.index(row['task']), row['trial']))
-        save(directory / 'report.yaml', {'schema': manifest['schema'], 'phase': phase,
-                                        'execution': {'jobs': jobs,
-                                            'generation_wall_ms': generation_wall_ms if generation_wall_ms is not None else (time.perf_counter() - generation_started) * 1000,
-                                            'evaluation_wall_ms': (time.perf_counter() - evaluation_started) * 1000 if evaluation_started is not None else 0},
-                                        'rows': rows, 'summary': summary(rows)})
+        report = {
+            'schema': manifest['schema'], 'phase': phase,
+            'execution': {
+                'jobs': jobs,
+                'generation_wall_ms': generation_wall_ms if generation_wall_ms is not None else (time.perf_counter() - generation_started) * 1000,
+                'evaluation_wall_ms': (time.perf_counter() - evaluation_started) * 1000 if evaluation_started is not None else 0,
+            },
+            'rows': rows, 'summary': summary(rows),
+        }
+        path = directory / 'report.yaml'
+        save(path, report)
+        publish_matrix(path, report)
 
     with ThreadPoolExecutor(max_workers=jobs) as pool:
         futures = [pool.submit(generate_attempt, root, args, ctx, directory, docs, task, trial, key)
@@ -518,6 +543,7 @@ def replay(root, args, ctx):
                              'samples': args.samples, 'recorded_at': datetime.now(timezone.utc).isoformat(),
                              'environment': {'platform': platform.platform(), 'python': platform.python_version()}}}
     save(directory / 'replay.yaml', report)
+    publish_matrix(directory / 'replay.yaml', report)
     return {'directory': str(directory), 'summary': report['summary']}
 
 
