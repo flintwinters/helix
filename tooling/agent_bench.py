@@ -366,7 +366,11 @@ def run(root, args, ctx):
         raise ValueError('trial, sample, token, turn, tool and job counts must be positive; temperature must be in [0,2]')
     if len(set(args.task or [])) != len(args.task or []) or any(task not in TASKS for task in args.task or []):
         raise ValueError('task IDs must be known and unique; use agent-bench list')
-    plan = retry_plan(args.retry, args.task) if getattr(args, 'retry', None) else [
+    retry = getattr(args, 'retry', None)
+    retry_error = getattr(args, 'retry_error', None)
+    if retry_error is not None and retry is None:
+        raise ValueError('--retry-error requires --retry')
+    plan = retry_plan(retry, args.task, retry_error) if retry else [
         (task, trial) for task in (args.task or list(TASKS)) for trial in range(1, args.trials + 1)]
     selected = list(dict.fromkeys(task for task, _ in plan))
     directory = Path(args.directory).resolve() if args.directory else root / 'runtime' / 'agent-bench' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
@@ -396,6 +400,7 @@ def run(root, args, ctx):
                 'trials': args.trials, 'samples': args.samples, 'temperature': args.temperature,
                 'max_tokens': args.max_tokens, 'tasks': selected, 'context_sha256': digest(docs),
                 'retry_of': str(Path(args.retry).resolve()) if getattr(args, 'retry', None) else None,
+                'retry_error': retry_error,
                 'attempts': [[task, trial] for task, trial in plan], 'test_timeout_seconds': ctx.timeout,
                 'task_source_sha256': source_digest(),
                 'git_revision': subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, capture_output=True, text=True, check=True).stdout.strip(),
@@ -465,7 +470,7 @@ def run(root, args, ctx):
     return {'directory': str(directory), 'dry_run': False, 'summary': summary(rows)}
 
 
-def retry_plan(source, tasks=None):
+def retry_plan(source, tasks=None, error=None):
     """(task, trial) pairs of a recorded run whose generation failed before submitting a program.
 
     Retried attempts keep their original trial numbers in a new directory; the
@@ -479,7 +484,8 @@ def retry_plan(source, tasks=None):
     for task in manifest['tasks']:
         for path in run_results(source, task):
             row = yaml.safe_load(path.read_text())
-            if row.get('error') and (not tasks or task in tasks):
+            recorded_error = row.get('error')
+            if recorded_error and (error is None or recorded_error == error) and (not tasks or task in tasks):
                 plan.append((task, row['trial']))
     if not plan:
         raise ValueError(f'{source} has no failed generations to retry')
