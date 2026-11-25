@@ -5,6 +5,7 @@ import time
 import threading
 from pathlib import Path
 from datetime import datetime, timezone
+from dataclasses import replace
 
 from tooling import usage_log
 from tooling.output import report_yaml
@@ -53,6 +54,35 @@ SUBMIT = {
 }
 TOOLS = [TOOL, FILES, SUBMIT]
 READ_ONLY = {'LANGUAGE.md', 'LIBRARY.md', 'public_test.yaml'}
+
+
+def tools(full_cli):
+    if not full_cli:
+        return TOOLS
+    full_tool = {'type': TOOL['type'], 'function': {**TOOL['function'],
+        'description': 'Invoke the complete Helix CLI with argv and optional stdin. Start with ["--help"]. '
+        'The working directory is a read-only view of the attempt files; use the workspace tool to save source. '
+        '/tmp is private to each call. There is no network or host credential access. '
+        'Run ["run", "public_test.yaml"] before calling submit.'}}
+    return [full_tool, FILES, SUBMIT]
+
+
+def isolated_cli(ctx, workspace, args, source=None):
+    def launch(command, **kwargs):
+        sandbox = [
+            'bwrap', '--unshare-all', '--die-with-parent', '--clearenv',
+            '--setenv', 'PATH', '/', '--cap-drop', 'ALL',
+            '--ro-bind', '/usr/lib', '/usr/lib',
+            '--symlink', 'usr/lib', '/lib', '--symlink', 'usr/lib64', '/lib64',
+            '--ro-bind', '/usr/lib64', '/usr/lib64',
+            '--ro-bind', command[0], '/helix',
+            '--ro-bind', str(workspace.resolve()), '/workspace',
+            '--tmpfs', '/tmp', '--dev', '/dev', '--chdir', '/workspace',
+        ]
+        return ctx.process_runner([*sandbox, '--', '/helix', *command[1:]], **kwargs)
+
+    return replace(ctx, process_runner=launch).helix(*args, stdin=source, cwd=workspace)
+
 
 
 def working_directory(directory):
@@ -165,6 +195,8 @@ def execute(ctx, directory, payload, identity, index, state=None):
     if not isinstance(args, list) or not all(isinstance(arg, str) for arg in args):
         error = 'args must be an array of strings'
         args = []
+    elif state is not None and state.get('full_cli'):
+        command = args
     elif args in (['--help'], ['schema']) or lookup(args):
         command = args
     elif len(args) == 2 and args[0] in ('fmt', 'run', 'check'):
@@ -191,7 +223,10 @@ def execute(ctx, directory, payload, identity, index, state=None):
     if error:
         code, stdout, stderr = 2, '', error
     else:
-        result = ctx.helix(*command, stdin=source if command in (['fmt', '-'], ['check', '-']) else None, cwd=workspace)
+        if state is not None and state.get('full_cli'):
+            result = isolated_cli(ctx, workspace, command, source)
+        else:
+            result = ctx.helix(*command, stdin=source if command in (['fmt', '-'], ['check', '-']) else None, cwd=workspace)
         code, stdout, stderr = result.returncode, result.stdout, result.stderr
     if state is not None and args == ['run', 'public_test.yaml']:
         state.pop('validated', None)

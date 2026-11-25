@@ -38,6 +38,12 @@ and no host effect grants. Workspace reads and writes cannot escape the attempt
 or modify the supplied documentation/public test. Tool feedback is capped at
 16,000 characters per stream; full CLI observations remain in the artifacts.
 
+For a full CLI round, pass `--full-cli`. The harness checks Bubblewrap before
+making API calls. Each Helix subprocess receives the actual arguments, a
+read-only view of its attempt workspace, private per-call scratch space, and
+an isolated network namespace with a cleared environment. Source edits go
+through the workspace tool. The manifest records the selected CLI mode.
+
 Submission uses a `submit` tool, not another code block in a final answer. It
 requires a successful execution of `public_test.yaml` against the exact current
 workspace fingerprint. Merely defining `solve` does not qualify. Any file edit

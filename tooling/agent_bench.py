@@ -234,18 +234,19 @@ def summary(rows):
 
 
 def generate(ctx, directory, prompt, args, identity):
-    from tooling.agent_cli import TOOLS, tool
+    from tooling.agent_cli import tool, tools
     mode = getattr(args, 'mode', 'one-shot')
     conversation = [dict(message) for message in prompt]
     responses, calls, api_ms, requests_made = [], 0, 0.0, 0
     response, error = None, None
-    state = {}
+    state = {'full_cli': getattr(args, 'full_cli', False)}
+    available_tools = tools(state['full_cli'])
     cli_calls, public_test_calls, public_test_successes = 0, 0, 0
     for turn in range(getattr(args, 'max_turns', 16) if mode == 'cli' else 1):
         payload = {'model': args.model, 'messages': [dict(message) for message in conversation],
                    'temperature': args.temperature, 'max_tokens': args.max_tokens}
         if mode == 'cli':
-            payload['tools'] = TOOLS
+            payload['tools'] = available_tools
             payload['tool_choice'] = 'auto'
         started = time.perf_counter()
         requests_made += 1
@@ -369,7 +370,16 @@ def run(root, args, ctx):
         (task, trial) for task in (args.task or list(TASKS)) for trial in range(1, args.trials + 1)]
     selected = list(dict.fromkeys(task for task, _ in plan))
     directory = Path(args.directory).resolve() if args.directory else root / 'runtime' / 'agent-bench' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+    full_cli = getattr(args, 'full_cli', False)
+    if full_cli:
+        from tooling.agent_cli import isolated_cli
+        if args.mode != 'cli':
+            raise ValueError('--full-cli requires --mode cli')
     directory.mkdir(parents=True, exist_ok=False)
+    if full_cli:
+        preflight = isolated_cli(ctx, directory, ['--help'])
+        if preflight.returncode:
+            raise ValueError(f'full CLI sandbox preflight failed: {preflight.stderr.strip()}')
     docs = context(root)
     (directory / 'context.md').write_text(docs)
     model, key = None, None
@@ -380,7 +390,7 @@ def run(root, args, ctx):
             raise ValueError(f'{args.model} is absent from OpenRouter catalog; no substitute model was requested')
     manifest = {'schema': 'helix.agent-bench.v1', 'protocol_version': PROTOCOL_VERSION,
                 'task_version': VERSION, 'model': args.model, 'catalog_model': model,
-                'mode': getattr(args, 'mode', 'one-shot'), 'jobs': jobs,
+                'mode': getattr(args, 'mode', 'one-shot'), 'full_cli': full_cli, 'jobs': jobs,
                 'context_delivery': 'workspace-documents' if getattr(args, 'mode', 'one-shot') == 'cli' else 'inline',
                 'max_turns': getattr(args, 'max_turns', 16), 'max_tool_calls': getattr(args, 'max_tool_calls', 32),
                 'trials': args.trials, 'samples': args.samples, 'temperature': args.temperature,

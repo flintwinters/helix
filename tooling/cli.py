@@ -242,6 +242,7 @@ def parser():
                     ["quality", "agent-bench"], "quality agent-bench run --trials 10")
     bench.add_argument("action", choices=("list", "models", "run", "score", "report"))
     bench.add_argument("--mode", choices=("one-shot", "cli"), default="cli", help="CLI-enabled bounded agent or a single completion without tools")
+    bench.add_argument("--full-cli", action="store_true", help="expose all Helix argv in a Bubblewrap sandbox")
     bench.add_argument("--max-turns", type=int, default=16, help="maximum model requests per CLI-enabled attempt")
     bench.add_argument("--max-tool-calls", type=int, default=32, help="maximum workspace/CLI/submission calls per CLI-enabled attempt")
     bench.add_argument("--jobs", type=int, default=4, help="independent generation workers; evaluation and timings remain isolated")
