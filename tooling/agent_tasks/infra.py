@@ -94,8 +94,8 @@ def host_pattern(rng):
 
 
 @task('host-range-expand',
-      goal='Input is a list of host patterns. A pattern contains at most one range "[A:B]", where A and B are decimal digit strings with A <= B numerically. Expand it to one host per integer from A to B inclusive, replacing the range with the integer padded with leading zeros to the number of digits in A. A pattern without a range expands to itself. Return the concatenated expansions in input order.',
-      example={'input': ['web[08:10].x', 'db', 'n[1:2]'], 'output': ['web08.x', 'web09.x', 'web10.x', 'db', 'n1', 'n2']},
+      goal='Input is a list of host patterns. A pattern contains at most one range "[A:B]", where A and B are decimal digit strings with A <= B numerically. Expand it to one host per integer from A to B inclusive, replacing the range with the integer padded with leading zeros to a minimum width equal to the number of digits in A. If the integer has more digits than A, keep all its digits without padding. A pattern without a range expands to itself. Return the concatenated expansions in input order.',
+      example={'input': ['web[08:10].x', 'db', 'n[9:10]'], 'output': ['web08.x', 'web09.x', 'web10.x', 'db', 'n9', 'n10']},
       edge=['[0:0]', '[000:2]雪', 'a[9:9]b'],
       generate=lambda rng, n: [host_pattern(rng) for _ in range(n)])
 def host_range_expand(patterns):
