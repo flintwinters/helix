@@ -19,7 +19,9 @@ def check(ctx):
     assert (None, "text_repeat") in names(find(ctx, "padding"))
     assert all(row["kind"] in ("builtin", "std") and row["next"].startswith("helix ") for row in report["results"])
     assert find(ctx, "add", "--in", "builtins")["results"][0]["name"] == "add"
-    assert find(ctx, "split", "zzzzqqq")["total"] == 0
+    partial = find(ctx, "split", "zzzzqqq")
+    assert partial["total"] == 0 and partial["results"] == []
+    assert any(item["name"] == "split" for item in partial["suggestions"])
 
     # Structure: parameter types match distinct parameters, result types match as written.
     strings = find(ctx, "--takes", "string", "--takes", "string", "--returns", "list_of(string)")

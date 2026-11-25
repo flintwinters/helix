@@ -289,13 +289,17 @@ pub fn command(args: &[&str]) -> ExitCode {
     }
     let structural = !query.takes.is_empty() || query.returns.is_some();
     let mut hits = Vec::new();
+    let mut partial = Vec::new();
     let mut unseen = 0;
     for entry in &all {
-        let Some(score) = rank(entry, &query.terms) else { continue };
         if query.scope.as_deref().is_some_and(|scope| !in_scope(entry, scope)) {
             continue;
         }
         if query.arity.is_some_and(|n| n < entry.arity.0 || entry.arity.1.is_some_and(|max| n > max)) {
+            continue;
+        }
+        let score = rank(entry, &query.terms);
+        if score.is_none() && (query.terms.len() < 2 || structural) {
             continue;
         }
         if structural {
@@ -308,9 +312,25 @@ pub fn command(args: &[&str]) -> ExitCode {
                 None => continue,
             }
         }
-        hits.push((score, entry));
+        if let Some(score) = score {
+            hits.push((score, entry));
+        } else {
+            let matching = query.terms.iter().filter_map(|term| rank(entry, std::slice::from_ref(term))).sum::<u32>();
+            if matching > 0 {
+                partial.push((matching, entry));
+            }
+        }
     }
-    hits.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| (a.1.module.as_deref(), &a.1.name).cmp(&(b.1.module.as_deref(), &b.1.name))));
+    let by_rank = |a: &(u32, &Entry), b: &(u32, &Entry)| {
+        b.0.cmp(&a.0).then_with(|| (a.1.module.as_deref(), &a.1.name).cmp(&(b.1.module.as_deref(), &b.1.name)))
+    };
+    hits.sort_by(by_rank);
+    if hits.is_empty() {
+        partial.sort_by(by_rank);
+        partial.truncate(query.limit.min(5));
+    } else {
+        partial.clear();
+    }
     let total = hits.len();
     hits.truncate(query.limit);
     let row = |score: u32, entry: &Entry| {
@@ -330,7 +350,8 @@ pub fn command(args: &[&str]) -> ExitCode {
     };
     if query.json {
         let rows: Vec<_> = hits.iter().map(|(score, entry)| row(*score, entry)).collect();
-        super::source::print_report(&json!({"query": args, "total": total, "shown": rows.len(), "unseen_by_types": unseen, "results": rows}));
+        let suggestions: Vec<_> = partial.iter().map(|(score, entry)| row(*score, entry)).collect();
+        super::source::print_report(&json!({"query": args, "total": total, "shown": rows.len(), "unseen_by_types": unseen, "results": rows, "suggestions": suggestions}));
         return ExitCode::SUCCESS;
     }
     for (_, entry) in &hits {
@@ -339,7 +360,13 @@ pub fn command(args: &[&str]) -> ExitCode {
         println!("{place}{}{summary}", entry.signature);
     }
     if hits.is_empty() {
-        println!("no matches");
+        println!("no matches for all words");
+        if !partial.is_empty() {
+            println!("Partial matches:");
+            for (_, entry) in &partial {
+                println!("  {}    {}", entry.signature, entry.next);
+            }
+        }
         println!("next: drop a word or filter; `helix std` lists modules, `helix builtins` lists builtins");
     } else {
         if total > hits.len() {
