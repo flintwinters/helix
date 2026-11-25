@@ -117,9 +117,9 @@ def event_lines(rng, n):
 
 
 @task('json-lines-aggregate',
-      goal='Input is JSON Lines text: lines separated by "\\n". Ignore empty lines. A valid line is a JSON object with a string field user and an integer field ms (booleans and floats are not integers); other fields are allowed. Every other nonempty line is invalid. Return {users: map from user to {events: count of valid lines, total_ms: sum of ms}, invalid: number of invalid lines}.',
-      example={'input': '{"user": "ann", "ms": 5}\n\n{"user": "ann", "ms": 7}\nnot json\n{"user": "bo"}',
-               'output': {'users': {'ann': {'events': 2, 'total_ms': 12}}, 'invalid': 2}},
+      goal='Input is JSON Lines text: lines separated by "\\n". Ignore empty lines. A valid line is a JSON object with a string field user and an integer field ms (booleans and floats are not integers); other fields are allowed. Every other nonempty line is invalid, including valid JSON values that are not objects (null, arrays, strings, numbers, and booleans). Return {users: map from user to {events: count of valid lines, total_ms: sum of ms}, invalid: number of invalid lines}.',
+      example={'input': '{"user": "ann", "ms": 5}\n\n{"user": "ann", "ms": 7}\nnot json\n{"user": "bo"}\nnull',
+               'output': {'users': {'ann': {'events': 2, 'total_ms': 12}}, 'invalid': 3}},
       edge='{"user": "", "ms": 0}\n{"user": "x", "ms": -1, "user2": 3}\n[]\n"s"',
       generate=event_lines)
 def json_lines_aggregate(source):
