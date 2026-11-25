@@ -179,7 +179,7 @@ pub(crate) fn parse(name: &str, text: &'static str) -> Module {
     let opening = lines.iter().take_while(|(_, line)| comment(line)).count();
     let doc = lines[..opening].iter().map(|(_, line)| uncomment(line)).collect();
     let graph = Graph::parse(text).expect("embedded standard module parses");
-    let exported = library::exported(&graph);
+    let mut exported = library::exported(&graph);
     if !matches!(graph.syntax(ROOT), Syntax::Mapping(_)) {
         let exports = exported
             .into_iter()
@@ -193,6 +193,11 @@ pub(crate) fn parse(name: &str, text: &'static str) -> Module {
             .collect();
         return Module { name: name.into(), doc, exports };
     }
+    // Runtime maps use canonical key order. Written spans follow source order.
+    exported.sort_by_key(|(_, node)| {
+        let span = graph.span(*node);
+        (span.line, span.col)
+    });
     // (first line of the key's text, the key's own line)
     let mut keys = Vec::new();
     let mut pending = None;
