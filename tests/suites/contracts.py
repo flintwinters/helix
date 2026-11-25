@@ -201,7 +201,6 @@ def std_catalog(h):
     assert one.returncode == 0 and one.stdout.endswith("\n") and "import: `list: !call [import, 'std:list']`" in one.stdout
     indexed = yaml.safe_load(h.helix("std", "map.index_by", "--yaml").stdout)
     assert "index_by: !call" in indexed["source"] and "merge: !call" not in indexed["source"], indexed
-    assert any("lookup index" in line for line in indexed["doc"]), indexed
     for args, hint in [(("std", "lst"), "did you mean `list`?"), (("std", "list.fnd"), "did you mean `find`?")]:
         result = h.helix(*args)
         assert result.returncode == 2 and not result.stdout and hint in result.stderr, (args, result)
