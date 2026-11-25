@@ -59,3 +59,17 @@ select: !call
       - {}
       - !call [keys, !ref source]
   - !ref map
+# Build a lookup index from a list in one traversal. The key callback returns a string.
+# If a key repeats, the last item wins. Use get for subsequent lookups.
+index_by: !call
+  - fn
+  - [[items, !ref list], [key, !ref function]]
+  - !call
+      - fold
+      - !call
+          - fn
+          - [index, item]
+          - !call [set, !ref index, !call [key, !ref item], !ref item]
+      - {}
+      - !ref items
+  - !ref map

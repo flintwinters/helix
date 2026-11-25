@@ -62,3 +62,9 @@ wrong_source: !call
       - fn
       - [e]
       - !call [get, !ref e, kind]
+repeat_unicode: !call [assert, !call [eq, !call [t.repeat, "🙂 ", 2], "🙂 🙂 "]]
+repeat_zero: !call [assert, !call [eq, !call [t.repeat, a, 0], ""]]
+repeat_limit: !call
+  - try
+  - !call [t.repeat, "🙂", 1000000]
+  - !call [fn, [e], !ref e.kind]

@@ -60,7 +60,7 @@ def tools(full_cli):
     if not full_cli:
         return TOOLS
     full_tool = {'type': TOOL['type'], 'function': {**TOOL['function'],
-        'description': 'Invoke the complete Helix CLI with argv and optional stdin. Start with ["--help"]. Use ["find", WORDS] to discover operations and ["profile", FILE, "--top", "8"] to identify expensive expressions. '
+        'description': 'Invoke the complete Helix CLI with argv and optional stdin. Start with ["--help"]. Use ["find", WORD] to discover an operation, one operation per query and ["profile", FILE, "--top", "8"] to identify expensive expressions. '
         'The working directory is a read-only view of the attempt files; use the workspace tool to save source. fmt prints formatted source to stdout and does not edit files. '
         '/tmp is private to each call. There is no network or host credential access. '
         'Run ["run", "public_test.yaml"] before calling submit.'}}

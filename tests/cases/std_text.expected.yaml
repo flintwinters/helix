@@ -687,6 +687,182 @@ annotations:
       - a
   - declaration:
       code:
+        "$ref": string
+      location:
+        path:
+          - repeat
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - repeat_limit
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "🙂"
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - repeat
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - repeat_limit
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 1000000
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - repeat
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - repeat_unicode
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: "🙂 "
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - repeat
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - repeat_unicode
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 2
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - repeat
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - repeat
+        - "$call"
+        - 2
+      source: "std:text"
+    type: string
+    value: "🙂 🙂 "
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - repeat
+          - "$call"
+          - 1
+          - 0
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - repeat_zero
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+      source: "<root>"
+    type: string
+    value: a
+  - declaration:
+      code:
+        "$ref": integer
+      location:
+        path:
+          - repeat
+          - "$call"
+          - 1
+          - 1
+          - 1
+        source: "std:text"
+    kind: parameter
+    target:
+      path:
+        - repeat_zero
+        - "$call"
+        - 1
+        - "$call"
+        - 1
+        - "$call"
+        - 2
+      source: "<root>"
+    type: integer
+    value: 0
+  - declaration:
+      code:
+        "$ref": string
+      location:
+        path:
+          - repeat
+          - "$call"
+          - 3
+        source: "std:text"
+    kind: result
+    target:
+      path:
+        - repeat
+        - "$call"
+        - 2
+      source: "std:text"
+    type: string
+    value: ""
+  - declaration:
+      code:
         "$call":
           - list_of
           - "$ref": string
@@ -1026,7 +1202,7 @@ objects:
         - join
       source: "std:text"
     program:
-      ref: object6
+      ref: object7
   object1:
     bindings: {}
     code:
@@ -1050,7 +1226,7 @@ objects:
         - matches
       source: "std:text"
     program:
-      ref: object6
+      ref: object7
   object2:
     bindings:
       join:
@@ -1116,7 +1292,7 @@ objects:
         - quote
       source: "std:text"
     program:
-      ref: object6
+      ref: object7
   object3:
     bindings: {}
     code:
@@ -1135,8 +1311,30 @@ objects:
         - regex
       source: "std:text"
     program:
-      ref: object6
+      ref: object7
   object4:
+    bindings: {}
+    code:
+      "$call":
+        - fn
+        - - - text
+            - "$ref": string
+          - - count
+            - "$ref": integer
+        - "$call":
+            - text_repeat
+            - "$ref": text
+            - "$ref": count
+        - "$ref": string
+    environment: []
+    kind: function
+    location:
+      path:
+        - repeat
+      source: "std:text"
+    program:
+      ref: object7
+  object5:
     bindings:
       quote:
         code:
@@ -1183,8 +1381,8 @@ objects:
         - replace
       source: "std:text"
     program:
-      ref: object6
-  object5:
+      ref: object7
+  object6:
     bindings: {}
     code:
       "$call":
@@ -1207,8 +1405,8 @@ objects:
         - split
       source: "std:text"
     program:
-      ref: object6
-  object6:
+      ref: object7
+  object7:
     kind: program
     sources:
       - code:
@@ -1279,6 +1477,37 @@ objects:
               - t.split
               - aaaaa
               - aa
+          repeat_limit:
+            "$call":
+              - try
+              - "$call":
+                  - t.repeat
+                  - "🙂"
+                  - 1000000
+              - "$call":
+                  - fn
+                  - - e
+                  - "$ref": e.kind
+          repeat_unicode:
+            "$call":
+              - assert
+              - "$call":
+                  - eq
+                  - "$call":
+                      - t.repeat
+                      - "🙂 "
+                      - 2
+                  - "🙂 🙂 "
+          repeat_zero:
+            "$call":
+              - assert
+              - "$call":
+                  - eq
+                  - "$call":
+                      - t.repeat
+                      - a
+                      - 0
+                  - ""
           roundtrip:
             "$call":
               - assert
@@ -1477,6 +1706,18 @@ objects:
                   - regex_find
                   - "$ref": pattern
                   - "$ref": text
+          repeat:
+            "$call":
+              - fn
+              - - - text
+                  - "$ref": string
+                - - count
+                  - "$ref": integer
+              - "$call":
+                  - text_repeat
+                  - "$ref": text
+                  - "$ref": count
+              - "$ref": string
           replace:
             "$call":
               - fn
@@ -1551,6 +1792,9 @@ root:
     - ""
     - ""
     - a
+  repeat_limit: limit
+  repeat_unicode: ~
+  repeat_zero: ~
   roundtrip: ~
   single: hello
   t:
@@ -1562,10 +1806,12 @@ root:
       ref: object2
     regex:
       ref: object3
-    replace:
+    repeat:
       ref: object4
-    split:
+    replace:
       ref: object5
+    split:
+      ref: object6
   unicode:
     - ""
     - "é"

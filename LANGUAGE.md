@@ -490,7 +490,7 @@ Use `helix find WORDS` to look up operations by purpose, for example
 `helix find split` for literal fields or `helix find padding` for
 `text_repeat(text, count)`. Prefer a single text operation over mapping a
 callback across characters. For repeated record lookups, build a map keyed by
-the record ID once with `fold` and `set`, then use `get` for each lookup.
+the record ID once with `std:map.index_by`, then use `get` for each lookup.
 Keep only the needed fields in accumulators. Use `helix profile FILE --top 8`
 on a representative input to locate hot source expressions before increasing
 the workload.

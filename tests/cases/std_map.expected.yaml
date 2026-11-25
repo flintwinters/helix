@@ -915,6 +915,39 @@ objects:
     code:
       "$call":
         - fn
+        - - - items
+            - "$ref": list
+          - - key
+            - "$ref": function
+        - "$call":
+            - fold
+            - "$call":
+                - fn
+                - - index
+                  - item
+                - "$call":
+                    - set
+                    - "$ref": index
+                    - "$call":
+                        - key
+                        - "$ref": item
+                    - "$ref": item
+            - {}
+            - "$ref": items
+        - "$ref": map
+    environment: []
+    kind: function
+    location:
+      path:
+        - index_by
+      source: "std:map"
+    program:
+      ref: object5
+  object1:
+    bindings: {}
+    code:
+      "$call":
+        - fn
         - - - left
             - "$ref": map
           - - right
@@ -945,8 +978,8 @@ objects:
         - merge
       source: "std:map"
     program:
-      ref: object4
-  object1:
+      ref: object5
+  object2:
     bindings:
       select:
         code:
@@ -987,8 +1020,8 @@ objects:
         - omit
       source: "std:map"
     program:
-      ref: object4
-  object2:
+      ref: object5
+  object3:
     bindings: {}
     code:
       "$call":
@@ -1030,8 +1063,8 @@ objects:
         - remove
       source: "std:map"
     program:
-      ref: object4
-  object3:
+      ref: object5
+  object4:
     bindings: {}
     code:
       "$call":
@@ -1075,8 +1108,8 @@ objects:
         - select
       source: "std:map"
     program:
-      ref: object4
-  object4:
+      ref: object5
+  object5:
     kind: program
     sources:
       - code:
@@ -1296,6 +1329,29 @@ objects:
                       - kind
         source: "<root>"
       - code:
+          index_by:
+            "$call":
+              - fn
+              - - - items
+                  - "$ref": list
+                - - key
+                  - "$ref": function
+              - "$call":
+                  - fold
+                  - "$call":
+                      - fn
+                      - - index
+                        - item
+                      - "$call":
+                          - set
+                          - "$ref": index
+                          - "$call":
+                              - key
+                              - "$ref": item
+                          - "$ref": item
+                  - {}
+                  - "$ref": items
+              - "$ref": map
           merge:
             "$call":
               - fn
@@ -1429,14 +1485,16 @@ root:
     z: 1
   left_identity: ~
   m:
-    merge:
+    index_by:
       ref: object0
-    omit:
+    merge:
       ref: object1
-    remove:
+    omit:
       ref: object2
-    select:
+    remove:
       ref: object3
+    select:
+      ref: object4
   merge_order: ~
   merged:
     a: false

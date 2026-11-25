@@ -47,6 +47,7 @@ enumerate: !call
           - !call [list, !ref i, !call [get, !ref xs, !ref i]]
       - !call [range, !call [len, !ref xs]]
   - !ref list
+# Linear scan. For many lookups, build a key map once with std:map.index_by, then use get.
 find: !call
   - fn
   - [[xs, !ref list], [predicate, !ref function], fallback]
@@ -58,6 +59,7 @@ find: !call
           - !call [lt, !ref i, 0]
           - !ref fallback
           - !call [get, !ref xs, !ref i]
+# Linear scan. For repeated keyed lookup, build a map before traversing the queries.
 find_index: !call
   - fn
   - [[xs, !ref list], [predicate, !ref function]]

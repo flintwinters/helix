@@ -13,12 +13,12 @@ Standard libraries are Helix source embedded in the executable:
 | `std:set` | `from(xs)`, `contains(xs, value)`, `insert(xs, value)`, `remove(xs, value)`, `union(left, right)`, `intersection(left, right)`, `difference(left, right)`, `is_subset(left, right)`, `is_disjoint(left, right)`, `equals(left, right)`, `symmetric_difference(left, right)` |
 | `std:stack` | `push(xs, value)`, `peek(xs, fallback)`, `pop(xs)`; top at the end |
 | `std:queue` | `enqueue(xs, value)`, `peek(xs, fallback)`, `dequeue(xs)`; front at index zero |
-| `std:map` | `merge(left, right)` (shallow, right wins), `remove(source, key)` (one string key; missing is harmless), `select(source, keys)`, `omit(source, keys)` |
+| `std:map` | `merge(left, right)` (shallow, right wins), `remove(source, key)` (one string key; missing is harmless), `select(source, keys)`, `omit(source, keys)`, `index_by(items, key)` |
 | `std:machine` | Abstract machine classes `host`, `packages`, `files`, `services`, `users`, their combination `machine`, the `port` refinement, and fleet checks `hostnames(fleet)` / `unique_hostnames(fleet)` over realized configs |
 | `std:facts` | Explicit typed Ubuntu observations, pure fact projection and reviewed provider configuration ([facts contracts](#ubuntu-facts-and-reviewed-configuration)) |
 | `std:inventory` | `resolve(document, dynamic, selection)` (validated host inventory, explicit connection overrides with provenance, and a reviewable target list) |
 | `std:fuzz` | `plan(source)` (ordered damaged-source slice plans) |
-| `std:text` | `split(source, separator)` (literal, non-overlapping), `join(parts, separator)`, `replace(source, from, to)` (literal), `matches(pattern, text)` (regex test), `regex(pattern, text)` |
+| `std:text` | `split(source, separator)` (literal, non-overlapping), `join(parts, separator)`, `repeat(text, count)`, `replace(source, from, to)` (literal), `matches(pattern, text)` (regex test), `regex(pattern, text)` |
 | `std:diff` | `compare(old, new)` (shallow configuration changes) |
 | `std:validation` | `batch(values, validate)` (indexed validation and transformation reports) |
 | `std:dependency` | `plan(tasks)` (stable dependency batches and blocked-task report) |
@@ -39,7 +39,7 @@ Standard libraries are Helix source embedded in the executable:
 
 `std:fuzz.plan` describes each line prefix followed by deletion of that line, then character prefixes at offsets 0, 5, 10 and so on (strictly before the end). It preserves duplicates and line terminators, recognizes CRLF as one boundary and also recognizes LF, CR, vertical tab, form feed, U+001C–U+001E, U+0085, U+2028 and U+2029. Empty input yields no variants; offsets count Unicode scalars. This pure policy supports host-supervised malformed-input testing: process crashes and timeouts must still be detected outside Helix. Each variant is a list of `[start, end]` source-slice spans; hosts concatenate those slices to materialize one damaged input at a time. The plan preserves mutation policy in Helix without retaining quadratic output text. Scanning immutable strings and accumulating spans can still consume quadratic work; runtime budgets apply.
 
-`std:text.split` preserves empty fields, including the one field in an empty source, and rejects separators outside 1–1024 Unicode scalar values with a `range` error. Splitting and joining use the bounded `text_split` and `text_join` builtins. `join` accepts a list of strings and a string separator; an empty list produces an empty string and an empty separator concatenates directly. `replace` substitutes every literal, non-overlapping `from` (an empty `from` is a `range` error; `$` in `to` is plain text). Arguments are checked even for empty inputs. Scanning and immutable copies can take quadratic time and allocations; runtime iteration and work budgets apply.
+`std:text.split` preserves empty fields, including the one field in an empty source, and rejects separators outside 1–1024 Unicode scalar values with a `range` error. Splitting and joining use the bounded `text_split` and `text_join` builtins. `join` accepts a list of strings and a string separator; an empty list produces an empty string and an empty separator concatenates directly. `repeat(text, count)` produces padding or separators without a per-character callback and rejects negative counts. `replace` substitutes every literal, non-overlapping `from` (an empty `from` is a `range` error; `$` in `to` is plain text). Arguments are checked even for empty inputs. Scanning and immutable copies can take quadratic time and allocations; runtime iteration and work budgets apply.
 
 `std:diff.compare` accepts two maps and returns `added` and `removed` key lists plus `changed` records containing `key`, `before` and `after`. Added, removed and changed keys each follow canonical string-key order. Missing keys differ from explicit null; nested values are compared structurally as whole values. Lookup and immutable copying suit small configurations and may be quadratic.
 
@@ -52,6 +52,10 @@ Standard modules dogfood ordinary function annotations. `std:math` exports `numb
 `std:map` uses canonical string-key order for merge and removal results; right-hand values win during merging. Nested values are replaced whole, including null. `merge` and `remove` require map arguments; removal requires a string key even for an empty map. They use bounded folds and immutable map copies, which can cost quadratic time and total allocations; use small inputs.
 
 `std:map.select(source, keys)` retains requested keys; `omit(source, keys)` excludes them. Both use canonical string-key order, ignore missing and repeated requested keys, and preserve values including null and false. The source must be a map and keys must be a list of strings, even for empty inputs. Membership scans and immutable copies suit small inputs.
+
+`std:map.index_by(items, key)` builds a string-keyed lookup map. It calls
+`key(item)` once per element and keeps the last item for each duplicate key.
+Build it once before performing repeated searches, then use `get`.
 
 `std:set.is_disjoint(left, right)` tests whether the inputs share no values. `equals(left, right)` compares set membership, ignoring order and duplicates. `symmetric_difference(left, right)` returns unique left-only values followed by unique right-only values, preserving encounter order within each side. These helpers use the same structural/numeric equality, list contracts and resource limits as the existing set operations.
 

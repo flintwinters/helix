@@ -56,6 +56,12 @@ replace: !call
           - !ref source
           - !call [regex_replace, "[$]", !ref to, "$$$$"]
   - !ref string
+# Repeat text without a per-character callback. Useful for padding and separators.
+repeat: !call
+  - fn
+  - [[text, !ref string], [count, !ref integer]]
+  - !call [text_repeat, !ref text, !ref count]
+  - !ref string
 split: !call
   - fn
   - [[source, !ref string], [separator, !ref string]]
