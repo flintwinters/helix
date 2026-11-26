@@ -1,0 +1,2 @@
+f: !call [fn, [n], !call [add, !ref n, !call [mul, !ref n, 2]]]
+answer: !call [f, 7]

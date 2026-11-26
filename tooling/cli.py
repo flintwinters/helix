@@ -56,6 +56,7 @@ SUITES = {
     "ssh_nginx": "Opt-in disposable SSH nginx convergence, review, drift and durable recovery acceptance",
     "docker_nginx": "Opt-in Docker nginx convergence, drift and failure acceptance against independently observed Linux state",
     "docker_linux": "Opt-in Docker Debian resources and mutually configuring Helix peers, against independently observed state",
+    "lowering": "Fast evaluation regions export exactly the YAML state stepwise evaluation does",
     "golden": "Exact YAML states, deterministic evaluation, and finished-root round trips",
     "robustness": "Damaged variants of every golden input remain structured states",
     "harness": "Test harness comparators, discovery, timeouts, and crash detection",

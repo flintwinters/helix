@@ -8,18 +8,28 @@ use crate::builtins::{self, Evaluation};
 use crate::graph::Syntax;
 use crate::model::{Binding, Evaluator, NodeId, Value};
 
+/// `HELIX_NO_FAST` turns regions off so the differential suite can compare exported states
+/// against pure stepwise evaluation; it changes no semantics.
+fn disabled() -> bool {
+    static OFF: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *OFF.get_or_init(|| std::env::var_os("HELIX_NO_FAST").is_some())
+}
+
 /// One completed node: its value and how many times the stepwise engine charges it
-/// (a parameter read is charged when read and again when the reference finishes).
+/// (a parameter read is charged once, when read).
 struct Done {
     node: NodeId,
     value: Value,
     charges: usize,
+    /// Whether the stepwise engine writes an evidence row for it (a reference finishes without
+    /// a `Finish` request, so it is charged but never noted).
+    row: bool,
 }
 
 impl Evaluator {
     /// Evaluate the call at `id` directly. `true` means the answer is set and nothing was pushed.
     pub(super) fn fast_region(&mut self, id: NodeId) -> bool {
-        if self.region.is_some() || self.type_time || self.inherited_type_time {
+        if self.region.is_some() || self.type_time || self.inherited_type_time || disabled() {
             return false;
         }
         let mut done = Vec::new();
@@ -33,11 +43,13 @@ impl Evaluator {
             return false;
         }
         self.remaining_work -= done.len() - 1;
-        for Done { node, value, charges } in done.iter() {
+        for Done { node, value, charges, row } in done.iter() {
             for _ in 0..*charges {
                 self.charge_value(*node, value).expect("budgets were checked before applying");
             }
-            self.note_evaluated(*node, value);
+            if *row {
+                self.note_evaluated(*node, value);
+            }
         }
         self.finish(done.pop().expect("a region has a root").value);
         true
@@ -46,11 +58,11 @@ impl Evaluator {
     /// The node's value, in post-order into `done`, and the height of its subtree;
     /// `None` when the stepwise engine must evaluate it.
     fn pure(&self, id: NodeId, done: &mut Vec<Done>, units: &mut usize) -> Option<usize> {
-        let (value, charges, height) = match self.graph().syntax(id) {
-            Syntax::Scalar(yaml) => (Value::from_yaml(yaml), 1, 1),
+        let (value, charges, height, row) = match self.graph().syntax(id) {
+            Syntax::Scalar(yaml) => (Value::from_yaml(yaml), 1, 1, true),
             // A dotted name projects members, which only the stepwise engine does.
             Syntax::Reference(name) if !name.contains('.') => match self.resolve(id, name) {
-                Some(Binding::Value(value)) => (value, 2, 1),
+                Some(Binding::Value(value)) => (value, 1, 1, false),
                 _ => return None,
             },
             Syntax::Call(items) => {
@@ -68,7 +80,7 @@ impl Evaluator {
                     operands.push(done.last()?.value.clone());
                 }
                 let mut never = |_: builtins::Ask| Err("pending answer".to_string());
-                (builtins::apply(descriptor.name, &operands, &mut never).ok()?, 1, height + 1)
+                (builtins::apply(descriptor.name, &operands, &mut never).ok()?, 1, height + 1, true)
             }
             _ => return None,
         };
@@ -80,7 +92,7 @@ impl Evaluator {
             return None;
         }
         *units += measure.units * charges;
-        done.push(Done { node: id, value, charges });
+        done.push(Done { node: id, value, charges, row });
         Some(height)
     }
 }

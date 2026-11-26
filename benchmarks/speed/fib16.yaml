@@ -1,0 +1,2 @@
+fib: !call [fn, [n], !call [if, !call [lt, !ref n, 2], !ref n, !call [add, !call [fib, !call [sub, !ref n, 1]], !call [fib, !call [sub, !ref n, 2]]]]]
+answer: !call [fib, 16]
