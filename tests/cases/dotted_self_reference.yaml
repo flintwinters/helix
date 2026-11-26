@@ -1,0 +1,2 @@
+# A field's dotted root sees the entry itself, so this is a real self-dependency.
+a: !ref a.b

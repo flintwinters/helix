@@ -1,0 +1,9 @@
+error:
+  column: 9
+  hint: "a dotted root resolves to its own entry before any outer or parameter binding; rename the field or the outer name"
+  kind: cycle
+  line: 2
+  message: "`a.b` reads the field it defines"
+  reference:
+    - a
+status: error

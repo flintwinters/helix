@@ -97,9 +97,12 @@ impl Evaluator {
                 None => return Err(self.unbound(site, name, false)),
             };
             match found.binding {
-                Binding::Node(next) if found.members.is_empty() && matches!(program.graph.syntax(next), Syntax::Reference(_)) => {
+                Binding::Node(next) if matches!(program.graph.syntax(next), Syntax::Reference(_)) => {
                     if chain.contains(&next) {
                         return Err(self.reference_cycle(id, &chain));
+                    }
+                    if !found.members.is_empty() {
+                        return self.read_resolution(site, name, false, found);
                     }
                     chain.push(next);
                     site = next;
@@ -118,6 +121,11 @@ impl Evaluator {
                 _ => None,
             })
             .collect::<Vec<_>>();
+        if let [name] = chain {
+            let Syntax::Reference(name) = self.graph().syntax(*name) else { unreachable!() };
+            return self.err(id, "cycle", format!("`{name}` reads the field it defines"))
+                .with_hint(Some("a dotted root resolves to its own entry before any outer or parameter binding; rename the field or the outer name".into()));
+        }
         self.err(id, "cycle", format!("references only name each other: {}", names.join(" -> ")))
             .with_hint(Some("give one of these names a value instead of another reference".into()))
     }

@@ -1,0 +1,6 @@
+# A field named like its parameter reads itself through the dotted root, not the parameter.
+f: !call
+  - fn
+  - [order]
+  - {order: !ref order.id}
+r: !call [f, {id: 1}]

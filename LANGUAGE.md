@@ -73,7 +73,7 @@ The supported YAML subset has string mapping keys, finite scalars, sequences and
 
 Ordinary result data is emitted without executable wrappers. To reexecute arbitrary result data, wrap the whole value in `!literal` so reserved singleton maps stay data. Function and machine inspection graphs are not executable serialization.
 
-References resolve to the nearest enclosing map defining the name; inner definitions shadow outer ones. Function parameters and `let` bindings are in scope inside their bodies. A field's own value outside a `fn` body resolves its name in the enclosing scopes (so `port: !ref port` reads an outer `port`), while dotted roots such as `!ref port.x` still see the entry itself. Pure reference loops and real self-dependencies are `cycle` errors.
+References resolve to the nearest enclosing map defining the name; inner definitions shadow outer ones. Function parameters and `let` bindings are in scope inside their bodies. A field's own value outside a `fn` body resolves its name in the enclosing scopes (so `port: !ref port` reads an outer `port`), while dotted roots such as `!ref port.x` still see the entry itself (so `{order: !ref order.id}` reads the field it defines, even inside `fn [order]`; rename one). Pure reference loops and real self-dependencies are `cycle` errors.
 
 Values are immutable: `set` and `append` return new values.
 
