@@ -102,6 +102,10 @@ offline viewer for locally retained runs, including conversations, workspace
 files and scores. It shows replay results when present. The HTML embeds the
 underlying artifacts, so share it only with recipients authorized to see them;
 opening it requires a browser supporting `DecompressionStream`.
+The detailed run directories are ignored by Git: to regenerate the same populated
+viewer on another workstation, copy the desired run directories into that
+workstation's `runtime/agent-bench/` first. The checked-in audited summaries do
+not contain the conversations and workspaces used by the viewer.
 
 Read the OpenRouter credential from `OPENROUTER_API_KEY` or `openrouter_api_key`
 in the environment or ignored root `.env`. The loader never executes shell code
