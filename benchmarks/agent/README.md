@@ -94,7 +94,14 @@ use of GPT-6 was approved by the user.
 ./manage.py quality agent-bench report --directory runtime/agent-bench/RUN
 ./manage.py quality agent-bench report --audit --directory runtime/agent-bench/RUN
 ./manage.py quality agent-bench report --replay --directory runtime/agent-bench/RUN
+./manage.py quality agent-bench review
 ```
+
+The review command builds `runtime/agent-bench/review.html`, a self-contained
+offline viewer for locally retained runs, including conversations, workspace
+files and scores. It shows replay results when present. The HTML embeds the
+underlying artifacts, so share it only with recipients authorized to see them;
+opening it requires a browser supporting `DecompressionStream`.
 
 Read the OpenRouter credential from `OPENROUTER_API_KEY` or `openrouter_api_key`
 in the environment or ignored root `.env`. The loader never executes shell code

@@ -615,6 +615,10 @@ def dispatch(root, args, ctx=None):
             report = saved_report(args)
         elif args.action == 'run':
             report = run(root, args, ctx)
+        elif args.action == 'review':
+            from tooling.agent_review import main
+            main()
+            return 0
         else:
             report = replay(root, args, ctx)
         emit({'command': 'agent-bench', 'status': 'ok', **report})

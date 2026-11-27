@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Bench Review</title>
+<style>
+:root {
+  --bg: #fbfaf8; --panel: #ffffff; --ink: #1d1f23; --muted: #6a6f78; --line: #e4e2dd;
+  --accent: #3b5bdb; --pass: #2b8a3e; --pass-bg: #e6f4ea; --fail: #c92a2a; --fail-bg: #fdecec; --unscored: #805100; --unscored-bg: #fff1cc; --payment: #62359a; --payment-bg: #f1e7fb;
+  --code: #f4f3f0; --sys: #f1f0fb; --user: #eef6ff; --asst: #ffffff; --tool: #f7f7f5;
+  --hl-key: #7b3fb0; --hl-tag: #b35900; --hl-fn: #1c6fd1; --hl-ref: #0d7d6c; --hl-str: #2b8a3e; --hl-num: #c2255c; --hl-com: #868e96; --hl-punct: #868e96;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15171a; --panel: #1c1f23; --ink: #e6e6e3; --muted: #9a9fa8; --line: #2e3238;
+    --accent: #8ea6ff; --pass: #69db7c; --pass-bg: #1d3324; --fail: #ff8787; --fail-bg: #3a1f22; --unscored: #ffd166; --unscored-bg: #3d2e12; --payment: #d7afff; --payment-bg: #362449;
+    --code: #23272c; --sys: #22213a; --user: #1b2737; --asst: #1c1f23; --tool: #202327;
+    --hl-key: #d0a2f7; --hl-tag: #ffb86b; --hl-fn: #74b9ff; --hl-ref: #63e6be; --hl-str: #a9e34b; --hl-num: #ff8fab; --hl-com: #7d848d; --hl-punct: #7d848d;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15171a; --panel: #1c1f23; --ink: #e6e6e3; --muted: #9a9fa8; --line: #2e3238;
+  --accent: #8ea6ff; --pass: #69db7c; --pass-bg: #1d3324; --fail: #ff8787; --fail-bg: #3a1f22; --unscored: #ffd166; --unscored-bg: #3d2e12; --payment: #d7afff; --payment-bg: #362449;
+  --code: #23272c; --sys: #22213a; --user: #1b2737; --asst: #1c1f23; --tool: #202327;
+  --hl-key: #d0a2f7; --hl-tag: #ffb86b; --hl-fn: #74b9ff; --hl-ref: #63e6be; --hl-str: #a9e34b; --hl-num: #ff8fab; --hl-com: #7d848d; --hl-punct: #7d848d;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+.app { display: grid; grid-template-columns: 320px 1fr; height: 100vh; }
+aside { border-right: 1px solid var(--line); overflow: auto; background: var(--panel); padding: 12px 8px 40px; }
+main { overflow: auto; padding: 20px 28px 60px; min-width: 0; }
+aside h1 { font-size: 15px; margin: 4px 8px 10px; }
+aside input { width: calc(100% - 16px); margin: 0 8px 10px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+.tree { font-size: 13px; }
+.tree details > summary, .tree .file { list-style: none; cursor: pointer; padding: 1px 6px; border-radius: 4px; white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+.tree details > summary::-webkit-details-marker { display: none; }
+.tree details > summary::before { content: "▸"; color: var(--muted); width: 10px; display: inline-block; }
+.tree details[open] > summary::before { content: "▾"; }
+.tree .file::before { content: ""; width: 10px; display: inline-block; }
+.tree .kids { margin-left: 12px; }
+.tree .sel { background: var(--code); }
+.tree summary:hover, .tree .file:hover { background: var(--code); }
+.tree .size { color: var(--muted); margin-left: auto; font-size: 11px; }
+.badge { font-size: 11px; padding: 0 6px; border-radius: 9px; font-weight: 600; }
+.ok { color: var(--pass); background: var(--pass-bg); } .pending { color: var(--muted, #888); border: 1px dashed currentColor; } .bad { color: var(--fail); background: var(--fail-bg); }
+.crumbs { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+h2 { margin: 0 0 4px; font-size: 22px; } h3 { margin: 26px 0 8px; font-size: 16px; }
+.sub { color: var(--muted); margin-bottom: 14px; }
+.kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; margin: 12px 0; }
+.kv div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.kv b { display: block; font-size: 11px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .03em; }
+.kv span { font-variant-numeric: tabular-nums; font-size: 15px; }
+table { border-collapse: collapse; width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 13px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: 12px; background: var(--code); cursor: pointer; user-select: none; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+td code { word-break: break-all; }
+table.cases td:nth-child(3) { max-width: 260px; }
+.role .sum { text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 12px; }
+tr.click { cursor: pointer; } tr.click:hover td { background: var(--code); }
+.wrap { overflow-x: auto; }
+.matrix { display: grid; gap: 4px; align-items: center; }
+.matrix .cell { display: block; text-align: center; border-radius: 4px; padding: 3px 0; font-size: 12px; font-weight: 600; }
+.matrix .cell.unscored, .badge.unscored { color: var(--unscored); background: var(--unscored-bg); }
+.matrix .cell.payment, .badge.payment { color: var(--payment); background: var(--payment-bg); }
+.matrix .lab { font-size: 13px; padding-right: 8px; }
+.matrix .trial-number { text-align: center; }
+.matrix .matrix-heading { margin: 0; white-space: nowrap; }
+pre, code { font-family: var(--mono); font-size: 12.5px; }
+pre { background: var(--code); border-radius: 6px; padding: 10px 12px; margin: 6px 0; white-space: pre-wrap; word-break: break-word; max-width: 100%; }
+pre.lines { counter-reset: ln; padding-left: 0; }
+pre.code > span { display: block; }
+pre.lines > span { padding-left: 56px; position: relative; }
+pre.lines > span::before { counter-increment: ln; content: counter(ln); position: absolute; left: 0; width: 44px; text-align: right; color: var(--muted); opacity: .6; }
+pre .k { color: var(--hl-key); } pre .t { color: var(--hl-tag); } pre .f { color: var(--hl-fn); font-weight: 600; } pre .r { color: var(--hl-ref); }
+pre .s { color: var(--hl-str); } pre .n { color: var(--hl-num); } pre .c { color: var(--hl-com); font-style: italic; } pre .p { color: var(--hl-punct); }
+.msg { border: 1px solid var(--line); border-radius: 8px; margin: 10px 0; padding: 8px 12px; }
+.msg.system { background: var(--sys); } .msg.user { background: var(--user); } .msg.assistant { background: var(--asst); } .msg.tool { background: var(--tool); margin-left: 28px; }
+.role { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.call { font-family: var(--mono); font-size: 12.5px; margin-top: 6px; }
+.call .fn { color: var(--accent); font-weight: 600; }
+details.more > summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+.toolbar { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+button { font: inherit; font-size: 12px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); cursor: pointer; }
+button.on { border-color: var(--accent); color: var(--accent); }
+.note { color: var(--muted); font-size: 12px; }
+.err { color: var(--fail); }
+@media (max-width: 800px) { .app { grid-template-columns: 1fr; height: auto; } aside { max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--line); } main { padding: 16px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Agent bench runs</h1>
+    <input id="filter" placeholder="Filter paths…" autocomplete="off">
+    <div class="tree" id="tree"></div>
+  </aside>
+  <main id="main"></main>
+</div>
+<script id="data" type="application/json">/*DATA*/null</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const fmt = (v, d = 0) => v == null ? '–' : typeof v === 'number' ? v.toLocaleString(undefined, {maximumFractionDigits: d}) : esc(v);
+const pct = v => v == null ? '–' : (v * 100).toFixed(0) + '%';
+const usd = v => v == null ? '–' : '$' + v.toFixed(v < 0.01 ? 5 : 4);
+const secs = ms => ms == null ? '–' : (ms / 1000).toFixed(1) + 's';
+const size = n => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+const badge = ok => ok == null ? '<span class="badge pending">pending</span>' : `<span class="badge ${ok ? 'ok' : 'bad'}">${ok ? 'pass' : 'fail'}</span>`;
+// Rows without a score yet (passed == null) are excluded from pass-rate denominators.
+const scored = rows => rows.filter(r => r.passed != null);
+
+// ---- file tree --------------------------------------------------------------
+const tree = {name: '', path: '', dirs: new Map(), files: []};
+const fileByPath = new Map();
+for (const [path, bytes, hash] of D.files) {
+  const parts = path.split('/'); let node = tree;
+  parts.slice(0, -1).forEach((p, i) => {
+    if (!node.dirs.has(p)) node.dirs.set(p, {name: p, path: parts.slice(0, i + 1).join('/'), dirs: new Map(), files: []});
+    node = node.dirs.get(p);
+  });
+  const f = {name: parts.at(-1), path, bytes, hash}; node.files.push(f); fileByPath.set(path, f);
+}
+const dirByPath = new Map();
+(function walk(n) { dirByPath.set(n.path, n); n.dirs.forEach(walk); })(tree);
+const rowByPath = new Map();
+for (const [run, r] of Object.entries(D.runs)) for (const row of r.rows) rowByPath.set(run + '/' + row.artifact, row);
+const natural = (a, b) => a.localeCompare(b, undefined, {numeric: true});
+
+function nodeHTML(n) {
+  const row = rowByPath.get(n.path);
+  const tag = row ? badge(row.passed) : scored(D.runs[n.path]?.rows || []).length ? `<span class="size">${D.runs[n.path].rows.filter(r => r.passed).length}/${scored(D.runs[n.path].rows).length}</span>` : '';
+  return `<details data-path="${esc(n.path)}"><summary data-go="${esc(n.path)}">${esc(n.name)} ${tag}</summary><div class="kids"></div></details>`;
+}
+function kidsHTML(n) {
+  return [...n.dirs.values()].sort((a, b) => natural(a.name, b.name)).map(nodeHTML).join('') +
+    [...n.files].sort((a, b) => natural(a.name, b.name)).map(f => `<div class="file" data-go="${esc(f.path)}">${esc(f.name)}<span class="size">${size(f.bytes)}</span></div>`).join('');
+}
+const treeEl = $('#tree');
+treeEl.innerHTML = kidsHTML(tree);
+treeEl.addEventListener('toggle', e => {
+  const d = e.target; if (d.open && !d.dataset.filled) { d.dataset.filled = 1; d.lastElementChild.innerHTML = kidsHTML(dirByPath.get(d.dataset.path)); }
+}, true);
+treeEl.addEventListener('click', e => {
+  const t = e.target.closest('[data-go]'); if (!t) return;
+  if (t.tagName === 'SUMMARY' && location.hash === '#/' + t.dataset.go) return;  // let a second click collapse
+  if (t.tagName === 'SUMMARY') e.preventDefault();
+  go(t.dataset.go);
+});
+function revealInTree(path) {
+  const parts = path.split('/');
+  for (let i = 1; i <= parts.length; i++) {
+    const p = parts.slice(0, i).join('/');
+    const d = treeEl.querySelector(`details[data-path="${CSS.escape(p)}"]`);
+    if (d && !d.open) d.open = true, d.dispatchEvent(new Event('toggle'));
+  }
+  treeEl.querySelectorAll('.sel').forEach(x => x.classList.remove('sel'));
+  const el = treeEl.querySelector(`[data-go="${CSS.escape(path)}"]`);
+  if (el) { el.classList.add('sel'); el.scrollIntoView({block: 'nearest'}); }
+}
+$('#filter').addEventListener('input', e => {
+  const q = e.target.value.trim().toLowerCase();
+  if (!q) { treeEl.innerHTML = kidsHTML(tree); return; }
+  const hits = D.files.filter(([p]) => p.toLowerCase().includes(q)).slice(0, 400);
+  treeEl.innerHTML = hits.map(([p, b]) => `<div class="file" data-go="${esc(p)}" title="${esc(p)}">${esc(p)}<span class="size">${size(b)}</span></div>`).join('') +
+    (hits.length === 400 ? '<div class="note">first 400 matches</div>' : '');
+});
+
+// ---- blobs ------------------------------------------------------------------
+const cache = new Map();
+function text(path) {
+  const f = fileByPath.get(path); if (!f) return Promise.resolve(null);
+  if (!cache.has(f.hash)) {
+    const bin = Uint8Array.from(atob(D.blobs[f.hash]), c => c.charCodeAt(0));
+    cache.set(f.hash, new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+  }
+  return cache.get(f.hash);
+}
+const json = async path => { const t = await text(path); try { return t == null ? null : JSON.parse(t); } catch { return null; } };
+
+// ---- routing ----------------------------------------------------------------
+function go(path) { location.hash = '#/' + path; }
+window.addEventListener('hashchange', route);
+function crumbs(path) {
+  const parts = path ? path.split('/') : [];
+  return `<div class="crumbs"><a href="#/">runs</a>${parts.map((p, i) => ` / <a href="#/${esc(parts.slice(0, i + 1).join('/'))}">${esc(p)}</a>`).join('')}</div>`;
+}
+async function route() {
+  const path = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+  const main = $('#main');
+  main.innerHTML = crumbs(path) + '<div class="note">loading…</div>';
+  const view = !path ? home : D.runs[path] ? runView : rowByPath.has(path) ? trialView : dirByPath.has(path) ? dirView : fileByPath.has(path) ? fileView : missing;
+  const html = await view(path);
+  main.innerHTML = crumbs(path) + html;
+  main.scrollTop = 0;
+  if (path) revealInTree(path);
+  bindTables(main);
+}
+const missing = p => `<h2>Not found</h2><p>${esc(p)}</p>`;
+
+// ---- views ------------------------------------------------------------------
+function totals(run) {
+  const rows = run.rows, n = scored(rows).length, ok = rows.filter(r => r.passed).length, pending = rows.length - n;
+  const sum = k => rows.reduce((a, r) => a + (r[k] || 0), 0);
+  return {n, ok, pending, tokens: sum('tokens'), cost: sum('cost'), requests: sum('model_requests'), tools: sum('tool_calls'), cli: sum('cli_calls'), tests: sum('public_test_calls')};
+}
+function home() {
+  const runs = Object.entries(D.runs), dry = runs.filter(([, r]) => r.manifest.dry_run);
+  const rows = runs.filter(([, r]) => !r.manifest.dry_run).map(([name, r]) => {
+    const t = totals(r), m = r.manifest;
+    return `<tr class="click" data-go="${esc(name)}"><td><a href="#/${esc(name)}">${esc(name)}</a></td><td>${esc(m.model)}</td><td>${esc(m.mode || 'one-shot')}</td><td class="n">${fmt(m.protocol_version)}</td>
+      <td class="n">${t.n ? `${t.ok}/${t.n}` : '–'}${t.pending ? ` <span class="badge pending">${t.pending} pending</span>` : ''}</td><td class="n">${t.n ? pct(t.ok / t.n) : '–'}</td><td class="n">${fmt(t.requests)}</td><td class="n">${fmt(t.tokens)}</td><td class="n">${t.n ? usd(t.cost) : '–'}</td><td>${esc((m.git_revision || '').slice(0, 10))}</td></tr>`;
+  }).join('');
+  return `<h2>Agent bench review</h2><div class="sub">${D.files.length.toLocaleString()} files across ${Object.keys(D.runs).length} run directories in <code>runtime/agent-bench/</code>. Click a run, task or trial, or browse the tree.</div>
+    <div class="wrap"><table class="sortable"><thead><tr><th>Run</th><th>Model</th><th>Mode</th><th class="n">Protocol</th><th class="n">Passed</th><th class="n">Rate</th><th class="n">Requests</th><th class="n">Tokens</th><th class="n">Cost</th><th>Git rev</th></tr></thead><tbody>${rows}</tbody></table></div>` +
+    (dry.length ? `<h3>Dry runs</h3><div class="sub">Reference validation only: prompts saved and reference solutions checked, no model calls, so no pass rate, tokens or cost.</div>
+    <div class="wrap"><table class="sortable"><thead><tr><th>Run</th><th class="n">Tasks</th><th class="n">Protocol</th><th>Git rev</th></tr></thead><tbody>` +
+    dry.map(([name, r]) => `<tr class="click" data-go="${esc(name)}"><td><a href="#/${esc(name)}">${esc(name)}</a></td><td class="n">${Object.keys(r.tasks).length}</td><td class="n">${fmt(r.manifest.protocol_version)}</td><td>${esc((r.manifest.git_revision || '').slice(0, 10))}</td></tr>`).join('') + '</tbody></table></div>' : '');
+}
+function previousRun(run) {
+  const name = run.manifest.retry_of?.replace(/\/+$/, '').split('/').at(-1);
+  return name && Object.hasOwn(D.runs, name) ? name : null;
+}
+function previousOutcome(name, task) {
+  const summary = D.runs[name].summary[task];
+  if (!summary) return '–';
+  const failed = summary.evaluated - summary.successes;
+  const unscored = summary.attempts - summary.evaluated;
+  return `<a href="#/${esc(name + '/' + task)}">${summary.successes}/${summary.attempts} passed</a>`
+    + `<div class="note">${failed} failed · ${unscored} unscored</div>`;
+}
+function unscoredStyle(error) {
+  return error === 'OpenRouter HTTP 402' ? 'payment' : 'unscored';
+}
+function outcomeMatrix(name, previous) {
+  const tasks = [...new Set(D.runs[name].rows.map(row => row.task))];
+  const panels = (previous ? [name, previous] : [name]).map(run => {
+    const rows = new Map();
+    let lastTrial = 0;
+    for (const row of D.runs[run].rows) {
+      rows.set(row.task + '/' + row.trial, row);
+      lastTrial = Math.max(lastTrial, row.trial);
+    }
+    return {run, rows, trials: Array.from({length: lastTrial}, (_, index) => index + 1)};
+  }).filter(panel => panel.trials.length);
+  const spacer = '<span aria-hidden="true"></span>';
+  const columns = panels.map(panel => `repeat(${panel.trials.length}, minmax(28px, 44px))`).join(' 16px ');
+  const headings = panels.map((panel, index) =>
+    `<h3 class="matrix-heading" style="grid-column: span ${panel.trials.length}">${index ? 'Prev outcome matrix' : 'Outcome matrix'}</h3>`);
+  const trialNumbers = panels.map(panel => panel.trials.map(trial =>
+    `<span class="note trial-number">${trial}</span>`).join(''));
+  const taskRows = tasks.map(task => {
+    const cells = panels.map(panel => panel.trials.map(trial => {
+      const row = panel.rows.get(task + '/' + trial);
+      if (!row) return spacer;
+      const [style, symbol, outcome] = row.passed === true ? ['ok', '✓', 'passed']
+        : row.passed === false ? ['bad', '✗', 'failed']
+        : row.error ? [unscoredStyle(row.error), '!', 'unscored'] : ['pending', '…', 'pending'];
+      const description = row.error || `${row.cases_passed}/${row.cases_total} cases, ${row.tool_calls ?? 0} tools`;
+      const label = `${row.artifact}: ${outcome} · ${description}`;
+      return `<a class="cell ${style}" href="#/${esc(panel.run + '/' + row.artifact)}" title="${esc(label)}" aria-label="${esc(label)}">${symbol}</a>`;
+    }).join(''));
+    return `<a class="lab" href="#/${esc(name + '/' + task)}">${esc(task)}</a>` + cells.join(spacer);
+  });
+  return `<div class="wrap"><div class="matrix" style="grid-template-columns: max-content ${columns}">`
+    + spacer + headings.join(spacer) + spacer + trialNumbers.join(spacer) + taskRows.join('') + '</div></div>';
+}
+function loadMatrixReport(run, kind) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `${encodeURIComponent(run)}/${kind}.matrix.js?v=${Date.now()}`;
+    script.onload = () => {
+      script.remove();
+      const report = script.matrixReport;
+      if (report?.schema === 'helix.agent-bench.v1' && Array.isArray(report.rows)) resolve(report);
+      else reject(new Error('Invalid matrix data.'));
+    };
+    script.onerror = () => { script.remove(); reject(new Error('Matrix data is unavailable.')); };
+    document.head.append(script);
+  });
+}
+async function refreshRunRows(run) {
+  let report;
+  try {
+    report = await loadMatrixReport(run, 'replay');
+  } catch {
+    report = await loadMatrixReport(run, 'report');
+  }
+  const current = D.runs[run], old = new Map(current.rows.map(row => [row.artifact, row]));
+  current.rows = report.rows.map(row => ({...old.get(row.artifact), ...row}));
+  for (const row of current.rows) rowByPath.set(run + '/' + row.artifact, row);
+}
+function bindMatrixRefresh(root) {
+  const button = root.querySelector('[data-refresh-matrix]');
+  if (!button) return;
+  const status = root.querySelector('[data-matrix-status]');
+  const panel = root.querySelector('[data-matrix-panel]');
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    status.textContent = 'Refreshing…';
+    const run = button.dataset.refreshMatrix, previous = previousRun(D.runs[run]);
+    try {
+      await refreshRunRows(run);
+      if (previous) await refreshRunRows(previous).catch(() => {});
+      const scroll = panel.querySelector('.wrap')?.scrollLeft ?? 0;
+      panel.innerHTML = D.runs[run].rows.length ? outcomeMatrix(run, previous) : '<p class="note">No attempts recorded yet.</p>';
+      const wrap = panel.querySelector('.wrap');
+      if (wrap) wrap.scrollLeft = scroll;
+      status.textContent = 'Updated ' + new Date().toLocaleTimeString();
+    } catch (error) {
+      status.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+function runView(name) {
+  const r = D.runs[name], m = r.manifest, t = totals(r), dir = dirByPath.get(name);
+  const previous = previousRun(r);
+  const facts = [['model', m.model], ['mode', m.mode || 'one-shot'], ['protocol', m.protocol_version], ['trials / task', m.trials], ['passed', (t.n ? `${t.ok}/${t.n} (${pct(t.ok / t.n)})` : '–') + (t.pending ? `, ${t.pending} not scored yet` : '')],
+    ['model requests', fmt(t.requests)], ['tool calls', fmt(t.tools)], ['CLI calls', fmt(t.cli)], ['public tests', fmt(t.tests)], ['tokens', fmt(t.tokens)], ['cost', t.n ? usd(t.cost) : '–'],
+    ['generation wall', secs(r.execution?.generation_wall_ms)], ['evaluation wall', secs(r.execution?.evaluation_wall_ms)], ['temperature', m.temperature], ['max turns', m.max_turns],
+    ['max tool calls', m.max_tool_calls], ['jobs', m.jobs], ['context', m.context_delivery], ['git rev', (m.git_revision || '').slice(0, 12)]].filter(([, v]) => v != null && v !== '–' || ['passed'].includes(v));
+  let html = `<h2>${esc(name)}</h2><div class="sub">${esc(r.phase ? 'phase: ' + r.phase : '')}</div><div class="kv">${facts.map(([k, v]) => `<div><b>${k}</b><span>${esc(v)}</span></div>`).join('')}</div>`;
+  html += `<div class="toolbar"><button data-refresh-matrix="${esc(name)}">Refresh matrix</button>`
+    + '<span class="note" role="status" data-matrix-status></span></div>'
+    + `<div data-matrix-panel>${r.rows.length ? outcomeMatrix(name, previous) : '<p class="note">No attempts recorded yet.</p>'}</div>`;
+  if (r.rows.length) {
+    const sums = Object.entries(r.summary).sort(([a], [b]) => natural(a, b));
+    if (previous) html += `<div class="sub">Previous run <a href="#/${esc(previous)}">${esc(previous)}</a></div>`;
+    html += `<h3>Per-task summary</h3><div class="wrap"><table class="sortable"><thead><tr><th>Task</th><th class="n">${previous ? 'Retry passed' : 'Passed'}</th>${previous ? '<th class="n">Previous outcome</th>' : ''}<th class="n">Wilson 95%</th><th class="n">Requests</th><th class="n">Tools</th><th class="n">Tests</th><th class="n">Tokens/attempt</th><th class="n">Cost</th><th class="n">Median gen</th><th class="n">Runtime × ref</th></tr></thead><tbody>` +
+      sums.map(([task, s]) => `<tr class="click" data-go="${esc(name + '/' + task)}"><td>${esc(task)}<div class="note">${esc(r.tasks[task]?.goal || '')}</div></td><td class="n">${s.successes}/${s.attempts}</td>${previous ? `<td class="n">${previousOutcome(previous, task)}</td>` : ''}<td class="n">${s.pass_rate_wilson_95 ? s.pass_rate_wilson_95.map(pct).join('–') : '–'}</td><td class="n">${fmt(s.model_requests)}</td><td class="n">${fmt(s.tool_calls)}</td><td class="n">${s.public_test_calls != null ? `${s.public_test_successes}/${s.public_test_calls}` : '–'}</td><td class="n">${fmt(s.mean_total_tokens_per_attempt)}</td><td class="n">${usd(s.reported_cost_usd)}</td><td class="n">${secs(s.median_generation_ms)}</td><td class="n">${fmt(s.median_runtime_ratio_to_reference, 2)}</td></tr>`).join('') + '</tbody></table></div>';
+    html += trialTable(name, r.rows);
+  }
+  return html + listing(dir);
+}
+function trialTable(run, rows, heading = 'Trials') {
+  const resultBadge = row => row.passed == null && row.error
+    ? `<span class="badge ${unscoredStyle(row.error)}">unscored</span>` : badge(row.passed);
+  return `<h3>${esc(heading)}</h3><div class="toolbar"><button data-only-fail>show failures only</button></div><div class="wrap"><table class="sortable trials"><thead><tr><th>Trial</th><th>Result</th><th class="n">Cases</th><th class="n">Requests</th><th class="n">Tools</th><th class="n">CLI</th><th class="n">Tests</th><th class="n">Tokens</th><th class="n">Cost</th><th class="n">Gen</th><th class="n">Runtime × ref</th><th>First failure</th></tr></thead><tbody>` +
+    rows.map(x => `<tr class="click ${x.passed === false || x.error ? 'failrow' : ''}" data-go="${esc(run + '/' + x.artifact)}"><td>${esc(x.artifact)}</td><td>${resultBadge(x)}</td><td class="n">${x.cases_passed}/${x.cases_total}</td><td class="n">${fmt(x.model_requests)}</td><td class="n">${fmt(x.tool_calls)}</td><td class="n">${fmt(x.cli_calls)}</td><td class="n">${x.public_test_calls != null ? `${x.public_test_successes}/${x.public_test_calls}` : '–'}</td><td class="n">${fmt(x.tokens)}</td><td class="n">${usd(x.cost)}</td><td class="n">${secs(x.generation_ms)}</td><td class="n">${fmt(x.runtime_ratio_to_reference, 2)}</td><td class="err">${x.error ? esc(x.error) : x.failure ? `${esc(x.failure.case)}: ${esc(x.failure.kind || '')} ${esc(x.failure.message || '')}` : ''}</td></tr>`).join('') + '</tbody></table></div>';
+}
+function listing(dir) {
+  if (!dir) return '';
+  const ds = [...dir.dirs.values()].sort((a, b) => natural(a.name, b.name)), fs = [...dir.files].sort((a, b) => natural(a.name, b.name));
+  const count = n => { let c = n.files.length; n.dirs.forEach(d => c += count(d)); return c; };
+  return `<h3>Directory</h3><div class="wrap"><table><thead><tr><th>Name</th><th class="n">Size</th></tr></thead><tbody>` +
+    ds.map(d => { const row = rowByPath.get(d.path); return `<tr class="click" data-go="${esc(d.path)}"><td>📁 ${esc(d.name)} ${row ? badge(row.passed) : ''}</td><td class="n">${count(d)} files</td></tr>`; }).join('') +
+    fs.map(f => `<tr class="click" data-go="${esc(f.path)}"><td>📄 ${esc(f.name)}</td><td class="n">${size(f.bytes)}</td></tr>`).join('') + '</tbody></table></div>';
+}
+async function dirView(path) {
+  const dir = dirByPath.get(path), [run] = path.split('/'), r = D.runs[run];
+  let html = `<h2>${esc(dir.name)}</h2>`;
+  const task = r?.tasks[dir.name];
+  if (task) html += `<div class="sub">${esc(task.goal)}</div>${task.example ? `<pre>${esc(task.example)}</pre>` : ''}`;
+  const rows = r ? r.rows.filter(x => (run + '/' + x.artifact).startsWith(path + '/')) : [];
+  const previous = task && path === run + '/' + dir.name ? previousRun(r) : null;
+  if (rows.length) html += trialTable(run, rows, previous ? 'Retry trials' : 'Trials');
+  if (previous) {
+    const priorRows = D.runs[previous].rows.filter(row => row.task === dir.name);
+    if (priorRows.length) html += trialTable(previous, priorRows, 'Previous trials');
+  }
+  return html + listing(dir);
+}
+async function trialView(path) {
+  const row = rowByPath.get(path), [run] = path.split('/'), r = D.runs[run];
+  const result = await json(path + '/result.json') || {};
+  const task = r.tasks[row.task];
+  let html = `<h2>${esc(row.artifact)} ${badge(row.passed)}</h2><div class="sub">${esc(task?.goal || '')}</div>`;
+  const facts = [['cases', `${row.cases_passed}/${row.cases_total}`], ['model requests', row.model_requests], ['tool calls', row.tool_calls], ['CLI calls', row.cli_calls],
+    ['public tests', row.public_test_calls != null ? `${row.public_test_successes}/${row.public_test_calls}` : null], ['tokens', fmt(row.tokens)], ['cost', usd(row.cost)],
+    ['generation', secs(row.generation_ms)], ['runtime × ref', fmt(row.runtime_ratio_to_reference, 2)], ['source bytes', row.source_bytes], ['finish', result.finish_reason], ['provider', result.provider]].filter(([, v]) => v != null);
+  html += `<div class="kv">${facts.map(([k, v]) => `<div><b>${k}</b><span>${esc(v)}</span></div>`).join('')}</div>`;
+  if (row.error) html += `<pre class="err">${esc(row.error)}</pre>`;
+  const cand = fileByPath.has(path + '/candidate.yaml') ? await text(path + '/candidate.yaml') : null;
+  if (cand != null) html += `<h3>Submitted candidate <span class="note">(formatted)</span></h3>${codeBlock(D.formattedFiles[fileByPath.get(path + '/candidate.yaml').hash] ?? cand, true, true)}`;
+  const cases = result.score?.cases || [];
+  if (cases.length) html += `<h3>Hidden cases</h3><div class="wrap"><table class="cases"><thead><tr><th>Case</th><th>Result</th><th>Input</th><th>Expected</th><th>Observed</th></tr></thead><tbody>` +
+    cases.map(c => { const o = c.observation || {}, st = o.state || {};
+      const observed = st.error ? `<span class="err">${esc(st.error.kind)}: ${esc(st.error.message)}</span>` : o.malformed ? `<span class="err">${esc(o.malformed)}</span>` : st.status === 'finished' ? `<code>${esc(clip(JSON.stringify(st.root), 300))}</code>` : `<code>${esc(clip(JSON.stringify(o), 300))}</code>`;
+      return `<tr><td>${esc(c.id)}</td><td>${badge(c.passed)}</td><td><code>${esc(clip(JSON.stringify(c.input), 160))}</code></td><td><code>${esc(clip(JSON.stringify(c.expected), 200))}</code></td><td>${observed}${o.stderr ? `<details class="more"><summary>stderr</summary><pre>${esc(o.stderr)}</pre></details>` : ''}</td></tr>`; }).join('') + '</tbody></table></div>';
+  const convo = await json(path + '/conversation.json');
+  if (convo) html += `<h3>Transcript <span class="note">(${convo.length} messages)</span></h3>${transcript(convo)}`;
+  else if (fileByPath.has(path + '/response.json')) {
+    const resp = await json(path + '/response.json'), msg = resp?.choices?.[0]?.message;
+    if (msg) html += `<h3>Model response</h3>${transcript([msg])}`;
+  }
+  return html + listing(dirByPath.get(path));
+}
+const clip = (s, n) => s == null ? '' : s.length > n ? s.slice(0, n) + '…' : s;
+// YAML (and JSON, its flow subset) highlighting, one line at a time so spans never cross
+// lines. The scalar after !ref is a reference; the first scalar after !call is its function.
+const YAML_TOKEN = /(\s+)|(#.*)|("(?:[^"\\]|\\.)*"|'(?:[^']|'')*')|(![\w.:\/-]*)|(-(?=\s|$)|[\[\]{},:])|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?(?=[\s,\]}]|$))|((?:true|false|null|~)(?=[\s,\]}]|$))|([^\s\[\]{},#:"'](?:[^\[\]{},:#]|:(?!\s|$)|#(?<!\s#))*)/y;
+function highlightYaml(src) {
+  let pending = null;  // 'f' after !call, 'r' after !ref
+  return src.split('\n').map(line => {
+    let out = '', m;
+    YAML_TOKEN.lastIndex = 0;
+    while (YAML_TOKEN.lastIndex < line.length && (m = YAML_TOKEN.exec(line))) {
+      const [tok, ws, com, str, tag, punct, num, kw, plain] = m;
+      const keyed = (str || plain) && /^\s*:(\s|$)/.test(line.slice(YAML_TOKEN.lastIndex));
+      let cls = ws ? '' : com ? 'c' : tag ? 't' : punct ? 'p' : num ? 'n' : kw ? 'n' : keyed ? 'k' : str ? 's' : '';
+      if (tag) pending = tag === '!call' ? 'f' : tag === '!ref' ? 'r' : null;
+      else if (pending && (str || plain || num || kw)) { cls = keyed ? 'k' : pending; pending = null; }
+      else if (pending && punct && !'[-'.includes(tok)) pending = null;
+      out += cls ? `<span class="${cls}">${esc(tok)}</span>` : esc(tok);
+    }
+    return out + esc(line.slice(YAML_TOKEN.lastIndex));
+  });
+}
+// Canonical Helix formatting of source a model wrote inline (absent when unparseable or unchanged).
+const formatted = s => D.formattedInline?.[s] ?? s;
+function codeBlock(s, lines = true, hl = false) {
+  const rows = hl ? highlightYaml(s) : esc(s).split('\n');
+  return `<pre class="code${lines ? ' lines' : ''}">${rows.map(l => `<span>${l || ' '}</span>`).join('')}</pre>`;
+}
+function long(s, open = false, n = 1200, hl = false) {
+  const body = hl ? codeBlock(s, false, true) : `<pre>${esc(s)}</pre>`;
+  if (s.length <= n) return body;
+  return `<details class="more"${open ? ' open' : ''}><summary>${size(s.length)} — ${esc(clip(s.replace(/\s+/g, ' '), 140))}</summary>${body}</details>`;
+}
+const YAML_KEYS = new Set(['content', 'stdin', 'stdout', 'source', 'program']);
+const block = (k, x) => long(formatted(x), false, 1200, k == null ? x in (D.formattedInline || {}) : YAML_KEYS.has(k) || x in (D.formattedInline || {}));
+function value(v) {  // render parsed JSON with long strings as blocks
+  if (typeof v === 'string') return v.includes('\n') || v.length > 120 ? block(null, v) : `<code>${esc(v)}</code>`;
+  if (v && typeof v === 'object' && !Array.isArray(v)) return `<div style="margin-left:4px">${Object.entries(v).map(([k, x]) =>
+    typeof x === 'string' && (x.includes('\n') || x.length > 120) ? `<div><b class="note">${esc(k)}</b>${block(k, x)}</div>` : `<div><b class="note">${esc(k)}</b> <code>${esc(clip(JSON.stringify(x), 400))}</code></div>`).join('')}</div>`;
+  return `<code>${esc(clip(JSON.stringify(v), 400))}</code>`;
+}
+function parse(s) { try { return JSON.parse(s); } catch { return s; } }
+function toolSummary(name, args, res) {
+  if (res && typeof res === 'object') {
+    if (res.error) return `<span class="err">error: ${esc(res.error)}</span>`;
+    if ('exit_code' in res) return `<span class="badge ${res.exit_code === 0 ? 'ok' : 'bad'}">exit ${res.exit_code}</span>`;
+    if (res.written) return `wrote ${esc(res.written)} (${res.bytes} B)`;
+    if (res.path && res.total_lines != null) return `read ${esc(res.path)} from line ${res.start_line} of ${res.total_lines}`;
+    if (res.submitted) return `<span class="badge ok">submitted</span>`;
+  }
+  return '';
+}
+function transcript(msgs) {
+  const results = new Map(msgs.filter(m => m.role === 'tool').map(m => [m.tool_call_id, m]));
+  let turn = 0;
+  return msgs.filter(m => m.role !== 'tool').map(m => {
+    if (m.role === 'system' || m.role === 'user') return `<div class="msg ${m.role}"><div class="role">${m.role}</div>${long(typeof m.content === 'string' ? m.content : JSON.stringify(m.content, null, 2), m.role === 'user', m.role === 'user' ? 4000 : 600)}</div>`;
+    turn++;
+    let h = `<div class="msg assistant"><div class="role">assistant · turn ${turn}</div>`;
+    const reasoning = m.reasoning || m.reasoning_content;
+    if (reasoning) h += `<details class="more"><summary>reasoning</summary><pre>${esc(reasoning)}</pre></details>`;
+    if (m.content) h += codeBlock(formatted(m.content), false, m.content in (D.formattedInline || {}));
+    h += '</div>';
+    for (const c of m.tool_calls || []) {
+      const args = parse(c.function?.arguments ?? ''), res = results.get(c.id), out = res ? parse(res.content) : null;
+      h += `<div class="msg tool"><div class="role">tool · <span class="call"><span class="fn">${esc(c.function?.name)}</span></span> <span class="sum">${toolSummary(c.function?.name, args, out)}</span></div>
+        <div class="call">${value(args)}</div>${res ? `<details class="more"><summary>result (${size(res.content.length)})</summary>${value(out)}</details>` : '<div class="note">no result recorded</div>'}</div>`;
+    }
+    return h;
+  }).join('');
+}
+async function fileView(path) {
+  const f = fileByPath.get(path), t = await text(path);
+  const big = t.length > 3e6, alt = big ? null : display(path, f, t);
+  const body = big ? `<pre>${esc(t.slice(0, 3e6))}</pre><div class="note">truncated at 3 MB for display</div>` : codeBlock(alt?.text ?? t, true, alt?.hl);
+  return `<h2>${esc(f.name)}</h2><div class="sub">${size(f.bytes)} · sha256 ${esc(f.hash)}…${alt?.label ? ` · showing ${alt.label}` : ''}</div>
+    <div class="toolbar"><button data-download>download</button>${alt?.label ? `<button data-raw>show original</button>` : ''}</div>${body}`;
+}
+// What a file view shows by default: pretty JSON, formatted Helix YAML, else the bytes.
+function display(path, f, t) {
+  if (/\.json$/.test(path)) { try { return {text: JSON.stringify(JSON.parse(t), null, 2), hl: true, label: 'pretty-printed JSON'}; } catch { return null; } }
+  if (/\.ya?ml$/.test(path)) return f.hash in D.formattedFiles ? {text: D.formattedFiles[f.hash], hl: true, label: 'formatted by helix fmt'} : {hl: true};
+  return null;
+}
+async function download(path) {
+  const t = await text(path), a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([t])); a.download = path.split('/').pop(); a.click();
+}
+
+// ---- table interactions ---------------------------------------------------------
+function bindTables(root) {
+  bindMatrixRefresh(root);
+  root.querySelectorAll('tr[data-go]').forEach(tr => tr.addEventListener('click', e => { if (!e.target.closest('a')) go(tr.dataset.go); }));
+  root.querySelectorAll('table.sortable th').forEach((th, i) => th.addEventListener('click', () => {
+    const tb = th.closest('table').tBodies[0], dir = th.dataset.dir = th.dataset.dir === 'asc' ? 'desc' : 'asc';
+    const key = tr => { const s = tr.cells[i].textContent.trim().replace(/[$,%s]/g, ''), n = parseFloat(s.split('/')[0]); return isNaN(n) ? s : n; };
+    [...tb.rows].sort((a, b) => { const x = key(a), y = key(b); const c = typeof x === 'number' && typeof y === 'number' ? x - y : natural(String(x), String(y)); return dir === 'asc' ? c : -c; }).forEach(r => tb.appendChild(r));
+  }));
+  root.querySelectorAll('[data-only-fail]').forEach(b => b.addEventListener('click', () => {
+    const on = b.classList.toggle('on');
+    b.parentElement.nextElementSibling.querySelectorAll('tbody tr').forEach(tr => tr.style.display = on && !tr.classList.contains('failrow') ? 'none' : '');
+  }));
+  const here = () => decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+  root.querySelectorAll('[data-download]').forEach(b => b.addEventListener('click', () => download(here())));
+  root.querySelectorAll('[data-raw]').forEach(b => b.addEventListener('click', async () => {
+    const path = here(), t = await text(path), raw = b.classList.toggle('on'), alt = display(path, fileByPath.get(path), t);
+    root.querySelector('pre').outerHTML = codeBlock(raw ? t : alt.text, true, /\.(json|ya?ml)$/.test(path));
+    b.textContent = raw ? 'show ' + alt.label : 'show original';
+  }));
+}
+route();
+</script>
+</body>
+</html>

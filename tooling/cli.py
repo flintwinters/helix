@@ -241,7 +241,7 @@ def parser():
     audit.add_argument("--baseline", help="read golden expectations from a Git revision instead of the working tree")
     bench = command(quality, "agent-bench", "Measure repeated one-shot coding with objective oracles and CLI timings",
                     ["quality", "agent-bench"], "quality agent-bench run --trials 10")
-    bench.add_argument("action", choices=("list", "models", "run", "score", "report"))
+    bench.add_argument("action", choices=("list", "models", "run", "score", "report", "review"))
     bench.add_argument("--mode", choices=("one-shot", "cli"), default="cli", help="CLI-enabled bounded agent or a single completion without tools")
     bench.add_argument("--full-cli", action="store_true", help="expose all Helix argv in a Bubblewrap sandbox")
     bench.add_argument("--max-turns", type=int, default=16, help="maximum model requests per CLI-enabled attempt")
